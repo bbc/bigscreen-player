@@ -1,0 +1,40 @@
+{
+  "name": "bigscreenplayer",
+  "version": "0.0.1",
+  "description": "Simplified media playback for bigscreen devices.",
+  "scripts": {
+    "test": "echo 'Test Suite not implemented yet'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bbc/BigscreenPlayer.git"
+  },
+  "keywords": [
+    "BBC",
+    "Media Player",
+    "Video Playback",
+    "TV",
+    "Set Top Box",
+    "Streaming"
+  ],
+  "author": "BBC",
+  "license": "SEE LICENCE IN LICENCE",
+  "bugs": {
+    "url": "https://github.com/bbc/BigscreenPlayer/issues"
+  },
+  "homepage": "https://github.com/bbc/BigscreenPlayer#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^3.0.0",
+    "eslint-plugin-es5": "1.1.0",
+    "eslint-plugin-jasmine": "2.9.3",
+    "eslint-plugin-node": "^6.0.1",
+    "eslint-plugin-require": "0.0.1",
+    "eslint-plugin-standard": "1.3.2",
+    "jasmine-core": "2.5.2",
+    "squirejs": "0.2.1",
+    "webpack": "^4.12.0",
+    "webpack-cli": "^3.0.3",
+    "webpack-dev-server": "^3.1.4"
+  }
+}
