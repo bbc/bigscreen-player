@@ -1,0 +1,151 @@
+define(
+    'bigscreenplayer/utils/coreutils',
+    function () {
+      'use strict';
+
+      return {
+        clone: function (args) {
+          var clone = {};
+          for (var prop in args) {
+            if (args.hasOwnProperty(prop)) {
+              clone[prop] = args[prop];
+            }
+          }
+          return clone;
+        },
+
+        deepClone: function (aObject) {
+          if (!aObject) {
+            return aObject;
+          }
+
+          var bObject, v, k;
+          bObject = Array.isArray(aObject) ? [] : {};
+          for (k in aObject) {
+            v = aObject[k];
+            bObject[k] = (typeof v === 'object') ? this.deepClone(v) : v;
+          }
+          return bObject;
+        },
+
+        cloneArray: function (arr) {
+          var clone = [];
+
+          for (var i = 0, n = arr.length; i < n; i++) {
+            clone.push(this.clone(arr[i]));
+          }
+
+          return clone;
+        },
+
+        merge: function () {
+          var merged = {};
+
+          for (var i = 0; i < arguments.length; i++) {
+            var obj = arguments[i];
+            for (var param in obj) {
+              merged[param] = obj[param];
+            }
+          }
+
+          return merged;
+        },
+
+        arrayStartsWith: function (array, partial) {
+          for (var i = 0; i < partial.length; i++) {
+            if (array[i] !== partial[i]) {
+              return false;
+            }
+          }
+
+          return true;
+        },
+
+        find: function (array, predicate) {
+          return array.reduce(function (acc, it, i) {
+            return acc !== false ? acc : predicate(it) && it;
+          }, false);
+        },
+
+        findIndex: function (array, predicate) {
+          return array.reduce(function (acc, it, i) {
+            return acc !== false ? acc : predicate(it) && i;
+          }, false);
+        },
+
+        swap: function (array, i, j) {
+          var arr = array.slice();
+          var temp = arr[i];
+
+          arr[i] = arr[j];
+          arr[j] = temp;
+
+          return arr;
+        },
+
+        pluck: function (array, property) {
+          var plucked = [];
+
+          for (var i = 0; i < array.length; i++) {
+            plucked.push(array[i][property]);
+          }
+
+          return plucked;
+        },
+
+        flatten: function (arr) {
+          return [].concat.apply([], arr);
+        },
+
+        without: function (arr, value) {
+          var newArray = [];
+
+          for (var i = 0; i < arr.length; i++) {
+            if (arr[i] !== value) {
+              newArray.push(arr[i]);
+            }
+          }
+
+          return newArray;
+        },
+
+        contains: function (arr, subset) {
+          return [].concat(subset).every(function (item) { return [].concat(arr).indexOf(item) > -1; });
+        },
+
+        pickRandomFromArray: function (arr) {
+          return arr[Math.floor(Math.random() * arr.length)];
+        },
+
+        filter: function (arr, predicate) {
+          var filteredArray = [];
+
+          for (var i = 0; i < arr.length; i++) {
+            if (predicate(arr[i])) {
+              filteredArray.push(arr[i]);
+            }
+          }
+
+          return filteredArray;
+        },
+
+        noop: function () {},
+
+        generateUUID: function () {
+          var d = new Date().getTime();
+
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = (d + Math.random() * 16) % 16 | 0;
+            d = Math.floor(d / 16);
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+          });
+        },
+
+        path: function (object, keys) {
+          return (keys || []).reduce(function (accum, key) {
+            return (accum || {})[key];
+          }, object || {});
+        }
+      };
+    }
+  );

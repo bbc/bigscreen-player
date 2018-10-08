@@ -12,8 +12,6 @@ This project should be considered **Work in Progress**. A full roadmap will be r
 
 `$ npm install`
 
-...more to come!
-
 ## Example Usage
 
 ### Initialisation
@@ -25,9 +23,9 @@ The player will render itself into a supplied parent element, and playback will 
 ```javascript
 require(
   [
-    'bigscreen/player',
-    'bigscreen/windowtypes',
-    'bigscreen/mediakinds'
+    'bigscreenplayer/bigscreenplayer',
+    'bigscreenplayer/windowtypes',
+    'bigscreenplayer/mediakinds'
   ],
   
   function (BigscreenPlayer, WindowType, LiveSupport, MediaKind) {

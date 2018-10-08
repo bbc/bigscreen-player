@@ -1,0 +1,56 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+    <title>Jasmine Spec Runner</title>
+
+    <% css.forEach(function(style){ %>
+    <link rel="stylesheet" type="text/css" href="<%= style %>">
+    <% }) %>
+
+    <style>
+        .html-reporter .symbol-summary li {
+            height: 12px;
+        }
+    </style>
+
+    <script type="text/javascript">
+        var require = {
+            paths: {
+                bigscreenplayer: "<%= options.scriptRoot %>/script",
+                node_modules: "<%= options.projectRoot %>/node_modules"
+            }
+        };
+    </script>
+
+    <% with (scripts) { %>
+    <% [].concat(jasmine, boot, vendor, helpers).forEach(function(script){ %>
+    <script src="<%= script %>"></script>
+    <% }) %>
+    <% }; %>
+
+    <script type="text/javascript">
+
+        window.bigscreenPlayer = {
+            playbackStrategy: 'mockstrategy'
+        };
+        window.requireTests = undefined;
+        var hasSpecs = '<%= options.specs %>' !== '';
+
+        if (hasSpecs){
+            requireTests = '<%= options.specs %>'.split(',');
+        } else {
+            requireTests = '<%= scripts.specs %>'.split(',');
+        }
+
+        requireTests = requireTests.filter(function (name) {
+            return name !== '..' && name !== '../lib/sinon-1.8.1.js';
+        });
+
+        require([].concat(requireTests).concat(['<%= scripts.reporters %>']));
+    </script>
+</head>
+<body></body>
+</html>
