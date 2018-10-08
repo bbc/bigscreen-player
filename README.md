@@ -97,7 +97,7 @@ The Bigscreen Player has some global configuration that is needed before initial
 window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'talstrategy' OR 'hybridstrategy')
 ```
 
-See the [configuration](https://github.com/bbc/BigscreenPlayer/wiki/Playback-Strategy) wiki page for further details on these strategies.
+See the [configuration](https://github.com/bbc/bigscreen-player/wiki/Playback-Strategy) wiki page for further details on these strategies.
 
 ### Reacting to state changes
 
@@ -205,11 +205,11 @@ This project currently has unit test coverage but no integration test suite. Thi
 
 When writing tests for your application it may be useful to use the mocking functions provided. This creates a fake player with mocking hook functions to simulate real world scenarios.
 
-See [here](https://github.com/bbc/BigscreenPlayer/wiki/Mocking-Bigscreen-Player) for example usage.
+See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player) for example usage.
 
 ## API Reference
 
-The full api is documented [here](https://github.com/bbc/BigscreenPlayer/wiki/API-Reference).
+The full api is documented [here](https://github.com/bbc/bigscreen-player/wiki/API-Reference).
 
 ## Contributing
 
