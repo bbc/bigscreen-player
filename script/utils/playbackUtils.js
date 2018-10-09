@@ -1,5 +1,5 @@
 define(
-    'bigscreenplayer/utils/coreutils',
+    'bigscreenplayer/utils/playbackutils',
     function () {
       'use strict';
 
@@ -14,18 +14,25 @@ define(
           return clone;
         },
 
-        deepClone: function (aObject) {
-          if (!aObject) {
-            return aObject;
+        deepClone: function (objectToClone) {
+          if (!objectToClone) {
+            return objectToClone;
           }
 
-          var bObject, v, k;
-          bObject = Array.isArray(aObject) ? [] : {};
-          for (k in aObject) {
-            v = aObject[k];
-            bObject[k] = (typeof v === 'object') ? this.deepClone(v) : v;
+          var clone, propValue, propName;
+          clone = Array.isArray(objectToClone) ? [] : {};
+          for (propName in objectToClone) {
+            propValue = objectToClone[propName];
+
+            // check for date
+            if (propValue && Object.prototype.toString.call(propValue) === '[object Date]') {
+              clone[propName] = new Date(propValue);
+              continue;
+            }
+
+            clone[propName] = (typeof propValue === 'object') ? this.deepClone(propValue) : propValue;
           }
-          return bObject;
+          return clone;
         },
 
         cloneArray: function (arr) {

@@ -3,12 +3,12 @@ define('bigscreenplayer/mockbigscreenplayer',
     'bigscreenplayer/models/mediastate',
     'bigscreenplayer/models/pausetriggers',
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/utils/coreutils',
+    'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/plugins',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums'
   ],
-  function (MediaState, PauseTriggers, WindowTypes, CoreUtils, Plugins, PluginData, PluginEnums) {
+  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums) {
     var sourceList;
     var source;
     var cdn;
@@ -75,7 +75,7 @@ define('bigscreenplayer/mockbigscreenplayer',
       if (mockStatus.currentlyMocked) {
         throw new Error('mock() was called while BigscreenPlayer was already mocked');
       }
-      shallowClone = CoreUtils.clone(BigscreenPlayer);
+      shallowClone = PlaybackUtils.clone(BigscreenPlayer);
 
       // Divert existing functions
       for (var mock in mockFunctions) {

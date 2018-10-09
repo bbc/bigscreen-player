@@ -1,11 +1,15 @@
 define('bigscreenplayer/plugins',
-  function () {
+  [
+    'bigscreen/app/playback/bigscreenplayer/utils/playbackutils'
+  ],
+  function (PlaybackUtils) {
     var plugins = [];
 
     function callOnAllPlugins (funcKey, evt) {
+      var clonedEvent = PlaybackUtils.deepClone(evt);
       for (var i in plugins) {
         if (plugins[i][funcKey]) {
-          plugins[i][funcKey](evt);
+          plugins[i][funcKey](clonedEvent);
         }
       }
     }

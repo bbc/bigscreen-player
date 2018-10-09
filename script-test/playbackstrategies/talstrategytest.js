@@ -73,7 +73,7 @@ require(
         mockGlitchCurtainInstance.tearDown.calls.reset();
       });
 
-      // Options = streamType, playableDevice, timeCorrection, deviceReplacement, isUHD
+      // Options = windowType, playableDevice, timeCorrection, deviceReplacement, isUHD
       function setUpTalStrategy (opts) {
         var options = opts || {};
 

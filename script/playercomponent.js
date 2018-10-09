@@ -4,13 +4,13 @@ define(
     'bigscreenplayer/captionscontainer',
     'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/utils/coreutils',
+    'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
     'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, Utils, PluginData, PluginEnums, Plugins, DebugTool) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool) {
     'use strict';
 
     return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
@@ -182,7 +182,7 @@ define(
 
       function startErrorTimeout (properties) {
         var bufferingTimeout = isInitialPlay ? 30000 : 20000;
-        var bufferingClearedProperties = Utils.clone(properties);
+        var bufferingClearedProperties = PlaybackUtils.clone(properties);
         clearErrorTimeout();
         errorTimeoutID = setTimeout(function () {
           bufferingClearedProperties.dismissed_by = 'timeout';
@@ -255,7 +255,7 @@ define(
       }
 
       function bubbleErrorCleared (playbackProperties) {
-        var errorProperties = Utils.clone(playbackProperties);
+        var errorProperties = PlaybackUtils.clone(playbackProperties);
         if (!errorProperties.dismissed_by) {
           if (userInteracted) {
             errorProperties.dismissed_by = 'other';
@@ -278,7 +278,7 @@ define(
       }
 
       function bubbleBufferingCleared (playbackProperties) {
-        var bufferingProperties = Utils.clone(playbackProperties);
+        var bufferingProperties = PlaybackUtils.clone(playbackProperties);
         if (!bufferingProperties.dismissed_by) {
           if (userInteracted) {
             bufferingProperties.dismissed_by = 'other';
@@ -301,7 +301,7 @@ define(
       }
 
       function createPlaybackErrorProperties (event) {
-        return Utils.merge(createPlaybackProperties(), event.errorProperties);
+        return PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
       }
 
       function publishMediaStateUpdate (state, opts) {
