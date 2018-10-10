@@ -4,6 +4,7 @@ module.exports = function (grunt) {
   grunt.config('jasmine', {
     src: 'script/**/*.js',
     options: {
+      customBootFile: 'spec/support/boot.js',
       keepRunner: true,
       specs: 'script-test/**/*.js',
       vendor: [
