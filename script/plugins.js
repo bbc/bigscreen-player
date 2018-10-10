@@ -1,6 +1,6 @@
 define('bigscreenplayer/plugins',
   [
-    'bigscreen/app/playback/bigscreenplayer/utils/playbackutils'
+    'bigscreenplayer/utils/playbackutils'
   ],
   function (PlaybackUtils) {
     var plugins = [];
