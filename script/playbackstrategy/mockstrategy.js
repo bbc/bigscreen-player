@@ -1,11 +1,5 @@
 define('bigscreenplayer/playbackstrategy/mockstrategy',
-  [
-    'bigscreenplayer/models/mediastate',
-    'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/bigscreenplayer',
-    'bigscreenplayer/debugger/debugtool'
-  ],
-  function (MediaState, WindowTypes, MediaSetUtils, DebugTool) {
+  function () {
     var eventCallback;
     var errorCallback;
     var timeUpdateCallback;
