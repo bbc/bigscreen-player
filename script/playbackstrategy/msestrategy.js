@@ -3,11 +3,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/models/mediastate',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/models/mediakinds',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds) {
     return function (windowType, mediaKind, timeData, playbackElement) {
       var mediaPlayer;
       var eventCallback;
@@ -108,8 +109,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function setUpMediaElement (playbackElement) {
-        videoElement = document.createElement('video');
-
+        if (mediaKind === MediaKinds.AUDIO) {
+          videoElement = document.createElement('audio');
+        } else {
+          videoElement = document.createElement('video');
+        }
         videoElement.style.position = 'absolute';
         videoElement.style.width = '100%';
         videoElement.style.height = '100%';
