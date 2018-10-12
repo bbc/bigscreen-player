@@ -186,10 +186,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             }
 
             if (windowType === WindowTypes.SLIDING) {
-              // zero start time indicates live point, relative time wise -1 will play almost from the live point,
-              // otherwise play from the given video start time relative to the window
-              startTime = (startTime === 0 ? -1 : startTime);
-              srcWithTime = src + '#r=' + parseInt(startTime);
+              srcWithTime = src; // No need for a relative time to play from live.
+
+              if (startTime !== undefined) {
+                // play from the given video start time relative to the window
+                // zero start time indicates live point to dashjs, but we use zero to mean start of the window
+                // so substituting -1 will play almost from the live point
+                startTime = (startTime === 0 ? -1 : startTime);
+                srcWithTime = src + '#r=' + parseInt(startTime);
+              }
             }
 
             setUpMediaElement(playbackElement);

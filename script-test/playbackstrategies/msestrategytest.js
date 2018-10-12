@@ -242,6 +242,16 @@ require(
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#r=0', true);
         });
 
+        it('should playback from the live point of a simulcast', function () {
+          setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
+
+          mockDashInstance.getSource.and.returnValue('src');
+
+          mseStrategy.load('src', null, undefined);
+
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src', true);
+        });
+
         it('should playback from derived start time for webcast', function () {
           setUpMSE(0, WindowTypes.GROWING, MediaKinds.VIDEO, 100000, 200000);
 
