@@ -17,6 +17,8 @@ require(
       var eventCallbacks;
       var eventHandlers = {};
 
+      var audioTag = document.createElement('audio');
+
       var dashjsMediaPlayerEvents = {
         ERROR: 'error',
         MANIFEST_LOADED: 'manifestLoaded',
@@ -48,13 +50,10 @@ require(
           windowEndTime: windowEndTimeMS || 0
         };
 
-        if (defaultMediaKind === MediaKinds.AUDIO) {
-          mockMediaElement = document.createElement('audio');
-        } else {
-          mockMediaElement = document.createElement('video');
-        }
+        mockMediaElement = document.createElement('video');
 
         mockMediaElement.currentTime = 0;
+
         spyOn(mockMediaElement, 'addEventListener');
         spyOn(mockMediaElement, 'removeEventListener');
 
@@ -83,7 +82,7 @@ require(
           };
         });
 
-          // For DVRInfo Based Seekable Range
+        // For DVRInfo Based Seekable Range
         mockDashInstance.isReady.and.returnValue(true);
         mockDashInstance.getDashMetrics.and.returnValue({
           getCurrentDVRInfo: function () {
@@ -96,7 +95,10 @@ require(
 
         window.dashjs = mockDashjs;
 
-        spyOn(document, 'createElement').and.returnValue(mockMediaElement);
+        if (defaultMediaKind !== MediaKinds.AUDIO) {
+          spyOn(document, 'createElement').and.returnValue(mockMediaElement);
+        }
+
         mockDashInstance.getDebug.and.returnValue(mockDashDebug);
       }
 
@@ -111,11 +113,17 @@ require(
 
           expect(mseStrategy.transitions.canBePaused()).toBe(true);
         });
+
+        it('canBeginSeek() Transition is true', function () {
+          setUpMSE();
+
+          expect(mseStrategy.transitions.canBeginSeek()).toBe(true);
+        });
       });
 
       describe('Load', function () {
         it('should create a video element and add it to the media element', function () {
-          setUpMSE();
+          setUpMSE(null, null, MediaKinds.VIDEO);
 
           expect(playbackElement.childElementCount).toBe(0);
 
@@ -132,14 +140,8 @@ require(
 
           mseStrategy.load('src', null, 0);
 
-          expect(playbackElement.firstChild).toBe(mockMediaElement);
+          expect(playbackElement.firstChild.toString()).toBe(audioTag.toString());
           expect(playbackElement.childElementCount).toBe(1);
-        });
-
-        it('canBeginSeek() Transition is true', function () {
-          setUpMSE();
-
-          expect(mseStrategy.transitions.canBeginSeek()).toBe(true);
         });
 
         it('should initialise MediaPlayer with the expected parameters', function () {
