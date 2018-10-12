@@ -433,27 +433,9 @@ require(
           expect(mseStrategy.isPaused()).toBe(false);
         });
 
-        it('should correctly return the paused state from the audio MediaPlayer when not paused', function () {
-          setUpMSE();
-          mseStrategy.load(null, null, MediaKinds.AUDIO);
-
-          mockDashInstance.isPaused.and.returnValue(false);
-
-          expect(mseStrategy.isPaused()).toBe(false);
-        });
-
         it('should correctly return the paused state from the MediaPlayer when paused', function () {
           setUpMSE();
           mseStrategy.load(null, null, 0);
-
-          mockDashInstance.isPaused.and.returnValue(true);
-
-          expect(mseStrategy.isPaused()).toBe(true);
-        });
-
-        it('should correctly return the paused state from the audio MediaPlayer when paused', function () {
-          setUpMSE();
-          mseStrategy.load(null, null, MediaKinds.AUDIO);
 
           mockDashInstance.isPaused.and.returnValue(true);
 
