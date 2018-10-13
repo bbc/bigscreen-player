@@ -1,5 +1,7 @@
 # Bigscreen Player
 
+[![Build Status](https://travis-ci.com/bbc/bigscreen-player.svg?branch=master)](https://travis-ci.com/bbc/bigscreen-player/branches)
+
 > Simplified media playback for bigscreen devices.
 
 ## Introduction
@@ -27,7 +29,7 @@ require(
     'bigscreenplayer/windowtypes',
     'bigscreenplayer/mediakinds'
   ],
-  
+
   function (BigscreenPlayer, WindowType, LiveSupport, MediaKind) {
 
     // configure the media player that will be used before loading
@@ -62,7 +64,7 @@ require(
         bitrate: 8940,         // Displayed by Debug Tool
         captionsUrl: 'https://www.somelovelycaptionsurl.com/captions',
         codec: 'h264',
-        kind: MediaKind.VIDEO, // Can be VIDEO, or AUDIO 
+        kind: MediaKind.VIDEO, // Can be VIDEO, or AUDIO
         urls: [
           // Multiple urls offer the ability to fail-over to another CDN if required
           {
@@ -77,9 +79,9 @@ require(
     }
 
     // STATIC for VOD content, GROWING/SLIDING for LIVE content
-    var windowType = WindowType.STATIC; 
+    var windowType = WindowType.STATIC;
     // 'seekable', 'restartable', 'playable'
-    var liveSupport = 'seekable'; 
+    var liveSupport = 'seekable';
     var enableSubtitles = false;
 
     bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles, liveSupport);
@@ -99,7 +101,7 @@ See the [configuration](https://github.com/bbc/bigscreen-player/wiki/Playback-St
 
 ### Reacting to state changes
 
-State changes which are emitted from the player can be acted upon to by registering a callback. The callback will receive all of the following state changes as the `state` property of the event: 
+State changes which are emitted from the player can be acted upon to by registering a callback. The callback will receive all of the following state changes as the `state` property of the event:
 - MediaState.STOPPED
 - MediaState.PAUSED
 - MediaState.PLAYING
@@ -159,7 +161,7 @@ An example plugin may look like:
 function ExamplePlugin (appName) {
 
   var name = appName;
-  
+
   function onFatalError (evt) {
     console.log('A fatal error has occured in the app: ' + name);
   }
