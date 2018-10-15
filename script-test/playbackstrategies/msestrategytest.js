@@ -168,7 +168,7 @@ require(
         it('should initialise MediaPlayer with the expected parameters when startTime is set and there is a time correction', function () {
           setUpMSE(1922);
           mseStrategy.load('src', null, 15);
-
+          // [ <video style="position: absolute; width: 100%; height: 100%;">, 'src#t=1937', true ]
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src#t=1937', true);
         });
 
