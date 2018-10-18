@@ -13,11 +13,11 @@ require(
       var mockDashInstance;
       var mockDashMediaPlayer;
       var mockDashDebug;
-      var mockMediaElement;
+      var mockVideoElement;
       var eventCallbacks;
       var eventHandlers = {};
 
-      var audioTag = document.createElement('audio');
+      var mockAudioElement = document.createElement('audio');
 
       var dashjsMediaPlayerEvents = {
         ERROR: 'error',
@@ -50,12 +50,12 @@ require(
           windowEndTime: windowEndTimeMS || 0
         };
 
-        mockMediaElement = document.createElement('video');
+        mockVideoElement = document.createElement('video');
 
-        mockMediaElement.currentTime = 0;
+        mockVideoElement.currentTime = 0;
 
-        spyOn(mockMediaElement, 'addEventListener');
-        spyOn(mockMediaElement, 'removeEventListener');
+        spyOn(mockVideoElement, 'addEventListener');
+        spyOn(mockVideoElement, 'removeEventListener');
 
         playbackElement = document.createElement('div');
         playbackElement.id = 'app';
@@ -74,7 +74,7 @@ require(
         mockDashjs.MediaPlayer.and.returnValue(mockDashMediaPlayer);
         mockDashMediaPlayer.create.and.returnValue(mockDashInstance);
 
-        mockMediaElement.addEventListener.and.callFake(function (eventType, handler) {
+        mockVideoElement.addEventListener.and.callFake(function (eventType, handler) {
           eventHandlers[eventType] = handler;
 
           eventCallbacks = function (event) {
@@ -96,14 +96,14 @@ require(
         window.dashjs = mockDashjs;
 
         if (defaultMediaKind !== MediaKinds.AUDIO) {
-          spyOn(document, 'createElement').and.returnValue(mockMediaElement);
+          spyOn(document, 'createElement').and.returnValue(mockVideoElement);
         }
 
         mockDashInstance.getDebug.and.returnValue(mockDashDebug);
       }
 
       afterEach(function () {
-        mockMediaElement.currentTime = 0;
+        mockVideoElement.currentTime = 0;
         document.body.removeChild(playbackElement);
       });
 
@@ -129,7 +129,7 @@ require(
 
           mseStrategy.load('src', null, 0);
 
-          expect(playbackElement.firstChild).toBe(mockMediaElement);
+          expect(playbackElement.firstChild).toBe(mockVideoElement);
           expect(playbackElement.childElementCount).toBe(1);
         });
 
@@ -140,7 +140,7 @@ require(
 
           mseStrategy.load('src', null, 0);
 
-          expect(playbackElement.firstChild.toString()).toBe(audioTag.toString());
+          expect(playbackElement.firstChild.toString()).toBe(mockAudioElement.toString());
           expect(playbackElement.childElementCount).toBe(1);
         });
 
@@ -148,42 +148,42 @@ require(
           setUpMSE();
           mseStrategy.load('src', null, 0);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src', true);
         });
 
         it('should initialise MediaPlayer with the expected parameters when no start time is present', function () {
           setUpMSE();
           mseStrategy.load('src', null, undefined);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src', true);
         });
 
         it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
           setUpMSE();
           mseStrategy.load('src', null, 15);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src#t=15', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#t=15', true);
         });
 
         it('should initialise MediaPlayer with the expected parameters when startTime is set and there is a time correction', function () {
           setUpMSE(1922);
           mseStrategy.load('src', null, 15);
           // [ <video style="position: absolute; width: 100%; height: 100%;">, 'src#t=1937', true ]
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src#t=1937', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#t=1937', true);
         });
 
         it('should set up bindings to MediaPlayer Events correctly', function () {
           setUpMSE();
           mseStrategy.load(null, null, 0);
 
-          expect(mockMediaElement.addEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
-          expect(mockMediaElement.addEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
-          expect(mockMediaElement.addEventListener).toHaveBeenCalledWith('pause', jasmine.any(Function));
-          expect(mockMediaElement.addEventListener).toHaveBeenCalledWith('waiting', jasmine.any(Function));
-          expect(mockMediaElement.addEventListener).toHaveBeenCalledWith('seeking', jasmine.any(Function));
-          expect(mockMediaElement.addEventListener).toHaveBeenCalledWith('seeked', jasmine.any(Function));
-          expect(mockMediaElement.addEventListener).toHaveBeenCalledWith('ended', jasmine.any(Function));
-          expect(mockMediaElement.addEventListener).toHaveBeenCalledWith('error', jasmine.any(Function));
+          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
+          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
+          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('pause', jasmine.any(Function));
+          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('waiting', jasmine.any(Function));
+          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('seeking', jasmine.any(Function));
+          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('seeked', jasmine.any(Function));
+          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('ended', jasmine.any(Function));
+          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('error', jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.ERROR, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_LOADED, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, jasmine.any(Function));
@@ -198,7 +198,7 @@ require(
 
           mseStrategy.load('src', null, 0);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src', true);
 
           mseStrategy.load('src2', null, 0);
 
@@ -212,7 +212,7 @@ require(
 
           mseStrategy.load('src', null, 45);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src#t=45', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#t=45', true);
 
           mseStrategy.load('src2', null, 0);
 
@@ -227,11 +227,11 @@ require(
           setUpMSE();
 
           mockDashInstance.getSource.and.returnValue('src');
-          mockMediaElement.currentTime = 86;
+          mockVideoElement.currentTime = 86;
 
           mseStrategy.load('src', null, 45);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src#t=45', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#t=45', true);
 
           mseStrategy.load('src2', null, 86);
 
@@ -246,7 +246,7 @@ require(
             // Actual live point requested
           mseStrategy.load('src', null, 0);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src#r=-1', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#r=-1', true);
         });
 
         it('should playback from relative start time for video simulcast', function () {
@@ -257,7 +257,7 @@ require(
             // Somewhat live, playbackUtils forces 0.1 for TAL related reasons!
           mseStrategy.load('src', null, 0.1);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src#r=0', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#r=0', true);
         });
 
         it('should playback from derived start time for webcast', function () {
@@ -267,7 +267,7 @@ require(
 
           mseStrategy.load('src', null, 0.1);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src#t=101', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#t=101', true);
         });
 
         it('should playback from the provided time of a webcast', function () {
@@ -277,7 +277,7 @@ require(
 
           mseStrategy.load('src', null, 60);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src#t=160', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#t=160', true);
         });
 
         it('should playback from the live point of a webcast', function () {
@@ -287,7 +287,7 @@ require(
 
           mseStrategy.load('src', null, undefined);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockMediaElement, 'src', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src', true);
         });
       });
 
@@ -303,7 +303,7 @@ require(
       describe('getCurrentTime()', function () {
         it('returns the correct time from the DASH Mediaplayer', function () {
           setUpMSE();
-          mockMediaElement.currentTime = 10;
+          mockVideoElement.currentTime = 10;
 
           mseStrategy.load('src', null, 0);
 
@@ -349,14 +349,14 @@ require(
 
           mseStrategy.tearDown();
 
-          expect(mockMediaElement.removeEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
-          expect(mockMediaElement.removeEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
-          expect(mockMediaElement.removeEventListener).toHaveBeenCalledWith('pause', jasmine.any(Function));
-          expect(mockMediaElement.removeEventListener).toHaveBeenCalledWith('waiting', jasmine.any(Function));
-          expect(mockMediaElement.removeEventListener).toHaveBeenCalledWith('seeking', jasmine.any(Function));
-          expect(mockMediaElement.removeEventListener).toHaveBeenCalledWith('seeked', jasmine.any(Function));
-          expect(mockMediaElement.removeEventListener).toHaveBeenCalledWith('ended', jasmine.any(Function));
-          expect(mockMediaElement.removeEventListener).toHaveBeenCalledWith('error', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('pause', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('waiting', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('seeking', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('seeked', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('ended', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('error', jasmine.any(Function));
           expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.ERROR, jasmine.any(Function));
           expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, jasmine.any(Function));
           expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.METRIC_ADDED, jasmine.any(Function));
