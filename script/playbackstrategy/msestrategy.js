@@ -3,11 +3,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/models/mediastate',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/models/mediakinds',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds) {
     return function (windowType, mediaKind, timeData, playbackElement) {
       var mediaPlayer;
       var eventCallback;
@@ -17,7 +18,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       var initialStartTime;
       var isEnded = false;
-      var videoElement;
+      var mediaElement;
 
       var DashJSEvents = {
         ERROR: 'error',
@@ -108,30 +109,33 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function setUpMediaElement (playbackElement) {
-        videoElement = document.createElement('video');
+        if (mediaKind === MediaKinds.AUDIO) {
+          mediaElement = document.createElement('audio');
+        } else {
+          mediaElement = document.createElement('video');
+        }
+        mediaElement.style.position = 'absolute';
+        mediaElement.style.width = '100%';
+        mediaElement.style.height = '100%';
 
-        videoElement.style.position = 'absolute';
-        videoElement.style.width = '100%';
-        videoElement.style.height = '100%';
-
-        playbackElement.insertBefore(videoElement, playbackElement.firstChild);
+        playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
       }
 
       function setUpMediaPlayer (src) {
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.getDebug().setLogToBrowserConsole(false);
-        mediaPlayer.initialize(videoElement, src, true);
+        mediaPlayer.initialize(mediaElement, src, true);
       }
 
       function setUpMediaListeners () {
-        videoElement.addEventListener('timeupdate', onTimeUpdate);
-        videoElement.addEventListener('playing', onPlaying);
-        videoElement.addEventListener('pause', onPaused);
-        videoElement.addEventListener('waiting', onBuffering);
-        videoElement.addEventListener('seeking', onBuffering);
-        videoElement.addEventListener('seeked', onSeeked);
-        videoElement.addEventListener('ended', onEnded);
-        videoElement.addEventListener('error', onError);
+        mediaElement.addEventListener('timeupdate', onTimeUpdate);
+        mediaElement.addEventListener('playing', onPlaying);
+        mediaElement.addEventListener('pause', onPaused);
+        mediaElement.addEventListener('waiting', onBuffering);
+        mediaElement.addEventListener('seeking', onBuffering);
+        mediaElement.addEventListener('seeked', onSeeked);
+        mediaElement.addEventListener('ended', onEnded);
+        mediaElement.addEventListener('error', onError);
         mediaPlayer.on(DashJSEvents.ERROR, onError);
         mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
@@ -141,7 +145,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function cdnFailoverLoad (newSrc, currentSrcWithTime) {
         // When an initial playback causes a failover and the media element is still reporting 0 rather than the initial start time
-        if (videoElement.currentTime === 0) {
+        if (mediaElement.currentTime === 0) {
           currentSrcWithTime = newSrc + '#t=' + initialStartTime;
         }
         mediaPlayer.attachSource(currentSrcWithTime);
@@ -215,7 +219,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           };
         },
         getCurrentTime: function () {
-          return (videoElement) ? videoElement.currentTime - timeCorrection : 0;
+          return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
         },
         getDuration: function () {
           return (mediaPlayer) ? mediaPlayer.duration() : 0;
@@ -223,24 +227,24 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         tearDown: function () {
           mediaPlayer.reset();
 
-          videoElement.removeEventListener('timeupdate', onTimeUpdate);
-          videoElement.removeEventListener('playing', onPlaying);
-          videoElement.removeEventListener('pause', onPaused);
-          videoElement.removeEventListener('waiting', onBuffering);
-          videoElement.removeEventListener('seeking', onBuffering);
-          videoElement.removeEventListener('seeked', onSeeked);
-          videoElement.removeEventListener('ended', onEnded);
-          videoElement.removeEventListener('error', onError);
+          mediaElement.removeEventListener('timeupdate', onTimeUpdate);
+          mediaElement.removeEventListener('playing', onPlaying);
+          mediaElement.removeEventListener('pause', onPaused);
+          mediaElement.removeEventListener('waiting', onBuffering);
+          mediaElement.removeEventListener('seeking', onBuffering);
+          mediaElement.removeEventListener('seeked', onSeeked);
+          mediaElement.removeEventListener('ended', onEnded);
+          mediaElement.removeEventListener('error', onError);
           mediaPlayer.off(DashJSEvents.ERROR, onError);
           mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
 
-          videoElement.parentElement.removeChild(videoElement);
+          mediaElement.parentElement.removeChild(mediaElement);
 
           mediaPlayer = undefined;
-          videoElement = undefined;
+          mediaElement = undefined;
           eventCallback = undefined;
           errorCallback = undefined;
           timeUpdateCallback = undefined;
@@ -269,7 +273,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           }
 
           if (windowType === WindowTypes.SLIDING) {
-            videoElement.currentTime = (time + timeCorrection);
+            mediaElement.currentTime = (time + timeCorrection);
           } else {
             mediaPlayer.seek(getClampedTime(time, this.getSeekableRange()));
           }

@@ -7,7 +7,7 @@ require(
   function (Squire, MediaKinds, WindowTypes) {
     describe('Media Source Extensions Playback Strategy', function () {
       var injector = new Squire();
-      var videoContainer;
+      var playbackElement;
       var MSEStrategy;
       var mseStrategy;
       var mockDashInstance;
@@ -16,6 +16,8 @@ require(
       var mockVideoElement;
       var eventCallbacks;
       var eventHandlers = {};
+
+      var mockAudioElement = document.createElement('audio');
 
       var dashjsMediaPlayerEvents = {
         ERROR: 'error',
@@ -49,15 +51,17 @@ require(
         };
 
         mockVideoElement = document.createElement('video');
+
         mockVideoElement.currentTime = 0;
+
         spyOn(mockVideoElement, 'addEventListener');
         spyOn(mockVideoElement, 'removeEventListener');
 
-        videoContainer = document.createElement('div');
-        videoContainer.id = 'app';
-        document.body.appendChild(videoContainer);
+        playbackElement = document.createElement('div');
+        playbackElement.id = 'app';
+        document.body.appendChild(playbackElement);
 
-        mseStrategy = MSEStrategy(defaultWindowType, defaultMediaKind, timeModel, videoContainer);
+        mseStrategy = MSEStrategy(defaultWindowType, defaultMediaKind, timeModel, playbackElement);
 
         mockDashDebug = jasmine.createSpyObj('mockDashDebug', ['setLogToBrowserConsole']);
 
@@ -91,13 +95,16 @@ require(
 
         window.dashjs = mockDashjs;
 
-        spyOn(document, 'createElement').and.returnValue(mockVideoElement);
+        if (defaultMediaKind !== MediaKinds.AUDIO) {
+          spyOn(document, 'createElement').and.returnValue(mockVideoElement);
+        }
+
         mockDashInstance.getDebug.and.returnValue(mockDashDebug);
       }
 
       afterEach(function () {
         mockVideoElement.currentTime = 0;
-        document.body.removeChild(videoContainer);
+        document.body.removeChild(playbackElement);
       });
 
       describe('Transitions', function () {
@@ -115,15 +122,26 @@ require(
       });
 
       describe('Load', function () {
-        it('should create a video element and add it to the video container', function () {
-          setUpMSE();
+        it('should create a video element and add it to the media element', function () {
+          setUpMSE(null, null, MediaKinds.VIDEO);
 
-          expect(videoContainer.childElementCount).toBe(0);
+          expect(playbackElement.childElementCount).toBe(0);
 
           mseStrategy.load('src', null, 0);
 
-          expect(videoContainer.firstChild).toBe(mockVideoElement);
-          expect(videoContainer.childElementCount).toBe(1);
+          expect(playbackElement.firstChild).toBe(mockVideoElement);
+          expect(playbackElement.childElementCount).toBe(1);
+        });
+
+        it('should create an audio element and add it to the media element', function () {
+          setUpMSE(null, null, MediaKinds.AUDIO);
+
+          expect(playbackElement.childElementCount).toBe(0);
+
+          mseStrategy.load('src', null, 0);
+
+          expect(playbackElement.firstChild.toString()).toBe(mockAudioElement.toString());
+          expect(playbackElement.childElementCount).toBe(1);
         });
 
         it('should initialise MediaPlayer with the expected parameters', function () {
@@ -150,7 +168,7 @@ require(
         it('should initialise MediaPlayer with the expected parameters when startTime is set and there is a time correction', function () {
           setUpMSE(1922);
           mseStrategy.load('src', null, 15);
-
+          // [ <video style="position: absolute; width: 100%; height: 100%;">, 'src#t=1937', true ]
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#t=1937', true);
         });
 
@@ -220,23 +238,23 @@ require(
           expect(mockDashInstance.attachSource).toHaveBeenCalledWith('src2#t=86');
         });
 
-        it('should playback from relative live start time for simulcast', function () {
+        it('should playback from relative live start time for video simulcast', function () {
           setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
 
           mockDashInstance.getSource.and.returnValue('src');
 
-          // Actual live point requested
+            // Actual live point requested
           mseStrategy.load('src', null, 0);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#r=-1', true);
         });
 
-        it('should playback from relative start time for simulcast', function () {
+        it('should playback from relative start time for video simulcast', function () {
           setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
 
           mockDashInstance.getSource.and.returnValue('src');
 
-          // Somewhat live, playbackUtils forces 0.1 for TAL related reasons!
+            // Somewhat live, playbackUtils forces 0.1 for TAL related reasons!
           mseStrategy.load('src', null, 0.1);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#r=0', true);
@@ -350,11 +368,11 @@ require(
           setUpMSE();
           mseStrategy.load(null, null, 0);
 
-          expect(videoContainer.childElementCount).toBe(1);
+          expect(playbackElement.childElementCount).toBe(1);
 
           mseStrategy.tearDown();
 
-          expect(videoContainer.childElementCount).toBe(0);
+          expect(playbackElement.childElementCount).toBe(0);
         });
       });
 
