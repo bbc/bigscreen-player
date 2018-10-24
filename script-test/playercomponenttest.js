@@ -6,7 +6,7 @@ require(
     'bigscreenplayer/playbackstrategy/mockstrategy',
     'bigscreenplayer/models/transportcontrolposition',
     'bigscreenplayer/pluginenums',
-    'node_modules/squirejs/src/squire'
+    'squire'
   ],
   function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, PluginEnums, Squire) {
     'use strict';

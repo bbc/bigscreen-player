@@ -1,6 +1,6 @@
 require(
   [
-    'node_modules/squirejs/src/squire',
+    'squire',
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/models/windowtypes'
   ],
