@@ -126,9 +126,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.getDebug().setLogToBrowserConsole(false);
 
         mediaPlayer.setBufferToKeep(0);
-        mediaPlayer.setBufferAheadToKeep(30);
-        mediaPlayer.setBufferTimeAtTopQuality(30);
-        mediaPlayer.setBufferTimeAtTopQualityLongForm(30);
+        mediaPlayer.setBufferAheadToKeep(20);
+        mediaPlayer.setBufferTimeAtTopQuality(20);
+        mediaPlayer.setBufferTimeAtTopQualityLongForm(20);
 
         mediaPlayer.initialize(mediaElement, src, true);
       }
