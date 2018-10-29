@@ -124,6 +124,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function setUpMediaPlayer (src) {
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.getDebug().setLogToBrowserConsole(false);
+
+        mediaPlayer.setBufferToKeep(0);
+        mediaPlayer.setBufferAheadToKeep(30);
+        mediaPlayer.setBufferTimeAtTopQuality(30);
+        mediaPlayer.setBufferTimeAtTopQualityLongForm(30);
+
         mediaPlayer.initialize(mediaElement, src, true);
       }
 
