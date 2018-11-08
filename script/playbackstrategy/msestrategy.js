@@ -278,10 +278,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             mediaPlayer.refreshManifest();
           }
 
+          var seekToTime = getClampedTime(time, this.getSeekableRange());
+
           if (windowType === WindowTypes.SLIDING) {
-            mediaElement.currentTime = (time + timeCorrection);
+            mediaElement.currentTime = (seekToTime + timeCorrection);
           } else {
-            mediaPlayer.seek(getClampedTime(time, this.getSeekableRange()));
+            mediaPlayer.seek(seekToTime);
           }
         }
       };
