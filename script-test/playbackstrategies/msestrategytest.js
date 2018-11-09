@@ -505,6 +505,31 @@ require(
           expect(mockDashInstance.refreshManifest).toHaveBeenCalled();
           expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9);
         });
+
+        describe('sliding window', function () {
+          beforeEach(function () {
+            setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
+            mseStrategy.load(null, null, 0);
+          });
+
+          it('should set current time on the video element', function () {
+            mseStrategy.setCurrentTime(12);
+
+            expect(mockVideoElement.currentTime).toBe(12);
+          });
+
+          it('should clamp the seek to the start of the seekable range', function () {
+            mseStrategy.setCurrentTime(-0.1);
+
+            expect(mockVideoElement.currentTime).toBe(0);
+          });
+
+          it('should clamp the seek to 1.1s before the end of the seekable range', function () {
+            mseStrategy.setCurrentTime(101);
+
+            expect(mockVideoElement.currentTime).toBe(99.9);
+          });
+        });
       });
     });
   });
