@@ -67,8 +67,7 @@ require(
 
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
-            'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor',
-            'setBufferToKeep', 'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm']);
+            'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor']);
 
         mockDashInstance.duration.and.returnValue(101);
 
