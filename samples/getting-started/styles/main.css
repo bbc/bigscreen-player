@@ -1,0 +1,32 @@
+#bsp_controls {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+#bsp2_controls {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+}
+
+#bsp_videoContainer {
+    display: inline-block;
+    height: 540px;
+    width: 720px;
+    background-color: white;
+}
+
+#bsp2_videoContainer {
+    display: inline-block;
+    height: 540px;
+    width: 720px;
+    background-color: white;
+}
+
+.testVideo {
+    display: block;
+    height: 540px;
+    width: 720px;
+    background-color: grey;
+}

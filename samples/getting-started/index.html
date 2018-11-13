@@ -1,0 +1,24 @@
+<html>
+<body>
+    <div id='app'>
+        <div id="bsp_controls">
+            <button id="playButton">Play</button>
+            <button id="pauseButton">Pause</button>
+            <button id="forwardButton">Seek 10s Forward</button>
+            <button id="backButton">Seek 10s Back</button>
+            <button id="seekEndButton">Seek To End</button>
+            <button id="toggleDebugToolButton">Toggle Debug Tool</button>
+            <span id="timeLabel"></span>
+            <span id="latestState"></span>
+        </div>
+        <div id="videoContainer"></div>
+    </div>
+</body>
+<script>
+    window.bigscreenPlayer = {
+        playbackStrategy: 'msestrategy'
+    }
+</script>
+<script data-main='dist/index' src="require.js"></script>
+<link rel="stylesheet" href="http://localhost:8080/styles/main.css"/>
+</html>
