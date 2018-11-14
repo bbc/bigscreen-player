@@ -30,7 +30,8 @@
     "pre-commit": "^1.2.2",
     "pre-push": "^0.1.1",
     "requirejs": "2.3.6",
-    "squirejs": "0.2.1"
+    "squirejs": "0.2.1",
+    "babel-preset-env": "1.7.0"
   },
   "dependencies": {
     "dashjs": "github:bbc/dash.js#smp-v2.7.0-2"
