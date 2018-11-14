@@ -33,7 +33,7 @@
     "squirejs": "0.2.1"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v2.7.0-2"
+    "dashjs": "github:bbc/dash.js#ab3e750bd26f9325ba13ab596c60b593672de8bb"
   },
   "repository": {
     "type": "git",
