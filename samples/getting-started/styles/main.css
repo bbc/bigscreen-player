@@ -42,7 +42,7 @@
 
 /* Generic Button Focus Style */
 .buttons:focus {
-    border: 2px solid rgb(255, 100, 255);
+    border: 2px solid rgb(0, 136, 95);
     outline: none;
 }
 
@@ -50,12 +50,12 @@
 .loadingSpinner {
     z-index: 10;
     position: absolute;
-    background: url(../res/img/playbackSpinner.gif) no-repeat center center;
+    background: url(../res/img/loadingSpinner.gif) no-repeat center center;
     left: 0;
     right: 0;
     width: auto;
-    height: 50px;
-    bottom: 45%;
+    height: 200px;
+    bottom: 35%;
     background-size: contain;
     margin: auto 0;
 }
