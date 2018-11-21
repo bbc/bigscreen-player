@@ -1,0 +1,34 @@
+<html>
+<body>
+    <div id='app'>
+        <div id="videoContainer"></div>
+        <div id="bsp_controls">
+            <button id="playButton" class="buttons">
+                <img src="/res/img/playButton.png" width="30" height="30" />
+            </button>
+            <button id="pauseButton" class="buttons">
+                <img src="/res/img/pauseButton.png" width="30" height="30" />
+            </button>
+            <button id="backButton" class="buttons">
+                <img src="/res/img/rewindButton.png" width="30" height="30" />
+            </button>
+            <button id="forwardButton" class="buttons">
+                <img src="/res/img/fastForwardButton.png" width="30" height="30" />
+            </button>
+            <button id="seekEndButton" class="buttons">
+                <img src="/res/img/seekToEndButton.png" width="30" height="30" />
+            </button>
+            <button id="toggleDebugToolButton" class="buttons">
+                <img src="/res/img/debugToolButton.png" width="30" height="30" />
+            </button>
+        </div>
+    </div>
+</body>
+<script>
+    window.bigscreenPlayer = {
+        playbackStrategy: 'msestrategy'
+    }
+</script>
+<script data-main='dist/index' src="require.js"></script>
+<link rel="stylesheet" href="styles/main.css"/>
+</html>

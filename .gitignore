@@ -13,3 +13,9 @@ WebRunner.html
 
 # Ignore Visual Studio Code project files
 .vscode
+
+# Sample Directory Dependencies
+samples/getting-started/dist
+samples/getting-started/lib
+samples/getting-started/node_modules
+samples/getting-started/require.js
