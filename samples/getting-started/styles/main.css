@@ -1,0 +1,61 @@
+/* Playback control style */
+#bsp_controls {
+    position: absolute;
+    z-index: 1;
+    margin: 0 auto;
+    width: 301px; 
+    left: 0;
+    right: 0;
+    bottom: 10px;
+    background: transparent;
+    display: none;
+}
+
+/* Playback Video Container */
+#bsp_videoContainer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: white;
+    z-index: 0;
+}
+
+/* Main App Div Element */
+#app {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%;
+    background-color: black;
+    z-index: 0;
+    justify-content: center;
+}
+
+/* Generic Button Style */
+.buttons {
+    background-color: white;
+    border: none;
+    border-radius: 5%;
+    margin: 0 auto;
+}
+
+/* Generic Button Focus Style */
+.buttons:focus {
+    border: 2px solid rgb(0, 136, 95);
+    outline: none;
+}
+
+/* Create loading spinner to be used */
+.loadingSpinner {
+    z-index: 10;
+    position: absolute;
+    background: url(../res/img/loadingSpinner.gif) no-repeat center center;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: 200px;
+    bottom: 35%;
+    background-size: contain;
+    margin: auto 0;
+}
