@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "cp node_modules/requirejs/require.js ./ && npx webpack --config webpack.config.js",
-    "start": "http-server -c -1"
+    "start": "http-server -c -1 ../../"
   },
   "devDependencies": {
     "webpack": "4.20.2",
