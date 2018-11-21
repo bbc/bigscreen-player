@@ -117,7 +117,9 @@ define([
         mimeType: 'video/mp4',
         urls: [
           {
-            url: 'http://rdmedia.bbc.co.uk/dash/ondemand/testcard/1/client_manifest-events.mpd'
+            // Content from DASH IF testing assests (used in their reference player) 
+            // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
+            url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd' 
           }
         ]
       }
