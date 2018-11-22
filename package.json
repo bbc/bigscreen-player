@@ -9,7 +9,7 @@
     "spec": "grunt --force spec-web",
     "lint": "npx eslint .",
     "lint:code:changed": "git diff-index --name-only HEAD | egrep '.js$' | xargs eslint",
-    "build:example-app": "cd docs/example-app/ && npm run build && cd ../../"
+    "build:example-app": "cd docs/example-app/ && npm install && npm run build && cd ../../"
   },
   "pre-commit": [
     "test"
