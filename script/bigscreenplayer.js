@@ -126,21 +126,18 @@ define('bigscreenplayer/bigscreenplayer',
           return callback;
         },
         unregisterForStateChanges: function (callback) {
-          var indexOf = stateChangeCallbacks.indexOf(callback);
-          if (indexOf !== -1) {
-            stateChangeCallbacks.splice(indexOf, 1);
-          }
+          stateChangeCallbacks = stateChangeCallbacks.filter(function (existingCallback) {
+            return callback !== existingCallback;
+          });
         },
         registerForTimeUpdates: function (callback) {
           timeUpdateCallbacks.push(callback);
           return callback;
         },
         unregisterForTimeUpdates: function (callback) {
-          var indexOf = timeUpdateCallbacks.indexOf(callback);
-
-          if (indexOf !== -1) {
-            timeUpdateCallbacks.splice(indexOf, 1);
-          }
+          timeUpdateCallbacks = timeUpdateCallbacks.filter(function (existingCallback) {
+            return callback !== existingCallback;
+          });
         },
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
