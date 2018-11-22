@@ -96,9 +96,13 @@ require(
 
         window.dashjs = mockDashjs;
 
-        if (defaultMediaKind !== MediaKinds.AUDIO) {
-          spyOn(document, 'createElement').and.returnValue(mockVideoElement);
-        }
+        spyOn(document, 'createElement').and.callFake(function (elementType) {
+          if (elementType === 'audio') {
+            return mockAudioElement;
+          } else if (elementType === 'video') {
+            return mockVideoElement;
+          }
+        });
 
         mockDashInstance.getDebug.and.returnValue(mockDashDebug);
       }
@@ -141,7 +145,7 @@ require(
 
           mseStrategy.load('src', null, 0);
 
-          expect(playbackElement.firstChild.toString()).toBe(mockAudioElement.toString());
+          expect(playbackElement.firstChild).toBe(mockAudioElement);
           expect(playbackElement.childElementCount).toBe(1);
         });
 
