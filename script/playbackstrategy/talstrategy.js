@@ -255,6 +255,7 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
           } else {
             mediaPlayer.beginPlayback();
           }
+          mediaPlayer.pause();
           DebugTool.keyValue({key: 'strategy', value: 'TAL'});
         },
         play: function () {

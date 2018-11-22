@@ -131,7 +131,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.setBufferTimeAtTopQuality(12);
         mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
 
-        mediaPlayer.initialize(mediaElement, src, true);
+        mediaPlayer.initialize(mediaElement, src, false);
       }
 
       function setUpMediaListeners () {
