@@ -16,7 +16,7 @@
     "babel-preset-env": "1.7.0"
   },
   "dependencies": {
-    "bigscreen-player": "1.0.1",
+    "bigscreen-player": "latest",
     "requirejs": "2.3.6"
   },
   "author": "",
