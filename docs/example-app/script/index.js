@@ -16,6 +16,14 @@ define([
     var debugToolButton = document.getElementById('toggleDebugToolButton');
     var controlsTimeout;
 
+    // Get slider references
+    var flSlider = document.getElementById('frontLeftSlider');
+    var frSlider = document.getElementById('frontRightSlider');
+    var fcSlider = document.getElementById('frontCenterSlider');
+    var rlSlider = document.getElementById('rearLeftSlider');
+    var rrSlider = document.getElementById('rearRightSlider');
+    var lfeSlider = document.getElementById('lfeSlider');
+
     // Create playback spinner
     var playbackSpinner = new PlaybackSpinner();
 
@@ -134,5 +142,111 @@ define([
     // At this point TAL environment can be injected, if needed
     bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles, liveSupport);
 
+    // Upmix video element audio output
+    function upmix() {
+
+      // create web audio api context
+      var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+      // Set channel count
+      audioCtx.destination.channelCount = 6;
+      audioCtx.destination.channelCountMode = 'explicit';
+      audioCtx.destination.channelInterpretation = 'discrete';
+    
+      // Create splitter
+      var merger = audioCtx.createChannelMerger(6);
+    
+      // Setup merger
+      // merger.channelCount = 1;
+      merger.channelCountMode = 'explicit';
+      merger.channelInterpretation = 'discrete';
+      merger.connect(audioCtx.destination);
+
+      // Get video element audio
+      var videoRef = document.querySelector('video');
+      var mediaSource = audioCtx.createMediaElementSource(videoRef);
+      mediaSource.channelCount = 6;
+      mediaSource.channelCountMode = 'explicit';
+      mediaSource.channelInterpretation = 'discrete';
+
+      // Split media source
+      var splitter = audioCtx.createChannelSplitter(2);
+      mediaSource.connect(splitter);
+
+      // Create gain array
+      var gains = {
+        frontLeft: {
+          node: audioCtx.createGain(),
+          gain: 1.0
+        },
+        frontRight: {
+          node: audioCtx.createGain(),
+          gain: 1.0
+        },
+        frontCenter: {
+          node: audioCtx.createGain(),
+          gain: 1.0
+        },
+        rearLeft: {
+          node: audioCtx.createGain(),
+          gain: 1.0
+        },
+        rearRight: {
+          node: audioCtx.createGain(),
+          gain: 1.0
+        },
+        lfe: {
+          node: audioCtx.createGain(),
+          gain: 1.0
+        }
+      };
+
+      // Setup routing splitter-gains
+      splitter.connect(gains.frontLeft.node, 0, 0);
+      splitter.connect(gains.frontRight.node, 1, 0);
+      splitter.connect(gains.frontCenter.node, 0, 0);
+      splitter.connect(gains.rearLeft.node, 1, 0);
+      splitter.connect(gains.rearRight.node, 0, 0);
+      splitter.connect(gains.lfe.node, 1, 0);
+
+      // Setup routing gains-merger
+      gains.frontLeft.node.connect(merger, 0, 0);
+      gains.frontRight.node.connect(merger, 0, 1);
+      gains.frontCenter.node.connect(merger, 0, 2);
+      gains.rearLeft.node.connect(merger, 0, 3);
+      gains.rearRight.node.connect(merger, 0, 4);
+      gains.lfe.node.connect(merger, 0, 5);
+
+      // Setup slider callbacks
+      flSlider.addEventListener("input", function(){
+        gains.frontLeft.node.gain.setValueAtTime(flSlider.value, audioCtx.currentTime);
+      });
+
+      frSlider.addEventListener("input", function(){
+        gains.frontRight.node.gain.setValueAtTime(frSlider.value, audioCtx.currentTime);
+      });
+
+      fcSlider.addEventListener("input", function(){
+        gains.frontCenter.node.gain.setValueAtTime(fcSlider.value, audioCtx.currentTime);
+      });
+
+      rlSlider.addEventListener("input", function(){
+        gains.rearLeft.node.gain.setValueAtTime(rlSlider.value, audioCtx.currentTime);
+      });
+
+      rrSlider.addEventListener("input", function(){ 
+        gains.rearRight.node.gain.setValueAtTime(rrSlider.value, audioCtx.currentTime);
+      });
+
+      lfeSlider.addEventListener("input", function(){
+        gains.lfe.node.gain.setValueAtTime(lfeSlider.value, audioCtx.currentTime);
+      });
+
+    }
+
+    upmix();
+
   }
 );
+
+
