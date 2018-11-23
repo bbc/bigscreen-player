@@ -83,7 +83,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             var oldRepresentation = isNaN(event.oldQuality) ? 'Initial' : event.oldQuality + ' (' + oldBitrate + ' Kbps)';
             var newRepresentation = event.newQuality + ' (' + newBitrate + ' Kbps)';
 
-            DebugTool.info('ABR Change from representation: ' + oldRepresentation + ' to: ' + newRepresentation);
+            DebugTool.info('ABR level change from: ' + oldRepresentation + ' - ' + newRepresentation);
             DebugTool.keyValue({key: 'bitrate', value: newBitrate + ' Kbps'});
           }
         }
