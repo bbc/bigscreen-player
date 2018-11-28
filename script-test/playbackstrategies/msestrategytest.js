@@ -28,7 +28,7 @@ require(
       };
 
       var mockDashjs = jasmine.createSpyObj('mockDashjs', ['MediaPlayer']);
-      mockDashMediaPlayer = jasmine.createSpyObj('mockDashMediaPlayer', ['create']);
+      mockDashMediaPlayer = jasmine.createSpyObj('mockDashMediaPlayer', ['create', 'getBitrateInfoListFor']);
 
       beforeEach(function (done) {
         injector.mock({
@@ -61,19 +61,28 @@ require(
         playbackElement.id = 'app';
         document.body.appendChild(playbackElement);
 
+        
         mseStrategy = MSEStrategy(defaultWindowType, defaultMediaKind, timeModel, playbackElement);
-
+        
         mockDashDebug = jasmine.createSpyObj('mockDashDebug', ['setLogToBrowserConsole']);
-
+        
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
-          ['initialize', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
-            'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor', 'setBufferToKeep',
-            'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm']);
-
+        ['initialize', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
+        'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor', 'setBufferToKeep',
+        'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm']);
+        
         mockDashInstance.duration.and.returnValue(101);
-
+        
         mockDashjs.MediaPlayer.and.returnValue(mockDashMediaPlayer);
         mockDashMediaPlayer.create.and.returnValue(mockDashInstance);
+
+        mockDashInstance.on.and.callFake(function (eventType, handler) {
+          eventHandlers[eventType] = handler;
+
+          eventCallbacks = function (eventType, event) {
+            eventHandlers[eventType].call(eventType, event);
+          };
+        });
 
         mockVideoElement.addEventListener.and.callFake(function (eventType, handler) {
           eventHandlers[eventType] = handler;
@@ -82,6 +91,8 @@ require(
             eventHandlers[event].call(event);
           };
         });
+
+
 
         // For DVRInfo Based Seekable Range
         mockDashInstance.isReady.and.returnValue(true);
@@ -535,5 +546,48 @@ require(
           });
         });
       });
+
+      describe('getMediaPlayerInfo', function () {
+
+        // var mockEvent;
+
+        // beforeEach(function () {
+
+        //   // setUpMSE();
+
+        //   // spyOn(mseStrategy, 'onQualityChangeRendered');
+
+          mockEvent = {
+            mediaType: 'video',
+            oldQuality: 0,
+            newQuality: 1,
+            type: 'qualityChangeRendered'
+          };
+
+        // });
+
+        it('should call plugins with playback bitrate', function () {
+
+          setUpMSE();
+
+          // mockDashMediaPlayer.getBitrateInfoListFor.and.returnValue([1000,2000,3000,4000]);
+          eventCallbacks('qualityChangeRendered', mockEvent)
+
+          // mseStrategy.onQualityChangeRendered(mockEvent);
+
+          // mockDashMediaPlayer.
+
+          expect(mseStrategy.getMediaPlayerInfo).toHaveBeenCalled();
+
+          expect(mseStrategy.getMediaPlayerInfo).toBe({
+            downloadBitrate: undefined,
+            playbackBitrate: 2,
+            bufferLength: undefined
+          });
+
+        });
+
+      });
+
     });
   });
