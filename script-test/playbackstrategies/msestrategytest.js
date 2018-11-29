@@ -15,7 +15,10 @@ require(
       var mockDashDebug;
       var mockVideoElement;
       var eventCallbacks;
+      var dashEventCallback;
       var eventHandlers = {};
+      var mockPlugins;
+      var mockPluginsInterface;
 
       var mockAudioElement = document.createElement('audio');
 
@@ -34,6 +37,14 @@ require(
         injector.mock({
           'dashjs': mockDashjs
         });
+        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onQualityChangeRendered']);
+
+        mockPlugins = {
+          interface: mockPluginsInterface
+        };
+
+        injector.mock({'bigscreenplayer/plugins': mockPlugins});
+
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
           MSEStrategy = SquiredMSEStrategy;
           done();
@@ -61,25 +72,24 @@ require(
         playbackElement.id = 'app';
         document.body.appendChild(playbackElement);
 
-        
         mseStrategy = MSEStrategy(defaultWindowType, defaultMediaKind, timeModel, playbackElement);
-        
+
         mockDashDebug = jasmine.createSpyObj('mockDashDebug', ['setLogToBrowserConsole']);
-        
+
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
-        ['initialize', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
-        'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor', 'setBufferToKeep',
-        'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm']);
-        
+          ['initialize', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
+            'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor', 'setBufferToKeep',
+            'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm', 'getBitrateInfoListFor']);
+
         mockDashInstance.duration.and.returnValue(101);
-        
+
         mockDashjs.MediaPlayer.and.returnValue(mockDashMediaPlayer);
         mockDashMediaPlayer.create.and.returnValue(mockDashInstance);
 
         mockDashInstance.on.and.callFake(function (eventType, handler) {
           eventHandlers[eventType] = handler;
 
-          eventCallbacks = function (eventType, event) {
+          dashEventCallback = function (eventType, event) {
             eventHandlers[eventType].call(eventType, event);
           };
         });
@@ -91,8 +101,6 @@ require(
             eventHandlers[event].call(event);
           };
         });
-
-
 
         // For DVRInfo Based Seekable Range
         mockDashInstance.isReady.and.returnValue(true);
@@ -548,46 +556,26 @@ require(
       });
 
       describe('getMediaPlayerInfo', function () {
-
-        // var mockEvent;
-
-        // beforeEach(function () {
-
-        //   // setUpMSE();
-
-        //   // spyOn(mseStrategy, 'onQualityChangeRendered');
-
-          mockEvent = {
-            mediaType: 'video',
-            oldQuality: 0,
-            newQuality: 1,
-            type: 'qualityChangeRendered'
-          };
-
-        // });
+        var mockEvent = {
+          mediaType: 'video',
+          oldQuality: 0,
+          newQuality: 1,
+          type: 'qualityChangeRendered'
+        };
 
         it('should call plugins with playback bitrate', function () {
-
           setUpMSE();
+          mockDashInstance.getBitrateInfoListFor.and.returnValue([{bitrate: 1000}, {bitrate: 2000}, {bitrate: 3000}]);
+          mseStrategy.load(null, null, 0);
 
-          // mockDashMediaPlayer.getBitrateInfoListFor.and.returnValue([1000,2000,3000,4000]);
-          eventCallbacks('qualityChangeRendered', mockEvent)
+          dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent);
 
-          // mseStrategy.onQualityChangeRendered(mockEvent);
-
-          // mockDashMediaPlayer.
-
-          expect(mseStrategy.getMediaPlayerInfo).toHaveBeenCalled();
-
-          expect(mseStrategy.getMediaPlayerInfo).toBe({
+          expect(mockPlugins.interface.onQualityChangeRendered).toHaveBeenCalledWith({
             downloadBitrate: undefined,
             playbackBitrate: 2,
             bufferLength: undefined
           });
-
         });
-
       });
-
     });
   });

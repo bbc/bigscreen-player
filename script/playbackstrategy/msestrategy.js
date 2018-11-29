@@ -22,7 +22,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var mediaElement;
 
       var bitrateInfoList;
-      var bitrateInfoListIndex;
+
+      var playerMetadata = {
+        downloadBitrate: undefined,
+        playbackBitrate: undefined,
+        bufferLength: undefined
+      };
 
       var DashJSEvents = {
         ERROR: 'error',
@@ -77,10 +82,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function onQualityChangeRendered (event) {
         if (event.mediaType === 'video') {
           DebugTool.info('ABR Change Rendered from: ' + event.oldQuality + ' to: ' + event.newQuality);
-          // 
+          //
           // here...
           //
-
+          handleMediaQualityEvent(event);
         }
       }
 
@@ -142,42 +147,16 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.initialize(mediaElement, src, true);
       }
 
-      function getMediaPlayerInfo(mediaType) {
-        
-        var playerMetadata = {
-          downloadBitrate: undefined,
-          playbackBitrate: undefined,
-          bufferLength: undefined
-        };
-
-        if(mediaType === 'video'){
-
-          playerMetadata = {
-            metrics: mediaPlayer.getMetricsFor('video'),
-            dashMetrics: mediaPlayer.getDashMetrics(),
-            activeStreamInfo: mediaPlayer.getActiveStream().getStreamInfo()
-          } 
-          
-          if (metrics && dashMetrics && activeStreamInfo) {
-            var bitrateInfoList = mediaPlayer.getBitrateInfoListFor('video');
-            var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
-            var newBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
-            var oldRepresentation = isNaN(event.oldQuality) ? 'Initial' : event.oldQuality + ' (' + oldBitrate + ' Kbps)';
-            var newRepresentation = event.newQuality + ' (' + newBitrate + ' Kbps)';
-          }
-
-          if (bitrateInfoList && bitrateInfoListIndex) {
-            playerMetadata.playbackBitrate = bitrateInfoList[bitrateInfoListIndex].bitrate / 1000;
-          } else if (!bitrateInfoList) {
+      function handleMediaQualityEvent (evt) {
+        if (evt.mediaType === 'video') {
+          if (!bitrateInfoList) {
             bitrateInfoList = mediaPlayer.getBitrateInfoListFor('video');
-          } else {
-
           }
-        
+          if (bitrateInfoList && evt.newQuality) {
+            playerMetadata.playbackBitrate = bitrateInfoList[evt.newQuality].bitrate / 1000;
+          }
+          Plugins.interface.onQualityChangeRendered(playerMetadata);
         }
-
-        return playerMetadata;
-
       }
 
       function setUpMediaListeners () {
