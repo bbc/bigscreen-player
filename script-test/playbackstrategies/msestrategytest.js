@@ -37,13 +37,6 @@ require(
         injector.mock({
           'dashjs': mockDashjs
         });
-        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onQualityChangeRendered']);
-
-        mockPlugins = {
-          interface: mockPluginsInterface
-        };
-
-        injector.mock({'bigscreenplayer/plugins': mockPlugins});
 
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
           MSEStrategy = SquiredMSEStrategy;
@@ -563,6 +556,14 @@ require(
           type: 'qualityChangeRendered'
         };
 
+        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onQualityChangeRendered']);
+
+        mockPlugins = {
+          interface: mockPluginsInterface
+        };
+
+        injector.mock({'bigscreenplayer/plugins': mockPlugins});
+
         it('should call plugins with playback bitrate', function () {
           setUpMSE();
           mockDashInstance.getBitrateInfoListFor.and.returnValue([{bitrate: 1000}, {bitrate: 2000}, {bitrate: 3000}]);
@@ -570,7 +571,7 @@ require(
 
           dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent);
 
-          expect(mockPlugins.interface.onQualityChangeRendered).toHaveBeenCalledWith({
+          expect(mockPluginsInterface.onQualityChangeRendered).toHaveBeenCalledWith({
             downloadBitrate: undefined,
             playbackBitrate: 2,
             bufferLength: undefined
