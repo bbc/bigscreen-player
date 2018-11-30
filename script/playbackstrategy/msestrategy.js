@@ -106,7 +106,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
             if (videoMetrics && dashMetrics) {
               playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(videoMetrics);
-              playerMetadata.downloadBitrate = mediaPlayer.getAverageThroughput('video');
+              playerMetadata.downloadBitrate = mediaPlayer.getAverageThroughput('video') / 1000;
               Plugins.interface.onPlayerInfoUpdated(playerMetadata);
             }
           }

@@ -597,7 +597,7 @@ require(
           dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
 
           expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-            downloadBitrate: undefined,
+            downloadBitrate: NaN,
             playbackBitrate: undefined,
             bufferLength: 'buffer'
           });
@@ -613,7 +613,7 @@ require(
               return 'buffer';
             }
           });
-          mockDashInstance.getAverageThroughput.and.returnValue('bitrate');
+          mockDashInstance.getAverageThroughput.and.returnValue(1000);
 
           var mockBufferEvent = {
             mediaType: 'video',
@@ -623,7 +623,7 @@ require(
           dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
 
           expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-            downloadBitrate: 'bitrate',
+            downloadBitrate: 1,
             playbackBitrate: undefined,
             bufferLength: 'buffer'
           });
