@@ -51,8 +51,8 @@ define('bigscreenplayer/plugins',
         onScreenCapabilityDetermined: function (tvInfo) {
           callOnAllPlugins('onScreenCapabilityDetermined', tvInfo);
         },
-        onQualityChangeRendered: function (evt) {
-          callOnAllPlugins('onQualityChangeRendered', evt);
+        onPlayerInfoUpdated: function (evt) {
+          callOnAllPlugins('onPlayerInfoUpdated', evt);
         }
       }
     };

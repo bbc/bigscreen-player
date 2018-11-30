@@ -31,7 +31,7 @@ require(
       };
 
       var mockDashjs = jasmine.createSpyObj('mockDashjs', ['MediaPlayer']);
-      mockDashMediaPlayer = jasmine.createSpyObj('mockDashMediaPlayer', ['create', 'getBitrateInfoListFor']);
+      mockDashMediaPlayer = jasmine.createSpyObj('mockDashMediaPlayer', ['create']);
 
       beforeEach(function (done) {
         injector.mock({
@@ -72,7 +72,7 @@ require(
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
             'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor', 'setBufferToKeep',
-            'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm', 'getBitrateInfoListFor']);
+            'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm', 'getBitrateInfoListFor', 'getAverageThroughput']);
 
         mockDashInstance.duration.and.returnValue(101);
 
@@ -556,7 +556,7 @@ require(
           type: 'qualityChangeRendered'
         };
 
-        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onQualityChangeRendered']);
+        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
 
         mockPlugins = {
           interface: mockPluginsInterface
@@ -571,10 +571,61 @@ require(
 
           dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent);
 
-          expect(mockPluginsInterface.onQualityChangeRendered).toHaveBeenCalledWith({
+          expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
             downloadBitrate: undefined,
             playbackBitrate: 2,
             bufferLength: undefined
+          });
+        });
+
+        it('should call plugins with playback buffer length', function () {
+          var mockBufferEvent = {
+            mediaType: 'video',
+            metric: 'BufferLevel'
+          };
+
+          setUpMSE();
+          
+          mockDashInstance.getMetricsFor.and.returnValue(true);
+          mockDashInstance.getDashMetrics.and.returnValue({
+            getCurrentBufferLevel: function () {
+              return 'buffer';
+            }
+          });
+          mseStrategy.load(null, null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
+
+          expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
+            downloadBitrate: undefined,
+            playbackBitrate: undefined,
+            bufferLength: 'buffer'
+          });
+        });
+
+        it('should call plugins with playback download bitrate', function () {
+          setUpMSE();
+          mseStrategy.load(null, null, 0);
+
+          mockDashInstance.getMetricsFor.and.returnValue(true);
+          mockDashInstance.getDashMetrics.and.returnValue({
+            getCurrentBufferLevel: function () {
+              return 'buffer';
+            }
+          });
+          mockDashInstance.getAverageThroughput.and.returnValue('bitrate');
+
+          var mockBufferEvent = {
+            mediaType: 'video',
+            metric: 'BufferLevel'
+          };
+
+          dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
+
+          expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
+            downloadBitrate: 'bitrate',
+            playbackBitrate: undefined,
+            bufferLength: 'buffer'
           });
         });
       });

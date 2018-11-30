@@ -22,6 +22,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var mediaElement;
 
       var bitrateInfoList;
+      var videoMetrics;
+      var dashMetrics;
 
       var playerMetadata = {
         downloadBitrate: undefined,
@@ -83,26 +85,34 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function onQualityChangeRendered (event) {
         if (event.mediaType === 'video') {
           DebugTool.info('ABR Change Rendered from: ' + event.oldQuality + ' to: ' + event.newQuality);
-          //
-          // here...
-          //
-          handleMediaQualityEvent(event);
+
+          if (!bitrateInfoList) {
+            bitrateInfoList = mediaPlayer.getBitrateInfoListFor('video');
+          }
+          if (bitrateInfoList && event.newQuality) {
+            playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
+          }
+          Plugins.interface.onPlayerInfoUpdated(playerMetadata);
         }
       }
 
-      function onMetricChanged(event) {
-
-        var foo = event;
-        DebugTool.info('Event Type onMetricChanged: ' + event.metric);
-
-      }
-
       function onMetricAdded (event) {
-        DebugTool.info('Event Type onMetricChanged: ' + event.metric);
-        if (event.mediaType === 'video' && event.metric === 'DroppedFrames') {
-          DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
-        } else if (event.mediaType === 'video' && event.metric === '') {
-          
+        DebugTool.info('Foo');
+        if (event.mediaType === 'video') {
+          if (event.metric === 'DroppedFrames') {
+            DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
+          } else if (event.metric === 'BufferLevel') {
+            videoMetrics = mediaPlayer.getMetricsFor('video');
+            dashMetrics = mediaPlayer.getDashMetrics();
+
+            if (videoMetrics && dashMetrics) {
+              playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(videoMetrics);
+              playerMetadata.downloadBitrate = mediaPlayer.getAverageThroughput('video');
+              Plugins.interface.onPlayerInfoUpdated(playerMetadata);
+              DebugTool.info('Buffer Length: ' + dashMetrics.getCurrentBufferLevel(videoMetrics));
+              DebugTool.info('Get Average Throughput: ' + mediaPlayer.getAverageThroughput('video'));
+            }
+          }
         }
       }
 
@@ -158,18 +168,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.initialize(mediaElement, src, true);
       }
 
-      function handleMediaQualityEvent (evt) {
-        if (evt.mediaType === 'video') {
-          if (!bitrateInfoList) {
-            bitrateInfoList = mediaPlayer.getBitrateInfoListFor('video');
-          }
-          if (bitrateInfoList && evt.newQuality) {
-            playerMetadata.playbackBitrate = bitrateInfoList[evt.newQuality].bitrate / 1000;
-          }
-          Plugins.interface.onQualityChangeRendered(playerMetadata);
-        }
-      }
-
       function setUpMediaListeners () {
         mediaElement.addEventListener('timeupdate', onTimeUpdate);
         mediaElement.addEventListener('playing', onPlaying);
@@ -184,10 +182,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
-        mediaPlayer.on(DashJSEvents.METRIC_CHANGED, onMetricChanged);
-        mediaPlayer.on('metricUpdated', function (event) {
-          DebugTool.info('foo : ' + event.metric);
-        });
       }
 
       function cdnFailoverLoad (newSrc, currentSrcWithTime) {
@@ -287,7 +281,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
-          mediaPlayer.off(DashJSEvents.METRIC_CHANGED, onMetricChanged);
 
           mediaElement.parentElement.removeChild(mediaElement);
 
