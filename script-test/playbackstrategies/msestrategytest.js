@@ -578,7 +578,7 @@ require(
           });
         });
 
-        it('should call plugins with playback buffer length and download bitrate', function () {
+        it('should call plugins with playback buffer length', function () {
           var mockBufferEvent = {
             mediaType: 'video',
             metric: 'BufferLevel'
@@ -588,7 +588,6 @@ require(
           mseStrategy.load(null, null, 0);
 
           mockDashInstance.getMetricsFor.and.returnValue(true);
-          mockDashInstance.getAverageThroughput.and.returnValue(1000);
           mockDashInstance.getDashMetrics.and.returnValue({
             getCurrentBufferLevel: function () {
               return 'buffer';
@@ -598,7 +597,7 @@ require(
           dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
 
           expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-            downloadBitrate: 1,
+            downloadBitrate: undefined,
             playbackBitrate: undefined,
             bufferLength: 'buffer'
           });
