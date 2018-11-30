@@ -97,7 +97,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onMetricAdded (event) {
-        DebugTool.info('Foo');
         if (event.mediaType === 'video') {
           if (event.metric === 'DroppedFrames') {
             DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
@@ -109,8 +108,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
               playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(videoMetrics);
               playerMetadata.downloadBitrate = mediaPlayer.getAverageThroughput('video');
               Plugins.interface.onPlayerInfoUpdated(playerMetadata);
-              DebugTool.info('Buffer Length: ' + dashMetrics.getCurrentBufferLevel(videoMetrics));
-              DebugTool.info('Get Average Throughput: ' + mediaPlayer.getAverageThroughput('video'));
             }
           }
         }
