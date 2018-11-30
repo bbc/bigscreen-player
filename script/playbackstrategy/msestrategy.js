@@ -34,7 +34,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         MANIFEST_LOADED: 'manifestLoaded',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-        METRIC_ADDED: 'metricAdded'
+        METRIC_ADDED: 'metricAdded',
+        METRIC_CHANGED: 'metricChanged'
       };
 
       function onPlaying () {
@@ -89,9 +90,19 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
+      function onMetricChanged(event) {
+
+        var foo = event;
+        DebugTool.info('Event Type onMetricChanged: ' + event.metric);
+
+      }
+
       function onMetricAdded (event) {
+        DebugTool.info('Event Type onMetricChanged: ' + event.metric);
         if (event.mediaType === 'video' && event.metric === 'DroppedFrames') {
           DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
+        } else if (event.mediaType === 'video' && event.metric === '') {
+          
         }
       }
 
@@ -173,6 +184,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
+        mediaPlayer.on(DashJSEvents.METRIC_CHANGED, onMetricChanged);
+        mediaPlayer.on('metricUpdated', function (event) {
+          DebugTool.info('foo : ' + event.metric);
+        });
       }
 
       function cdnFailoverLoad (newSrc, currentSrcWithTime) {
@@ -272,6 +287,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
+          mediaPlayer.off(DashJSEvents.METRIC_CHANGED, onMetricChanged);
 
           mediaElement.parentElement.removeChild(mediaElement);
 
