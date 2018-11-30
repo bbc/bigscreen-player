@@ -578,47 +578,22 @@ require(
           });
         });
 
-        it('should call plugins with playback buffer length', function () {
+        it('should call plugins with playback buffer length and download bitrate', function () {
           var mockBufferEvent = {
             mediaType: 'video',
             metric: 'BufferLevel'
           };
 
           setUpMSE();
-
-          mockDashInstance.getMetricsFor.and.returnValue(true);
-          mockDashInstance.getDashMetrics.and.returnValue({
-            getCurrentBufferLevel: function () {
-              return 'buffer';
-            }
-          });
-          mseStrategy.load(null, null, 0);
-
-          dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
-
-          expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-            downloadBitrate: NaN,
-            playbackBitrate: undefined,
-            bufferLength: 'buffer'
-          });
-        });
-
-        it('should call plugins with playback download bitrate', function () {
-          setUpMSE();
           mseStrategy.load(null, null, 0);
 
           mockDashInstance.getMetricsFor.and.returnValue(true);
-          mockDashInstance.getDashMetrics.and.returnValue({
-            getCurrentBufferLevel: function () {
-              return 'buffer';
-            }
-          });
           mockDashInstance.getAverageThroughput.and.returnValue(1000);
-
-          var mockBufferEvent = {
-            mediaType: 'video',
-            metric: 'BufferLevel'
-          };
+          mockDashInstance.getDashMetrics.and.returnValue({
+            getCurrentBufferLevel: function () {
+              return 'buffer';
+            }
+          });
 
           dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
 
