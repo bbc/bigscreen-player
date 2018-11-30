@@ -585,7 +585,7 @@ require(
           };
 
           setUpMSE();
-          
+
           mockDashInstance.getMetricsFor.and.returnValue(true);
           mockDashInstance.getDashMetrics.and.returnValue({
             getCurrentBufferLevel: function () {
