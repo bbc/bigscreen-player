@@ -26,7 +26,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var dashMetrics;
 
       var playerMetadata = {
-        downloadBitrate: undefined,
         playbackBitrate: undefined,
         bufferLength: undefined
       };

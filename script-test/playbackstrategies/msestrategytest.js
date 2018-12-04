@@ -548,7 +548,7 @@ require(
         });
       });
 
-      describe('getMediaPlayerInfo', function () {
+      describe('onMetricAdded and onQualityChangeRendered', function () {
         var mockEvent = {
           mediaType: 'video',
           oldQuality: 0,
@@ -566,14 +566,13 @@ require(
 
         it('should call plugins with playback bitrate', function () {
           setUpMSE();
-          mockDashInstance.getBitrateInfoListFor.and.returnValue([{bitrate: 1000}, {bitrate: 2000}, {bitrate: 3000}]);
+          mockDashInstance.getBitrateInfoListFor.and.returnValue([{bitrate: 1000}, {bitrate: 2048}, {bitrate: 3000}]);
           mseStrategy.load(null, null, 0);
 
           dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent);
 
           expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-            downloadBitrate: undefined,
-            playbackBitrate: 2,
+            playbackBitrate: 2.048,
             bufferLength: undefined
           });
         });
@@ -597,7 +596,6 @@ require(
           dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
 
           expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-            downloadBitrate: undefined,
             playbackBitrate: undefined,
             bufferLength: 'buffer'
           });
