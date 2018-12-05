@@ -85,7 +85,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         if (!bitrateInfoList) {
           bitrateInfoList = mediaPlayer.getBitrateInfoListFor(event.mediaType);
         }
-        if (bitrateInfoList && event.newQuality) {
+        if (bitrateInfoList && (event.newQuality !== undefined)) {
           playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
 
           var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
