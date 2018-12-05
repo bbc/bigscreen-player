@@ -22,7 +22,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var mediaElement;
 
       var bitrateInfoList;
-      var videoMetrics;
+      var mediaMetrics;
       var dashMetrics;
 
       var playerMetadata = {
@@ -84,29 +84,30 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function onQualityChangeRendered (event) {
         if (event.mediaType === 'video') {
           DebugTool.info('ABR Change Rendered from: ' + event.oldQuality + ' to: ' + event.newQuality);
-
-          if (!bitrateInfoList) {
-            bitrateInfoList = mediaPlayer.getBitrateInfoListFor('video');
-          }
-          if (bitrateInfoList && event.newQuality) {
-            playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
-          }
-          Plugins.interface.onPlayerInfoUpdated(playerMetadata);
         }
+
+        if (!bitrateInfoList) {
+          bitrateInfoList = mediaPlayer.getBitrateInfoListFor(event.mediaType);
+        }
+        if (bitrateInfoList && event.newQuality) {
+          playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
+        }
+        Plugins.interface.onPlayerInfoUpdated(playerMetadata);
       }
 
       function onMetricAdded (event) {
         if (event.mediaType === 'video') {
           if (event.metric === 'DroppedFrames') {
             DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
-          } else if (event.metric === 'BufferLevel') {
-            videoMetrics = mediaPlayer.getMetricsFor('video');
-            dashMetrics = mediaPlayer.getDashMetrics();
+          }
+        }
+        if (event.metric === 'BufferLevel') {
+          mediaMetrics = mediaPlayer.getMetricsFor(event.mediaType);
+          dashMetrics = mediaPlayer.getDashMetrics();
 
-            if (videoMetrics && dashMetrics) {
-              playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(videoMetrics);
-              Plugins.interface.onPlayerInfoUpdated(playerMetadata);
-            }
+          if (mediaMetrics && dashMetrics) {
+            playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
+            Plugins.interface.onPlayerInfoUpdated(playerMetadata);
           }
         }
       }
