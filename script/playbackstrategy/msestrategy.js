@@ -72,32 +72,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function onQualityChangeRendered (event) {
         if (event.mediaType === 'video') {
-          var metrics = mediaPlayer.getMetricsFor('video');
-          var dashMetrics = mediaPlayer.getDashMetrics();
-          var activeStreamInfo = mediaPlayer.getActiveStream().getStreamInfo();
-
-          if (metrics && dashMetrics && activeStreamInfo) {
-            var bitrateInfoList = mediaPlayer.getBitrateInfoListFor('video');
-            var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
-            var newBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
-            var oldRepresentation = isNaN(event.oldQuality) ? 'Initial' : event.oldQuality + ' (' + oldBitrate + ' Kbps)';
-            var newRepresentation = event.newQuality + ' (' + newBitrate + ' Kbps)';
-
-            DebugTool.info('ABR level change from: ' + oldRepresentation + ' - ' + newRepresentation);
-            DebugTool.keyValue({key: 'bitrate', value: newBitrate + ' Kbps'});
-          }
+          DebugTool.info('ABR Change Rendered from: ' + event.oldQuality + ' to: ' + event.newQuality);
         }
       }
 
       function onMetricAdded (event) {
-        if (event.mediaType === 'video' && event.metric === 'BufferLevel') {
-          var metrics = mediaPlayer.getMetricsFor('video');
-          var dashMetrics = mediaPlayer.getDashMetrics();
-
-          if (metrics && dashMetrics) {
-            DebugTool.keyValue({key: 'Buffer Length', value: dashMetrics.getCurrentBufferLevel(metrics)});
-          }
-        }
         if (event.mediaType === 'video' && event.metric === 'DroppedFrames') {
           DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
         }
