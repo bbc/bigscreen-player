@@ -19,7 +19,6 @@ define('bigscreenplayer/debugger/debugview',
      logBox.style.backgroundColor = '#1D1D1D';
      logBox.style.opacity = 0.9;
      logBox.style.overflow = 'hidden';
-     logBox.style.fontFamily = 'monospace';
 
      staticBox.id = 'staticBox';
      staticBox.style.position = 'absolute';
@@ -30,7 +29,6 @@ define('bigscreenplayer/debugger/debugview',
      staticBox.style.backgroundColor = '#1D1D1D';
      staticBox.style.opacity = 0.9;
      staticBox.style.overflow = 'hidden';
-     staticBox.style.fontFamily = 'monospace';
 
      logContainer.id = 'logContainer';
      logContainer.style.color = '#ffffff';
