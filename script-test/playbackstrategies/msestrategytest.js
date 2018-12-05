@@ -15,7 +15,10 @@ require(
       var mockDashDebug;
       var mockVideoElement;
       var eventCallbacks;
+      var dashEventCallback;
       var eventHandlers = {};
+      var mockPlugins;
+      var mockPluginsInterface;
 
       var mockAudioElement = document.createElement('audio');
 
@@ -34,6 +37,7 @@ require(
         injector.mock({
           'dashjs': mockDashjs
         });
+
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
           MSEStrategy = SquiredMSEStrategy;
           done();
@@ -68,12 +72,20 @@ require(
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
             'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor', 'setBufferToKeep',
-            'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm']);
+            'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm', 'getBitrateInfoListFor', 'getAverageThroughput']);
 
         mockDashInstance.duration.and.returnValue(101);
 
         mockDashjs.MediaPlayer.and.returnValue(mockDashMediaPlayer);
         mockDashMediaPlayer.create.and.returnValue(mockDashInstance);
+
+        mockDashInstance.on.and.callFake(function (eventType, handler) {
+          eventHandlers[eventType] = handler;
+
+          dashEventCallback = function (eventType, event) {
+            eventHandlers[eventType].call(eventType, event);
+          };
+        });
 
         mockVideoElement.addEventListener.and.callFake(function (eventType, handler) {
           eventHandlers[eventType] = handler;
@@ -532,6 +544,60 @@ require(
             mseStrategy.setCurrentTime(101);
 
             expect(mockVideoElement.currentTime).toBe(99.9);
+          });
+        });
+      });
+
+      describe('onMetricAdded and onQualityChangeRendered', function () {
+        var mockEvent = {
+          mediaType: 'video',
+          oldQuality: 0,
+          newQuality: 1,
+          type: 'qualityChangeRendered'
+        };
+
+        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
+
+        mockPlugins = {
+          interface: mockPluginsInterface
+        };
+
+        injector.mock({'bigscreenplayer/plugins': mockPlugins});
+
+        it('should call plugins with playback bitrate', function () {
+          setUpMSE();
+          mockDashInstance.getBitrateInfoListFor.and.returnValue([{bitrate: 1000}, {bitrate: 2048}, {bitrate: 3000}]);
+          mseStrategy.load(null, null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent);
+
+          expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
+            playbackBitrate: 2.048,
+            bufferLength: undefined
+          });
+        });
+
+        it('should call plugins with playback buffer length', function () {
+          var mockBufferEvent = {
+            mediaType: 'video',
+            metric: 'BufferLevel'
+          };
+
+          setUpMSE();
+          mseStrategy.load(null, null, 0);
+
+          mockDashInstance.getMetricsFor.and.returnValue(true);
+          mockDashInstance.getDashMetrics.and.returnValue({
+            getCurrentBufferLevel: function () {
+              return 'buffer';
+            }
+          });
+
+          dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
+
+          expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
+            playbackBitrate: undefined,
+            bufferLength: 'buffer'
           });
         });
       });

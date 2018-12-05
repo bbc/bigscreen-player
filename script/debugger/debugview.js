@@ -18,7 +18,7 @@ define('bigscreenplayer/debugger/debugview',
      logBox.style.bottom = '25%';
      logBox.style.backgroundColor = '#1D1D1D';
      logBox.style.opacity = 0.9;
-     logBox.style.overflow = 'wrap';
+     logBox.style.overflow = 'hidden';
 
      staticBox.id = 'staticBox';
      staticBox.style.position = 'absolute';
@@ -28,11 +28,11 @@ define('bigscreenplayer/debugger/debugview',
      staticBox.style.bottom = '25%';
      staticBox.style.backgroundColor = '#1D1D1D';
      staticBox.style.opacity = 0.9;
-     staticBox.style.overflow = 'wrap';
+     staticBox.style.overflow = 'hidden';
 
      logContainer.id = 'logContainer';
      logContainer.style.color = '#ffffff';
-     logContainer.style.fontSize = '13pt';
+     logContainer.style.fontSize = '11pt';
      logContainer.style.position = 'absolute';
      logContainer.style.bottom = '1%';
      logContainer.style.left = '1%';
@@ -40,7 +40,7 @@ define('bigscreenplayer/debugger/debugview',
 
      staticContainer.id = 'staticContainer';
      staticContainer.style.color = '#ffffff';
-     staticContainer.style.fontSize = '13pt';
+     staticContainer.style.fontSize = '11pt';
      staticContainer.style.wordWrap = 'break-word';
      staticContainer.style.left = '1%';
 

@@ -4,11 +4,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/mediakinds',
+    'bigscreenplayer/plugins',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins) {
     return function (windowType, mediaKind, timeData, playbackElement) {
       var mediaPlayer;
       var eventCallback;
@@ -20,12 +21,22 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var isEnded = false;
       var mediaElement;
 
+      var bitrateInfoList;
+      var mediaMetrics;
+      var dashMetrics;
+
+      var playerMetadata = {
+        playbackBitrate: undefined,
+        bufferLength: undefined
+      };
+
       var DashJSEvents = {
         ERROR: 'error',
         MANIFEST_LOADED: 'manifestLoaded',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-        METRIC_ADDED: 'metricAdded'
+        METRIC_ADDED: 'metricAdded',
+        METRIC_CHANGED: 'metricChanged'
       };
 
       function onPlaying () {
@@ -74,11 +85,30 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         if (event.mediaType === 'video') {
           DebugTool.info('ABR Change Rendered from: ' + event.oldQuality + ' to: ' + event.newQuality);
         }
+
+        if (!bitrateInfoList) {
+          bitrateInfoList = mediaPlayer.getBitrateInfoListFor(event.mediaType);
+        }
+        if (bitrateInfoList && event.newQuality) {
+          playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
+        }
+        Plugins.interface.onPlayerInfoUpdated(playerMetadata);
       }
 
       function onMetricAdded (event) {
-        if (event.mediaType === 'video' && event.metric === 'DroppedFrames') {
-          DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
+        if (event.mediaType === 'video') {
+          if (event.metric === 'DroppedFrames') {
+            DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
+          }
+        }
+        if (event.metric === 'BufferLevel') {
+          mediaMetrics = mediaPlayer.getMetricsFor(event.mediaType);
+          dashMetrics = mediaPlayer.getDashMetrics();
+
+          if (mediaMetrics && dashMetrics) {
+            playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
+            Plugins.interface.onPlayerInfoUpdated(playerMetadata);
+          }
         }
       }
 
