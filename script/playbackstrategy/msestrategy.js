@@ -82,15 +82,17 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onQualityChangeRendered (event) {
-        if (event.mediaType === 'video') {
-          DebugTool.info('ABR Change Rendered from: ' + event.oldQuality + ' to: ' + event.newQuality);
-        }
-
         if (!bitrateInfoList) {
           bitrateInfoList = mediaPlayer.getBitrateInfoListFor(event.mediaType);
         }
         if (bitrateInfoList && event.newQuality) {
           playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
+
+          var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
+          var oldRepresentation = isNaN(event.oldQuality) ? 'Initial' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
+          var newRepresentation = event.newQuality + ' (' + playerMetadata.playbackBitrate + ' kbps)';
+
+          DebugTool.info('ABR Change Rendered from: ' + oldRepresentation + ' to: ' + newRepresentation);
         }
         Plugins.interface.onPlayerInfoUpdated(playerMetadata);
       }
@@ -107,6 +109,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
           if (mediaMetrics && dashMetrics) {
             playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
+            DebugTool.keyValue({key: 'Buffer Length', value: playerMetadata.bufferLength});
             Plugins.interface.onPlayerInfoUpdated(playerMetadata);
           }
         }
