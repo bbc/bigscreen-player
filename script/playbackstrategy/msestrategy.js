@@ -93,6 +93,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           var newRepresentation = event.newQuality + ' (' + playerMetadata.playbackBitrate + ' kbps)';
 
           DebugTool.info('ABR Change Rendered from: ' + oldRepresentation + ' to: ' + newRepresentation);
+          DebugTool.keyValue({key: 'bitrate', value: newRepresentation});
         }
         Plugins.interface.onPlayerInfoUpdated(playerMetadata);
       }
