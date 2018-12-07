@@ -134,5 +134,7 @@ define([
     // At this point TAL environment can be injected, if needed
     bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles, liveSupport);
 
+    WebAudioFx.setOnElement(document.getElementsByTagName('video')[0]);
+
   }
 );
