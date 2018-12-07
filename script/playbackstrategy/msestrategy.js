@@ -91,10 +91,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
           var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
           var newRepresentation = event.newQuality + ' (' + playerMetadata.playbackBitrate + ' kbps)';
-          DebugTool.keyValue({key: event.mediaType.toUpperCase() + ' Representation', value: newRepresentation});
+          DebugTool.keyValue({key: event.mediaType + ' Representation', value: newRepresentation});
 
           if (event.mediaType === 'video') {
-            DebugTool.info('ABR Change Rendered From ' + 'Representation' + oldRepresentation + ' To Representation ' + newRepresentation);
+            DebugTool.info('ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
           }
         }
         Plugins.interface.onPlayerInfoUpdated(playerMetadata);
