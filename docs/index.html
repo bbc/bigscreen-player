@@ -22,6 +22,12 @@
                 <img src="example-app/res/img/debugToolButton.png" width="30" height="30" />
             </button>
         </div>
+        <div id="webAudioControls" class="webAudioControls">
+            <span>Spatial Upmix</span>
+            <input type="range" min="1" max="100" value="1" class="slider" id="reverbMix"> </br>
+            <span>Speech Enhancement</span>
+            <input type="range" min="1" max="100" value="1" class="slider" id="speechBoost"> </br>
+        </div>
     </div>
 </body>
 <script>
@@ -29,6 +35,7 @@
         playbackStrategy: 'msestrategy'
     }
 </script>
+<script src="example-app/script/waudio.js"></script>
 <script data-main='example-app/dist/index' src="example-app/require.js"></script>
 <link rel="stylesheet" href="example-app/styles/main.css"/>
 </html>
