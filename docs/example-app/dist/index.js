@@ -62395,11 +62395,19 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
   bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles, liveSupport);
 
   /* Web Audio Demo Spike */
-  WebAudioFx.setOnElement(document.getElementsByTagName('video')[0]);
+
+  // Apply to stream from mediaElement
+  WebAudioFx.setOnMediaElement(document.getElementsByTagName('video')[0]);
+
+  // Ensure start values
+  WebAudioFx.setReverbMix(0);
+  WebAudioFx.setBassBoost(0);
+  WebAudioFx.setSpeechBoost(0, 0, 0, 0);
 
   // Setup Slider callbacks
   var spatialSlider = document.getElementById('spatialSlider');
   var speechSlider = document.getElementById('speechSlider');
+  var bassBoostSlider = document.getElementById('bassBoostSlider');
 
   spatialSlider.addEventListener('input', function () {
     WebAudioFx.setReverbMix(spatialSlider.value / 100);
@@ -62412,6 +62420,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var highGain = convertRange(speechVal, [1, 100], [0, 15]);
     var threshold = convertRange(speechVal, [1, 100], [0, -50]);
     WebAudioFx.setSpeechBoost(lowGain, midGain, highGain, threshold);
+  });
+
+  bassBoostSlider.addEventListener('input', function () {
+    var boostGain = convertRange(bassBoostSlider.value, [1, 100], [0, 25]);
+    WebAudioFx.setBassBoost(boostGain);
   });
 }).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));

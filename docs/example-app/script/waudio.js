@@ -18,36 +18,6 @@ function AudioFX () {
         }
     }
 
-
-    function setOnElement (mediaElement) {
-
-        // Setup context
-        _audio.context = new AudioContext() || WebKit.AudioContext();
-
-        // Create nodes
-        _audio.nodes.input = _audio.context.createMediaElementSource(mediaElement);
-        _audio.nodes.reverb = _audio.context.createConvolver();
-        _audio.nodes.reverbMixer = _audio.context.createGain();
-        _audio.nodes.dryMixer = _audio.context.createGain();
-        _audio.nodes.speech.lowShelf = _audio.context.createBiquadFilter();
-        _audio.nodes.speech.highShelf = _audio.context.createBiquadFilter();
-        _audio.nodes.speech.peaking = _audio.context.createBiquadFilter();
-        _audio.nodes.speech.compressor = _audio.context.createDynamicsCompressor();
-        _audio.nodes.bassBoost = _audio.context.createBiquadFilter();
-
-        /* Setup all the individual node parameters */
-        
-        // Filters
-        setBiquadParams(_audio.nodes.speech.lowShelf, 0, 400, 0.7, 'lowshelf');
-        setBiquadParams(_audio.nodes.speech.highShelf, 0, 2000, 0.7, 'highshelf');
-        setBiquadParams(_audio.nodes.speech.peaking, 0, 1000, 0.7, 'peaking');
-        setBiquadParams(_audio.nodes.bassBoost, 0, 500, 0.7, 'lowshelf');
-
-        // Request the convolver buffer and setup graph on load
-        setConvolverBuffer('example-app/res/audio/ir.mp3');
-
-    }
-
     function setBiquadParams (biquadNode, gain, freq=undefined, Q=undefined, type=undefined) {
         biquadNode.gain.setValueAtTime(gain, _audio.context.currentTime);
         if(freq !== undefined) {
@@ -59,11 +29,6 @@ function AudioFX () {
         if(type !== undefined) {
             biquadNode.type = type;
         }
-    }
-
-    function setReverbWetLevel (level) {
-        _audio.nodes.reverbMixer.gain.setValueAtTime(level, _audio.context.currentTime);
-        _audio.nodes.dryMixer.gain.setValueAtTime(1 - level, _audio.context.currentTime);
     }
 
     function setConvolverBuffer (url) {
@@ -108,15 +73,9 @@ function AudioFX () {
         _audio.nodes.speech.lowShelf.connect(_audio.nodes.speech.highShelf);
         _audio.nodes.speech.highShelf.connect(_audio.nodes.speech.peaking);
         _audio.nodes.speech.peaking.connect(_audio.nodes.dryMixer);
-        _audio.nodes.dryMixer.connect(_audio.context.destination);
+        _audio.nodes.dryMixer.connect(_audio.nodes.bassBoost);
+        _audio.nodes.bassBoost.connect(_audio.context.destination);
 
-    }
-
-    function setSpeechBoost(lowGain, peakGain, highGain, threshold) {
-        _audio.nodes.speech.lowShelf.gain.setValueAtTime(lowGain, _audio.context.currentTime);
-        _audio.nodes.speech.peaking.gain.setValueAtTime(peakGain, _audio.context.currentTime);
-        _audio.nodes.speech.highShelf.gain.setValueAtTime(highGain, _audio.context.currentTime);
-        setCompression(threshold);
     }
 
     function setCompression (threshold){
@@ -127,10 +86,56 @@ function AudioFX () {
         _audio.nodes.speech.compressor.release.setValueAtTime(0.25, _audio.context.currentTime);
     }
 
+    function setOnMediaElement (mediaElement) {
+
+        // Setup context
+        _audio.context = new AudioContext() || WebKit.AudioContext();
+
+        // Create nodes
+        _audio.nodes.input = _audio.context.createMediaElementSource(mediaElement);
+        _audio.nodes.reverb = _audio.context.createConvolver();
+        _audio.nodes.reverbMixer = _audio.context.createGain();
+        _audio.nodes.dryMixer = _audio.context.createGain();
+        _audio.nodes.speech.lowShelf = _audio.context.createBiquadFilter();
+        _audio.nodes.speech.highShelf = _audio.context.createBiquadFilter();
+        _audio.nodes.speech.peaking = _audio.context.createBiquadFilter();
+        _audio.nodes.speech.compressor = _audio.context.createDynamicsCompressor();
+        _audio.nodes.bassBoost = _audio.context.createBiquadFilter();
+
+        /* Setup all the individual node parameters */
+        
+        // Filters
+        setBiquadParams(_audio.nodes.speech.lowShelf, 0, 400, 0.7, 'lowshelf');
+        setBiquadParams(_audio.nodes.speech.highShelf, 0, 2000, 0.7, 'highshelf');
+        setBiquadParams(_audio.nodes.speech.peaking, 0, 1000, 0.7, 'peaking');
+        setBiquadParams(_audio.nodes.bassBoost, 0, 1000, 0.7, 'lowshelf');
+
+        // Request the convolver buffer and setup graph on load
+        setConvolverBuffer('example-app/res/audio/ir.mp3');
+
+    }
+
+    function setReverbWetLevel (level) {
+        _audio.nodes.reverbMixer.gain.setValueAtTime(level, _audio.context.currentTime);
+        _audio.nodes.dryMixer.gain.setValueAtTime(1 - level, _audio.context.currentTime);
+    }
+
+    function setSpeechBoost(lowGain, peakGain, highGain, threshold) {
+        _audio.nodes.speech.lowShelf.gain.setValueAtTime(lowGain, _audio.context.currentTime);
+        _audio.nodes.speech.peaking.gain.setValueAtTime(peakGain, _audio.context.currentTime);
+        _audio.nodes.speech.highShelf.gain.setValueAtTime(highGain, _audio.context.currentTime);
+        setCompression(threshold);
+    }
+
+    function setBassBoost(gain) {
+        _audio.nodes.bassBoost.gain.setValueAtTime(gain, _audio.context.currentTime);
+    }    
+
     return({
-        setOnElement: setOnElement,
+        setOnMediaElement: setOnMediaElement,
         setReverbMix: setReverbWetLevel,
-        setSpeechBoost: setSpeechBoost
+        setSpeechBoost: setSpeechBoost,
+        setBassBoost: setBassBoost
     })
 }
 
