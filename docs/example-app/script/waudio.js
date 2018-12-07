@@ -21,8 +21,6 @@ function AudioFX () {
 
     function setOnElement (mediaElement) {
 
-        console.log('Setting Audio FX on a given media element');
-
         // Setup context
         _audio.context = new AudioContext() || WebKit.AudioContext();
 
@@ -40,7 +38,7 @@ function AudioFX () {
         /* Setup all the individual node parameters */
         
         // Filters
-        setBiquadParams(_audio.nodes.speech.lowShelf, 0, 600, 0.7, 'lowshelf');
+        setBiquadParams(_audio.nodes.speech.lowShelf, 0, 400, 0.7, 'lowshelf');
         setBiquadParams(_audio.nodes.speech.highShelf, 0, 2000, 0.7, 'highshelf');
         setBiquadParams(_audio.nodes.speech.peaking, 0, 1000, 0.7, 'peaking');
         setBiquadParams(_audio.nodes.bassBoost, 0, 500, 0.7, 'lowshelf');
@@ -86,10 +84,6 @@ function AudioFX () {
                 // Connect all nodes
                 connectGraph();
 
-                setReverbWetLevel(0.98);
-
-                console.log('All setup!');
-
             },
 
             (e) => { 
@@ -118,9 +112,31 @@ function AudioFX () {
 
     }
 
+    function setSpeechBoost(lowGain, peakGain, highGain, threshold) {
+        _audio.nodes.speech.lowShelf.gain.setValueAtTime(lowGain, _audio.context.currentTime);
+        _audio.nodes.speech.peaking.gain.setValueAtTime(peakGain, _audio.context.currentTime);
+        _audio.nodes.speech.highShelf.gain.setValueAtTime(highGain, _audio.context.currentTime);
+        setCompression(threshold);
+    }
+
+    function setCompression (threshold){
+        _audio.nodes.speech.compressor.threshold.setValueAtTime(threshold, _audio.context.currentTime);
+        _audio.nodes.speech.compressor.knee.setValueAtTime(40, _audio.context.currentTime);
+        _audio.nodes.speech.compressor.ratio.setValueAtTime(12, _audio.context.currentTime);
+        _audio.nodes.speech.compressor.attack.setValueAtTime(0, _audio.context.currentTime);
+        _audio.nodes.speech.compressor.release.setValueAtTime(0.25, _audio.context.currentTime);
+    }
+
     return({
-        setOnElement: setOnElement
+        setOnElement: setOnElement,
+        setReverbMix: setReverbWetLevel,
+        setSpeechBoost: setSpeechBoost
     })
 }
 
 var WebAudioFx = AudioFX();
+
+// Utility function
+function convertRange( value, r1, r2 ) { 
+    return ( value - r1[ 0 ] ) * ( r2[ 1 ] - r2[ 0 ] ) / ( r1[ 1 ] - r1[ 0 ] ) + r2[ 0 ];
+}

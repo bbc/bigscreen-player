@@ -134,7 +134,25 @@ define([
     // At this point TAL environment can be injected, if needed
     bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles, liveSupport);
 
+    /* Web Audio Demo Spike */
     WebAudioFx.setOnElement(document.getElementsByTagName('video')[0]);
+
+    // Setup Slider callbacks
+    var spatialSlider = document.getElementById('spatialSlider');
+    var speechSlider = document.getElementById('speechSlider');
+
+    spatialSlider.addEventListener('input', () => {
+      WebAudioFx.setReverbMix(spatialSlider.value/100);
+    })
+
+    speechSlider.addEventListener('input', () => {
+      var speechVal = speechSlider.value;
+      var lowGain = convertRange(speechVal, [1,100], [0, 20]);
+      var midGain = convertRange(speechVal, [1,100], [0, -20]);
+      var highGain = convertRange(speechVal, [1,100], [0, 15]);
+      var threshold = convertRange(speechVal, [1,100], [0, -50]);
+      WebAudioFx.setSpeechBoost(lowGain, midGain, highGain, threshold);
+    })
 
   }
 );
