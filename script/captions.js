@@ -43,11 +43,11 @@ define('bigscreenplayer/captions',
                 try {
                   transformXML(req.responseXML);
                 } catch (e) {
-                  DebugTool.error('Error transforming captions response: ' + e);
+                  DebugTool.info('Error transforming captions response: ' + e);
                 }
               }
             } else {
-              DebugTool.error('Response Code ' + req.status + '; Error loading captions data: ' + req.responseText);
+              DebugTool.info('Response Code ' + req.status + '; Error loading captions data: ' + req.responseText);
             }
           }
         };
@@ -56,7 +56,7 @@ define('bigscreenplayer/captions',
           req.open('GET', dataFeedUrl, true);
           req.send(null);
         } catch (e) {
-          DebugTool.error('Error transforming captions response: ' + e);
+          DebugTool.info('Error transforming captions response: ' + e);
         }
       }
 
