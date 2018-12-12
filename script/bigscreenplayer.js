@@ -97,7 +97,6 @@ define('bigscreenplayer/bigscreenplayer',
             device
           );
 
-          DebugTool.keyValue({key: 'bitrate', value: bigscreenPlayerData.media.bitrate + ' kbps'});
           DebugTool.keyValue({key: 'cdn', value: bigscreenPlayerData.media.urls[0].cdn});
           DebugTool.keyValue({key: 'url', value: bigscreenPlayerData.media.urls[0].url});
         },

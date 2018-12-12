@@ -82,17 +82,21 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onQualityChangeRendered (event) {
-        if (event.mediaType === 'video') {
-          DebugTool.info('ABR Change Rendered from: ' + event.oldQuality + ' to: ' + event.newQuality);
-        }
+        if (event.mediaType === mediaKind) {
+          if (!bitrateInfoList) {
+            bitrateInfoList = mediaPlayer.getBitrateInfoListFor(event.mediaType);
+          }
+          if (bitrateInfoList && (event.newQuality !== undefined)) {
+            playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
 
-        if (!bitrateInfoList) {
-          bitrateInfoList = mediaPlayer.getBitrateInfoListFor(event.mediaType);
+            var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
+            var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
+            var newRepresentation = event.newQuality + ' (' + playerMetadata.playbackBitrate + ' kbps)';
+            DebugTool.keyValue({key: event.mediaType + ' Representation', value: newRepresentation});
+            DebugTool.info('ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
+          }
+          Plugins.interface.onPlayerInfoUpdated(playerMetadata);
         }
-        if (bitrateInfoList && event.newQuality) {
-          playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
-        }
-        Plugins.interface.onPlayerInfoUpdated(playerMetadata);
       }
 
       function onMetricAdded (event) {
@@ -101,12 +105,13 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
           }
         }
-        if (event.metric === 'BufferLevel') {
+        if (event.mediaType === mediaKind && event.metric === 'BufferLevel') {
           mediaMetrics = mediaPlayer.getMetricsFor(event.mediaType);
           dashMetrics = mediaPlayer.getDashMetrics();
 
           if (mediaMetrics && dashMetrics) {
             playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
+            DebugTool.keyValue({key: 'Buffer Length', value: playerMetadata.bufferLength});
             Plugins.interface.onPlayerInfoUpdated(playerMetadata);
           }
         }

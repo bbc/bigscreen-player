@@ -564,7 +564,11 @@ require(
 
         injector.mock({'bigscreenplayer/plugins': mockPlugins});
 
-        it('should call plugins with playback bitrate', function () {
+        beforeEach(function () {
+          mockPluginsInterface.onPlayerInfoUpdated.calls.reset();
+        });
+
+        it('should call plugins with video playback bitrate', function () {
           setUpMSE();
           mockDashInstance.getBitrateInfoListFor.and.returnValue([{bitrate: 1000}, {bitrate: 2048}, {bitrate: 3000}]);
           mseStrategy.load(null, null, 0);
@@ -577,7 +581,24 @@ require(
           });
         });
 
-        it('should call plugins with playback buffer length', function () {
+        it('should not call plugins with audio playback bitrate when mediaKind is video', function () {
+          var mockEvent = {
+            mediaType: 'audio',
+            oldQuality: 0,
+            newQuality: 1,
+            type: 'qualityChangeRendered'
+          };
+
+          setUpMSE();
+          mockDashInstance.getBitrateInfoListFor.and.returnValue([{bitrate: 1000}, {bitrate: 2048}, {bitrate: 3000}]);
+          mseStrategy.load(null, null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent);
+
+          expect(mockPluginsInterface.onPlayerInfoUpdated).not.toHaveBeenCalled();
+        });
+
+        it('should call plugins with video playback buffer length', function () {
           var mockBufferEvent = {
             mediaType: 'video',
             metric: 'BufferLevel'
@@ -599,6 +620,27 @@ require(
             playbackBitrate: undefined,
             bufferLength: 'buffer'
           });
+        });
+
+        it('should not call plugins with audio playback buffer length when mediaKind is video', function () {
+          var mockBufferEvent = {
+            mediaType: 'audio',
+            metric: 'BufferLevel'
+          };
+
+          setUpMSE();
+          mseStrategy.load(null, null, 0);
+
+          mockDashInstance.getMetricsFor.and.returnValue(true);
+          mockDashInstance.getDashMetrics.and.returnValue({
+            getCurrentBufferLevel: function () {
+              return 'buffer';
+            }
+          });
+
+          dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
+
+          expect(mockPluginsInterface.onPlayerInfoUpdated).not.toHaveBeenCalled();
         });
       });
     });
