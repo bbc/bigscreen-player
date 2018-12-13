@@ -4,6 +4,16 @@ define(
       'use strict';
 
       return {
+        durationToSeconds: function (duration) {
+          var matches = duration.match(/^PT(\d+(?:[,\.]\d+)?H)?(\d+(?:[,\.]\d+)?M)?(\d+(?:[,\.]\d+)?S)?/) || [];
+
+          var hours = parseFloat(matches[1] || 0) * 60 * 60;
+          var mins = parseFloat(matches[2] || 0) * 60;
+          var secs = parseFloat(matches[3] || 0);
+
+          return (hours + mins + secs) || undefined;
+        },
+
         clone: function (args) {
           var clone = {};
           for (var prop in args) {
