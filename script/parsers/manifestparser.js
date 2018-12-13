@@ -19,9 +19,10 @@ define('bigscreenplayer/parsers/manifestparser',
        var segmentTemplate = manifest.getElementsByTagName('SegmentTemplate')[0];
        var timescale = parseFloat(segmentTemplate.getAttribute('timescale'));
        var duration = parseFloat(segmentTemplate.getAttribute('duration'));
+       var oneSegment = 1000 * duration / timescale;
 
-       if (availabilityStartTime && timescale && duration) {
-         var windowEndTime = dateWithOffset - (timeShiftBufferDepth ? availabilityStartTime : 0) - (1000 * duration / timescale);
+       if (availabilityStartTime && oneSegment) {
+         var windowEndTime = dateWithOffset - (timeShiftBufferDepth ? availabilityStartTime : 0) - oneSegment;
          var windowStartTime = timeShiftBufferDepth ? windowEndTime - (timeShiftBufferDepth * 1000) : availabilityStartTime;
          var timeCorrection = timeShiftBufferDepth ? windowStartTime / 1000 : 0;
        }
