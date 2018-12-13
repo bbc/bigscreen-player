@@ -62,7 +62,7 @@ require(
       describe('HLS m3u8', function () {
         it('returns correct data for sliding window hls manifest', function () {
           var manifest = hlsManifests.slidingWindow();
-          var manifestParser = new ManifestParser(manifest, 'm3u8', new Date('2018-12-13T11:00:00.000000Z'));
+          var manifestParser = new ManifestParser(manifest, 'm3u8');
           var liveWindowData = manifestParser.parse();
 
           expect(liveWindowData).toEqual({
@@ -73,7 +73,7 @@ require(
 
         it('returns and error if manifest has an invalid start date', function () {
           var manifest = hlsManifests.invalidDate();
-          var manifestParser = new ManifestParser(manifest, 'm3u8', new Date('2018-12-13T11:00:00.000000Z'));
+          var manifestParser = new ManifestParser(manifest, 'm3u8');
           var liveWindowData = manifestParser.parse();
 
           expect(liveWindowData).toEqual({error: 'Error parsing HLS manifest'});
@@ -81,7 +81,7 @@ require(
 
         it('returns an error if hls manifest data is malformed', function () {
           var manifest = 'not an valid manifest';
-          var manifestParser = new ManifestParser(manifest, 'm3u8', new Date('2018-12-13T11:00:00.000000Z'));
+          var manifestParser = new ManifestParser(manifest, 'm3u8');
           var liveWindowData = manifestParser.parse();
 
           expect(liveWindowData).toEqual({error: 'Error parsing HLS manifest'});
