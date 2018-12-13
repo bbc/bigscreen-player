@@ -38,7 +38,21 @@ require(
           });
         });
 
-        it('returns ')
+        it('returns an error if manifest data has bad data in the attributes', function () {
+          var manifest = dashManifests.badAttributes();
+          var manifestParser = new ManifestParser(manifest, 'mpd', new Date('2018-12-13T11:00:00.000000Z'));
+          var liveWindowData = manifestParser.parse();
+
+          expect(liveWindowData).toEqual({error: 'Error parsing DASH manifest attributes'});
+        });
+
+        it('returns an error if manifest data is malformed', function () {
+          var manifest = 'not an MPD';
+          var manifestParser = new ManifestParser(manifest, 'mpd', new Date('2018-12-13T11:00:00.000000Z'));
+          var liveWindowData = manifestParser.parse();
+
+          expect(liveWindowData).toEqual({error: 'Error parsing DASH manifest'});
+        });
       });
     });
   });
