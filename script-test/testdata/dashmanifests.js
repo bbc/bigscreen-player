@@ -5,7 +5,7 @@ define('testdata/dashmanifests',
  function () {
    'use strict';
    return function DashManifests () {
-     var slidingWindow = `<?xml version="1.0" encoding="utf-8"?>
+     var slidingWindowString = `<?xml version="1.0" encoding="utf-8"?>
                           <MPD
                             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                             xmlns="urn:mpeg:dash:schema:mpd:2011"
@@ -107,9 +107,12 @@ define('testdata/dashmanifests',
                               </AdaptationSet>
                             </Period>
                           </MPD>`;
+      function slidingWindow() {
+        var parser = new DOMParser();
+        return parser.parseFromString(slidingWindowString, "application/xml");
+      }
      return {
        slidingWindow: slidingWindow
-
      };
    };
  });
