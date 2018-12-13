@@ -40,9 +40,49 @@ define('bigscreenplayer/parsers/manifestparser',
        }
      }
 
+     function parseM3U8 () {
+       var windowStartTime = getM3U8ProgramDateTime(manifest);
+       var duration = getM3U8WindowSizeInSeconds(manifest);
+
+       if (windowStartTime && duration) {
+         var windowEndTime = windowStartTime + duration * 1000;
+       } else {
+         return {error: 'Error parsing HLS manifest'};
+       }
+       return {
+         windowStartTime: windowStartTime,
+         windowEndTime: windowEndTime
+       };
+     }
+
+     function getM3U8ProgramDateTime (data) {
+       var programDateTime;
+       var match = /^#EXT-X-PROGRAM-DATE-TIME:(.*)$/m.exec(data);
+       if (match) {
+         var parsedDate = Date.parse(match[1]);
+         if (!isNaN(parsedDate)) {
+           programDateTime = parsedDate;
+         }
+       }
+       return programDateTime;
+     }
+
+     function getM3U8WindowSizeInSeconds (data) {
+       var regex = /#EXTINF:(\d+(?:\.\d+)?)/g;
+       var matches = regex.exec(data);
+       var result = 0;
+       while (matches) {
+         result += (+matches[1]);
+         matches = regex.exec(data);
+       }
+       return Math.floor(result);
+     }
+
      function parse () {
        if (type === 'mpd') {
          return parseMPD();
+       } else if (type === 'm3u8') {
+         return parseM3U8();
        }
      }
 

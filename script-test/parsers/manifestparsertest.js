@@ -1,20 +1,24 @@
 require(
   [
     'bigscreenplayer/parsers/manifestparser',
-    'testdata/dashmanifests'
+    'testdata/dashmanifests',
+    'testdata/hlsmanifests'
   ],
-  function (ManifestParser, DashManifests) {
+  function (ManifestParser, DashManifests, HlsManifests) {
     describe('ManifestParser', function () {
       var dashManifests;
+      var hlsManifests;
+
       beforeEach(function () {
         dashManifests = new DashManifests();
+        hlsManifests = new HlsManifests();
       });
 
       afterEach(function () {
       });
 
       describe('DASH mpd', function () {
-        it('returns correct data for sliding window manifest', function () {
+        it('returns correct data for sliding window dash manifest', function () {
           var manifest = dashManifests.slidingWindow();
           var manifestParser = new ManifestParser(manifest, 'mpd', new Date('2018-12-13T11:00:00.000000Z'));
           var liveWindowData = manifestParser.parse();
@@ -52,6 +56,27 @@ require(
           var liveWindowData = manifestParser.parse();
 
           expect(liveWindowData).toEqual({error: 'Error parsing DASH manifest'});
+        });
+      });
+
+      describe('HLS m3u8', function () {
+        it('returns correct data for sliding window hls manifest', function () {
+          var manifest = hlsManifests.slidingWindow();
+          var manifestParser = new ManifestParser(manifest, 'm3u8', new Date('2018-12-13T11:00:00.000000Z'));
+          var liveWindowData = manifestParser.parse();
+
+          expect(liveWindowData).toEqual({
+            windowStartTime: 1436259310000,
+            windowEndTime: 1436259342000
+          });
+        });
+
+        it('returns and error if manifest has an invalid start date', function () {
+          var manifest = hlsManifests.invalidDate();
+          var manifestParser = new ManifestParser(manifest, 'm3u8', new Date('2018-12-13T11:00:00.000000Z'));
+          var liveWindowData = manifestParser.parse();
+
+          expect(liveWindowData).toEqual({error: 'Error parsing HLS manifest'});
         });
       });
     });
