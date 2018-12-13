@@ -78,6 +78,14 @@ require(
 
           expect(liveWindowData).toEqual({error: 'Error parsing HLS manifest'});
         });
+
+        it('returns an error if hls manifest data is malformed', function () {
+          var manifest = 'not an valid manifest';
+          var manifestParser = new ManifestParser(manifest, 'm3u8', new Date('2018-12-13T11:00:00.000000Z'));
+          var liveWindowData = manifestParser.parse();
+
+          expect(liveWindowData).toEqual({error: 'Error parsing HLS manifest'});
+        });
       });
     });
   });
