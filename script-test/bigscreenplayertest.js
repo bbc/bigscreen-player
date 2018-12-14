@@ -1,23 +1,28 @@
 require(
   [
     'bigscreenplayer/bigscreenplayer',
+    'squire',
     'bigscreenplayer/models/mediastate',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/pausetriggers',
     'bigscreenplayer/pluginenums',
-    'bigscreenplayer/playbackstrategy/mockstrategy'
+    'bigscreenplayer/playbackstrategy/mockstrategy',
+    'testdata/dashmanifests'
   ],
-    function (BigscreenPlayer, MediaState, WindowTypes, PauseTriggers, PluginEnums, MockStrategy) {
+    function (BigscreenPlayer, Squire, MediaState, WindowTypes, PauseTriggers, PluginEnums, MockStrategy, DashManifests) {
       var MediaPlayerLiveSupport = {
         NONE: 'none',
         PLAYABLE: 'playable',
         RESTARTABLE: 'restartable',
         SEEKABLE: 'seekable'
       };
-      var bigscreenPlayer = BigscreenPlayer();
+      var injector = new Squire();
+      var bigscreenPlayer;
       var bigscreenPlayerData;
       var playbackElement;
       var mockStrategy = MockStrategy();
+      var dashManifests = new DashManifests();
+      var manifestParserMock;
 
       function initialiseBigscreenPlayer (options) {
         // options = subtitlesAvailable, windowType, windowStartTime, windowEndTime
@@ -37,9 +42,12 @@ require(
             urls: [{url: 'videoUrl', cdn: 'cdn'}],
             kind: options.mediaKind || 'video',
             type: 'mimeType',
-            bitrate: 'bitrate'
+            bitrate: 'bitrate',
+            manifest: options.manifest,
+            manifestType: options.manifestType
           },
-          initialPlaybackTime: options.initialPlaybackTime
+          initialPlaybackTime: options.initialPlaybackTime,
+          clientOffset: new Date()
         };
 
         if (windowType === WindowTypes.SLIDING) {
@@ -58,8 +66,18 @@ require(
 
       describe('Bigscreen Player', function () {
         var mockPlugin;
-        beforeEach(function () {
+        beforeEach(function (done) {
           mockPlugin = jasmine.createSpyObj('plugin', ['onError', 'onFatalError', 'onErrorHandled', 'onErrorCleared', 'onBufferingCleared', 'onBuffering']);
+          manifestParserMock = jasmine.createSpyObj('manifestParserSpy', ['parse']);
+
+          injector.mock({
+            'bigscreenplayer/parsers/manifestparser': function () { return manifestParserMock; }
+          });
+
+          injector.require(['bigscreenplayer/bigscreenplayer'], function (bigscreenPlayerReference) {
+            bigscreenPlayer = bigscreenPlayerReference();
+            done();
+          });
         });
 
         afterEach(function () {
@@ -289,7 +307,10 @@ require(
           });
 
           it('should set endOfStream to true when seeking to the end of a simulcast', function () {
-            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+            manifestParserMock.parse.and.returnValue({windowStartTime: 10, windowEndTime: 100, correction: 0});
+
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING, manifest: {}, manifestType: 'mpd'});
+
             var callback = jasmine.createSpy();
             var endOfStreamWindow = bigscreenPlayerData.time.windowEndTime - 2;
 
@@ -524,7 +545,11 @@ require(
             it('should return true when it can seek', function () {
               spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 60});
 
-              initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING, liveSupport: MediaPlayerLiveSupport.SEEKABLE});
+              initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING,
+                liveSupport: MediaPlayerLiveSupport.SEEKABLE,
+                manifest: dashManifests.slidingWindow(),
+                manifestType: 'mpd'
+              });
 
               expect(bigscreenPlayer.canSeek()).toBe(true);
             });
@@ -569,19 +594,24 @@ require(
 
           describe('live', function () {
             it('should return true when it can pause', function () {
+              manifestParserMock.parse.and.returnValue({windowStartTime: 0, windowEndTime: 150000000, correction: 0});
               initialiseBigscreenPlayer({
                 windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.RESTARTABLE
+                liveSupport: MediaPlayerLiveSupport.RESTARTABLE,
+                manifest: {},
+                manifestType: 'mpd'
               });
 
               expect(bigscreenPlayer.canPause()).toBe(true);
             });
 
             it('should return false when window length less than four minutes', function () {
+              manifestParserMock.parse.and.returnValue({windowStartTime: 0, windowEndTime: 239999, correction: 0});
+
               initialiseBigscreenPlayer({
                 windowType: WindowTypes.SLIDING,
-                windowStartTime: 0,
-                windowEndTime: 239999,
+                manifest: {},
+                manifestType: 'mpd',
                 liveSupport: MediaPlayerLiveSupport.RESTARTABLE
               });
 
@@ -589,6 +619,7 @@ require(
             });
 
             it('should return false when device does not support pausing', function () {
+              manifestParserMock.parse.and.returnValue({windowStartTime: 0, windowEndTime: 150000000, correction: 0});
               initialiseBigscreenPlayer({
                 windowType: WindowTypes.SLIDING,
                 liveSupport: MediaPlayerLiveSupport.PLAYABLE
@@ -603,10 +634,11 @@ require(
           it('converts video time to epoch time when windowStartTime is supplied', function () {
             initialiseBigscreenPlayer({
               windowType: WindowTypes.SLIDING,
-              windowStartTime: 1500000000000
+              manifest: dashManifests.slidingWindow(),
+              manifestType: 'mpd'
             });
 
-            expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(1500001000000);
+            expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(bigscreenPlayerData.time.windowStartTime + 1000000);
           });
 
           it('does not convert video time to epoch time when windowStartTime is not supplied', function () {
