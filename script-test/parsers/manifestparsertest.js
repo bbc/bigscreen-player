@@ -61,7 +61,7 @@ require(
 
       describe('HLS m3u8', function () {
         it('returns correct data for sliding window hls manifest', function () {
-          var manifest = hlsManifests.slidingWindow();
+          var manifest = hlsManifests.slidingWindow;
           var manifestParser = new ManifestParser(manifest, 'm3u8');
           var liveWindowData = manifestParser.parse();
 
@@ -72,7 +72,7 @@ require(
         });
 
         it('returns and error if manifest has an invalid start date', function () {
-          var manifest = hlsManifests.invalidDate();
+          var manifest = hlsManifests.invalidDate;
           var manifestParser = new ManifestParser(manifest, 'm3u8');
           var liveWindowData = manifestParser.parse();
 

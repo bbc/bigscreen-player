@@ -1,7 +1,5 @@
 /* eslint-disable*/
 define('testdata/hlsmanifests',
-  [
-  ],
  function () {
    'use strict';
    return function HlsManifests () {
@@ -31,15 +29,9 @@ define('testdata/hlsmanifests',
                               '#EXTINF:8, no desc\n' +
                               'content-audio_2=96000-video=1374000-179532414.ts\n';
 
-      function slidingWindow() {
-        return slidingWindowString;
-      }
-      function invalidDate() {
-        return invalidDateString;
-      }
      return {
-       slidingWindow: slidingWindow,
-       invalidDate: invalidDate
+       slidingWindow: slidingWindowString,
+       invalidDate: invalidDateString
      };
    };
  });
