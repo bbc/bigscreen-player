@@ -10,7 +10,7 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/parsers/manifestparser',
-    'bigscreenplayer/utils/slidingwindowutils'
+    'bigscreenplayer/utils/timeutils'
   ],
   function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestParser, SlidingWindowUtils) {
     'use strict';
@@ -84,7 +84,7 @@ define('bigscreenplayer/bigscreenplayer',
         init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport, device) {
           Chronicle.init();
 
-          if (bigscreenPlayerData.media.manifest) {
+          if (newWindowType !== WindowTypes.STATIC && bigscreenPlayerData.media.manifest) {
             var manifestParser = new ManifestParser(bigscreenPlayerData.media.manifest, bigscreenPlayerData.media.manifestType, bigscreenPlayerData.clientOffset);
             var liveWindowData = manifestParser.parse();
 

@@ -1,8 +1,8 @@
 define('bigscreenplayer/parsers/manifestparser',
   [
-    'bigscreenplayer/utils/playbackutils'
+    'bigscreenplayer/utils/timeutils'
   ],
- function (Utils) {
+ function (TimeUtils) {
    'use strict';
    return function ManifestParser (manifest, type, dateWithOffset) {
      function parseMPD () {
@@ -12,7 +12,7 @@ define('bigscreenplayer/parsers/manifestparser',
          var availabilityStartTime = Date.parse(mpd.getAttribute('availabilityStartTime'));
 
          var tsbdAttr = mpd.getAttribute('timeShiftBufferDepth');
-         var timeShiftBufferDepth = tsbdAttr && Utils.durationToSeconds(tsbdAttr);
+         var timeShiftBufferDepth = tsbdAttr && TimeUtils.durationToSeconds(tsbdAttr);
 
        // Getting zeroth SegmentTemplate may grab either audio or video
        // data. This shouldn't matter as we only use the factor of
