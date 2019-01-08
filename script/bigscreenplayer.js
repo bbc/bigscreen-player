@@ -21,6 +21,7 @@ define('bigscreenplayer/bigscreenplayer',
       var mediaKind;
       var windowStartTime;
       var windowEndTime;
+      var initialPlaybackTime;
       var liveSupport;
       var playerComponent;
       var pauseTrigger;
@@ -90,6 +91,7 @@ define('bigscreenplayer/bigscreenplayer',
 
             windowStartTime = liveWindowData.windowStartTime;
             windowEndTime = liveWindowData.windowEndTime;
+            initialPlaybackTime = bigscreenPlayerData.initialPlaybackTime;
 
             bigscreenPlayerData.time = {};
             bigscreenPlayerData.time.windowStartTime = windowStartTime;
@@ -180,6 +182,13 @@ define('bigscreenplayer/bigscreenplayer',
         },
         getSeekableRange: function () {
           return playerComponent ? playerComponent.getSeekableRange() : {};
+        },
+        getLiveWindowData: function () {
+          return {
+            windowStartTime: windowStartTime,
+            windowEndTime: windowEndTime,
+            initialPlaybackTime: initialPlaybackTime
+          };
         },
         getDuration: function () {
           return playerComponent && playerComponent.getDuration();
