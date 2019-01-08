@@ -91,7 +91,6 @@ define('bigscreenplayer/bigscreenplayer',
 
             windowStartTime = liveWindowData.windowStartTime;
             windowEndTime = liveWindowData.windowEndTime;
-            initialPlaybackTime = bigscreenPlayerData.initialPlaybackTime;
 
             bigscreenPlayerData.time = {};
             bigscreenPlayerData.time.windowStartTime = windowStartTime;
@@ -100,6 +99,7 @@ define('bigscreenplayer/bigscreenplayer',
 
             // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
             bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(bigscreenPlayerData.initialPlaybackTime, windowStartTime);
+            initialPlaybackTime = bigscreenPlayerData.initialPlaybackTime;
           }
 
           mediaKind = bigscreenPlayerData.media.kind;
