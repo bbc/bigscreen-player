@@ -1,3 +1,6 @@
+# should ignore some files that will change everytime a version is bumped
+script/build
+
 # OS X
 .DS_Store
 
@@ -19,3 +22,4 @@ samples/getting-started/dist
 samples/getting-started/lib
 samples/getting-started/node_modules
 samples/getting-started/require.js
+

@@ -4,7 +4,7 @@ module.exports = function (grunt) {
       expand: true,
       cwd: 'script/build/',
       src: 'bigscreenversion.json',
-      dest: 'script/debugger/config/',
+      dest: 'script/build/',
       rename: function (dest, src) {
         return dest + src.replace(/json$/, 'js');
       },
