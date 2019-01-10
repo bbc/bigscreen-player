@@ -1,4 +1,4 @@
-# should ignore some files that will change everytime a version is bumped
+# files produced during a build
 script/build
 
 # OS X
