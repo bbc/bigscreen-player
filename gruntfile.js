@@ -55,4 +55,5 @@ module.exports = function (grunt) {
 
   grunt.registerTask('spec', ['buildSpec']);
   grunt.registerTask('spec-web', ['buildSpec', 'openspec']);
+  grunt.registerTask('build', ['buildBigscreenVersion', 'copy:bigscreenversion']);
 };
