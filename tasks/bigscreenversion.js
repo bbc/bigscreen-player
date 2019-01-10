@@ -10,9 +10,8 @@ module.exports = function (grunt) {
     var packageVersions = {};
     try {
       packageVersions['bigscreen'] = JSON.parse(fs.readFileSync(packagePath, 'utf8')).version;
-      packageVersions['dash'] = JSON.parse(fs.readFileSync(packagePath, 'utf8')).dependencies.dashjs;
 
-      grunt.log.writeln('Writing file with versions: \n BSP: ' + packageVersions.bigscreen + '\n dash: ' + packageVersions.dash);
+      grunt.log.writeln('Writing file with versions: \n BSP: ' + packageVersions.bigscreen);
 
       fs.writeFileSync(outputPath, JSON.stringify(packageVersions));
     } catch (e) {
