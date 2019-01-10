@@ -5,6 +5,7 @@
   "main": "script/bigscreenplayer.js",
   "scripts": {
     "jasmine": "grunt spec",
+    "build": "grunt build",
     "test": "npm run lint && npm run jasmine",
     "spec": "grunt --force spec-web",
     "lint": "npx eslint .",
@@ -12,6 +13,7 @@
     "build:example-app": "cd docs/example-app/ && npm install && npm run build && cd ../../"
   },
   "pre-commit": [
+    "build",
     "test"
   ],
   "pre-push": [
