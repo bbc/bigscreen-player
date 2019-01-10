@@ -21,7 +21,7 @@ define('bigscreenplayer/bigscreenplayer',
       var mediaKind;
       var windowStartTime;
       var windowEndTime;
-      var initialPlaybackTime;
+      var initialPlaybackTimeEpoch;
       var serverDate;
       var liveSupport;
       var playerComponent;
@@ -99,9 +99,10 @@ define('bigscreenplayer/bigscreenplayer',
             bigscreenPlayerData.time.windowEndTime = windowEndTime;
             bigscreenPlayerData.time.correction = liveWindowData.timeCorrection;
 
+            initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime;
+
             // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
             bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(bigscreenPlayerData.initialPlaybackTime, windowStartTime);
-            initialPlaybackTime = bigscreenPlayerData.initialPlaybackTime;
           }
 
           mediaKind = bigscreenPlayerData.media.kind;
@@ -189,7 +190,7 @@ define('bigscreenplayer/bigscreenplayer',
           return {
             windowStartTime: windowStartTime,
             windowEndTime: windowEndTime,
-            initialPlaybackTime: initialPlaybackTime,
+            initialPlaybackTime: initialPlaybackTimeEpoch,
             serverDate: serverDate
           };
         },
