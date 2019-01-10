@@ -22,6 +22,7 @@ define('bigscreenplayer/bigscreenplayer',
       var windowStartTime;
       var windowEndTime;
       var initialPlaybackTime;
+      var serverDate;
       var liveSupport;
       var playerComponent;
       var pauseTrigger;
@@ -86,11 +87,12 @@ define('bigscreenplayer/bigscreenplayer',
           Chronicle.init();
 
           if (newWindowType !== WindowTypes.STATIC && bigscreenPlayerData.media.manifest) {
-            var manifestParser = new ManifestParser(bigscreenPlayerData.media.manifest, bigscreenPlayerData.media.manifestType, bigscreenPlayerData.clientOffset);
+            var manifestParser = new ManifestParser(bigscreenPlayerData.media.manifest, bigscreenPlayerData.media.manifestType, bigscreenPlayerData.serverDate);
             var liveWindowData = manifestParser.parse();
 
             windowStartTime = liveWindowData.windowStartTime;
             windowEndTime = liveWindowData.windowEndTime;
+            serverDate = bigscreenPlayerData.serverDate;
 
             bigscreenPlayerData.time = {};
             bigscreenPlayerData.time.windowStartTime = windowStartTime;
@@ -187,7 +189,8 @@ define('bigscreenplayer/bigscreenplayer',
           return {
             windowStartTime: windowStartTime,
             windowEndTime: windowEndTime,
-            initialPlaybackTime: initialPlaybackTime
+            initialPlaybackTime: initialPlaybackTime,
+            serverDate: serverDate
           };
         },
         getDuration: function () {
