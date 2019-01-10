@@ -10,7 +10,7 @@ module.exports = function (grunt) {
       },
       options: {
         process: function (contents, filePath) {
-          return 'define(\'bigscreenplayer/debugger/config/bigscreenversion\', function () { return ' + JSON.stringify(JSON.parse(contents)) + '; });';
+          return '/*eslint-disable*/\ndefine(\'bigscreenplayer/debugger/config/bigscreenversion\', function () { return ' + JSON.stringify(JSON.parse(contents)) + '; });';
         }
       }
     }

@@ -8,9 +8,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/mockbigscreenplayer',
     'bigscreenplayer/plugins',
     'bigscreenplayer/debugger/chronicle',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/debugger/config/bigscreenversion'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, BigscreenVersion) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -97,6 +98,7 @@ define('bigscreenplayer/bigscreenplayer',
             device
           );
 
+          DebugTool.keyValue({key: 'Bigscreen Version', value: BigscreenVersion.bigscreen});
           DebugTool.keyValue({key: 'cdn', value: bigscreenPlayerData.media.urls[0].cdn});
           DebugTool.keyValue({key: 'url', value: bigscreenPlayerData.media.urls[0].url});
         },
