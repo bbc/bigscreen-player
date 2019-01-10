@@ -22,6 +22,7 @@ module.exports = function (grunt) {
   });
 
   grunt.loadNpmTasks('grunt-contrib-jasmine');
+  grunt.loadNpmTasks('grunt-contrib-copy');
 
   function getFilteredSpecs () {
     var fileName = grunt.option('specs');
@@ -49,6 +50,8 @@ module.exports = function (grunt) {
     grunt.log.writeln('Opening ' + outfile + '...');
     childProcess.exec('open ' + outfile);
   });
+
+  grunt.loadTasks('tasks');
 
   grunt.registerTask('spec', ['buildSpec']);
   grunt.registerTask('spec-web', ['buildSpec', 'openspec']);

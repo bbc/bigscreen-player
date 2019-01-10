@@ -18,6 +18,7 @@
     "test"
   ],
   "devDependencies": {
+    "babel-preset-env": "1.7.0",
     "eslint": "^3.0.0",
     "eslint-plugin-es5": "1.3.1",
     "eslint-plugin-jasmine": "2.10.1",
@@ -26,13 +27,13 @@
     "eslint-plugin-require": "0.0.1",
     "eslint-plugin-standard": "4.0.0",
     "grunt": "^1.0.3",
+    "grunt-contrib-copy": "^1.0.0",
     "grunt-contrib-jasmine": "^2.0.2",
     "jasmine": "3.2.0",
     "pre-commit": "^1.2.2",
     "pre-push": "^0.1.1",
     "requirejs": "2.3.6",
-    "squirejs": "0.2.1",
-    "babel-preset-env": "1.7.0"
+    "squirejs": "0.2.1"
   },
   "dependencies": {
     "dashjs": "github:bbc/dash.js#ab3e750bd26f9325ba13ab596c60b593672de8bb"
