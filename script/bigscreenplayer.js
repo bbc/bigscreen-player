@@ -251,6 +251,9 @@ define('bigscreenplayer/bigscreenplayer',
         getPlayerElement: function () {
           return playerComponent && playerComponent.getPlayerElement();
         },
+        convertEpochMsToVideoTimeSeconds: function (epochTime) {
+          return windowStartTime ? Math.floor((epochTime - windowStartTime) / 1000) : undefined;
+        },
         convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs
       };
     }

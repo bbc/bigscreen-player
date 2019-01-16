@@ -637,6 +637,28 @@ require(
           });
         });
 
+        describe('covertEpochMsToVideoTimeSeconds', function () {
+          it('converts epoch time to video time when windowStartTime is available', function () {
+            // windowStartTime - 16 January 2019 12:00:00
+            // windowEndTime - 16 January 2019 14:00:00
+            manifestParserMock.parse.and.returnValue({windowStartTime: 1547640000000, windowEndTime: 1547647200000, correction: 0});
+            initialiseBigscreenPlayer({
+              windowType: WindowTypes.SLIDING,
+              manifest: {},
+              manifestType: 'mpd'
+            });
+
+            // Time to convert - 16 January 2019 13:00:00 - one hour (3600 seconds)
+            expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBe(3600);
+          });
+
+          it('does not convert epoch time to video time when windowStartTime is not available', function () {
+            initialiseBigscreenPlayer();
+
+            expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBeUndefined();
+          });
+        });
+
         describe('registerPlugin', function () {
           beforeEach(function () {
             jasmine.clock().install();
