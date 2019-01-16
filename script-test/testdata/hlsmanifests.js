@@ -5,7 +5,6 @@ define('testdata/hlsmanifests',
    return function HlsManifests () {
      var slidingWindowString = '#EXTM3U\n' +
                                 '#EXT-X-VERSION:2\n' +
-                                '## Created with Unified Streaming Platform(version=1.7.9)\n' +
                                 '#EXT-X-MEDIA-SEQUENCE:179532414\n' +
                                 '#EXT-X-TARGETDURATION:8\n' +
                                 '#USP-X-TIMESTAMP-MAP:MPEGTS=2003059584,LOCAL=2015-07-07T08:55:10Z\n' +
@@ -21,7 +20,6 @@ define('testdata/hlsmanifests',
 
       var invalidDateString = '#EXTM3U\n' +
                               '#EXT-X-VERSION:2\n' +
-                              '## Created with Unified Streaming Platform(version=1.7.9)\n' +
                               '#EXT-X-MEDIA-SEQUENCE:179532414\n' +
                               '#EXT-X-TARGETDURATION:8\n' +
                               '#USP-X-TIMESTAMP-MAP:MPEGTS=2003059584,LOCAL=2015-07-07T08:55:10Z\n' +
