@@ -86,18 +86,24 @@ define('bigscreenplayer/bigscreenplayer',
         init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport, device) {
           Chronicle.init();
 
-          if (newWindowType !== WindowTypes.STATIC && bigscreenPlayerData.media.manifest) {
-            var manifestParser = new ManifestParser(bigscreenPlayerData.media.manifest, bigscreenPlayerData.media.manifestType, bigscreenPlayerData.serverDate);
-            var liveWindowData = manifestParser.parse();
+          if (newWindowType !== WindowTypes.STATIC) {
+            if (bigscreenPlayerData.time) {
+              windowStartTime = bigscreenPlayerData.time.windowStartTime;
+              windowEndTime = bigscreenPlayerData.time.windowEndTime;
+              serverDate = bigscreenPlayerData.serverDate;
+            } else if (bigscreenPlayerData.media.manifest) {
+              var manifestParser = new ManifestParser(bigscreenPlayerData.media.manifest, bigscreenPlayerData.media.manifestType, bigscreenPlayerData.serverDate);
+              var liveWindowData = manifestParser.parse();
 
-            windowStartTime = liveWindowData.windowStartTime;
-            windowEndTime = liveWindowData.windowEndTime;
-            serverDate = bigscreenPlayerData.serverDate;
+              windowStartTime = liveWindowData.windowStartTime;
+              windowEndTime = liveWindowData.windowEndTime;
+              serverDate = bigscreenPlayerData.serverDate;
 
-            bigscreenPlayerData.time = {};
-            bigscreenPlayerData.time.windowStartTime = windowStartTime;
-            bigscreenPlayerData.time.windowEndTime = windowEndTime;
-            bigscreenPlayerData.time.correction = liveWindowData.timeCorrection;
+              bigscreenPlayerData.time = {};
+              bigscreenPlayerData.time.windowStartTime = windowStartTime;
+              bigscreenPlayerData.time.windowEndTime = windowEndTime;
+              bigscreenPlayerData.time.correction = liveWindowData.timeCorrection;
+            }
 
             initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime;
 

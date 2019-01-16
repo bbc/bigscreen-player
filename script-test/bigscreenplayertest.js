@@ -52,11 +52,11 @@ require(
             manifest: options.manifest,
             manifestType: options.manifestType
           },
-          initialPlaybackTime: options.initialPlaybackTime,
-          clientOffset: new Date()
+          serverDate: options.serverDate,
+          initialPlaybackTime: options.initialPlaybackTime
         };
 
-        if (windowType === WindowTypes.SLIDING) {
+        if (windowType === WindowTypes.SLIDING && options.manifest === undefined) {
           bigscreenPlayerData.time = {
             windowStartTime: options.windowStartTime !== undefined ? options.windowStartTime : 724000,
             windowEndTime: options.windowEndTime || 4324000
@@ -330,7 +330,6 @@ require(
 
             bigscreenPlayer.setCurrentTime(middleOfStreamWindow);
 
-            // mockStrategy.mockingHooks.fireTimeUpdate();
             mockEventHook({data: {currentTime: middleOfStreamWindow}, timeUpdate: true});
 
             expect(callback).toHaveBeenCalledWith({currentTime: middleOfStreamWindow, endOfStream: false});
@@ -341,7 +340,6 @@ require(
           it('should return the current time from the strategy', function () {
             initialiseBigscreenPlayer();
 
-            // spyOn(mockStrategy, 'getCurrentTime').and.returnValue(10);
             mockPlayerComponentInstance.getCurrentTime.and.returnValue(10);
 
             expect(bigscreenPlayer.getCurrentTime()).toBe(10);
@@ -372,7 +370,6 @@ require(
           it('should return the seekable range from the strategy', function () {
             initialiseBigscreenPlayer();
 
-            // spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 10});
             mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 10});
 
             expect(bigscreenPlayer.getSeekableRange().start).toEqual(0);
@@ -381,6 +378,31 @@ require(
 
           it('should return an empty object when bigscreen player has not been initialised', function () {
             expect(bigscreenPlayer.getSeekableRange()).toEqual({});
+          });
+        });
+
+        describe('getLiveWindowData', function () {
+          it('should return undefined values when windowType is static', function () {
+            initialiseBigscreenPlayer({windowType: WindowTypes.STATIC});
+
+            expect(bigscreenPlayer.getLiveWindowData()).toEqual({windowStartTime: undefined, windowEndTime: undefined, serverDate: undefined, initialPlaybackTime: undefined});
+          });
+
+          it('should return liveWindowData when the windowType is sliding and manifest is provided', function () {
+            var mockLiveData = {windowStartTime: 1, windowEndTime: 2};
+            manifestParserMock.parse.and.returnValue(mockLiveData);
+
+            var initialisationData = {windowType: WindowTypes.SLIDING, manifest: true, serverDate: new Date(), initialPlaybackTime: new Date().getTime()};
+            initialiseBigscreenPlayer(initialisationData);
+
+            expect(bigscreenPlayer.getLiveWindowData()).toEqual({windowStartTime: 1, windowEndTime: 2, serverDate: initialisationData.serverDate, initialPlaybackTime: initialisationData.initialPlaybackTime});
+          });
+
+          it('should return a subset of liveWindowData when the windowType is sliding and time block is provided', function () {
+            var initialisationData = {windowType: WindowTypes.SLIDING, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: new Date().getTime()};
+            initialiseBigscreenPlayer(initialisationData);
+
+            expect(bigscreenPlayer.getLiveWindowData()).toEqual({serverDate: undefined, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: initialisationData.initialPlaybackTime});
           });
         });
 
@@ -402,7 +424,6 @@ require(
           it('should get the paused state from the strategy', function () {
             initialiseBigscreenPlayer();
 
-            // spyOn(mockStrategy, 'isPaused').and.returnValue(true);
             mockPlayerComponentInstance.isPaused.and.returnValue(true);
 
             expect(bigscreenPlayer.isPaused()).toBe(true);
@@ -417,8 +438,6 @@ require(
           it('should get the ended state from the strategy', function () {
             initialiseBigscreenPlayer();
 
-            // spyOn(mockStrategy, 'isEnded').and.returnValue(true);
-
             mockPlayerComponentInstance.isEnded.and.returnValue(true);
 
             expect(bigscreenPlayer.isEnded()).toBe(true);
@@ -432,8 +451,6 @@ require(
         describe('play', function () {
           it('should call play on the strategy', function () {
             initialiseBigscreenPlayer();
-
-            // spyOn(mockStrategy, 'play');
 
             bigscreenPlayer.play();
 
