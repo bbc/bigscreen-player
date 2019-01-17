@@ -19,7 +19,6 @@ define('bigscreenplayer/mockbigscreenplayer',
     var currentTime;
     var seekableRange;
     var duration;
-    var liveWindowStart;
     var pausedState = true;
     var endedState;
     var mediaKind;
@@ -134,7 +133,6 @@ define('bigscreenplayer/mockbigscreenplayer',
     var mockFunctions = {
       init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport) {
         currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0;
-        liveWindowStart = undefined;
         pausedState = true;
         endedState = false;
         mediaKind = 'video';
@@ -239,7 +237,7 @@ define('bigscreenplayer/mockbigscreenplayer',
         return canPauseState;
       },
       convertVideoTimeSecondsToEpochMs: function (seconds) {
-        return liveWindowStart ? liveWindowStart + (seconds * 1000) : undefined;
+        return liveWindowData.windowStartTime ? liveWindowData.windowStartTime + (seconds * 1000) : undefined;
       },
       transitions: function () {
         return {
@@ -356,9 +354,6 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       setCanPause: function (value) {
         canPauseState = value;
-      },
-      setLiveWindowStart: function (value) {
-        liveWindowStart = value;
       },
       setSubtitlesAvailable: function (value) {
         subtitlesAvailable = value;
