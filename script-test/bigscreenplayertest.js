@@ -385,7 +385,7 @@ require(
           it('should return undefined values when windowType is static', function () {
             initialiseBigscreenPlayer({windowType: WindowTypes.STATIC});
 
-            expect(bigscreenPlayer.getLiveWindowData()).toEqual({windowStartTime: undefined, windowEndTime: undefined, serverDate: undefined, initialPlaybackTime: undefined});
+            expect(bigscreenPlayer.getLiveWindowData()).toEqual({});
           });
 
           it('should return liveWindowData when the windowType is sliding and manifest is provided', function () {

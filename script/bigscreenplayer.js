@@ -193,6 +193,9 @@ define('bigscreenplayer/bigscreenplayer',
           return playerComponent ? playerComponent.getSeekableRange() : {};
         },
         getLiveWindowData: function () {
+          if (windowType === WindowTypes.STATIC) {
+            return {};
+          }
           return {
             windowStartTime: windowStartTime,
             windowEndTime: windowEndTime,

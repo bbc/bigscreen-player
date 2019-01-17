@@ -275,6 +275,9 @@ define('bigscreenplayer/mockbigscreenplayer',
         Plugins.unregisterPlugin(plugin);
       },
       getLiveWindowData: function () {
+        if (windowType === WindowTypes.STATIC) {
+          return {};
+        }
         return {
           windowStartTime: liveWindowData.windowStartTime,
           windowEndTime: liveWindowData.windowEndTime,
