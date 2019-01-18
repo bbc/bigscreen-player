@@ -1,5 +1,3 @@
-import { EventEmitter } from 'events';
-
 define('bigscreenplayer/playbackstrategy/msestrategy',
   [
     'bigscreenplayer/models/mediastate',

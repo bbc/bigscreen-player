@@ -37,12 +37,14 @@ define('bigscreenplayer/debugger/debugview',
      logContainer.style.bottom = '1%';
      logContainer.style.left = '1%';
      logContainer.style.wordWrap = 'break-word';
+     logContainer.style.whiteSpace = 'pre-line';
 
      staticContainer.id = 'staticContainer';
      staticContainer.style.color = '#ffffff';
      staticContainer.style.fontSize = '11pt';
      staticContainer.style.wordWrap = 'break-word';
      staticContainer.style.left = '1%';
+     staticContainer.style.whiteSpace = 'pre-line';
 
      logBox.appendChild(logContainer);
      staticBox.appendChild(staticContainer);
@@ -58,18 +60,14 @@ define('bigscreenplayer/debugger/debugview',
      }
 
      dynamicLogs = dynamicLogs.slice(-LINES_TO_DISPLAY);
-     logContainer.innerHTML = dynamicLogs.join('<br>');
+     logContainer.innerHTML = dynamicLogs.join('\n');
 
-     var rowElements = logData.static.map(function (staticElement) {
-       var staticRow = document.createElement('p');
-       staticRow.innerText = staticElement.key + ': ' + staticElement.value;
-       return staticRow;
+     var staticLogString = '';
+     logData.static.forEach(function (log) {
+       staticLogString = staticLogString + log.key + ': ' + log.value + '\n\n';
      });
 
-     staticContainer.innerHTML = '';
-     rowElements.forEach(function (row) {
-       staticContainer.appendChild(row);
-     });
+     staticContainer.innerHTML = staticLogString;
    }
 
    function tearDown () {
