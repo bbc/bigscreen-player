@@ -39,6 +39,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
 
       mediaPlayer.addEventCallback(this, eventHandler);
 
+      var strategy = window.bigscreen && window.bigscreen.playbackStrategy ? window.bigscreen.playbackStrategy.match(/(.+)strategy/g) : 'unknown';
+
       function eventHandler (event) {
         var handleEvent = {
           'playing': onPlaying,
@@ -134,6 +136,10 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
         if (timeUpdateCallback) {
           timeUpdateCallback();
         }
+      }
+
+      function getStrategy () {
+        return strategy;
       }
 
       function createEventHistoryLabels () {
@@ -247,7 +253,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           } else {
             mediaPlayer.beginPlayback();
           }
-          DebugTool.keyValue({key: 'strategy', value: 'TAL'});
+          DebugTool.keyValue({key: 'strategy', value: strategy});
         },
         play: function () {
           isPaused = false;
@@ -319,6 +325,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             mediaPlayer.pause();
           }
         },
+        getStrategy: getStrategy(),
         reset: reset,
         tearDown: function () {
           mediaPlayer.removeAllEventCallbacks();
