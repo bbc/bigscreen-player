@@ -1,27 +1,53 @@
-// require(
-//   [
-//     'bigscreenplayer/playbackstrategy/talstrategy',
-//     'bigscreenplayer/models/windowtypes',
-//     'squire'
-//   ],
-//   function (TalStrategy, WindowTypes, Squire) {
-//     describe('TAL Strategy', function () {
-//       var injector = new Squire();
-//       var mediaPlayer = 'mediaPlayer';
-//       var livePlayer = 'livePlayer';
-//       var config = 'config';
+require(
+  [
+    'bigscreenplayer/models/windowtypes',
+    'squire'
+  ],
+  function (WindowTypes, Squire) {
+    describe('TAL Strategy', function () {
+      var injector = new Squire();
+      var TalStrategy;
+      var mediaPlayer;
 
-//       var legacyAdapter;
-//       var mockDevice;
+      var mockLegacyAdapter;
+      var mockDevice;
 
-//       beforeEach(function () {
-//         mockDevice = jasmine.createSpyObj('mockDevice', ['getMediaPlayer', 'getLivePlayer', 'getConfig']);
-//       });
+      beforeEach(function (done) {
+        mockDevice = jasmine.createSpyObj('mockDevice', ['getMediaPlayer', 'getLivePlayer', 'getConfig']);
+        mediaPlayer = jasmine.createSpyObj('mockMediaPlayer', ['addEventCallback']);
 
-//       fit('calls LegacyAdapter with a live media player', function () {
-//         TalStrategy(WindowTypes.STATIC, null, null, null, null, mockDevice);
+        mockLegacyAdapter = jasmine.createSpy('legacyAdapter');
 
-//         expect(mockDevice.getMediaPlayer).toHaveBeenCalledWith();
-//       });
-//     });
-//   });
+        mockDevice.getMediaPlayer.and.returnValue(mediaPlayer);
+        mockDevice.getLivePlayer.and.returnValue(mediaPlayer);
+
+        injector.mock({'bigscreenplayer/playbackstrategy/legacyplayeradapter': mockLegacyAdapter});
+
+        injector.require(['bigscreenplayer/playbackstrategy/talstrategy'], function (strategy) {
+          TalStrategy = strategy;
+          done();
+        });
+      });
+
+      it('calls LegacyAdapter with a static media player when called for STATIC window', function () {
+        TalStrategy(WindowTypes.STATIC, null, null, null, null, mockDevice);
+
+        // getMediaPlayer is called to get a non-live player
+        expect(mockDevice.getMediaPlayer).toHaveBeenCalledWith();
+      });
+
+      it('calls LegacyAdapter with a live media player when called for a GROWING window', function () {
+        TalStrategy(WindowTypes.GROWING, null, null, null, null, mockDevice);
+
+        // getMediaPlayer is called to get a non-live player
+        expect(mockDevice.getLivePlayer).toHaveBeenCalledWith();
+      });
+
+      it('calls LegacyAdapter with a live media player when called for a SLIDING window', function () {
+        TalStrategy(WindowTypes.SLIDING, null, null, null, null, mockDevice);
+
+        // getMediaPlayer is called to get a non-live player
+        expect(mockDevice.getLivePlayer).toHaveBeenCalledWith();
+      });
+    });
+  });
