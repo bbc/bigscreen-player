@@ -119,7 +119,7 @@ define([
           {
             // Content from DASH IF testing assests (used in their reference player) 
             // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
-            url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd' 
+            url: 'http://clips.vorwaerts-gmbh.de/VfE_html5.mp4' //'http://127.0.0.1:8080/small.mp4' //'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd' 
           }
         ]
       }
@@ -129,6 +129,10 @@ define([
     var windowType = WindowTypes.STATIC;
     var liveSupport = 'seekable';
     var enableSubtitles = false;
+
+    window.bigscreenPlayer = {
+      playbackStrategy : 'nativehtml5strategy'
+    }
 
     // Initialise the player
     // At this point TAL environment can be injected, if needed
