@@ -32,6 +32,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
 
       var liveGlitchCurtain;
 
+      var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
       var config = deviceConfig;
       var setSourceOpts = {
         disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels
@@ -39,7 +40,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
 
       mediaPlayer.addEventCallback(this, eventHandler);
 
-      var strategy = window.bigscreen && window.bigscreen.playbackStrategy ? window.bigscreen.playbackStrategy.match(/(.+)strategy/g) : 'unknown';
+      strategy = strategy.match(/.+(?=strategy)/g)[0];
 
       function eventHandler (event) {
         var handleEvent = {
@@ -56,7 +57,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
         if (handleEvent.hasOwnProperty(event.type)) {
           handleEvent[event.type].call(this, event);
         } else {
-          DebugTool.info('TAL Event:' + event.type);
+          DebugTool.info(getSelection() + ' Event:' + event.type);
         }
 
         if (event.type !== 'status') {
@@ -139,7 +140,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       }
 
       function getStrategy () {
-        return strategy;
+        return strategy.toUpperCase();
       }
 
       function createEventHistoryLabels () {
