@@ -10,9 +10,9 @@ define('bigscreenplayer/playbackstrategy/nativehtml5strategy',
       var mediaPlayer;
 
       if (windowType === WindowTypes.STATIC) {
-        mediaPlayer = new Html5Player();
+        mediaPlayer = Html5Player();
       } else {
-        mediaPlayer = new LiveSeekablePlayer();
+        mediaPlayer = LiveSeekablePlayer();
       }
 
       return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);

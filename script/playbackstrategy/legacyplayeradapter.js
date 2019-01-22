@@ -254,7 +254,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           } else {
             mediaPlayer.beginPlayback();
           }
-          DebugTool.keyValue({key: 'strategy', value: strategy});
+          DebugTool.keyValue({key: 'strategy', value: getStrategy()});
         },
         play: function () {
           isPaused = false;
