@@ -12,15 +12,6 @@ define(
     function (MediaPlayerBase) {
       'use strict';
   
-      /**
-       * Main MediaPlayer implementation for HTML5 devices.
-       * Use this device modifier if a device implements the HTML5 media playback standard.
-       * It must support creation of &lt;video&gt; and &lt;audio&gt; elements, and those objects must expose an
-       * API in accordance with the HTML5 media specification.
-       * @name antie.devices.mediaplayer.HTML5
-       * @class
-       * @extends antie.devices.mediaplayer.MediaPlayer
-       */
       function Player () {
         var eventCallback;
         var state = MediaPlayerBase.STATE.EMPTY;
@@ -315,18 +306,6 @@ define(
           state = MediaPlayerBase.STATE.BUFFERING;
           emitEvent(MediaPlayerBase.EVENT.BUFFERING);
           setSentinels([exitBufferingSentinel]);
-        }
-  
-        function toPlaying () {
-          state = MediaPlayerBase.STATE.PLAYING;
-          emitEvent(MediaPlayerBase.EVENT.PLAYING);
-          setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel]);
-        }
-  
-        function toPaused () {
-          state = MediaPlayerBase.STATE.PAUSED;
-          emitEvent(MediaPlayerBase.EVENT.PAUSED);
-          setSentinels([shouldBeSeekedSentinel, shouldBePausedSentinel]);
         }
   
         function toComplete () {
@@ -793,6 +772,18 @@ define(
                 break;
             }
           },
+
+          toPlaying: function () {
+            state = MediaPlayerBase.STATE.PLAYING;
+            emitEvent(MediaPlayerBase.EVENT.PLAYING);
+            setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel]);
+          },
+
+          toPaused: function () {
+            state = MediaPlayerBase.STATE.PAUSED;
+            emitEvent(MediaPlayerBase.EVENT.PAUSED);
+            setSentinels([shouldBeSeekedSentinel, shouldBePausedSentinel]);
+          },
   
           reset: function () {
             switch (getState()) {
@@ -809,7 +800,7 @@ define(
                 break;
             }
           },
-  
+
           getSeekableRange: function () {
             switch (getState()) {
               case MediaPlayerBase.STATE.STOPPED:
@@ -843,3 +834,4 @@ define(
       return Player;
     }
   );
+  

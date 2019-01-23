@@ -15,26 +15,30 @@ define(
         'use strict';
         var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
-        /**
-         * Live player for devices that have full support for playing and seeking live streams.
-         * Implements all functions of the underlying {antie.devices.mediaplayer.MediaPlayerBase}.
-         * See the documentation for that class for API details.
-         * @name antie.devices.mediaplayer.live.Seekable
-         * @class
-         * @extends antie.Class
-         */
-
-        
-
         function SeekableLivePlayer (deviceConfig) {
 
-            var mediaPlayer = new Html5Player(); 
+            var mediaPlayer = Html5Player(); 
 
-            return ({
-                init: function init () {
-                    // mediaPlayer = new Html5Player();
-                },
+            function autoResumeAtStartOfRange () {
+                var self = this;
+                var secondsUntilAutoResume = Math.max(0, mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
+    
+                var autoResumeTimer = setTimeout(function () {
+                    self.removeEventCallback(self, detectIfUnpaused);
+                    self.resume();
+                }, secondsUntilAutoResume * 1000);
+    
+                this.addEventCallback(this, detectIfUnpaused);
+                function detectIfUnpaused(event) {
+                    if (event.state !== MediaPlayerBase.STATE.PAUSED) {
+                        self.removeEventCallback(self, detectIfUnpaused);
+                        clearTimeout(autoResumeTimer);
+                    }
+                }
+            }
 
+            return {
+                
                 initialiseMedia: function initialiseMedia (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
                     if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
                         mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
@@ -69,14 +73,13 @@ define(
                     if (opts.disableAutoResume) {
                         mediaPlayer.pause();
                     } else if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
-                        // IPLAYERTVV1-4166
                         // We can't pause so close to the start of the sliding window, so do a quick state transition in and
                         // out on 'pause' state to be consistent with the rest of TAL.
-                        mediaPlayer._toPaused();
-                        mediaPlayer._toPlaying();
+                        mediaPlayer.toPaused();
+                        mediaPlayer.toPlaying();
                     } else {
                         mediaPlayer.pause();
-                        _autoResumeAtStartOfRange();
+                        autoResumeAtStartOfRange();
                     }
                 },
                 resume: function resume () {
@@ -130,27 +133,8 @@ define(
                 getLiveSupport: function getLiveSupport () {
                     return MediaPlayerBase.LIVE_SUPPORT.SEEKABLE;
                 },
-
-                _autoResumeAtStartOfRange: function _autoResumeAtStartOfRange () {
-                    var self = this;
-                    var secondsUntilAutoResume = Math.max(0, mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
-
-                    var autoResumeTimer = setTimeout(function () {
-                        self.removeEventCallback(self, detectIfUnpaused);
-                        self.resume();
-                    }, secondsUntilAutoResume * 1000);
-
-                    this.addEventCallback(this, detectIfUnpaused);
-                    function detectIfUnpaused(event) {
-                        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-                            self.removeEventCallback(self, detectIfUnpaused);
-                            clearTimeout(autoResumeTimer);
-                        }
-                    }
-                }
-        });
+        };
     }
 
     return SeekableLivePlayer;
-
 });
