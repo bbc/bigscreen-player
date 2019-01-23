@@ -24,13 +24,15 @@ define(
          * @extends antie.Class
          */
 
-        var mediaPlayer; 
+        
 
-        function SeekableLivePlayer () {
+        function SeekableLivePlayer (deviceConfig) {
+
+            var mediaPlayer = new Html5Player(); 
 
             return ({
                 init: function init () {
-                    mediaPlayer = new Html5Player();
+                    // mediaPlayer = new Html5Player();
                 },
 
                 initialiseMedia: function initialiseMedia (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
@@ -44,7 +46,7 @@ define(
                 },
 
                 beginPlayback: function beginPlayback () {
-                    var config = RuntimeContext.getDevice().getConfig();
+                    var config = deviceConfig;
                     if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
                         mediaPlayer.beginPlaybackFrom(Infinity);
                     } else {
@@ -149,6 +151,6 @@ define(
         });
     }
 
-    return SeekableLivePlayer();
+    return SeekableLivePlayer;
 
 });
