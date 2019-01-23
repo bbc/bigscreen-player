@@ -12,15 +12,6 @@ define(
     function (MediaPlayerBase) {
       'use strict';
 
-      /**
-       * Main MediaPlayer implementation for HTML5 devices.
-       * Use this device modifier if a device implements the HTML5 media playback standard.
-       * It must support creation of &lt;video&gt; and &lt;audio&gt; elements, and those objects must expose an
-       * API in accordance with the HTML5 media specification.
-       * @name antie.devices.mediaplayer.HTML5
-       * @class
-       * @extends antie.devices.mediaplayer.MediaPlayer
-       */
       function Player () {
         var eventCallback;
         var state = MediaPlayerBase.STATE.EMPTY;
@@ -128,7 +119,7 @@ define(
         function generateSourceElement (url, mimeType) {
           var sourceElement = document.createElement('source');
           sourceElement.src = url;
-          sourceElement.type = 'video/mp4'; // mimeType;
+          sourceElement.type = 'video/mp4';  // mimeType;
           return sourceElement;
         }
 
@@ -315,18 +306,6 @@ define(
           state = MediaPlayerBase.STATE.BUFFERING;
           emitEvent(MediaPlayerBase.EVENT.BUFFERING);
           setSentinels([exitBufferingSentinel]);
-        }
-
-        function toPlaying () {
-          state = MediaPlayerBase.STATE.PLAYING;
-          emitEvent(MediaPlayerBase.EVENT.PLAYING);
-          setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel]);
-        }
-
-        function toPaused () {
-          state = MediaPlayerBase.STATE.PAUSED;
-          emitEvent(MediaPlayerBase.EVENT.PAUSED);
-          setSentinels([shouldBeSeekedSentinel, shouldBePausedSentinel]);
         }
 
         function toComplete () {
@@ -596,6 +575,18 @@ define(
           mediaElement.load();
         }
 
+        function toPaused () {
+          state = MediaPlayerBase.STATE.PAUSED;
+          emitEvent(MediaPlayerBase.EVENT.PAUSED);
+          setSentinels([shouldBeSeekedSentinel, shouldBePausedSentinel]);
+        }
+
+        function toPlaying () {
+          state = MediaPlayerBase.STATE.PLAYING;
+          emitEvent(MediaPlayerBase.EVENT.PLAYING);
+          setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel]);
+        }
+
         return {
           addEventCallback: function (newCallback) {
             eventCallback = function (event) {
@@ -836,7 +827,12 @@ define(
 
           getCurrentTime: getCurrentTime,
 
-          getDuration: getDuration
+          getDuration: getDuration,
+
+          toPaused: toPaused,
+
+          toPlaying: toPlaying
+
         };
       }
 
