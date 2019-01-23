@@ -1,4 +1,4 @@
-define('bigscreenplayer/playbackstrategy/nativehtml5strategy',
+define('bigscreenplayer/playbackstrategy/nativestrategy',
   [
     'bigscreenplayer/playbackstrategy/legacyplayeradapter',
     'bigscreenplayer/models/windowtypes',

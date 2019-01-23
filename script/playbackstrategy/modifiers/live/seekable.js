@@ -15,15 +15,6 @@ define(
       'use strict';
       var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
-        /**
-         * Live player for devices that have full support for playing and seeking live streams.
-         * Implements all functions of the underlying {antie.devices.mediaplayer.MediaPlayerBase}.
-         * See the documentation for that class for API details.
-         * @name antie.devices.mediaplayer.live.Seekable
-         * @class
-         * @extends antie.Class
-         */
-
       function SeekableLivePlayer (deviceConfig) {
         var mediaPlayer = Html5Player();
 
