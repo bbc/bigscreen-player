@@ -18,12 +18,12 @@ define(
       function SeekableLivePlayer (deviceConfig) {
         var mediaPlayer = Html5Player();
 
-        function addEventCallback (callback) {
-          mediaPlayer.addEventCallback(callback);
+        function addEventCallback (thisArg, callback) {
+          mediaPlayer.addEventCallback(thisArg, callback);
         }
 
-        function removeEventCallback (callback) {
-          mediaPlayer.removeEventCallback(callback);
+        function removeEventCallback (thisArg, callback) {
+          mediaPlayer.removeEventCallback(thisArg, callback);
         }
 
         function removeAllEventCallbacks () {
@@ -34,11 +34,11 @@ define(
           var secondsUntilAutoResume = Math.max(0, mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
 
           var autoResumeTimer = setTimeout(function () {
-            removeEventCallback(detectIfUnpaused);
+            removeEventCallback(self, detectIfUnpaused);
             resume();
           }, secondsUntilAutoResume * 1000);
 
-          addEventCallback(detectIfUnpaused);
+          addEventCallback(self, detectIfUnpaused);
           function detectIfUnpaused (event) {
             if (event.state !== MediaPlayerBase.STATE.PAUSED) {
               self.removeEventCallback(self, detectIfUnpaused);

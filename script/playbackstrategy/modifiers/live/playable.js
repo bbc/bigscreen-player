@@ -43,12 +43,12 @@ define(
             return mediaPlayer.getMimeType();
           },
 
-          addEventCallback: function addEventCallback (callback) {
-            mediaPlayer.addEventCallback(callback);
+          addEventCallback: function addEventCallback (thisArg, callback) {
+            mediaPlayer.addEventCallback(thisArg, callback);
           },
 
-          removeEventCallback: function removeEventCallback (callback) {
-            mediaPlayer.removeEventCallback(callback);
+          removeEventCallback: function removeEventCallback (thisArg, callback) {
+            mediaPlayer.removeEventCallback(thisArg, callback);
           },
 
           removeAllEventCallbacks: function removeAllEventCallbacks () {

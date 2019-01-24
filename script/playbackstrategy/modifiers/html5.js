@@ -588,9 +588,9 @@ define(
         }
 
         return {
-          addEventCallback: function (newCallback) {
+          addEventCallback: function (thisArg, newCallback) {
             eventCallback = function (event) {
-              newCallback.call(event);
+              newCallback.call(thisArg, event);
             };
           },
 

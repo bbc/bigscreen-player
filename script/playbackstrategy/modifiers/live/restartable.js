@@ -14,16 +14,16 @@ define(
         var bufferingStarted;
 
         function determineTimeUntilStartOfWindow () {
-          mediaPlayer.addEventCallback(detectCurrentTimeCallback);
+          mediaPlayer.addEventCallback(self, detectCurrentTimeCallback);
         }
 
         function stopDeterminingTimeUntilStartOfWindow () {
-          mediaPlayer.removeEventCallback(detectCurrentTimeCallback);
+          mediaPlayer.removeEventCallback(self, detectCurrentTimeCallback);
         }
 
         function detectCurrentTimeCallback (event) {
           if (event.state === MediaPlayerBase.STATE.PLAYING && event.currentTime > 0) {
-            removeEventCallback(detectCurrentTimeCallback);
+            removeEventCallback(self, detectCurrentTimeCallback);
             millisecondsUntilStartOfWindow = event.currentTime * 1000;
             determineTimeSpentBuffering();
           }
@@ -39,7 +39,7 @@ define(
               resume();
             }, resumeTimeOut);
 
-            addEventCallback(this, detectIfUnpaused);
+            addEventCallback(self, detectIfUnpaused);
           }
 
           function detectIfUnpaused (event) {
@@ -52,12 +52,12 @@ define(
           }
         }
 
-        function addEventCallback (callback) {
-          mediaPlayer.addEventCallback(callback);
+        function addEventCallback (thisArg, callback) {
+          mediaPlayer.addEventCallback(thisArg, callback);
         }
 
-        function removeEventCallback (callback) {
-          mediaPlayer.removeEventCallback(callback);
+        function removeEventCallback (thisArg, callback) {
+          mediaPlayer.removeEventCallback(thisArg, callback);
         }
 
         function removeAllEventCallbacks () {
@@ -66,11 +66,11 @@ define(
 
         function determineTimeSpentBuffering () {
           bufferingStarted = null;
-          addEventCallback(determineBufferingCallback);
+          addEventCallback(self, determineBufferingCallback);
         }
 
         function stopDeterminingTimeSpentBuffering () {
-          removeEventCallback(this, determineBufferingCallback);
+          removeEventCallback(self, determineBufferingCallback);
         }
 
         function determineBufferingCallback (event) {
