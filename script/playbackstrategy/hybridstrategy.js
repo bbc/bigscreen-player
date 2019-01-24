@@ -1,10 +1,10 @@
 define('bigscreenplayer/playbackstrategy/hybridstrategy',
   [
-    'bigscreenplayer/playbackstrategy/talstrategy',
+    'bigscreenplayer/playbackstrategy/nativestrategy',
     'bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/playbackstrategy/strategypicker'
   ],
-  function (TAL, MSE, StrategyPicker) {
+  function (Native, MSE, StrategyPicker) {
     return function (windowType, mediaKind, timeCorrection, videoElement, isUHD, device) {
       var strategy = StrategyPicker(windowType, isUHD);
 
@@ -12,7 +12,7 @@ define('bigscreenplayer/playbackstrategy/hybridstrategy',
         return MSE(windowType, mediaKind, timeCorrection, videoElement, isUHD);
       }
 
-      return TAL(windowType, mediaKind, timeCorrection, videoElement, isUHD, device);
+      return Native(windowType, mediaKind, timeCorrection, videoElement, isUHD, device);
     };
   }
 );
