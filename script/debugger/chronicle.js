@@ -40,6 +40,10 @@ function () {
     pushToChronicle({type: TYPES.INFO, message: message});
   }
 
+  function verbose (message) {
+    pushToChronicle({type: TYPES.INFO, message: message});
+  }
+
   function error (err) {
     pushToChronicle({type: TYPES.ERROR, error: err});
   }
@@ -103,6 +107,7 @@ function () {
     TYPES: TYPES,
     clear: clear,
     info: info,
+    verbose: verbose,
     error: error,
     event: event,
     apicall: apicall,

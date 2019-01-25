@@ -38,7 +38,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         METRIC_ADDED: 'metricAdded',
         METRIC_CHANGED: 'metricChanged',
         PLAYBACK_STALLED: 'playbackStalled',
-        BUFFER_STALLED: 'bufferStalled'
+        BUFFER_STALLED: 'bufferStalled',
+        LOG: 'log'
       };
 
       function onPlaying () {
@@ -134,6 +135,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
+      function onDebugLog (e) {
+        DebugTool.verbose(e.message);
+      }
+
       function publishMediaState (mediaState) {
         if (eventCallback) {
           eventCallback(mediaState);
@@ -202,6 +207,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
         mediaPlayer.on(DashJSEvents.PLAYBACK_STALLED, onPlaybackStalled);
         mediaPlayer.on(DashJSEvents.BUFFER_STALLED, onBufferStalled);
+        mediaPlayer.on(DashJSEvents.LOG, onDebugLog);
       }
 
       function cdnFailoverLoad (newSrc, currentSrcWithTime) {
@@ -303,6 +309,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
           mediaPlayer.off(DashJSEvents.PLAYBACK_STALLED, onPlaybackStalled);
           mediaPlayer.off(DashJSEvents.BUFFER_STALLED, onBufferStalled);
+          mediaPlayer.off(DashJSEvents.LOG, onDebugLog);
 
           mediaElement.parentElement.removeChild(mediaElement);
 
