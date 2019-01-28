@@ -12,7 +12,7 @@ define(
     function (MediaPlayerBase) {
       'use strict';
 
-      function Player () {
+      function Player (logger) {
         var eventCallback;
         var state = MediaPlayerBase.STATE.EMPTY;
 
@@ -119,7 +119,7 @@ define(
         function generateSourceElement (url, mimeType) {
           var sourceElement = document.createElement('source');
           sourceElement.src = url;
-          sourceElement.type = 'video/mp4';  // mimeType;
+          sourceElement.type = mimeType;
           return sourceElement;
         }
 
@@ -297,9 +297,7 @@ define(
         }
 
         function reportError (errorMessage) {
-          // TODO: replace this with Debug logs?
-          // RuntimeContext.getDevice().getLogger().error(errorMessage);
-          emitEvent(MediaPlayerBase.EVENT.ERROR, { 'errorMessage': errorMessage });
+          logger.error(errorMessage);
         }
 
         function toBuffering () {
@@ -353,8 +351,7 @@ define(
                 end: mediaElement.duration
               };
             } else {
-              // TODO: replace this with Debug logs?
-              // RuntimeContext.getDevice().getLogger().warn('No \'duration\' or \'seekable\' on media element');
+              logger.warn('No \'duration\' or \'seekable\' on media element');
             }
           }
           return undefined;
@@ -527,9 +524,9 @@ define(
 
         function getClampedTimeForPlayFrom (seconds) {
           var clampedTime = getClampedTime(seconds);
+          var range = getSeekableRange();
           if (clampedTime !== seconds) {
-            // TODO: replace this with Debug logs?
-            // RuntimeContext.getDevice().getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+            logger.debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
           }
           return clampedTime;
         }
@@ -562,9 +559,8 @@ define(
             unloadMediaSrc();
             removeElement(mediaElement);
 
-            // TODO: Still needed?
-            // delete mediaElement;
-            // delete this._sourceElement;
+            mediaElement = null;
+            sourceElement = null;
           }
         }
 

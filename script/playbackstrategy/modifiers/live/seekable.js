@@ -15,8 +15,8 @@ define(
       'use strict';
       var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
-      function SeekableLivePlayer (deviceConfig) {
-        var mediaPlayer = Html5Player();
+      function SeekableLivePlayer (deviceConfig, logger) {
+        var mediaPlayer = Html5Player(logger);
 
         function addEventCallback (thisArg, callback) {
           mediaPlayer.addEventCallback(thisArg, callback);
@@ -52,10 +52,6 @@ define(
         }
 
         return ({
-          init: function init () {
-                    // mediaPlayer = new Html5Player();
-          },
-
           initialiseMedia: function initialiseMedia (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
             if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
               mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
