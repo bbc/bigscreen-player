@@ -1,6 +1,6 @@
 define('bigscreenplayer/playbackstrategy/hybridstrategy',
   [
-    'bigscreenplayer/playbackstrategy/talstrategy',
+    'bigscreenplayer/playbackstrategy/nativestrategy',
     'bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/playbackstrategy/strategypicker'
   ],
