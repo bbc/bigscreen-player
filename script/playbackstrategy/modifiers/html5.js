@@ -12,7 +12,7 @@ define(
     function (MediaPlayerBase) {
       'use strict';
 
-      function Player (logger) {
+      function Player (logger, device) {
         var eventCallback;
         var state = MediaPlayerBase.STATE.EMPTY;
 
@@ -117,23 +117,23 @@ define(
         }
 
         function generateSourceElement (url, mimeType) {
-          var sourceElement = document.createElement('source');
+          var sourceElement = device._createElement('source');
           sourceElement.src = url;
           sourceElement.type = mimeType;
           return sourceElement;
         }
 
-        function appendChildElement (to, el) {
-          to.appendChild(el);
-        }
+        // function appendChildElement (to, el) {
+        //   to.appendChild(el);
+        // }
 
-        function prependChildElement (to, el) {
-          if (to.childNodes.length > 0) {
-            to.insertBefore(el, to.childNodes[0]);
-          } else {
-            to.appendChild(el);
-          }
-        }
+        // function prependChildElement (to, el) {
+        //   if (to.childNodes.length > 0) {
+        //     to.insertBefore(el, to.childNodes[0]);
+        //   } else {
+        //     to.appendChild(el);
+        //   }
+        // }
 
         function removeElement (el) {
           if (el.parentNode) {
@@ -609,7 +609,7 @@ define(
               source = url;
               mimeType = mediaMimeType;
 
-              mediaElement = document.createElement(idSuffix.toLowerCase(), 'mediaPlayer' + idSuffix);
+              mediaElement = device._createElement(idSuffix.toLowerCase(), 'mediaPlayer' + idSuffix);
               mediaElement.autoplay = false;
               mediaElement.style.position = 'absolute';
               mediaElement.style.top = '0px';
@@ -627,13 +627,13 @@ define(
               mediaElement.addEventListener('loadedmetadata', onMetadata, false);
               mediaElement.addEventListener('pause', onPause, false);
 
-              prependChildElement(sourceContainer, mediaElement);
+              device.prependChildElement(sourceContainer, mediaElement);
 
               sourceElement = generateSourceElement(url, mimeType);
               sourceElement.addEventListener('error', onSourceError, false);
 
               mediaElement.preload = 'auto';
-              appendChildElement(mediaElement, sourceElement);
+              device.appendChildElement(mediaElement, sourceElement);
 
               mediaElement.load();
 
