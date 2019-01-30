@@ -13,9 +13,10 @@ define(
   ],
     function (Html5Player, MediaPlayerBase) {
       'use strict';
-      var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
       function SeekableLivePlayer (deviceConfig, logger) {
+        var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
+
         var mediaPlayer = Html5Player(logger);
 
         function addEventCallback (thisArg, callback) {
