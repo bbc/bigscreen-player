@@ -15,8 +15,8 @@ define(
       'use strict';
       var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
-      function SeekableLivePlayer (deviceConfig, logger, device) {
-        var mediaPlayer = Html5Player(logger, device);
+      function SeekableLivePlayer (deviceConfig, logger) {
+        var mediaPlayer = Html5Player(logger);
 
         function addEventCallback (thisArg, callback) {
           mediaPlayer.addEventCallback(thisArg, callback);
