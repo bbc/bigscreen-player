@@ -89,6 +89,7 @@ define(
             } else if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
               mediaPlayer.toPaused();
               mediaPlayer.toPlaying();
+              // Nothing to see here
             } else {
               mediaPlayer.pause();
               autoResumeAtStartOfRange();
