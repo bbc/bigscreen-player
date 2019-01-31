@@ -87,11 +87,8 @@ define(
             if (opts.disableAutoResume) {
               mediaPlayer.pause();
             } else if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
-                        // IPLAYERTVV1-4166
-                        // We can't pause so close to the start of the sliding window, so do a quick state transition in and
-                        // out on 'pause' state to be consistent with the rest of TAL.
-              mediaPlayer._toPaused();
-              mediaPlayer._toPlaying();
+              mediaPlayer.toPaused();
+              mediaPlayer.toPlaying();
             } else {
               mediaPlayer.pause();
               autoResumeAtStartOfRange();
