@@ -33,7 +33,7 @@ define(
 
         function autoResumeAtStartOfRange () {
           var secondsUntilAutoResume = Math.max(0, mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
-
+          var self = this;
           var autoResumeTimer = setTimeout(function () {
             removeEventCallback(self, detectIfUnpaused);
             resume();
@@ -42,7 +42,7 @@ define(
           addEventCallback(self, detectIfUnpaused);
           function detectIfUnpaused (event) {
             if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-              self.removeEventCallback(self, detectIfUnpaused);
+              removeEventCallback(self, detectIfUnpaused);
               clearTimeout(autoResumeTimer);
             }
           }
