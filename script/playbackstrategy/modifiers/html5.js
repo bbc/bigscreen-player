@@ -324,7 +324,6 @@ define(
         wipe();
         state = MediaPlayerBase.STATE.ERROR;
         reportError(errorMessage);
-        // throw 'ApiError: ' + errorMessage; // TODO: fix this
       }
 
       function isReadyToPlayFrom () {
