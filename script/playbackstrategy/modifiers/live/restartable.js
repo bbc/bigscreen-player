@@ -12,6 +12,7 @@ define(
         var mediaPlayer = Html5Player(logger);
         var millisecondsUntilStartOfWindow;
         var bufferingStarted;
+        var self = this;
 
         function determineTimeUntilStartOfWindow () {
           mediaPlayer.addEventCallback(self, detectCurrentTimeCallback);
@@ -44,10 +45,10 @@ define(
 
           function detectIfUnpaused (event) {
             if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-              self.removeEventCallback(self, detectIfUnpaused);
+              removeEventCallback(self, detectIfUnpaused);
               clearTimeout(autoResumeTimer);
               var timePaused = new Date().getTime() - pauseStarted;
-              self._millisecondsUntilStartOfWindow -= timePaused;
+              millisecondsUntilStartOfWindow -= timePaused;
             }
           }
         }
