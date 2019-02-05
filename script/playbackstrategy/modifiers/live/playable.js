@@ -61,6 +61,6 @@ define(
         };
       }
 
-      return PlayableLivePlayer();
+      return PlayableLivePlayer;
     }
 );
