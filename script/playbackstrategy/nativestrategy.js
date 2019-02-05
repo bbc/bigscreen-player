@@ -17,6 +17,6 @@ define('bigscreenplayer/playbackstrategy/nativestrategy',
         mediaPlayer = Html5Player(logger);
       }
 
-      return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device._config, mediaPlayer);
+      return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
     };
   });
