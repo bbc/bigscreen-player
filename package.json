@@ -35,7 +35,7 @@
     "babel-preset-env": "1.7.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#ab3e750bd26f9325ba13ab596c60b593672de8bb"
+    "dashjs": "github:bbc/dash.js#smp-v2.9.2-2"
   },
   "repository": {
     "type": "git",
