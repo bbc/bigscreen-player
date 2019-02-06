@@ -12,6 +12,10 @@ module.exports = function (grunt) {
       ],
       template: 'spec/support/test-runner/SpecRunner.html',
       outfile: 'spec/support/test-runner/WebRunner.html',
+      failFast: true,
+      oneFailurePerSpec: true,
+      hideDisabled: true,
+      specFilter: true,
       templateOptions: {
         scriptRoot: '../../..',
         projectRoot: '../../..'
