@@ -190,5 +190,13 @@ require(
               expect(player.beginPlayback).not.toHaveBeenCalledWith(Infinity);
             });
           });
+
+          describe('Internal Methods to monitor buffering', function () {
+              // Buffering and time out tests here
+          });
+
+          describe('behaves approapriately near the start of the window', function () {
+             // tests for buffering near the start of the window
+          });
         });
       });
