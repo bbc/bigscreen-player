@@ -6,13 +6,20 @@ require(
       function (MediaPlayerBase, Squire) {
         var sourceContainer = document.createElement('div');
         var player;
-        var playableMediaPlayer;
+        var restartableMediaConstructor;
+        var restartableMediaPlayer;
+
+        function wrapperTests (action) {
+          restartableMediaPlayer[action]();
+
+          expect(player[action]).toHaveBeenCalled();
+        }
+
+        function getLivePlayer (config, logger) {
+          restartableMediaPlayer = restartableMediaConstructor(config, logger);
+        }
 
         describe('restartable HMTL5 Live Player', function () {
-          function getLivePlayer (config, logger) {
-            return playableMediaPlayer(config, logger);
-          }
-
           beforeEach(function (done) {
             var injector = new Squire();
 
@@ -28,67 +35,48 @@ require(
             injector.mock({'bigscreenplayer/playbackstrategy/modifiers/html5': mockMediaPlayer});
 
             injector.require(['bigscreenplayer/playbackstrategy/modifiers/live/restartable'], function (mediaPlayer) {
-              playableMediaPlayer = mediaPlayer;
+              restartableMediaConstructor = mediaPlayer;
               done();
             });
           });
 
           describe('methods call the appropriate media player methods', function () {
-            var livePlayer;
-            // var logger = jasmine.createSpy('logger');
-
             beforeEach(function () {
-              var config;
-              var logger;
-              livePlayer = getLivePlayer(config, logger);
+              getLivePlayer();
             });
 
             it('calls beginPlayback on the media player', function () {
-              livePlayer.beginPlayback();
-
-              expect(player.beginPlayback).toHaveBeenCalledTimes(1);
+              wrapperTests('beginPlayback');
             });
 
             it('calls initialiseMedia on the media player', function () {
-              livePlayer.initialiseMedia();
-
-              expect(player.initialiseMedia).toHaveBeenCalledTimes(1);
+              wrapperTests('initialiseMedia');
             });
 
             it('calls stop on the media player', function () {
-              livePlayer.stop();
-
-              expect(player.stop).toHaveBeenCalledTimes(1);
+              wrapperTests('stop');
             });
 
             it('calls reset on the media player', function () {
-              livePlayer.reset();
-
-              expect(player.reset).toHaveBeenCalledTimes(1);
+              wrapperTests('reset');
             });
 
             it('calls getState on the media player', function () {
-              livePlayer.getState();
-
-              expect(player.getState).toHaveBeenCalledTimes(1);
+              wrapperTests('getState');
             });
 
             it('calls getSource on the media player', function () {
-              livePlayer.getSource();
-
-              expect(player.getSource).toHaveBeenCalledTimes(1);
+              wrapperTests('getSource');
             });
 
             it('calls getMimeType on the media player', function () {
-              livePlayer.getMimeType();
-
-              expect(player.getMimeType).toHaveBeenCalledTimes(1);
+              wrapperTests('getMimeType');
             });
 
             it('calls addEventCallback on the media player', function () {
               var thisArg = 'arg';
               var callback = function () { return; };
-              livePlayer.addEventCallback(thisArg, callback);
+              restartableMediaPlayer.addEventCallback(thisArg, callback);
 
               expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, callback);
             });
@@ -96,66 +84,54 @@ require(
             it('calls removeEventCallback on the media player', function () {
               var thisArg = 'arg';
               var callback = function () { return; };
-              livePlayer.removeEventCallback(thisArg, callback);
+              restartableMediaPlayer.removeEventCallback(thisArg, callback);
 
               expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback);
             });
 
             it('calls removeAllEventCallbacks on the media player', function () {
-              livePlayer.removeAllEventCallbacks();
-
-              expect(player.removeAllEventCallbacks).toHaveBeenCalledTimes(1);
+              wrapperTests('removeAllEventCallbacks');
             });
 
             it('calls getPlayerElement on the media player', function () {
-              livePlayer.getPlayerElement();
-
-              expect(player.getPlayerElement).toHaveBeenCalledTimes(1);
+              wrapperTests('getPlayerElement');
             });
 
             it('calls pause on the media player', function () {
-              livePlayer.pause();
-
-              expect(player.pause).toHaveBeenCalledTimes(1);
-            });
-
-            it('calls getPlayerElement on the media player', function () {
-              livePlayer.resume();
-
-              expect(player.resume).toHaveBeenCalledTimes(1);
+              wrapperTests('pause');
             });
           });
 
           describe('calls the mediaplayer with the correct media Type', function () {
-            var livePlayer;
-
             beforeEach(function () {
-              var config;
-              var logger;
-              livePlayer = getLivePlayer(config, logger);
+              getLivePlayer();
             });
 
-            it('when is an audio stream', function () {
-              var mediaType = MediaPlayerBase.TYPE.AUDIO;
-              livePlayer.initialiseMedia(mediaType, null, null, sourceContainer, null);
+            it('all non-live and live video and audio', function () {
+              restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, '', '', sourceContainer);
 
-              expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, null, null, sourceContainer, null);
-            });
+              expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
 
-            it('when is an video stream', function () {
-              var mediaType = MediaPlayerBase.TYPE.VIDEO;
-              livePlayer.initialiseMedia(mediaType, null, null, sourceContainer, null);
+              restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, '', '', sourceContainer);
 
-              expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, null, null, sourceContainer, null);
+              expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
+
+              restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer);
+
+              expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
+
+              restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer);
+
+              expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
             });
           });
 
           describe('Restartable features', function () {
             it('begins playback with the desired offset', function () {
-              var livePlayer = getLivePlayer();
+              getLivePlayer();
               var offset = 10;
 
-              livePlayer.beginPlaybackFrom(offset);
+              restartableMediaPlayer.beginPlaybackFrom(offset);
 
               expect(player.beginPlaybackFrom).toHaveBeenCalledWith(offset);
             });
@@ -168,9 +144,9 @@ require(
                   }
                 }
               };
-              var livePlayer = getLivePlayer(config);
+              getLivePlayer(config);
 
-              livePlayer.beginPlayback();
+              restartableMediaPlayer.beginPlayback();
 
               expect(player.beginPlaybackFrom).toHaveBeenCalledWith(Infinity);
             });
@@ -183,9 +159,9 @@ require(
                   }
                 }
               };
-              var livePlayer = getLivePlayer(config, null);
+              getLivePlayer(config);
 
-              livePlayer.beginPlayback();
+              restartableMediaPlayer.beginPlayback();
 
               expect(player.beginPlayback).not.toHaveBeenCalledWith(Infinity);
             });

@@ -14,6 +14,16 @@ require(
       var player;
       var playableMediaPlayer;
 
+      function wrapperTests (action) {
+        playableMediaPlayer[action]();
+
+        expect(player[action]).toHaveBeenCalled();
+      }
+
+      function isUndefined (action) {
+        expect(playableMediaPlayer[action]).not.toBeDefined();
+      }
+
       describe('Playable HMTL5 Live Player', function () {
         beforeEach(function (done) {
           var injector = new Squire();
@@ -34,75 +44,73 @@ require(
           });
         });
 
-        describe('methods call the appropriate media player methods', function () {
-          it('calls beginPlayback on the media player', function () {
-            playableMediaPlayer.beginPlayback();
+        it('calls beginPlayback on the media player', function () {
+          wrapperTests('beginPlayback');
+        });
 
-            expect(player.beginPlayback).toHaveBeenCalledTimes(1);
+        it('calls initialiseMedia on the media player', function () {
+          wrapperTests('initialiseMedia');
+        });
+
+        it('calls stop on the media player', function () {
+          wrapperTests('stop');
+        });
+
+        it('calls reset on the media player', function () {
+          wrapperTests('reset');
+        });
+
+        it('calls getState on the media player', function () {
+          wrapperTests('getState');
+        });
+
+        it('calls getSource on the media player', function () {
+          wrapperTests('getSource');
+        });
+
+        it('calls getMimeType on the media player', function () {
+          wrapperTests('getMimeType');
+        });
+
+        it('calls addEventCallback on the media player', function () {
+          wrapperTests('addEventCallback', 'args', function () { return; });
+        });
+
+        it('calls removeEventCallback on the media player', function () {
+          wrapperTests('removeEventCallback', 'args', function () { return; });
+        });
+
+        it('calls removeAllEventCallbacks on the media player', function () {
+          wrapperTests('removeAllEventCallbacks');
+        });
+
+        it('calls getPlayerElement on the media player', function () {
+          wrapperTests('getPlayerElement');
+        });
+
+        describe('should not have methods for', function () {
+          it('beginPlaybackFrom', function () {
+            isUndefined('beginPlaybackFrom');
           });
 
-          it('calls initialiseMedia on the media player', function () {
-            playableMediaPlayer.initialiseMedia();
-
-            expect(player.initialiseMedia).toHaveBeenCalledTimes(1);
+          it('playFrom', function () {
+            isUndefined('playFrom');
           });
 
-          it('calls stop on the media player', function () {
-            playableMediaPlayer.stop();
-
-            expect(player.stop).toHaveBeenCalledTimes(1);
+          it('pause', function () {
+            isUndefined('pause');
           });
 
-          it('calls reset on the media player', function () {
-            playableMediaPlayer.reset();
-
-            expect(player.reset).toHaveBeenCalledTimes(1);
+          it('resume', function () {
+            isUndefined('resume');
           });
 
-          it('calls getState on the media player', function () {
-            playableMediaPlayer.getState();
-
-            expect(player.getState).toHaveBeenCalledTimes(1);
+          it('getCurrentTime', function () {
+            isUndefined('getCurrentTime');
           });
 
-          it('calls getSource on the media player', function () {
-            playableMediaPlayer.getSource();
-
-            expect(player.getSource).toHaveBeenCalledTimes(1);
-          });
-
-          it('calls getMimeType on the media player', function () {
-            playableMediaPlayer.getMimeType();
-
-            expect(player.getMimeType).toHaveBeenCalledTimes(1);
-          });
-
-          it('calls addEventCallback on the media player', function () {
-            var thisArg = 'arg';
-            var callback = function () { return; };
-            playableMediaPlayer.addEventCallback(thisArg, callback);
-
-            expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, callback);
-          });
-
-          it('calls removeEventCallback on the media player', function () {
-            var thisArg = 'arg';
-            var callback = function () { return; };
-            playableMediaPlayer.removeEventCallback(thisArg, callback);
-
-            expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback);
-          });
-
-          it('calls removeAllEventCallbacks on the media player', function () {
-            playableMediaPlayer.removeAllEventCallbacks();
-
-            expect(player.removeAllEventCallbacks).toHaveBeenCalledTimes(1);
-          });
-
-          it('calls getPlayerElement on the media player', function () {
-            playableMediaPlayer.getPlayerElement();
-
-            expect(player.getPlayerElement).toHaveBeenCalledTimes(1);
+          it('paugetSeekableRangese', function () {
+            isUndefined('getSeekableRange');
           });
         });
 
