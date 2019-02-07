@@ -295,9 +295,5 @@ require(
               expect(player.resume).toHaveBeenCalledTimes(1);
             });
           });
-
-          describe('behaves approapriately near the start of the window', function () {
-             // tests for buffering near the start of the window
-          });
         });
       });
