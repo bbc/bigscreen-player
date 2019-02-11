@@ -74,7 +74,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   var filterSpecs = !!queryString.getParam('spec');
 
   // Overrides
+  env.stopOnSpecFailure(true);
+  env.throwOnExpectationFailure(true);
+
   var hideDisabled = queryString.getParam('hideDisabled');
+  env.hideDisabled(hideDisabled);
 
   var random = queryString.getParam('random');
 
@@ -114,6 +118,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   var specFilter = new jasmine.HtmlSpecFilter({
     filterString: function () { return queryString.getParam('spec'); }
   });
+
+  env.specFilter = function (spec) {
+    return specFilter.matches(spec.getFullName());
+  };
 
   /**
    * Setting up timing functions to be able to be overridden. Certain browsers (Safari, IE 8, phantomjs) require this hack.
