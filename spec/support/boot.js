@@ -119,6 +119,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     filterString: function () { return queryString.getParam('spec'); }
   });
 
+  env.specFilter = function (spec) {
+    return specFilter.matches(spec.getFullName());
+  };
+
   /**
    * Setting up timing functions to be able to be overridden. Certain browsers (Safari, IE 8, phantomjs) require this hack.
    */
