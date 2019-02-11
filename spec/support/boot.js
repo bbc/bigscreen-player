@@ -74,7 +74,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   var filterSpecs = !!queryString.getParam('spec');
 
   // Overrides
+  env.stopOnSpecFailure(true);
+  env.throwOnExpectationFailure(true);
+
   var hideDisabled = queryString.getParam('hideDisabled');
+  env.hideDisabled(hideDisabled);
 
   var random = queryString.getParam('random');
 
