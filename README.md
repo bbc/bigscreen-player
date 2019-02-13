@@ -16,7 +16,7 @@ This project should be considered **Work in Progress**. A full roadmap will be r
 
 ## Example Usage
 
-We have a working example app - see [docs/example-app].
+We have a working example app - see [docs/example-app](docs/example-app).
 
 ### Initialisation
 
