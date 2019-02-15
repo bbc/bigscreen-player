@@ -16,7 +16,10 @@ require(
         var finishedBufferingCallback;
         var errorCallback;
         var endedCallback;
+        var timeupdateCallback;
         var waitingCallback;
+
+        var recentEvents = [];
 
         var logger = jasmine.createSpyObj('logger', ['warn', 'debug', 'error']);
 
@@ -45,6 +48,35 @@ require(
           expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
         }
 
+        function eventCallbackReporter (event) {
+          recentEvents.push(event.type);
+        }
+
+        function giveMediaElementMetaData (mediaElement, metadata) {
+          try {
+            spyOnProperty(mediaElement, 'seekable').and.returnValue(
+              {
+                start: function () {
+                  return metadata.start;
+                },
+                end: function () {
+                  return metadata.end;
+                },
+                length: 2
+              });
+          } catch (ex) {
+            mediaElement.seekable = {
+              start: function () {
+                return metadata.start;
+              },
+              end: function () {
+                return metadata.end;
+              },
+              length: 2
+            };
+          }
+        }
+
         beforeEach(function (done) {
           mockSourceElement = document.createElement('source');
           mockVideoMediaElement = document.createElement('video');
@@ -63,6 +95,8 @@ require(
           beforeEach(function () {
             player = html5Player(logger);
             spyOn(player, 'toPaused').and.callThrough();
+
+            player.addEventCallback(this, eventCallbackReporter);
 
             spyOn(document, 'createElement').and.callFake(function (type) {
               if (type === 'source') {
@@ -85,6 +119,8 @@ require(
                 endedCallback = methodCall;
               } else if (name === 'waiting') {
                 waitingCallback = methodCall;
+              } else if (name === 'timeupdate') {
+                timeupdateCallback = methodCall;
               }
             });
 
@@ -109,6 +145,1047 @@ require(
 
           afterEach(function () {
             player = null;
+          });
+
+          describe('Empty State Tests', function () {
+            it('Get Source Returns Undefined In Empty State', function () {
+              expect(player.getSource()).toBe(undefined);
+            });
+
+            it('Get Mime Type Returns Undefined In Empty State', function () {
+              expect(player.getMimeType()).toBe(undefined);
+            });
+
+            it('Get Current Time Returns Undefined In Empty State', function () {
+              expect(player.getCurrentTime()).toBe(undefined);
+            });
+
+            it('Get Seekable Range Returns Undefined In Empty State', function () {
+              expect(player.getSeekableRange()).toBe(undefined);
+            });
+
+            it('Get Duration Returns Undefined In Empty State', function () {
+              expect(player.getDuration()).toBe(undefined);
+            });
+
+            it('Get Source Returns Undefined In Empty State After Reset', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              metaDataCallback();
+              finishedBufferingCallback();
+
+              player.reset();
+
+              expect(player.getSource()).toBe(undefined);
+            });
+
+            it('Get Mime Type Returns Undefined In Empty State After Reset', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              metaDataCallback();
+              finishedBufferingCallback();
+
+              player.reset();
+
+              expect(player.getMimeType()).toBe(undefined);
+            });
+
+            it('Get Current Time Returns Undefined In Empty State After Reset', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              metaDataCallback();
+              finishedBufferingCallback();
+
+              player.reset();
+
+              expect(player.getCurrentTime()).toBe(undefined);
+            });
+
+            it('Get Seekable Range Returns Undefined In Empty State After Reset', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              metaDataCallback();
+              finishedBufferingCallback();
+
+              player.reset();
+
+              expect(player.getSeekableRange()).toBe(undefined);
+            });
+
+            it('Get Duration Returns Undefined In Empty State After Reset', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              metaDataCallback();
+              finishedBufferingCallback();
+
+              player.reset();
+
+              expect(player.getDuration()).toBe(undefined);
+            });
+
+            it('Calling Begin Playback In Empty State Is An Error', function () {
+              player.beginPlayback();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'EMPTY\' state');
+            });
+
+            it('Calling Begin Playback From In Empty State Is An Error', function () {
+              player.beginPlaybackFrom();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'EMPTY\' state');
+            });
+
+            it('Calling Pause In Empty State Is An Error', function () {
+              player.pause();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'EMPTY\' state');
+            });
+
+            it('Calling Resume In Empty State Is An Error', function () {
+              player.resume();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'EMPTY\' state');
+            });
+
+            it('Calling Stop In Empty State Is An Error', function () {
+              player.stop();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot stop while in the \'EMPTY\' state');
+            });
+
+            it('Calling Initialise Media In Empty State Goes To Stopped State', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED);
+            });
+
+            it('Calling Reset In Empty State Stays In Empty State', function () {
+              player.reset();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.EMPTY);
+            });
+          });
+
+          describe('Stopped state tests', function () {
+            beforeEach(function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+            });
+
+            it('Get Source Returns Correct Value In Stopped State', function () {
+              expect(player.getSource()).toEqual('testUrl');
+            });
+
+            it('Get Mime Type Returns Correct Value In Stopped State', function () {
+              expect(player.getMimeType()).toEqual('testMimeType');
+            });
+
+            it('Get Current Time Returns Undefined In Stopped State', function () {
+              expect(player.getCurrentTime()).toEqual(undefined);
+            });
+
+            it('Get Seekable Range Returns Undefined In Stopped State', function () {
+              expect(player.getSeekableRange()).toEqual(undefined);
+            });
+
+            it('Get Duration Returns Undefined In Stopped State', function () {
+              expect(player.getDuration()).toEqual(undefined);
+            });
+
+            it('Calling Initialise Media In Stopped State Is An Error', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+
+              expect(logger.error).toHaveBeenCalledTimes(1);
+            });
+
+            it('Calling Play From In Stopped State Is An Error', function () {
+              player.playFrom();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot playFrom while in the \'STOPPED\' state');
+            });
+
+            it('Calling Pause In Stopped State Is An Error', function () {
+              player.pause();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'STOPPED\' state');
+            });
+
+            it('Calling Resume In Stopped State Is An Error', function () {
+              player.resume();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'STOPPED\' state');
+            });
+
+            it('Send Meta Data In Stopped State Stays In Stopped State', function () {
+              metaDataCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED);
+            });
+
+            it('Finish Buffering In Stopped State Stays In Stopped State', function () {
+              finishedBufferingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED);
+            });
+
+            it('Start Buffering In Stopped State Stays In Stopped State', function () {
+              waitingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED);
+            });
+
+            it('Player Error In Stopped State Gets Reported', function () {
+              spyOnProperty(mockVideoMediaElement, 'error').and.returnValue({code: 'test'});
+              errorCallback({type: 'testError'});
+
+              expect(logger.error).toHaveBeenCalledWith('Media element error code: test');
+            });
+
+            it('Time Passing Does Not Cause Status Event To Be Sent In Stopped State', function () {
+              recentEvents = [];
+              mockVideoMediaElement.currentTime += 1;
+
+              expect(recentEvents).toEqual([]);
+            });
+
+            it('Calling Reset In Stopped State Goes To Empty State', function () {
+              player.reset();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.EMPTY);
+            });
+
+            it('Calling Begin Playback From In Stopped State Goes To Buffering State', function () {
+              player.beginPlaybackFrom();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+            });
+
+            it('Finish Buffering Then Begin Playback From In Stopped State Goes To Buffering', function () {
+              finishedBufferingCallback();
+
+              player.beginPlaybackFrom();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+            });
+
+            it('Calling Begin Playback In Stopped State Goes To Buffering State', function () {
+              player.beginPlayback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+            });
+
+            it('Calling Stop In Stopped State Stays In Stopped State', function () {
+              player.stop();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED);
+            });
+          });
+
+          describe('Buffering state tests', function () {
+            beforeEach(function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              player.beginPlaybackFrom(0);
+            });
+
+            it('Get Source Returns Expected Value In Buffering State', function () {
+              expect(player.getSource()).toEqual('testUrl');
+            });
+
+            it('Get Mime Type Returns Expected Value In Buffering State', function () {
+              expect(player.getMimeType()).toEqual('testMimeType');
+            });
+
+            it('Calling Initialise Media In Buffering State Is An Error', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+            });
+
+            it('Calling Begin Playback In Buffering State Is An Error', function () {
+              player.beginPlayback();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'BUFFERING\' state');
+            });
+
+            it('Calling Begin Playback From In Buffering State Is An Error', function () {
+              player.beginPlaybackFrom();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'BUFFERING\' state');
+            });
+
+            it('Calling Reset In Buffering State Is An Error', function () {
+              player.reset();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'BUFFERING\' state');
+            });
+
+            it('Send Meta Data In Buffering State Stays In Buffering State', function () {
+              metaDataCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+            });
+
+            it('Start Buffering In Buffering State Stays In Buffering State', function () {
+              waitingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+            });
+
+            it('Device Error In Buffering State Gets Reported', function () {
+              spyOnProperty(mockVideoMediaElement, 'error').and.returnValue({code: 'test'});
+              errorCallback();
+
+              expect(logger.error).toHaveBeenCalledWith('Media element error code: test');
+            });
+
+            it('Time Passing Does Not Cause Status Event To Be Sent In Buffering State', function () {
+              recentEvents = [];
+              mockVideoMediaElement.currentTime += 1;
+
+              expect(recentEvents).toEqual([]);
+            });
+
+            it('When Buffering Finishes And No Further Api Calls Then We Go To Playing State', function () {
+              finishedBufferingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+            });
+
+            it('When Pause Called And Buffering Finishes Then We Go To Paused State', function () {
+              player.pause();
+
+              finishedBufferingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
+            });
+
+            it('When Pause Then Resume Called Before Buffering Finishes Then We Go To Playing State', function () {
+              player.pause();
+              player.resume();
+
+              finishedBufferingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+            });
+
+            it('When Begin Playback From Middle Of Media And Buffering Finishes Then We Go To Playing From Specified Point', function () {
+              player.stop();
+              player.beginPlaybackFrom(20);
+
+              finishedBufferingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+              expect(mockVideoMediaElement.currentTime).toEqual(20);
+            });
+
+            it('Calling Stop In Buffering State Goes To Stopped State', function () {
+              player.stop();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED);
+            });
+
+            it('Device Buffering Notification In Buffering State Does Not Emit Second Buffering Event', function () {
+              recentEvents = [];
+              waitingCallback();
+
+              expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.BUFFERING);
+            });
+          });
+
+          describe('Playing State Tests', function () {
+            beforeEach(function () {
+              spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
+
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              player.beginPlaybackFrom(0);
+              finishedBufferingCallback();
+              metaDataCallback();
+
+              jasmine.clock().install();
+            });
+
+            afterEach(function () {
+              jasmine.clock().uninstall();
+              player = null;
+            });
+
+            it('Get Source Returns Expected Value In Playing State', function () {
+              expect(player.getSource()).toEqual('testUrl');
+            });
+
+            it('Get Mime Type Returns Expected Value In Playing State', function () {
+              expect(player.getMimeType()).toEqual('testMimeType');
+            });
+
+            it('Get Current Time Returns Expected Value In Playing State', function () {
+              expect(player.getCurrentTime()).toEqual(0);
+            });
+
+            it('Get Seekable Range Returns Expected Value In Playing State', function () {
+              expect(player.getSeekableRange()).toEqual({ start: 0, end: 100 });
+            });
+
+            it('Get Duration Returns Expected Value In Playing State', function () {
+              expect(player.getDuration()).toEqual(100);
+            });
+
+            it('Calling Begin Playback In Playing State Is An Error', function () {
+              player.beginPlayback();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'PLAYING\' state');
+            });
+
+            it('Calling Begin Playback From In Playing State Is An Error', function () {
+              player.beginPlaybackFrom();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'PLAYING\' state');
+            });
+
+            it('Calling Initialise Media In Playing State Is An Error', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+            });
+
+            it('Calling Reset In Playing State Is An Error', function () {
+              player.reset();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'PLAYING\' state');
+            });
+
+            it('Send Meta Data In Playing State Stays In Playing State', function () {
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+
+              metaDataCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+            });
+
+            it('Finish Buffering In Playing State Stays In Playing State', function () {
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+
+              finishedBufferingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+            });
+
+            it('Device Error In Playing State Gets Reported', function () {
+              spyOnProperty(mockVideoMediaElement, 'error').and.returnValue({code: 'testError'});
+
+              errorCallback();
+
+              expect(logger.error).toHaveBeenCalledWith('Media element error code: testError');
+            });
+
+            it('When Call Resume While Already Playing Then Remain In Play State', function () {
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+
+              player.resume();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+            });
+
+            it('When Call Play From While Playing Goes To Buffering State', function () {
+              player.playFrom(90);
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+            });
+
+            it('When Calling Pause While Playing Goes To Paused State', function () {
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+
+              player.pause();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
+            });
+
+            it('When Media Finishes When Playing Then Goes To Complete State', function () {
+              giveMediaElementMetaData(mockVideoMediaElement, {start: 1, end: 99});
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+
+              mockVideoMediaElement.currentTime = 100;
+              endedCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.COMPLETE);
+            });
+
+            it('When Buffering Starts While Playing Goes To Buffering State', function () {
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+
+              waitingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+            });
+
+            it('Get Regular Status Event When Playing', function () {
+              recentEvents = [];
+
+              timeupdateCallback();
+              jasmine.clock().tick(1000);
+
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.STATUS);
+
+              recentEvents = [];
+              timeupdateCallback();
+              jasmine.clock().tick(1000);
+
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.STATUS);
+
+              recentEvents = [];
+              timeupdateCallback();
+              jasmine.clock().tick(1000);
+
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.STATUS);
+            });
+
+            it('Get Duration Returns Infinity With A Live Video Stream', function () {
+              player.stop();
+              player.reset();
+              player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              player.beginPlaybackFrom(0);
+              finishedBufferingCallback();
+              metaDataCallback();
+
+              var actualDurations = [0, 'foo', undefined, null, Infinity, 360];
+              for (var i = 0; i < actualDurations.length; i++) {
+                giveMediaElementMetaData(mockVideoMediaElement, { start: 0, end: actualDurations[i] });
+
+                expect(player.getDuration()).toEqual(Infinity);
+              }
+            });
+
+            it('Get Duration Returns Infinity With A Live Audio Stream', function () {
+              player.stop();
+              player.reset();
+              player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_AUDIO, 'testUrl', 'testMimeType', sourceContainer, {});
+              player.beginPlaybackFrom(0);
+              finishedBufferingCallback();
+              metaDataCallback();
+
+              var actualDurations = [0, 'foo', undefined, null, Infinity, 360];
+              for (var i = 0; i < actualDurations.length; i++) {
+                giveMediaElementMetaData(mockAudioMediaElement, { start: 0, end: actualDurations[i] });
+
+                expect(player.getDuration()).toEqual(Infinity);
+              }
+            });
+          });
+
+          describe('Paused state tests', function () {
+            beforeEach(function () {
+              spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
+              spyOnProperty(mockVideoMediaElement, 'seekable').and.returnValue({
+                start: function () { return 0; },
+                end: function () { return 100; },
+                length: 2
+              });
+
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              player.beginPlaybackFrom(0);
+              finishedBufferingCallback();
+              metaDataCallback();
+              player.pause();
+
+              jasmine.clock().install();
+            });
+
+            afterEach(function () {
+              jasmine.clock().uninstall();
+              recentEvents = [];
+            });
+
+            it('Get Source Returns Expected Value In Paused State', function () {
+              expect(player.getSource()).toEqual('testUrl');
+            });
+
+            it('Get Mime Type Returns Expected Value In Paused State', function () {
+              expect(player.getMimeType()).toEqual('testMimeType');
+            });
+
+            it('Get Current Time Returns Expected Value In Paused State', function () {
+              expect(player.getCurrentTime()).toEqual(0);
+            });
+
+            it('Get Seekable Range Returns Expected Value In Paused State', function () {
+              expect(player.getSeekableRange()).toEqual({start: 0, end: 100});
+            });
+
+            it('Get Duration Returns Expected Value In Paused State', function () {
+              expect(player.getDuration()).toEqual(100);
+            });
+
+            it('Calling Begin Playback In Paused State Is An Error', function () {
+              player.beginPlayback();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'PAUSED\' state');
+            });
+
+            it('Calling Begin Playback From In Paused State Is An Error', function () {
+              player.beginPlaybackFrom();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'PAUSED\' state');
+            });
+
+            it('Calling Initialise Media In Paused State Is An Error', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+            });
+
+            it('Calling Reset In Paused State Is An Error', function () {
+              player.reset();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'PAUSED\' state');
+            });
+
+            it('Send Meta Data In Paused State Stays In Paused State', function () {
+              metaDataCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
+            });
+
+            it('Finish Buffering In Paused State Stays In Paused State', function () {
+              finishedBufferingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
+            });
+
+            it('Start Buffering In Paused State Stays In Paused State', function () {
+              waitingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
+            });
+
+            it('Device Error In Paused State Gets Reported', function () {
+              spyOnProperty(mockVideoMediaElement, 'error').and.returnValue({code: 'testError'});
+
+              errorCallback();
+
+              expect(logger.error).toHaveBeenCalledTimes(1);
+            });
+
+            it('Time Passing Does Not Cause Status Event To Be Sent In Paused State', function () {
+              jasmine.clock().tick(10000);
+
+              expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.STATUS);
+            });
+
+            it('When Calling Resume While Paused Goes To Playing State', function () {
+              player.resume();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
+            });
+
+            it('When Call Play From While Paused Goes To Buffering State', function () {
+              player.playFrom(90);
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+            });
+
+            it('When Call Pause While Already Paused Then Remain In Paused State', function () {
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
+
+              player.pause();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
+            }
+            );
+
+            it('When Calling Stop While Paused Goes To Stopped State', function () {
+              player.stop();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED);
+            });
+          });
+
+          describe('Complete state tests', function () {
+            beforeEach(function () {
+              spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
+              spyOnProperty(mockVideoMediaElement, 'seekable').and.returnValue({
+                start: function () { return 0; },
+                end: function () { return 100; },
+                length: 2
+              });
+
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              player.beginPlaybackFrom(0);
+              finishedBufferingCallback();
+              metaDataCallback();
+              mockVideoMediaElement.currentTime = 100;
+              endedCallback();
+
+              jasmine.clock().install();
+            });
+
+            afterEach(function () {
+              jasmine.clock().uninstall();
+              recentEvents = [];
+            });
+
+            it('Get Source Returns Expected Value In Complete State', function () {
+              expect(player.getSource()).toEqual('testUrl');
+            });
+
+            it('Get Mime Type Returns Expected Value In Complete State', function () {
+              expect(player.getMimeType()).toEqual('testMimeType');
+            });
+
+            it('Get Seekable Range Returns Expected Value In Complete State', function () {
+              expect(player.getSeekableRange()).toEqual({ start: 0, end: 100 });
+            });
+
+            it('Get Duration Returns Expected Value In Complete State', function () {
+              expect(player.getDuration()).toEqual(100);
+            });
+
+            it('Get Current Time Returns Expected Value In Complete State', function () {
+              expect(player.getCurrentTime()).toEqual(100);
+            });
+
+            it('Calling Begin Playback In Complete State Is An Error', function () {
+              player.beginPlayback();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'COMPLETE\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Begin Playback From In Complete State Is An Error', function () {
+              player.beginPlaybackFrom();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'COMPLETE\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Initialise Media From In Complete State Is An Error', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Pause From In Complete State Is An Error', function () {
+              player.pause();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'COMPLETE\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Resume From In Complete State Is An Error', function () {
+              player.resume();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'COMPLETE\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Reset From In Complete State Is An Error', function () {
+              player.reset();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'COMPLETE\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            }
+            );
+
+            it('Send Meta Data In Complete State Stays In Complete State', function () {
+              var previousState = player.getState();
+
+              metaDataCallback();
+
+              expect(player.getState()).toEqual(previousState);
+            });
+
+            it('Finish Buffering In Complete State Stays In Complete State', function () {
+              var previousState = player.getState();
+
+              finishedBufferingCallback();
+
+              expect(player.getState()).toEqual(previousState);
+            });
+
+            it('Start Buffering In Complete State Stays In Complete State', function () {
+              var previousState = player.getState();
+
+              waitingCallback();
+
+              expect(player.getState()).toEqual(previousState);
+            });
+
+            it('Time Passing Does Not Cause Status Event To Be Sent In Complete State', function () {
+              timeupdateCallback();
+              jasmine.clock().tick();
+
+              expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SATUS);
+            });
+
+            it('When Call Play From While Complete Goes To Buffering State', function () {
+              player.playFrom(90);
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+            });
+
+            it('Calling Stop In Complete State Goes To Stopped State', function () {
+              player.stop();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED);
+            });
+          });
+
+          describe('Error state tests', function () {
+            beforeEach(function () {
+              spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
+              spyOnProperty(mockVideoMediaElement, 'seekable').and.returnValue({
+                start: function () { return 0; },
+                end: function () { return 100; },
+                length: 2
+              });
+              spyOnProperty(mockVideoMediaElement, 'error').and.returnValue({code: 'testError'});
+
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              player.beginPlaybackFrom(0);
+              finishedBufferingCallback();
+              metaDataCallback();
+              mockVideoMediaElement.currentTime = 100;
+              player.reset();
+
+              jasmine.clock().install();
+            });
+
+            afterEach(function () {
+              jasmine.clock().uninstall();
+              recentEvents = [];
+            });
+
+            it('Get Source Returns Undefined In Error State', function () {
+              expect(player.getSource()).toBe(undefined);
+            });
+
+            it('Get Mime Type Returns Undefined In Error State', function () {
+              expect(player.getMimeType()).toBe(undefined);
+            });
+
+            it('Get Seekable Range Returns Undefined In Error State', function () {
+              expect(player.getSeekableRange()).toBe(undefined);
+            });
+
+            it('Get Duration Returns Undefined In Error State', function () {
+              expect(player.getDuration()).toBe(undefined);
+            });
+
+            it('Get Current Time Returns Undefined In Error State', function () {
+              expect(player.getCurrentTime()).toBe(undefined);
+            });
+
+            it('Calling Begin Playback In Error State Is An Error', function () {
+              recentEvents = [];
+              player.beginPlayback();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Begin Playback From In Error State Is An Error', function () {
+              recentEvents = [];
+              player.beginPlaybackFrom();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Initialise Media In Error State Is An Error', function () {
+              recentEvents = [];
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Play From In Error State Is An Error', function () {
+              recentEvents = [];
+              player.playFrom();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot playFrom while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Pause In Error State Is An Error', function () {
+              recentEvents = [];
+              player.pause();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Resume In Error State Is An Error', function () {
+              recentEvents = [];
+              player.resume();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Stop From In Error State Is An Error', function () {
+              recentEvents = [];
+              player.stop();
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot stop while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+
+            it('Calling Reset In Error State Goes To Empty State', function () {
+              player.reset();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.EMPTY);
+            });
+
+            it('When Buffering Finishes During Error We Continue To Be In Error', function () {
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+
+              metaDataCallback();
+              finishedBufferingCallback();
+
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
+            });
+          });
+
+          describe('Error logged for invalid state transitions tests', function () {
+            it('Error While Playing From In Invalid State Is Logged', function () {
+              try {
+                player.playFrom([0]);
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot playFrom while in the \'EMPTY\' state');
+
+              try {
+                player.playFrom([0]);
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot playFrom while in the \'ERROR\' state');
+            });
+
+            it('Error While Pausing In Invalid State Is Logged', function () {
+              try {
+                player.pause();
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'EMPTY\' state');
+
+              try {
+                player.pause();
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'ERROR\' state');
+            });
+
+            it('Error While Resuming In Invalid State Is Logged', function () {
+              try {
+                player.resume();
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'EMPTY\' state');
+
+              try {
+                player.resume();
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'ERROR\' state');
+            });
+
+            it('Error While Stopping In Invalid State Is Logged', function () {
+              try {
+                player.stop();
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot stop while in the \'EMPTY\' state');
+
+              try {
+                player.stop();
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot stop while in the \'ERROR\' state');
+            });
+
+            it('Error While Setting Source In Invalid State Is Logged', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://testurl/', 'video/mp4', sourceContainer, {});
+
+              try {
+                player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://testurl/', 'video/mp4', sourceContainer, {});
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+            }
+            );
+
+            it('Error While Resetting In Invalid State Is Logged', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://testurl/', 'video/mp4', sourceContainer, {});
+              metaDataCallback();
+              player.beginPlayback();
+              finishedBufferingCallback();
+
+              try {
+                player.reset();
+              } catch (e) { }
+
+              expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'PLAYING\' state');
+            });
+          });
+
+          describe('Debug message logged for clamped playFrom', function () {
+            it('When Play From Gets Clamped From Buffering A Debug Message Is Logged', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://testurl/', 'video/mp4', sourceContainer, {});
+
+              giveMediaElementMetaData(mockVideoMediaElement, {start: 0, end: 0});
+              metaDataCallback();
+              player.beginPlaybackFrom(0);
+
+              finishedBufferingCallback();
+
+              player.playFrom(50);
+              timeupdateCallback();
+
+              expect(logger.debug).toHaveBeenCalledTimes(1);
+              expect(logger.debug).toHaveBeenCalledWith('play From 50 clamped to 0 - seekable range is { start: 0, end: 0 }');
+            });
+
+            it('When Play From Gets Clamped From Playing State A Debug Message Is Logged', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://testurl/', 'video/mp4', sourceContainer, {});
+              giveMediaElementMetaData(mockVideoMediaElement, {start: 0, end: 0});
+              metaDataCallback();
+              finishedBufferingCallback();
+
+              player.beginPlaybackFrom(0);
+
+              player.playFrom(110);
+
+              expect(logger.debug).toHaveBeenCalledWith('play From 110 clamped to 0 - seekable range is { start: 0, end: 0 }');
+            });
+
+            it('When Play From Gets Clamped From Playing State With Non Zero End Of Range A Debug Message Is Logged', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://testurl/', 'video/mp4', sourceContainer, {});
+              player.beginPlaybackFrom(0);
+              giveMediaElementMetaData(mockVideoMediaElement, { start: 0, end: 100 });
+              metaDataCallback();
+              finishedBufferingCallback();
+              player.playFrom(110);
+
+              expect(logger.debug).toHaveBeenCalledWith('play From 110 clamped to 98.9 - seekable range is { start: 0, end: 100 }');
+              expect(logger.debug).toHaveBeenCalledTimes(1);
+            });
+
+            it('When Play From Gets Clamped From Paused State A Debug Message Is Logged', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://testurl/', 'video/mp4', sourceContainer, {});
+              player.beginPlayback();
+              giveMediaElementMetaData(mockVideoMediaElement, { start: 0, end: 60 });
+              metaDataCallback();
+              finishedBufferingCallback();
+              player.playFrom(80);
+
+              expect(logger.debug).toHaveBeenCalledWith('play From 80 clamped to 58.9 - seekable range is { start: 0, end: 60 }');
+              expect(logger.debug).toHaveBeenCalledTimes(1);
+            });
+
+            it('When Begin Playback From Does Not Get Clamped A Debug Message Is Not Logged', function () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://testurl/', 'video/mp4', sourceContainer, {});
+              player.beginPlaybackFrom(50);
+              giveMediaElementMetaData(mockVideoMediaElement, { start: 0, end: 60 });
+              metaDataCallback();
+              finishedBufferingCallback();
+
+              expect(logger.debug).not.toHaveBeenCalled();
+            });
           });
 
           describe('Initialise Media', function () {
@@ -959,8 +2036,6 @@ require(
           });
 
           describe('Sentinels', function () {
-            var recentEvents;
-
             function tickClock () {
               jasmine.clock().tick(1100);
             }
@@ -975,11 +2050,7 @@ require(
               jasmine.clock().uninstall();
             });
 
-            function eventCallbackReporter (event) {
-              recentEvents.push(event.type);
-            }
             it(' Enter Buffering Sentinel Causes Transition To Buffering When Playback Halts For More Than One Sentinel Iteration Since State Changed', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(0);
 
@@ -1000,7 +2071,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Not Fired When Sentinels Disabled', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true});
               player.beginPlaybackFrom(0);
 
@@ -1024,7 +2094,6 @@ require(
               var SEEK_SENTINEL_TOLERANCE = 15;
               var AFTER_JUMP_TIME = INITIAL_TIME - (SEEK_SENTINEL_TOLERANCE + 5);
 
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true});
               player.beginPlaybackFrom(INITIAL_TIME);
 
@@ -1050,7 +2119,6 @@ require(
             });
 
             it(' No Sentinels Activate When Current Time Runs Normally Then Jumps Backwards Near End Of Media', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(95);
 
@@ -1070,7 +2138,6 @@ require(
             });
 
             it(' Pause Sentinel Activates When Current Time Runs Normally Then Jumps Backwards When Paused', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(10);
 
@@ -1090,7 +2157,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Does Not Activate When Playback Halts When Only One Sentinel Iteration Since State Changed', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(10);
 
@@ -1106,7 +2172,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Does Nothing When Playback Is Working', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(10);
 
@@ -1122,7 +2187,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Does Nothing When Device Reports Buffering Correctly', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(10);
 
@@ -1135,7 +2199,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Does Nothing When Device Is Paused', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(10);
 
@@ -1199,7 +2262,6 @@ require(
             };
 
             it(' Enter Buffering Sentinel Does Nothing When Device Time Is Reported As Zero During Playback', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(10);
 
@@ -1211,7 +2273,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Does Nothing When Begin Playback Is Called And Device Time Is Reported As Zero For At Least Two Intervals', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(20);
 
@@ -1223,7 +2284,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Fires When Begin Playback From Zero Is Called And Device Time Does Not Advance', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(0);
 
@@ -1235,7 +2295,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Fires When Begin Playback Is Called And Device Time Does Not Advance', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(0);
 
@@ -1247,7 +2306,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Fires When Seeked To Zero And Device Time Is Reported As Zero For At Least Two Intervals', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(20);
 
@@ -1265,7 +2323,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Only Fires On Second Attempt When Device Reports Time As Not Changing Within Tolerance', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(0);
 
@@ -1287,7 +2344,6 @@ require(
             });
 
             it(' Enter Buffering Sentinel Does Not Fire On Two Non Consecutive Occurrences Of Device Reporting Time As Not Changing Within Tolerance', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(0);
 
@@ -1300,7 +2356,6 @@ require(
             });
 
             it(' Exit Buffering Sentinel Causes Transition To Playing When Playback Starts', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(0);
 
@@ -1315,7 +2370,6 @@ require(
             });
 
             it(' Exit Buffering Sentinel Not Fired When Sentinels Disabled', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true});
               player.beginPlaybackFrom(0);
 
@@ -1334,7 +2388,6 @@ require(
             });
 
             it(' Exit Buffering Sentinel Causes Transition To Paused When Device Reports Paused', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(0);
 
@@ -1362,7 +2415,6 @@ require(
             });
 
             it('Seek Sentinel Sets Current Time', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
               player.beginPlaybackFrom(50);
 
@@ -1379,7 +2431,6 @@ require(
             });
 
             it(' Seek Sentinel Sets Current Time Not Fired When Sentinels Disabled', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true});
               player.beginPlaybackFrom(50);
 
@@ -1396,7 +2447,6 @@ require(
             });
 
             it(' Seek Sentinel Clamps Target Seek Time When Required', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
               spyOnProperty(mockVideoMediaElement, 'seekable').and.returnValue({
@@ -1421,7 +2471,6 @@ require(
             });
 
             it(' Seek Sentinel Does Not Reseek To Initial Seek Time After 15s', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1448,7 +2497,7 @@ require(
                 },
                 length: 2
               });
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1466,7 +2515,6 @@ require(
             });
 
             it(' Seek Sentinel Sets Current Time When Paused', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1484,7 +2532,6 @@ require(
             });
 
             it(' Seek Sentinel Does Not Seek When Begin Playback Called', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1500,7 +2547,6 @@ require(
             });
 
             it(' Seek Sentinel Does Not Seek When Begin Playback Starts Playing Half Way Through Media', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1516,7 +2562,6 @@ require(
             });
 
             it(' Seek Sentinel Does Not Seek When Begin Playback After Previously Seeking', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1537,7 +2582,6 @@ require(
             });
 
             it(' Seek Sentinel Activates When Device Reports New Position Then Reverts To Old Position', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1555,7 +2599,6 @@ require(
             });
 
             it(' Seek Sentinel Does Not Fire In Live When Device Jumps Back Less Than Thirty Seconds', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1571,7 +2614,6 @@ require(
             });
 
             it(' Seek Sentinel Fires In Live When Device Jumps Back More Than Thirty Seconds', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1587,7 +2629,6 @@ require(
             });
 
             it(' Pause Sentinel Retries Pause If Pause Fails', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1606,7 +2647,6 @@ require(
             });
 
             it(' Pause Sentinel Not Fired When Sentinels Disabled', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true});
               metaDataCallback({start: 0, end: 100});
 
@@ -1625,7 +2665,6 @@ require(
             });
 
             it(' Pause Sentinel Does Not Retry Pause If Pause Succeeds', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1641,7 +2680,6 @@ require(
             });
 
             it(' Pause Sentinel Does Not Retry Pause If Pause Succeeds', function () {
-              player.addEventCallback(this, eventCallbackReporter);
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
               metaDataCallback({start: 0, end: 100});
 
@@ -1667,7 +2705,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -1698,7 +2736,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true});
 
               metaDataCallback({start: 0, end: 100});
@@ -1729,7 +2767,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -1754,7 +2792,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -1780,7 +2818,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -1806,7 +2844,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -1832,7 +2870,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -1878,7 +2916,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -1910,7 +2948,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -1944,7 +2982,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -1974,7 +3012,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -2007,7 +3045,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -2038,7 +3076,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -2075,7 +3113,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -2120,7 +3158,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -2155,7 +3193,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
@@ -2201,7 +3239,7 @@ require(
                 length: 2
               });
               spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-              player.addEventCallback(this, eventCallbackReporter);
+
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
 
               metaDataCallback({start: 0, end: 100});
