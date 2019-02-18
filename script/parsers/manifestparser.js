@@ -1,14 +1,12 @@
 define('bigscreenplayer/parsers/manifestparser',
   [
-    'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/utils/timeutils'
   ],
- function (TimeUtils, DebugTool) {
+ function (TimeUtils) {
    'use strict';
    return function ManifestParser (manifest, type, dateWithOffset) {
      function parseMPD () {
        try {
-         DebugTool.info('About to parse MPD');
          var mpd = manifest.getElementsByTagName('MPD')[0];
 
          var availabilityStartTime = Date.parse(mpd.getAttribute('availabilityStartTime'));
@@ -31,7 +29,6 @@ define('bigscreenplayer/parsers/manifestparser',
          } else {
            return {error: 'Error parsing DASH manifest attributes'};
          }
-         DebugTool.info('Done parsing MPD');
 
          return {
            windowStartTime: windowStartTime,
@@ -39,15 +36,11 @@ define('bigscreenplayer/parsers/manifestparser',
            timeCorrection: timeCorrection
          };
        } catch (e) {
-         DebugTool.error('Error parsing DASH manifest: ');
-         DebugTool.error(JSON.stringify(e));
          return {error: 'Error parsing DASH manifest'};
        }
      }
 
      function parseM3U8 () {
-       DebugTool.info('About to parse M3U8');
-
        var windowStartTime = getM3U8ProgramDateTime(manifest);
        var duration = getM3U8WindowSizeInSeconds(manifest);
 
