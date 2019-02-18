@@ -15,6 +15,11 @@ require(
         var mockLogger = 'logger';
         var mockConfig = 'config';
 
+        var mediaKind = 'mediaKind';
+        var timeData = 'timeData';
+        var playbackElement = 'playbackElement';
+        var isUHD = 'isUHD';
+
         beforeEach(function (done) {
           var injector = new Squire();
 
@@ -49,29 +54,29 @@ require(
 
         it('calls LegacyAdapter with a static media player when called for STATIC window', function () {
           var windowType = WindowTypes.STATIC;
-          nativeStrategy(windowType, null, null, null, null, mockDevice);
+          nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
           expect(html5player).toHaveBeenCalledWith(mockLogger);
 
-          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, null, null, null, null, mockConfig, mediaPlayer);
+          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
 
         it('calls LegacyAdapter with a live media player when called for a GROWING window', function () {
           var windowType = WindowTypes.GROWING;
-          nativeStrategy(windowType, null, null, null, null, mockDevice);
+          nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
           expect(livePlayer).toHaveBeenCalledWith(mockConfig, mockLogger);
 
-          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, null, null, null, null, mockConfig, mediaPlayer);
+          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
 
         it('calls LegacyAdapter with a live media player when called for a SLIDING window', function () {
           var windowType = WindowTypes.SLIDING;
-          nativeStrategy(windowType, null, null, null, null, mockDevice);
+          nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
           expect(livePlayer).toHaveBeenCalledWith(mockConfig, mockLogger);
 
-          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, null, null, null, null, mockConfig, mediaPlayer);
+          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
       });
     });
