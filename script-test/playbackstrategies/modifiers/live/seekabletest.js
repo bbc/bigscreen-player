@@ -15,11 +15,12 @@ require(
         expect(player[action]).toHaveBeenCalled();
       }
 
-      function getLivePlayer (config, logger) {
+      function initialiseSeekableMediaPlayer (config, logger) {
         seekableMediaPlayer = seekableMediaConstructor(config, logger);
       }
 
       describe('Seekable HMTL5 Live Player', function () {
+        var testReturnValue = 'return me';
         beforeEach(function (done) {
           var injector = new Squire();
 
@@ -35,15 +36,15 @@ require(
 
           injector.mock({'bigscreenplayer/playbackstrategy/modifiers/html5': mockMediaPlayer});
 
-          injector.require(['bigscreenplayer/playbackstrategy/modifiers/live/seekable'], function (mediaPlayer) {
-            seekableMediaConstructor = mediaPlayer;
+          injector.require(['bigscreenplayer/playbackstrategy/modifiers/live/seekable'], function (seekableMediaPlayer) {
+            seekableMediaConstructor = seekableMediaPlayer;
             done();
           });
         });
 
         describe('methods call the appropriate media player methods', function () {
           beforeEach(function () {
-            getLivePlayer();
+            initialiseSeekableMediaPlayer();
           });
 
           it('calls beginPlayback on the media player', function () {
@@ -77,15 +78,21 @@ require(
           });
 
           it('calls getState on the media player', function () {
-            wrapperTests('getState');
+            player.getState.and.returnValue(testReturnValue);
+
+            expect(seekableMediaPlayer.getState()).toBe(testReturnValue);
           });
 
           it('calls getSource on the media player', function () {
-            wrapperTests('getSource');
+            player.getSource.and.returnValue(testReturnValue);
+
+            expect(seekableMediaPlayer.getSource()).toBe(testReturnValue);
           });
 
           it('calls getMimeType on the media player', function () {
-            wrapperTests('getMimeType');
+            player.getMimeType.and.returnValue(testReturnValue);
+
+            expect(seekableMediaPlayer.getMimeType()).toBe(testReturnValue);
           });
 
           it('calls addEventCallback on the media player', function () {
@@ -117,18 +124,21 @@ require(
 
             wrapperTests('pause');
           });
-        });
 
-        describe('Restartable features', function () {
-          it('begins playback with the desired offset', function () {
-            getLivePlayer();
-            var offset = 10;
+          it('calls getCurrentTime on media player', function () {
+            player.getCurrentTime.and.returnValue(testReturnValue);
 
-            seekableMediaPlayer.beginPlaybackFrom(offset);
-
-            expect(player.beginPlaybackFrom).toHaveBeenCalledWith(offset);
+            expect(seekableMediaPlayer.getCurrentTime()).toBe(testReturnValue);
           });
 
+          it('calls getSeekableRange on media player', function () {
+            player.getSeekableRange.and.returnValue(testReturnValue);
+
+            expect(seekableMediaPlayer.getSeekableRange()).toBe(testReturnValue);
+          });
+        });
+
+        describe('Seekable features', function () {
           it('should respect config forcing playback from the end of the window', function () {
             var config = {
               streaming: {
@@ -137,60 +147,57 @@ require(
                 }
               }
             };
-            getLivePlayer(config);
+            initialiseSeekableMediaPlayer(config);
 
             seekableMediaPlayer.beginPlayback();
 
             expect(player.beginPlaybackFrom).toHaveBeenCalledWith(Infinity);
           });
-
-          it('should playback normally if no config values are inhibiting', function () {
-            var config = {
-              streaming: {
-                overrides: {
-                  forceBeginPlaybackToEndOfWindow: false
-                }
-              }
-            };
-            getLivePlayer(config);
-
-            seekableMediaPlayer.beginPlayback();
-
-            expect(player.beginPlayback).not.toHaveBeenCalledWith(Infinity);
-          });
         });
 
         describe('calls the mediaplayer with the correct media Type', function () {
           beforeEach(function () {
-            getLivePlayer();
+            initialiseSeekableMediaPlayer();
           });
 
-          it('all non-live and live video and audio', function () {
+          it('for static video', function () {
             seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, '', '', sourceContainer);
 
             expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
+          });
 
-            seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, '', '', sourceContainer);
-
-            expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
-
+          it('for live video', function () {
             seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer);
 
             expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
+          });
 
+          it('for static audio', function () {
+            seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, '', '', sourceContainer);
+
+            expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer, undefined);
+          });
+
+          it('for live audio', function () {
             seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer);
 
-            expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
+            expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer, undefined);
           });
         });
 
-        describe('Internal Methods to monitor buffering', function () {
+        describe('Internal Methods to monitor playing state close to the start of the window', function () {
           var mockCallback = [];
+
+          function startPlaybackAndPause (startTime, disableAutoResume) {
+            seekableMediaPlayer.beginPlaybackFrom(startTime || 0);
+            seekableMediaPlayer.pause({disableAutoResume: disableAutoResume});
+          }
+
           beforeEach(function () {
             jasmine.clock().install();
             jasmine.clock().mockDate();
 
-            getLivePlayer();
+            initialiseSeekableMediaPlayer();
 
             player.getSeekableRange.and.returnValue({start: 0});
             player.getCurrentTime.and.returnValue(20);
@@ -206,8 +213,7 @@ require(
           });
             // Buffering and time out tests here
           it('calls resume when approaching the start of the buffer', function () {
-            seekableMediaPlayer.beginPlaybackFrom(20);
-            seekableMediaPlayer.pause({disableAutoResume: false});
+            startPlaybackAndPause(20, false);
 
             jasmine.clock().tick(12 * 1000);
 
@@ -215,17 +221,15 @@ require(
           });
 
           it('does not call resume when approaching the start of the buffer with the disableAutoResume option', function () {
-            seekableMediaPlayer.beginPlaybackFrom(20);
-            seekableMediaPlayer.pause({disableAutoResume: true});
+            startPlaybackAndPause(20, true);
 
-            jasmine.clock().tick(12 * 1000);
+            jasmine.clock().tick(11 * 1000);
 
             expect(player.resume).not.toHaveBeenCalledWith();
           });
 
           it('does not call resume if paused after the auto resume point', function () {
-            seekableMediaPlayer.beginPlaybackFrom(20);
-            seekableMediaPlayer.pause();
+            startPlaybackAndPause(20, false);
 
             jasmine.clock().tick(2 * 1000);
 
@@ -233,8 +237,7 @@ require(
           });
 
           it('does not autoplay if the video is no longer paused', function () {
-            seekableMediaPlayer.beginPlaybackFrom(20);
-            seekableMediaPlayer.pause();
+            startPlaybackAndPause(20, false);
 
             for (var index = 0; index < mockCallback.length; index++) {
               mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING});
@@ -242,12 +245,11 @@ require(
 
             jasmine.clock().tick(12 * 1000);
 
-            expect(player.resume).not.toHaveBeenCalledTimes(2);
+            expect(player.resume).not.toHaveBeenCalled();
           });
 
           it('Calls resume when paused is called multiple times', function () {
-            seekableMediaPlayer.beginPlayback();
-            seekableMediaPlayer.pause();
+            startPlaybackAndPause(0, false);
 
             var event = {state: MediaPlayerBase.STATE.PLAYING, currentTime: 25};
             for (var index = 0; index < mockCallback.length; index++) {
@@ -270,8 +272,7 @@ require(
           });
 
           it('calls autoresume immeditetly if paused after an autoresume', function () {
-            seekableMediaPlayer.beginPlaybackFrom(20);
-            seekableMediaPlayer.pause();
+            startPlaybackAndPause(20, false);
 
             jasmine.clock().tick(12 * 1000);
 
@@ -287,8 +288,7 @@ require(
           });
 
           it('does not calls autoresume immeditetly if paused after an autoresume with disableAutoResume options', function () {
-            seekableMediaPlayer.beginPlaybackFrom(20);
-            seekableMediaPlayer.pause({disableAutoResume: true});
+            startPlaybackAndPause(20, true);
 
             jasmine.clock().tick(12 * 1000);
             player.getSeekableRange.and.returnValue({start: 12});
@@ -299,8 +299,7 @@ require(
           });
 
           it('autoresume is not cancelled by a paused event state', function () {
-            seekableMediaPlayer.beginPlaybackFrom(20);
-            seekableMediaPlayer.pause();
+            startPlaybackAndPause(20, false);
 
             for (var index = 0; index < mockCallback.length; index++) {
               mockCallback[index]({state: MediaPlayerBase.STATE.PAUSED});
@@ -313,8 +312,7 @@ require(
 
           it('will fake pause if attempting to pause at the start of playback ', function () {
             player.getCurrentTime.and.returnValue(0);
-            seekableMediaPlayer.beginPlayback();
-            seekableMediaPlayer.pause();
+            startPlaybackAndPause(0, false);
 
             expect(player.toPaused).toHaveBeenCalledTimes(1);
             expect(player.toPlaying).toHaveBeenCalledTimes(1);
