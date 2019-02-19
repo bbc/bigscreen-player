@@ -18,7 +18,7 @@ require(
         var timeupdateCallback;
         var waitingCallback;
 
-        var recentEvents = [];
+        var recentEvents;
 
         var logger = jasmine.createSpyObj('logger', ['warn', 'debug', 'error']);
 
@@ -64,6 +64,8 @@ require(
           sourceContainer = document.createElement('div');
 
           html5Player = Html5MediaPLayer;
+
+          recentEvents = [];
 
           player = html5Player(logger);
           spyOn(player, 'toPaused').and.callThrough();
@@ -235,6 +237,7 @@ require(
           describe('Stopped state tests', function () {
             beforeEach(function () {
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+              recentEvents = [];
             });
 
             it('Get Source Returns Correct Value In Stopped State', function () {
@@ -307,7 +310,6 @@ require(
             });
 
             it('Time Passing Does Not Cause Status Event To Be Sent In Stopped State', function () {
-              recentEvents = [];
               mockVideoMediaElement.currentTime += 1;
 
               expect(recentEvents).toEqual([]);
@@ -350,6 +352,7 @@ require(
             beforeEach(function () {
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
               player.beginPlaybackFrom(0);
+              recentEvents = [];
             });
 
             it('Get Source Returns Expected Value In Buffering State', function () {
@@ -404,7 +407,6 @@ require(
             });
 
             it('Time Passing Does Not Cause Status Event To Be Sent In Buffering State', function () {
-              recentEvents = [];
               mockVideoMediaElement.currentTime += 1;
 
               expect(recentEvents).toEqual([]);
@@ -450,7 +452,6 @@ require(
             });
 
             it('Device Buffering Notification In Buffering State Does Not Emit Second Buffering Event', function () {
-              recentEvents = [];
               waitingCallback();
 
               expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.BUFFERING);
@@ -584,8 +585,6 @@ require(
             });
 
             it('Get Regular Status Event When Playing', function () {
-              recentEvents = [];
-
               timeupdateCallback();
               jasmine.clock().tick(1000);
 
@@ -785,7 +784,6 @@ require(
 
             afterEach(function () {
               jasmine.clock().uninstall();
-              recentEvents = [];
             });
 
             it('Get Source Returns Expected Value In Complete State', function () {
@@ -912,12 +910,12 @@ require(
               mockVideoMediaElement.currentTime = 100;
               player.reset();
 
+              recentEvents = [];
               jasmine.clock().install();
             });
 
             afterEach(function () {
               jasmine.clock().uninstall();
-              recentEvents = [];
             });
 
             it('Get Source Returns Undefined In Error State', function () {
@@ -941,7 +939,6 @@ require(
             });
 
             it('Calling Begin Playback In Error State Is An Error', function () {
-              recentEvents = [];
               player.beginPlayback();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'ERROR\' state');
@@ -949,7 +946,6 @@ require(
             });
 
             it('Calling Begin Playback From In Error State Is An Error', function () {
-              recentEvents = [];
               player.beginPlaybackFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'ERROR\' state');
@@ -957,7 +953,6 @@ require(
             });
 
             it('Calling Initialise Media In Error State Is An Error', function () {
-              recentEvents = [];
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
 
               expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
@@ -965,7 +960,6 @@ require(
             });
 
             it('Calling Play From In Error State Is An Error', function () {
-              recentEvents = [];
               player.playFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot playFrom while in the \'ERROR\' state');
@@ -973,7 +967,6 @@ require(
             });
 
             it('Calling Pause In Error State Is An Error', function () {
-              recentEvents = [];
               player.pause();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'ERROR\' state');
@@ -981,7 +974,6 @@ require(
             });
 
             it('Calling Resume In Error State Is An Error', function () {
-              recentEvents = [];
               player.resume();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'ERROR\' state');
@@ -989,7 +981,6 @@ require(
             });
 
             it('Calling Stop From In Error State Is An Error', function () {
-              recentEvents = [];
               player.stop();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot stop while in the \'ERROR\' state');
@@ -1025,6 +1016,7 @@ require(
               } catch (e) { }
 
               expect(logger.error).toHaveBeenCalledWith('Cannot playFrom while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
             it('Error While Pausing In Invalid State Is Logged', function () {
@@ -1039,6 +1031,7 @@ require(
               } catch (e) { }
 
               expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
             it('Error While Resuming In Invalid State Is Logged', function () {
@@ -1053,6 +1046,7 @@ require(
               } catch (e) { }
 
               expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
             it('Error While Stopping In Invalid State Is Logged', function () {
@@ -1067,6 +1061,7 @@ require(
               } catch (e) { }
 
               expect(logger.error).toHaveBeenCalledWith('Cannot stop while in the \'ERROR\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
             it('Error While Setting Source In Invalid State Is Logged', function () {
@@ -1077,6 +1072,7 @@ require(
               } catch (e) { }
 
               expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             }
             );
 
@@ -1091,6 +1087,7 @@ require(
               } catch (e) { }
 
               expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'PLAYING\' state');
+              expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
           });
 
@@ -2029,7 +2026,6 @@ require(
           beforeEach(function () {
             jasmine.clock().install();
             jasmine.clock().mockDate();
-            recentEvents = [];
           });
 
           afterEach(function () {

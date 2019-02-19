@@ -32,7 +32,7 @@ require(
             player = jasmine.createSpyObj('player',
               ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
                 'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement', 'pause',
-                'resume', 'beginPlaybackFrom']);
+                'resume', 'beginPlaybackFrom', 'getCurrentTime']);
 
             function mockMediaPlayer () {
               return player;
@@ -160,15 +160,21 @@ require(
 
           describe('Internal Methods to monitor buffering', function () {
             var mockCallback = [];
+
+            function startPlaybackAndPause (startTime, disableAutoResume) {
+              restartableMediaPlayer.beginPlaybackFrom(startTime);
+              restartableMediaPlayer.pause({disableAutoResume: disableAutoResume});
+            }
+
             beforeEach(function () {
               jasmine.clock().install();
               jasmine.clock().mockDate();
 
-              initialiseRestartableMediaPlayer();
-
               player.addEventCallback.and.callFake(function (self, callback) {
                 mockCallback.push(callback);
               });
+
+              initialiseRestartableMediaPlayer();
             });
 
             afterEach(function () {
@@ -177,8 +183,7 @@ require(
             });
               // Buffering and time out tests here
             it('calls resume when approaching the start of the buffer', function () {
-              restartableMediaPlayer.beginPlaybackFrom(20);
-              restartableMediaPlayer.pause({disableAutoResume: false});
+              startPlaybackAndPause(20, false);
 
               jasmine.clock().tick(12 * 1000);
 
@@ -186,8 +191,7 @@ require(
             });
 
             it('does not call resume when approaching the start of the buffer with the disableAutoResume option', function () {
-              restartableMediaPlayer.beginPlaybackFrom(20);
-              restartableMediaPlayer.pause({disableAutoResume: true});
+              startPlaybackAndPause(20, true);
 
               jasmine.clock().tick(12 * 1000);
 
@@ -195,8 +199,7 @@ require(
             });
 
             it('does not call resume if paused after the auto resume point', function () {
-              restartableMediaPlayer.beginPlaybackFrom(20);
-              restartableMediaPlayer.pause();
+              startPlaybackAndPause(20, false);
 
               jasmine.clock().tick(11 * 1000);
 
@@ -204,8 +207,7 @@ require(
             });
 
             it('does not autoplay if the video is no longer paused', function () {
-              restartableMediaPlayer.beginPlaybackFrom(20);
-              restartableMediaPlayer.pause();
+              startPlaybackAndPause(20, false);
 
               for (var index = 0; index < mockCallback.length; index++) {
                 mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING});
@@ -217,8 +219,7 @@ require(
             });
 
             it('Calls resume when paused is called multiple times', function () {
-              restartableMediaPlayer.beginPlayback();
-              restartableMediaPlayer.pause();
+              startPlaybackAndPause(0, false);
 
               var event = {state: MediaPlayerBase.STATE.PLAYING, currentTime: 25};
               for (var index = 0; index < mockCallback.length; index++) {
@@ -241,8 +242,7 @@ require(
             });
 
             it('calls autoresume immeditetly if paused after an autoresume', function () {
-              restartableMediaPlayer.beginPlaybackFrom(20);
-              restartableMediaPlayer.pause();
+              startPlaybackAndPause(20, false);
 
               jasmine.clock().tick(12 * 1000);
 
@@ -254,8 +254,7 @@ require(
             });
 
             it('autoresume is not cancelled by a paused event state', function () {
-              restartableMediaPlayer.beginPlaybackFrom(20);
-              restartableMediaPlayer.pause();
+              startPlaybackAndPause(20, false);
 
               for (var index = 0; index < mockCallback.length; index++) {
                 mockCallback[index]({state: MediaPlayerBase.STATE.PAUSED});
@@ -264,6 +263,25 @@ require(
               jasmine.clock().tick(12 * 1000);
 
               expect(player.resume).toHaveBeenCalledTimes(1);
+            });
+
+            it('will fake pause if attempting to pause at the start of playback ', function () {
+              startPlaybackAndPause(0, false);
+
+              jasmine.clock().tick(1);
+
+              expect(player.pause).toHaveBeenCalledTimes(1);
+              expect(player.resume).toHaveBeenCalledTimes(1);
+            });
+
+            it('does not calls autoresume immeditetly if paused after an autoresume with disableAutoResume options', function () {
+              startPlaybackAndPause(20, true);
+
+              jasmine.clock().tick(12 * 1000);
+
+              jasmine.clock().tick(1);
+
+              expect(player.resume).not.toHaveBeenCalledTimes(1);
             });
 
             it('time spend buffering is deducted when considering time to autoresume', function () {
@@ -281,7 +299,7 @@ require(
 
               restartableMediaPlayer.pause();
 
-              jasmine.clock().tick(1 * 1000);
+              jasmine.clock().tick(3 * 1000);
 
               expect(player.resume).toHaveBeenCalledTimes(1);
             });

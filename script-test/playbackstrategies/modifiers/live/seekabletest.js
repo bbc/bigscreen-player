@@ -306,6 +306,30 @@ require(
             expect(player.toPaused).toHaveBeenCalledTimes(1);
             expect(player.toPlaying).toHaveBeenCalledTimes(1);
           });
+
+          it('time spend buffering is deducted when considering time to autoresume', function () {
+            startPlaybackAndPause(0, false);
+
+            seekableMediaPlayer.resume();
+            player.resume.calls.reset();
+
+            for (var index = 0; index < mockCallback.length; index++) {
+              mockCallback[index]({state: MediaPlayerBase.STATE.BUFFERING, currentTime: 20});
+            }
+
+            jasmine.clock().tick(11 * 1000);
+
+            for (index = 0; index < mockCallback.length; index++) {
+              mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING, currentTime: 20});
+            }
+            player.getSeekableRange.and.returnValue({start: 20});
+
+            seekableMediaPlayer.pause();
+
+            jasmine.clock().tick(3 * 1000);
+
+            expect(player.toPlaying).toHaveBeenCalledTimes(1);
+          });
         });
       });
     });
