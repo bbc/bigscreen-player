@@ -123,7 +123,7 @@ require(
             isUndefined('getCurrentTime');
           });
 
-          it('getSeekableRangese', function () {
+          it('getSeekableRange', function () {
             isUndefined('getSeekableRange');
           });
         });

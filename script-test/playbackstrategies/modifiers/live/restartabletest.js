@@ -108,6 +108,28 @@ require(
             });
           });
 
+          describe('should not have methods for', function () {
+            function isUndefined (action) {
+              expect(restartableMediaPlayer[action]).not.toBeDefined();
+            }
+
+            beforeEach(function () {
+              initialiseRestartableMediaPlayer();
+            });
+
+            it('playFrom', function () {
+              isUndefined('playFrom');
+            });
+
+            it('getCurrentTime', function () {
+              isUndefined('getCurrentTime');
+            });
+
+            it('getSeekableRange', function () {
+              isUndefined('getSeekableRange');
+            });
+          });
+
           describe('calls the mediaplayer with the correct media Type', function () {
             beforeEach(function () {
               initialiseRestartableMediaPlayer();
