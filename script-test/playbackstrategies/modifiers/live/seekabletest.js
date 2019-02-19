@@ -9,10 +9,16 @@ require(
       var seekableMediaConstructor;
       var seekableMediaPlayer;
 
-      function wrapperTests (action) {
-        seekableMediaPlayer[action]();
+      function wrapperTests (action, expectedReturn) {
+        if (expectedReturn) {
+          player[action].and.returnValue(expectedReturn);
 
-        expect(player[action]).toHaveBeenCalled();
+          expect(seekableMediaPlayer[action]()).toBe(expectedReturn);
+        } else {
+          seekableMediaPlayer[action]();
+
+          expect(player[action]).toHaveBeenCalledTimes(1);
+        }
       }
 
       function initialiseSeekableMediaPlayer (config, logger) {
@@ -20,7 +26,6 @@ require(
       }
 
       describe('Seekable HMTL5 Live Player', function () {
-        var testReturnValue = 'return me';
         beforeEach(function (done) {
           var injector = new Squire();
 
@@ -78,21 +83,15 @@ require(
           });
 
           it('calls getState on the media player', function () {
-            player.getState.and.returnValue(testReturnValue);
-
-            expect(seekableMediaPlayer.getState()).toBe(testReturnValue);
+            wrapperTests('getState', 'thisState');
           });
 
           it('calls getSource on the media player', function () {
-            player.getSource.and.returnValue(testReturnValue);
-
-            expect(seekableMediaPlayer.getSource()).toBe(testReturnValue);
+            wrapperTests('getSource', 'thisSource');
           });
 
           it('calls getMimeType on the media player', function () {
-            player.getMimeType.and.returnValue(testReturnValue);
-
-            expect(seekableMediaPlayer.getMimeType()).toBe(testReturnValue);
+            wrapperTests('getMimeType', 'thisMimeType');
           });
 
           it('calls addEventCallback on the media player', function () {
@@ -126,15 +125,11 @@ require(
           });
 
           it('calls getCurrentTime on media player', function () {
-            player.getCurrentTime.and.returnValue(testReturnValue);
-
-            expect(seekableMediaPlayer.getCurrentTime()).toBe(testReturnValue);
+            wrapperTests('getCurrentTime', 'thisTime');
           });
 
           it('calls getSeekableRange on media player', function () {
-            player.getSeekableRange.and.returnValue(testReturnValue);
-
-            expect(seekableMediaPlayer.getSeekableRange()).toBe(testReturnValue);
+            wrapperTests('getSeekableRange', 'thisRange');
           });
         });
 
@@ -174,12 +169,6 @@ require(
 
           it('for static audio', function () {
             seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, '', '', sourceContainer);
-
-            expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer, undefined);
-          });
-
-          it('for live audio', function () {
-            seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer);
 
             expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer, undefined);
           });
@@ -231,7 +220,7 @@ require(
           it('does not call resume if paused after the auto resume point', function () {
             startPlaybackAndPause(20, false);
 
-            jasmine.clock().tick(2 * 1000);
+            jasmine.clock().tick(11 * 1000);
 
             expect(player.resume).not.toHaveBeenCalledWith();
           });

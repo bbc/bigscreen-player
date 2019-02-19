@@ -9,24 +9,30 @@ require(
         var restartableMediaConstructor;
         var restartableMediaPlayer;
 
-        function wrapperTests (action) {
-          restartableMediaPlayer[action]();
-
-          expect(player[action]).toHaveBeenCalled();
-        }
-
-        function getLivePlayer (config, logger) {
+        function initialiseRestartableMediaPlayer (config, logger) {
           restartableMediaPlayer = restartableMediaConstructor(config, logger);
         }
 
         describe('restartable HMTL5 Live Player', function () {
+          function wrapperTests (action, expectedReturn) {
+            if (expectedReturn) {
+              player[action].and.returnValue(expectedReturn);
+
+              expect(restartableMediaPlayer[action]()).toBe(expectedReturn);
+            } else {
+              restartableMediaPlayer[action]();
+
+              expect(player[action]).toHaveBeenCalledTimes(1);
+            }
+          }
+
           beforeEach(function (done) {
             var injector = new Squire();
 
             player = jasmine.createSpyObj('player',
               ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
                 'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement', 'pause',
-                'resume', 'beginPlaybackFrom' ]);
+                'resume', 'beginPlaybackFrom']);
 
             function mockMediaPlayer () {
               return player;
@@ -42,7 +48,7 @@ require(
 
           describe('methods call the appropriate media player methods', function () {
             beforeEach(function () {
-              getLivePlayer();
+              initialiseRestartableMediaPlayer();
             });
 
             it('calls beginPlayback on the media player', function () {
@@ -62,15 +68,15 @@ require(
             });
 
             it('calls getState on the media player', function () {
-              wrapperTests('getState');
+              wrapperTests('getState', 'thisState');
             });
 
             it('calls getSource on the media player', function () {
-              wrapperTests('getSource');
+              wrapperTests('getSource', 'thisSource');
             });
 
             it('calls getMimeType on the media player', function () {
-              wrapperTests('getMimeType');
+              wrapperTests('getMimeType', 'thisMimeType');
             });
 
             it('calls addEventCallback on the media player', function () {
@@ -94,7 +100,7 @@ require(
             });
 
             it('calls getPlayerElement on the media player', function () {
-              wrapperTests('getPlayerElement');
+              wrapperTests('getPlayerElement', 'thisPlayerElement');
             });
 
             it('calls pause on the media player', function () {
@@ -104,31 +110,31 @@ require(
 
           describe('calls the mediaplayer with the correct media Type', function () {
             beforeEach(function () {
-              getLivePlayer();
+              initialiseRestartableMediaPlayer();
             });
 
-            it('all non-live and live video and audio', function () {
+            it('for static video', function () {
               restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, '', '', sourceContainer);
 
               expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
+            });
 
-              restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, '', '', sourceContainer);
-
-              expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
-
+            it('for live video', function () {
               restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer);
 
               expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
+            });
 
-              restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer);
+            it('for static audio', function () {
+              restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, '', '', sourceContainer);
 
-              expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined);
+              expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer, undefined);
             });
           });
 
           describe('Restartable features', function () {
             it('begins playback with the desired offset', function () {
-              getLivePlayer();
+              initialiseRestartableMediaPlayer();
               var offset = 10;
 
               restartableMediaPlayer.beginPlaybackFrom(offset);
@@ -144,26 +150,11 @@ require(
                   }
                 }
               };
-              getLivePlayer(config);
+              initialiseRestartableMediaPlayer(config);
 
               restartableMediaPlayer.beginPlayback();
 
               expect(player.beginPlaybackFrom).toHaveBeenCalledWith(Infinity);
-            });
-
-            it('should playback normally if no config values are inhibiting', function () {
-              var config = {
-                streaming: {
-                  overrides: {
-                    forceBeginPlaybackToEndOfWindow: false
-                  }
-                }
-              };
-              getLivePlayer(config);
-
-              restartableMediaPlayer.beginPlayback();
-
-              expect(player.beginPlayback).not.toHaveBeenCalledWith(Infinity);
             });
           });
 
@@ -173,7 +164,7 @@ require(
               jasmine.clock().install();
               jasmine.clock().mockDate();
 
-              getLivePlayer();
+              initialiseRestartableMediaPlayer();
 
               player.addEventCallback.and.callFake(function (self, callback) {
                 mockCallback.push(callback);
@@ -207,7 +198,7 @@ require(
               restartableMediaPlayer.beginPlaybackFrom(20);
               restartableMediaPlayer.pause();
 
-              jasmine.clock().tick(2 * 1000);
+              jasmine.clock().tick(11 * 1000);
 
               expect(player.resume).not.toHaveBeenCalledWith();
             });

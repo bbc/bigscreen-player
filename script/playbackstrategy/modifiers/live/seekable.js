@@ -47,7 +47,7 @@ define(
 
         return ({
           initialiseMedia: function initialiseMedia (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
-            if (mediaType === MediaPlayerBase.TYPE.AUDIO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO) {
+            if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
               mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
             } else {
               mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO;

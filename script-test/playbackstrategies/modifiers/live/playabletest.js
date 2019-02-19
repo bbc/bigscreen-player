@@ -14,10 +14,16 @@ require(
       var player;
       var playableMediaPlayer;
 
-      function wrapperTests (action) {
-        playableMediaPlayer[action]();
+      function wrapperTests (action, expectedReturn) {
+        if (expectedReturn) {
+          player[action].and.returnValue(expectedReturn);
 
-        expect(player[action]).toHaveBeenCalled();
+          expect(playableMediaPlayer[action]()).toBe(expectedReturn);
+        } else {
+          playableMediaPlayer[action]();
+
+          expect(player[action]).toHaveBeenCalledTimes(1);
+        }
       }
 
       function isUndefined (action) {
@@ -38,8 +44,8 @@ require(
 
           injector.mock({'bigscreenplayer/playbackstrategy/modifiers/html5': mockMediaPlayer});
 
-          injector.require(['bigscreenplayer/playbackstrategy/modifiers/live/playable'], function (mediaPlayer) {
-            playableMediaPlayer = mediaPlayer();
+          injector.require(['bigscreenplayer/playbackstrategy/modifiers/live/playable'], function (PlayableMediaPlayer) {
+            playableMediaPlayer = PlayableMediaPlayer();
             done();
           });
         });
@@ -61,23 +67,31 @@ require(
         });
 
         it('calls getState on the media player', function () {
-          wrapperTests('getState');
+          wrapperTests('getState', 'thisState');
         });
 
         it('calls getSource on the media player', function () {
-          wrapperTests('getSource');
+          wrapperTests('getSource', 'thisSource');
         });
 
         it('calls getMimeType on the media player', function () {
-          wrapperTests('getMimeType');
+          wrapperTests('getMimeType', 'thisMimeType');
         });
 
         it('calls addEventCallback on the media player', function () {
-          wrapperTests('addEventCallback', 'args', function () { return; });
+          var thisArg = 'arg';
+          var callback = function () { return; };
+          playableMediaPlayer.addEventCallback(thisArg, callback);
+
+          expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, callback);
         });
 
         it('calls removeEventCallback on the media player', function () {
-          wrapperTests('removeEventCallback', 'args', function () { return; });
+          var thisArg = 'arg';
+          var callback = function () { return; };
+          playableMediaPlayer.removeEventCallback(thisArg, callback);
+
+          expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback);
         });
 
         it('calls removeAllEventCallbacks on the media player', function () {
@@ -85,7 +99,7 @@ require(
         });
 
         it('calls getPlayerElement on the media player', function () {
-          wrapperTests('getPlayerElement');
+          wrapperTests('getPlayerElement', 'thisPlayerElement');
         });
 
         describe('should not have methods for', function () {
@@ -109,7 +123,7 @@ require(
             isUndefined('getCurrentTime');
           });
 
-          it('paugetSeekableRangese', function () {
+          it('getSeekableRangese', function () {
             isUndefined('getSeekableRange');
           });
         });
