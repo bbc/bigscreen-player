@@ -330,6 +330,16 @@ require(
 
             expect(player.toPlaying).toHaveBeenCalledTimes(1);
           });
+
+          it('does not calls autoresume immeditetly if paused after an autoresume with disableAutoResume options', function () {
+            startPlaybackAndPause(20, true);
+
+            jasmine.clock().tick(12 * 1000);
+
+            jasmine.clock().tick(1);
+
+            expect(player.resume).not.toHaveBeenCalledTimes(1);
+          });
         });
       });
     });
