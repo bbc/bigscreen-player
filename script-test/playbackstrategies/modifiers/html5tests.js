@@ -22,10 +22,6 @@ require(
 
         var logger = jasmine.createSpyObj('logger', ['warn', 'debug', 'error']);
 
-        mockSourceElement = document.createElement('source');
-        mockVideoMediaElement = document.createElement('video');
-        mockAudioMediaElement = document.createElement('audio');
-
         function eventCallbackReporter (event) {
           recentEvents.push(event.type);
         }
