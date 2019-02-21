@@ -203,7 +203,7 @@ require(
               jasmine.clock().uninstall();
               mockCallback = [];
             });
-              // Buffering and time out tests here
+
             it('calls resume when approaching the start of the buffer', function () {
               startPlaybackAndPause(20, false);
 
