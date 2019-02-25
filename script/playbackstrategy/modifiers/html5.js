@@ -522,7 +522,7 @@ define(
         var clampedTime = getClampedTime(seconds);
         var range = getSeekableRange();
         if (clampedTime !== seconds) {
-          logger.debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+          logger.debug('play From ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
         }
         return clampedTime;
       }
@@ -599,7 +599,12 @@ define(
         },
 
         initialiseMedia: function (type, url, mediaMimeType, sourceContainer, opts) {
+          disableSentinels = opts.disableSentinels;
+          mediaType = type;
+          source = url;
+          mimeType = mediaMimeType;
           opts = opts || {};
+
           if (getState() === MediaPlayerBase.STATE.EMPTY) {
             var idSuffix = 'Video';
             if (mediaType === MediaPlayerBase.TYPE.AUDIO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO) {
@@ -607,11 +612,6 @@ define(
             }
 
             setSeekSentinelTolerance();
-
-            disableSentinels = opts.disableSentinels;
-            mediaType = type;
-            source = url;
-            mimeType = mediaMimeType;
 
             mediaElement = document.createElement(idSuffix.toLowerCase(), 'mediaPlayer' + idSuffix);
             mediaElement.autoplay = false;
