@@ -137,7 +137,7 @@ define('bigscreenplayer/mockbigscreenplayer',
         liveWindowStart = undefined;
         pausedState = true;
         endedState = false;
-        mediaKind = 'video';
+        mediaKind = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.kind || 'video';
         windowType = newWindowType || WindowTypes.STATIC;
         subtitlesAvailable = true;
         subtitlesEnabled = false;
