@@ -41,6 +41,7 @@ define('bigscreenplayer/debugger/debugtool',
        view = DebugView;
        view.init();
        presenter.init(view);
+       presenter.update(Chronicle.retrieve());
        Chronicle.registerForUpdates(presenter.update);
        visible = true;
      }
