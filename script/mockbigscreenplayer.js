@@ -43,6 +43,8 @@ define('bigscreenplayer/mockbigscreenplayer',
     var autoProgressInterval;
     var initialBuffering = false;
 
+    var liveWindowData;
+
     function startProgress (progressCause) {
       setTimeout(function () {
         if (!autoProgressInterval) {
@@ -271,6 +273,17 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       unregisterPlugin: function (plugin) {
         Plugins.unregisterPlugin(plugin);
+      },
+      getLiveWindowData: function () {
+        if (windowType === WindowTypes.STATIC) {
+          return {};
+        }
+        return {
+          windowStartTime: liveWindowData.windowStartTime,
+          windowEndTime: liveWindowData.windowEndTime,
+          initialPlaybackTime: liveWindowData.initialPlaybackTime,
+          serverDate: liveWindowData.serverDate
+        };
       }
     };
 
@@ -379,6 +392,9 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       setInitialBuffering: function (value) {
         initialBuffering = value;
+      },
+      setLiveWindowData: function (newLiveWindowData) {
+        liveWindowData = newLiveWindowData;
       }
     };
 
