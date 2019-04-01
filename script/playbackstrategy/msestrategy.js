@@ -67,6 +67,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onTimeUpdate () {
+        DebugTool.keyValue({key: 'Ready State', value: mediaElement.readyState});
         publishTimeUpdate();
       }
 
@@ -187,16 +188,36 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.initialize(mediaElement, src, true);
       }
 
+      // testing - logging out mediaElement events
+      function onCanPlay () {
+        DebugTool.info('Media Element event: can play. Ready State: ' + mediaElement.readyState);
+      }
+
+      function onCanPlayThrough () {
+        DebugTool.info('Media Element event: can play through. Ready State: ' + mediaElement.readyState);
+      }
+
+      function onLoadedMetaData () {
+        DebugTool.info('Media Element event: loaded meta data. Ready State: ' + mediaElement.readyState);
+      }
+
+      function onLoadedData () {
+        DebugTool.info('Media Element event: loadeddata. Ready State: ' + mediaElement.readyState);
+      }
+
       function setUpMediaListeners () {
         mediaElement.addEventListener('timeupdate', onTimeUpdate);
-        // mediaElement.addEventListener('playing', onPlaying);
-        mediaPlayer.on(DashJSEvents.PLAYING, onPlaying);
+        mediaElement.addEventListener('playing', onPlaying);
         mediaElement.addEventListener('pause', onPaused);
         mediaElement.addEventListener('waiting', onBuffering);
         mediaElement.addEventListener('seeking', onBuffering);
         mediaElement.addEventListener('seeked', onSeeked);
         mediaElement.addEventListener('ended', onEnded);
         mediaElement.addEventListener('error', onError);
+        mediaElement.addEventListener('canplay', onCanPlay);
+        mediaElement.addEventListener('canplaythrough', onCanPlayThrough);
+        mediaElement.addEventListener('loadeddata', onLoadedData);
+        mediaElement.addEventListener('loadedmetadata', onLoadedMetaData);
         mediaPlayer.on(DashJSEvents.ERROR, onError);
         mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
