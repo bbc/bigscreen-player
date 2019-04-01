@@ -35,6 +35,7 @@ require(
             codec: undefined,
             urls: opts.multiCdn ? [{url: 'a', cdn: 'cdn-a'}, {url: 'b', cdn: 'cdn-b'}, {url: 'c', cdn: 'cdn-c'}] : [{url: 'a', cdn: 'cdn-a'}],
             type: 'application/dash+xml',
+            manifestType: 'mpd',
             bitrate: undefined,
             captionsUrl: opts.subtitlesAvailable ? 'captionsUrl' : undefined
           },
@@ -950,38 +951,68 @@ require(
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
         });
 
-        it('should fire a fatal error on the plugins if the playback type is live', function () {
+        // it('should fire a fatal error on the plugins if the playback type is live', function () {
+        //   spyOn(mockStrategy, 'getDuration').and.returnValue(100);
+        //   spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
+        //   spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
+        //   spyOn(mockStrategy, 'load');
+
+        //   setUpPlayerComponent({windowType: WindowTypes.SLIDING, multiCdn: true});
+
+        //   mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
+
+        //   jasmine.clock().tick(5000);
+
+        //   expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+
+        //   expect(mockPluginsInterface.onFatalError).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
+        // });
+
+        it('should failover after buffering for 20 seconds on live dash playback', function () {
+          var secondCdn = 'b';
+          var currentTime = 94;
+          var type = 'application/dash+xml';
+
           spyOn(mockStrategy, 'getDuration').and.returnValue(100);
-          spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
+          spyOn(mockStrategy, 'getCurrentTime').and.returnValue(currentTime);
           spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
           spyOn(mockStrategy, 'load');
 
-          setUpPlayerComponent({windowType: WindowTypes.SLIDING, multiCdn: true});
+          setUpPlayerComponent({windowType: WindowTypes.GROWING, multiCdn: true});
 
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
+          // mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
 
-          jasmine.clock().tick(5000);
+          // Set playback cause to normal
+          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
 
-          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
 
-          expect(mockPluginsInterface.onFatalError).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
-        });
-
-        it('should publish a media state update of fatal if the playback type is live', function () {
-          spyOn(mockStrategy, 'getDuration').and.returnValue(100);
-          spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
-          spyOn(mockStrategy, 'load');
-
-          setUpPlayerComponent({windowType: WindowTypes.SLIDING, multiCdn: true});
-
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
-
-          jasmine.clock().tick(5000);
+          jasmine.clock().tick(19999);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
 
-          expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
+          jasmine.clock().tick(1);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(2);
+
+          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
         });
+
+        // it('should publish a media state update of fatal if the playback type is live', function () {
+        //   spyOn(mockStrategy, 'getDuration').and.returnValue(100);
+        //   spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
+        //   spyOn(mockStrategy, 'load');
+
+        //   setUpPlayerComponent({windowType: WindowTypes.SLIDING, multiCdn: true});
+
+        //   mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
+
+        //   jasmine.clock().tick(5000);
+
+        //   expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+
+        //   expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
+        // });
 
         it('should fire a fatal error on the plugins if we are in the last 5 seconds of playback', function () {
           errorProperties.current_time = 96;
