@@ -26,6 +26,7 @@ define(
       var mediaMetaData;
       var fatalErrorTimeout;
       var fatalError;
+      var transferFormat = bigscreenPlayerData.media.manifestType === 'mpd' ? 'dash' : 'hls';
 
       playbackStrategy = PlaybackStrategy(
         windowType,
@@ -210,8 +211,10 @@ define(
       }
 
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
-        var aboutToEnd = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
-        if (mediaMetaData.urls.length > 1 && windowType === WindowTypes.STATIC && !aboutToEnd) {
+        var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
+        if (mediaMetaData.urls.length > 1 && (windowType === WindowTypes.STATIC) && !aboutToEndVod) {
+          cdnFailover(errorProperties, bufferingTimeoutError);
+        } else if (windowType !== WindowTypes.STATIC && transferFormat === 'dash') {
           cdnFailover(errorProperties, bufferingTimeoutError);
         } else {
           var evt = new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError});
