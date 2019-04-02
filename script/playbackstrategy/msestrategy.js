@@ -70,6 +70,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onError (event) {
+        if (event.error && event.error.data) {
+          delete event.error.data;
+        }
+
         event.errorProperties = {error_mssg: event.error};
 
         if (event.error) {
