@@ -211,10 +211,12 @@ define(
       }
 
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
+        var hasNextCDN = mediaMetaData.urls.length > 1;
         var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
-        if (mediaMetaData.urls.length > 1 && (windowType === WindowTypes.STATIC) && !aboutToEndVod) {
-          cdnFailover(errorProperties, bufferingTimeoutError);
-        } else if (windowType !== WindowTypes.STATIC && transferFormat === 'dash') {
+        var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
+        var canLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
+
+        if (hasNextCDN && (canVodFailover || canLiveFailover)) {
           cdnFailover(errorProperties, bufferingTimeoutError);
         } else {
           var evt = new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError});
