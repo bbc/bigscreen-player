@@ -183,7 +183,36 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.setBufferTimeAtTopQuality(12);
         mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
 
-        mediaPlayer.initialize(mediaElement, src, true);
+        mediaPlayer.initialize(mediaElement, null, true);
+        modifySource(src);
+      }
+
+      function modifySource (src) {
+        mediaPlayer.retrieveManifest(src, function (manifest) {
+          var representationOptions = window.bigscreenPlayer.representationOptions || {};
+          var constantFps = representationOptions.constantFps;
+          var maxFps = representationOptions.maxFps;
+
+          if (constantFps || maxFps) {
+            manifest.Period.AdaptationSet = manifest.Period.AdaptationSet.map(function (adaptationSet) {
+              if (adaptationSet.contentType === 'video') {
+                var frameRates = [];
+
+                adaptationSet.Representation_asArray = adaptationSet.Representation_asArray.filter(function (representation) {
+                  if (!maxFps || representation.frameRate <= maxFps) {
+                    frameRates.push(representation.frameRate);
+                    return true;
+                  }
+                }).filter(function (representation) {
+                  return !constantFps || representation.frameRate === Math.max.apply(null, frameRates);
+                });
+              }
+              return adaptationSet;
+            });
+          }
+
+          mediaPlayer.attachSource(manifest);
+        });
       }
 
       function setUpMediaListeners () {
@@ -209,7 +238,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         if (mediaElement.currentTime === 0) {
           currentSrcWithTime = newSrc + '#t=' + initialStartTime;
         }
-        mediaPlayer.attachSource(currentSrcWithTime);
+        modifySource(currentSrcWithTime);
       }
 
       return {
