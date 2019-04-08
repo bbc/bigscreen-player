@@ -36,9 +36,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
         METRIC_ADDED: 'metricAdded',
-        METRIC_CHANGED: 'metricChanged',
-        PLAYBACK_STALLED: 'playbackStalled',
-        BUFFER_STALLED: 'bufferStalled'
+        METRIC_CHANGED: 'metricChanged'
       };
 
       function onPlaying () {
@@ -84,14 +82,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           }
         }
         publishError(event);
-      }
-
-      function onBufferStalled (event) {
-        DebugTool.info('MSE Buffer Stalled');
-      }
-
-      function onPlaybackStalled (event) {
-        DebugTool.info('Playback Element Stalled');
       }
 
       function onManifestLoaded (event) {
@@ -204,8 +194,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
-        mediaPlayer.on(DashJSEvents.PLAYBACK_STALLED, onPlaybackStalled);
-        mediaPlayer.on(DashJSEvents.BUFFER_STALLED, onBufferStalled);
       }
 
       function cdnFailoverLoad (newSrc, currentSrcWithTime) {
@@ -305,8 +293,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
-          mediaPlayer.off(DashJSEvents.PLAYBACK_STALLED, onPlaybackStalled);
-          mediaPlayer.off(DashJSEvents.BUFFER_STALLED, onBufferStalled);
 
           mediaElement.parentElement.removeChild(mediaElement);
 
