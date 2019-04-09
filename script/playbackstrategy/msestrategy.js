@@ -315,7 +315,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
         },
         getDuration: function () {
-          return (mediaPlayer) ? mediaPlayer.duration() : 0;
+          return (mediaPlayer && mediaPlayer.isReady()) ? mediaPlayer.duration() : 0;
         },
         tearDown: function () {
           mediaPlayer.reset();
