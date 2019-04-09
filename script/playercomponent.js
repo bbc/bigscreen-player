@@ -232,11 +232,11 @@ define(
         var evt = new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn});
         Plugins.interface.onErrorHandled(evt);
 
-        var availableCdns = mediaMetaData.urls.reduce(function (acc, media) {
-          return acc.cdn.concat(', ', media.cdn);
+        var availableCdns = mediaMetaData.urls.map(function (media) {
+          return media.cdn;
         });
 
-        DebugTool.keyValue({key: 'available cdns', value: availableCdns.cdn || availableCdns});
+        DebugTool.keyValue({key: 'available cdns', value: availableCdns});
         DebugTool.keyValue({key: 'current cdn', value: mediaMetaData.urls[0].cdn});
         DebugTool.keyValue({key: 'url', value: mediaMetaData.urls[0].url});
         loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, getCurrentTime(), thenPause);

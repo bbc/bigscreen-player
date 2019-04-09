@@ -126,11 +126,11 @@ define('bigscreenplayer/bigscreenplayer',
             device
           );
 
-          var availableCdns = bigscreenPlayerData.media.urls.reduce(function (acc, media) {
-            return acc.cdn.concat(', ', media.cdn);
+          var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
+            return media.cdn;
           });
 
-          DebugTool.keyValue({key: 'available cdns', value: availableCdns.cdn || availableCdns});
+          DebugTool.keyValue({key: 'available cdns', value: availableCdns});
           DebugTool.keyValue({key: 'current cdn', value: bigscreenPlayerData.media.urls[0].cdn});
           DebugTool.keyValue({key: 'url', value: bigscreenPlayerData.media.urls[0].url});
         },
