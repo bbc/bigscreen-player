@@ -5,11 +5,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/plugins',
+    'bigscreenplayer/parsers/manifestfilter',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestFilter) {
     return function (windowType, mediaKind, timeData, playbackElement) {
       var mediaPlayer;
       var eventCallback;
@@ -70,7 +71,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onError (event) {
-        event.errorProperties = {error_mssg: event.error};
+        event.errorProperties = { error_mssg: event.error };
 
         if (event.error) {
           if (event.error.message) {
@@ -109,7 +110,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
             var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
             var newRepresentation = event.newQuality + ' (' + playerMetadata.playbackBitrate + ' kbps)';
-            DebugTool.keyValue({key: event.mediaType + ' Representation', value: newRepresentation});
+            DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
             DebugTool.info('ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
           }
           Plugins.interface.onPlayerInfoUpdated(playerMetadata);
@@ -119,7 +120,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function onMetricAdded (event) {
         if (event.mediaType === 'video') {
           if (event.metric === 'DroppedFrames') {
-            DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
+            DebugTool.keyValue({ key: 'Dropped Frames', value: event.value.droppedFrames });
           }
         }
         if (event.mediaType === mediaKind && event.metric === 'BufferLevel') {
@@ -128,7 +129,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
           if (mediaMetrics && dashMetrics) {
             playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
-            DebugTool.keyValue({key: 'Buffer Length', value: playerMetadata.bufferLength});
+            DebugTool.keyValue({ key: 'Buffer Length', value: playerMetadata.bufferLength });
             Plugins.interface.onPlayerInfoUpdated(playerMetadata);
           }
         }
@@ -189,33 +190,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function modifySource (src) {
         mediaPlayer.retrieveManifest(src, function (manifest) {
-          mediaPlayer.attachSource(alterManifest(manifest, window.bigscreenPlayer.representationOptions || {}));
+          var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+          mediaPlayer.attachSource(filteredManifest);
         });
-      }
-
-      function alterManifest (manifest, representationOptions) {
-        var constantFps = representationOptions.constantFps;
-        var maxFps = representationOptions.maxFps;
-
-        if (constantFps || maxFps) {
-          manifest.Period.AdaptationSet = manifest.Period.AdaptationSet.map(function (adaptationSet) {
-            if (adaptationSet.contentType === 'video') {
-              var frameRates = [];
-
-              adaptationSet.Representation_asArray = adaptationSet.Representation_asArray.filter(function (representation) {
-                if (!maxFps || representation.frameRate <= maxFps) {
-                  frameRates.push(representation.frameRate);
-                  return true;
-                }
-              }).filter(function (representation) {
-                return !constantFps || representation.frameRate === Math.max.apply(null, frameRates);
-              });
-            }
-            return adaptationSet;
-          });
-        }
-
-        return manifest;
       }
 
       function setUpMediaListeners () {
@@ -374,8 +351,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           } else {
             mediaPlayer.seek(seekToTime);
           }
-        },
-        alterManifest: alterManifest
+        }
       };
     };
   }
