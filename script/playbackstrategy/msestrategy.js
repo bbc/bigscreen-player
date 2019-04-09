@@ -154,7 +154,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function isPaused () {
-        return (mediaPlayer) ? mediaPlayer.isPaused() : undefined;
+        return (mediaPlayer && mediaPlayer.isReady()) ? mediaPlayer.isPaused() : undefined;
       }
 
       function getClampedTime (time, range) {
