@@ -212,7 +212,7 @@ require(
 
           mseStrategy.load('src2', null, 0);
 
-          expect(mockDashInstance.attachSource).toHaveBeenCalledWith('src2#t=0');
+          expect(mockDashInstance.attachSource).toHaveBeenCalledWith('src2');
         });
 
         it('should correctly continue playback from resume point when CDN failover occurs before we have a valid currentTime', function () {
@@ -266,7 +266,7 @@ require(
             // Actual live point requested
           mseStrategy.load('src', null, 0);
 
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#r=-1', true);
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src', true);
         });
 
         it('should playback from relative start time for video simulcast', function () {

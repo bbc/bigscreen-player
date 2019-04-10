@@ -196,16 +196,18 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
       }
 
-      function cdnFailoverLoad (newSrc, currentSrcWithTime) {
-        // When an initial playback causes a failover and the media element is still reporting 0 rather than the initial start time
-        if (mediaElement.currentTime === 0) {
-          currentSrcWithTime = newSrc + '#t=' + initialStartTime;
-        }
-        mediaPlayer.attachSource(currentSrcWithTime);
-      }
-
+      /**
+       * Calculates a source url with anchor tags for playback within dashjs
+       *
+       * Anchor tags applied to the MPD source for playback:
+       *
+       * #r - relative to the start of the first period defined in the DASH manifest
+       * #t - time since the beginning of the first period defined in the DASH manifest
+       * @param {String} source
+       * @param {Number} startTime
+       */
       function calculateSourceAnchor (source, startTime) {
-        if (startTime === undefined) {
+        if (startTime === undefined || isNaN(startTime)) {
           return source;
         }
 
@@ -222,11 +224,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
 
         if (windowType === WindowTypes.SLIDING) {
-          // play from the given video start time relative to the window
-          // zero start time indicates live point to dashjs, but we use zero to mean start of the window
-          // so substituting -1 will play almost from the live point
-          startTime = (startTime === 0 ? -1 : startTime);
-          return source + '#r=' + parseInt(startTime);
+          if (startTime === 0) {
+            return source;
+          } else {
+            return source + '#r=' + parseInt(startTime);
+          }
         }
       }
 
@@ -250,16 +252,22 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (src, mimeType, startTime) {
-          var sourceWithTime = calculateSourceAnchor(src, startTime);
-
+        load: function (src, mimeType, playbackTime) {
           if (!mediaPlayer) {
-            initialStartTime = parseInt(startTime) + timeCorrection;
+            initialStartTime = parseInt(playbackTime) + timeCorrection;
             setUpMediaElement(playbackElement);
-            setUpMediaPlayer(sourceWithTime);
+            setUpMediaPlayer(calculateSourceAnchor(src, playbackTime));
             setUpMediaListeners();
           } else {
-            cdnFailoverLoad(src, sourceWithTime);
+            var failoverSourceTime;
+
+            if (mediaElement.currentTime === 0) {
+              failoverSourceTime = calculateSourceAnchor(src, initialStartTime);
+            } else {
+              failoverSourceTime = calculateSourceAnchor(src, playbackTime);
+            }
+
+            mediaPlayer.attachSource(failoverSourceTime);
           }
         },
         getSeekableRange: function () {
