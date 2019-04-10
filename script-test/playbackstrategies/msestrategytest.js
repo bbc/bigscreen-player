@@ -182,13 +182,6 @@ require(
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#t=15', true);
         });
 
-        it('should initialise MediaPlayer with the expected parameters when startTime is set and there is a time correction', function () {
-          setUpMSE(1922);
-          mseStrategy.load('src', null, 15);
-          // [ <video style="position: absolute; width: 100%; height: 100%;">, 'src#t=1937', true ]
-          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src#t=1937', true);
-        });
-
         it('should set up bindings to MediaPlayer Events correctly', function () {
           setUpMSE();
           mseStrategy.load(null, null, 0);
@@ -253,6 +246,16 @@ require(
           mseStrategy.load('src2', null, 86);
 
           expect(mockDashInstance.attachSource).toHaveBeenCalledWith('src2#t=86');
+        });
+
+        it('should playback from the live point of a simulcast', function () {
+          setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
+
+          mockDashInstance.getSource.and.returnValue('src');
+
+          mseStrategy.load('src', null, undefined);
+
+          expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, 'src', true);
         });
 
         it('should playback from relative live start time for video simulcast', function () {

@@ -204,6 +204,32 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.attachSource(currentSrcWithTime);
       }
 
+      function calculateSourceAnchor (source, startTime) {
+        if (startTime === undefined) {
+          return source;
+        }
+
+        if (windowType === WindowTypes.STATIC) {
+          return startTime === 0 ? source : source + '#t=' + parseInt(startTime);
+        }
+
+        if (windowType === WindowTypes.GROWING) {
+          var windowStartTimeSeconds = (timeData.windowStartTime / 1000);
+          var srcWithTimeAnchor = source + '#t=';
+
+          startTime = parseInt(startTime);
+          return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
+        }
+
+        if (windowType === WindowTypes.SLIDING) {
+          // play from the given video start time relative to the window
+          // zero start time indicates live point to dashjs, but we use zero to mean start of the window
+          // so substituting -1 will play almost from the live point
+          startTime = (startTime === 0 ? -1 : startTime);
+          return source + '#r=' + parseInt(startTime);
+        }
+      }
+
       return {
         transitions: {
           canBePaused: function () { return true; },
@@ -225,35 +251,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           };
         },
         load: function (src, mimeType, startTime) {
-          var srcWithTime = startTime ? src + '#t=' + (startTime + timeCorrection) : src;
+          var sourceWithTime = calculateSourceAnchor(src, startTime);
 
           if (!mediaPlayer) {
-            initialStartTime = startTime + timeCorrection;
-
-            if (windowType === WindowTypes.GROWING) {
-              var windowStartTimeSeconds = (timeData.windowStartTime / 1000);
-              var srcWithTimeAnchor = src + '#t=';
-              // No need for an absolute time to play from live with a Webcast using dashjs.
-              srcWithTime = src;
-
-              if (startTime) {
-                startTime = parseInt(startTime);
-                srcWithTime = startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
-              }
-            }
-
-            if (windowType === WindowTypes.SLIDING) {
-              // zero start time indicates live point, relative time wise -1 will play almost from the live point,
-              // otherwise play from the given video start time relative to the window
-              startTime = (startTime === 0 ? -1 : startTime);
-              srcWithTime = src + '#r=' + parseInt(startTime);
-            }
-
+            initialStartTime = parseInt(startTime) + timeCorrection;
             setUpMediaElement(playbackElement);
-            setUpMediaPlayer(srcWithTime);
+            setUpMediaPlayer(sourceWithTime);
             setUpMediaListeners();
           } else {
-            cdnFailoverLoad(src, srcWithTime);
+            cdnFailoverLoad(src, sourceWithTime);
           }
         },
         getSeekableRange: function () {
