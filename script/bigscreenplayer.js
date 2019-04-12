@@ -186,11 +186,7 @@ define('bigscreenplayer/bigscreenplayer',
           }
         },
         getCurrentTime: function () {
-          if (playerComponent) {
-            return playerComponent.getCurrentTime() || 0;
-          } else {
-            return 0;
-          }
+          return playerComponent && playerComponent.getCurrentTime() || 0;
         },
         getMediaKind: function () {
           return mediaKind;
