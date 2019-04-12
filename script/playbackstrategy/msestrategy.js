@@ -5,11 +5,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/plugins',
+    'bigscreenplayer/parsers/manifestfilter',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestFilter) {
     return function (windowType, mediaKind, timeData, playbackElement) {
       var mediaPlayer;
       var eventCallback;
@@ -70,7 +71,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onError (event) {
-        event.errorProperties = {error_mssg: event.error};
+        event.errorProperties = { error_mssg: event.error };
 
         if (event.error) {
           if (event.error.message) {
@@ -109,7 +110,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
             var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
             var newRepresentation = event.newQuality + ' (' + playerMetadata.playbackBitrate + ' kbps)';
-            DebugTool.keyValue({key: event.mediaType + ' Representation', value: newRepresentation});
+            DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
             DebugTool.info('ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
           }
           Plugins.interface.onPlayerInfoUpdated(playerMetadata);
@@ -119,7 +120,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function onMetricAdded (event) {
         if (event.mediaType === 'video') {
           if (event.metric === 'DroppedFrames') {
-            DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
+            DebugTool.keyValue({ key: 'Dropped Frames', value: event.value.droppedFrames });
           }
         }
         if (event.mediaType === mediaKind && event.metric === 'BufferLevel') {
@@ -128,7 +129,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
           if (mediaMetrics && dashMetrics) {
             playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
-            DebugTool.keyValue({key: 'Buffer Length', value: playerMetadata.bufferLength});
+            DebugTool.keyValue({ key: 'Buffer Length', value: playerMetadata.bufferLength });
             Plugins.interface.onPlayerInfoUpdated(playerMetadata);
           }
         }
@@ -153,7 +154,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function isPaused () {
-        return (mediaPlayer) ? mediaPlayer.isPaused() : undefined;
+        return (mediaPlayer && mediaPlayer.isReady()) ? mediaPlayer.isPaused() : undefined;
       }
 
       function getClampedTime (time, range) {
@@ -183,7 +184,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.setBufferTimeAtTopQuality(12);
         mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
 
-        mediaPlayer.initialize(mediaElement, src, true);
+        mediaPlayer.initialize(mediaElement, null, true);
+        modifySource(src);
+      }
+
+      function modifySource (src) {
+        mediaPlayer.retrieveManifest(src, function (manifest) {
+          var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+          mediaPlayer.attachSource(filteredManifest);
+        });
       }
 
       function setUpMediaListeners () {
@@ -209,7 +218,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         if (mediaElement.currentTime === 0) {
           currentSrcWithTime = newSrc + '#t=' + initialStartTime;
         }
-        mediaPlayer.attachSource(currentSrcWithTime);
+        modifySource(currentSrcWithTime);
       }
 
       return {
@@ -283,7 +292,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
         },
         getDuration: function () {
-          return (mediaPlayer) ? mediaPlayer.duration() : 0;
+          return (mediaPlayer && mediaPlayer.isReady()) ? mediaPlayer.duration() : 0;
         },
         tearDown: function () {
           mediaPlayer.reset();
