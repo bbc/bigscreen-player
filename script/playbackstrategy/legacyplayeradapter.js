@@ -16,7 +16,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var eventCallback;
       var errorCallback;
       var timeUpdateCallback;
-      var currentTime = 0;
+      var currentTime;
       var timeCorrection = timeData && timeData.correction || 0;
       var duration = 0;
       var isPaused;
