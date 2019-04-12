@@ -242,14 +242,15 @@ require(
           setUpMSE();
 
           mockDashInstance.getSource.and.returnValue('src');
-          mockVideoElement.currentTime = 86;
 
           mseStrategy.load('src', null, 45);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
           expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src#t=45', jasmine.any(Function));
 
-          mseStrategy.load('src2', null, 86);
+          mockVideoElement.currentTime = 86;
+          eventHandlers.timeupdate();
+          mseStrategy.load('src2', null, -1); // Start time is ignored by mse strategy one subsequent loads
 
           expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src2#t=86', jasmine.any(Function));
         });

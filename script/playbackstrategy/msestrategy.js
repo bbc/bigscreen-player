@@ -18,7 +18,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var timeUpdateCallback;
       var timeCorrection = timeData && timeData.correction || 0;
 
-      var initialStartTime;
+      var failoverTime;
       var isEnded = false;
       var mediaElement;
 
@@ -65,6 +65,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onTimeUpdate () {
+        failoverTime = mediaElement.currentTime - timeCorrection;
         publishTimeUpdate();
       }
 
@@ -263,20 +264,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         },
         load: function (src, mimeType, playbackTime) {
           if (!mediaPlayer) {
-            initialStartTime = parseInt(playbackTime) + timeCorrection;
+            failoverTime = playbackTime;
             setUpMediaElement(playbackElement);
             setUpMediaPlayer(calculateSourceAnchor(src, playbackTime));
             setUpMediaListeners();
           } else {
-            var failoverSourceTime;
-
-            if (mediaElement.currentTime === 0) {
-              failoverSourceTime = calculateSourceAnchor(src, initialStartTime);
-            } else {
-              failoverSourceTime = calculateSourceAnchor(src, playbackTime);
-            }
-
-            modifySource(failoverSourceTime);
+            modifySource(calculateSourceAnchor(src, failoverTime));
           }
         },
         getSeekableRange: function () {
@@ -325,7 +318,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           errorCallback = undefined;
           timeUpdateCallback = undefined;
           isEnded = undefined;
-          initialStartTime = undefined;
+          failoverTime = undefined;
           timeCorrection = undefined;
           windowType = undefined;
         },
