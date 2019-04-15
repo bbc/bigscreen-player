@@ -21,6 +21,7 @@ require(
       var mockPluginsInterface;
       var PlayerComponentWithMocks;
       var mockStateUpdateCallback;
+      var corePlaybackData;
 
       // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
       function setUpPlayerComponent (opts) {
@@ -29,13 +30,13 @@ require(
         playbackElement = document.createElement('div');
         playbackElement.id = 'app';
 
-        var corePlaybackData = {
+        corePlaybackData = {
           media: {
             kind: opts.mediaKind || MediaKinds.VIDEO,
             codec: undefined,
             urls: opts.multiCdn ? [{url: 'a', cdn: 'cdn-a'}, {url: 'b', cdn: 'cdn-b'}, {url: 'c', cdn: 'cdn-c'}] : [{url: 'a', cdn: 'cdn-a'}],
             type: 'application/dash+xml',
-            manifestType: 'mpd',
+            manifestType: opts.manifestType || 'mpd',
             bitrate: undefined,
             captionsUrl: opts.subtitlesAvailable ? 'captionsUrl' : undefined
           },
@@ -337,7 +338,7 @@ require(
             jasmine.clock().uninstall();
           });
 
-                    // playout logic
+          // playout logic
           it('should fire buffering cleared on the plugins', function () {
             var bufferingProperties = {
               seekable_range: '0 to 100',
@@ -888,11 +889,17 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
 
+          expect(corePlaybackData.media.urls.length).toBe(3);
+          expect(corePlaybackData.media.urls).toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
 
           expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
+
+          expect(corePlaybackData.media.urls.length).toBe(2);
+          expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
         });
 
         it('should failover after 5 seconds if we have not cleared an error from the device', function () {
@@ -941,6 +948,22 @@ require(
           spyOn(mockStrategy, 'load');
 
           setUpPlayerComponent();
+
+          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
+
+          jasmine.clock().tick(5000);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+
+          expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
+        });
+
+        it('should publish a media state update of fatal if playback is live hls', function () {
+          spyOn(mockStrategy, 'getDuration').and.returnValue(100);
+          spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
+          spyOn(mockStrategy, 'load');
+
+          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.SLIDING});
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
 
