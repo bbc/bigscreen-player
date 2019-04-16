@@ -248,7 +248,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           hasStartTime = startTime || startTime === 0;
           var isLiveNonRestart = windowType !== WindowTypes.STATIC && !hasStartTime;
 
-          mediaPlayer.initialiseMedia('video', src, mimeType, playbackElement, setSourceOpts);
+          mediaPlayer.initialiseMedia(mediaKind, src, mimeType, playbackElement, setSourceOpts);
           if (mediaPlayer.beginPlaybackFrom && !isLiveNonRestart) {
             mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);
           } else {
