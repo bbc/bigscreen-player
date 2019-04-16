@@ -16,7 +16,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var eventCallback;
       var errorCallback;
       var timeUpdateCallback;
-      var currentTime = 0;
+      var currentTime;
       var timeCorrection = timeData && timeData.correction || 0;
       var duration = 0;
       var isPaused;
@@ -246,10 +246,11 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           isPaused = false;
 
           hasStartTime = startTime || startTime === 0;
-          var isLiveNonRestart = windowType !== WindowTypes.STATIC && !hasStartTime;
+          var isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime;
 
           mediaPlayer.initialiseMedia('video', src, mimeType, playbackElement, setSourceOpts);
-          if (mediaPlayer.beginPlaybackFrom && !isLiveNonRestart) {
+          if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
+            currentTime = startTime;
             mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);
           } else {
             mediaPlayer.beginPlayback();

@@ -126,7 +126,12 @@ define('bigscreenplayer/bigscreenplayer',
             device
           );
 
-          DebugTool.keyValue({key: 'cdn', value: bigscreenPlayerData.media.urls[0].cdn});
+          var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
+            return media.cdn;
+          });
+
+          DebugTool.keyValue({key: 'available cdns', value: availableCdns});
+          DebugTool.keyValue({key: 'current cdn', value: bigscreenPlayerData.media.urls[0].cdn});
           DebugTool.keyValue({key: 'url', value: bigscreenPlayerData.media.urls[0].url});
         },
 
@@ -181,7 +186,7 @@ define('bigscreenplayer/bigscreenplayer',
           }
         },
         getCurrentTime: function () {
-          return playerComponent ? playerComponent.getCurrentTime() : 0;
+          return playerComponent && playerComponent.getCurrentTime() || 0;
         },
         getMediaKind: function () {
           return mediaKind;

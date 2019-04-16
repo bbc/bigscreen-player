@@ -18,7 +18,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var timeUpdateCallback;
       var timeCorrection = timeData && timeData.correction || 0;
 
-      var initialStartTime;
+      var failoverTime;
       var isEnded = false;
       var mediaElement;
 
@@ -37,9 +37,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
         METRIC_ADDED: 'metricAdded',
-        METRIC_CHANGED: 'metricChanged',
-        PLAYBACK_STALLED: 'playbackStalled',
-        BUFFER_STALLED: 'bufferStalled'
+        METRIC_CHANGED: 'metricChanged'
       };
 
       function onPlaying () {
@@ -67,10 +65,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onTimeUpdate () {
+        failoverTime = mediaElement.currentTime - timeCorrection;
         publishTimeUpdate();
       }
 
       function onError (event) {
+        if (event.error && event.error.data) {
+          delete event.error.data;
+        }
+
         event.errorProperties = { error_mssg: event.error };
 
         if (event.error) {
@@ -81,14 +84,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           }
         }
         publishError(event);
-      }
-
-      function onBufferStalled (event) {
-        DebugTool.info('MSE Buffer Stalled');
-      }
-
-      function onPlaybackStalled (event) {
-        DebugTool.info('Playback Element Stalled');
       }
 
       function onManifestLoaded (event) {
@@ -209,16 +204,38 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
-        mediaPlayer.on(DashJSEvents.PLAYBACK_STALLED, onPlaybackStalled);
-        mediaPlayer.on(DashJSEvents.BUFFER_STALLED, onBufferStalled);
       }
 
-      function cdnFailoverLoad (newSrc, currentSrcWithTime) {
-        // When an initial playback causes a failover and the media element is still reporting 0 rather than the initial start time
-        if (mediaElement.currentTime === 0) {
-          currentSrcWithTime = newSrc + '#t=' + initialStartTime;
+      /**
+       * Calculates a source url with anchor tags for playback within dashjs
+       *
+       * Anchor tags applied to the MPD source for playback:
+       *
+       * #r - relative to the start of the first period defined in the DASH manifest
+       * #t - time since the beginning of the first period defined in the DASH manifest
+       * @param {String} source
+       * @param {Number} startTime
+       */
+      function calculateSourceAnchor (source, startTime) {
+        if (startTime === undefined || isNaN(startTime)) {
+          return source;
         }
-        modifySource(currentSrcWithTime);
+
+        if (windowType === WindowTypes.STATIC) {
+          return startTime === 0 ? source : source + '#t=' + parseInt(startTime);
+        }
+
+        if (windowType === WindowTypes.SLIDING) {
+          return startTime === 0 ? source : source + '#r=' + parseInt(startTime);
+        }
+
+        if (windowType === WindowTypes.GROWING) {
+          var windowStartTimeSeconds = (timeData.windowStartTime / 1000);
+          var srcWithTimeAnchor = source + '#t=';
+
+          startTime = parseInt(startTime);
+          return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
+        }
       }
 
       return {
@@ -241,36 +258,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (src, mimeType, startTime) {
-          var srcWithTime = startTime ? src + '#t=' + (startTime + timeCorrection) : src;
-
+        load: function (src, mimeType, playbackTime) {
           if (!mediaPlayer) {
-            initialStartTime = startTime + timeCorrection;
-
-            if (windowType === WindowTypes.GROWING) {
-              var windowStartTimeSeconds = (timeData.windowStartTime / 1000);
-              var srcWithTimeAnchor = src + '#t=';
-              // No need for an absolute time to play from live with a Webcast using dashjs.
-              srcWithTime = src;
-
-              if (startTime) {
-                startTime = parseInt(startTime);
-                srcWithTime = startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
-              }
-            }
-
-            if (windowType === WindowTypes.SLIDING) {
-              // zero start time indicates live point, relative time wise -1 will play almost from the live point,
-              // otherwise play from the given video start time relative to the window
-              startTime = (startTime === 0 ? -1 : startTime);
-              srcWithTime = src + '#r=' + parseInt(startTime);
-            }
-
+            failoverTime = playbackTime;
             setUpMediaElement(playbackElement);
-            setUpMediaPlayer(srcWithTime);
+            setUpMediaPlayer(calculateSourceAnchor(src, playbackTime));
             setUpMediaListeners();
           } else {
-            cdnFailoverLoad(src, srcWithTime);
+            modifySource(calculateSourceAnchor(src, failoverTime));
           }
         },
         getSeekableRange: function () {
@@ -310,8 +305,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
-          mediaPlayer.off(DashJSEvents.PLAYBACK_STALLED, onPlaybackStalled);
-          mediaPlayer.off(DashJSEvents.BUFFER_STALLED, onBufferStalled);
 
           mediaElement.parentElement.removeChild(mediaElement);
 
@@ -321,7 +314,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           errorCallback = undefined;
           timeUpdateCallback = undefined;
           isEnded = undefined;
-          initialStartTime = undefined;
+          failoverTime = undefined;
           timeCorrection = undefined;
           windowType = undefined;
         },
