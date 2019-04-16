@@ -204,7 +204,6 @@ require(
 
             mockDashInstance.getSource.and.returnValue('src');
 
-              // Somewhat live, playbackUtils forces 0.1 for TAL related reasons!
             mseStrategy.load('src', null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
@@ -240,7 +239,6 @@ require(
 
             mockDashInstance.getSource.and.returnValue('src');
 
-            // Somewhat live, playbackUtils forces 0.1 for TAL related reasons!
             mseStrategy.load('src', null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
