@@ -214,7 +214,7 @@ define(
         var hasNextCDN = mediaMetaData.urls.length > 1;
         var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
         var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
-        var canLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
+        var canLiveFailover = windowType !== WindowTypes.STATIC && (transferFormat === 'dash' || windowType === WindowTypes.GROWING);
 
         if (hasNextCDN && (canVodFailover || canLiveFailover)) {
           cdnFailover(errorProperties, bufferingTimeoutError);
