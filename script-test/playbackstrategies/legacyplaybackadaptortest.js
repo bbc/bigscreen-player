@@ -392,12 +392,6 @@ require(
       });
 
       describe('getCurrentTime', function () {
-        it('should be set to 0 on initialisation', function () {
-          setUpLegacyAdaptor();
-
-          expect(legacyAdaptor.getCurrentTime()).toEqual(0);
-        });
-
         it('should be set when we get a playing event', function () {
           setUpLegacyAdaptor();
 

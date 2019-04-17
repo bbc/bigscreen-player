@@ -26,6 +26,7 @@ define(
       var mediaMetaData;
       var fatalErrorTimeout;
       var fatalError;
+      var transferFormat = bigscreenPlayerData.media.manifestType === 'mpd' ? 'dash' : 'hls';
 
       playbackStrategy = PlaybackStrategy(
         windowType,
@@ -210,8 +211,12 @@ define(
       }
 
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
-        var aboutToEnd = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
-        if (mediaMetaData.urls.length > 1 && windowType === WindowTypes.STATIC && !aboutToEnd) {
+        var hasNextCDN = mediaMetaData.urls.length > 1;
+        var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
+        var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
+        var canLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
+
+        if (hasNextCDN && (canVodFailover || canLiveFailover)) {
           cdnFailover(errorProperties, bufferingTimeoutError);
         } else {
           var evt = new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError});
@@ -226,7 +231,13 @@ define(
         mediaMetaData.urls.shift();
         var evt = new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn});
         Plugins.interface.onErrorHandled(evt);
-        DebugTool.keyValue({key: 'cdn', value: mediaMetaData.urls[0].cdn});
+
+        var availableCdns = mediaMetaData.urls.map(function (media) {
+          return media.cdn;
+        });
+
+        DebugTool.keyValue({key: 'available cdns', value: availableCdns});
+        DebugTool.keyValue({key: 'current cdn', value: mediaMetaData.urls[0].cdn});
         DebugTool.keyValue({key: 'url', value: mediaMetaData.urls[0].url});
         loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, getCurrentTime(), thenPause);
       }
