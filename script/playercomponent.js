@@ -13,7 +13,7 @@ define(
   function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool) {
     'use strict';
 
-    return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
+    return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device, newLiveSupport) {
       var isInitialPlay = true;
       var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
@@ -27,6 +27,14 @@ define(
       var fatalErrorTimeout;
       var fatalError;
       var transferFormat = bigscreenPlayerData.media.manifestType === 'mpd' ? 'dash' : 'hls';
+      var liveSupport = newLiveSupport;
+
+      var LiveSupport = {
+        NONE: 'none',
+        PLAYABLE: 'playable',
+        RESTARTABLE: 'restartable',
+        SEEKABLE: 'seekable'
+      };
 
       playbackStrategy = PlaybackStrategy(
         windowType,
@@ -214,7 +222,8 @@ define(
         var hasNextCDN = mediaMetaData.urls.length > 1;
         var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
         var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
-        var canLiveFailover = windowType !== WindowTypes.STATIC && (transferFormat === 'dash' || windowType === WindowTypes.GROWING);
+        var hlsSupported = windowType === WindowTypes.GROWING && liveSupport === LiveSupport.SEEKABLE;
+        var canLiveFailover = windowType !== WindowTypes.STATIC && (transferFormat === 'dash' || hlsSupported);
 
         if (hasNextCDN && (canVodFailover || canLiveFailover)) {
           cdnFailover(errorProperties, bufferingTimeoutError);
