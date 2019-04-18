@@ -5,12 +5,13 @@ define(
     'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/utils/playbackutils',
+    'bigscreenplayer/livesupportenum',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
     'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, DebugTool) {
     'use strict';
 
     return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device, newLiveSupport) {
@@ -28,13 +29,6 @@ define(
       var fatalError;
       var transferFormat = bigscreenPlayerData.media.manifestType === 'mpd' ? 'dash' : 'hls';
       var liveSupport = newLiveSupport;
-
-      var LiveSupport = {
-        NONE: 'none',
-        PLAYABLE: 'playable',
-        RESTARTABLE: 'restartable',
-        SEEKABLE: 'seekable'
-      };
 
       playbackStrategy = PlaybackStrategy(
         windowType,
