@@ -36,7 +36,7 @@ require(
             kind: opts.mediaKind || MediaKinds.VIDEO,
             codec: undefined,
             urls: opts.multiCdn ? [{url: 'a', cdn: 'cdn-a'}, {url: 'b', cdn: 'cdn-b'}, {url: 'c', cdn: 'cdn-c'}] : [{url: 'a', cdn: 'cdn-a'}],
-            type: 'application/dash+xml',
+            type: opts.type || 'application/dash+xml',
             manifestType: opts.manifestType || 'mpd',
             bitrate: undefined,
             captionsUrl: opts.subtitlesAvailable ? 'captionsUrl' : undefined
@@ -996,12 +996,12 @@ require(
         it('should cdn failover on hls webcast with seekable', function () {
           var secondCdn = 'b';
           var currentTime = 10;
-          var type = 'application/dash+xml';
+          var type = 'application/vnd.apple.mpegurl';
 
           spyOn(mockStrategy, 'load');
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(currentTime);
 
-          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: 'seekable'});
+          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: 'seekable', type: type});
 
           // Set playback cause to normal
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
