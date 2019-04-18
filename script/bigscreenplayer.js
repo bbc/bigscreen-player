@@ -94,7 +94,7 @@ define('bigscreenplayer/bigscreenplayer',
         return windowType !== WindowTypes.STATIC && requiresSimulcastSeekingData[liveSupport];
       }
 
-      function bigscreenPlayerDataLoaded (playbackElement, bigscreenPlayerData, enableSubtitles, device) {
+      function bigscreenPlayerDataLoaded (playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback) {
         if (bigscreenPlayerData.time) {
           windowStartTime = bigscreenPlayerData.time.windowStartTime;
           windowEndTime = bigscreenPlayerData.time.windowEndTime;
@@ -117,6 +117,8 @@ define('bigscreenplayer/bigscreenplayer',
           device
         );
 
+        successCallback();
+
         var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
           return media.cdn;
         });
@@ -127,7 +129,7 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       return {
-        init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport, device) {
+        init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport, successCallback, device) {
           Chronicle.init();
           liveSupport = newLiveSupport;
           windowType = newWindowType;
@@ -142,7 +144,7 @@ define('bigscreenplayer/bigscreenplayer',
                 onSuccess: function (manifestData) {
                   bigscreenPlayerData.media.manifestType = manifestData.manifestType;
                   bigscreenPlayerData.time = manifestData.time;
-                  bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device);
+                  bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback);
                 },
                 onError: function () {
                   mediaStateUpdateCallback({data: {state: MediaState.MANIFEST_ERROR}});
@@ -150,7 +152,7 @@ define('bigscreenplayer/bigscreenplayer',
               }
             );
           } else {
-            bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device);
+            bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback);
           }
         },
 
