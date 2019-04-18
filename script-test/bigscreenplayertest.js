@@ -70,7 +70,7 @@ require(
         bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, liveSupport, device);
       }
 
-      describe('Bigscreen Player', function () {
+      xdescribe('Bigscreen Player', function () {
         beforeEach(function (done) {
           manifestParserMock = jasmine.createSpyObj('manifestParserSpy', ['parse']);
 
