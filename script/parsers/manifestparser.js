@@ -39,7 +39,7 @@ define('bigscreenplayer/parsers/manifestparser',
          return {
            windowStartTime: windowStartTime,
            windowEndTime: windowEndTime,
-           timeCorrection: timeCorrection
+           correction: timeCorrection
          };
        } catch (e) {
          return {error: 'Error parsing DASH manifest'};
