@@ -5,7 +5,7 @@ define(
     'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/utils/playbackutils',
-    'bigscreenplayer/livesupportenum',
+    'bigscreenplayer/models/livesupportenum',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',

@@ -1,6 +1,6 @@
 define(
   'bigscreenplayer/dynamicwindowutils', [
-    'bigscreenplayer/livesupportenum'
+    'bigscreenplayer/models/livesupportenum'
   ],
   function (LiveSupport) {
     'use strict';

@@ -1,5 +1,5 @@
 define(
-  'bigscreenplayer/livesupportenum',
+  'bigscreenplayer/models/livesupportenum',
   function () {
     'use strict';
 
