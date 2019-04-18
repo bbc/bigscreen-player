@@ -5,10 +5,11 @@ require(
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/playbackstrategy/mockstrategy',
     'bigscreenplayer/models/transportcontrolposition',
+    'bigscreenplayer/models/livesupportenum',
     'bigscreenplayer/pluginenums',
     'squire'
   ],
-  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, PluginEnums, Squire) {
+  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, LiveSupport, PluginEnums, Squire) {
     'use strict';
 
     describe('Player Component', function () {
@@ -981,7 +982,7 @@ require(
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
           spyOn(mockStrategy, 'load');
 
-          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: 'playable'});
+          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: LiveSupport.PLAYABLE});
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
 
