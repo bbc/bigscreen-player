@@ -67,10 +67,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function onTimeUpdate () {
         var IN_STREAM_BUFFERING_SECONDS = 20;
         var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor('video'));
-        failoverTime = mediaElement.currentTime;
 
         if (dvrInfo && windowType === WindowTypes.SLIDING) {
           failoverTime = Math.max(0, parseInt(dvrInfo.time - dvrInfo.range.start) - IN_STREAM_BUFFERING_SECONDS);
+        } else {
+          failoverTime = mediaElement.currentTime;
         }
 
         publishTimeUpdate();
