@@ -216,10 +216,10 @@ define(
         var hasNextCDN = mediaMetaData.urls.length > 1;
         var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
         var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
-        var hlsSupported = windowType === WindowTypes.GROWING && liveSupport === LiveSupport.SEEKABLE;
-        var canLiveFailover = windowType !== WindowTypes.STATIC && (transferFormat === 'dash' || hlsSupported);
+        var canHlsLiveFailover = windowType === WindowTypes.GROWING && liveSupport === LiveSupport.SEEKABLE;
+        var canDashLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
 
-        if (hasNextCDN && (canVodFailover || canLiveFailover)) {
+        if (hasNextCDN && (canVodFailover || canHlsLiveFailover || canDashLiveFailover)) {
           cdnFailover(errorProperties, bufferingTimeoutError);
         } else {
           var evt = new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError});
