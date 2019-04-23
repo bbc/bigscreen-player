@@ -123,8 +123,7 @@ define('bigscreenplayer/bigscreenplayer',
             windowType,
             enableSubtitles,
             mediaStateUpdateCallback,
-            device,
-            liveSupport
+            device
           );
 
           var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
