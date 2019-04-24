@@ -26,7 +26,7 @@
     "eslint-plugin-promise": "4.0.1",
     "eslint-plugin-require": "0.0.1",
     "eslint-plugin-standard": "4.0.0",
-    "grunt": "^1.0.3",
+    "grunt": "^1.0.4",
     "grunt-contrib-jasmine": "^2.0.3",
     "jasmine": "3.2.0",
     "pre-commit": "^1.2.2",
@@ -35,7 +35,7 @@
     "squirejs": "0.2.1"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v2.9.2-2"
+    "dashjs": "github:bbc/dash.js#smp-v2.9.2-4"
   },
   "repository": {
     "type": "git",
