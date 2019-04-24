@@ -26,6 +26,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var mediaMetrics;
       var dashMetrics;
 
+      var baseUrls = [];
+
       var playerMetadata = {
         playbackBitrate: undefined,
         bufferLength: undefined
@@ -191,10 +193,33 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         modifySource(src);
       }
 
-      function modifySource (src) {
-        mediaPlayer.retrieveManifest(src, function (manifest) {
-          var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+      function manifestMunjer (manifest, src) {
+        var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+
+        var baseUrlText = {
+          __text: manifest.baseUri + manifest.Period.BaseURL,
+          'dvb:priority': baseUrls.length
+        };
+
+        baseUrls.push(baseUrlText);
+
+        if (baseUrls.length === src.length) {
+          // filteredManifest.Period.BaseURL_asArray = baseUrls;
+          filteredManifest.BaseURL_asArray = baseUrls;
+
+          delete filteredManifest.Period.BaseURL;
+          delete filteredManifest.Period.BaseURL_asArray;
+
           mediaPlayer.attachSource(filteredManifest);
+        }
+      }
+
+      function modifySource (src) {
+        src.forEach(function (element) {
+          var tempMediaPlayer = dashjs.MediaPlayer().create();
+          tempMediaPlayer.initialize();
+          tempMediaPlayer.retrieveManifest(element.url, function (manifest) { manifestMunjer(manifest, src); });
+          // mediaPlayer.retrieveManifest(element.url, function (manifest) { manifestMunjer(manifest, src); });
         });
       }
 

@@ -194,10 +194,10 @@ define(
       }
 
       function raiseError (properties, bufferingTimeoutError) {
-        clearErrorTimeout();
-        publishMediaStateUpdate(MediaState.WAITING);
-        bubbleErrorRaised(properties, bufferingTimeoutError);
-        startFatalErrorTimeout(properties, bufferingTimeoutError);
+        // clearErrorTimeout();
+        // publishMediaStateUpdate(MediaState.WAITING);
+        // bubbleErrorRaised(properties, bufferingTimeoutError);
+        // startFatalErrorTimeout(properties, bufferingTimeoutError);
       }
 
       function startFatalErrorTimeout (errorProperties, bufferingTimeoutError) {
@@ -331,7 +331,7 @@ define(
 
       function initialMediaPlay (media, startTime) {
         mediaMetaData = media;
-        loadMedia(media.urls[0].url, media.type, startTime);
+        loadMedia(media.urls, media.type, startTime);
 
         if (!captionsContainer) {
           captionsContainer = new CaptionsContainer(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
