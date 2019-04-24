@@ -1,14 +1,9 @@
 define(
-  'bigscreenplayer/dynamicwindowutils',
-  function () {
+  'bigscreenplayer/dynamicwindowutils', [
+    'bigscreenplayer/models/livesupportenum'
+  ],
+  function (LiveSupport) {
     'use strict';
-
-    var LiveSupport = {
-      NONE: 'none',
-      PLAYABLE: 'playable',
-      RESTARTABLE: 'restartable',
-      SEEKABLE: 'seekable'
-    };
 
     var FOUR_MINUTES = 4 * 60;
 
