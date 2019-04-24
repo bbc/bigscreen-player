@@ -961,7 +961,7 @@ require(
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
         });
 
-        it('should publish a media state update of fatal if playback is live hls simulcast', function () {
+        it('should publish a media state update of fatal when playing a hls simulcast', function () {
           spyOn(mockStrategy, 'getDuration').and.returnValue(100);
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
           spyOn(mockStrategy, 'load');
@@ -977,12 +977,12 @@ require(
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
         });
 
-        it('should publish a media state update of fatal if playback is live hls webcast with playable', function () {
+        it('should publish a media state update of fatal when playing a hls webcast on a restartable device', function () {
           spyOn(mockStrategy, 'getDuration').and.returnValue(100);
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
           spyOn(mockStrategy, 'load');
 
-          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: LiveSupport.PLAYABLE});
+          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: LiveSupport.RESTARTABLE});
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
 
@@ -993,7 +993,7 @@ require(
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
         });
 
-        it('should cdn failover on hls webcast with seekable', function () {
+        it('should failover on a seekable device when playing hls webcasts', function () {
           var secondCdn = 'b';
           var currentTime = 10;
           var type = 'application/vnd.apple.mpegurl';
@@ -1001,7 +1001,39 @@ require(
           spyOn(mockStrategy, 'load');
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(currentTime);
 
-          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: 'seekable', type: type});
+          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: LiveSupport.SEEKABLE, type: type});
+
+          // Set playback cause to normal
+          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
+
+          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
+
+          jasmine.clock().tick(19999);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+
+          expect(corePlaybackData.media.urls.length).toBe(3);
+          expect(corePlaybackData.media.urls).toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+
+          jasmine.clock().tick(1);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(2);
+
+          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
+
+          expect(corePlaybackData.media.urls.length).toBe(2);
+          expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+        });
+
+        it('should failover on a playable device when playing hls webcasts', function () {
+          var secondCdn = 'b';
+          var currentTime = 10;
+          var type = 'application/vnd.apple.mpegurl';
+
+          spyOn(mockStrategy, 'load');
+          spyOn(mockStrategy, 'getCurrentTime').and.returnValue(currentTime);
+
+          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: LiveSupport.PLAYABLE, type: type});
 
           // Set playback cause to normal
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);

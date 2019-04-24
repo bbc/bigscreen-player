@@ -216,7 +216,7 @@ define(
         var hasNextCDN = mediaMetaData.urls.length > 1;
         var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
         var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
-        var canHlsLiveFailover = windowType === WindowTypes.GROWING && liveSupport === LiveSupport.SEEKABLE;
+        var canHlsLiveFailover = windowType === WindowTypes.GROWING && (liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.PLAYABLE) && transferFormat === 'hls';
         var canDashLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
 
         if (hasNextCDN && (canVodFailover || canHlsLiveFailover || canDashLiveFailover)) {
