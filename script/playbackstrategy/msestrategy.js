@@ -26,8 +26,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var mediaMetrics;
       var dashMetrics;
 
-      var baseUrls = [];
-
       var playerMetadata = {
         playbackBitrate: undefined,
         bufferLength: undefined
@@ -193,33 +191,26 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         modifySource(src);
       }
 
-      function manifestMunjer (manifest, src) {
-        var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+      function modifySource (sources) {
+        var baseUrls = [];
 
-        var baseUrlText = {
-          __text: manifest.baseUri + manifest.Period.BaseURL,
-          'dvb:priority': baseUrls.length
+        var manifestCallback = function (manifest, priority) {
+          baseUrls.push({
+            __text: manifest.baseUri + manifest.Period.BaseURL,
+            'dvb:priority': priority
+          });
+
+          if (baseUrls.length === sources.length) {
+            var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+            filteredManifest.BaseURL_asArray = baseUrls;
+            mediaPlayer.attachSource(filteredManifest);
+          }
         };
 
-        baseUrls.push(baseUrlText);
-
-        if (baseUrls.length === src.length) {
-          // filteredManifest.Period.BaseURL_asArray = baseUrls;
-          filteredManifest.BaseURL_asArray = baseUrls;
-
-          delete filteredManifest.Period.BaseURL;
-          delete filteredManifest.Period.BaseURL_asArray;
-
-          mediaPlayer.attachSource(filteredManifest);
-        }
-      }
-
-      function modifySource (src) {
-        src.forEach(function (element) {
+        sources.forEach(function (source, priority) {
           var tempMediaPlayer = dashjs.MediaPlayer().create();
           tempMediaPlayer.initialize();
-          tempMediaPlayer.retrieveManifest(element.url, function (manifest) { manifestMunjer(manifest, src); });
-          // mediaPlayer.retrieveManifest(element.url, function (manifest) { manifestMunjer(manifest, src); });
+          tempMediaPlayer.retrieveManifest(source.url, function (manifest) { manifestCallback(manifest, priority); });
         });
       }
 
