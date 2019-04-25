@@ -5,9 +5,10 @@ require(
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/pausetriggers',
     'bigscreenplayer/pluginenums',
-    'bigscreenplayer/plugins'
+    'bigscreenplayer/plugins',
+    'bigscreenplayer/models/transferformats'
   ],
-    function (Squire, MediaState, WindowTypes, PauseTriggers, PluginEnums, Plugins) {
+    function (Squire, MediaState, WindowTypes, PauseTriggers, PluginEnums, Plugins, TransferFormats) {
       var MediaPlayerLiveSupport = {
         NONE: 'none',
         PLAYABLE: 'playable',
@@ -300,7 +301,7 @@ require(
           it('should set endOfStream to true when seeking to the end of a simulcast', function () {
             manifestParserMock.parse.and.returnValue({windowStartTime: 10, windowEndTime: 100, correction: 0});
 
-            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING, manifest: {}, transferFormat: 'mpd'});
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING, manifest: {}, transferFormat: TransferFormats.DASH});
 
             var callback = jasmine.createSpy();
             var endOfStreamWindow = bigscreenPlayerData.time.windowEndTime - 2;
@@ -551,7 +552,7 @@ require(
               initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING,
                 liveSupport: MediaPlayerLiveSupport.SEEKABLE,
                 manifest: {},
-                transferFormat: 'mpd'
+                transferFormat: TransferFormats.DASH
               });
 
               expect(bigscreenPlayer.canSeek()).toBe(true);
@@ -604,7 +605,7 @@ require(
                 windowType: WindowTypes.SLIDING,
                 liveSupport: MediaPlayerLiveSupport.RESTARTABLE,
                 manifest: {},
-                transferFormat: 'mpd'
+                transferFormat: TransferFormats.DASH
               });
 
               expect(bigscreenPlayer.canPause()).toBe(true);
@@ -616,7 +617,7 @@ require(
               initialiseBigscreenPlayer({
                 windowType: WindowTypes.SLIDING,
                 manifest: {},
-                transferFormat: 'mpd',
+                transferFormat: TransferFormats.DASH,
                 liveSupport: MediaPlayerLiveSupport.RESTARTABLE
               });
 
@@ -641,7 +642,7 @@ require(
             initialiseBigscreenPlayer({
               windowType: WindowTypes.SLIDING,
               manifest: {},
-              transferFormat: 'mpd'
+              transferFormat: TransferFormats.DASH
             });
 
             expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(bigscreenPlayerData.time.windowStartTime + 1000000);
@@ -662,7 +663,7 @@ require(
             initialiseBigscreenPlayer({
               windowType: WindowTypes.SLIDING,
               manifest: {},
-              transferFormat: 'mpd'
+              transferFormat: TransferFormats.DASH
             });
 
             // Time to convert - 16 January 2019 13:00:00 - one hour (3600 seconds)

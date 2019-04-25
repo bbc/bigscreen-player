@@ -8,9 +8,10 @@ define(
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/models/transferformats'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats) {
     'use strict';
 
     return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
@@ -214,7 +215,7 @@ define(
         var hasNextCDN = mediaMetaData.urls.length > 1;
         var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
         var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
-        var canLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
+        var canLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === TransferFormats.DASH;
 
         if (hasNextCDN && (canVodFailover || canLiveFailover)) {
           cdnFailover(errorProperties, bufferingTimeoutError);

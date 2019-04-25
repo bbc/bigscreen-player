@@ -1,8 +1,9 @@
 define(
   'bigscreenplayer/parsers/manifestloader', [
-    'bigscreenplayer/parsers/manifestparser'
+    'bigscreenplayer/parsers/manifestparser',
+    'bigscreenplayer/models/transferformats'
   ],
-    function (ManifestParser) {
+    function (ManifestParser, TransferFormats) {
       'use strict';
 
       function ManifestLoader () {
@@ -42,7 +43,7 @@ define(
                 try {
                   if (xhr.responseXML) {
                     callbacks.onSuccess({
-                      transferFormat: 'dash',
+                      transferFormat: TransferFormats.DASH,
                       time: ManifestParser(xhr.responseXML, 'mpd', dateWithOffset)
                     });
                   } else {
@@ -98,7 +99,7 @@ define(
               onLoad: function (responseText) {
                 if (responseText) {
                   callbacks.onSuccess({
-                    transferFormat: 'hls',
+                    transferFormat: TransferFormats.HLS,
                     time: ManifestParser(responseText, 'm3u8', dateWithOffset)
                   });
                 } else {

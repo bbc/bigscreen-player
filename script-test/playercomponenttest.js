@@ -6,9 +6,10 @@ require(
     'bigscreenplayer/playbackstrategy/mockstrategy',
     'bigscreenplayer/models/transportcontrolposition',
     'bigscreenplayer/pluginenums',
+    'bigscreenplayer/models/transferformats',
     'squire'
   ],
-  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, PluginEnums, Squire) {
+  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, PluginEnums, TransferFormats, Squire) {
     'use strict';
 
     describe('Player Component', function () {
@@ -36,7 +37,7 @@ require(
             codec: undefined,
             urls: opts.multiCdn ? [{url: 'a', cdn: 'cdn-a'}, {url: 'b', cdn: 'cdn-b'}, {url: 'c', cdn: 'cdn-c'}] : [{url: 'a', cdn: 'cdn-a'}],
             type: 'application/dash+xml',
-            transferFormat: opts.transferFormat || 'dash',
+            transferFormat: opts.transferFormat || TransferFormats.DASH,
             bitrate: undefined,
             captionsUrl: opts.subtitlesAvailable ? 'captionsUrl' : undefined
           },
@@ -963,7 +964,7 @@ require(
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
           spyOn(mockStrategy, 'load');
 
-          setUpPlayerComponent({multiCdn: true, transferFormat: 'm3u8', windowType: WindowTypes.SLIDING});
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.SLIDING});
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
 
