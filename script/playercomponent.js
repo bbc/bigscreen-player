@@ -26,7 +26,7 @@ define(
       var mediaMetaData;
       var fatalErrorTimeout;
       var fatalError;
-      var transferFormat = bigscreenPlayerData.media.manifestType === 'mpd' ? 'dash' : 'hls';
+      var transferFormat = bigscreenPlayerData.media.transferFormat;
 
       playbackStrategy = PlaybackStrategy(
         windowType,

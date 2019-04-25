@@ -36,7 +36,7 @@ require(
             codec: undefined,
             urls: opts.multiCdn ? [{url: 'a', cdn: 'cdn-a'}, {url: 'b', cdn: 'cdn-b'}, {url: 'c', cdn: 'cdn-c'}] : [{url: 'a', cdn: 'cdn-a'}],
             type: 'application/dash+xml',
-            manifestType: opts.manifestType || 'mpd',
+            transferFormat: opts.transferFormat || 'dash',
             bitrate: undefined,
             captionsUrl: opts.subtitlesAvailable ? 'captionsUrl' : undefined
           },
@@ -963,7 +963,7 @@ require(
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
           spyOn(mockStrategy, 'load');
 
-          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.SLIDING});
+          setUpPlayerComponent({multiCdn: true, transferFormat: 'm3u8', windowType: WindowTypes.SLIDING});
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
 

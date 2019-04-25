@@ -142,7 +142,7 @@ define('bigscreenplayer/bigscreenplayer',
               device,
               {
                 onSuccess: function (manifestData) {
-                  bigscreenPlayerData.media.manifestType = manifestData.manifestType;
+                  bigscreenPlayerData.media.transferFormat = manifestData.transferFormat;
                   bigscreenPlayerData.time = manifestData.time;
                   bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback);
                 },

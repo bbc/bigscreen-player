@@ -42,7 +42,7 @@ define(
                 try {
                   if (xhr.responseXML) {
                     callbacks.onSuccess({
-                      manifestType: 'dash',
+                      transferFormat: 'dash',
                       time: ManifestParser(xhr.responseXML, 'mpd', dateWithOffset)
                     });
                   } else {
@@ -98,7 +98,7 @@ define(
               onLoad: function (responseText) {
                 if (responseText) {
                   callbacks.onSuccess({
-                    manifestType: 'hls',
+                    transferFormat: 'hls',
                     time: ManifestParser(responseText, 'm3u8', dateWithOffset)
                   });
                 } else {
