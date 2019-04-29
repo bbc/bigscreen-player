@@ -192,25 +192,25 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function modifySource (sources) {
-        var baseUrls = [];
+        var regexp = /.*\//;
 
-        var manifestCallback = function (manifest, priority) {
-          baseUrls.push({
-            __text: manifest.baseUri + manifest.Period.BaseURL,
+        var baseUrls = sources.map(function (source, priority) {
+          var sourceUrl = regexp.exec(source.url)[0];
+
+          return {
+            __text: sourceUrl + 'dash/',
             'dvb:priority': priority
-          });
+          };
+        });
 
-          if (baseUrls.length === sources.length) {
-            var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-            filteredManifest.BaseURL_asArray = baseUrls;
-            mediaPlayer.attachSource(filteredManifest);
-          }
-        };
+        mediaPlayer.retrieveManifest(sources[0].url, function (manifest) {
+          var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+          filteredManifest.BaseURL_asArray = baseUrls;
 
-        sources.forEach(function (source, priority) {
-          var tempMediaPlayer = dashjs.MediaPlayer().create();
-          tempMediaPlayer.initialize();
-          tempMediaPlayer.retrieveManifest(source.url, function (manifest) { manifestCallback(manifest, priority); });
+          delete filteredManifest.Period.BaseURL;
+          delete filteredManifest.Period.BaseURL_asArray;
+
+          mediaPlayer.attachSource(filteredManifest);
         });
       }
 
