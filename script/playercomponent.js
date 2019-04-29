@@ -5,7 +5,7 @@ define(
     'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/utils/playbackutils',
-    'bigscreenplayer/models/livesupportenum',
+    'bigscreenplayer/models/livesupport',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
@@ -15,7 +15,7 @@ define(
   function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats) {
     'use strict';
 
-    return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device, newLiveSupport) {
+    var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
       var isInitialPlay = true;
       var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
@@ -29,7 +29,6 @@ define(
       var fatalErrorTimeout;
       var fatalError;
       var transferFormat = bigscreenPlayerData.media.transferFormat;
-      var liveSupport = newLiveSupport;
 
       playbackStrategy = PlaybackStrategy(
         windowType,
@@ -217,7 +216,7 @@ define(
         var hasNextCDN = mediaMetaData.urls.length > 1;
         var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
         var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
-        var canHlsLiveFailover = windowType === WindowTypes.GROWING && liveSupport === LiveSupport.SEEKABLE;
+        var canHlsLiveFailover = windowType === WindowTypes.GROWING && getLiveSupport() === LiveSupport.SEEKABLE;
         var canDashLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === TransferFormats.DASH;
 
         if (hasNextCDN && (canVodFailover || canHlsLiveFailover || canDashLiveFailover)) {
@@ -393,5 +392,13 @@ define(
         tearDown: tearDown
       };
     };
+
+    function getLiveSupport (device) {
+      return PlaybackStrategy.getLiveSupport(device);
+    }
+
+    PlayerComponent.getLiveSupport = getLiveSupport;
+
+    return PlayerComponent;
   }
 );

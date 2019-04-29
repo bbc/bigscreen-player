@@ -6,20 +6,16 @@ require(
     'bigscreenplayer/models/pausetriggers',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/models/transferformats'
+    'bigscreenplayer/models/transferformats',
+    'bigscreenplayer/models/livesupport'
   ],
-    function (Squire, MediaState, WindowTypes, PauseTriggers, PluginEnums, Plugins, TransferFormats) {
-      var MediaPlayerLiveSupport = {
-        NONE: 'none',
-        PLAYABLE: 'playable',
-        RESTARTABLE: 'restartable',
-        SEEKABLE: 'seekable'
-      };
+    function (Squire, MediaState, WindowTypes, PauseTriggers, PluginEnums, Plugins, TransferFormats, LiveSupport) {
       var injector = new Squire();
       var bigscreenPlayer;
       var bigscreenPlayerData;
       var playbackElement;
       var manifestData;
+      var liveSupport;
 
       var mockEventHook;
       var mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
@@ -29,6 +25,10 @@ require(
       var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
         mockEventHook = callback;
         return mockPlayerComponentInstance;
+      };
+
+      mockPlayerComponent.getLiveSupport = function () {
+        return liveSupport;
       };
 
       function setupManifestData (options) {
@@ -56,7 +56,6 @@ require(
         options = options || {};
 
         var windowType = options.windowType || WindowTypes.STATIC;
-        var liveSupport = options.liveSupport || MediaPlayerLiveSupport.SEEKABLE;
         var device = options.device;
         var subtitlesEnabled = options.subtitlesEnabled || false;
 
@@ -91,12 +90,13 @@ require(
 
         };
 
-        bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, liveSupport, successCallback, device);
+        bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, device, successCallback);
       }
 
       describe('Bigscreen Player', function () {
         beforeEach(function (done) {
           setupManifestData();
+          liveSupport = LiveSupport.SEEKABLE;
 
           injector.mock({
             'bigscreenplayer/parsers/manifestloader': manifestLoaderMock,
@@ -348,6 +348,14 @@ require(
           });
 
           it('should set endOfStream to false when seeking into a simulcast', function () {
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 10,
+                windowEndTime: 100
+              }
+            });
+
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
 
             var callback = jasmine.createSpy();
@@ -420,7 +428,7 @@ require(
 
           it('should return liveWindowData when the windowType is sliding and manifest is loaded', function () {
             setupManifestData({
-              transferFormat: 'dash',
+              transferFormat: TransferFormats.DASH,
               time: {
                 windowStartTime: 1,
                 windowEndTime: 2
@@ -583,8 +591,7 @@ require(
               mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
 
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.SEEKABLE
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canSeek()).toBe(true);
@@ -594,8 +601,7 @@ require(
               mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: Infinity});
 
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.SEEKABLE
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canSeek()).toBe(false);
@@ -613,8 +619,7 @@ require(
               mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
 
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.SEEKABLE
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canSeek()).toBe(false);
@@ -623,9 +628,10 @@ require(
             it('should return false when device does not support seeking', function () {
               mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
 
+              liveSupport = LiveSupport.RESTARTABLE;
+
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.RESTARTABLE
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canSeek()).toBe(false);
@@ -642,9 +648,10 @@ require(
 
           describe('live', function () {
             it('should return true when it can pause', function () {
+              liveSupport = LiveSupport.RESTARTABLE;
+
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.RESTARTABLE
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canPause()).toBe(true);
@@ -659,20 +666,20 @@ require(
                   correction: 0
                 }
               });
+              liveSupport = LiveSupport.RESTARTABLE;
 
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                manifest: {},
-                liveSupport: MediaPlayerLiveSupport.RESTARTABLE
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canPause()).toBe(false);
             });
 
             it('should return false when device does not support pausing', function () {
+              liveSupport = LiveSupport.PLAYABLE;
+
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.PLAYABLE
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canPause()).toBe(false);

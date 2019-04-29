@@ -5,7 +5,7 @@ require(
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/playbackstrategy/mockstrategy',
     'bigscreenplayer/models/transportcontrolposition',
-    'bigscreenplayer/models/livesupportenum',
+    'bigscreenplayer/models/livesupport',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/models/transferformats',
     'squire'
@@ -24,6 +24,7 @@ require(
       var PlayerComponentWithMocks;
       var mockStateUpdateCallback;
       var corePlaybackData;
+      var liveSupport;
 
       // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
       function setUpPlayerComponent (opts) {
@@ -59,8 +60,7 @@ require(
           windowType,
           opts.subtitlesEnabled || false,
           mockStateUpdateCallback,
-          null,
-          opts.liveSupport || 'none'
+          null
         );
       }
 
@@ -82,6 +82,11 @@ require(
         function mockStrategyConstructor () {
           return mockStrategy;
         }
+
+        liveSupport = LiveSupport.SEEKABLE;
+        mockStrategyConstructor.getLiveSupport = function () {
+          return liveSupport;
+        };
 
         injector.mock({
           'bigscreenplayer/captionscontainer': mockCaptionsContainerConstructor,
@@ -983,7 +988,8 @@ require(
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
           spyOn(mockStrategy, 'load');
 
-          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.GROWING, liveSupport: LiveSupport.PLAYABLE});
+          liveSupport = LiveSupport.PLAYABLE;
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.GROWING});
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
 
@@ -1002,7 +1008,7 @@ require(
           spyOn(mockStrategy, 'load');
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(currentTime);
 
-          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.GROWING, liveSupport: 'seekable', type: type});
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.GROWING, type: type});
 
           // Set playback cause to normal
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);

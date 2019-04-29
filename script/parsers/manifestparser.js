@@ -5,12 +5,6 @@ define('bigscreenplayer/parsers/manifestparser',
  function (TimeUtils) {
    'use strict';
    return function ManifestParser (manifest, type, dateWithOffset) {
-     if (type === 'mpd') {
-       return parseMPD();
-     } else if (type === 'm3u8') {
-       return parseM3U8();
-     }
-
      function parseMPD () {
        try {
          var mpd = manifest.getElementsByTagName('MPD')[0];
@@ -83,5 +77,17 @@ define('bigscreenplayer/parsers/manifestparser',
        }
        return Math.floor(result);
      }
+
+     function parse () {
+       if (type === 'mpd') {
+         return parseMPD();
+       } else if (type === 'm3u8') {
+         return parseM3U8();
+       }
+     }
+
+     return {
+       parse: parse
+     };
    };
  });

@@ -23,11 +23,11 @@ define('bigscreenplayer/bigscreenplayer',
       var windowEndTime;
       var initialPlaybackTimeEpoch;
       var serverDate;
-      var liveSupport;
       var playerComponent;
       var pauseTrigger;
       var endOfStream;
       var windowType;
+      var device;
 
       function mediaStateUpdateCallback (evt) {
         if (evt.timeUpdate) {
@@ -91,7 +91,7 @@ define('bigscreenplayer/bigscreenplayer',
           none: false
         };
 
-        return windowType !== WindowTypes.STATIC && requiresSimulcastSeekingData[liveSupport];
+        return windowType !== WindowTypes.STATIC && requiresSimulcastSeekingData[getLiveSupport(device)];
       }
 
       function bigscreenPlayerDataLoaded (playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback) {
@@ -129,9 +129,9 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       return {
-        init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport, successCallback, device) {
+        init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, successCallback) {
           Chronicle.init();
-          liveSupport = newLiveSupport;
+          device = newDevice;
           windowType = newWindowType;
           serverDate = bigscreenPlayerData.serverDate;
 
@@ -147,7 +147,7 @@ define('bigscreenplayer/bigscreenplayer',
                   bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback);
                 },
                 onError: function () {
-                  mediaStateUpdateCallback({data: {state: MediaState.MANIFEST_ERROR}});
+                  mediaStateUpdateCallback({data: {state: MediaState.MANIFEST_ERROR}}); // could replace this with passed in errorCallback given we now have successCallback anyway
                 }
               }
             );
@@ -167,7 +167,6 @@ define('bigscreenplayer/bigscreenplayer',
           mediaKind = undefined;
           windowStartTime = undefined;
           windowEndTime = undefined;
-          liveSupport = undefined;
           pauseTrigger = undefined;
           windowType = undefined;
           this.unregisterPlugin();
@@ -260,10 +259,10 @@ define('bigscreenplayer/bigscreenplayer',
           playerComponent.setTransportControlPosition(position);
         },
         canSeek: function () {
-          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(windowStartTime, windowEndTime, liveSupport, this.getSeekableRange());
+          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(windowStartTime, windowEndTime, getLiveSupport(device), this.getSeekableRange());
         },
         canPause: function () {
-          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(windowStartTime, windowEndTime, liveSupport);
+          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(windowStartTime, windowEndTime, getLiveSupport(device));
         },
         mock: function (opts) {
           MockBigscreenPlayer.mock(this, opts);
@@ -292,6 +291,12 @@ define('bigscreenplayer/bigscreenplayer',
         convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs
       };
     }
+
+    function getLiveSupport (device) {
+      return PlayerComponent.getLiveSupport(device);
+    }
+
+    BigscreenPlayer.getLiveSupport = getLiveSupport;
 
     return BigscreenPlayer;
   }

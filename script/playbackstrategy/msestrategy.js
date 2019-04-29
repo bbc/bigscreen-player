@@ -6,12 +6,13 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/plugins',
     'bigscreenplayer/parsers/manifestfilter',
+    'bigscreenplayer/models/livesupport',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestFilter) {
-    return function (windowType, mediaKind, timeData, playbackElement) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestFilter, LiveSupport) {
+    var MSEStrategy = function (windowType, mediaKind, timeData, playbackElement) {
       var mediaPlayer;
       var eventCallback;
       var errorCallback;
@@ -355,5 +356,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       };
     };
+
+    MSEStrategy.getLiveSupport = function () {
+      return LiveSupport.SEEKABLE;
+    };
+
+    return MSEStrategy;
   }
 );
