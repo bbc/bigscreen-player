@@ -1,4 +1,4 @@
-define('bigscreenplayer/parsers/manifestparser',
+define('bigscreenplayer/manifest/manifestparser',
   [
     'bigscreenplayer/utils/timeutils'
   ],

@@ -98,7 +98,7 @@ require(
           liveSupport = LiveSupport.SEEKABLE;
 
           injector.mock({
-            'bigscreenplayer/parsers/manifestloader': manifestLoaderMock,
+            'bigscreenplayer/manifest/manifestloader': manifestLoaderMock,
             'bigscreenplayer/playercomponent': mockPlayerComponent,
             'bigscreenplayer/plugins': Plugins
           });

@@ -1,6 +1,6 @@
 define(
-  'bigscreenplayer/parsers/manifestloader', [
-    'bigscreenplayer/parsers/manifestparser',
+  'bigscreenplayer/manifest/manifestloader', [
+    'bigscreenplayer/manifest/manifestparser',
     'bigscreenplayer/models/transferformats'
   ],
     function (ManifestParser, TransferFormats) {

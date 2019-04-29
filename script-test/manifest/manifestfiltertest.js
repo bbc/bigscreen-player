@@ -1,6 +1,6 @@
 require(
   [
-    'bigscreenplayer/parsers/manifestfilter'
+    'bigscreenplayer/manifest/manifestfilter'
   ],
   function (ManifestFilter) {
     describe('ManifestFilter', function () {

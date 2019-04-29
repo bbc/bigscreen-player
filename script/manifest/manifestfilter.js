@@ -1,4 +1,4 @@
-define('bigscreenplayer/parsers/manifestfilter',
+define('bigscreenplayer/manifest/manifestfilter',
   function () {
     'use strict';
 

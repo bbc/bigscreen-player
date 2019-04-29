@@ -9,7 +9,7 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/plugins',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
-    'bigscreenplayer/parsers/manifestloader',
+    'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/utils/timeutils'
   ],
   function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils) {

@@ -5,7 +5,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/parsers/manifestfilter',
+    'bigscreenplayer/manifest/manifestfilter',
     'bigscreenplayer/models/livesupport',
 
     // static imports
