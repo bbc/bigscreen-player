@@ -5,11 +5,12 @@ require(
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/playbackstrategy/mockstrategy',
     'bigscreenplayer/models/transportcontrolposition',
+    'bigscreenplayer/models/livesupportenum',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/models/transferformats',
     'squire'
   ],
-  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, PluginEnums, TransferFormats, Squire) {
+  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, LiveSupport, PluginEnums, TransferFormats, Squire) {
     'use strict';
 
     describe('Player Component', function () {
@@ -36,7 +37,7 @@ require(
             kind: opts.mediaKind || MediaKinds.VIDEO,
             codec: undefined,
             urls: opts.multiCdn ? [{url: 'a', cdn: 'cdn-a'}, {url: 'b', cdn: 'cdn-b'}, {url: 'c', cdn: 'cdn-c'}] : [{url: 'a', cdn: 'cdn-a'}],
-            type: 'application/dash+xml',
+            type: opts.type || 'application/dash+xml',
             transferFormat: opts.transferFormat || TransferFormats.DASH,
             bitrate: undefined,
             captionsUrl: opts.subtitlesAvailable ? 'captionsUrl' : undefined
@@ -57,7 +58,9 @@ require(
           corePlaybackData,
           windowType,
           opts.subtitlesEnabled || false,
-          mockStateUpdateCallback
+          mockStateUpdateCallback,
+          null,
+          opts.liveSupport || 'none'
         );
       }
 
@@ -959,7 +962,7 @@ require(
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
         });
 
-        it('should publish a media state update of fatal if playback is live hls', function () {
+        it('should publish a media state update of fatal if playback is live hls simulcast', function () {
           spyOn(mockStrategy, 'getDuration').and.returnValue(100);
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
           spyOn(mockStrategy, 'load');
@@ -973,6 +976,54 @@ require(
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
 
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
+        });
+
+        it('should publish a media state update of fatal if playback is live hls webcast with playable', function () {
+          spyOn(mockStrategy, 'getDuration').and.returnValue(100);
+          spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
+          spyOn(mockStrategy, 'load');
+
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.GROWING, liveSupport: LiveSupport.PLAYABLE});
+
+          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
+
+          jasmine.clock().tick(5000);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+
+          expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
+        });
+
+        it('should cdn failover on hls webcast with seekable', function () {
+          var secondCdn = 'b';
+          var currentTime = 10;
+          var type = 'application/vnd.apple.mpegurl';
+
+          spyOn(mockStrategy, 'load');
+          spyOn(mockStrategy, 'getCurrentTime').and.returnValue(currentTime);
+
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.GROWING, liveSupport: 'seekable', type: type});
+
+          // Set playback cause to normal
+          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
+
+          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
+
+          jasmine.clock().tick(19999);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+
+          expect(corePlaybackData.media.urls.length).toBe(3);
+          expect(corePlaybackData.media.urls).toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+
+          jasmine.clock().tick(1);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(2);
+
+          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
+
+          expect(corePlaybackData.media.urls.length).toBe(2);
+          expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
         });
 
         it('should failover after buffering for 20 seconds on live dash playback', function () {
