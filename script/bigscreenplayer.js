@@ -129,7 +129,7 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       return {
-        init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, successCallback) {
+        init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, callbacks) {
           Chronicle.init();
           device = newDevice;
           windowType = newWindowType;
@@ -144,15 +144,15 @@ define('bigscreenplayer/bigscreenplayer',
                 onSuccess: function (manifestData) {
                   bigscreenPlayerData.media.transferFormat = manifestData.transferFormat;
                   bigscreenPlayerData.time = manifestData.time;
-                  bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback);
+                  bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
                 },
                 onError: function () {
-                  mediaStateUpdateCallback({data: {state: MediaState.MANIFEST_ERROR}}); // could replace this with passed in errorCallback given we now have successCallback anyway
+                  callbacks.onError({error: 'manifest'});
                 }
               }
             );
           } else {
-            bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback);
+            bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
           }
         },
 

@@ -86,11 +86,10 @@ require(
           bigscreenPlayerData.media.captionsUrl = 'captions';
         }
 
-        var successCallback = function () {
+        var successCallback = function () {};
+        var errorCallback = function () {};
 
-        };
-
-        bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, device, successCallback);
+        bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, device, {onSuccess: successCallback, onError: errorCallback});
       }
 
       describe('Bigscreen Player', function () {
