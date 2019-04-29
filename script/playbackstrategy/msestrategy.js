@@ -177,7 +177,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
       }
 
-      function setUpMediaPlayer (src) {
+      function setUpMediaPlayer (sources, playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.getDebug().setLogToBrowserConsole(false);
 
@@ -188,10 +188,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
 
         mediaPlayer.initialize(mediaElement, null, true);
-        modifySource(src);
+        modifySource(sources, playbackTime);
       }
 
-      function modifySource (sources) {
+      function modifySource (sources, playbackTime) {
         var regexp = /.*\//;
 
         var baseUrls = sources.map(function (source, priority) {
@@ -202,6 +202,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             'dvb:priority': priority
           };
         });
+
+        sources[0].url = calculateSourceAnchor(sources[0].url, playbackTime);
 
         mediaPlayer.retrieveManifest(sources[0].url, function (manifest) {
           var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
@@ -282,14 +284,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (src, mimeType, playbackTime) {
+        load: function (sources, mimeType, playbackTime) {
           if (!mediaPlayer) {
             failoverTime = playbackTime;
             setUpMediaElement(playbackElement);
-            setUpMediaPlayer(calculateSourceAnchor(src, playbackTime));
+            setUpMediaPlayer(sources, playbackTime);
             setUpMediaListeners();
           } else {
-            modifySource(calculateSourceAnchor(src, failoverTime));
+            modifySource(sources, failoverTime);
           }
         },
         getSeekableRange: function () {
