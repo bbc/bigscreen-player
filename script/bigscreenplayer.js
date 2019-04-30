@@ -139,7 +139,6 @@ define('bigscreenplayer/bigscreenplayer',
             ManifestLoader().load(
               bigscreenPlayerData.media.urls,
               serverDate,
-              device,
               {
                 onSuccess: function (manifestData) {
                   bigscreenPlayerData.media.transferFormat = manifestData.transferFormat;

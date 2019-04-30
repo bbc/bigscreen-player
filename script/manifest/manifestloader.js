@@ -121,7 +121,7 @@ define(
       }
 
       return {
-        load: function (mediaUrls, serverDate, newDevice, callbacks) {
+        load: function (mediaUrls, serverDate, callbacks) {
           var hlsUrl = filterHLS(mediaUrls)[0];
           var dashUrl = filterDash(mediaUrls)[0];
           dateWithOffset = serverDate;

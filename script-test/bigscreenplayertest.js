@@ -47,7 +47,7 @@ require(
 
       function manifestLoaderMock () {
         return {
-          load: function (urls, serverDate, device, callbacks) {
+          load: function (urls, serverDate, callbacks) {
             if (forceManifestLoadError) {
               callbacks.onError();
             } else {
