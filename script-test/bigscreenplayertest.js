@@ -830,7 +830,3 @@ require(
       });
     }
   );
-
-  // put it into sliding window mode so we try to load manifest
-  // set a flag to force manifestloader to error
-  // assert that passed in error callback is fired with correct errorModel

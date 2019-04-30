@@ -21,9 +21,7 @@ define(
       /** Media is seeking backwards or forwards. */
       ENDED: 5,
       /** Media has thrown a fatal error. */
-      FATAL_ERROR: 6,
-      /** Manifest has failed to load/parse. */
-      MANIFEST_ERROR: 7
+      FATAL_ERROR: 6
     };
 
     return MediaState;
