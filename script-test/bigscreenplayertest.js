@@ -16,6 +16,9 @@ require(
       var playbackElement;
       var manifestData;
       var liveSupport;
+      var forceManifestLoadError;
+      var successCallback = jasmine.createSpy('successCallback');
+      var errorCallback = jasmine.createSpy('errorCallback');
 
       var mockEventHook;
       var mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
@@ -45,7 +48,11 @@ require(
       function manifestLoaderMock () {
         return {
           load: function (urls, serverDate, device, callbacks) {
-            callbacks.onSuccess(manifestData);
+            if (forceManifestLoadError) {
+              callbacks.onError();
+            } else {
+              callbacks.onSuccess(manifestData);
+            }
           },
           abort: function () { }
         };
@@ -86,9 +93,6 @@ require(
           bigscreenPlayerData.media.captionsUrl = 'captions';
         }
 
-        var successCallback = function () {};
-        var errorCallback = function () {};
-
         bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, device, {onSuccess: successCallback, onError: errorCallback});
       }
 
@@ -96,6 +100,7 @@ require(
         beforeEach(function (done) {
           setupManifestData();
           liveSupport = LiveSupport.SEEKABLE;
+          forceManifestLoadError = false;
 
           injector.mock({
             'bigscreenplayer/manifest/manifestloader': manifestLoaderMock,
@@ -113,6 +118,8 @@ require(
           Object.keys(mockPlayerComponentInstance).forEach(function (spyFunction) {
             mockPlayerComponentInstance[spyFunction].calls.reset();
           });
+          successCallback.calls.reset();
+          errorCallback.calls.reset();
           bigscreenPlayer.tearDown();
         });
 
@@ -146,6 +153,28 @@ require(
             mockEventHook({data: {currentTime: 0}, timeUpdate: true, isBufferingTimeoutError: false});
 
             expect(callback).toHaveBeenCalledWith({currentTime: 0, endOfStream: false});
+          });
+
+          it('should call the suppiled success callback if playing VOD', function () {
+            initialiseBigscreenPlayer();
+
+            expect(successCallback).toHaveBeenCalledWith();
+            expect(errorCallback).not.toHaveBeenCalled();
+          });
+
+          it('should call the suppiled success callback if playing LIVE and the manifest loads', function () {
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+
+            expect(successCallback).toHaveBeenCalledWith();
+            expect(errorCallback).not.toHaveBeenCalled();
+          });
+
+          it('should call the supplied error callback if manifest fails to load', function () {
+            forceManifestLoadError = true;
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+
+            expect(errorCallback).toHaveBeenCalledWith({error: 'manifest'});
+            expect(successCallback).not.toHaveBeenCalled();
           });
         });
 
@@ -802,3 +831,6 @@ require(
     }
   );
 
+  // put it into sliding window mode so we try to load manifest
+  // set a flag to force manifestloader to error
+  // assert that passed in error callback is fired with correct errorModel
