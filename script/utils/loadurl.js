@@ -4,7 +4,7 @@ define(
     'use strict';
 
     return function (url, opts) {
-      var xhr = this._newXMLHttpRequest();
+      var xhr = new XMLHttpRequest();
       if (opts.timeout) {
         xhr.timeout = opts.timeout;
       }

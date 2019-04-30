@@ -44,7 +44,7 @@ define(
                 if (xhr.responseXML) {
                   callbacks.onSuccess({
                     transferFormat: TransferFormats.DASH,
-                    time: ManifestParser(xhr.responseXML, 'mpd', dateWithOffset)
+                    time: ManifestParser(xhr.responseXML, 'mpd', dateWithOffset).parse()
                   });
                 } else {
                   callbacks.onError('Unable to retrieve DASH XML response');
@@ -100,7 +100,7 @@ define(
               if (responseText) {
                 callbacks.onSuccess({
                   transferFormat: TransferFormats.HLS,
-                  time: ManifestParser(responseText, 'm3u8', dateWithOffset)
+                  time: ManifestParser(responseText, 'm3u8', dateWithOffset).parse()
                 });
               } else {
                 callbacks.onError('Unable to retrieve HLS live playlist');

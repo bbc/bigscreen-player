@@ -1,15 +1,18 @@
 require(
   [
-    'squire'
+    'squire',
+    'sinon',
+    'bigscreenplayer/manifest/manifestloader',
+    'bigscreenplayer/models/transferformats'
   ],
-  function (Squire) {
+  function (Squire, Sinon, ManifestLoader, TransferFormats) {
     'use strict';
 
     describe('Manifest Loader', function () {
       var loadUrl = jasmine.createSpy('loadUrl');
 
       var injector = new Squire();
-      var manifestLoader, playbackData;
+      var manifestLoader;
 
       beforeEach(function (done) {
         injector.mock({
@@ -17,7 +20,6 @@ require(
         });
         injector.require(['bigscreenplayer/manifest/manifestloader'], function (ManifestLoader) {
           manifestLoader = ManifestLoader();
-          playbackData = createPlaybackData();
           done();
         });
       });
@@ -29,8 +31,8 @@ require(
       describe('With HLS media', function () {
         it('Picks the first HLS url', function () {
           var hlsUrl = 'first.m3u8';
-          playbackData.media.urls = [{ url: 'something_else' }, { url: hlsUrl }, { url: 'next.m3u8' }];
-          manifestLoader.load(playbackData.media.urls, undefined, undefined, {});
+          var urls = [{ url: 'something_else' }, { url: hlsUrl }, { url: 'next.m3u8' }];
+          manifestLoader.load(urls, undefined, undefined, {});
 
           expect(loadUrl).toHaveBeenCalledWith(hlsUrl, jasmine.anything());
         });
@@ -39,8 +41,8 @@ require(
       describe('With Dash Media', function () {
         it('Picks the first dash url', function () {
           var dashUrl = 'first.mpd';
-          playbackData.media.urls = [{ url: 'something_else' }, { url: dashUrl }, { url: 'next.mpd' }];
-          manifestLoader.load(playbackData.media.urls, undefined, undefined, {});
+          var urls = [{ url: 'something_else' }, { url: dashUrl }, { url: 'next.mpd' }];
+          manifestLoader.load(urls, undefined, undefined, {});
 
           expect(loadUrl).toHaveBeenCalledWith(dashUrl, jasmine.anything());
         });
@@ -51,15 +53,18 @@ require(
           var callbackSpies = {
             onError: jasmine.createSpy('error callback')
           };
-          var data = createPlaybackData();
-          data.media.urls = [{ url: 'bad_url' }];
-          manifestLoader.load(data.media.urls, undefined, undefined, callbackSpies);
+          var urls = [{ url: 'bad_url' }];
+          manifestLoader.load(urls, undefined, undefined, callbackSpies);
 
           expect(callbackSpies.onError).toHaveBeenCalledWith('Invalid media url');
         });
       });
+    });
 
-      xdescribe('On manifestDataSource load', function () {
+    describe('Manifest Loader', function () {
+      var manifestLoader = ManifestLoader();
+
+      describe('On manifestDataSource load', function () {
         var callbackSpies, server;
 
         var dashResponse = '<?xml version="1.0" encoding="utf-8"?> <MPD xmlns="urn:mpeg:dash:schema:mpd:2011"></MPD>';
@@ -74,11 +79,7 @@ require(
           '#EXT-X-VERSION:2\n';
 
         beforeEach(function () {
-          // re-require ManifestDataSource as previous tests Squire'd this in.
-          var ManifestDataSource = require('bigscreen/app/playback/manifestdatasource');
-          manifestDataSource = ManifestDataSource();
-
-          server = sinon.fakeServer.create();
+          server = Sinon.fakeServer.create();
 
           callbackSpies = {
             onSuccess: jasmine.createSpy('success callback'),
@@ -93,18 +94,20 @@ require(
         describe('DASH manifest fetching', function () {
           it('Calls success when network returns a DASH response', function () {
             server.respondWith('GET', 'http://foo.bar/test.mpd', [200, { 'Content-Type': 'application/dash+xml' }, dashResponse]);
-            manifestDataSource.load([{ url: 'http://foo.bar/test.mpd' }], callbackSpies);
+            manifestLoader.load([{ url: 'http://foo.bar/test.mpd' }], undefined, undefined, callbackSpies);
             server.respond();
 
-            var parser = new DOMParser();
-            var expectedDOM = parser.parseFromString(dashResponse, 'application/xml');
+            var expectedResponse = {
+              transferFormat: TransferFormats.DASH,
+              time: jasmine.any(Object)
+            };
 
-            expect(callbackSpies.onSuccess).toHaveBeenCalledWith(expectedDOM, 'mpd');
+            expect(callbackSpies.onSuccess).toHaveBeenCalledWith(expectedResponse);
           });
 
           it('Calls error when response is invalid', function () {
             server.respondWith('GET', 'http://foo.bar/test.mpd', [200, {}, '']);
-            manifestDataSource.load([{ url: 'http://foo.bar/test.mpd' }], callbackSpies);
+            manifestLoader.load([{ url: 'http://foo.bar/test.mpd' }], undefined, undefined, callbackSpies);
             server.respond();
 
             expect(callbackSpies.onError).toHaveBeenCalledWith('Unable to retrieve DASH XML response');
@@ -112,7 +115,7 @@ require(
 
           it('Calls error when network request fails', function () {
             server.respondWith('GET', 'http://foo.bar/test.mpd', [404, {}, '']);
-            manifestDataSource.load([{ url: 'http://foo.bar/test.mpd' }], callbackSpies);
+            manifestLoader.load([{ url: 'http://foo.bar/test.mpd' }], undefined, undefined, callbackSpies);
             server.respond();
 
             expect(callbackSpies.onError).toHaveBeenCalledWith('Network error: Unable to retrieve DASH manifest');
@@ -123,16 +126,21 @@ require(
           it('Calls success when network returns a HLS live playlist response', function () {
             server.respondWith('GET', 'http://foo.bar/test.m3u8', [200, { 'Content-Type': 'application/vnd.apple.mpegurl' }, hlsMasterResponse]);
             server.respondWith('GET', 'http://foo.bar/live.m3u8', [200, { 'Content-Type': 'application/vnd.apple.mpegurl' }, hlsLiveResponse]);
-            manifestDataSource.load([{ url: 'http://foo.bar/test.m3u8' }], callbackSpies);
+            manifestLoader.load([{ url: 'http://foo.bar/test.m3u8' }], undefined, undefined, callbackSpies);
             server.respond();
             server.respond(); // need to respond twice, once for each unique url (above)
 
-            expect(callbackSpies.onSuccess).toHaveBeenCalledWith(hlsLiveResponse, 'm3u8');
+            var expectedResponse = {
+              transferFormat: TransferFormats.HLS,
+              time: jasmine.any(Object)
+            };
+
+            expect(callbackSpies.onSuccess).toHaveBeenCalledWith(expectedResponse);
           });
 
           it('calls error when network request fails', function () {
             server.respondWith('GET', 'http://foo.bar/test.m3u8', [404, { 'Content-Type': 'application/vnd.apple.mpegurl' }, '']);
-            manifestDataSource.load([{ url: 'http://foo.bar/test.m3u8' }], callbackSpies);
+            manifestLoader.load([{ url: 'http://foo.bar/test.m3u8' }], undefined, undefined, callbackSpies);
             server.respond();
 
             expect(callbackSpies.onError).toHaveBeenCalledWith('Network error: Unable to retrieve HLS master playlist');
@@ -140,7 +148,7 @@ require(
 
           it('calls error if not valid HLS response', function () {
             server.respondWith('GET', 'http://foo.bar/test.m3u8', [200, { 'Content-Type': 'application/vnd.apple.mpegurl' }, hlsInvalidResponse]);
-            manifestDataSource.load([{ url: 'http://foo.bar/test.m3u8' }], callbackSpies);
+            manifestLoader.load([{ url: 'http://foo.bar/test.m3u8' }], undefined, undefined, callbackSpies);
             server.respond();
 
             expect(callbackSpies.onError).toHaveBeenCalledWith('Unable to retrieve HLS master playlist');
@@ -149,7 +157,7 @@ require(
           it('calls error when HLS live playlist response is invalid', function () {
             server.respondWith('GET', 'http://foo.bar/test.m3u8', [200, { 'Content-Type': 'application/vnd.apple.mpegurl' }, hlsMasterResponse]);
             server.respondWith('GET', 'http://foo.bar/live.m3u8', [200, { 'Content-Type': 'application/vnd.apple.mpegurl' }, '']);
-            manifestDataSource.load([{ url: 'http://foo.bar/test.m3u8' }], callbackSpies);
+            manifestLoader.load([{ url: 'http://foo.bar/test.m3u8' }], undefined, undefined, callbackSpies);
             server.respond();
             server.respond(); // need to respond twice, once for each unique url (above)
 
@@ -159,7 +167,7 @@ require(
           it('calls error when network request for HLS live playlist fails', function () {
             server.respondWith('GET', 'http://foo.bar/test.m3u8', [200, { 'Content-Type': 'application/vnd.apple.mpegurl' }, hlsMasterResponse]);
             server.respondWith('GET', 'http://foo.bar/live.m3u8', [404, { 'Content-Type': 'application/vnd.apple.mpegurl' }, '']);
-            manifestDataSource.load([{ url: 'http://foo.bar/test.m3u8' }], callbackSpies);
+            manifestLoader.load([{ url: 'http://foo.bar/test.m3u8' }], undefined, undefined, callbackSpies);
             server.respond();
             server.respond(); // need to respond twice, once for each unique url (above)
 
@@ -167,19 +175,5 @@ require(
           });
         });
       });
-
-      function createPlaybackData () {
-        return {
-          playbackType: 'live_restart',
-          media: {
-            urls: [{ url: 'url0.m3u8' }]
-          },
-          episode: {
-            whatIsOn: [{
-              scheduled_start: '2015-07-07T09:55:10Z'
-            }]
-          }
-        };
-      }
     });
   });
