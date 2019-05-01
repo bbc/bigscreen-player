@@ -178,7 +178,7 @@ define(
         bubbleBufferingCleared(playbackProperties);
 
         var playbackErrorProperties = createPlaybackErrorProperties(event);
-        raiseError(playbackErrorProperties);
+        raiseError(playbackErrorProperties, false); // TODO: Why was this never set before?
       }
 
       function startErrorTimeout (properties) {
@@ -194,10 +194,10 @@ define(
       }
 
       function raiseError (properties, bufferingTimeoutError) {
-        // clearErrorTimeout();
-        // publishMediaStateUpdate(MediaState.WAITING);
-        // bubbleErrorRaised(properties, bufferingTimeoutError);
-        // startFatalErrorTimeout(properties, bufferingTimeoutError);
+        clearErrorTimeout();
+        publishMediaStateUpdate(MediaState.WAITING);
+        bubbleErrorRaised(properties, bufferingTimeoutError);
+        startFatalErrorTimeout(properties, bufferingTimeoutError);
       }
 
       function startFatalErrorTimeout (errorProperties, bufferingTimeoutError) {
@@ -239,7 +239,7 @@ define(
         DebugTool.keyValue({key: 'available cdns', value: availableCdns});
         DebugTool.keyValue({key: 'current cdn', value: mediaMetaData.urls[0].cdn});
         DebugTool.keyValue({key: 'url', value: mediaMetaData.urls[0].url});
-        loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, getCurrentTime(), thenPause);
+        loadMedia(mediaMetaData.urls, mediaMetaData.type, getCurrentTime(), thenPause);
       }
 
       function clearFatalErrorTimeout () {

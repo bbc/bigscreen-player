@@ -36,6 +36,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         MANIFEST_LOADED: 'manifestLoaded',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
+        CDN_FAILOVER: 'baseUrlSelected',
         METRIC_ADDED: 'metricAdded',
         METRIC_CHANGED: 'metricChanged'
       };
@@ -87,8 +88,18 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         if (event.error) {
           if (event.error.message) {
             DebugTool.info('MSE Error: ' + event.error.message);
+
+            // TODO: Magic Number -  Don't raise an error on fragment download error
+            if (event.error.code === 28) {
+              return;
+            }
           } else {
             DebugTool.info('MSE Error: ' + event.error);
+
+            // TODO: Don't raise an error on fragment download error unless we do a standard failover for growing windows
+            if (event.error === 'download' && windowType !== WindowTypes.GROWING) {
+              return;
+            }
           }
         }
         publishError(event);
@@ -118,6 +129,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           }
           Plugins.interface.onPlayerInfoUpdated(playerMetadata);
         }
+      }
+
+      function onCdnFailover (event) {
+        // TODO: raise this state to the plugins
+        // console.log(JSON.stringify(event));
       }
 
       function onMetricAdded (event) {
@@ -191,26 +207,36 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         modifySource(sources, playbackTime);
       }
 
+      /**
+       *
+       * Edge case for growing window - only use one source at a time, do a legacy failover as we don't refresh the manifest.
+       *
+       * @param {*} sources
+       * @param {*} playbackTime
+       */
       function modifySource (sources, playbackTime) {
         var regexp = /.*\//;
+        var initialSource = calculateSourceAnchor(sources[0].url, playbackTime);
 
-        var baseUrls = sources.map(function (source, priority) {
-          var sourceUrl = regexp.exec(source.url)[0];
+        if (windowType !== WindowTypes.GROWING) {
+          var baseUrls = sources.map(function (source, priority) {
+            var sourceUrl = regexp.exec(source.url)[0];
 
-          return {
-            __text: sourceUrl + 'dash/',
-            'dvb:priority': priority
-          };
-        });
+            return {
+              __text: sourceUrl + 'dash/',
+              'dvb:priority': priority
+            };
+          });
+        }
 
-        sources[0].url = calculateSourceAnchor(sources[0].url, playbackTime);
-
-        mediaPlayer.retrieveManifest(sources[0].url, function (manifest) {
+        mediaPlayer.retrieveManifest(initialSource, function (manifest) {
           var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-          filteredManifest.BaseURL_asArray = baseUrls;
 
-          delete filteredManifest.Period.BaseURL;
-          delete filteredManifest.Period.BaseURL_asArray;
+          if (windowType !== WindowTypes.GROWING) {
+            filteredManifest.BaseURL_asArray = baseUrls;
+            delete filteredManifest.Period.BaseURL;
+            delete filteredManifest.Period.BaseURL_asArray;
+          }
 
           mediaPlayer.attachSource(filteredManifest);
         });
@@ -229,6 +255,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
+        mediaPlayer.on(DashJSEvents.CDN_FAILOVER, onCdnFailover);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
       }
 
@@ -285,6 +312,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           };
         },
         load: function (sources, mimeType, playbackTime) {
+          // TODO: reason about unrealistic load parameters
+          if (sources && sources.length === 0) return;
+
           if (!mediaPlayer) {
             failoverTime = playbackTime;
             setUpMediaElement(playbackElement);
@@ -331,6 +361,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
+          mediaPlayer.off(DashJSEvents.CDN_FAILOVER, onCdnFailover);
 
           mediaElement.parentElement.removeChild(mediaElement);
 
