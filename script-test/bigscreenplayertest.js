@@ -45,18 +45,15 @@ require(
         };
       }
 
-      function manifestLoaderMock () {
-        return {
-          load: function (urls, serverDate, callbacks) {
-            if (forceManifestLoadError) {
-              callbacks.onError();
-            } else {
-              callbacks.onSuccess(manifestData);
-            }
-          },
-          abort: function () { }
-        };
-      }
+      var manifestLoaderMock = {
+        load: function (urls, serverDate, callbacks) {
+          if (forceManifestLoadError) {
+            callbacks.onError();
+          } else {
+            callbacks.onSuccess(manifestData);
+          }
+        }
+      };
 
       function initialiseBigscreenPlayer (options) {
         // options = subtitlesAvailable, windowType, windowStartTime, windowEndTime

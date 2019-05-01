@@ -136,7 +136,7 @@ define('bigscreenplayer/bigscreenplayer',
           serverDate = bigscreenPlayerData.serverDate;
 
           if (needToGetManifest() && !bigscreenPlayerData.time) {
-            ManifestLoader().load(
+            ManifestLoader.load(
               bigscreenPlayerData.media.urls,
               serverDate,
               {
