@@ -28,15 +28,26 @@ require(
         MANIFEST_LOADED: 'manifestLoaded',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-        METRIC_ADDED: 'metricAdded'
+        CDN_FAILOVER: 'baseUrlSelected',
+        METRIC_ADDED: 'metricAdded',
+        METRIC_CHANGED: 'metricChanged'
       };
 
       var mockDashjs = jasmine.createSpyObj('mockDashjs', ['MediaPlayer']);
       mockDashMediaPlayer = jasmine.createSpyObj('mockDashMediaPlayer', ['create']);
+      mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
+
+      mockPlugins = {
+        interface: mockPluginsInterface
+      };
 
       beforeEach(function (done) {
+        cdnArray = [];
+        cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
+
         injector.mock({
-          'dashjs': mockDashjs
+          'dashjs': mockDashjs,
+          'bigscreenplayer/plugins': mockPlugins
         });
 
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
@@ -46,7 +57,6 @@ require(
       });
 
       function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
-        cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
         var defaultWindowType = windowType || WindowTypes.STATIC;
         var defaultMediaKind = mediaKind || MediaKinds.VIDEO;
 
@@ -124,6 +134,7 @@ require(
       afterEach(function () {
         mockVideoElement.currentTime = 0;
         document.body.removeChild(playbackElement);
+        mockPluginsInterface.onErrorHandled.calls.reset();
       });
 
       describe('Transitions', function () {
@@ -328,6 +339,8 @@ require(
         it('should attach a new source with expected parameters at the current playback time', function () {
           setUpMSE();
 
+          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+
           mockDashInstance.getSource.and.returnValue('src');
 
           mseStrategy.load(cdnArray, null, 45);
@@ -342,6 +355,32 @@ require(
           mseStrategy.load(cdnArray, null, 0);
 
           expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=86', jasmine.any(Function));
+        });
+
+        it('should fire download error event when in growing window', function () {
+          setUpMSE();
+
+          mseStrategy.load(cdnArray, WindowTypes.GROWING, 3);
+
+          eventHandlers.error({
+            errorMessage: 'Boom'
+          });
+
+          expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
+        });
+
+        it('should call plugin handler on dash baseUrl changed event', function () {
+          setUpMSE();
+
+          mseStrategy.load(cdnArray, WindowTypes.STATIC, 3);
+
+          eventHandlers.baseUrlSelected({
+            baseUrl: {
+              url: cdnArray[0].cdn
+            }
+          });
+
+          expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalled();
         });
       });
 
@@ -592,14 +631,6 @@ require(
           newQuality: 1,
           type: 'qualityChangeRendered'
         };
-
-        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
-
-        mockPlugins = {
-          interface: mockPluginsInterface
-        };
-
-        injector.mock({'bigscreenplayer/plugins': mockPlugins});
 
         beforeEach(function () {
           mockPluginsInterface.onPlayerInfoUpdated.calls.reset();
