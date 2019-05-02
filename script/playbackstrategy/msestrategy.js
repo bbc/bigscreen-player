@@ -94,7 +94,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             DebugTool.info('MSE Error: ' + event.error.message);
 
             // TODO: Magic Number -  Don't raise an error on fragment download error
-            if (event.error.code === 28) {
+            if (event.error.code === 28 || event.error.code === 27) {
               return;
             }
           } else {
@@ -162,7 +162,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         if (event.baseUrl.url) {
           cdns.forEach(function (element) {
-            if (element.indexOf(event.baseUrl.url) !== -1) {
+            if (event.baseUrl.serviceLocation === element) {
               cdn = element;
             }
           });
@@ -269,7 +269,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
             return {
               __text: sourceUrl + 'dash/',
-              'dvb:priority': priority
+              'dvb:priority': priority,
+              serviceLocation: source.cdn
             };
           });
         }
