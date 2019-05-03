@@ -231,14 +231,6 @@ define(
         mediaMetaData.urls.shift();
         var evt = new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn});
         Plugins.interface.onErrorHandled(evt);
-
-        var availableCdns = mediaMetaData.urls.map(function (media) {
-          return media.cdn;
-        });
-
-        DebugTool.keyValue({key: 'available cdns', value: availableCdns});
-        DebugTool.keyValue({key: 'current cdn', value: mediaMetaData.urls[0].cdn});
-        DebugTool.keyValue({key: 'url', value: mediaMetaData.urls[0].url});
         loadMedia(mediaMetaData.urls, mediaMetaData.type, getCurrentTime(), thenPause);
       }
 
@@ -338,8 +330,8 @@ define(
         }
       }
 
-      function loadMedia (url, type, startTime, thenPause) {
-        playbackStrategy.load(url, type, startTime);
+      function loadMedia (urls, type, startTime, thenPause) {
+        playbackStrategy.load(urls, type, startTime);
         if (thenPause) {
           pause();
         }

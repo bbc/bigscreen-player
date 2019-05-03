@@ -16,18 +16,21 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestFilter, PlaybackUtils) {
     return function (windowType, mediaKind, timeData, playbackElement) {
       var mediaPlayer;
+      var mediaElement;
+
       var eventCallback;
       var errorCallback;
       var timeUpdateCallback;
-      var timeCorrection = timeData && timeData.correction || 0;
 
+      var timeCorrection = timeData && timeData.correction || 0;
       var failoverTime;
       var isEnded = false;
-      var mediaElement;
 
       var bitrateInfoList;
       var mediaMetrics;
       var dashMetrics;
+
+      var mediaSources;
       var cdns;
 
       var playerMetadata = {
@@ -38,6 +41,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var DashJSEvents = {
         ERROR: 'error',
         MANIFEST_LOADED: 'manifestLoaded',
+        DOWNLOAD_SIDX_ERROR_CODE: 27,
+        DOWNLOAD_CONTENT_ERROR_CODE: 28,
+        DOWNLOAD_ERROR_MESSAGE: 'download',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
         CDN_FAILOVER: 'baseUrlSelected',
@@ -93,15 +99,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           if (event.error.message) {
             DebugTool.info('MSE Error: ' + event.error.message);
 
-            // TODO: Magic Number -  Don't raise an error on fragment download error
-            if (event.error.code === 28 || event.error.code === 27) {
+            // Don't raise an error on fragment download error
+            if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE || event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE) {
               return;
             }
           } else {
             DebugTool.info('MSE Error: ' + event.error);
 
-            // TODO: Don't raise an error on fragment download error unless we do a standard failover for growing windows
-            if (event.error === 'download' && windowType !== WindowTypes.GROWING) {
+            // Don't raise an error on fragment download error unless we want to do a standard failover for growing windows
+            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && windowType !== WindowTypes.GROWING) {
               return;
             }
           }
@@ -146,6 +152,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function propagateCdnFailover (event, cdn) {
+        // Initial playback
+        if (cdn === mediaSources[0].cdn) return;
+
         var errorProperties = PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
         var evt = new PluginData({
           status: PluginEnums.STATUS.FAILOVER,
@@ -154,6 +163,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           isBufferingTimeoutError: false,
           cdn: cdn
         });
+        // urls -> sources -> mediaSources
+        // TODO: Remove this horrible mutation when failover is pushed down per strategy.
+        mediaSources.shift();
         Plugins.interface.onErrorHandled(evt);
       }
 
@@ -256,6 +268,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
        * @param {*} playbackTime
        */
       function modifySource (sources, playbackTime) {
+        mediaSources = sources;
         var regexp = /.*\//;
         var initialSource = calculateSourceAnchor(sources[0].url, playbackTime);
 
@@ -276,6 +289,17 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
 
         mediaPlayer.retrieveManifest(initialSource, function (manifest) {
+          if (manifest === null) {
+            var event = {
+              errorProperties: {
+                error_mssg: 'manifestDownloadError'
+              }
+            };
+            DebugTool.info('MSE Error: manifestDownloadError');
+            publishError(event);
+            return;
+          }
+
           var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
 
           if (windowType !== WindowTypes.GROWING) {
@@ -382,7 +406,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           };
         },
         load: function (sources, mimeType, playbackTime) {
-          // TODO: reason about unrealistic load parameters
           if (sources && sources.length === 0) return;
 
           if (!mediaPlayer) {
@@ -422,10 +445,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           eventCallback = undefined;
           errorCallback = undefined;
           timeUpdateCallback = undefined;
-          isEnded = undefined;
-          failoverTime = undefined;
           timeCorrection = undefined;
-          windowType = undefined;
+          failoverTime = undefined;
+          isEnded = undefined;
+          bitrateInfoList = undefined;
+          mediaMetrics = undefined;
+          dashMetrics = undefined;
+          cdns = undefined;
+          mediaSources = undefined;
         },
         reset: function () {
           return;

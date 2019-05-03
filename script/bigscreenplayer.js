@@ -10,9 +10,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/parsers/manifestparser',
-    'bigscreenplayer/utils/timeutils'
+    'bigscreenplayer/utils/timeutils',
+    'bigscreenplayer/plugins/cdndebugoutput'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestParser, SlidingWindowUtils) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestParser, SlidingWindowUtils, CdnDebugOutput) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -117,6 +118,8 @@ define('bigscreenplayer/bigscreenplayer',
           windowType = newWindowType;
           endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0);
 
+          this.registerPlugin(new CdnDebugOutput(bigscreenPlayerData.media.urls));
+
           playerComponent = new PlayerComponent(
             playbackElement,
             bigscreenPlayerData,
@@ -125,14 +128,6 @@ define('bigscreenplayer/bigscreenplayer',
             mediaStateUpdateCallback,
             device
           );
-
-          var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
-            return media.cdn;
-          });
-
-          DebugTool.keyValue({key: 'available cdns', value: availableCdns});
-          DebugTool.keyValue({key: 'current cdn', value: bigscreenPlayerData.media.urls[0].cdn});
-          DebugTool.keyValue({key: 'url', value: bigscreenPlayerData.media.urls[0].url});
         },
 
         tearDown: function () {
