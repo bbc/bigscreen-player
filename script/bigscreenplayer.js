@@ -117,7 +117,9 @@ define('bigscreenplayer/bigscreenplayer',
           device
         );
 
-        successCallback();
+        if (successCallback) {
+          successCallback();
+        }
 
         var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
           return media.cdn;
@@ -134,6 +136,9 @@ define('bigscreenplayer/bigscreenplayer',
           device = newDevice;
           windowType = newWindowType;
           serverDate = bigscreenPlayerData.serverDate;
+          if (!callbacks) {
+            callbacks = {};
+          }
 
           if (needToGetManifest() && !bigscreenPlayerData.time) {
             ManifestLoader.load(
@@ -146,7 +151,9 @@ define('bigscreenplayer/bigscreenplayer',
                   bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
                 },
                 onError: function () {
-                  callbacks.onError({error: 'manifest'});
+                  if (callbacks.onError) {
+                    callbacks.onError({error: 'manifest'});
+                  }
                 }
               }
             );

@@ -19,6 +19,7 @@ require(
       var forceManifestLoadError;
       var successCallback = jasmine.createSpy('successCallback');
       var errorCallback = jasmine.createSpy('errorCallback');
+      var noCallbacks = false;
 
       var mockEventHook;
       var mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
@@ -90,7 +91,11 @@ require(
           bigscreenPlayerData.media.captionsUrl = 'captions';
         }
 
-        bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, device, {onSuccess: successCallback, onError: errorCallback});
+        var callbacks;
+        if (!noCallbacks) {
+          callbacks = {onSuccess: successCallback, onError: errorCallback};
+        }
+        bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, device, callbacks);
       }
 
       describe('Bigscreen Player', function () {
@@ -98,6 +103,7 @@ require(
           setupManifestData();
           liveSupport = LiveSupport.SEEKABLE;
           forceManifestLoadError = false;
+          noCallbacks = false;
 
           injector.mock({
             'bigscreenplayer/manifest/manifestloader': manifestLoaderMock,
@@ -172,6 +178,21 @@ require(
 
             expect(errorCallback).toHaveBeenCalledWith({error: 'manifest'});
             expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('should not attempt to call onSuccess callback if one is not provided', function () {
+            noCallbacks = true;
+            initialiseBigscreenPlayer();
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('should not attempt to call onSuccess callback if one is not provided', function () {
+            noCallbacks = true;
+            forceManifestLoadError = true;
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+
+            expect(errorCallback).not.toHaveBeenCalled();
           });
         });
 
