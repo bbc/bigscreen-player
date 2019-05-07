@@ -171,6 +171,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onCdnFailover (event) {
+        if (windowType === WindowTypes.GROWING) return;
+
         var cdn;
 
         if (event.baseUrl.url) {
