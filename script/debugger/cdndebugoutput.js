@@ -1,5 +1,5 @@
 
-define('bigscreenplayer/plugins/cdndebugoutput',
+define('bigscreenplayer/debugger/cdndebugoutput',
 ['bigscreenplayer/debugger/debugtool', 'bigscreenplayer/utils/playbackutils'],
 function (DebugTool, Utils) {
   'use strict';
@@ -30,11 +30,10 @@ function (DebugTool, Utils) {
     }
 
     return {
-      onErrorHandled: function (event) {
-        update(event.cdn);
-      },
+      update: update,
       tearDown: function () {
-
+        media = undefined;
+        currentCDN = undefined;
       }
     };
   }

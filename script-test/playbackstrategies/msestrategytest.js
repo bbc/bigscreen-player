@@ -77,7 +77,9 @@ require(
         playbackElement.id = 'app';
         document.body.appendChild(playbackElement);
 
-        mseStrategy = MSEStrategy(defaultWindowType, defaultMediaKind, timeModel, playbackElement);
+        var mockCdnDebugOutput = jasmine.createSpyObj('mockCdnDebugOutput', ['update', 'tearDown']);
+
+        mseStrategy = MSEStrategy(defaultWindowType, defaultMediaKind, timeModel, playbackElement, {}, false, mockCdnDebugOutput);
 
         mockDashDebug = jasmine.createSpyObj('mockDashDebug', ['setLogToBrowserConsole']);
 

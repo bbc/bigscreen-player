@@ -10,10 +10,9 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/parsers/manifestparser',
-    'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/plugins/cdndebugoutput'
+    'bigscreenplayer/utils/timeutils'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestParser, SlidingWindowUtils, CdnDebugOutput) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestParser, SlidingWindowUtils) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -117,8 +116,6 @@ define('bigscreenplayer/bigscreenplayer',
           liveSupport = newLiveSupport;
           windowType = newWindowType;
           endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0);
-
-          this.registerPlugin(new CdnDebugOutput(bigscreenPlayerData.media.urls));
 
           playerComponent = new PlayerComponent(
             playbackElement,

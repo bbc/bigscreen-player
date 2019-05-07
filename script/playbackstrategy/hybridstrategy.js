@@ -5,14 +5,14 @@ define('bigscreenplayer/playbackstrategy/hybridstrategy',
     'bigscreenplayer/playbackstrategy/strategypicker'
   ],
   function (Native, MSE, StrategyPicker) {
-    return function (windowType, mediaKind, timeCorrection, videoElement, isUHD, device) {
+    return function (windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput) {
       var strategy = StrategyPicker(windowType, isUHD);
 
       if (strategy === 'mseStrategy') {
-        return MSE(windowType, mediaKind, timeCorrection, videoElement, isUHD);
+        return MSE(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput);
       }
 
-      return Native(windowType, mediaKind, timeCorrection, videoElement, isUHD, device);
+      return Native(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput);
     };
   }
 );

@@ -8,9 +8,9 @@ define(
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/debugger/cdndebugoutput'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, CdnDebugOutput) {
     'use strict';
 
     return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
@@ -27,6 +27,7 @@ define(
       var fatalErrorTimeout;
       var fatalError;
       var transferFormat = bigscreenPlayerData.media.manifestType === 'mpd' ? 'dash' : 'hls';
+      var cdnDebugOutput = new CdnDebugOutput(bigscreenPlayerData.media.urls);
 
       playbackStrategy = PlaybackStrategy(
         windowType,
@@ -34,7 +35,8 @@ define(
         bigscreenPlayerData.time,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        device
+        device,
+        cdnDebugOutput
       );
 
       playbackStrategy.addEventCallback(this, eventCallback);
@@ -231,6 +233,7 @@ define(
         mediaMetaData.urls.shift();
         var evt = new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn});
         Plugins.interface.onErrorHandled(evt);
+        cdnDebugOutput.update(evt.cdn);
         loadMedia(mediaMetaData.urls, mediaMetaData.type, getCurrentTime(), thenPause);
       }
 
@@ -348,6 +351,11 @@ define(
           captionsContainer.stop();
           captionsContainer.tearDown();
           captionsContainer = null;
+        }
+
+        if (cdnDebugOutput) {
+          cdnDebugOutput.tearDown();
+          cdnDebugOutput = undefined;
         }
 
         isInitialPlay = true;
