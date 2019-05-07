@@ -82,7 +82,7 @@ define('bigscreenplayer/bigscreenplayer',
         return windowStartTime ? windowStartTime + (seconds * 1000) : undefined;
       }
 
-      // Will need reusing in Player Component for Live CDN failover HLS
+      // TODO: make this more reusable so Player Component can do this for HLS Live CDN failover
       function needToGetManifest () {
         var requiresSimulcastSeekingData = {
           restartable: true,
