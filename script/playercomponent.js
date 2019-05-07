@@ -5,15 +5,16 @@ define(
     'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/utils/playbackutils',
+    'bigscreenplayer/models/livesupportenum',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
     'bigscreenplayer/debugger/cdndebugoutput'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, CdnDebugOutput) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, CdnDebugOutput) {
     'use strict';
 
-    return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
+    return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device, newLiveSupport) {
       var isInitialPlay = true;
       var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
@@ -28,6 +29,7 @@ define(
       var fatalError;
       var transferFormat = bigscreenPlayerData.media.manifestType === 'mpd' ? 'dash' : 'hls';
       var cdnDebugOutput = new CdnDebugOutput(bigscreenPlayerData.media.urls);
+      var liveSupport = newLiveSupport;
 
       playbackStrategy = PlaybackStrategy(
         windowType,
@@ -216,9 +218,10 @@ define(
         var hasNextCDN = mediaMetaData.urls.length > 1;
         var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
         var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
-        var canLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
+        var canHlsLiveFailover = windowType === WindowTypes.GROWING && (liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.PLAYABLE) && transferFormat === 'hls';
+        var canDashLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
 
-        if (hasNextCDN && (canVodFailover || canLiveFailover)) {
+        if (hasNextCDN && (canVodFailover || canHlsLiveFailover || canDashLiveFailover)) {
           cdnFailover(errorProperties, bufferingTimeoutError);
         } else {
           var evt = new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError});

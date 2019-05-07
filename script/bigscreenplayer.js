@@ -123,7 +123,8 @@ define('bigscreenplayer/bigscreenplayer',
             windowType,
             enableSubtitles,
             mediaStateUpdateCallback,
-            device
+            device,
+            liveSupport
           );
         },
 
