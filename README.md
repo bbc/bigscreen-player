@@ -32,7 +32,7 @@ require(
     'bigscreenplayer/mediakinds'
   ],
 
-  function (BigscreenPlayer, WindowType, LiveSupport, MediaKind) {
+  function (BigscreenPlayer, WindowType, MediaKind) {
 
     // configure the media player that will be used before loading
     // see below for further details of ths config
@@ -82,11 +82,9 @@ require(
 
     // STATIC for VOD content, GROWING/SLIDING for LIVE content
     var windowType = WindowType.STATIC;
-    // 'seekable', 'restartable', 'playable'
-    var liveSupport = 'seekable';
     var enableSubtitles = false;
 
-    bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles, liveSupport);
+    bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles);
   }
 )
 ```

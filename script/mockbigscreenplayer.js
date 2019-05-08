@@ -44,6 +44,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     var initialBuffering = false;
 
     var liveWindowData;
+    var manifestError;
 
     function startProgress (progressCause) {
       setTimeout(function () {
@@ -132,7 +133,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     }
 
     var mockFunctions = {
-      init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport) {
+      init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, device, callbacks) {
         currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0;
         liveWindowStart = undefined;
         pausedState = true;
@@ -150,6 +151,13 @@ define('bigscreenplayer/mockbigscreenplayer',
         duration = windowType === WindowTypes.STATIC ? 4808 : Infinity;
         seekableRange = {start: 0, end: 4808};
 
+        if (manifestError) {
+          if (callbacks && callbacks.onError) {
+            callbacks.onError({error: 'manifest'});
+          }
+          return;
+        }
+
         mockingHooks.changeState(MediaState.WAITING);
 
         if (autoProgress && !initialBuffering) {
@@ -157,6 +165,10 @@ define('bigscreenplayer/mockbigscreenplayer',
         }
 
         initialised = true;
+
+        if (callbacks && callbacks.onSuccess) {
+          callbacks.onSuccess();
+        }
       },
       registerForTimeUpdates: function (callback) {
         timeUpdateCallbacks.push(callback);
@@ -251,6 +263,7 @@ define('bigscreenplayer/mockbigscreenplayer',
         return;
       },
       tearDown: function () {
+        manifestError = false;
         if (!initialised) {
           return;
         }
@@ -374,6 +387,9 @@ define('bigscreenplayer/mockbigscreenplayer',
         Plugins.interface.onError(new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false}));
         this.changeState(MediaState.WAITING);
         stopProgress();
+      },
+      triggerManifestError: function () {
+        manifestError = true;
       },
       triggerErrorHandled: function () {
         if (sourceList && sourceList.length > 1) {

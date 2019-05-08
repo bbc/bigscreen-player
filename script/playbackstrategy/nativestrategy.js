@@ -6,7 +6,7 @@ define('bigscreenplayer/playbackstrategy/nativestrategy',
     'bigscreenplayer/playbackstrategy/modifiers/live/' + (window.bigscreenPlayer.liveSupport || 'playable')
   ],
   function (LegacyAdapter, WindowTypes, Html5Player, LivePlayer) {
-    return function (windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+    var NativeStrategy = function (windowType, mediaKind, timeData, playbackElement, isUHD, device) {
       var mediaPlayer;
       var logger = device.getLogger();
       var tempConfig = device.getConfig();
@@ -19,4 +19,10 @@ define('bigscreenplayer/playbackstrategy/nativestrategy',
 
       return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
     };
+
+    NativeStrategy.getLiveSupport = function () {
+      return window.bigscreenPlayer.liveSupport;
+    };
+
+    return NativeStrategy;
   });
