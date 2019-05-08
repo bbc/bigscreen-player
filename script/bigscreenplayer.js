@@ -10,9 +10,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/manifest/manifestloader',
-    'bigscreenplayer/utils/timeutils'
+    'bigscreenplayer/utils/timeutils',
+    'bigscreenplayer/utils/manifestutils'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, ManifestUtils) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -82,18 +83,6 @@ define('bigscreenplayer/bigscreenplayer',
         return windowStartTime ? windowStartTime + (seconds * 1000) : undefined;
       }
 
-      // TODO: make this more reusable so Player Component can do this for HLS Live CDN failover
-      function needToGetManifest () {
-        var requiresSimulcastSeekingData = {
-          restartable: true,
-          seekable: true,
-          playable: false,
-          none: false
-        };
-
-        return windowType !== WindowTypes.STATIC && requiresSimulcastSeekingData[getLiveSupport(device)];
-      }
-
       function bigscreenPlayerDataLoaded (playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback) {
         if (bigscreenPlayerData.time) {
           windowStartTime = bigscreenPlayerData.time.windowStartTime;
@@ -140,7 +129,7 @@ define('bigscreenplayer/bigscreenplayer',
             callbacks = {};
           }
 
-          if (needToGetManifest() && !bigscreenPlayerData.time) {
+          if (ManifestUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
             ManifestLoader.load(
               bigscreenPlayerData.media.urls,
               serverDate,

@@ -11,9 +11,10 @@ define(
     'bigscreenplayer/plugins',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/transferformats',
-    'bigscreenplayer/manifest/manifestloader'
+    'bigscreenplayer/manifest/manifestloader',
+    'bigscreenplayer/utils/manifestutils'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, ManifestUtils) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
@@ -247,21 +248,26 @@ define(
         DebugTool.keyValue({ key: 'url', value: mediaMetaData.urls[0].url });
 
         var failoverTime = getCurrentTime();
-        if (transferFormat === TransferFormats.HLS) {
-          ManifestLoader.load(
-            bigscreenPlayerData.media.urls,
-            bigscreenPlayerData.serverDate,
-            {
-              onSuccess: function (manifestData) {
-                var windowOffset = manifestData.time.windowStartTime - bigscreenPlayerData.time.windowStartTime;
-                failoverTime -= windowOffset / 1000;
-                loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, failoverTime, thenPause);
-              }
-            }
-          );
+        if (transferFormat === TransferFormats.HLS && ManifestUtils.needToGetManifest(windowType, getLiveSupport(device))) {
+          manifestReloadFailover(failoverTime, thenPause);
         } else {
           loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, failoverTime, thenPause);
         }
+      }
+
+      function manifestReloadFailover (failoverTime, thenPause) {
+        ManifestLoader.load(
+          bigscreenPlayerData.media.urls,
+          bigscreenPlayerData.serverDate,
+          {
+            onSuccess: function (manifestData) {
+              var windowOffset = manifestData.time.windowStartTime - bigscreenPlayerData.time.windowStartTime;
+              failoverTime -= windowOffset / 1000;
+              loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, failoverTime, thenPause);
+            },
+            onError: function () {}
+          }
+        );
       }
 
       function clearFatalErrorTimeout () {
