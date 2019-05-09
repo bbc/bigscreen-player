@@ -864,6 +864,7 @@ require(
         var secondCdn;
         var currentTime;
         var type;
+        var currentTimeSpy;
 
         beforeEach(function () {
           jasmine.clock().install();
@@ -888,7 +889,8 @@ require(
           type = 'application/dash+xml';
 
           spyOn(mockStrategy, 'load');
-          spyOn(mockStrategy, 'getCurrentTime').and.returnValue(currentTime);
+          currentTimeSpy = spyOn(mockStrategy, 'getCurrentTime');
+          currentTimeSpy.and.returnValue(currentTime);
           spyOn(mockStrategy, 'getDuration').and.returnValue(100);
           spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
         });
@@ -994,6 +996,8 @@ require(
         it('should failover for with updated failover time from manifest load', function () {
           type = 'application/vnd.apple.mpegurl';
 
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.SLIDING, type: type});
+
           setupManifestData({
             transferFormat: TransferFormats.HLS,
             time: {
@@ -1002,11 +1006,8 @@ require(
             }
           });
 
-          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.SLIDING, type: type});
-
           // Set playback cause to normal
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
-
           mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
 
           jasmine.clock().tick(19999);
@@ -1021,6 +1022,48 @@ require(
           expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime - 20);
           expect(corePlaybackData.media.urls.length).toBe(2);
           expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+        });
+
+        it('should failover for with updated failover time for multiple failovers', function () {
+          type = 'application/vnd.apple.mpegurl';
+          var thirdCdn = 'c';
+
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.SLIDING, type: type});
+
+          // Set playback cause to normal
+          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
+          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
+
+          setupManifestData({
+            transferFormat: TransferFormats.HLS,
+            time: {
+              windowStartTime: 744000,
+              windowEndTime: 1000000
+            }
+          });
+
+          jasmine.clock().tick(20000);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(2);
+          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime - 20);
+
+          currentTimeSpy.and.returnValue(currentTime - 20);
+
+          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
+          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
+
+          setupManifestData({
+            transferFormat: TransferFormats.HLS,
+            time: {
+              windowStartTime: 764000,
+              windowEndTime: 1000000
+            }
+          });
+
+          jasmine.clock().tick(20000);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(3);
+          expect(mockStrategy.load).toHaveBeenCalledWith(thirdCdn, type, currentTime - 40);
         });
 
         it('should failover on a without reloading the manifest', function () {
