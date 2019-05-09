@@ -12,9 +12,10 @@ define(
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/manifest/manifestloader',
-    'bigscreenplayer/utils/manifestutils'
+    'bigscreenplayer/utils/manifestutils',
+    'bigscreenplayer/utils/cdnutils'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, ManifestUtils) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, ManifestUtils, CdnUtils) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
@@ -216,14 +217,9 @@ define(
 
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
         var hasNextCDN = mediaMetaData.urls.length > 1;
-        var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
-        var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
-        var canHlsLiveFailover = transferFormat === TransferFormats.HLS &&
-          (getLiveSupport(device) === LiveSupport.SEEKABLE || getLiveSupport(device) === LiveSupport.PLAYABLE);
-        var canDashLiveFailover = transferFormat === TransferFormats.DASH;
-        var canLiveFailover = windowType !== WindowTypes.STATIC && (canDashLiveFailover || canHlsLiveFailover);
+        var shouldFailover = CdnUtils.shouldFailover(getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
 
-        if (hasNextCDN && (canVodFailover || canLiveFailover)) {
+        if (hasNextCDN && shouldFailover) {
           cdnFailover(errorProperties, bufferingTimeoutError);
         } else {
           bubbleFatalError(errorProperties, bufferingTimeoutError);
