@@ -23,19 +23,19 @@ define([
     controlsElement.style.display = "none";
 
     // Toggle on screen playback controls
-    function toggleControls() {
+    function toggleControls () {
       controlsElement.style.display = controlsElement.style.display == "none" ? "block" : "none";
-      if(controlsElement.style.display === "block") {
+      if (controlsElement.style.display === "block") {
         playButton.focus();
       }
     }
 
     // Timeout feature for controls
-    function startControlsTimeOut() {
+    function startControlsTimeOut () {
 
       clearTimeout(controlsTimeout);
 
-      if(controlsElement.style.display === "block") {
+      if (controlsElement.style.display === "block") {
         controlsTimeout = setTimeout(function () {
           toggleControls();
         }, 5000);
@@ -44,10 +44,10 @@ define([
       }
     }
 
-    // Create event listeners 
+    // Create event listeners
     function setupControls () {
 
-      window.addEventListener('keydown', function() {
+      window.addEventListener('keydown', function () {
         startControlsTimeOut();
       });
 
@@ -94,7 +94,7 @@ define([
           case 5: state = 'ENDED'; break;
           case 6: state = 'FATAL_ERROR'; break;
         }
-        if(state === 'WAITING') {
+        if (state === 'WAITING') {
           playbackElement.appendChild(playbackSpinner);
         } else {
           playbackElement.removeChild(playbackSpinner);
@@ -117,9 +117,9 @@ define([
         mimeType: 'video/mp4',
         urls: [
           {
-            // Content from DASH IF testing assests (used in their reference player) 
+            // Content from DASH IF testing assests (used in their reference player)
             // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
-            url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd' 
+            url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd'
           }
         ]
       }
@@ -127,12 +127,11 @@ define([
 
     // Specify extra input args
     var windowType = WindowTypes.STATIC;
-    var liveSupport = 'seekable';
     var enableSubtitles = false;
 
     // Initialise the player
     // At this point TAL environment can be injected, if needed
-    bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles, liveSupport);
+    bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles);
 
   }
 );

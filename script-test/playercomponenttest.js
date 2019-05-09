@@ -5,11 +5,12 @@ require(
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/playbackstrategy/mockstrategy',
     'bigscreenplayer/models/transportcontrolposition',
-    'bigscreenplayer/models/livesupportenum',
+    'bigscreenplayer/models/livesupport',
     'bigscreenplayer/pluginenums',
+    'bigscreenplayer/models/transferformats',
     'squire'
   ],
-  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, LiveSupport, PluginEnums, Squire) {
+  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, LiveSupport, PluginEnums, TransferFormats, Squire) {
     'use strict';
 
     describe('Player Component', function () {
@@ -23,6 +24,7 @@ require(
       var PlayerComponentWithMocks;
       var mockStateUpdateCallback;
       var corePlaybackData;
+      var liveSupport;
 
       // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
       function setUpPlayerComponent (opts) {
@@ -37,7 +39,7 @@ require(
             codec: undefined,
             urls: opts.multiCdn ? [{url: 'a', cdn: 'cdn-a'}, {url: 'b', cdn: 'cdn-b'}, {url: 'c', cdn: 'cdn-c'}] : [{url: 'a', cdn: 'cdn-a'}],
             type: opts.type || 'application/dash+xml',
-            manifestType: opts.manifestType || 'mpd',
+            transferFormat: opts.transferFormat || TransferFormats.DASH,
             bitrate: undefined,
             captionsUrl: opts.subtitlesAvailable ? 'captionsUrl' : undefined
           },
@@ -58,8 +60,7 @@ require(
           windowType,
           opts.subtitlesEnabled || false,
           mockStateUpdateCallback,
-          null,
-          opts.liveSupport || 'none'
+          null
         );
       }
 
@@ -81,6 +82,11 @@ require(
         function mockStrategyConstructor () {
           return mockStrategy;
         }
+
+        liveSupport = LiveSupport.SEEKABLE;
+        mockStrategyConstructor.getLiveSupport = function () {
+          return liveSupport;
+        };
 
         injector.mock({
           'bigscreenplayer/captionscontainer': mockCaptionsContainerConstructor,
@@ -966,7 +972,7 @@ require(
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
           spyOn(mockStrategy, 'load');
 
-          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.SLIDING});
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.SLIDING});
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
 
@@ -982,7 +988,8 @@ require(
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
           spyOn(mockStrategy, 'load');
 
-          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: LiveSupport.RESTARTABLE});
+          liveSupport = LiveSupport.RESTARTABLE;
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.GROWING});
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
 
@@ -1000,7 +1007,7 @@ require(
           spyOn(mockStrategy, 'load');
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(currentTime);
 
-          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: LiveSupport.SEEKABLE, type: type});
+          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, type: type});
 
           // Set playback cause to normal
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
@@ -1031,6 +1038,7 @@ require(
           spyOn(mockStrategy, 'load');
           spyOn(mockStrategy, 'getCurrentTime').and.returnValue(currentTime);
 
+          liveSupport = LiveSupport.PLAYABLE;
           setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, liveSupport: LiveSupport.PLAYABLE, type: type});
 
           // Set playback cause to normal

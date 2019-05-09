@@ -7,14 +7,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/plugins',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
-    'bigscreenplayer/parsers/manifestfilter',
+    'bigscreenplayer/manifest/manifestfilter',
     'bigscreenplayer/utils/playbackutils',
+    'bigscreenplayer/models/livesupport',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestFilter, PlaybackUtils) {
-    return function (windowType, mediaKind, timeData, playbackElement, isUHD, device, cdnDebugOutput) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestFilter, PlaybackUtils, LiveSupport) {
+    var MSEStrategy = function (windowType, mediaKind, timeData, playbackElement, isUHD, device, cdnDebugOutput) {
       var mediaPlayer;
       var mediaElement;
 
@@ -486,5 +487,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       };
     };
+
+    MSEStrategy.getLiveSupport = function () {
+      return LiveSupport.SEEKABLE;
+    };
+
+    return MSEStrategy;
   }
 );

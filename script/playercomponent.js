@@ -5,16 +5,17 @@ define(
     'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/utils/playbackutils',
-    'bigscreenplayer/models/livesupportenum',
+    'bigscreenplayer/models/livesupport',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/debugger/cdndebugoutput'
+    'bigscreenplayer/debugger/cdndebugoutput',
+    'bigscreenplayer/models/transferformats'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, CdnDebugOutput) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, CdnDebugOutput, TransferFormats) {
     'use strict';
 
-    return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device, newLiveSupport) {
+    var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
       var isInitialPlay = true;
       var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
@@ -27,9 +28,8 @@ define(
       var mediaMetaData;
       var fatalErrorTimeout;
       var fatalError;
-      var transferFormat = bigscreenPlayerData.media.manifestType === 'mpd' ? 'dash' : 'hls';
       var cdnDebugOutput = new CdnDebugOutput(bigscreenPlayerData.media.urls);
-      var liveSupport = newLiveSupport;
+      var transferFormat = bigscreenPlayerData.media.transferFormat;
 
       playbackStrategy = PlaybackStrategy(
         windowType,
@@ -218,8 +218,10 @@ define(
         var hasNextCDN = mediaMetaData.urls.length > 1;
         var aboutToEndVod = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
         var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
-        var canHlsLiveFailover = windowType === WindowTypes.GROWING && (liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.PLAYABLE) && transferFormat === 'hls';
-        var canDashLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
+        var canHlsLiveFailover = windowType === WindowTypes.GROWING &&
+          (getLiveSupport(device) === LiveSupport.SEEKABLE || getLiveSupport(device) === LiveSupport.PLAYABLE) &&
+          transferFormat === TransferFormats.HLS;
+        var canDashLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === TransferFormats.DASH;
 
         if (hasNextCDN && (canVodFailover || canHlsLiveFailover || canDashLiveFailover)) {
           cdnFailover(errorProperties, bufferingTimeoutError);
@@ -392,5 +394,13 @@ define(
         tearDown: tearDown
       };
     };
+
+    function getLiveSupport (device) {
+      return PlaybackStrategy.getLiveSupport(device);
+    }
+
+    PlayerComponent.getLiveSupport = getLiveSupport;
+
+    return PlayerComponent;
   }
 );
