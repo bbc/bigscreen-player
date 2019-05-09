@@ -122,6 +122,8 @@ require(
           PlayerComponentWithMocks = PlayerComponent;
           done();
         });
+
+        forceManifestLoadError = false;
       });
 
       describe('init', function () {
@@ -1195,6 +1197,26 @@ require(
           };
 
           expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
+        });
+
+        it('should fire a fatal error if the manifest fails to reload', function () {
+          spyOn(mockStrategy, 'getDuration').and.returnValue(100);
+          spyOn(mockStrategy, 'getCurrentTime').and.returnValue(94);
+          spyOn(mockStrategy, 'load');
+          forceManifestLoadError = true;
+
+          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.SLIDING});
+
+          // Set playback cause to normal
+          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
+
+          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
+
+          jasmine.clock().tick(20000);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+
+          expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
         });
 
         it('should reset the strategy', function () {
