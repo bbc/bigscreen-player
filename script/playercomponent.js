@@ -182,7 +182,7 @@ define(
         bubbleBufferingCleared(playbackProperties);
 
         var playbackErrorProperties = createPlaybackErrorProperties(event);
-        raiseError(playbackErrorProperties, false); // TODO: Why was this never set before?
+        raiseError(playbackErrorProperties, false);
       }
 
       function startErrorTimeout (properties) {

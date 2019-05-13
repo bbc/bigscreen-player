@@ -143,13 +143,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function createPlaybackProperties () {
-        var playbackProperties = {};
-
-        playbackProperties.seekable_range = getSeekableRange().start + ' to ' + getSeekableRange().end;
-        playbackProperties.current_time = getCurrentTime();
-        playbackProperties.duration = getDuration();
-
-        return playbackProperties;
+        return {
+          seekable_range: getSeekableRange().start + ' to ' + getSeekableRange().end,
+          current_time: getCurrentTime(),
+          duration: getDuration()
+        };
       }
 
       function propagateCdnFailover (event, cdn) {
