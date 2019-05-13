@@ -22,8 +22,8 @@ function (DebugTool, Utils) {
       currentCDN = media[0];
     }
 
-    function update (cdn) {
-      updateMedia(cdn);
+    function update () {
+      updateMedia();
       DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
       DebugTool.keyValue({key: 'current cdn', value: currentCDN.cdn});
       DebugTool.keyValue({key: 'url', value: currentCDN.url});

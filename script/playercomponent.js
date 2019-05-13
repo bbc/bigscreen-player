@@ -238,7 +238,7 @@ define(
         mediaMetaData.urls.shift();
         var evt = new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn});
         Plugins.interface.onErrorHandled(evt);
-        cdnDebugOutput.update(evt.cdn);
+        cdnDebugOutput.update();
         loadMedia(mediaMetaData.urls, mediaMetaData.type, getCurrentTime(), thenPause);
       }
 

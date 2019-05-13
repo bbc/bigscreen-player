@@ -166,7 +166,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         // TODO: Remove this horrible mutation when failover is pushed down per strategy.
         mediaSources.shift();
         Plugins.interface.onErrorHandled(evt);
-        cdnDebugOutput.update(cdn);
+        cdnDebugOutput.update();
       }
 
       function onCdnFailover (event) {
