@@ -116,11 +116,11 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function getWindowStartTime () {
-        return playerComponent.getWindowStartTime();
+        return playerComponent && playerComponent.getWindowStartTime();
       }
 
       function getWindowEndTime () {
-        return playerComponent.getWindowEndTime();
+        return playerComponent && playerComponent.getWindowEndTime();
       }
 
       return {
