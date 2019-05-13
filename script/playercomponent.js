@@ -74,6 +74,14 @@ define(
         return playbackStrategy.getDuration();
       }
 
+      function getWindowStartTime () {
+        return bigscreenPlayerData.time.windowStartTime;
+      }
+
+      function getWindowEndTime () {
+        return bigscreenPlayerData.time.windowEndTime;
+      }
+
       function getPlayerElement () {
         var element = null;
         if (playbackStrategy && playbackStrategy.getPlayerElement) {
@@ -255,7 +263,7 @@ define(
           bigscreenPlayerData.serverDate,
           {
             onSuccess: function (manifestData) {
-              var windowOffset = manifestData.time.windowStartTime - bigscreenPlayerData.time.windowStartTime;
+              var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
               bigscreenPlayerData.time = manifestData.time;
               failoverTime -= windowOffset / 1000;
               loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, failoverTime, thenPause);
@@ -410,6 +418,8 @@ define(
         setCurrentTime: setCurrentTime,
         getCurrentTime: getCurrentTime,
         getDuration: getDuration,
+        getWindowStartTime: getWindowStartTime,
+        getWindowEndTime: getWindowEndTime,
         getSeekableRange: getSeekableRange,
         getPlayerElement: getPlayerElement,
         isSubtitlesAvailable: isSubtitlesAvailable,
