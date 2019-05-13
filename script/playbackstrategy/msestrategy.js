@@ -42,7 +42,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var DashJSEvents = {
         ERROR: 'error',
         MANIFEST_LOADED: 'manifestLoaded',
-        DOWNLOD_MANIFEST_ERROR_CODE: 26,
+        DOWNLOAD_MANIFEST_ERROR_CODE: 26,
         DOWNLOAD_SIDX_ERROR_CODE: 27,
         DOWNLOAD_CONTENT_ERROR_CODE: 28,
         DOWNLOAD_ERROR_MESSAGE: 'download',
@@ -104,7 +104,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             // Don't raise an error on fragment download error
             if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE ||
                event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
-               event.error.code === DashJSEvents.DOWNLOD_MANIFEST_ERROR_CODE) {
+               event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
               return;
             }
           } else {
