@@ -162,7 +162,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           isBufferingTimeoutError: false,
           cdn: cdn
         });
-        // urls -> sources -> mediaSources
+        // urls -> sources -> mediaSources (shift the cdns for correct behaviour with buffering timeout failover)
         // TODO: Remove this horrible mutation when failover is pushed down per strategy.
         mediaSources.shift();
         Plugins.interface.onErrorHandled(evt);
