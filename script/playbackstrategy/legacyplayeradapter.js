@@ -241,14 +241,15 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (src, mimeType, startTime) {
+        load: function (cdns, mimeType, startTime) {
+          var source = cdns[0].url;
           setupExitSeekWorkarounds(mimeType);
           isPaused = false;
 
           hasStartTime = startTime || startTime === 0;
           var isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime;
 
-          mediaPlayer.initialiseMedia('video', src, mimeType, playbackElement, setSourceOpts);
+          mediaPlayer.initialiseMedia('video', source, mimeType, playbackElement, setSourceOpts);
           if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
             currentTime = startTime;
             mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);
