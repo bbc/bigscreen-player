@@ -35,6 +35,7 @@ define(
         {
           method: 'GET',
           headers: {},
+          timeout: 10000,
           onLoad: function () {
             try {
               if (xhr.responseXML) {
@@ -62,6 +63,7 @@ define(
         {
           method: 'GET',
           headers: {},
+          timeout: 10000,
           onLoad: function (responseText) {
             var streamUrl;
             if (responseText) {
@@ -92,6 +94,7 @@ define(
         {
           method: 'GET',
           headers: {},
+          timeout: 10000,
           onLoad: function (responseText) {
             if (responseText) {
               callbacks.onSuccess({
