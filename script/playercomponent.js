@@ -9,10 +9,10 @@ define(
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/debugger/cdndebugoutput',
     'bigscreenplayer/models/transferformats'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, CdnDebugOutput, TransferFormats) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
@@ -28,6 +28,7 @@ define(
       var mediaMetaData;
       var fatalErrorTimeout;
       var fatalError;
+      var cdnDebugOutput = new CdnDebugOutput(bigscreenPlayerData.media.urls);
       var transferFormat = bigscreenPlayerData.media.transferFormat;
 
       playbackStrategy = PlaybackStrategy(
@@ -36,7 +37,8 @@ define(
         bigscreenPlayerData.time,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        device
+        device,
+        cdnDebugOutput
       );
 
       playbackStrategy.addEventCallback(this, eventCallback);
@@ -180,7 +182,7 @@ define(
         bubbleBufferingCleared(playbackProperties);
 
         var playbackErrorProperties = createPlaybackErrorProperties(event);
-        raiseError(playbackErrorProperties);
+        raiseError(playbackErrorProperties, false);
       }
 
       function startErrorTimeout (properties) {
@@ -236,15 +238,8 @@ define(
         mediaMetaData.urls.shift();
         var evt = new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn});
         Plugins.interface.onErrorHandled(evt);
-
-        var availableCdns = mediaMetaData.urls.map(function (media) {
-          return media.cdn;
-        });
-
-        DebugTool.keyValue({key: 'available cdns', value: availableCdns});
-        DebugTool.keyValue({key: 'current cdn', value: mediaMetaData.urls[0].cdn});
-        DebugTool.keyValue({key: 'url', value: mediaMetaData.urls[0].url});
-        loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, getCurrentTime(), thenPause);
+        cdnDebugOutput.update();
+        loadMedia(mediaMetaData.urls, mediaMetaData.type, getCurrentTime(), thenPause);
       }
 
       function clearFatalErrorTimeout () {
@@ -336,15 +331,15 @@ define(
 
       function initialMediaPlay (media, startTime) {
         mediaMetaData = media;
-        loadMedia(media.urls[0].url, media.type, startTime);
+        loadMedia(media.urls, media.type, startTime);
 
         if (!captionsContainer) {
           captionsContainer = new CaptionsContainer(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
         }
       }
 
-      function loadMedia (url, type, startTime, thenPause) {
-        playbackStrategy.load(url, type, startTime);
+      function loadMedia (urls, type, startTime, thenPause) {
+        playbackStrategy.load(urls, type, startTime);
         if (thenPause) {
           pause();
         }
@@ -361,6 +356,11 @@ define(
           captionsContainer.stop();
           captionsContainer.tearDown();
           captionsContainer = null;
+        }
+
+        if (cdnDebugOutput) {
+          cdnDebugOutput.tearDown();
+          cdnDebugOutput = undefined;
         }
 
         isInitialPlay = true;

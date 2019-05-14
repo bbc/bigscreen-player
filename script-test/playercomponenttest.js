@@ -857,7 +857,6 @@ require(
         });
 
         it('should failover after buffering for 30 seconds on initial playback', function () {
-          var secondCdn = 'b';
           var currentTime = 10;
           var type = 'application/dash+xml';
 
@@ -876,11 +875,10 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
 
-          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
         });
 
         it('should failover after buffering for 20 seconds on normal playback', function () {
-          var secondCdn = 'b';
           var currentTime = 10;
           var type = 'application/dash+xml';
 
@@ -905,14 +903,13 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
 
-          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
 
           expect(corePlaybackData.media.urls.length).toBe(2);
           expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
         });
 
         it('should failover after 5 seconds if we have not cleared an error from the device', function () {
-          var secondCdn = 'b';
           var currentTime = 10;
           var type = 'application/dash+xml';
 
@@ -926,12 +923,15 @@ require(
           jasmine.clock().tick(4999);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+          expect(corePlaybackData.media.urls.length).toBe(3);
 
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
 
-          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
+
+          expect(corePlaybackData.media.urls.length).toBe(2);
         });
 
         it('should fire a fatal error on the plugins if there is only one cdn', function () {
@@ -1001,7 +1001,6 @@ require(
         });
 
         it('should failover on a seekable device when playing hls webcasts', function () {
-          var secondCdn = 'b';
           var currentTime = 10;
           var type = 'application/vnd.apple.mpegurl';
 
@@ -1026,14 +1025,13 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
 
-          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
 
           expect(corePlaybackData.media.urls.length).toBe(2);
           expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
         });
 
         it('should failover on a playable device when playing hls webcasts', function () {
-          var secondCdn = 'b';
           var currentTime = 10;
           var type = 'application/vnd.apple.mpegurl';
 
@@ -1059,14 +1057,13 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
 
-          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
 
           expect(corePlaybackData.media.urls.length).toBe(2);
           expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
         });
 
         it('should failover after buffering for 20 seconds on live dash playback', function () {
-          var secondCdn = 'b';
           var currentTime = 94;
           var type = 'application/dash+xml';
 
@@ -1085,12 +1082,14 @@ require(
           jasmine.clock().tick(19999);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+          expect(corePlaybackData.media.urls.length).toBe(3);
 
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
 
-          expect(mockStrategy.load).toHaveBeenCalledWith(secondCdn, type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
+          expect(corePlaybackData.media.urls.length).toBe(2);
         });
 
         it('should fire a fatal error on the plugins if we are in the last 5 seconds of playback', function () {

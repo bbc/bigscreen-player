@@ -19,6 +19,7 @@ require(
       var eventHandlers = {};
       var mockPlugins;
       var mockPluginsInterface;
+      var cdnArray = [];
 
       var mockAudioElement = document.createElement('audio');
 
@@ -27,15 +28,26 @@ require(
         MANIFEST_LOADED: 'manifestLoaded',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-        METRIC_ADDED: 'metricAdded'
+        CDN_FAILOVER: 'baseUrlSelected',
+        METRIC_ADDED: 'metricAdded',
+        METRIC_CHANGED: 'metricChanged'
       };
 
       var mockDashjs = jasmine.createSpyObj('mockDashjs', ['MediaPlayer']);
       mockDashMediaPlayer = jasmine.createSpyObj('mockDashMediaPlayer', ['create']);
+      mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
+
+      mockPlugins = {
+        interface: mockPluginsInterface
+      };
 
       beforeEach(function (done) {
+        cdnArray = [];
+        cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
+
         injector.mock({
-          'dashjs': mockDashjs
+          'dashjs': mockDashjs,
+          'bigscreenplayer/plugins': mockPlugins
         });
 
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
@@ -65,7 +77,9 @@ require(
         playbackElement.id = 'app';
         document.body.appendChild(playbackElement);
 
-        mseStrategy = MSEStrategy(defaultWindowType, defaultMediaKind, timeModel, playbackElement);
+        var mockCdnDebugOutput = jasmine.createSpyObj('mockCdnDebugOutput', ['update', 'tearDown']);
+
+        mseStrategy = MSEStrategy(defaultWindowType, defaultMediaKind, timeModel, playbackElement, {}, false, mockCdnDebugOutput);
 
         mockDashDebug = jasmine.createSpyObj('mockDashDebug', ['setLogToBrowserConsole']);
 
@@ -122,6 +136,7 @@ require(
       afterEach(function () {
         mockVideoElement.currentTime = 0;
         document.body.removeChild(playbackElement);
+        mockPluginsInterface.onErrorHandled.calls.reset();
       });
 
       describe('Transitions', function () {
@@ -144,7 +159,7 @@ require(
 
           expect(playbackElement.childElementCount).toBe(0);
 
-          mseStrategy.load('src', null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           expect(playbackElement.firstChild).toBe(mockVideoElement);
           expect(playbackElement.childElementCount).toBe(1);
@@ -155,7 +170,7 @@ require(
 
           expect(playbackElement.childElementCount).toBe(0);
 
-          mseStrategy.load('src', null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           expect(playbackElement.firstChild).toBe(mockAudioElement);
           expect(playbackElement.childElementCount).toBe(1);
@@ -163,27 +178,27 @@ require(
 
         it('should initialise MediaPlayer with the expected parameters when no start time is present', function () {
           setUpMSE();
-          mseStrategy.load('src', null, undefined);
+          mseStrategy.load(cdnArray, null, undefined);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src', jasmine.any(Function));
+          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
         });
 
         describe('for STATIC window', function () {
           it('should initialise MediaPlayer with the expected parameters when startTime is zero', function () {
             setUpMSE();
-            mseStrategy.load('src', null, 0);
+            mseStrategy.load(cdnArray, null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src', jasmine.any(Function));
+            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
             setUpMSE();
-            mseStrategy.load('src', null, 15);
+            mseStrategy.load(cdnArray, null, 15);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src#t=15', jasmine.any(Function));
+            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=15', jasmine.any(Function));
           });
         });
 
@@ -193,10 +208,10 @@ require(
 
             mockDashInstance.getSource.and.returnValue('src');
 
-            mseStrategy.load('src', null, 0);
+            mseStrategy.load(cdnArray, null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src', jasmine.any(Function));
+            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set to 0.1', function () {
@@ -204,10 +219,10 @@ require(
 
             mockDashInstance.getSource.and.returnValue('src');
 
-            mseStrategy.load('src', null, 0.1);
+            mseStrategy.load(cdnArray, null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src#r=0', jasmine.any(Function));
+            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#r=0', jasmine.any(Function));
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
@@ -215,10 +230,10 @@ require(
 
             mockDashInstance.getSource.and.returnValue('src');
 
-            mseStrategy.load('src', null, 100);
+            mseStrategy.load(cdnArray, null, 100);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src#r=100', jasmine.any(Function));
+            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#r=100', jasmine.any(Function));
           });
         });
 
@@ -228,10 +243,10 @@ require(
 
             mockDashInstance.getSource.and.returnValue('src');
 
-            mseStrategy.load('src', null, 0);
+            mseStrategy.load(cdnArray, null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src#t=101', jasmine.any(Function));
+            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=101', jasmine.any(Function));
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set to 0.1', function () {
@@ -239,10 +254,10 @@ require(
 
             mockDashInstance.getSource.and.returnValue('src');
 
-            mseStrategy.load('src', null, 0.1);
+            mseStrategy.load(cdnArray, null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src#t=101', jasmine.any(Function));
+            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=101', jasmine.any(Function));
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
@@ -250,16 +265,16 @@ require(
 
             mockDashInstance.getSource.and.returnValue('src');
 
-            mseStrategy.load('src', null, 60);
+            mseStrategy.load(cdnArray, null, 60);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src#t=160', jasmine.any(Function));
+            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=160', jasmine.any(Function));
           });
         });
 
         it('should set up bindings to MediaPlayer Events correctly', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
@@ -281,59 +296,100 @@ require(
         it('should attach a new source with the expected parameters', function () {
           setUpMSE();
 
+          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+
           mockDashInstance.getSource.and.returnValue('src');
 
-          mseStrategy.load('src', null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src', jasmine.any(Function));
+          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
 
-          mseStrategy.load('src2', null, 0);
+          cdnArray.shift();
 
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src2', jasmine.any(Function));
+          mseStrategy.load(cdnArray, null, 0);
+
+          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
         });
 
         it('should a new source with the expected parameters called before we have a valid currentTime', function () {
           setUpMSE();
 
+          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          cdnArray.push({url: 'testcdn3/test/', cdn: 'cdn3'});
+
           mockDashInstance.getSource.and.returnValue('src');
 
-          mseStrategy.load('src', null, 45);
+          mseStrategy.load(cdnArray, null, 45);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src#t=45', jasmine.any(Function));
+          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=45', jasmine.any(Function));
 
-          mseStrategy.load('src2', null, 0);
+          cdnArray.shift();
 
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src2#t=45', jasmine.any(Function));
+          mseStrategy.load(cdnArray, null, 0);
 
-          mseStrategy.load('src3', null, 0);
+          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=45', jasmine.any(Function));
 
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src3#t=45', jasmine.any(Function));
+          cdnArray.shift();
+
+          mseStrategy.load(cdnArray, null, 0);
+
+          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=45', jasmine.any(Function));
         });
 
         it('should attach a new source with expected parameters at the current playback time', function () {
           setUpMSE();
 
+          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+
           mockDashInstance.getSource.and.returnValue('src');
 
-          mseStrategy.load('src', null, 45);
+          mseStrategy.load(cdnArray, null, 45);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src#t=45', jasmine.any(Function));
+          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=45', jasmine.any(Function));
+
+          cdnArray.shift();
 
           mockVideoElement.currentTime = 86;
           eventHandlers.timeupdate();
-          mseStrategy.load('src2', null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith('src2#t=86', jasmine.any(Function));
+          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=86', jasmine.any(Function));
+        });
+
+        it('should fire download error event when in growing window', function () {
+          setUpMSE();
+
+          mseStrategy.load(cdnArray, WindowTypes.GROWING, 3);
+
+          eventHandlers.error({
+            errorMessage: 'Boom'
+          });
+
+          expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
+        });
+
+        it('should call plugin handler on dash baseUrl changed event', function () {
+          setUpMSE();
+
+          mseStrategy.load(cdnArray, WindowTypes.STATIC, 3);
+
+          eventHandlers.baseUrlSelected({
+            baseUrl: {
+              url: cdnArray[0].cdn
+            }
+          });
+
+          expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalled();
         });
       });
 
       describe('getSeekableRange()', function () {
         it('returns the correct start and end time', function () {
           setUpMSE();
-          mseStrategy.load('src', null, 45);
+          mseStrategy.load(cdnArray, null, 45);
 
           expect(mseStrategy.getSeekableRange()).toEqual({start: 0, end: 101});
         });
@@ -344,7 +400,7 @@ require(
           setUpMSE();
           mockVideoElement.currentTime = 10;
 
-          mseStrategy.load('src', null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           expect(mseStrategy.getCurrentTime()).toBe(10);
         });
@@ -360,7 +416,7 @@ require(
         it('returns the correct duration from the DASH Mediaplayer', function () {
           setUpMSE();
 
-          mseStrategy.load('src', null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           expect(mseStrategy.getDuration()).toBe(101);
         });
@@ -375,7 +431,7 @@ require(
       describe('tearDown()', function () {
         it('should reset the MediaPlayer', function () {
           setUpMSE();
-          mseStrategy.load('src', null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mseStrategy.tearDown();
 
@@ -384,7 +440,7 @@ require(
 
         it('should tear down bindings to MediaPlayer Events correctly', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mseStrategy.tearDown();
 
@@ -405,7 +461,7 @@ require(
 
         it('should remove the video element', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           expect(playbackElement.childElementCount).toBe(1);
 
@@ -418,14 +474,14 @@ require(
       describe('isEnded()', function () {
         it('should be set to false on initialisation of the strategy', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           expect(mseStrategy.isEnded()).toBe(false);
         });
 
         it('should be set to true when we get an ended event', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           eventCallbacks('ended');
 
@@ -434,7 +490,7 @@ require(
 
         it('should be set to false when we get a playing event', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           eventCallbacks('playing');
 
@@ -443,7 +499,7 @@ require(
 
         it('should be set to false when we get a waiting event', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           eventCallbacks('waiting');
 
@@ -452,7 +508,7 @@ require(
 
         it('should be set to true when we get a completed event then false when we start initial buffering from playing', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           eventCallbacks('ended');
 
@@ -467,7 +523,7 @@ require(
       describe('isPaused()', function () {
         it('should correctly return the paused state from the MediaPlayer when not paused', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mockDashInstance.isPaused.and.returnValue(false);
 
@@ -476,7 +532,7 @@ require(
 
         it('should correctly return the paused state from the MediaPlayer when paused', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mockDashInstance.isPaused.and.returnValue(true);
 
@@ -487,7 +543,7 @@ require(
       describe('pause()', function () {
         it('should call through to MediaPlayer\'s pause function', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mseStrategy.pause();
 
@@ -498,7 +554,7 @@ require(
       describe('play()', function () {
         it('should call through to MediaPlayer\'s play function', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mseStrategy.play();
 
@@ -509,7 +565,7 @@ require(
       describe('setCurrentTime()', function () {
         it('should call through to MediaPlayer\'s seek function', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mseStrategy.setCurrentTime(12);
 
@@ -518,7 +574,7 @@ require(
 
         it('should clamp the seek to the start of the seekable range', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mseStrategy.setCurrentTime(-0.1);
 
@@ -527,7 +583,7 @@ require(
 
         it('should clamp the seek to 1.1s before the end of the seekable range', function () {
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mseStrategy.setCurrentTime(101);
 
@@ -536,7 +592,7 @@ require(
 
         it('should refresh the DASH manifest before seeking  within a growing window asset', function () {
           setUpMSE(0, WindowTypes.GROWING, MediaKinds.VIDEO);
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mseStrategy.setCurrentTime(102);
 
@@ -547,7 +603,7 @@ require(
         describe('sliding window', function () {
           beforeEach(function () {
             setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
-            mseStrategy.load(null, null, 0);
+            mseStrategy.load(cdnArray, null, 0);
           });
 
           it('should set current time on the video element', function () {
@@ -578,14 +634,6 @@ require(
           type: 'qualityChangeRendered'
         };
 
-        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
-
-        mockPlugins = {
-          interface: mockPluginsInterface
-        };
-
-        injector.mock({'bigscreenplayer/plugins': mockPlugins});
-
         beforeEach(function () {
           mockPluginsInterface.onPlayerInfoUpdated.calls.reset();
         });
@@ -593,7 +641,7 @@ require(
         it('should call plugins with video playback bitrate', function () {
           setUpMSE();
           mockDashInstance.getBitrateInfoListFor.and.returnValue([{bitrate: 1000}, {bitrate: 2048}, {bitrate: 3000}]);
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent);
 
@@ -613,7 +661,7 @@ require(
 
           setUpMSE();
           mockDashInstance.getBitrateInfoListFor.and.returnValue([{bitrate: 1000}, {bitrate: 2048}, {bitrate: 3000}]);
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent);
 
@@ -627,7 +675,7 @@ require(
           };
 
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mockDashInstance.getMetricsFor.and.returnValue(true);
           mockDashInstance.getDashMetrics.and.returnValue({
@@ -651,7 +699,7 @@ require(
           };
 
           setUpMSE();
-          mseStrategy.load(null, null, 0);
+          mseStrategy.load(cdnArray, null, 0);
 
           mockDashInstance.getMetricsFor.and.returnValue(true);
           mockDashInstance.getDashMetrics.and.returnValue({
