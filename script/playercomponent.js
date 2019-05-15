@@ -77,11 +77,11 @@ define(
       }
 
       function getWindowStartTime () {
-        return bigscreenPlayerData.time.windowStartTime;
+        return bigscreenPlayerData.time && bigscreenPlayerData.time.windowStartTime;
       }
 
       function getWindowEndTime () {
-        return bigscreenPlayerData.time.windowEndTime;
+        return bigscreenPlayerData.time && bigscreenPlayerData.time.windowEndTime;
       }
 
       function getPlayerElement () {
