@@ -19,6 +19,11 @@ require(
             expect(CdnUtils.shouldFailover(100, 96, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(false);
             expect(CdnUtils.shouldFailover(100, 96, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(false);
           });
+
+          it('should return true if playback has not yet started', function () {
+            expect(CdnUtils.shouldFailover(0, undefined, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(true);
+            expect(CdnUtils.shouldFailover(0, undefined, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(true);
+          });
         });
 
         describe('when window type is GROWING', function () {
