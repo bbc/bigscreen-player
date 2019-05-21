@@ -1098,7 +1098,7 @@ require(
           expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
         });
 
-        it('should fire an error handled event on the plugins with the new CDN', function () {
+        it('should fire an error handled event on the plugins with the erroring CDN', function () {
           setUpPlayerComponent({multiCdn: true});
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
@@ -1110,7 +1110,7 @@ require(
             stateType: PluginEnums.TYPE.ERROR,
             properties: errorProperties,
             isBufferingTimeoutError: false,
-            cdn: 'cdn-b',
+            cdn: 'cdn-a',
             isInitialPlay: undefined,
             timeStamp: jasmine.any(Object)
           };
@@ -1131,7 +1131,7 @@ require(
           jasmine.clock().tick(20000);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-
+          expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
         });
 

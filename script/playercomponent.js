@@ -229,33 +229,17 @@ define(
         var shouldFailover = MediaResilience.shouldFailover(mediaMetaData.urls.length, getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
 
         if (shouldFailover) {
-          cdnFailover(errorProperties, bufferingTimeoutError);
+          var thenPause = playbackStrategy.isPaused();
+          tearDownMediaElement();
+
+          var failoverTime = getCurrentTime();
+          if (transferFormat === TransferFormats.HLS && ManifestUtils.needToGetManifest(windowType, getLiveSupport(device))) {
+            manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
+          } else {
+            cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
+          }
         } else {
           bubbleFatalError(errorProperties, bufferingTimeoutError);
-        }
-      }
-
-      function cdnFailover (errorProperties, bufferingTimeoutError) {
-        var thenPause = playbackStrategy.isPaused();
-        tearDownMediaElement();
-        mediaMetaData.urls.shift();
-        var evt = new PluginData({ status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn });
-        Plugins.interface.onErrorHandled(evt);
-
-        var availableCdns = mediaMetaData.urls.map(function (media) {
-          return media.cdn;
-        });
-
-        DebugTool.keyValue({ key: 'available cdns', value: availableCdns });
-        DebugTool.keyValue({ key: 'current cdn', value: mediaMetaData.urls[0].cdn });
-        DebugTool.keyValue({ key: 'url', value: mediaMetaData.urls[0].url });
-
-        cdnDebugOutput.update();
-        var failoverTime = getCurrentTime();
-        if (transferFormat === TransferFormats.HLS && ManifestUtils.needToGetManifest(windowType, getLiveSupport(device))) {
-          manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-        } else {
-          loadMedia(mediaMetaData.urls, mediaMetaData.type, failoverTime, thenPause);
         }
       }
 
@@ -268,13 +252,21 @@ define(
               var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
               bigscreenPlayerData.time = manifestData.time;
               failoverTime -= windowOffset / 1000;
-              loadMedia(mediaMetaData.urls, mediaMetaData.type, failoverTime, thenPause);
+              cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
             },
             onError: function () {
               bubbleFatalError(errorProperties, bufferingTimeoutError);
             }
           }
         );
+      }
+
+      function cdnFailover (failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
+        var evt = new PluginData({ status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn });
+        Plugins.interface.onErrorHandled(evt);
+        mediaMetaData.urls.shift();
+        cdnDebugOutput.update();
+        loadMedia(mediaMetaData.urls, mediaMetaData.type, failoverTime, thenPause);
       }
 
       function clearFatalErrorTimeout () {
