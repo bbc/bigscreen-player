@@ -1110,7 +1110,7 @@ require(
             stateType: PluginEnums.TYPE.ERROR,
             properties: errorProperties,
             isBufferingTimeoutError: false,
-            cdn: 'cdn-a',
+            cdn: 'cdn-b',
             isInitialPlay: undefined,
             timeStamp: jasmine.any(Object)
           };
