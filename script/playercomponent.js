@@ -12,10 +12,10 @@ define(
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/utils/manifestutils',
-    'bigscreenplayer/utils/cdnutils',
+    'bigscreenplayer/mediaresilience',
     'bigscreenplayer/debugger/cdndebugoutput'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, ManifestUtils, CdnUtils, CdnDebugOutput) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, ManifestUtils, MediaResilience, CdnDebugOutput) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
@@ -226,10 +226,9 @@ define(
       }
 
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
-        var hasNextCDN = mediaMetaData.urls.length > 1;
-        var shouldFailover = CdnUtils.shouldFailover(getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
+        var shouldFailover = MediaResilience.shouldFailover(mediaMetaData.urls.length, getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
 
-        if (hasNextCDN && shouldFailover) {
+        if (shouldFailover) {
           cdnFailover(errorProperties, bufferingTimeoutError);
         } else {
           bubbleFatalError(errorProperties, bufferingTimeoutError);
