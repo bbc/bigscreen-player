@@ -24,7 +24,8 @@ require(
       var mockEventHook;
       var mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
         'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-        'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown']);
+        'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
+        'getWindowStartTime', 'getWindowEndTime']);
 
       var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
         mockEventHook = callback;
@@ -44,6 +45,8 @@ require(
             correction: 0
           }
         };
+        mockPlayerComponentInstance.getWindowStartTime.and.returnValue(manifestData.time.windowStartTime);
+        mockPlayerComponentInstance.getWindowEndTime.and.returnValue(manifestData.time.windowStartTime);
       }
 
       var manifestLoaderMock = {
@@ -85,6 +88,11 @@ require(
             windowStartTime: options.windowStartTime,
             windowEndTime: options.windowEndTime
           };
+          mockPlayerComponentInstance.getWindowStartTime.and.returnValue(options.windowStartTime);
+          mockPlayerComponentInstance.getWindowEndTime.and.returnValue(options.windowEndTime);
+        } else {
+          mockPlayerComponentInstance.getWindowStartTime.and.returnValue(manifestData.time.windowStartTime);
+          mockPlayerComponentInstance.getWindowEndTime.and.returnValue(manifestData.time.windowEndTime);
         }
 
         if (options.subtitlesAvailable) {
@@ -735,18 +743,12 @@ require(
 
         describe('convertVideoTimeSecondsToEpochMs', function () {
           it('converts video time to epoch time when windowStartTime is supplied', function () {
-            setupManifestData({
-              transferFormat: TransferFormats.DASH,
-              time: {
-                windowStartTime: 4200,
-                windowEndTime: 150000000,
-                correction: 0
-              }
-            });
-
             initialiseBigscreenPlayer({
               windowType: WindowTypes.SLIDING
             });
+
+            mockPlayerComponentInstance.getWindowStartTime.and.returnValue(4200);
+            mockPlayerComponentInstance.getWindowEndTime.and.returnValue(150000000);
 
             expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(4200 + 1000000);
           });
@@ -754,26 +756,23 @@ require(
           it('does not convert video time to epoch time when windowStartTime is not supplied', function () {
             initialiseBigscreenPlayer();
 
+            mockPlayerComponentInstance.getWindowStartTime.and.returnValue(undefined);
+            mockPlayerComponentInstance.getWindowEndTime.and.returnValue(undefined);
+
             expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBeUndefined();
           });
         });
 
         describe('covertEpochMsToVideoTimeSeconds', function () {
           it('converts epoch time to video time when windowStartTime is available', function () {
-            // windowStartTime - 16 January 2019 12:00:00
-            // windowEndTime - 16 January 2019 14:00:00
-            setupManifestData({
-              transferFormat: TransferFormats.DASH,
-              time: {
-                windowStartTime: 1547640000000,
-                windowEndTime: 1547647200000,
-                correction: 0
-              }
-            });
-
             initialiseBigscreenPlayer({
               windowType: WindowTypes.SLIDING
             });
+
+            // windowStartTime - 16 January 2019 12:00:00
+            // windowEndTime - 16 January 2019 14:00:00
+            mockPlayerComponentInstance.getWindowStartTime.and.returnValue(1547640000000);
+            mockPlayerComponentInstance.getWindowEndTime.and.returnValue(1547647200000);
 
             // Time to convert - 16 January 2019 13:00:00 - one hour (3600 seconds)
             expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBe(3600);
@@ -781,6 +780,9 @@ require(
 
           it('does not convert epoch time to video time when windowStartTime is not available', function () {
             initialiseBigscreenPlayer();
+
+            mockPlayerComponentInstance.getWindowStartTime.and.returnValue(undefined);
+            mockPlayerComponentInstance.getWindowEndTime.and.returnValue(undefined);
 
             expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBeUndefined();
           });
