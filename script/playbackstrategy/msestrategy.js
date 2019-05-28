@@ -32,7 +32,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var dashMetrics;
 
       var mediaSources;
-      var cdns;
 
       var playerMetadata = {
         playbackBitrate: undefined,
@@ -163,27 +162,17 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           stateType: PluginEnums.TYPE.ERROR,
           properties: errorProperties,
           isBufferingTimeoutError: false,
-          cdn: cdn
+          cdn: mediaSources[0].cdn
         });
         // urls -> sources -> mediaSources (shift the cdns for correct behaviour with buffering timeout failover)
         // TODO: Remove this horrible mutation when failover is pushed down per strategy.
-        mediaSources.shift();
         Plugins.interface.onErrorHandled(evt);
+        mediaSources.shift();
         cdnDebugOutput.update();
       }
 
       function onCdnFailover (event) {
         if (windowType === WindowTypes.GROWING) return;
-
-        var cdn;
-
-        if (event.baseUrl.url) {
-          cdns.forEach(function (element) {
-            if (event.baseUrl.serviceLocation === element) {
-              cdn = element;
-            }
-          });
-        }
 
         var pluginEvent = {
           errorProperties: {
@@ -191,7 +180,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           }
         };
 
-        propagateCdnFailover(pluginEvent, cdn);
+        propagateCdnFailover(pluginEvent, event.baseUrl.serviceLocation);
       }
 
       function onMetricAdded (event) {
@@ -276,10 +265,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaSources = sources;
         var regexp = /.*\//;
         var initialSource = calculateSourceAnchor(sources[0].url, playbackTime);
-
-        cdns = sources.map(function (source) {
-          return source.cdn;
-        });
 
         if (windowType !== WindowTypes.GROWING) {
           var baseUrls = sources.map(function (source, priority) {
@@ -456,7 +441,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           bitrateInfoList = undefined;
           mediaMetrics = undefined;
           dashMetrics = undefined;
-          cdns = undefined;
           mediaSources = undefined;
         },
         reset: function () {

@@ -262,9 +262,9 @@ define(
       }
 
       function cdnFailover (failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-        mediaMetaData.urls.shift();
         var evt = new PluginData({ status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn });
         Plugins.interface.onErrorHandled(evt);
+        mediaMetaData.urls.shift();
         cdnDebugOutput.update();
         loadMedia(mediaMetaData.urls, mediaMetaData.type, failoverTime, thenPause);
       }
