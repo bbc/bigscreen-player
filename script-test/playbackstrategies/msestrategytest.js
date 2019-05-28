@@ -2,9 +2,10 @@ require(
   [
     'squire',
     'bigscreenplayer/models/mediakinds',
-    'bigscreenplayer/models/windowtypes'
+    'bigscreenplayer/models/windowtypes',
+    'bigscreenplayer/pluginenums'
   ],
-  function (Squire, MediaKinds, WindowTypes) {
+  function (Squire, MediaKinds, WindowTypes, PluginEnums) {
     describe('Media Source Extensions Playback Strategy', function () {
       var injector = new Squire();
       var playbackElement;
@@ -711,6 +712,65 @@ require(
           dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
 
           expect(mockPluginsInterface.onPlayerInfoUpdated).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('dashJS CDN_FAILOVER event', function () {
+        var errorProperties = {
+          seekable_range: '0 to 101',
+          current_time: 0,
+          duration: 101,
+          error_mssg: 'download'
+        };
+
+        var pluginData = {
+          status: PluginEnums.STATUS.FAILOVER,
+          stateType: PluginEnums.TYPE.ERROR,
+          properties: errorProperties,
+          isBufferingTimeoutError: false,
+          cdn: 'cdn1',
+          isInitialPlay: undefined,
+          timeStamp: jasmine.any(Object)
+        };
+
+        beforeEach(function () {
+          mockPluginsInterface.onErrorHandled.calls.reset();
+        });
+
+        it('should not fire error handled event on initial load', function () {
+          var mockEvent = {
+            mediaType: 'video',
+            type: 'baseUrlSelected',
+            baseUrl: {
+              serviceLocation: 'cdn1'
+            }
+          };
+
+          setUpMSE();
+          mseStrategy.load(cdnArray, null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.CDN_FAILOVER, mockEvent);
+
+          expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
+        });
+
+        it('should fire an error handled event on the plugins with the erroring CDN', function () {
+          var mockEvent = {
+            mediaType: 'video',
+            type: 'baseUrlSelected',
+            baseUrl: {
+              serviceLocation: 'cdn2'
+            }
+          };
+
+          setUpMSE();
+
+          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          mseStrategy.load(cdnArray, null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.CDN_FAILOVER, mockEvent);
+
+          expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
         });
       });
     });
