@@ -1111,6 +1111,7 @@ require(
             properties: errorProperties,
             isBufferingTimeoutError: false,
             cdn: 'cdn-a',
+            newCdn: 'cdn-b',
             isInitialPlay: undefined,
             timeStamp: jasmine.any(Object)
           };

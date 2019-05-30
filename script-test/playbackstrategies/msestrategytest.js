@@ -374,16 +374,21 @@ require(
 
         it('should call plugin handler on dash baseUrl changed event', function () {
           setUpMSE();
+          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
 
           mseStrategy.load(cdnArray, WindowTypes.STATIC, 3);
 
           eventHandlers.baseUrlSelected({
             baseUrl: {
-              url: cdnArray[0].cdn
+              url: cdnArray[1].cdn,
+              serviceLocation: cdnArray[1].cdn
             }
           });
 
-          expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalled();
+          expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalledWith(jasmine.objectContaining({
+            cdn: 'cdn1',
+            newCdn: 'cdn2'
+          }));
         });
       });
 
