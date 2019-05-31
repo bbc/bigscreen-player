@@ -13,9 +13,10 @@ define(
     'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/utils/manifestutils',
     'bigscreenplayer/mediaresilience',
-    'bigscreenplayer/debugger/cdndebugoutput'
+    'bigscreenplayer/debugger/cdndebugoutput',
+    'bigscreenplayer/models/livesupport'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, ManifestUtils, MediaResilience, CdnDebugOutput) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, ManifestUtils, MediaResilience, CdnDebugOutput, LiveSupport) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
@@ -126,7 +127,39 @@ define(
       function setCurrentTime (time) {
         userInteracted = true;
         if (transitions().canBeginSeek()) {
-          playbackStrategy.setCurrentTime(time);
+          if (windowType !== WindowTypes.STATIC && getLiveSupport(device) === LiveSupport.RESTARTABLE) {
+            failoverStyleSeek(time);
+          } else {
+            playbackStrategy.setCurrentTime(time);
+          }
+        }
+      }
+
+      function failoverStyleSeek (time) {
+        function doSeek (time) {
+          var thenPause = playbackStrategy.isPaused();
+          tearDownMediaElement();
+          loadMedia(mediaMetaData.urls, mediaMetaData.type, time, thenPause);
+        }
+
+        if (transferFormat === TransferFormats.HLS && ManifestUtils.needToGetManifest(windowType, getLiveSupport(device))) {
+          ManifestLoader.load(
+            bigscreenPlayerData.media.urls,
+            bigscreenPlayerData.serverDate,
+            {
+              onSuccess: function (manifestData) {
+                var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
+                bigscreenPlayerData.time = manifestData.time;
+                time -= windowOffset / 1000;
+                doSeek(time);
+              },
+              onError: function () {
+                // handle error; 04002?
+              }
+            }
+          );
+        } else {
+          doSeek(time);
         }
       }
 
