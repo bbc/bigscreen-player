@@ -466,7 +466,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           var seekToTime = getClampedTime(time, getSeekableRange());
 
           if (windowType === WindowTypes.SLIDING) {
-            mediaElement.currentTime = (seekToTime + timeCorrection);
+            // Devices that don't have setLiveSeekableRange could just do this...
+            modifySource(mediaSources, seekToTime);
           } else {
             mediaPlayer.seek(seekToTime);
           }
