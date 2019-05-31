@@ -42,7 +42,7 @@ define(
     }
 
     function supportsSeeking (liveSupport) {
-      return liveSupport === LiveSupport.SEEKABLE;
+      return liveSupport === LiveSupport.SEEKABLE || LiveSupport.RESTARTABLE;
     }
 
     return {
