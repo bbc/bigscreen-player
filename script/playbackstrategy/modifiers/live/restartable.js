@@ -11,7 +11,7 @@ define(
 
       function RestartableLivePlayer (deviceConfig, logger, windowType) {
         var mediaPlayer = Html5Player(logger);
-        mediaPlayer.addEventCallback(function (event) {
+        mediaPlayer.addEventCallback(this, function (event) {
           if (event.type === MediaPlayerBase.EVENT.STATUS) {
             return;
           }
@@ -54,7 +54,7 @@ define(
               resume();
             }, resumeTimeOut);
 
-            addEventCallback(self, detectIfUnpaused);
+            mediaPlayer.addEventCallback(self, detectIfUnpaused);
           }
 
           function detectIfUnpaused (event) {
@@ -67,13 +67,9 @@ define(
           }
         }
 
-        function addEventCallback (thisArg, callback) {
-          mediaPlayer.addEventCallback(thisArg, callback);
-        }
-
         function determineTimeSpentBuffering () {
           bufferingStarted = null;
-          addEventCallback(self, determineBufferingCallback);
+          mediaPlayer.addEventCallback(self, determineBufferingCallback);
         }
 
         function stopDeterminingTimeSpentBuffering () {
@@ -237,7 +233,7 @@ define(
           },
 
           addEventCallback: function (thisArg, newCallback) {
-            eventCallback = function (event) {
+            var eventCallback = function (event) {
               newCallback.call(thisArg, event);
             };
             eventCallbacks.push(eventCallback);

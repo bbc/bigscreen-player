@@ -8,7 +8,7 @@ define(
 
     function Player (logger) {
       var eventCallback;
-      var eventCallbacks = [];
+      var eventCallbacks = {};
       var state = MediaPlayerBase.STATE.EMPTY;
 
       var mediaElement;
@@ -69,8 +69,8 @@ define(
           }
         }
 
-        for (var index = 0; index < eventCallbacks.length; index++) {
-          eventCallbacks[index](event);
+        for (var callback in eventCallbacks) {
+          eventCallbacks[callback](event);
         }
       }
 
@@ -584,18 +584,15 @@ define(
           eventCallback = function (event) {
             newCallback.call(thisArg, event);
           };
-          eventCallbacks.push(eventCallback);
+          eventCallbacks[newCallback] = eventCallback;
         },
 
         removeEventCallback: function (callback) {
-          var index = eventCallbacks.indexOf(callback);
-          if (index !== -1) {
-            eventCallbacks.splice(index, 1);
-          }
+          delete eventCallbacks[callback];
         },
 
         removeAllEventCallbacks: function () {
-          eventCallbacks = undefined;
+          eventCallbacks = {};
         },
 
         initialiseMedia: function (type, url, mediaMimeType, sourceContainer, opts) {
