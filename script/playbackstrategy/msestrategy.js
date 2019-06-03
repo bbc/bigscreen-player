@@ -33,11 +33,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       var mediaSources;
 
-      var seeking = {
-        state: false,
-        time: undefined
-      };
-
       var playerMetadata = {
         playbackBitrate: undefined,
         bufferLength: undefined
@@ -128,13 +123,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         if (event.data) {
           modifyManifest(event.data);
-        }
-
-        if (seeking.state === true && windowType === WindowTypes.GROWING) {
-          var seekToTime = getClampedTime(seeking.time !== undefined ? seeking.time : getCurrentTime(), getSeekableRange());
-          mediaPlayer.seek(seekToTime);
-          seeking.state = false;
-          seeking.time = undefined;
         }
       }
 
@@ -348,6 +336,22 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
+      function refreshManifest (onSuccess, onError, timeout) {
+        var callback = function () {
+          onSuccess();
+          mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, callback);
+          clearTimeout(errorId);
+        };
+
+        var errorId = setTimeout(function () {
+          onError();
+          mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, callback);
+        }, timeout || 2000);
+
+        mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, callback);
+        mediaPlayer.refreshManifest();
+      }
+
       function getSeekableRange () {
         if (mediaPlayer && mediaPlayer.isReady() && windowType !== WindowTypes.STATIC) {
           var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
@@ -454,22 +458,31 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.play();
         },
         setCurrentTime: function (time) {
-          // if (windowType === WindowTypes.GROWING) {
+          if (windowType === WindowTypes.GROWING) {
+            DebugTool.info('Seeking and refreshing the manifest');
 
-          DebugTool.info('Seeking and refreshing the manifest');
-          mediaPlayer.refreshManifest();
-          seeking.state = true;
-          seeking.time = time;
+            var refreshSuccess = function () {
+              var seekToTime = getClampedTime(time, getSeekableRange());
+              mediaPlayer.seek(seekToTime);
+            };
 
-          // } else {
-          var seekToTime = getClampedTime(time, getSeekableRange());
+            var refreshError = function () {
+              publishError({
+                errorProperties: 'manifestLoad',
+                error: 'manifestLoad'
+              });
+            };
 
-          if (windowType === WindowTypes.SLIDING) {
-            mediaElement.currentTime = (seekToTime + timeCorrection);
+            refreshManifest(refreshSuccess, refreshError);
           } else {
-            mediaPlayer.seek(seekToTime);
+            var seekToTime = getClampedTime(time, getSeekableRange());
+
+            if (windowType === WindowTypes.SLIDING) {
+              mediaElement.currentTime = (seekToTime + timeCorrection);
+            } else {
+              mediaPlayer.seek(seekToTime);
+            }
           }
-          // }
         }
       };
     };
