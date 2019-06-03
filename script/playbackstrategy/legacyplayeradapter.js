@@ -92,6 +92,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
         // Must publish this time update before checkSeekSucceded - which could cause a pause event
         // This is a device specific event ordering issue.
         publishTimeUpdate();
+        DebugTool.info('handleErrorOnExitSeek: ' + handleErrorOnExitingSeek + ' delayPauseOnExitSeek: ' + delayPauseOnExitSeek + ' exitingSeek: ' + exitingSeek);
         if ((handleErrorOnExitingSeek || delayPauseOnExitSeek) && exitingSeek) {
           checkSeekSucceeded(event.seekableRange.start, event.currentTime);
         }
@@ -104,6 +105,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       }
 
       function onError (event) {
+        DebugTool.info('onError, handleErrorOnExitingSeek: ' + handleErrorOnExitingSeek + ' exitingSeek: ' + exitingSeek);
         if (handleErrorOnExitingSeek && exitingSeek) {
           restartMediaPlayer();
         } else {
@@ -162,6 +164,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       }
 
       function checkSeekSucceeded (seekableRangeStart, currentTime) {
+        DebugTool.info('checkSeekSucceeded: start: ' + seekableRangeStart + ' currentTime: ' + currentTime);
         var SEEK_TOLERANCE = 30;
 
         var clampedSeekToTime = Math.max(seekableRangeStart, targetSeekToTime);
@@ -169,6 +172,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
 
         if (successfullySeeked) {
           if (pauseOnExitSeek) {
+            DebugTool.info('pauseOnExitSeek called');
           // Delay call to pause until seek has completed
           // successfully for scenarios which can error upon exiting seek.
             mediaPlayer.pause();
@@ -261,6 +265,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
         play: function () {
           isPaused = false;
           if (delayPauseOnExitSeek && exitingSeek) {
+            DebugTool.info('play called, setting pauseOnExitSeek to false');
             pauseOnExitSeek = false;
           } else {
             if (isEnded) {
