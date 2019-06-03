@@ -33,6 +33,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       var mediaSources;
 
+      var seeking = {
+        state: false,
+        time: undefined
+      };
+
       var playerMetadata = {
         playbackBitrate: undefined,
         bufferLength: undefined
@@ -120,6 +125,17 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function onManifestLoaded (event) {
         DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
+
+        if (event.data) {
+          modifyManifest(event.data);
+        }
+
+        if (seeking.state === true && windowType === WindowTypes.GROWING) {
+          var seekToTime = getClampedTime(seeking.time !== undefined ? seeking.time : getCurrentTime(), getSeekableRange());
+          mediaPlayer.seek(seekToTime);
+          seeking.state = false;
+          seeking.time = undefined;
+        }
       }
 
       function onManifestValidityChange (event) {
@@ -255,52 +271,32 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         modifySource(sources, playbackTime);
       }
 
-      /**
-       *
-       * Edge case for growing window - only use one source at a time, do a legacy failover as we don't refresh the manifest.
-       *
-       * @param {*} sources
-       * @param {*} playbackTime
-       */
+      function generateBaseUrls (sources) {
+        var regexp = /.*\//;
+        return sources.map(function (source, priority) {
+          var sourceUrl = regexp.exec(source.url)[0];
+
+          return {
+            __text: sourceUrl + 'dash/',
+            'dvb:priority': priority,
+            serviceLocation: source.cdn
+          };
+        });
+      }
+
+      function modifyManifest (manifest) {
+        var baseUrls = generateBaseUrls(mediaSources);
+        ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+
+        manifest.BaseURL_asArray = baseUrls;
+        delete manifest.Period.BaseURL;
+        delete manifest.Period.BaseURL_asArray;
+      }
+
       function modifySource (sources, playbackTime) {
         mediaSources = sources;
-        var regexp = /.*\//;
         var initialSource = calculateSourceAnchor(sources[0].url, playbackTime);
-
-        if (windowType !== WindowTypes.GROWING) {
-          var baseUrls = sources.map(function (source, priority) {
-            var sourceUrl = regexp.exec(source.url)[0];
-
-            return {
-              __text: sourceUrl + 'dash/',
-              'dvb:priority': priority,
-              serviceLocation: source.cdn
-            };
-          });
-        }
-
-        mediaPlayer.retrieveManifest(initialSource, function (manifest) {
-          if (manifest === null) {
-            var event = {
-              errorProperties: {
-                error_mssg: 'manifestDownloadError'
-              }
-            };
-            DebugTool.info('MSE Error: manifestDownloadError');
-            publishError(event);
-            return;
-          }
-
-          var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-
-          if (windowType !== WindowTypes.GROWING) {
-            filteredManifest.BaseURL_asArray = baseUrls;
-            delete filteredManifest.Period.BaseURL;
-            delete filteredManifest.Period.BaseURL_asArray;
-          }
-
-          mediaPlayer.attachSource(filteredManifest);
-        });
+        mediaPlayer.attachSource(initialSource);
       }
 
       function setUpMediaListeners () {
@@ -458,11 +454,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.play();
         },
         setCurrentTime: function (time) {
-          if (windowType === WindowTypes.GROWING) {
-            DebugTool.info('Seeking and refreshing the manifest');
-            mediaPlayer.refreshManifest();
-          }
+          // if (windowType === WindowTypes.GROWING) {
 
+          DebugTool.info('Seeking and refreshing the manifest');
+          mediaPlayer.refreshManifest();
+          seeking.state = true;
+          seeking.time = time;
+
+          // } else {
           var seekToTime = getClampedTime(time, getSeekableRange());
 
           if (windowType === WindowTypes.SLIDING) {
@@ -470,6 +469,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           } else {
             mediaPlayer.seek(seekToTime);
           }
+          // }
         }
       };
     };
