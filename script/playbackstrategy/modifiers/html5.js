@@ -1,10 +1,9 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-  function (MediaPlayerBase, DebugTool) {
+  function (MediaPlayerBase) {
     'use strict';
 
     function Player (logger) {
@@ -653,8 +652,6 @@ define(
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           targetSeekTime = seconds;
           sentinelLimits.seek.currentAttemptCount = 0;
-
-          DebugTool.info('playFrom called in state' + getState());
 
           switch (getState()) {
             case MediaPlayerBase.STATE.PAUSED:

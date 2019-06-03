@@ -193,7 +193,7 @@ define('bigscreenplayer/bigscreenplayer',
           }
         },
         setCurrentTime: function (time) {
-          DebugTool.apicall('setCurrentTime: ' + time + ' seekableRange: start: ' + this.getSeekableRange().start + ' end: ' + this.getSeekableRange().end);
+          DebugTool.apicall('setCurrentTime');
           if (playerComponent) {
             var END_OF_STREAM_TOLERANCE = 10;
 
