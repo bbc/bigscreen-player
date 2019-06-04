@@ -42,13 +42,18 @@ require(
         interface: mockPluginsInterface
       };
 
+      var mockManifestFilter = {
+        filter: function () {}
+      };
+
       beforeEach(function (done) {
         cdnArray = [];
         cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
 
         injector.mock({
           'dashjs': mockDashjs,
-          'bigscreenplayer/plugins': mockPlugins
+          'bigscreenplayer/plugins': mockPlugins,
+          'bigscreenplayer/manifest/manifestfilter': mockManifestFilter
         });
 
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
@@ -182,7 +187,35 @@ require(
           mseStrategy.load(cdnArray, null, undefined);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
+          expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url);
+        });
+
+        it('should modify the manifest when dashjs fires a manifest loaded event', function () {
+          setUpMSE();
+          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          mseStrategy.load(cdnArray, null, 0);
+
+          var testManifestObject = {
+            type: 'manifestLoaded',
+            data: {}
+          };
+
+          dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject);
+
+          var baseUrlArray = [
+            {
+              __text: cdnArray[0].url + 'dash/',
+              'dvb:priority': 0,
+              serviceLocation: cdnArray[0].cdn
+            },
+            {
+              __text: cdnArray[1].url + 'dash/',
+              'dvb:priority': 1,
+              serviceLocation: cdnArray[1].cdn
+            }
+          ];
+
+          expect(testManifestObject.data.BaseURL_asArray).toEqual(baseUrlArray);
         });
 
         describe('for STATIC window', function () {
@@ -191,7 +224,7 @@ require(
             mseStrategy.load(cdnArray, null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url);
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
@@ -199,7 +232,7 @@ require(
             mseStrategy.load(cdnArray, null, 15);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=15', jasmine.any(Function));
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=15');
           });
         });
 
@@ -212,7 +245,7 @@ require(
             mseStrategy.load(cdnArray, null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url);
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set to 0.1', function () {
@@ -223,7 +256,7 @@ require(
             mseStrategy.load(cdnArray, null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#r=0', jasmine.any(Function));
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#r=0');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
@@ -234,7 +267,7 @@ require(
             mseStrategy.load(cdnArray, null, 100);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#r=100', jasmine.any(Function));
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#r=100');
           });
         });
 
@@ -247,7 +280,7 @@ require(
             mseStrategy.load(cdnArray, null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=101', jasmine.any(Function));
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=101');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set to 0.1', function () {
@@ -258,7 +291,7 @@ require(
             mseStrategy.load(cdnArray, null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=101', jasmine.any(Function));
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=101');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
@@ -269,7 +302,7 @@ require(
             mseStrategy.load(cdnArray, null, 60);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=160', jasmine.any(Function));
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=160');
           });
         });
 
@@ -304,13 +337,13 @@ require(
           mseStrategy.load(cdnArray, null, 0);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
+          expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url);
 
           cdnArray.shift();
 
           mseStrategy.load(cdnArray, null, 0);
 
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url, jasmine.any(Function));
+          expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url);
         });
 
         it('should a new source with the expected parameters called before we have a valid currentTime', function () {
@@ -324,19 +357,19 @@ require(
           mseStrategy.load(cdnArray, null, 45);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=45', jasmine.any(Function));
+          expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=45');
 
           cdnArray.shift();
 
           mseStrategy.load(cdnArray, null, 0);
 
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=45', jasmine.any(Function));
+          expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=45');
 
           cdnArray.shift();
 
           mseStrategy.load(cdnArray, null, 0);
 
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=45', jasmine.any(Function));
+          expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=45');
         });
 
         it('should attach a new source with expected parameters at the current playback time', function () {
@@ -349,7 +382,7 @@ require(
           mseStrategy.load(cdnArray, null, 45);
 
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=45', jasmine.any(Function));
+          expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=45');
 
           cdnArray.shift();
 
@@ -357,7 +390,7 @@ require(
           eventHandlers.timeupdate();
           mseStrategy.load(cdnArray, null, 0);
 
-          expect(mockDashInstance.retrieveManifest).toHaveBeenCalledWith(cdnArray[0].url + '#t=86', jasmine.any(Function));
+          expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=86');
         });
 
         it('should fire download error event when in growing window', function () {
@@ -596,11 +629,12 @@ require(
           expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9);
         });
 
-        it('should refresh the DASH manifest before seeking  within a growing window asset', function () {
+        it('should refresh the DASH manifest before seeking within a growing window asset', function () {
           setUpMSE(0, WindowTypes.GROWING, MediaKinds.VIDEO);
           mseStrategy.load(cdnArray, null, 0);
 
           mseStrategy.setCurrentTime(102);
+          dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, {});
 
           expect(mockDashInstance.refreshManifest).toHaveBeenCalled();
           expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9);
