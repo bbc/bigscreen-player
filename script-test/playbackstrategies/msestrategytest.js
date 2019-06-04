@@ -629,17 +629,6 @@ require(
           expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9);
         });
 
-        it('should refresh the DASH manifest before seeking within a growing window asset', function () {
-          setUpMSE(0, WindowTypes.GROWING, MediaKinds.VIDEO);
-          mseStrategy.load(cdnArray, null, 0);
-
-          mseStrategy.setCurrentTime(102);
-          dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, {});
-
-          expect(mockDashInstance.refreshManifest).toHaveBeenCalled();
-          expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9);
-        });
-
         describe('sliding window', function () {
           beforeEach(function () {
             setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
