@@ -122,7 +122,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
 
         if (event.data) {
-          modifyManifest(event.data);
+          var manifest = event.data;
+          ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+
+          manifest.BaseURL_asArray = generateBaseUrls(mediaSources);
+          if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
+          if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
         }
       }
 
@@ -232,6 +237,19 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         return Math.min(Math.max(time, range.start), range.end - 1.1);
       }
 
+      function generateBaseUrls (sources) {
+        var regexp = /.*\//;
+        return sources.map(function (source, priority) {
+          var sourceUrl = regexp.exec(source.url)[0];
+
+          return {
+            __text: sourceUrl + 'dash/',
+            'dvb:priority': priority,
+            serviceLocation: source.cdn
+          };
+        });
+      }
+
       function setUpMediaElement (playbackElement) {
         if (mediaKind === MediaKinds.AUDIO) {
           mediaElement = document.createElement('audio');
@@ -257,28 +275,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         mediaPlayer.initialize(mediaElement, null, true);
         modifySource(sources, playbackTime);
-      }
-
-      function generateBaseUrls (sources) {
-        var regexp = /.*\//;
-        return sources.map(function (source, priority) {
-          var sourceUrl = regexp.exec(source.url)[0];
-
-          return {
-            __text: sourceUrl + 'dash/',
-            'dvb:priority': priority,
-            serviceLocation: source.cdn
-          };
-        });
-      }
-
-      function modifyManifest (manifest) {
-        var baseUrls = generateBaseUrls(mediaSources);
-        ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-
-        manifest.BaseURL_asArray = baseUrls;
-        delete manifest.Period.BaseURL;
-        delete manifest.Period.BaseURL_asArray;
       }
 
       function modifySource (sources, playbackTime) {
