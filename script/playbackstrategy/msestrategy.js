@@ -336,15 +336,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
-      function refreshManifest (onSuccess, onError, timeout) {
+      function refreshManifest (onComplete, timeout) {
         var callback = function () {
-          onSuccess();
+          onComplete();
           mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, callback);
           clearTimeout(errorId);
         };
 
         var errorId = setTimeout(function () {
-          onError();
+          onComplete(); // so the manifest load failed, but look on the bright side, we might not have seeked past the available segments, so let's have a go anyway.
           mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, callback);
         }, timeout || 2000);
 
@@ -461,19 +461,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           if (windowType === WindowTypes.GROWING) {
             DebugTool.info('Seeking and refreshing the manifest');
 
-            var refreshSuccess = function () {
+            refreshManifest(function () {
               var seekToTime = getClampedTime(time, getSeekableRange());
               mediaPlayer.seek(seekToTime);
-            };
-
-            var refreshError = function () {
-              publishError({
-                errorProperties: 'manifestLoad',
-                error: 'manifestLoad'
-              });
-            };
-
-            refreshManifest(refreshSuccess, refreshError);
+            });
           } else {
             var seekToTime = getClampedTime(time, getSeekableRange());
 
