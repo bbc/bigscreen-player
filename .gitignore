@@ -13,3 +13,5 @@ WebRunner.html
 
 # Ignore Visual Studio Code project files
 .vscode
+
+script/
