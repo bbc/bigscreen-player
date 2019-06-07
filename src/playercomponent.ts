@@ -1,18 +1,20 @@
 import MediaState from "./models/mediastate";
 import CaptionsContainer from "./captionscontainer";
-import PlaybackStrategy from "./playbackstrategy/talstrategy";
-// 'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
 import WindowTypes from "./models/windowtypes";
 import PlaybackUtils from "./utils/playbackutils";
 import PluginData from "./plugindata";
 import PluginEnums from "./pluginenums";
 import Plugins from "./plugins";
-import DebugTool from "./debugger/debugtool";
 import TransferFormats from "./models/transferformats";
 import ManifestLoader from "./manifest/manifestloader";
 import ManifestUtils from "./utils/manifestutils";
 import MediaResilience from "./mediaresilience";
 import CdnDebugOutput from "./debugger/cdndebugoutput";
+
+let PlaybackStrategy;
+import(`./playbackstrategy/${window.bigscreenPlayer.playbackStrategy}`).then(
+  ({ default: ps }) => (PlaybackStrategy = ps)
+);
 
 var PlayerComponent = (
   playbackElement,
@@ -207,7 +209,7 @@ var PlayerComponent = (
     var bufferingTimeout = isInitialPlay ? 30000 : 20000;
     var bufferingClearedProperties = PlaybackUtils.clone(properties);
     clearErrorTimeout();
-    errorTimeoutID = setTimeout(function () {
+    errorTimeoutID = setTimeout(function() {
       bufferingClearedProperties.dismissed_by = "timeout";
       bubbleBufferingCleared(bufferingClearedProperties);
       properties.error_mssg = "Buffering timed out";
@@ -224,7 +226,7 @@ var PlayerComponent = (
 
   function startFatalErrorTimeout(errorProperties, bufferingTimeoutError) {
     if (!fatalErrorTimeout && !fatalError) {
-      fatalErrorTimeout = setTimeout(function () {
+      fatalErrorTimeout = setTimeout(function() {
         fatalErrorTimeout = null;
         fatalError = true;
         attemptCdnFailover(errorProperties, bufferingTimeoutError);
@@ -280,7 +282,7 @@ var PlayerComponent = (
       bigscreenPlayerData.media.urls,
       bigscreenPlayerData.serverDate,
       {
-        onSuccess: function (manifestData) {
+        onSuccess: function(manifestData) {
           var windowOffset =
             manifestData.time.windowStartTime - getWindowStartTime();
           bigscreenPlayerData.time = manifestData.time;
@@ -292,7 +294,7 @@ var PlayerComponent = (
             bufferingTimeoutError
           );
         },
-        onError: function () {
+        onError: function() {
           bubbleFatalError(errorProperties, bufferingTimeoutError);
         }
       }

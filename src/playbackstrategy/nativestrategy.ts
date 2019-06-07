@@ -1,8 +1,12 @@
 import LegacyAdapter from "./legacyplayeradapter";
 import WindowTypes from "../models/windowtypes";
 import Html5Player from "./modifiers/html5";
-import LivePlayer from "./modifiers/live/seekable";
-// 'bigscreenplayer/playbackstrategy/modifiers/live/' + (window.bigscreenPlayer.liveSupport || 'playable')
+
+let LivePlayer;
+import(
+  `./modifiers/live/${window.bigscreenPlayer.liveSupport || "playable"}`
+).then(({ default: lp }) => (LivePlayer = lp));
+
 var NativeStrategy = function(
   windowType,
   mediaKind,
