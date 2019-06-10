@@ -109,8 +109,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           } else {
             DebugTool.info('MSE Error: ' + event.error);
 
-            // Don't raise an error on fragment download error unless we want to do a standard failover for growing windows
-            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && windowType !== WindowTypes.GROWING) {
+            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE) {
               return;
             }
           }
