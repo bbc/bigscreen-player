@@ -109,7 +109,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           } else {
             DebugTool.info('MSE Error: ' + event.error);
 
-            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE) {
+            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && event.event.id === 'content') {
               return;
             }
           }
@@ -181,8 +181,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onCdnFailover (event) {
-        if (windowType === WindowTypes.GROWING) return;
-
         var pluginEvent = {
           errorProperties: {
             error_mssg: 'download'

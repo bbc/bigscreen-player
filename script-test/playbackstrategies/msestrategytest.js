@@ -800,6 +800,48 @@ require(
 
           expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
         });
+
+        it('should not fire CDN failover event on content download error', function () {
+          var mockEvent = {
+            error: 'download',
+            event: {
+              id: 'content'
+            }
+          };
+
+          setUpMSE();
+
+          var mockErrorCallback = jasmine.createSpy();
+          mseStrategy.addErrorCallback(null, mockErrorCallback);
+
+          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          mseStrategy.load(cdnArray, null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
+
+          expect(mockErrorCallback).not.toHaveBeenCalled();
+        });
+
+        it('should fire CDN failover event on manifest download error', function () {
+          var mockEvent = {
+            error: 'download',
+            event: {
+              id: 'manifest'
+            }
+          };
+
+          setUpMSE();
+
+          var mockErrorCallback = jasmine.createSpy();
+          mseStrategy.addErrorCallback(null, mockErrorCallback);
+
+          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          mseStrategy.load(cdnArray, null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
+
+          expect(mockErrorCallback).toHaveBeenCalledWith(jasmine.objectContaining(mockEvent));
+        });
       });
     });
   });
