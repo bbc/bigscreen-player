@@ -4,7 +4,9 @@
     "module": "amd",
     "allowJs": true,
     "outDir": "./script",
-    "strict": true
+    "strict": true,
+    "moduleResolution": "node",
+    "noImplicitAny": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
