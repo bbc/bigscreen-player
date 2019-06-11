@@ -2,11 +2,9 @@
   "compilerOptions": {
     "target": "ES3",
     "module": "amd",
-    "lib": ["es2015.collection"],
-    "allowJs": false,
+    "allowJs": true,
     "outDir": "./script",
-    "strict": true,
-    "esModuleInterop": true
+    "strict": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"]
