@@ -191,30 +191,35 @@ require(
               player.beginPlayback();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Begin Playback From In Empty State Is An Error', function () {
               player.beginPlaybackFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Pause In Empty State Is An Error', function () {
               player.pause();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Resume In Empty State Is An Error', function () {
               player.resume();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Stop In Empty State Is An Error', function () {
               player.stop();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot stop while in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Initialise Media In Empty State Goes To Stopped State', function () {
@@ -260,24 +265,28 @@ require(
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
 
               expect(logger.error).toHaveBeenCalledTimes(1);
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Play From In Stopped State Is An Error', function () {
               player.playFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot playFrom while in the \'STOPPED\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Pause In Stopped State Is An Error', function () {
               player.pause();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'STOPPED\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Resume In Stopped State Is An Error', function () {
               player.resume();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'STOPPED\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Send Meta Data In Stopped State Stays In Stopped State', function () {
@@ -303,6 +312,7 @@ require(
               errorCallback({type: 'testError'});
 
               expect(logger.error).toHaveBeenCalledWith('Media element error code: test');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Time Passing Does Not Cause Status Event To Be Sent In Stopped State', function () {
@@ -363,24 +373,28 @@ require(
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
 
               expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Begin Playback In Buffering State Is An Error', function () {
               player.beginPlayback();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'BUFFERING\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Begin Playback From In Buffering State Is An Error', function () {
               player.beginPlaybackFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'BUFFERING\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Reset In Buffering State Is An Error', function () {
               player.reset();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'BUFFERING\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Send Meta Data In Buffering State Stays In Buffering State', function () {
@@ -400,6 +414,7 @@ require(
               errorCallback();
 
               expect(logger.error).toHaveBeenCalledWith('Media element error code: test');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Time Passing Does Not Cause Status Event To Be Sent In Buffering State', function () {
@@ -495,24 +510,28 @@ require(
               player.beginPlayback();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'PLAYING\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Begin Playback From In Playing State Is An Error', function () {
               player.beginPlaybackFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'PLAYING\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Initialise Media In Playing State Is An Error', function () {
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
 
               expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Reset In Playing State Is An Error', function () {
               player.reset();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'PLAYING\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Send Meta Data In Playing State Stays In Playing State', function () {
@@ -537,6 +556,7 @@ require(
               errorCallback();
 
               expect(logger.error).toHaveBeenCalledWith('Media element error code: testError');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('When Call Resume While Already Playing Then Remain In Play State', function () {
@@ -679,24 +699,28 @@ require(
               player.beginPlayback();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'PAUSED\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Begin Playback From In Paused State Is An Error', function () {
               player.beginPlaybackFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'PAUSED\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Initialise Media In Paused State Is An Error', function () {
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
 
               expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Calling Reset In Paused State Is An Error', function () {
               player.reset();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'PAUSED\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Send Meta Data In Paused State Stays In Paused State', function () {
@@ -723,6 +747,7 @@ require(
               errorCallback();
 
               expect(logger.error).toHaveBeenCalledTimes(1);
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
             });
 
             it('Time Passing Does Not Cause Status Event To Be Sent In Paused State', function () {
@@ -806,6 +831,7 @@ require(
               player.beginPlayback();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'COMPLETE\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -813,6 +839,7 @@ require(
               player.beginPlaybackFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'COMPLETE\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -820,6 +847,7 @@ require(
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
 
               expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -827,6 +855,7 @@ require(
               player.pause();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'COMPLETE\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -834,6 +863,7 @@ require(
               player.resume();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'COMPLETE\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -841,6 +871,7 @@ require(
               player.reset();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot reset while in the \'COMPLETE\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             }
             );
@@ -938,6 +969,7 @@ require(
               player.beginPlayback();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlayback while in the \'ERROR\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -945,6 +977,7 @@ require(
               player.beginPlaybackFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot beginPlaybackFrom while in the \'ERROR\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -952,6 +985,7 @@ require(
               player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
 
               expect(logger.error).toHaveBeenCalledWith('Cannot set source unless in the \'EMPTY\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -959,6 +993,7 @@ require(
               player.playFrom();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot playFrom while in the \'ERROR\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -966,6 +1001,7 @@ require(
               player.pause();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot pause while in the \'ERROR\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -973,6 +1009,7 @@ require(
               player.resume();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot resume while in the \'ERROR\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -980,6 +1017,7 @@ require(
               player.stop();
 
               expect(logger.error).toHaveBeenCalledWith('Cannot stop while in the \'ERROR\' state');
+              expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
               expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR);
             });
 
@@ -1302,6 +1340,7 @@ require(
             errorCallback();
 
             expect(logger.error).toHaveBeenCalledWith('Media element error code: ' + errorMessage);
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
           });
 
           it(' Error Event From Source Element Causes Error Log And Error Message In Event', function () {
@@ -1317,6 +1356,7 @@ require(
             sourceError();
 
             expect(logger.error).toHaveBeenCalledWith('Media source element error');
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR);
           });
 
           it(' Pause Passed Through To Media Element When In Playing State', function () {
