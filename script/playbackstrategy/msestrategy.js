@@ -32,6 +32,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var dashMetrics;
 
       var mediaSources;
+      var baseUrls;
 
       var playerMetadata = {
         playbackBitrate: undefined,
@@ -124,9 +125,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           var manifest = event.data;
           ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
 
-          manifest.BaseURL_asArray = generateBaseUrls(mediaSources);
-          if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
-          if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
+          baseUrls = generateBaseUrls(mediaSources, manifest);
+          if (baseUrls) {
+            manifest.BaseURL_asArray = baseUrls;
+            if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
+            if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
+          }
         }
       }
 
@@ -162,7 +166,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function propagateCdnFailover (event, cdn) {
         // Initial playback
-        if (cdn === mediaSources[0].cdn) return;
+        if (!baseUrls || cdn === baseUrls[0].serviceLocation) return;
 
         var errorProperties = PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
         var evt = new PluginData({
@@ -170,13 +174,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           stateType: PluginEnums.TYPE.ERROR,
           properties: errorProperties,
           isBufferingTimeoutError: false,
-          cdn: mediaSources[0].cdn,
-          newCdn: mediaSources[1].cdn
+          cdn: baseUrls[0].serviceLocation,
+          newCdn: baseUrls[1].serviceLocation
         });
         // urls -> sources -> mediaSources (shift the cdns for correct behaviour with buffering timeout failover)
         // TODO: Remove this horrible mutation when failover is pushed down per strategy.
         Plugins.interface.onErrorHandled(evt);
         mediaSources.shift();
+        baseUrls.shift();
         cdnDebugOutput.update();
       }
 
@@ -234,13 +239,17 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         return Math.min(Math.max(time, range.start), range.end - 1.1);
       }
 
-      function generateBaseUrls (sources) {
-        var regexp = /.*\//;
-        return sources.map(function (source, priority) {
-          var sourceUrl = regexp.exec(source.url)[0];
+      function generateBaseUrls (sources, manifest) {
+        var baseUrl = manifest.Period && manifest.Period.BaseURL || manifest.BaseURL && manifest.BaseURL.__text;
+        if (!baseUrl) return;
+        if (baseUrl.match(/^https?:\/\//)) {
+          sources = sources.slice(0, 1);
+        }
 
+        return sources.map(function (source, priority) {
+          var sourceUrl = new URL(baseUrl, source.url);
           return {
-            __text: sourceUrl + 'dash/',
+            __text: sourceUrl.href,
             'dvb:priority': priority,
             serviceLocation: source.cdn
           };
@@ -420,6 +429,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaMetrics = undefined;
           dashMetrics = undefined;
           mediaSources = undefined;
+          baseUrls = undefined;
         },
         reset: function () {
           return;
