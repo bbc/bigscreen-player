@@ -109,8 +109,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           } else {
             DebugTool.info('MSE Error: ' + event.error);
 
-            // Don't raise an error on fragment download error unless we want to do a standard failover for growing windows
-            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && windowType !== WindowTypes.GROWING) {
+            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && event.event.id === 'content') {
               return;
             }
           }
@@ -120,6 +119,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function onManifestLoaded (event) {
         DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
+
+        if (event.data) {
+          var manifest = event.data;
+          ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+
+          manifest.BaseURL_asArray = generateBaseUrls(mediaSources);
+          if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
+          if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
+        }
       }
 
       function onManifestValidityChange (event) {
@@ -173,8 +181,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onCdnFailover (event) {
-        if (windowType === WindowTypes.GROWING) return;
-
         var pluginEvent = {
           errorProperties: {
             error_mssg: 'download'
@@ -228,6 +234,19 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         return Math.min(Math.max(time, range.start), range.end - 1.1);
       }
 
+      function generateBaseUrls (sources) {
+        var regexp = /.*\//;
+        return sources.map(function (source, priority) {
+          var sourceUrl = regexp.exec(source.url)[0];
+
+          return {
+            __text: sourceUrl + 'dash/',
+            'dvb:priority': priority,
+            serviceLocation: source.cdn
+          };
+        });
+      }
+
       function setUpMediaElement (playbackElement) {
         if (mediaKind === MediaKinds.AUDIO) {
           mediaElement = document.createElement('audio');
@@ -255,52 +274,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         modifySource(sources, playbackTime);
       }
 
-      /**
-       *
-       * Edge case for growing window - only use one source at a time, do a legacy failover as we don't refresh the manifest.
-       *
-       * @param {*} sources
-       * @param {*} playbackTime
-       */
       function modifySource (sources, playbackTime) {
         mediaSources = sources;
-        var regexp = /.*\//;
         var initialSource = calculateSourceAnchor(sources[0].url, playbackTime);
-
-        if (windowType !== WindowTypes.GROWING) {
-          var baseUrls = sources.map(function (source, priority) {
-            var sourceUrl = regexp.exec(source.url)[0];
-
-            return {
-              __text: sourceUrl + 'dash/',
-              'dvb:priority': priority,
-              serviceLocation: source.cdn
-            };
-          });
-        }
-
-        mediaPlayer.retrieveManifest(initialSource, function (manifest) {
-          if (manifest === null) {
-            var event = {
-              errorProperties: {
-                error_mssg: 'manifestDownloadError'
-              }
-            };
-            DebugTool.info('MSE Error: manifestDownloadError');
-            publishError(event);
-            return;
-          }
-
-          var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-
-          if (windowType !== WindowTypes.GROWING) {
-            filteredManifest.BaseURL_asArray = baseUrls;
-            delete filteredManifest.Period.BaseURL;
-            delete filteredManifest.Period.BaseURL_asArray;
-          }
-
-          mediaPlayer.attachSource(filteredManifest);
-        });
+        mediaPlayer.attachSource(initialSource);
       }
 
       function setUpMediaListeners () {
@@ -458,13 +435,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.play();
         },
         setCurrentTime: function (time) {
-          if (windowType === WindowTypes.GROWING) {
-            DebugTool.info('Seeking and refreshing the manifest');
-            mediaPlayer.refreshManifest();
-          }
-
           var seekToTime = getClampedTime(time, getSeekableRange());
-
           if (windowType === WindowTypes.SLIDING) {
             mediaElement.currentTime = (seekToTime + timeCorrection);
           } else {
