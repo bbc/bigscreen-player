@@ -159,7 +159,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function propagateCdnFailover (event, cdn) {
         // Initial playback
-        if (cdn === mediaSources[0].cdn) return;
+        if (mediaSources.length <= 1 || cdn !== mediaSources[1].cdn) return;
 
         var errorProperties = PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
         var evt = new PluginData({

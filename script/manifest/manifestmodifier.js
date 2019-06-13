@@ -32,10 +32,7 @@ define('bigscreenplayer/manifest/manifestmodifier',
 
     function generateBaseUrls (manifest, sources) {
       var baseUrl = extractBaseUrl(manifest);
-      if (!baseUrl) return;
-      if (baseUrl.match(/^https?:\/\//)) {
-        sources = sources.slice(0, 1);
-      }
+      if (!baseUrl || baseUrl.match(/^https?:\/\//)) return;
 
       var baseUrls = sources.map(function (source, priority) {
         var sourceUrl = new URL(baseUrl, source.url);

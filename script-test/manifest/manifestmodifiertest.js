@@ -219,7 +219,7 @@ require(
           expect(manifest).toEqual(expectedManifest);
         });
 
-        it('should convert only the first source for absolute base urls', function () {
+        it('should leave the manifest unchanged for absolute base urls', function () {
           var manifest = {
             Period: {
               BaseURL: 'http://cdn-a.com/dash/'
@@ -227,10 +227,9 @@ require(
           };
 
           var expectedManifest = {
-            BaseURL_asArray: [
-              { __text: 'http://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'cdn-a' }
-            ],
-            Period: {}
+            Period: {
+              BaseURL: 'http://cdn-a.com/dash/'
+            }
           };
 
           ManifestModifier.generateBaseUrls(manifest, sources);
@@ -238,7 +237,7 @@ require(
           expect(manifest).toEqual(expectedManifest);
         });
 
-        it('should return undefined if there is no base url', function () {
+        it('should leave the manifest unchanged if there is no base url', function () {
           var manifest = {
             Period: {}
           };
