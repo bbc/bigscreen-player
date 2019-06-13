@@ -1,9 +1,9 @@
 require(
   [
-    'bigscreenplayer/manifest/manifestfilter'
+    'bigscreenplayer/manifest/manifestmodifier'
   ],
-  function (ManifestFilter) {
-    describe('ManifestFilter', function () {
+  function (Manifest) {
+    describe('Manifest', function () {
       describe('filter()', function () {
         var manifest;
 
@@ -46,7 +46,7 @@ require(
         });
 
         it('should leave the manifest unchanged when the config is empty', function () {
-          var actualManifest = ManifestFilter.filter(manifest, {});
+          var actualManifest = Manifest.filter(manifest, {});
 
           expect(actualManifest).toEqual(manifest);
         });
@@ -79,7 +79,7 @@ require(
               ]
             }
           };
-          var actualManifest = ManifestFilter.filter(manifest, { maxFps: 30 });
+          var actualManifest = Manifest.filter(manifest, { maxFps: 30 });
 
           expect(actualManifest).toEqual(expectedManifest);
         });
@@ -112,7 +112,7 @@ require(
               ]
             }
           };
-          var actualManifest = ManifestFilter.filter(manifest, { constantFps: true });
+          var actualManifest = Manifest.filter(manifest, { constantFps: true });
 
           expect(actualManifest).toEqual(expectedManifest);
         });
@@ -141,7 +141,7 @@ require(
               ]
             }
           };
-          var actualManifest = ManifestFilter.filter(manifest, { constantFps: true, maxFps: 30 });
+          var actualManifest = Manifest.filter(manifest, { constantFps: true, maxFps: 30 });
 
           expect(actualManifest).toEqual(expectedManifest);
         });
@@ -165,9 +165,91 @@ require(
               ]
             }
           };
-          var actualManifest = ManifestFilter.filter(manifest, { maxFps: 10, constantFps: true });
+          var actualManifest = Manifest.filter(manifest, { maxFps: 10, constantFps: true });
 
           expect(actualManifest).toEqual(expectedManifest);
+        });
+      });
+
+      describe('extractBaseUrl()', function () {
+        it('should return the base url from the period', function () {
+          var manifest = {
+            Period: {
+              BaseURL: 'dash/'
+            }
+          };
+
+          expect(Manifest.extractBaseUrl(manifest)).toBe('dash/');
+        });
+
+        it('should return the base url from the root', function () {
+          var manifest = {
+            BaseURL: {
+              __text: 'https://cnd/dash/'
+            }
+          };
+
+          expect(Manifest.extractBaseUrl(manifest)).toBe('https://cnd/dash/');
+        });
+      });
+
+      describe('generateBaseUrls()', function () {
+        var sources = [
+          { cdn: 'cdn-a', url: 'https://cdn-a.com/' },
+          { cdn: 'cdn-b', url: 'https://cdn-b.com/' }
+        ];
+
+        it('should convert the sources into base urls', function () {
+          var manifest = {
+            Period: {
+              BaseURL: 'dash/'
+            }
+          };
+
+          var expectedManifest = {
+            BaseURL_asArray: [
+              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'cdn-a' },
+              { __text: 'https://cdn-b.com/dash/', 'dvb:priority': 1, serviceLocation: 'cdn-b' }
+            ],
+            Period: {}
+          };
+
+          Manifest.generateBaseUrls(manifest, sources);
+
+          expect(manifest).toEqual(expectedManifest);
+        });
+
+        it('should convert only the first source for absolute base urls', function () {
+          var manifest = {
+            Period: {
+              BaseURL: 'http://cdn-a.com/dash/'
+            }
+          };
+
+          var expectedManifest = {
+            BaseURL_asArray: [
+              { __text: 'http://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'cdn-a' }
+            ],
+            Period: {}
+          };
+
+          Manifest.generateBaseUrls(manifest, sources);
+
+          expect(manifest).toEqual(expectedManifest);
+        });
+
+        it('should return undefined if there is no base url', function () {
+          var manifest = {
+            Period: {}
+          };
+
+          var expectedManifest = {
+            Period: {}
+          };
+
+          Manifest.generateBaseUrls(manifest, sources);
+
+          expect(manifest).toEqual(expectedManifest);
         });
       });
     });

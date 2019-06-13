@@ -7,14 +7,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/plugins',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
-    'bigscreenplayer/manifest/manifestfilter',
+    'bigscreenplayer/manifest/manifestmodifier',
     'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/models/livesupport',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestFilter, PlaybackUtils, LiveSupport) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestModifier, PlaybackUtils, LiveSupport) {
     var MSEStrategy = function (windowType, mediaKind, timeData, playbackElement, isUHD, device, cdnDebugOutput) {
       var mediaPlayer;
       var mediaElement;
@@ -32,7 +32,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var dashMetrics;
 
       var mediaSources;
-      var baseUrls;
 
       var playerMetadata = {
         playbackBitrate: undefined,
@@ -123,14 +122,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         if (event.data) {
           var manifest = event.data;
-          ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-
-          baseUrls = generateBaseUrls(mediaSources, manifest);
-          if (baseUrls) {
-            manifest.BaseURL_asArray = baseUrls;
-            if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
-            if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
-          }
+          ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+          ManifestModifier.generateBaseUrls(manifest, mediaSources);
         }
       }
 
@@ -166,7 +159,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function propagateCdnFailover (event, cdn) {
         // Initial playback
-        if (!baseUrls || cdn === baseUrls[0].serviceLocation) return;
+        if (cdn === mediaSources[0].cdn) return;
 
         var errorProperties = PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
         var evt = new PluginData({
@@ -174,14 +167,13 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           stateType: PluginEnums.TYPE.ERROR,
           properties: errorProperties,
           isBufferingTimeoutError: false,
-          cdn: baseUrls[0].serviceLocation,
-          newCdn: baseUrls[1].serviceLocation
+          cdn: mediaSources[0].cdn,
+          newCdn: mediaSources[1].cdn
         });
         // urls -> sources -> mediaSources (shift the cdns for correct behaviour with buffering timeout failover)
         // TODO: Remove this horrible mutation when failover is pushed down per strategy.
         Plugins.interface.onErrorHandled(evt);
         mediaSources.shift();
-        baseUrls.shift();
         cdnDebugOutput.update();
       }
 
@@ -237,23 +229,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function getClampedTime (time, range) {
         return Math.min(Math.max(time, range.start), range.end - 1.1);
-      }
-
-      function generateBaseUrls (sources, manifest) {
-        var baseUrl = manifest.Period && manifest.Period.BaseURL || manifest.BaseURL && manifest.BaseURL.__text;
-        if (!baseUrl) return;
-        if (baseUrl.match(/^https?:\/\//)) {
-          sources = sources.slice(0, 1);
-        }
-
-        return sources.map(function (source, priority) {
-          var sourceUrl = new URL(baseUrl, source.url);
-          return {
-            __text: sourceUrl.href,
-            'dvb:priority': priority,
-            serviceLocation: source.cdn
-          };
-        });
       }
 
       function setUpMediaElement (playbackElement) {
@@ -429,7 +404,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaMetrics = undefined;
           dashMetrics = undefined;
           mediaSources = undefined;
-          baseUrls = undefined;
         },
         reset: function () {
           return;
