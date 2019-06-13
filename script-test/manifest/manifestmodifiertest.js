@@ -2,8 +2,8 @@ require(
   [
     'bigscreenplayer/manifest/manifestmodifier'
   ],
-  function (Manifest) {
-    describe('Manifest', function () {
+  function (ManifestModifier) {
+    describe('ManifestModifier', function () {
       describe('filter()', function () {
         var manifest;
 
@@ -46,7 +46,7 @@ require(
         });
 
         it('should leave the manifest unchanged when the config is empty', function () {
-          var actualManifest = Manifest.filter(manifest, {});
+          var actualManifest = ManifestModifier.filter(manifest, {});
 
           expect(actualManifest).toEqual(manifest);
         });
@@ -79,7 +79,7 @@ require(
               ]
             }
           };
-          var actualManifest = Manifest.filter(manifest, { maxFps: 30 });
+          var actualManifest = ManifestModifier.filter(manifest, { maxFps: 30 });
 
           expect(actualManifest).toEqual(expectedManifest);
         });
@@ -112,7 +112,7 @@ require(
               ]
             }
           };
-          var actualManifest = Manifest.filter(manifest, { constantFps: true });
+          var actualManifest = ManifestModifier.filter(manifest, { constantFps: true });
 
           expect(actualManifest).toEqual(expectedManifest);
         });
@@ -141,7 +141,7 @@ require(
               ]
             }
           };
-          var actualManifest = Manifest.filter(manifest, { constantFps: true, maxFps: 30 });
+          var actualManifest = ManifestModifier.filter(manifest, { constantFps: true, maxFps: 30 });
 
           expect(actualManifest).toEqual(expectedManifest);
         });
@@ -165,7 +165,7 @@ require(
               ]
             }
           };
-          var actualManifest = Manifest.filter(manifest, { maxFps: 10, constantFps: true });
+          var actualManifest = ManifestModifier.filter(manifest, { maxFps: 10, constantFps: true });
 
           expect(actualManifest).toEqual(expectedManifest);
         });
@@ -179,7 +179,7 @@ require(
             }
           };
 
-          expect(Manifest.extractBaseUrl(manifest)).toBe('dash/');
+          expect(ManifestModifier.extractBaseUrl(manifest)).toBe('dash/');
         });
 
         it('should return the base url from the root', function () {
@@ -189,7 +189,7 @@ require(
             }
           };
 
-          expect(Manifest.extractBaseUrl(manifest)).toBe('https://cnd/dash/');
+          expect(ManifestModifier.extractBaseUrl(manifest)).toBe('https://cnd/dash/');
         });
       });
 
@@ -214,7 +214,7 @@ require(
             Period: {}
           };
 
-          Manifest.generateBaseUrls(manifest, sources);
+          ManifestModifier.generateBaseUrls(manifest, sources);
 
           expect(manifest).toEqual(expectedManifest);
         });
@@ -233,7 +233,7 @@ require(
             Period: {}
           };
 
-          Manifest.generateBaseUrls(manifest, sources);
+          ManifestModifier.generateBaseUrls(manifest, sources);
 
           expect(manifest).toEqual(expectedManifest);
         });
@@ -247,7 +247,7 @@ require(
             Period: {}
           };
 
-          Manifest.generateBaseUrls(manifest, sources);
+          ManifestModifier.generateBaseUrls(manifest, sources);
 
           expect(manifest).toEqual(expectedManifest);
         });
