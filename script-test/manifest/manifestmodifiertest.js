@@ -185,11 +185,11 @@ require(
         it('should return the base url from the root', function () {
           var manifest = {
             BaseURL: {
-              __text: 'https://cnd/dash/'
+              __text: 'https://cdn/dash/'
             }
           };
 
-          expect(ManifestModifier.extractBaseUrl(manifest)).toBe('https://cnd/dash/');
+          expect(ManifestModifier.extractBaseUrl(manifest)).toBe('https://cdn/dash/');
         });
       });
 
