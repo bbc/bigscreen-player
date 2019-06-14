@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "cp node_modules/requirejs/require.js ./ && npx webpack --config webpack.config.js",
+    "build": "npx webpack --config webpack.config.js",
     "start": "http-server ../ -c -1"
   },
   "devDependencies": {
@@ -16,8 +16,7 @@
     "babel-preset-env": "1.7.0"
   },
   "dependencies": {
-    "bigscreen-player": "latest",
-    "requirejs": "2.3.6"
+    "bigscreen-player": "latest"
   },
   "author": "",
   "license": "ISC"

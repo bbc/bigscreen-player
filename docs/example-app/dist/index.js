@@ -1,4 +1,4 @@
-define(function() { return /******/ (function(modules) { // webpackBootstrap
+/******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -280,1006 +280,10 @@ ISOFile.prototype.fetch = function (type) {
   return result.length ? result[0] : null;
 };
 
-ISOFile.prototype.fetchAll = function (type, returnEarly) {
-  var result = [];
-  ISOFile._sweep.call(this, type, result, returnEarly);
-  return result;
-};
-
-ISOFile.prototype.parse = function () {
-  this._cursor.offset = 0;
-  this.boxes = [];
-  while (this._cursor.offset < this._raw.byteLength) {
-    var box = ISOBox.parse(this);
-
-    // Box could not be parsed
-    if (typeof box.type === 'undefined') break;
-
-    this.boxes.push(box);
-  }
-  return this;
-};
-
-ISOFile._sweep = function (type, result, returnEarly) {
-  if (this.type && this.type == type) result.push(this);
-  for (var box in this.boxes) {
-    if (result.length && returnEarly) return;
-    ISOFile._sweep.call(this.boxes[box], type, result, returnEarly);
-  }
-};
-
-ISOFile.prototype.write = function () {
-
-  var length = 0,
-      i;
-
-  for (i = 0; i < this.boxes.length; i++) {
-    length += this.boxes[i].getLength(false);
-  }
-
-  var bytes = new Uint8Array(length);
-  this._rawo = new DataView(bytes.buffer);
-  this.bytes = bytes;
-  this._cursor.offset = 0;
-
-  for (i = 0; i < this.boxes.length; i++) {
-    this.boxes[i].write();
-  }
-
-  return bytes.buffer;
-};
-
-ISOFile.prototype.append = function (box, pos) {
-  ISOBoxer.Utils.appendBox(this, box, pos);
-};
-var ISOBox = function ISOBox() {
-  this._cursor = new ISOBoxer.Cursor();
-};
-
-ISOBox.parse = function (parent) {
-  var newBox = new ISOBox();
-  newBox._offset = parent._cursor.offset;
-  newBox._root = parent._root ? parent._root : parent;
-  newBox._raw = parent._raw;
-  newBox._parent = parent;
-  newBox._parseBox();
-  parent._cursor.offset = newBox._raw.byteOffset + newBox._raw.byteLength;
-  return newBox;
-};
-
-ISOBox.create = function (type) {
-  var newBox = new ISOBox();
-  newBox.type = type;
-  newBox.boxes = [];
-  return newBox;
-};
-
-ISOBox.prototype._boxContainers = ['dinf', 'edts', 'mdia', 'meco', 'mfra', 'minf', 'moof', 'moov', 'mvex', 'stbl', 'strk', 'traf', 'trak', 'tref', 'udta', 'vttc', 'sinf', 'schi', 'encv', 'enca'];
-
-ISOBox.prototype._boxProcessors = {};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Generic read/write functions
-
-ISOBox.prototype._procField = function (name, type, size) {
-  if (this._parsing) {
-    this[name] = this._readField(type, size);
-  } else {
-    this._writeField(type, size, this[name]);
-  }
-};
-
-ISOBox.prototype._procFieldArray = function (name, length, type, size) {
-  var i;
-  if (this._parsing) {
-    this[name] = [];
-    for (i = 0; i < length; i++) {
-      this[name][i] = this._readField(type, size);
-    }
-  } else {
-    for (i = 0; i < this[name].length; i++) {
-      this._writeField(type, size, this[name][i]);
-    }
-  }
-};
-
-ISOBox.prototype._procFullBox = function () {
-  this._procField('version', 'uint', 8);
-  this._procField('flags', 'uint', 24);
-};
-
-ISOBox.prototype._procEntries = function (name, length, fn) {
-  var i;
-  if (this._parsing) {
-    this[name] = [];
-    for (i = 0; i < length; i++) {
-      this[name].push({});
-      fn.call(this, this[name][i]);
-    }
-  } else {
-    for (i = 0; i < length; i++) {
-      fn.call(this, this[name][i]);
-    }
-  }
-};
-
-ISOBox.prototype._procSubEntries = function (entry, name, length, fn) {
-  var i;
-  if (this._parsing) {
-    entry[name] = [];
-    for (i = 0; i < length; i++) {
-      entry[name].push({});
-      fn.call(this, entry[name][i]);
-    }
-  } else {
-    for (i = 0; i < length; i++) {
-      fn.call(this, entry[name][i]);
-    }
-  }
-};
-
-ISOBox.prototype._procEntryField = function (entry, name, type, size) {
-  if (this._parsing) {
-    entry[name] = this._readField(type, size);
-  } else {
-    this._writeField(type, size, entry[name]);
-  }
-};
-
-ISOBox.prototype._procSubBoxes = function (name, length) {
-  var i;
-  if (this._parsing) {
-    this[name] = [];
-    for (i = 0; i < length; i++) {
-      this[name].push(ISOBox.parse(this));
-    }
-  } else {
-    for (i = 0; i < length; i++) {
-      if (this._rawo) {
-        this[name][i].write();
-      } else {
-        this.size += this[name][i].getLength();
-      }
-    }
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Read/parse functions
-
-ISOBox.prototype._readField = function (type, size) {
-  switch (type) {
-    case 'uint':
-      return this._readUint(size);
-    case 'int':
-      return this._readInt(size);
-    case 'template':
-      return this._readTemplate(size);
-    case 'string':
-      return size === -1 ? this._readTerminatedString() : this._readString(size);
-    case 'data':
-      return this._readData(size);
-    case 'utf8':
-      return this._readUTF8String();
-    default:
-      return -1;
-  }
-};
-
-ISOBox.prototype._readInt = function (size) {
-  var result = null,
-      offset = this._cursor.offset - this._raw.byteOffset;
-  switch (size) {
-    case 8:
-      result = this._raw.getInt8(offset);
-      break;
-    case 16:
-      result = this._raw.getInt16(offset);
-      break;
-    case 32:
-      result = this._raw.getInt32(offset);
-      break;
-    case 64:
-      // Warning: JavaScript cannot handle 64-bit integers natively.
-      // This will give unexpected results for integers >= 2^53
-      var s1 = this._raw.getInt32(offset);
-      var s2 = this._raw.getInt32(offset + 4);
-      result = s1 * Math.pow(2, 32) + s2;
-      break;
-  }
-  this._cursor.offset += size >> 3;
-  return result;
-};
-
-ISOBox.prototype._readUint = function (size) {
-  var result = null,
-      offset = this._cursor.offset - this._raw.byteOffset,
-      s1,
-      s2;
-  switch (size) {
-    case 8:
-      result = this._raw.getUint8(offset);
-      break;
-    case 16:
-      result = this._raw.getUint16(offset);
-      break;
-    case 24:
-      s1 = this._raw.getUint16(offset);
-      s2 = this._raw.getUint8(offset + 2);
-      result = (s1 << 8) + s2;
-      break;
-    case 32:
-      result = this._raw.getUint32(offset);
-      break;
-    case 64:
-      // Warning: JavaScript cannot handle 64-bit integers natively.
-      // This will give unexpected results for integers >= 2^53
-      s1 = this._raw.getUint32(offset);
-      s2 = this._raw.getUint32(offset + 4);
-      result = s1 * Math.pow(2, 32) + s2;
-      break;
-  }
-  this._cursor.offset += size >> 3;
-  return result;
-};
-
-ISOBox.prototype._readString = function (length) {
-  var str = '';
-  for (var c = 0; c < length; c++) {
-    var char = this._readUint(8);
-    str += String.fromCharCode(char);
-  }
-  return str;
-};
-
-ISOBox.prototype._readTemplate = function (size) {
-  var pre = this._readUint(size / 2);
-  var post = this._readUint(size / 2);
-  return pre + post / Math.pow(2, size / 2);
-};
-
-ISOBox.prototype._readTerminatedString = function () {
-  var str = '';
-  while (this._cursor.offset - this._offset < this._raw.byteLength) {
-    var char = this._readUint(8);
-    if (char === 0) break;
-    str += String.fromCharCode(char);
-  }
-  return str;
-};
-
-ISOBox.prototype._readData = function (size) {
-  var length = size > 0 ? size : this._raw.byteLength - (this._cursor.offset - this._offset);
-  if (length > 0) {
-    var data = new Uint8Array(this._raw.buffer, this._cursor.offset, length);
-
-    this._cursor.offset += length;
-    return data;
-  } else {
-    return null;
-  }
-};
-
-ISOBox.prototype._readUTF8String = function () {
-  var length = this._raw.byteLength - (this._cursor.offset - this._offset);
-  var data = null;
-  if (length > 0) {
-    data = new DataView(this._raw.buffer, this._cursor.offset, length);
-    this._cursor.offset += length;
-  }
-
-  return data ? ISOBoxer.Utils.dataViewToString(data) : data;
-};
-
-ISOBox.prototype._parseBox = function () {
-  this._parsing = true;
-  this._cursor.offset = this._offset;
-
-  // return immediately if there are not enough bytes to read the header
-  if (this._offset + 8 > this._raw.buffer.byteLength) {
-    this._root._incomplete = true;
-    return;
-  }
-
-  this._procField('size', 'uint', 32);
-  this._procField('type', 'string', 4);
-
-  if (this.size === 1) {
-    this._procField('largesize', 'uint', 64);
-  }
-  if (this.type === 'uuid') {
-    this._procFieldArray('usertype', 16, 'uint', 8);
-  }
-
-  switch (this.size) {
-    case 0:
-      this._raw = new DataView(this._raw.buffer, this._offset, this._raw.byteLength - this._cursor.offset + 8);
-      break;
-    case 1:
-      if (this._offset + this.size > this._raw.buffer.byteLength) {
-        this._incomplete = true;
-        this._root._incomplete = true;
-      } else {
-        this._raw = new DataView(this._raw.buffer, this._offset, this.largesize);
-      }
-      break;
-    default:
-      if (this._offset + this.size > this._raw.buffer.byteLength) {
-        this._incomplete = true;
-        this._root._incomplete = true;
-      } else {
-        this._raw = new DataView(this._raw.buffer, this._offset, this.size);
-      }
-  }
-
-  // additional parsing
-  if (!this._incomplete) {
-    if (this._boxProcessors[this.type]) {
-      this._boxProcessors[this.type].call(this);
-    }
-    if (this._boxContainers.indexOf(this.type) !== -1) {
-      this._parseContainerBox();
-    } else {
-      // Unknown box => read and store box content
-      this._data = this._readData();
-    }
-  }
-};
-
-ISOBox.prototype._parseFullBox = function () {
-  this.version = this._readUint(8);
-  this.flags = this._readUint(24);
-};
-
-ISOBox.prototype._parseContainerBox = function () {
-  this.boxes = [];
-  while (this._cursor.offset - this._raw.byteOffset < this._raw.byteLength) {
-    this.boxes.push(ISOBox.parse(this));
-  }
-};
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-// Write functions
-
-ISOBox.prototype.append = function (box, pos) {
-  ISOBoxer.Utils.appendBox(this, box, pos);
-};
-
-ISOBox.prototype.getLength = function () {
-  this._parsing = false;
-  this._rawo = null;
-
-  this.size = 0;
-  this._procField('size', 'uint', 32);
-  this._procField('type', 'string', 4);
-
-  if (this.size === 1) {
-    this._procField('largesize', 'uint', 64);
-  }
-  if (this.type === 'uuid') {
-    this._procFieldArray('usertype', 16, 'uint', 8);
-  }
-
-  if (this._boxProcessors[this.type]) {
-    this._boxProcessors[this.type].call(this);
-  }
-
-  if (this._boxContainers.indexOf(this.type) !== -1) {
-    for (var i = 0; i < this.boxes.length; i++) {
-      this.size += this.boxes[i].getLength();
-    }
-  }
-
-  if (this._data) {
-    this._writeData(this._data);
-  }
-
-  return this.size;
-};
-
-ISOBox.prototype.write = function () {
-  this._parsing = false;
-  this._cursor.offset = this._parent._cursor.offset;
-
-  switch (this.size) {
-    case 0:
-      this._rawo = new DataView(this._parent._rawo.buffer, this._cursor.offset, this.parent._rawo.byteLength - this._cursor.offset);
-      break;
-    case 1:
-      this._rawo = new DataView(this._parent._rawo.buffer, this._cursor.offset, this.largesize);
-      break;
-    default:
-      this._rawo = new DataView(this._parent._rawo.buffer, this._cursor.offset, this.size);
-  }
-
-  this._procField('size', 'uint', 32);
-  this._procField('type', 'string', 4);
-
-  if (this.size === 1) {
-    this._procField('largesize', 'uint', 64);
-  }
-  if (this.type === 'uuid') {
-    this._procFieldArray('usertype', 16, 'uint', 8);
-  }
-
-  if (this._boxProcessors[this.type]) {
-    this._boxProcessors[this.type].call(this);
-  }
-
-  if (this._boxContainers.indexOf(this.type) !== -1) {
-    for (var i = 0; i < this.boxes.length; i++) {
-      this.boxes[i].write();
-    }
-  }
-
-  if (this._data) {
-    this._writeData(this._data);
-  }
-
-  this._parent._cursor.offset += this.size;
-
-  return this.size;
-};
-
-ISOBox.prototype._writeInt = function (size, value) {
-  if (this._rawo) {
-    var offset = this._cursor.offset - this._rawo.byteOffset;
-    switch (size) {
-      case 8:
-        this._rawo.setInt8(offset, value);
-        break;
-      case 16:
-        this._rawo.setInt16(offset, value);
-        break;
-      case 32:
-        this._rawo.setInt32(offset, value);
-        break;
-      case 64:
-        // Warning: JavaScript cannot handle 64-bit integers natively.
-        // This will give unexpected results for integers >= 2^53
-        var s1 = Math.floor(value / Math.pow(2, 32));
-        var s2 = value - s1 * Math.pow(2, 32);
-        this._rawo.setUint32(offset, s1);
-        this._rawo.setUint32(offset + 4, s2);
-        break;
-    }
-    this._cursor.offset += size >> 3;
-  } else {
-    this.size += size >> 3;
-  }
-};
-
-ISOBox.prototype._writeUint = function (size, value) {
-
-  if (this._rawo) {
-    var offset = this._cursor.offset - this._rawo.byteOffset,
-        s1,
-        s2;
-    switch (size) {
-      case 8:
-        this._rawo.setUint8(offset, value);
-        break;
-      case 16:
-        this._rawo.setUint16(offset, value);
-        break;
-      case 24:
-        s1 = (value & 0xFFFF00) >> 8;
-        s2 = value & 0x0000FF;
-        this._rawo.setUint16(offset, s1);
-        this._rawo.setUint8(offset + 2, s2);
-        break;
-      case 32:
-        this._rawo.setUint32(offset, value);
-        break;
-      case 64:
-        // Warning: JavaScript cannot handle 64-bit integers natively.
-        // This will give unexpected results for integers >= 2^53
-        s1 = Math.floor(value / Math.pow(2, 32));
-        s2 = value - s1 * Math.pow(2, 32);
-        this._rawo.setUint32(offset, s1);
-        this._rawo.setUint32(offset + 4, s2);
-        break;
-    }
-    this._cursor.offset += size >> 3;
-  } else {
-    this.size += size >> 3;
-  }
-};
-
-ISOBox.prototype._writeString = function (size, str) {
-  for (var c = 0; c < size; c++) {
-    this._writeUint(8, str.charCodeAt(c));
-  }
-};
-
-ISOBox.prototype._writeTerminatedString = function (str) {
-  if (str.length === 0) {
-    return;
-  }
-  for (var c = 0; c < str.length; c++) {
-    this._writeUint(8, str.charCodeAt(c));
-  }
-  this._writeUint(8, 0);
-};
-
-ISOBox.prototype._writeTemplate = function (size, value) {
-  var pre = Math.floor(value);
-  var post = (value - pre) * Math.pow(2, size / 2);
-  this._writeUint(size / 2, pre);
-  this._writeUint(size / 2, post);
-};
-
-ISOBox.prototype._writeData = function (data) {
-  var i;
-  //data to copy
-  if (data) {
-    if (this._rawo) {
-      //Array and Uint8Array has also to be managed
-      if (data instanceof Array) {
-        var offset = this._cursor.offset - this._rawo.byteOffset;
-        for (var i = 0; i < data.length; i++) {
-          this._rawo.setInt8(offset + i, data[i]);
-        }
-        this._cursor.offset += data.length;
-      }
-
-      if (data instanceof Uint8Array) {
-        this._root.bytes.set(data, this._cursor.offset);
-        this._cursor.offset += data.length;
-      }
-    } else {
-      //nothing to copy only size to compute
-      this.size += data.length;
-    }
-  }
-};
-
-ISOBox.prototype._writeUTF8String = function (string) {
-  var u = ISOBoxer.Utils.utf8ToByteArray(string);
-  if (this._rawo) {
-    var dataView = new DataView(this._rawo.buffer, this._cursor.offset, u.length);
-    for (var i = 0; i < u.length; i++) {
-      dataView.setUint8(i, u[i]);
-    }
-  } else {
-    this.size += u.length;
-  }
-};
-
-ISOBox.prototype._writeField = function (type, size, value) {
-  switch (type) {
-    case 'uint':
-      this._writeUint(size, value);
-      break;
-    case 'int':
-      this._writeInt(size, value);
-      break;
-    case 'template':
-      this._writeTemplate(size, value);
-      break;
-    case 'string':
-      if (size == -1) {
-        this._writeTerminatedString(value);
-      } else {
-        this._writeString(size, value);
-      }
-      break;
-    case 'data':
-      this._writeData(value);
-      break;
-    case 'utf8':
-      this._writeUTF8String(value);
-      break;
-    default:
-      break;
-  }
-};
-
-// ISO/IEC 14496-15:2014 - avc1 box
-ISOBox.prototype._boxProcessors['avc1'] = ISOBox.prototype._boxProcessors['encv'] = function () {
-  // SampleEntry fields
-  this._procFieldArray('reserved1', 6, 'uint', 8);
-  this._procField('data_reference_index', 'uint', 16);
-  // VisualSampleEntry fields
-  this._procField('pre_defined1', 'uint', 16);
-  this._procField('reserved2', 'uint', 16);
-  this._procFieldArray('pre_defined2', 3, 'uint', 32);
-  this._procField('width', 'uint', 16);
-  this._procField('height', 'uint', 16);
-  this._procField('horizresolution', 'template', 32);
-  this._procField('vertresolution', 'template', 32);
-  this._procField('reserved3', 'uint', 32);
-  this._procField('frame_count', 'uint', 16);
-  this._procFieldArray('compressorname', 32, 'uint', 8);
-  this._procField('depth', 'uint', 16);
-  this._procField('pre_defined3', 'int', 16);
-  // AVCSampleEntry fields
-  this._procField('config', 'data', -1);
-};
-
-// ISO/IEC 14496-12:2012 - 8.7.2 Data Reference Box
-ISOBox.prototype._boxProcessors['dref'] = function () {
-  this._procFullBox();
-  this._procField('entry_count', 'uint', 32);
-  this._procSubBoxes('entries', this.entry_count);
-};
-
-// ISO/IEC 14496-12:2012 - 8.6.6 Edit List Box
-ISOBox.prototype._boxProcessors['elst'] = function () {
-  this._procFullBox();
-  this._procField('entry_count', 'uint', 32);
-  this._procEntries('entries', this.entry_count, function (entry) {
-    this._procEntryField(entry, 'segment_duration', 'uint', this.version === 1 ? 64 : 32);
-    this._procEntryField(entry, 'media_time', 'int', this.version === 1 ? 64 : 32);
-    this._procEntryField(entry, 'media_rate_integer', 'int', 16);
-    this._procEntryField(entry, 'media_rate_fraction', 'int', 16);
-  });
-};
-
-// ISO/IEC 23009-1:2014 - 5.10.3.3 Event Message Box
-ISOBox.prototype._boxProcessors['emsg'] = function () {
-  this._procFullBox();
-  if (this.version == 1) {
-    this._procField('timescale', 'uint', 32);
-    this._procField('presentation_time', 'uint', 64);
-    this._procField('event_duration', 'uint', 32);
-    this._procField('id', 'uint', 32);
-    this._procField('scheme_id_uri', 'string', -1);
-    this._procField('value', 'string', -1);
-  } else {
-    this._procField('scheme_id_uri', 'string', -1);
-    this._procField('value', 'string', -1);
-    this._procField('timescale', 'uint', 32);
-    this._procField('presentation_time_delta', 'uint', 32);
-    this._procField('event_duration', 'uint', 32);
-    this._procField('id', 'uint', 32);
-  }
-  this._procField('message_data', 'data', -1);
-};
-// ISO/IEC 14496-12:2012 - 8.1.2 Free Space Box
-ISOBox.prototype._boxProcessors['free'] = ISOBox.prototype._boxProcessors['skip'] = function () {
-  this._procField('data', 'data', -1);
-};
-
-// ISO/IEC 14496-12:2012 - 8.12.2 Original Format Box
-ISOBox.prototype._boxProcessors['frma'] = function () {
-  this._procField('data_format', 'uint', 32);
-};
-// ISO/IEC 14496-12:2012 - 4.3 File Type Box / 8.16.2 Segment Type Box
-ISOBox.prototype._boxProcessors['ftyp'] = ISOBox.prototype._boxProcessors['styp'] = function () {
-  this._procField('major_brand', 'string', 4);
-  this._procField('minor_version', 'uint', 32);
-  var nbCompatibleBrands = -1;
-  if (this._parsing) {
-    nbCompatibleBrands = (this._raw.byteLength - (this._cursor.offset - this._raw.byteOffset)) / 4;
-  }
-  this._procFieldArray('compatible_brands', nbCompatibleBrands, 'string', 4);
-};
-
-// ISO/IEC 14496-12:2012 - 8.4.3 Handler Reference Box
-ISOBox.prototype._boxProcessors['hdlr'] = function () {
-  this._procFullBox();
-  this._procField('pre_defined', 'uint', 32);
-  this._procField('handler_type', 'string', 4);
-  this._procFieldArray('reserved', 3, 'uint', 32);
-  this._procField('name', 'string', -1);
-};
-
-// ISO/IEC 14496-12:2012 - 8.1.1 Media Data Box
-ISOBox.prototype._boxProcessors['mdat'] = function () {
-  this._procField('data', 'data', -1);
-};
-
-// ISO/IEC 14496-12:2012 - 8.4.2 Media Header Box
-ISOBox.prototype._boxProcessors['mdhd'] = function () {
-  this._procFullBox();
-  this._procField('creation_time', 'uint', this.version == 1 ? 64 : 32);
-  this._procField('modification_time', 'uint', this.version == 1 ? 64 : 32);
-  this._procField('timescale', 'uint', 32);
-  this._procField('duration', 'uint', this.version == 1 ? 64 : 32);
-  if (!this._parsing && typeof this.language === 'string') {
-    // In case of writing and language has been set as a string, then convert it into char codes array
-    this.language = this.language.charCodeAt(0) - 0x60 << 10 | this.language.charCodeAt(1) - 0x60 << 5 | this.language.charCodeAt(2) - 0x60;
-  }
-  this._procField('language', 'uint', 16);
-  if (this._parsing) {
-    this.language = String.fromCharCode((this.language >> 10 & 0x1F) + 0x60, (this.language >> 5 & 0x1F) + 0x60, (this.language & 0x1F) + 0x60);
-  }
-  this._procField('pre_defined', 'uint', 16);
-};
-
-// ISO/IEC 14496-12:2012 - 8.8.2 Movie Extends Header Box
-ISOBox.prototype._boxProcessors['mehd'] = function () {
-  this._procFullBox();
-  this._procField('fragment_duration', 'uint', this.version == 1 ? 64 : 32);
-};
-
-// ISO/IEC 14496-12:2012 - 8.8.5 Movie Fragment Header Box
-ISOBox.prototype._boxProcessors['mfhd'] = function () {
-  this._procFullBox();
-  this._procField('sequence_number', 'uint', 32);
-};
-
-// ISO/IEC 14496-12:2012 - 8.8.11 Movie Fragment Random Access Box
-ISOBox.prototype._boxProcessors['mfro'] = function () {
-  this._procFullBox();
-  this._procField('mfra_size', 'uint', 32); // Called mfra_size to distinguish from the normal "size" attribute of a box
-};
-
-// ISO/IEC 14496-12:2012 - 8.5.2.2 mp4a box (use AudioSampleEntry definition and naming)
-ISOBox.prototype._boxProcessors['mp4a'] = ISOBox.prototype._boxProcessors['enca'] = function () {
-  // SampleEntry fields
-  this._procFieldArray('reserved1', 6, 'uint', 8);
-  this._procField('data_reference_index', 'uint', 16);
-  // AudioSampleEntry fields
-  this._procFieldArray('reserved2', 2, 'uint', 32);
-  this._procField('channelcount', 'uint', 16);
-  this._procField('samplesize', 'uint', 16);
-  this._procField('pre_defined', 'uint', 16);
-  this._procField('reserved3', 'uint', 16);
-  this._procField('samplerate', 'template', 32);
-  // ESDescriptor fields
-  this._procField('esds', 'data', -1);
-};
-
-// ISO/IEC 14496-12:2012 - 8.2.2 Movie Header Box
-ISOBox.prototype._boxProcessors['mvhd'] = function () {
-  this._procFullBox();
-  this._procField('creation_time', 'uint', this.version == 1 ? 64 : 32);
-  this._procField('modification_time', 'uint', this.version == 1 ? 64 : 32);
-  this._procField('timescale', 'uint', 32);
-  this._procField('duration', 'uint', this.version == 1 ? 64 : 32);
-  this._procField('rate', 'template', 32);
-  this._procField('volume', 'template', 16);
-  this._procField('reserved1', 'uint', 16);
-  this._procFieldArray('reserved2', 2, 'uint', 32);
-  this._procFieldArray('matrix', 9, 'template', 32);
-  this._procFieldArray('pre_defined', 6, 'uint', 32);
-  this._procField('next_track_ID', 'uint', 32);
-};
-
-// ISO/IEC 14496-30:2014 - WebVTT Cue Payload Box.
-ISOBox.prototype._boxProcessors['payl'] = function () {
-  this._procField('cue_text', 'utf8');
-};
-
-//ISO/IEC 23001-7:2011 - 8.1 Protection System Specific Header Box
-ISOBox.prototype._boxProcessors['pssh'] = function () {
-  this._procFullBox();
-
-  this._procFieldArray('SystemID', 16, 'uint', 8);
-  this._procField('DataSize', 'uint', 32);
-  this._procFieldArray('Data', this.DataSize, 'uint', 8);
-};
-// ISO/IEC 14496-12:2012 - 8.12.5 Scheme Type Box
-ISOBox.prototype._boxProcessors['schm'] = function () {
-  this._procFullBox();
-
-  this._procField('scheme_type', 'uint', 32);
-  this._procField('scheme_version', 'uint', 32);
-
-  if (this.flags & 0x000001) {
-    this._procField('scheme_uri', 'string', -1);
-  }
-};
-// ISO/IEC 14496-12:2012 - 8.6.4.1 sdtp box 
-ISOBox.prototype._boxProcessors['sdtp'] = function () {
-  this._procFullBox();
-
-  var sample_count = -1;
-  if (this._parsing) {
-    sample_count = this._raw.byteLength - (this._cursor.offset - this._raw.byteOffset);
-  }
-
-  this._procFieldArray('sample_dependency_table', sample_count, 'uint', 8);
-};
-
-// ISO/IEC 14496-12:2012 - 8.16.3 Segment Index Box
-ISOBox.prototype._boxProcessors['sidx'] = function () {
-  this._procFullBox();
-  this._procField('reference_ID', 'uint', 32);
-  this._procField('timescale', 'uint', 32);
-  this._procField('earliest_presentation_time', 'uint', this.version == 1 ? 64 : 32);
-  this._procField('first_offset', 'uint', this.version == 1 ? 64 : 32);
-  this._procField('reserved', 'uint', 16);
-  this._procField('reference_count', 'uint', 16);
-  this._procEntries('references', this.reference_count, function (entry) {
-    if (!this._parsing) {
-      entry.reference = (entry.reference_type & 0x00000001) << 31;
-      entry.reference |= entry.referenced_size & 0x7FFFFFFF;
-      entry.sap = (entry.starts_with_SAP & 0x00000001) << 31;
-      entry.sap |= (entry.SAP_type & 0x00000003) << 28;
-      entry.sap |= entry.SAP_delta_time & 0x0FFFFFFF;
-    }
-    this._procEntryField(entry, 'reference', 'uint', 32);
-    this._procEntryField(entry, 'subsegment_duration', 'uint', 32);
-    this._procEntryField(entry, 'sap', 'uint', 32);
-    if (this._parsing) {
-      entry.reference_type = entry.reference >> 31 & 0x00000001;
-      entry.referenced_size = entry.reference & 0x7FFFFFFF;
-      entry.starts_with_SAP = entry.sap >> 31 & 0x00000001;
-      entry.SAP_type = entry.sap >> 28 & 0x00000007;
-      entry.SAP_delta_time = entry.sap & 0x0FFFFFFF;
-    }
-  });
-};
-
-// ISO/IEC 14496-12:2012 - 8.4.5.3 Sound Media Header Box
-ISOBox.prototype._boxProcessors['smhd'] = function () {
-  this._procFullBox();
-  this._procField('balance', 'uint', 16);
-  this._procField('reserved', 'uint', 16);
-};
-
-// ISO/IEC 14496-12:2012 - 8.16.4 Subsegment Index Box
-ISOBox.prototype._boxProcessors['ssix'] = function () {
-  this._procFullBox();
-  this._procField('subsegment_count', 'uint', 32);
-  this._procEntries('subsegments', this.subsegment_count, function (subsegment) {
-    this._procEntryField(subsegment, 'ranges_count', 'uint', 32);
-    this._procSubEntries(subsegment, 'ranges', subsegment.ranges_count, function (range) {
-      this._procEntryField(range, 'level', 'uint', 8);
-      this._procEntryField(range, 'range_size', 'uint', 24);
-    });
-  });
-};
-
-// ISO/IEC 14496-12:2012 - 8.5.2 Sample Description Box
-ISOBox.prototype._boxProcessors['stsd'] = function () {
-  this._procFullBox();
-  this._procField('entry_count', 'uint', 32);
-  this._procSubBoxes('entries', this.entry_count);
-};
-
-// ISO/IEC 14496-12:2015 - 8.7.7 Sub-Sample Information Box
-ISOBox.prototype._boxProcessors['subs'] = function () {
-  this._procFullBox();
-  this._procField('entry_count', 'uint', 32);
-  this._procEntries('entries', this.entry_count, function (entry) {
-    this._procEntryField(entry, 'sample_delta', 'uint', 32);
-    this._procEntryField(entry, 'subsample_count', 'uint', 16);
-    this._procSubEntries(entry, 'subsamples', entry.subsample_count, function (subsample) {
-      this._procEntryField(subsample, 'subsample_size', 'uint', this.version === 1 ? 32 : 16);
-      this._procEntryField(subsample, 'subsample_priority', 'uint', 8);
-      this._procEntryField(subsample, 'discardable', 'uint', 8);
-      this._procEntryField(subsample, 'codec_specific_parameters', 'uint', 32);
-    });
-  });
-};
-
-//ISO/IEC 23001-7:2011 - 8.2 Track Encryption Box
-ISOBox.prototype._boxProcessors['tenc'] = function () {
-  this._procFullBox();
-
-  this._procField('default_IsEncrypted', 'uint', 24);
-  this._procField('default_IV_size', 'uint', 8);
-  this._procFieldArray('default_KID', 16, 'uint', 8);
-};
-
-// ISO/IEC 14496-12:2012 - 8.8.12 Track Fragmnent Decode Time
-ISOBox.prototype._boxProcessors['tfdt'] = function () {
-  this._procFullBox();
-  this._procField('baseMediaDecodeTime', 'uint', this.version == 1 ? 64 : 32);
-};
-
-// ISO/IEC 14496-12:2012 - 8.8.7 Track Fragment Header Box
-ISOBox.prototype._boxProcessors['tfhd'] = function () {
-  this._procFullBox();
-  this._procField('track_ID', 'uint', 32);
-  if (this.flags & 0x01) this._procField('base_data_offset', 'uint', 64);
-  if (this.flags & 0x02) this._procField('sample_description_offset', 'uint', 32);
-  if (this.flags & 0x08) this._procField('default_sample_duration', 'uint', 32);
-  if (this.flags & 0x10) this._procField('default_sample_size', 'uint', 32);
-  if (this.flags & 0x20) this._procField('default_sample_flags', 'uint', 32);
-};
-
-// ISO/IEC 14496-12:2012 - 8.8.10 Track Fragment Random Access Box
-ISOBox.prototype._boxProcessors['tfra'] = function () {
-  this._procFullBox();
-  this._procField('track_ID', 'uint', 32);
-  if (!this._parsing) {
-    this.reserved = 0;
-    this.reserved |= (this.length_size_of_traf_num & 0x00000030) << 4;
-    this.reserved |= (this.length_size_of_trun_num & 0x0000000C) << 2;
-    this.reserved |= this.length_size_of_sample_num & 0x00000003;
-  }
-  this._procField('reserved', 'uint', 32);
-  if (this._parsing) {
-    this.length_size_of_traf_num = (this.reserved & 0x00000030) >> 4;
-    this.length_size_of_trun_num = (this.reserved & 0x0000000C) >> 2;
-    this.length_size_of_sample_num = this.reserved & 0x00000003;
-  }
-  this._procField('number_of_entry', 'uint', 32);
-  this._procEntries('entries', this.number_of_entry, function (entry) {
-    this._procEntryField(entry, 'time', 'uint', this.version === 1 ? 64 : 32);
-    this._procEntryField(entry, 'moof_offset', 'uint', this.version === 1 ? 64 : 32);
-    this._procEntryField(entry, 'traf_number', 'uint', (this.length_size_of_traf_num + 1) * 8);
-    this._procEntryField(entry, 'trun_number', 'uint', (this.length_size_of_trun_num + 1) * 8);
-    this._procEntryField(entry, 'sample_number', 'uint', (this.length_size_of_sample_num + 1) * 8);
-  });
-};
-
-// ISO/IEC 14496-12:2012 - 8.3.2 Track Header Box
-ISOBox.prototype._boxProcessors['tkhd'] = function () {
-  this._procFullBox();
-  this._procField('creation_time', 'uint', this.version == 1 ? 64 : 32);
-  this._procField('modification_time', 'uint', this.version == 1 ? 64 : 32);
-  this._procField('track_ID', 'uint', 32);
-  this._procField('reserved1', 'uint', 32);
-  this._procField('duration', 'uint', this.version == 1 ? 64 : 32);
-  this._procFieldArray('reserved2', 2, 'uint', 32);
-  this._procField('layer', 'uint', 16);
-  this._procField('alternate_group', 'uint', 16);
-  this._procField('volume', 'template', 16);
-  this._procField('reserved3', 'uint', 16);
-  this._procFieldArray('matrix', 9, 'template', 32);
-  this._procField('width', 'template', 32);
-  this._procField('height', 'template', 32);
-};
-
-// ISO/IEC 14496-12:2012 - 8.8.3 Track Extends Box
-ISOBox.prototype._boxProcessors['trex'] = function () {
-  this._procFullBox();
-  this._procField('track_ID', 'uint', 32);
-  this._procField('default_sample_description_index', 'uint', 32);
-  this._procField('default_sample_duration', 'uint', 32);
-  this._procField('default_sample_size', 'uint', 32);
-  this._procField('default_sample_flags', 'uint', 32);
-};
-
-// ISO/IEC 14496-12:2012 - 8.8.8 Track Run Box
-// Note: the 'trun' box has a direct relation to the 'tfhd' box for defaults.
-// These defaults are not set explicitly here, but are left to resolve for the user.
-ISOBox.prototype._boxProcessors['trun'] = function () {
-  this._procFullBox();
-  this._procField('sample_count', 'uint', 32);
-  if (this.flags & 0x1) this._procField('data_offset', 'int', 32);
-  if (this.flags & 0x4) this._procField('first_sample_flags', 'uint', 32);
-  this._procEntries('samples', this.sample_count, function (sample) {
-    if (this.flags & 0x100) this._procEntryField(sample, 'sample_duration', 'uint', 32);
-    if (this.flags & 0x200) this._procEntryField(sample, 'sample_size', 'uint', 32);
-    if (this.flags & 0x400) this._procEntryField(sample, 'sample_flags', 'uint', 32);
-    if (this.flags & 0x800) this._procEntryField(sample, 'sample_composition_time_offset', this.version === 1 ? 'int' : 'uint', 32);
-  });
-};
-
-// ISO/IEC 14496-12:2012 - 8.7.2 Data Reference Box
-ISOBox.prototype._boxProcessors['url '] = ISOBox.prototype._boxProcessors['urn '] = function () {
-  this._procFullBox();
-  if (this.type === 'urn ') {
-    this._procField('name', 'string', -1);
-  }
-  this._procField('location', 'string', -1);
-};
-
-// ISO/IEC 14496-30:2014 - WebVTT Source Label Box
-ISOBox.prototype._boxProcessors['vlab'] = function () {
-  this._procField('source_label', 'utf8');
-};
-
-// ISO/IEC 14496-12:2012 - 8.4.5.2 Video Media Header Box
-ISOBox.prototype._boxProcessors['vmhd'] = function () {
-  this._procFullBox();
-  this._procField('graphicsmode', 'uint', 16);
-  this._procFieldArray('opcolor', 3, 'uint', 16);
-};
-
-// ISO/IEC 14496-30:2014 - WebVTT Configuration Box
-ISOBox.prototype._boxProcessors['vttC'] = function () {
-  this._procField('config', 'utf8');
-};
-
-// ISO/IEC 14496-30:2014 - WebVTT Empty Sample Box
-ISOBox.prototype._boxProcessors['vtte'] = function () {
-  // Nothing should happen here.
-};
-
-/***/ }),
-
-/***/ "../../node_modules/dashjs/externals/base64.js":
-/*!******************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/externals/base64.js ***!
-  \******************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/externals/base64.js":
+/*!*******************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/externals/base64.js ***!
+  \*******************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -1449,12 +453,17 @@ if (true) {
     exports.encodeASCII = BASE64.encodeASCII;
 }
 
-/***/ }),
+ISOFile.prototype.append = function (box, pos) {
+  ISOBoxer.Utils.appendBox(this, box, pos);
+};
+var ISOBox = function ISOBox() {
+  this._cursor = new ISOBoxer.Cursor();
+};
 
-/***/ "../../node_modules/dashjs/externals/cea608-parser.js":
-/*!*************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/externals/cea608-parser.js ***!
-  \*************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/externals/cea608-parser.js":
+/*!**************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/externals/cea608-parser.js ***!
+  \**************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -2714,10 +1723,10 @@ if (true) {
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/externals/xml2json.js":
-/*!********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/externals/xml2json.js ***!
-  \********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/externals/xml2json.js":
+/*!*********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/externals/xml2json.js ***!
+  \*********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -3268,10 +2277,10 @@ exports.default = X2JS;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/index.js":
-/*!*******************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/index.js ***!
-  \*******************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/index.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/index.js ***!
+  \********************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -3283,21 +2292,21 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.Debug = exports.MediaPlayerFactory = exports.MetricsReporting = exports.Protection = exports.MediaPlayer = undefined;
 
-var _index_mediaplayerOnly = __webpack_require__(/*! ./index_mediaplayerOnly */ "../../node_modules/dashjs/index_mediaplayerOnly.js");
+var _index_mediaplayerOnly = __webpack_require__(/*! ./index_mediaplayerOnly */ "./node_modules/bigscreen-player/node_modules/dashjs/index_mediaplayerOnly.js");
 
-var _MetricsReporting = __webpack_require__(/*! ./src/streaming/metrics/MetricsReporting */ "../../node_modules/dashjs/src/streaming/metrics/MetricsReporting.js");
+var _MetricsReporting = __webpack_require__(/*! ./src/streaming/metrics/MetricsReporting */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReporting.js");
 
 var _MetricsReporting2 = _interopRequireDefault(_MetricsReporting);
 
-var _Protection = __webpack_require__(/*! ./src/streaming/protection/Protection */ "../../node_modules/dashjs/src/streaming/protection/Protection.js");
+var _Protection = __webpack_require__(/*! ./src/streaming/protection/Protection */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/Protection.js");
 
 var _Protection2 = _interopRequireDefault(_Protection);
 
-var _MediaPlayerFactory = __webpack_require__(/*! ./src/streaming/MediaPlayerFactory */ "../../node_modules/dashjs/src/streaming/MediaPlayerFactory.js");
+var _MediaPlayerFactory = __webpack_require__(/*! ./src/streaming/MediaPlayerFactory */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayerFactory.js");
 
 var _MediaPlayerFactory2 = _interopRequireDefault(_MediaPlayerFactory);
 
-var _Debug = __webpack_require__(/*! ./src/core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ./src/core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
@@ -3347,10 +2356,10 @@ exports.Debug = _Debug2.default;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/index_mediaplayerOnly.js":
-/*!***********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/index_mediaplayerOnly.js ***!
-  \***********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/index_mediaplayerOnly.js":
+/*!************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/index_mediaplayerOnly.js ***!
+  \************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -3362,19 +2371,19 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.Debug = exports.FactoryMaker = exports.MediaPlayer = undefined;
 
-var _MediaPlayer = __webpack_require__(/*! ./src/streaming/MediaPlayer */ "../../node_modules/dashjs/src/streaming/MediaPlayer.js");
+var _MediaPlayer = __webpack_require__(/*! ./src/streaming/MediaPlayer */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayer.js");
 
 var _MediaPlayer2 = _interopRequireDefault(_MediaPlayer);
 
-var _FactoryMaker = __webpack_require__(/*! ./src/core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ./src/core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ./src/core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ./src/core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _Version = __webpack_require__(/*! ./src/core/Version */ "../../node_modules/dashjs/src/core/Version.js");
+var _Version = __webpack_require__(/*! ./src/core/Version */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Version.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -3426,14 +2435,14 @@ exports.default = dashjs;
 exports.MediaPlayer = _MediaPlayer2.default;
 exports.FactoryMaker = _FactoryMaker2.default;
 exports.Debug = _Debug2.default;
-/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../docs/example-app/node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
-/***/ }),
+var _CoreEvents3 = _interopRequireDefault(_CoreEvents2);
 
-/***/ "../../node_modules/dashjs/src/core/Debug.js":
-/*!****************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/core/Debug.js ***!
-  \****************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js":
+/*!*****************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js ***!
+  \*****************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -3444,15 +2453,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _EventBus = __webpack_require__(/*! ./EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ./EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ./events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ./events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ./FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ./FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -3746,10 +2755,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/core/EventBus.js":
-/*!*******************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/core/EventBus.js ***!
-  \*******************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js":
+/*!********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js ***!
+  \********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -3760,7 +2769,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ./FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ./FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -3898,10 +2907,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/core/FactoryMaker.js":
-/*!***********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js ***!
-  \***********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js":
+/*!************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js ***!
+  \************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4168,10 +3177,10 @@ exports.default = FactoryMaker;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/core/Version.js":
-/*!******************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/core/Version.js ***!
-  \******************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Version.js":
+/*!*******************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/core/Version.js ***!
+  \*******************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4189,10 +3198,10 @@ function getVersionString() {
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/core/errors/Errors.js":
-/*!************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js ***!
-  \************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js":
+/*!*************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js ***!
+  \*************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4203,7 +3212,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _ErrorsBase2 = __webpack_require__(/*! ./ErrorsBase */ "../../node_modules/dashjs/src/core/errors/ErrorsBase.js");
+var _ErrorsBase2 = __webpack_require__(/*! ./ErrorsBase */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/ErrorsBase.js");
 
 var _ErrorsBase3 = _interopRequireDefault(_ErrorsBase2);
 
@@ -4363,10 +3372,10 @@ exports.default = errors;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/core/errors/ErrorsBase.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/core/errors/ErrorsBase.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/ErrorsBase.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/ErrorsBase.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4443,10 +3452,10 @@ exports.default = ErrorsBase;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/core/events/CoreEvents.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/core/events/CoreEvents.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/CoreEvents.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/CoreEvents.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4457,7 +3466,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _EventsBase2 = __webpack_require__(/*! ./EventsBase */ "../../node_modules/dashjs/src/core/events/EventsBase.js");
+var _EventsBase2 = __webpack_require__(/*! ./EventsBase */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/EventsBase.js");
 
 var _EventsBase3 = _interopRequireDefault(_EventsBase2);
 
@@ -4560,10 +3569,10 @@ exports.default = CoreEvents;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/core/events/Events.js":
-/*!************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/core/events/Events.js ***!
-  \************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js":
+/*!*************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js ***!
+  \*************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4574,7 +3583,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _CoreEvents2 = __webpack_require__(/*! ./CoreEvents */ "../../node_modules/dashjs/src/core/events/CoreEvents.js");
+var _CoreEvents2 = __webpack_require__(/*! ./CoreEvents */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/CoreEvents.js");
 
 var _CoreEvents3 = _interopRequireDefault(_CoreEvents2);
 
@@ -4637,10 +3646,10 @@ exports.default = events;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/core/events/EventsBase.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/core/events/EventsBase.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/EventsBase.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/EventsBase.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4717,10 +3726,10 @@ exports.default = EventsBase;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/DashAdapter.js":
-/*!**********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/DashAdapter.js ***!
-  \**********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/DashAdapter.js":
+/*!***********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/DashAdapter.js ***!
+  \***********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -4731,39 +3740,39 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../streaming/constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../streaming/constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _RepresentationInfo = __webpack_require__(/*! ../streaming/vo/RepresentationInfo */ "../../node_modules/dashjs/src/streaming/vo/RepresentationInfo.js");
+var _RepresentationInfo = __webpack_require__(/*! ../streaming/vo/RepresentationInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/RepresentationInfo.js");
 
 var _RepresentationInfo2 = _interopRequireDefault(_RepresentationInfo);
 
-var _MediaInfo = __webpack_require__(/*! ../streaming/vo/MediaInfo */ "../../node_modules/dashjs/src/streaming/vo/MediaInfo.js");
+var _MediaInfo = __webpack_require__(/*! ../streaming/vo/MediaInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/MediaInfo.js");
 
 var _MediaInfo2 = _interopRequireDefault(_MediaInfo);
 
-var _StreamInfo = __webpack_require__(/*! ../streaming/vo/StreamInfo */ "../../node_modules/dashjs/src/streaming/vo/StreamInfo.js");
+var _StreamInfo = __webpack_require__(/*! ../streaming/vo/StreamInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/StreamInfo.js");
 
 var _StreamInfo2 = _interopRequireDefault(_StreamInfo);
 
-var _ManifestInfo = __webpack_require__(/*! ../streaming/vo/ManifestInfo */ "../../node_modules/dashjs/src/streaming/vo/ManifestInfo.js");
+var _ManifestInfo = __webpack_require__(/*! ../streaming/vo/ManifestInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/ManifestInfo.js");
 
 var _ManifestInfo2 = _interopRequireDefault(_ManifestInfo);
 
-var _Event = __webpack_require__(/*! ./vo/Event */ "../../node_modules/dashjs/src/dash/vo/Event.js");
+var _Event = __webpack_require__(/*! ./vo/Event */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Event.js");
 
 var _Event2 = _interopRequireDefault(_Event);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _cea608Parser = __webpack_require__(/*! ../../externals/cea608-parser */ "../../node_modules/dashjs/externals/cea608-parser.js");
+var _cea608Parser = __webpack_require__(/*! ../../externals/cea608-parser */ "./node_modules/bigscreen-player/node_modules/dashjs/externals/cea608-parser.js");
 
 var _cea608Parser2 = _interopRequireDefault(_cea608Parser);
 
-var _SupervisorTools = __webpack_require__(/*! ../streaming/utils/SupervisorTools */ "../../node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
+var _SupervisorTools = __webpack_require__(/*! ../streaming/utils/SupervisorTools */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -5289,10 +4298,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(DashAdapter);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/DashHandler.js":
-/*!**********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/DashHandler.js ***!
-  \**********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/DashHandler.js":
+/*!***********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/DashHandler.js ***!
+  \***********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -5303,63 +4312,63 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../streaming/constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../streaming/constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _DashConstants = __webpack_require__(/*! ./constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ./constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
-var _FragmentRequest = __webpack_require__(/*! ../streaming/vo/FragmentRequest */ "../../node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
+var _FragmentRequest = __webpack_require__(/*! ../streaming/vo/FragmentRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
 
 var _FragmentRequest2 = _interopRequireDefault(_FragmentRequest);
 
-var _DashJSError = __webpack_require__(/*! ../streaming/vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../streaming/vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _HTTPRequest = __webpack_require__(/*! ../streaming/vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../streaming/vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _Events = __webpack_require__(/*! ../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _EventBus = __webpack_require__(/*! ../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _URLUtils = __webpack_require__(/*! ../streaming/utils/URLUtils */ "../../node_modules/dashjs/src/streaming/utils/URLUtils.js");
+var _URLUtils = __webpack_require__(/*! ../streaming/utils/URLUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js");
 
 var _URLUtils2 = _interopRequireDefault(_URLUtils);
 
-var _Representation = __webpack_require__(/*! ./vo/Representation */ "../../node_modules/dashjs/src/dash/vo/Representation.js");
+var _Representation = __webpack_require__(/*! ./vo/Representation */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Representation.js");
 
 var _Representation2 = _interopRequireDefault(_Representation);
 
-var _SegmentsUtils = __webpack_require__(/*! ./utils/SegmentsUtils */ "../../node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
+var _SegmentsUtils = __webpack_require__(/*! ./utils/SegmentsUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
 
-var _SegmentsGetter = __webpack_require__(/*! ./utils/SegmentsGetter */ "../../node_modules/dashjs/src/dash/utils/SegmentsGetter.js");
+var _SegmentsGetter = __webpack_require__(/*! ./utils/SegmentsGetter */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsGetter.js");
 
 var _SegmentsGetter2 = _interopRequireDefault(_SegmentsGetter);
 
-var _SegmentBaseLoader = __webpack_require__(/*! ./SegmentBaseLoader */ "../../node_modules/dashjs/src/dash/SegmentBaseLoader.js");
+var _SegmentBaseLoader = __webpack_require__(/*! ./SegmentBaseLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/SegmentBaseLoader.js");
 
 var _SegmentBaseLoader2 = _interopRequireDefault(_SegmentBaseLoader);
 
-var _WebmSegmentBaseLoader = __webpack_require__(/*! ./WebmSegmentBaseLoader */ "../../node_modules/dashjs/src/dash/WebmSegmentBaseLoader.js");
+var _WebmSegmentBaseLoader = __webpack_require__(/*! ./WebmSegmentBaseLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/WebmSegmentBaseLoader.js");
 
 var _WebmSegmentBaseLoader2 = _interopRequireDefault(_WebmSegmentBaseLoader);
 
@@ -5866,33 +4875,34 @@ function DashHandler(config) {
 DashHandler.__dashjs_factory_name = 'DashHandler';
 exports.default = _FactoryMaker2.default.getClassFactory(DashHandler);
 
-/***/ }),
+var _Segment = __webpack_require__(/*! ./vo/Segment */ "../../node_modules/dashjs/src/dash/vo/Segment.js");
 
-/***/ "../../node_modules/dashjs/src/dash/DashMetrics.js":
-/*!**********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/DashMetrics.js ***!
-  \**********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/DashMetrics.js":
+/*!***********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/DashMetrics.js ***!
+  \***********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+var _HTTPRequest = __webpack_require__(/*! ../streaming/vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
+var _FragmentRequest = __webpack_require__(/*! ../streaming/vo/FragmentRequest */ "../../node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _HTTPRequest = __webpack_require__(/*! ../streaming/vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../streaming/vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _MetricsConstants = __webpack_require__(/*! ../streaming/constants/MetricsConstants */ "../../node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
+var _MetricsConstants = __webpack_require__(/*! ../streaming/constants/MetricsConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
 
 var _MetricsConstants2 = _interopRequireDefault(_MetricsConstants);
 
-var _Round = __webpack_require__(/*! ./utils/Round10 */ "../../node_modules/dashjs/src/dash/utils/Round10.js");
+var _Round = __webpack_require__(/*! ./utils/Round10 */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/Round10.js");
 
 var _Round2 = _interopRequireDefault(_Round);
 
@@ -6301,10 +5311,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(DashMetrics);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/SegmentBaseLoader.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/SegmentBaseLoader.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/SegmentBaseLoader.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/SegmentBaseLoader.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -6315,49 +5325,49 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _RequestModifier = __webpack_require__(/*! ../streaming/utils/RequestModifier */ "../../node_modules/dashjs/src/streaming/utils/RequestModifier.js");
+var _RequestModifier = __webpack_require__(/*! ../streaming/utils/RequestModifier */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/RequestModifier.js");
 
 var _RequestModifier2 = _interopRequireDefault(_RequestModifier);
 
-var _Segment = __webpack_require__(/*! ./vo/Segment */ "../../node_modules/dashjs/src/dash/vo/Segment.js");
+var _Segment = __webpack_require__(/*! ./vo/Segment */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Segment.js");
 
 var _Segment2 = _interopRequireDefault(_Segment);
 
-var _DashJSError = __webpack_require__(/*! ../streaming/vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../streaming/vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _Events = __webpack_require__(/*! ../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _EventBus = __webpack_require__(/*! ../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _BoxParser = __webpack_require__(/*! ../streaming/utils/BoxParser */ "../../node_modules/dashjs/src/streaming/utils/BoxParser.js");
+var _BoxParser = __webpack_require__(/*! ../streaming/utils/BoxParser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BoxParser.js");
 
 var _BoxParser2 = _interopRequireDefault(_BoxParser);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _HTTPRequest = __webpack_require__(/*! ../streaming/vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../streaming/vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _FragmentRequest = __webpack_require__(/*! ../streaming/vo/FragmentRequest */ "../../node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
+var _FragmentRequest = __webpack_require__(/*! ../streaming/vo/FragmentRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
 
 var _FragmentRequest2 = _interopRequireDefault(_FragmentRequest);
 
-var _HTTPLoader = __webpack_require__(/*! ../streaming/net/HTTPLoader */ "../../node_modules/dashjs/src/streaming/net/HTTPLoader.js");
+var _HTTPLoader = __webpack_require__(/*! ../streaming/net/HTTPLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/HTTPLoader.js");
 
 var _HTTPLoader2 = _interopRequireDefault(_HTTPLoader);
 
-var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
@@ -6675,69 +5685,76 @@ function SegmentBaseLoader() {
 SegmentBaseLoader.__dashjs_factory_name = 'SegmentBaseLoader';
 exports.default = _FactoryMaker2.default.getSingletonFactory(SegmentBaseLoader);
 
-/***/ }),
+    function getStreamProcessor() {
+        return streamProcessor;
+    }
 
-/***/ "../../node_modules/dashjs/src/dash/WebmSegmentBaseLoader.js":
-/*!********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/WebmSegmentBaseLoader.js ***!
-  \********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/WebmSegmentBaseLoader.js":
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/WebmSegmentBaseLoader.js ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+    function getDataIndex() {
+        return realAdaptationIndex;
+    }
 
+    function isUpdating() {
+        return updating;
+    }
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Events = __webpack_require__(/*! ../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _EventBus = __webpack_require__(/*! ../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _EBMLParser = __webpack_require__(/*! ../streaming/utils/EBMLParser */ "../../node_modules/dashjs/src/streaming/utils/EBMLParser.js");
+var _EBMLParser = __webpack_require__(/*! ../streaming/utils/EBMLParser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/EBMLParser.js");
 
 var _EBMLParser2 = _interopRequireDefault(_EBMLParser);
 
-var _Constants = __webpack_require__(/*! ../streaming/constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../streaming/constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _RequestModifier = __webpack_require__(/*! ../streaming/utils/RequestModifier */ "../../node_modules/dashjs/src/streaming/utils/RequestModifier.js");
+var _RequestModifier = __webpack_require__(/*! ../streaming/utils/RequestModifier */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/RequestModifier.js");
 
 var _RequestModifier2 = _interopRequireDefault(_RequestModifier);
 
-var _Segment = __webpack_require__(/*! ./vo/Segment */ "../../node_modules/dashjs/src/dash/vo/Segment.js");
+var _Segment = __webpack_require__(/*! ./vo/Segment */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Segment.js");
 
 var _Segment2 = _interopRequireDefault(_Segment);
 
-var _HTTPRequest = __webpack_require__(/*! ../streaming/vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../streaming/vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _FragmentRequest = __webpack_require__(/*! ../streaming/vo/FragmentRequest */ "../../node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
+var _FragmentRequest = __webpack_require__(/*! ../streaming/vo/FragmentRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
 
 var _FragmentRequest2 = _interopRequireDefault(_FragmentRequest);
 
-var _HTTPLoader = __webpack_require__(/*! ../streaming/net/HTTPLoader */ "../../node_modules/dashjs/src/streaming/net/HTTPLoader.js");
+var _HTTPLoader = __webpack_require__(/*! ../streaming/net/HTTPLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/HTTPLoader.js");
 
 var _HTTPLoader2 = _interopRequireDefault(_HTTPLoader);
 
-var _DashJSError = __webpack_require__(/*! ../streaming/vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../streaming/vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
@@ -7157,10 +6174,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(WebmSegmentBaseLoad
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/constants/DashConstants.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -7318,12 +6335,12 @@ var DashConstants = function () {
 var constants = new DashConstants();
 exports.default = constants;
 
-/***/ }),
+var _UTCTiming2 = _interopRequireDefault(_UTCTiming);
 
-/***/ "../../node_modules/dashjs/src/dash/controllers/RepresentationController.js":
-/*!***********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/controllers/RepresentationController.js ***!
-  \***********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/controllers/RepresentationController.js":
+/*!************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/controllers/RepresentationController.js ***!
+  \************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -7334,35 +6351,35 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../../streaming/constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../../streaming/constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
-var _DashConstants = __webpack_require__(/*! ../constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
-var _DashJSError = __webpack_require__(/*! ../../streaming/vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../../streaming/vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Representation = __webpack_require__(/*! ../vo/Representation */ "../../node_modules/dashjs/src/dash/vo/Representation.js");
+var _Representation = __webpack_require__(/*! ../vo/Representation */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Representation.js");
 
 var _Representation2 = _interopRequireDefault(_Representation);
 
@@ -7754,83 +6771,91 @@ function RepresentationController() {
 RepresentationController.__dashjs_factory_name = 'RepresentationController';
 exports.default = _FactoryMaker2.default.getClassFactory(RepresentationController);
 
-/***/ }),
+        if (adaptations.length > 1 && streamInfo) {
+            var currentTrack = mediaController.getCurrentTrackFor(type, streamInfo);
+            var allMediaInfoForType = adapter.getAllMediaInfoForType(streamInfo, type);
 
-/***/ "../../node_modules/dashjs/src/dash/models/DashManifestModel.js":
-/*!***********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/models/DashManifestModel.js ***!
-  \***********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/models/DashManifestModel.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/models/DashManifestModel.js ***!
+  \************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+            for (var _i = 0, _ln = adaptations.length; _i < _ln; _i++) {
+                if (getIsMain(adaptations[_i])) {
+                    return adaptations[_i];
+                }
+            }
+        }
 
+        return adaptations[0];
+    }
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+    function getCodec(adaptation, representationId, addResolutionInfo) {
+        var codec = null;
 
-var _Constants = __webpack_require__(/*! ../../streaming/constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../../streaming/constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _DashConstants = __webpack_require__(/*! ../constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
-var _Representation = __webpack_require__(/*! ../vo/Representation */ "../../node_modules/dashjs/src/dash/vo/Representation.js");
+var _Representation = __webpack_require__(/*! ../vo/Representation */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Representation.js");
 
 var _Representation2 = _interopRequireDefault(_Representation);
 
-var _AdaptationSet = __webpack_require__(/*! ../vo/AdaptationSet */ "../../node_modules/dashjs/src/dash/vo/AdaptationSet.js");
+var _AdaptationSet = __webpack_require__(/*! ../vo/AdaptationSet */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/AdaptationSet.js");
 
 var _AdaptationSet2 = _interopRequireDefault(_AdaptationSet);
 
-var _Period = __webpack_require__(/*! ../vo/Period */ "../../node_modules/dashjs/src/dash/vo/Period.js");
+var _Period = __webpack_require__(/*! ../vo/Period */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Period.js");
 
 var _Period2 = _interopRequireDefault(_Period);
 
-var _Mpd = __webpack_require__(/*! ../vo/Mpd */ "../../node_modules/dashjs/src/dash/vo/Mpd.js");
+var _Mpd = __webpack_require__(/*! ../vo/Mpd */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Mpd.js");
 
 var _Mpd2 = _interopRequireDefault(_Mpd);
 
-var _UTCTiming = __webpack_require__(/*! ../vo/UTCTiming */ "../../node_modules/dashjs/src/dash/vo/UTCTiming.js");
+var _UTCTiming = __webpack_require__(/*! ../vo/UTCTiming */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/UTCTiming.js");
 
 var _UTCTiming2 = _interopRequireDefault(_UTCTiming);
 
-var _Event = __webpack_require__(/*! ../vo/Event */ "../../node_modules/dashjs/src/dash/vo/Event.js");
+var _Event = __webpack_require__(/*! ../vo/Event */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Event.js");
 
 var _Event2 = _interopRequireDefault(_Event);
 
-var _BaseURL = __webpack_require__(/*! ../vo/BaseURL */ "../../node_modules/dashjs/src/dash/vo/BaseURL.js");
+var _BaseURL = __webpack_require__(/*! ../vo/BaseURL */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/BaseURL.js");
 
 var _BaseURL2 = _interopRequireDefault(_BaseURL);
 
-var _EventStream = __webpack_require__(/*! ../vo/EventStream */ "../../node_modules/dashjs/src/dash/vo/EventStream.js");
+var _EventStream = __webpack_require__(/*! ../vo/EventStream */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/EventStream.js");
 
 var _EventStream2 = _interopRequireDefault(_EventStream);
 
-var _ObjectUtils = __webpack_require__(/*! ../../streaming/utils/ObjectUtils */ "../../node_modules/dashjs/src/streaming/utils/ObjectUtils.js");
+var _ObjectUtils = __webpack_require__(/*! ../../streaming/utils/ObjectUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/ObjectUtils.js");
 
 var _ObjectUtils2 = _interopRequireDefault(_ObjectUtils);
 
-var _URLUtils = __webpack_require__(/*! ../../streaming/utils/URLUtils */ "../../node_modules/dashjs/src/streaming/utils/URLUtils.js");
+var _URLUtils = __webpack_require__(/*! ../../streaming/utils/URLUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js");
 
 var _URLUtils2 = _interopRequireDefault(_URLUtils);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _DashJSError = __webpack_require__(/*! ../../streaming/vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../../streaming/vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
@@ -8887,10 +7912,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(DashManifestModel);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/DashParser.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/DashParser.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/DashParser.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/DashParser.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -8901,47 +7926,47 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _objectiron = __webpack_require__(/*! ./objectiron */ "../../node_modules/dashjs/src/dash/parser/objectiron.js");
+var _objectiron = __webpack_require__(/*! ./objectiron */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/objectiron.js");
 
 var _objectiron2 = _interopRequireDefault(_objectiron);
 
-var _xml2json = __webpack_require__(/*! ../../../externals/xml2json */ "../../node_modules/dashjs/externals/xml2json.js");
+var _xml2json = __webpack_require__(/*! ../../../externals/xml2json */ "./node_modules/bigscreen-player/node_modules/dashjs/externals/xml2json.js");
 
 var _xml2json2 = _interopRequireDefault(_xml2json);
 
-var _StringMatcher = __webpack_require__(/*! ./matchers/StringMatcher */ "../../node_modules/dashjs/src/dash/parser/matchers/StringMatcher.js");
+var _StringMatcher = __webpack_require__(/*! ./matchers/StringMatcher */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/StringMatcher.js");
 
 var _StringMatcher2 = _interopRequireDefault(_StringMatcher);
 
-var _DurationMatcher = __webpack_require__(/*! ./matchers/DurationMatcher */ "../../node_modules/dashjs/src/dash/parser/matchers/DurationMatcher.js");
+var _DurationMatcher = __webpack_require__(/*! ./matchers/DurationMatcher */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/DurationMatcher.js");
 
 var _DurationMatcher2 = _interopRequireDefault(_DurationMatcher);
 
-var _DateTimeMatcher = __webpack_require__(/*! ./matchers/DateTimeMatcher */ "../../node_modules/dashjs/src/dash/parser/matchers/DateTimeMatcher.js");
+var _DateTimeMatcher = __webpack_require__(/*! ./matchers/DateTimeMatcher */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/DateTimeMatcher.js");
 
 var _DateTimeMatcher2 = _interopRequireDefault(_DateTimeMatcher);
 
-var _NumericMatcher = __webpack_require__(/*! ./matchers/NumericMatcher */ "../../node_modules/dashjs/src/dash/parser/matchers/NumericMatcher.js");
+var _NumericMatcher = __webpack_require__(/*! ./matchers/NumericMatcher */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/NumericMatcher.js");
 
 var _NumericMatcher2 = _interopRequireDefault(_NumericMatcher);
 
-var _RepresentationBaseValuesMap = __webpack_require__(/*! ./maps/RepresentationBaseValuesMap */ "../../node_modules/dashjs/src/dash/parser/maps/RepresentationBaseValuesMap.js");
+var _RepresentationBaseValuesMap = __webpack_require__(/*! ./maps/RepresentationBaseValuesMap */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/RepresentationBaseValuesMap.js");
 
 var _RepresentationBaseValuesMap2 = _interopRequireDefault(_RepresentationBaseValuesMap);
 
-var _SegmentValuesMap = __webpack_require__(/*! ./maps/SegmentValuesMap */ "../../node_modules/dashjs/src/dash/parser/maps/SegmentValuesMap.js");
+var _SegmentValuesMap = __webpack_require__(/*! ./maps/SegmentValuesMap */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/SegmentValuesMap.js");
 
 var _SegmentValuesMap2 = _interopRequireDefault(_SegmentValuesMap);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+exports.default = DateTimeMatcher;
 
 /**
  * The copyright in this software is being made available under the BSD License,
@@ -9048,10 +8073,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(DashParser);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/maps/CommonProperty.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/CommonProperty.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/CommonProperty.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/CommonProperty.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9131,10 +8156,10 @@ exports.default = CommonProperty;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/maps/MapNode.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/MapNode.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/MapNode.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/MapNode.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9180,7 +8205,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
  */
 
 
-var _CommonProperty = __webpack_require__(/*! ./CommonProperty */ "../../node_modules/dashjs/src/dash/parser/maps/CommonProperty.js");
+var _CommonProperty = __webpack_require__(/*! ./CommonProperty */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/CommonProperty.js");
 
 var _CommonProperty2 = _interopRequireDefault(_CommonProperty);
 
@@ -9229,10 +8254,10 @@ exports.default = MapNode;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/maps/RepresentationBaseValuesMap.js":
-/*!**************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/RepresentationBaseValuesMap.js ***!
-  \**************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/RepresentationBaseValuesMap.js":
+/*!***************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/RepresentationBaseValuesMap.js ***!
+  \***************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9243,11 +8268,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _MapNode2 = __webpack_require__(/*! ./MapNode */ "../../node_modules/dashjs/src/dash/parser/maps/MapNode.js");
+var _MapNode2 = __webpack_require__(/*! ./MapNode */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/MapNode.js");
 
 var _MapNode3 = _interopRequireDefault(_MapNode2);
 
-var _DashConstants = __webpack_require__(/*! ../../constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../../constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
@@ -9310,10 +8335,10 @@ exports.default = RepresentationBaseValuesMap;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/maps/SegmentValuesMap.js":
-/*!***************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/SegmentValuesMap.js ***!
-  \***************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/SegmentValuesMap.js":
+/*!****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/SegmentValuesMap.js ***!
+  \****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9324,11 +8349,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _MapNode2 = __webpack_require__(/*! ./MapNode */ "../../node_modules/dashjs/src/dash/parser/maps/MapNode.js");
+var _MapNode2 = __webpack_require__(/*! ./MapNode */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/maps/MapNode.js");
 
 var _MapNode3 = _interopRequireDefault(_MapNode2);
 
-var _DashConstants = __webpack_require__(/*! ../../constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../../constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
@@ -9391,10 +8416,10 @@ exports.default = SegmentValuesMap;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js":
-/*!**************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js ***!
-  \**************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js":
+/*!***************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js ***!
+  \***************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9471,10 +8496,10 @@ exports.default = BaseMatcher;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/matchers/DateTimeMatcher.js":
-/*!******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/DateTimeMatcher.js ***!
-  \******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/DateTimeMatcher.js":
+/*!*******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/DateTimeMatcher.js ***!
+  \*******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9485,7 +8510,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _BaseMatcher2 = __webpack_require__(/*! ./BaseMatcher */ "../../node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js");
+var _BaseMatcher2 = __webpack_require__(/*! ./BaseMatcher */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js");
 
 var _BaseMatcher3 = _interopRequireDefault(_BaseMatcher2);
 
@@ -9571,10 +8596,10 @@ exports.default = DateTimeMatcher;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/matchers/DurationMatcher.js":
-/*!******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/DurationMatcher.js ***!
-  \******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/DurationMatcher.js":
+/*!*******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/DurationMatcher.js ***!
+  \*******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9585,15 +8610,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _BaseMatcher2 = __webpack_require__(/*! ./BaseMatcher */ "../../node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js");
+var _BaseMatcher2 = __webpack_require__(/*! ./BaseMatcher */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js");
 
 var _BaseMatcher3 = _interopRequireDefault(_BaseMatcher2);
 
-var _Constants = __webpack_require__(/*! ../../../streaming/constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../../../streaming/constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _DashConstants = __webpack_require__(/*! ../../constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../../constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
@@ -9683,10 +8708,10 @@ exports.default = DurationMatcher;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/matchers/NumericMatcher.js":
-/*!*****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/NumericMatcher.js ***!
-  \*****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/NumericMatcher.js":
+/*!******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/NumericMatcher.js ***!
+  \******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9697,7 +8722,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _BaseMatcher2 = __webpack_require__(/*! ./BaseMatcher */ "../../node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js");
+var _BaseMatcher2 = __webpack_require__(/*! ./BaseMatcher */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js");
 
 var _BaseMatcher3 = _interopRequireDefault(_BaseMatcher2);
 
@@ -9764,10 +8789,10 @@ exports.default = NumericMatcher;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/matchers/StringMatcher.js":
-/*!****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/StringMatcher.js ***!
-  \****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/StringMatcher.js":
+/*!*****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/StringMatcher.js ***!
+  \*****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9778,11 +8803,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _BaseMatcher2 = __webpack_require__(/*! ./BaseMatcher */ "../../node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js");
+var _BaseMatcher2 = __webpack_require__(/*! ./BaseMatcher */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/matchers/BaseMatcher.js");
 
 var _BaseMatcher3 = _interopRequireDefault(_BaseMatcher2);
 
-var _DashConstants = __webpack_require__(/*! ../../constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../../constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
@@ -9860,10 +8885,10 @@ exports.default = StringMatcher;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/parser/objectiron.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/parser/objectiron.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/objectiron.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/objectiron.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9906,7 +8931,7 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                                                                                                                                                                                                                                                                                */
 
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -9949,6 +8974,37 @@ function ObjectIron(mappers) {
             }
         }
     }
+    return numStr;
+} /**
+   * The copyright in this software is being made available under the BSD License,
+   * included below. This software may be subject to other third party and contributor
+   * rights, including patent rights, and no such rights are granted under this license.
+   *
+   * Copyright (c) 2013, Dash Industry Forum.
+   * All rights reserved.
+   *
+   * Redistribution and use in source and binary forms, with or without modification,
+   * are permitted provided that the following conditions are met:
+   *  * Redistributions of source code must retain the above copyright notice, this
+   *  list of conditions and the following disclaimer.
+   *  * Redistributions in binary form must reproduce the above copyright notice,
+   *  this list of conditions and the following disclaimer in the documentation and/or
+   *  other materials provided with the distribution.
+   *  * Neither the name of Dash Industry Forum nor the names of its
+   *  contributors may be used to endorse or promote products derived from this software
+   *  without specific prior written permission.
+   *
+   *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
+   *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+   *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+   *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   *  POSSIBILITY OF SUCH DAMAGE.
+   */
 
     function mapItem(item, node) {
         for (var i = 0, len = item.children.length; i < len; ++i) {
@@ -10004,10 +9060,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/utils/ListSegmentsGetter.js":
-/*!***********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/utils/ListSegmentsGetter.js ***!
-  \***********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/ListSegmentsGetter.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/ListSegmentsGetter.js ***!
+  \************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10018,11 +9074,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _SegmentsUtils = __webpack_require__(/*! ./SegmentsUtils */ "../../node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
+var _SegmentsUtils = __webpack_require__(/*! ./SegmentsUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -10107,7 +9163,7 @@ function ListSegmentsGetter(config, isDynamic) {
         getSegments: getSegmentsFromList
     };
 
-    return instance;
+    return null;
 }
 
 ListSegmentsGetter.__dashjs_factory_name = 'ListSegmentsGetter';
@@ -10116,10 +9172,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/utils/Round10.js":
-/*!************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/utils/Round10.js ***!
-  \************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/Round10.js":
+/*!*************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/Round10.js ***!
+  \*************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10233,10 +9289,10 @@ function _decimalAdjust(type, value, exp) {
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/utils/SegmentsGetter.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsGetter.js ***!
-  \*******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsGetter.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsGetter.js ***!
+  \********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10247,23 +9303,23 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _DashConstants = __webpack_require__(/*! ../constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _TimelineSegmentsGetter = __webpack_require__(/*! ./TimelineSegmentsGetter */ "../../node_modules/dashjs/src/dash/utils/TimelineSegmentsGetter.js");
+var _TimelineSegmentsGetter = __webpack_require__(/*! ./TimelineSegmentsGetter */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/TimelineSegmentsGetter.js");
 
 var _TimelineSegmentsGetter2 = _interopRequireDefault(_TimelineSegmentsGetter);
 
-var _TemplateSegmentsGetter = __webpack_require__(/*! ./TemplateSegmentsGetter */ "../../node_modules/dashjs/src/dash/utils/TemplateSegmentsGetter.js");
+var _TemplateSegmentsGetter = __webpack_require__(/*! ./TemplateSegmentsGetter */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/TemplateSegmentsGetter.js");
 
 var _TemplateSegmentsGetter2 = _interopRequireDefault(_TemplateSegmentsGetter);
 
-var _ListSegmentsGetter = __webpack_require__(/*! ./ListSegmentsGetter */ "../../node_modules/dashjs/src/dash/utils/ListSegmentsGetter.js");
+var _ListSegmentsGetter = __webpack_require__(/*! ./ListSegmentsGetter */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/ListSegmentsGetter.js");
 
 var _ListSegmentsGetter2 = _interopRequireDefault(_ListSegmentsGetter);
 
@@ -10373,10 +9429,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/utils/SegmentsUtils.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10394,7 +9450,7 @@ exports.getTimeBasedSegment = getTimeBasedSegment;
 exports.getSegmentByIndex = getSegmentByIndex;
 exports.decideSegmentListRangeForTemplate = decideSegmentListRangeForTemplate;
 
-var _Segment = __webpack_require__(/*! ./../vo/Segment */ "../../node_modules/dashjs/src/dash/vo/Segment.js");
+var _Segment = __webpack_require__(/*! ./../vo/Segment */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Segment.js");
 
 var _Segment2 = _interopRequireDefault(_Segment);
 
@@ -10684,10 +9740,10 @@ function decideSegmentListRangeForTemplate(timelineConverter, isDynamic, represe
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/utils/TemplateSegmentsGetter.js":
-/*!***************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/utils/TemplateSegmentsGetter.js ***!
-  \***************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/TemplateSegmentsGetter.js":
+/*!****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/TemplateSegmentsGetter.js ***!
+  \****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10698,13 +9754,144 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _SegmentsUtils = __webpack_require__(/*! ./SegmentsUtils */ "../../node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
+var _SegmentsUtils = __webpack_require__(/*! ./SegmentsUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+        if (requestedTime !== null) {
+            requiredMediaTime = timelineConverter.calcMediaTimeFromPresentationTime(requestedTime, representation);
+        }
+
+        for (i = 0, len = fragments.length; i < len; i++) {
+            frag = fragments[i];
+            repeat = 0;
+            if (frag.hasOwnProperty('r')) {
+                repeat = frag.r;
+            }
+
+            // For a repeated S element, t belongs only to the first segment
+            if (frag.hasOwnProperty('t')) {
+                time = frag.t;
+                scaledTime = time / fTimescale;
+            }
+
+            // This is a special case: "A negative value of the @r attribute of the S element indicates that the duration indicated in @d attribute repeats until the start of the next S element, the end of the Period or until the
+            // next MPD update."
+            if (repeat < 0) {
+                nextFrag = fragments[i + 1];
+
+                if (nextFrag && nextFrag.hasOwnProperty('t')) {
+                    repeatEndTime = nextFrag.t / fTimescale;
+                } else {
+                    var availabilityEnd = representation.segmentAvailabilityRange ? representation.segmentAvailabilityRange.end : timelineConverter.calcSegmentAvailabilityRange(representation, isDynamic).end;
+                    repeatEndTime = timelineConverter.calcMediaTimeFromPresentationTime(availabilityEnd, representation);
+                    representation.segmentDuration = frag.d / fTimescale;
+                }
+
+                repeat = Math.ceil((repeatEndTime - scaledTime) / (frag.d / fTimescale)) - 1;
+            }
+
+            // if we have enough segments in the list, but we have not calculated the total number of the segments yet we
+            // should continue the loop and calc the number. Once it is calculated, we can break the loop.
+            if (hasEnoughSegments) {
+                if (isAvailableSegmentNumberCalculated) break;
+                availabilityIdx += repeat + 1;
+                continue;
+            }
+
+            for (j = 0; j <= repeat; j++) {
+                availabilityIdx++;
+
+                if (segments.length > maxSegmentsAhead) {
+                    hasEnoughSegments = true;
+                    if (isAvailableSegmentNumberCalculated) break;
+                    continue;
+                }
+
+                if (requiredMediaTime !== null) {
+                    // In some cases when requiredMediaTime = actual end time of the last segment
+                    // it is possible that this time a bit exceeds the declared end time of the last segment.
+                    // in this case we still need to include the last segment in the segment list. to do this we
+                    // use a correction factor = 1.5. This number is used because the largest possible deviation is
+                    // is 50% of segment duration.
+                    if (scaledTime >= requiredMediaTime - frag.d / fTimescale * 1.5) {
+                        segments.push(createSegment(frag, availabilityIdx));
+                    }
+                } else if (availabilityIdx >= startIdx) {
+                    segments.push(createSegment(frag, availabilityIdx));
+                }
+
+                time += frag.d;
+                scaledTime = time / fTimescale;
+            }
+        }
+
+        if (!isAvailableSegmentNumberCalculated) {
+            representation.availableSegmentsNumber = availabilityIdx + 1;
+        }
+
+        return segments;
+    }
+
+    instance = {
+        getSegments: getSegmentsFromTimeline
+    };
+
+    return instance;
+} /**
+   * The copyright in this software is being made available under the BSD License,
+   * included below. This software may be subject to other third party and contributor
+   * rights, including patent rights, and no such rights are granted under this license.
+   *
+   * Copyright (c) 2013, Dash Industry Forum.
+   * All rights reserved.
+   *
+   * Redistribution and use in source and binary forms, with or without modification,
+   * are permitted provided that the following conditions are met:
+   *  * Redistributions of source code must retain the above copyright notice, this
+   *  list of conditions and the following disclaimer.
+   *  * Redistributions in binary form must reproduce the above copyright notice,
+   *  this list of conditions and the following disclaimer in the documentation and/or
+   *  other materials provided with the distribution.
+   *  * Neither the name of Dash Industry Forum nor the names of its
+   *  contributors may be used to endorse or promote products derived from this software
+   *  without specific prior written permission.
+   *
+   *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
+   *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+   *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+   *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   *  POSSIBILITY OF SUCH DAMAGE.
+   */
+
+TimelineSegmentsGetter.__dashjs_factory_name = 'TimelineSegmentsGetter';
+var factory = _FactoryMaker2.default.getClassFactory(TimelineSegmentsGetter);
+exports.default = factory;
+
+/***/ }),
+
+/***/ "../../node_modules/dashjs/src/dash/vo/AdaptationSet.js":
+/*!***************************************************************************************************!*\
+  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/AdaptationSet.js ***!
+  \***************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /**
  * The copyright in this software is being made available under the BSD License,
@@ -10807,10 +9994,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/utils/TimelineConverter.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/utils/TimelineConverter.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/TimelineConverter.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/TimelineConverter.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10821,17 +10008,19 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
-var _EventBus2 = _interopRequireDefault(_EventBus);
+/***/ }),
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
-var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -11056,10 +10245,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(TimelineConverter);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/utils/TimelineSegmentsGetter.js":
-/*!***************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/utils/TimelineSegmentsGetter.js ***!
-  \***************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/TimelineSegmentsGetter.js":
+/*!****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/TimelineSegmentsGetter.js ***!
+  \****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11070,15 +10259,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Constants = __webpack_require__(/*! ../../streaming/constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../../streaming/constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _SegmentsUtils = __webpack_require__(/*! ./SegmentsUtils */ "../../node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
+var _SegmentsUtils = __webpack_require__(/*! ./SegmentsUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -11272,15 +10461,25 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/vo/AdaptationSet.js":
-/*!***************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/AdaptationSet.js ***!
-  \***************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/AdaptationSet.js":
+/*!****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/AdaptationSet.js ***!
+  \****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+                try {
+                    manifest = parser.parse(data);
+                } catch (e) {
+                    eventBus.trigger(_Events2.default.INTERNAL_MANIFEST_LOADED, {
+                        manifest: null,
+                        error: new _DashJSError2.default(_Errors2.default.MANIFEST_LOADER_PARSING_FAILURE_ERROR_CODE, _Errors2.default.MANIFEST_LOADER_PARSING_FAILURE_ERROR_MESSAGE + ('' + url))
+                    });
+                    return;
+                }
 
+                if (manifest) {
+                    manifest.url = actualUrl || url;
 
 Object.defineProperty(exports, "__esModule", {
   value: true
@@ -11334,10 +10533,10 @@ exports.default = AdaptationSet;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/vo/BaseURL.js":
-/*!*********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/BaseURL.js ***!
-  \*********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/BaseURL.js":
+/*!**********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/BaseURL.js ***!
+  \**********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11413,10 +10612,10 @@ exports.default = BaseURL;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/vo/Event.js":
-/*!*******************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/Event.js ***!
-  \*******************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Event.js":
+/*!********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Event.js ***!
+  \********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11478,10 +10677,10 @@ exports.default = Event;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/vo/EventStream.js":
-/*!*************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/EventStream.js ***!
-  \*************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/EventStream.js":
+/*!**************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/EventStream.js ***!
+  \**************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11543,10 +10742,10 @@ exports.default = EventStream;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/vo/Mpd.js":
-/*!*****************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/Mpd.js ***!
-  \*****************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Mpd.js":
+/*!******************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Mpd.js ***!
+  \******************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11610,10 +10809,10 @@ exports.default = Mpd;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/vo/Period.js":
-/*!********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/Period.js ***!
-  \********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Period.js":
+/*!*********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Period.js ***!
+  \*********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11676,10 +10875,10 @@ exports.default = Period;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/vo/Representation.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/Representation.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Representation.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Representation.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11725,7 +10924,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
  * @ignore
  */
 
-var _DashConstants = __webpack_require__(/*! ../constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
@@ -11780,17 +10979,18 @@ var Representation = function () {
 
 exports.default = Representation;
 
-/***/ }),
+var _TextController = __webpack_require__(/*! ./text/TextController */ "../../node_modules/dashjs/src/streaming/text/TextController.js");
 
-/***/ "../../node_modules/dashjs/src/dash/vo/Segment.js":
-/*!*********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/Segment.js ***!
-  \*********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Segment.js":
+/*!**********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/Segment.js ***!
+  \**********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+var _URIFragmentModel = __webpack_require__(/*! ./models/URIFragmentModel */ "../../node_modules/dashjs/src/streaming/models/URIFragmentModel.js");
 
+var _URIFragmentModel2 = _interopRequireDefault(_URIFragmentModel);
 
 Object.defineProperty(exports, "__esModule", {
   value: true
@@ -11865,10 +11065,10 @@ exports.default = Segment;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/dash/vo/UTCTiming.js":
-/*!***********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/dash/vo/UTCTiming.js ***!
-  \***********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/UTCTiming.js":
+/*!************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/UTCTiming.js ***!
+  \************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11927,10 +11127,10 @@ exports.default = UTCTiming;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/FragmentLoader.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/FragmentLoader.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/FragmentLoader.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/FragmentLoader.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -11941,69 +11141,61 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _HTTPLoader = __webpack_require__(/*! ./net/HTTPLoader */ "../../node_modules/dashjs/src/streaming/net/HTTPLoader.js");
+var _HTTPLoader = __webpack_require__(/*! ./net/HTTPLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/HTTPLoader.js");
 
 var _HTTPLoader2 = _interopRequireDefault(_HTTPLoader);
 
-var _HeadRequest = __webpack_require__(/*! ./vo/HeadRequest */ "../../node_modules/dashjs/src/streaming/vo/HeadRequest.js");
+var _HeadRequest = __webpack_require__(/*! ./vo/HeadRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/HeadRequest.js");
 
 var _HeadRequest2 = _interopRequireDefault(_HeadRequest);
+
+var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
+
+var _DashJSError2 = _interopRequireDefault(_DashJSError);
+
+var _EventBus = __webpack_require__(/*! ./../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
+
+var _EventBus2 = _interopRequireDefault(_EventBus);
+
+var _BoxParser = __webpack_require__(/*! ../streaming/utils/BoxParser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BoxParser.js");
+
+var _BoxParser2 = _interopRequireDefault(_BoxParser);
+
+var _Events = __webpack_require__(/*! ./../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
+
+var _Events2 = _interopRequireDefault(_Events);
+
+var _Errors = __webpack_require__(/*! ./../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
+
+var _TimelineConverter2 = _interopRequireDefault(_TimelineConverter);
+
+var _HTTPRequest = __webpack_require__(/*! ./vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+
+var _base = __webpack_require__(/*! ../../externals/base64 */ "../../node_modules/dashjs/externals/base64.js");
+
+var _base2 = _interopRequireDefault(_base);
+
+var _codemIsoboxer = __webpack_require__(/*! codem-isoboxer */ "../../node_modules/codem-isoboxer/dist/iso_boxer.js");
+
+var _codemIsoboxer2 = _interopRequireDefault(_codemIsoboxer);
 
 var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _EventBus = __webpack_require__(/*! ./../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _SupervisorTools = __webpack_require__(/*! ./utils/SupervisorTools */ "../../node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
 
-var _EventBus2 = _interopRequireDefault(_EventBus);
-
-var _BoxParser = __webpack_require__(/*! ../streaming/utils/BoxParser */ "../../node_modules/dashjs/src/streaming/utils/BoxParser.js");
-
-var _BoxParser2 = _interopRequireDefault(_BoxParser);
-
-var _Events = __webpack_require__(/*! ./../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
-
-var _Events2 = _interopRequireDefault(_Events);
-
-var _Errors = __webpack_require__(/*! ./../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
-
-var _Errors2 = _interopRequireDefault(_Errors);
-
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
- * The copyright in this software is being made available under the BSD License,
- * included below. This software may be subject to other third party and contributor
- * rights, including patent rights, and no such rights are granted under this license.
- *
- * Copyright (c) 2013, Dash Industry Forum.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *  * Redistributions of source code must retain the above copyright notice, this
- *  list of conditions and the following disclaimer.
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation and/or
- *  other materials provided with the distribution.
- *  * Neither the name of Dash Industry Forum nor the names of its
- *  contributors may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
- *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
+ * @module MediaPlayer
+ * @description The MediaPlayer is the primary dash.js Module and a Facade to build your player around.
+ * It will allow you access to all the important dash.js properties/methods via the public API and all the
+ * events to build a robust DASH media player.
  */
 function FragmentLoader(config) {
 
@@ -12014,6 +11206,11 @@ function FragmentLoader(config) {
     var instance = void 0,
         httpLoader = void 0;
 
+    /*
+    ---------------------------------------------------------------------------
+         INIT FUNCTIONS
+     ---------------------------------------------------------------------------
+    */
     function setup() {
         var boxParser = (0, _BoxParser2.default)(context).getInstance();
         httpLoader = (0, _HTTPLoader2.default)(context).create({
@@ -12125,10 +11322,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(FragmentLoader);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/ManifestLoader.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/ManifestLoader.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/ManifestLoader.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/ManifestLoader.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -12139,53 +11336,53 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ./constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ./constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _XlinkController = __webpack_require__(/*! ./controllers/XlinkController */ "../../node_modules/dashjs/src/streaming/controllers/XlinkController.js");
+var _XlinkController = __webpack_require__(/*! ./controllers/XlinkController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/XlinkController.js");
 
 var _XlinkController2 = _interopRequireDefault(_XlinkController);
 
-var _HTTPLoader = __webpack_require__(/*! ./net/HTTPLoader */ "../../node_modules/dashjs/src/streaming/net/HTTPLoader.js");
+var _HTTPLoader = __webpack_require__(/*! ./net/HTTPLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/HTTPLoader.js");
 
 var _HTTPLoader2 = _interopRequireDefault(_HTTPLoader);
 
-var _URLUtils = __webpack_require__(/*! ./utils/URLUtils */ "../../node_modules/dashjs/src/streaming/utils/URLUtils.js");
+var _URLUtils = __webpack_require__(/*! ./utils/URLUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js");
 
 var _URLUtils2 = _interopRequireDefault(_URLUtils);
 
-var _TextRequest = __webpack_require__(/*! ./vo/TextRequest */ "../../node_modules/dashjs/src/streaming/vo/TextRequest.js");
+var _TextRequest = __webpack_require__(/*! ./vo/TextRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/TextRequest.js");
 
 var _TextRequest2 = _interopRequireDefault(_TextRequest);
 
-var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _HTTPRequest = __webpack_require__(/*! ./vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ./vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _EventBus = __webpack_require__(/*! ../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _DashParser = __webpack_require__(/*! ../dash/parser/DashParser */ "../../node_modules/dashjs/src/dash/parser/DashParser.js");
+var _DashParser = __webpack_require__(/*! ../dash/parser/DashParser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/parser/DashParser.js");
 
 var _DashParser2 = _interopRequireDefault(_DashParser);
 
-var _Debug = __webpack_require__(/*! ../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
@@ -12406,10 +11603,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/ManifestUpdater.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/ManifestUpdater.js ***!
-  \*******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/ManifestUpdater.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/ManifestUpdater.js ***!
+  \********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -12420,23 +11617,23 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _EventBus = __webpack_require__(/*! ../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
@@ -12644,10 +11841,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(ManifestUpdater);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/MediaPlayer.js":
-/*!***************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayer.js ***!
-  \***************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayer.js":
+/*!****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayer.js ***!
+  \****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -12658,139 +11855,139 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ./constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ./constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _MetricsConstants = __webpack_require__(/*! ./constants/MetricsConstants */ "../../node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
+var _MetricsConstants = __webpack_require__(/*! ./constants/MetricsConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
 
 var _MetricsConstants2 = _interopRequireDefault(_MetricsConstants);
 
-var _PlaybackController = __webpack_require__(/*! ./controllers/PlaybackController */ "../../node_modules/dashjs/src/streaming/controllers/PlaybackController.js");
+var _PlaybackController = __webpack_require__(/*! ./controllers/PlaybackController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/PlaybackController.js");
 
 var _PlaybackController2 = _interopRequireDefault(_PlaybackController);
 
-var _StreamController = __webpack_require__(/*! ./controllers/StreamController */ "../../node_modules/dashjs/src/streaming/controllers/StreamController.js");
+var _StreamController = __webpack_require__(/*! ./controllers/StreamController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/StreamController.js");
 
 var _StreamController2 = _interopRequireDefault(_StreamController);
 
-var _MediaController = __webpack_require__(/*! ./controllers/MediaController */ "../../node_modules/dashjs/src/streaming/controllers/MediaController.js");
+var _MediaController = __webpack_require__(/*! ./controllers/MediaController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaController.js");
 
 var _MediaController2 = _interopRequireDefault(_MediaController);
 
-var _BaseURLController = __webpack_require__(/*! ./controllers/BaseURLController */ "../../node_modules/dashjs/src/streaming/controllers/BaseURLController.js");
+var _BaseURLController = __webpack_require__(/*! ./controllers/BaseURLController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BaseURLController.js");
 
 var _BaseURLController2 = _interopRequireDefault(_BaseURLController);
 
-var _ManifestLoader = __webpack_require__(/*! ./ManifestLoader */ "../../node_modules/dashjs/src/streaming/ManifestLoader.js");
+var _ManifestLoader = __webpack_require__(/*! ./ManifestLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/ManifestLoader.js");
 
 var _ManifestLoader2 = _interopRequireDefault(_ManifestLoader);
 
-var _ErrorHandler = __webpack_require__(/*! ./utils/ErrorHandler */ "../../node_modules/dashjs/src/streaming/utils/ErrorHandler.js");
+var _ErrorHandler = __webpack_require__(/*! ./utils/ErrorHandler */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/ErrorHandler.js");
 
 var _ErrorHandler2 = _interopRequireDefault(_ErrorHandler);
 
-var _Capabilities = __webpack_require__(/*! ./utils/Capabilities */ "../../node_modules/dashjs/src/streaming/utils/Capabilities.js");
+var _Capabilities = __webpack_require__(/*! ./utils/Capabilities */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/Capabilities.js");
 
 var _Capabilities2 = _interopRequireDefault(_Capabilities);
 
-var _TextTracks = __webpack_require__(/*! ./text/TextTracks */ "../../node_modules/dashjs/src/streaming/text/TextTracks.js");
+var _TextTracks = __webpack_require__(/*! ./text/TextTracks */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextTracks.js");
 
 var _TextTracks2 = _interopRequireDefault(_TextTracks);
 
-var _RequestModifier = __webpack_require__(/*! ./utils/RequestModifier */ "../../node_modules/dashjs/src/streaming/utils/RequestModifier.js");
+var _RequestModifier = __webpack_require__(/*! ./utils/RequestModifier */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/RequestModifier.js");
 
 var _RequestModifier2 = _interopRequireDefault(_RequestModifier);
 
-var _TextController = __webpack_require__(/*! ./text/TextController */ "../../node_modules/dashjs/src/streaming/text/TextController.js");
+var _TextController = __webpack_require__(/*! ./text/TextController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextController.js");
 
 var _TextController2 = _interopRequireDefault(_TextController);
 
-var _URIFragmentModel = __webpack_require__(/*! ./models/URIFragmentModel */ "../../node_modules/dashjs/src/streaming/models/URIFragmentModel.js");
+var _URIFragmentModel = __webpack_require__(/*! ./models/URIFragmentModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/URIFragmentModel.js");
 
 var _URIFragmentModel2 = _interopRequireDefault(_URIFragmentModel);
 
-var _ManifestModel = __webpack_require__(/*! ./models/ManifestModel */ "../../node_modules/dashjs/src/streaming/models/ManifestModel.js");
+var _ManifestModel = __webpack_require__(/*! ./models/ManifestModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/ManifestModel.js");
 
 var _ManifestModel2 = _interopRequireDefault(_ManifestModel);
 
-var _MediaPlayerModel = __webpack_require__(/*! ./models/MediaPlayerModel */ "../../node_modules/dashjs/src/streaming/models/MediaPlayerModel.js");
+var _MediaPlayerModel = __webpack_require__(/*! ./models/MediaPlayerModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/MediaPlayerModel.js");
 
 var _MediaPlayerModel2 = _interopRequireDefault(_MediaPlayerModel);
 
-var _MetricsModel = __webpack_require__(/*! ./models/MetricsModel */ "../../node_modules/dashjs/src/streaming/models/MetricsModel.js");
+var _MetricsModel = __webpack_require__(/*! ./models/MetricsModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/MetricsModel.js");
 
 var _MetricsModel2 = _interopRequireDefault(_MetricsModel);
 
-var _AbrController = __webpack_require__(/*! ./controllers/AbrController */ "../../node_modules/dashjs/src/streaming/controllers/AbrController.js");
+var _AbrController = __webpack_require__(/*! ./controllers/AbrController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/AbrController.js");
 
 var _AbrController2 = _interopRequireDefault(_AbrController);
 
-var _VideoModel = __webpack_require__(/*! ./models/VideoModel */ "../../node_modules/dashjs/src/streaming/models/VideoModel.js");
+var _VideoModel = __webpack_require__(/*! ./models/VideoModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/VideoModel.js");
 
 var _VideoModel2 = _interopRequireDefault(_VideoModel);
 
-var _DOMStorage = __webpack_require__(/*! ./utils/DOMStorage */ "../../node_modules/dashjs/src/streaming/utils/DOMStorage.js");
+var _DOMStorage = __webpack_require__(/*! ./utils/DOMStorage */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/DOMStorage.js");
 
 var _DOMStorage2 = _interopRequireDefault(_DOMStorage);
 
-var _Debug = __webpack_require__(/*! ./../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ./../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _Errors = __webpack_require__(/*! ./../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ./../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
-var _EventBus = __webpack_require__(/*! ./../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ./../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ./../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ./../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _MediaPlayerEvents = __webpack_require__(/*! ./MediaPlayerEvents */ "../../node_modules/dashjs/src/streaming/MediaPlayerEvents.js");
+var _MediaPlayerEvents = __webpack_require__(/*! ./MediaPlayerEvents */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayerEvents.js");
 
 var _MediaPlayerEvents2 = _interopRequireDefault(_MediaPlayerEvents);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Version = __webpack_require__(/*! ./../core/Version */ "../../node_modules/dashjs/src/core/Version.js");
+var _Version = __webpack_require__(/*! ./../core/Version */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Version.js");
 
-var _DashAdapter = __webpack_require__(/*! ../dash/DashAdapter */ "../../node_modules/dashjs/src/dash/DashAdapter.js");
+var _DashAdapter = __webpack_require__(/*! ../dash/DashAdapter */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/DashAdapter.js");
 
 var _DashAdapter2 = _interopRequireDefault(_DashAdapter);
 
-var _DashManifestModel = __webpack_require__(/*! ../dash/models/DashManifestModel */ "../../node_modules/dashjs/src/dash/models/DashManifestModel.js");
+var _DashManifestModel = __webpack_require__(/*! ../dash/models/DashManifestModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/models/DashManifestModel.js");
 
 var _DashManifestModel2 = _interopRequireDefault(_DashManifestModel);
 
-var _DashMetrics = __webpack_require__(/*! ../dash/DashMetrics */ "../../node_modules/dashjs/src/dash/DashMetrics.js");
+var _DashMetrics = __webpack_require__(/*! ../dash/DashMetrics */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/DashMetrics.js");
 
 var _DashMetrics2 = _interopRequireDefault(_DashMetrics);
 
-var _TimelineConverter = __webpack_require__(/*! ../dash/utils/TimelineConverter */ "../../node_modules/dashjs/src/dash/utils/TimelineConverter.js");
+var _TimelineConverter = __webpack_require__(/*! ../dash/utils/TimelineConverter */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/TimelineConverter.js");
 
 var _TimelineConverter2 = _interopRequireDefault(_TimelineConverter);
 
-var _HTTPRequest = __webpack_require__(/*! ./vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ./vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _base = __webpack_require__(/*! ../../externals/base64 */ "../../node_modules/dashjs/externals/base64.js");
+var _base = __webpack_require__(/*! ../../externals/base64 */ "./node_modules/bigscreen-player/node_modules/dashjs/externals/base64.js");
 
 var _base2 = _interopRequireDefault(_base);
 
-var _codemIsoboxer = __webpack_require__(/*! codem-isoboxer */ "../../node_modules/codem-isoboxer/dist/iso_boxer.js");
+var _codemIsoboxer = __webpack_require__(/*! codem-isoboxer */ "./node_modules/codem-isoboxer/dist/iso_boxer.js");
 
 var _codemIsoboxer2 = _interopRequireDefault(_codemIsoboxer);
 
-var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _SupervisorTools = __webpack_require__(/*! ./utils/SupervisorTools */ "../../node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
+var _SupervisorTools = __webpack_require__(/*! ./utils/SupervisorTools */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -15918,23 +15115,33 @@ _FactoryMaker2.default.updateClassFactory(MediaPlayer.__dashjs_factory_name, fac
 
 exports.default = factory;
 
-/***/ }),
+        for (var _i = 0; _i < streamProcessors.length; _i++) {
+            //Adding of new tracks to a stream processor isn't guaranteed by the spec after the METADATA_LOADED state
+            //so do this after the buffers are created above.
+            streamProcessors[_i].dischargePreBuffer();
+        }
 
-/***/ "../../node_modules/dashjs/src/streaming/MediaPlayerEvents.js":
-/*!*********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayerEvents.js ***!
-  \*********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayerEvents.js":
+/*!**********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayerEvents.js ***!
+  \**********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+    function resetInitialSettings() {
+        deactivate();
+        streamInfo = null;
+        updateError = {};
+        isUpdating = false;
+    }
 
+    function reset() {
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _EventsBase2 = __webpack_require__(/*! ../core/events/EventsBase */ "../../node_modules/dashjs/src/core/events/EventsBase.js");
+var _EventsBase2 = __webpack_require__(/*! ../core/events/EventsBase */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/EventsBase.js");
 
 var _EventsBase3 = _interopRequireDefault(_EventsBase2);
 
@@ -16311,10 +15518,10 @@ exports.default = mediaPlayerEvents;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/MediaPlayerFactory.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayerFactory.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayerFactory.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayerFactory.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -16325,7 +15532,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _MediaPlayer = __webpack_require__(/*! ./MediaPlayer */ "../../node_modules/dashjs/src/streaming/MediaPlayer.js");
+var _MediaPlayer = __webpack_require__(/*! ./MediaPlayer */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayer.js");
 
 var _MediaPlayer2 = _interopRequireDefault(_MediaPlayer);
 
@@ -16463,29 +15670,35 @@ exports.default = instance;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/PreBufferSink.js":
-/*!*****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/PreBufferSink.js ***!
-  \*****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/PreBufferSink.js":
+/*!******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/PreBufferSink.js ***!
+  \******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+    function updateData(updatedStreamInfo) {
+        logger.info('Manifest updated... updating data system wide.');
 
+        isStreamActivated = false;
+        isUpdating = true;
+        streamInfo = updatedStreamInfo;
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+        if (eventController) {
+            addInlineEvents();
+        }
 
-var _Debug = __webpack_require__(/*! ../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+        isUpdating = false;
+        checkIfInitializationCompleted();
+    }
 
 /**
  * This is a sink that is used to temporarily hold onto media chunks before a video element is added.
@@ -16584,6 +15797,8 @@ function PreBufferSink(onAppendedCallback) {
                 ranges[ranges.length - 1].end = chunk.end;
             }
         }
+        var newStreamInfo = stream.getStreamInfo();
+        var currentStreamInfo = getStreamInfo();
 
         //Implements TimeRanges interface. So acts just like sourceBuffer.buffered.
         var timeranges = {
@@ -16656,10 +15871,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/SourceBufferSink.js":
-/*!********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/SourceBufferSink.js ***!
-  \********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/SourceBufferSink.js":
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/SourceBufferSink.js ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -16670,31 +15885,31 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Debug = __webpack_require__(/*! ../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _EventBus = __webpack_require__(/*! ../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _TextController = __webpack_require__(/*! ./text/TextController */ "../../node_modules/dashjs/src/streaming/text/TextController.js");
+var _TextController = __webpack_require__(/*! ./text/TextController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextController.js");
 
 var _TextController2 = _interopRequireDefault(_TextController);
 
-var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
@@ -17028,10 +16243,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/Stream.js":
-/*!**********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/Stream.js ***!
-  \**********************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/Stream.js":
+/*!***********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/Stream.js ***!
+  \***********************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -17042,47 +16257,47 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ./constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ./constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _StreamProcessor = __webpack_require__(/*! ./StreamProcessor */ "../../node_modules/dashjs/src/streaming/StreamProcessor.js");
+var _StreamProcessor = __webpack_require__(/*! ./StreamProcessor */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/StreamProcessor.js");
 
 var _StreamProcessor2 = _interopRequireDefault(_StreamProcessor);
 
-var _EventController = __webpack_require__(/*! ./controllers/EventController */ "../../node_modules/dashjs/src/streaming/controllers/EventController.js");
+var _EventController = __webpack_require__(/*! ./controllers/EventController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/EventController.js");
 
 var _EventController2 = _interopRequireDefault(_EventController);
 
-var _FragmentController = __webpack_require__(/*! ./controllers/FragmentController */ "../../node_modules/dashjs/src/streaming/controllers/FragmentController.js");
+var _FragmentController = __webpack_require__(/*! ./controllers/FragmentController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/FragmentController.js");
 
 var _FragmentController2 = _interopRequireDefault(_FragmentController);
 
-var _ThumbnailController = __webpack_require__(/*! ./thumbnail/ThumbnailController */ "../../node_modules/dashjs/src/streaming/thumbnail/ThumbnailController.js");
+var _ThumbnailController = __webpack_require__(/*! ./thumbnail/ThumbnailController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/thumbnail/ThumbnailController.js");
 
 var _ThumbnailController2 = _interopRequireDefault(_ThumbnailController);
 
-var _EventBus = __webpack_require__(/*! ../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _Debug = __webpack_require__(/*! ../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
@@ -17926,55 +17141,86 @@ function Stream(config) {
    *  POSSIBILITY OF SUCH DAMAGE.
    */
 
+    function getMaxAllowedIndexFor(type) {
+        var maxBitrate = getMaxAllowedBitrateFor(type);
+        if (maxBitrate) {
+            return getQualityForBitrate(streamProcessorDict[type].getMediaInfo(), maxBitrate);
+        } else {
+            return undefined;
+        }
+    }
 
 Stream.__dashjs_factory_name = 'Stream';
 exports.default = _FactoryMaker2.default.getClassFactory(Stream);
 
-/***/ }),
+        if (minBitrate) {
+            var mediaInfo = streamProcessorDict[type].getMediaInfo();
+            var bitrateList = getBitrateList(mediaInfo);
+            // This returns the quality index <= for the given bitrate
+            var minIdx = getQualityForBitrate(mediaInfo, minBitrate);
+            if (bitrateList[minIdx] && minIdx < bitrateList.length - 1 && bitrateList[minIdx].bitrate < minBitrate * 1000) {
+                minIdx++; // Go to the next bitrate
+            }
+            return minIdx;
+        } else {
+            return undefined;
+        }
+    }
 
-/***/ "../../node_modules/dashjs/src/streaming/StreamProcessor.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/StreamProcessor.js ***!
-  \*******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/StreamProcessor.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/StreamProcessor.js ***!
+  \********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+    function setMaxAllowedRepresentationRatioFor(type, value) {
+        ratioDict.max = ratioDict.max || {};
+        ratioDict.max[type] = value;
+    }
 
+    function getAutoSwitchBitrateFor(type) {
+        return autoSwitchBitrate[type];
+    }
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+    function setAutoSwitchBitrateFor(type, value) {
+        (0, _SupervisorTools.checkParameterType)(value, 'boolean');
+        (0, _SupervisorTools.checkIsVideoOrAudioType)(type);
+        autoSwitchBitrate[type] = value;
+    }
 
-var _Constants = __webpack_require__(/*! ./constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ./constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
-var _Constants2 = _interopRequireDefault(_Constants);
+    function setLimitBitrateByPortal(value) {
+        (0, _SupervisorTools.checkParameterType)(value, 'boolean');
+        limitBitrateByPortal = value;
+    }
 
-var _LiveEdgeFinder = __webpack_require__(/*! ./utils/LiveEdgeFinder */ "../../node_modules/dashjs/src/streaming/utils/LiveEdgeFinder.js");
+var _LiveEdgeFinder = __webpack_require__(/*! ./utils/LiveEdgeFinder */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/LiveEdgeFinder.js");
 
 var _LiveEdgeFinder2 = _interopRequireDefault(_LiveEdgeFinder);
 
-var _BufferController = __webpack_require__(/*! ./controllers/BufferController */ "../../node_modules/dashjs/src/streaming/controllers/BufferController.js");
+var _BufferController = __webpack_require__(/*! ./controllers/BufferController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js");
 
 var _BufferController2 = _interopRequireDefault(_BufferController);
 
-var _TextBufferController = __webpack_require__(/*! ./text/TextBufferController */ "../../node_modules/dashjs/src/streaming/text/TextBufferController.js");
+var _TextBufferController = __webpack_require__(/*! ./text/TextBufferController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextBufferController.js");
 
 var _TextBufferController2 = _interopRequireDefault(_TextBufferController);
 
-var _ScheduleController = __webpack_require__(/*! ./controllers/ScheduleController */ "../../node_modules/dashjs/src/streaming/controllers/ScheduleController.js");
+var _ScheduleController = __webpack_require__(/*! ./controllers/ScheduleController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/ScheduleController.js");
 
 var _ScheduleController2 = _interopRequireDefault(_ScheduleController);
 
-var _RepresentationController = __webpack_require__(/*! ../dash/controllers/RepresentationController */ "../../node_modules/dashjs/src/dash/controllers/RepresentationController.js");
+var _RepresentationController = __webpack_require__(/*! ../dash/controllers/RepresentationController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/controllers/RepresentationController.js");
 
 var _RepresentationController2 = _interopRequireDefault(_RepresentationController);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _DashHandler = __webpack_require__(/*! ../dash/DashHandler */ "../../node_modules/dashjs/src/dash/DashHandler.js");
+var _DashHandler = __webpack_require__(/*! ../dash/DashHandler */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/DashHandler.js");
 
 var _DashHandler2 = _interopRequireDefault(_DashHandler);
 
@@ -18339,6 +17585,10 @@ function StreamProcessor(config) {
         return playbackController;
     }
 
+    function getSwitchHistory(type) {
+        return switchHistoryDict[type];
+    }
+
     instance = {
         initialize: initialize,
         isUpdating: isUpdating,
@@ -18385,10 +17635,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(StreamProcessor);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/XlinkLoader.js":
-/*!***************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/XlinkLoader.js ***!
-  \***************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/XlinkLoader.js":
+/*!****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/XlinkLoader.js ***!
+  \****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -18399,33 +17649,33 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ./vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _HTTPLoader = __webpack_require__(/*! ./net/HTTPLoader */ "../../node_modules/dashjs/src/streaming/net/HTTPLoader.js");
+var _HTTPLoader = __webpack_require__(/*! ./net/HTTPLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/HTTPLoader.js");
 
 var _HTTPLoader2 = _interopRequireDefault(_HTTPLoader);
 
-var _HTTPRequest = __webpack_require__(/*! ./vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ./vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _TextRequest = __webpack_require__(/*! ./vo/TextRequest */ "../../node_modules/dashjs/src/streaming/vo/TextRequest.js");
+var _TextRequest = __webpack_require__(/*! ./vo/TextRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/TextRequest.js");
 
 var _TextRequest2 = _interopRequireDefault(_TextRequest);
 
-var _EventBus = __webpack_require__(/*! ../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
@@ -18527,10 +17777,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(XlinkLoader);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/constants/Constants.js":
-/*!***********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js ***!
-  \***********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js ***!
+  \************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -18631,10 +17881,10 @@ exports.default = constants;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/constants/MetricsConstants.js":
-/*!******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/constants/MetricsConstants.js ***!
-  \******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/MetricsConstants.js":
+/*!*******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/MetricsConstants.js ***!
+  \*******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -18720,10 +17970,10 @@ exports.default = constants;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/constants/ProtectionConstants.js":
-/*!*********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js ***!
-  \*********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js":
+/*!**********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js ***!
+  \**********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -18798,10 +18048,10 @@ exports.default = constants;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/AbrController.js":
-/*!*****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/AbrController.js ***!
-  \*****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/AbrController.js":
+/*!******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/AbrController.js ***!
+  \******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -18812,65 +18062,65 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _ABRRulesCollection = __webpack_require__(/*! ../rules/abr/ABRRulesCollection */ "../../node_modules/dashjs/src/streaming/rules/abr/ABRRulesCollection.js");
+var _ABRRulesCollection = __webpack_require__(/*! ../rules/abr/ABRRulesCollection */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/ABRRulesCollection.js");
 
 var _ABRRulesCollection2 = _interopRequireDefault(_ABRRulesCollection);
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _MetricsConstants = __webpack_require__(/*! ../constants/MetricsConstants */ "../../node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
+var _MetricsConstants = __webpack_require__(/*! ../constants/MetricsConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
 
 var _MetricsConstants2 = _interopRequireDefault(_MetricsConstants);
 
-var _BitrateInfo = __webpack_require__(/*! ../vo/BitrateInfo */ "../../node_modules/dashjs/src/streaming/vo/BitrateInfo.js");
+var _BitrateInfo = __webpack_require__(/*! ../vo/BitrateInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/BitrateInfo.js");
 
 var _BitrateInfo2 = _interopRequireDefault(_BitrateInfo);
 
-var _FragmentModel = __webpack_require__(/*! ../models/FragmentModel */ "../../node_modules/dashjs/src/streaming/models/FragmentModel.js");
+var _FragmentModel = __webpack_require__(/*! ../models/FragmentModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/FragmentModel.js");
 
 var _FragmentModel2 = _interopRequireDefault(_FragmentModel);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _RulesContext = __webpack_require__(/*! ../rules/RulesContext */ "../../node_modules/dashjs/src/streaming/rules/RulesContext.js");
+var _RulesContext = __webpack_require__(/*! ../rules/RulesContext */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/RulesContext.js");
 
 var _RulesContext2 = _interopRequireDefault(_RulesContext);
 
-var _SwitchRequest = __webpack_require__(/*! ../rules/SwitchRequest */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
+var _SwitchRequest = __webpack_require__(/*! ../rules/SwitchRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
 
 var _SwitchRequest2 = _interopRequireDefault(_SwitchRequest);
 
-var _SwitchRequestHistory = __webpack_require__(/*! ../rules/SwitchRequestHistory */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequestHistory.js");
+var _SwitchRequestHistory = __webpack_require__(/*! ../rules/SwitchRequestHistory */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequestHistory.js");
 
 var _SwitchRequestHistory2 = _interopRequireDefault(_SwitchRequestHistory);
 
-var _DroppedFramesHistory = __webpack_require__(/*! ../rules/DroppedFramesHistory */ "../../node_modules/dashjs/src/streaming/rules/DroppedFramesHistory.js");
+var _DroppedFramesHistory = __webpack_require__(/*! ../rules/DroppedFramesHistory */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/DroppedFramesHistory.js");
 
 var _DroppedFramesHistory2 = _interopRequireDefault(_DroppedFramesHistory);
 
-var _ThroughputHistory = __webpack_require__(/*! ../rules/ThroughputHistory */ "../../node_modules/dashjs/src/streaming/rules/ThroughputHistory.js");
+var _ThroughputHistory = __webpack_require__(/*! ../rules/ThroughputHistory */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/ThroughputHistory.js");
 
 var _ThroughputHistory2 = _interopRequireDefault(_ThroughputHistory);
 
-var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _SupervisorTools = __webpack_require__(/*! ../utils/SupervisorTools */ "../../node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
+var _SupervisorTools = __webpack_require__(/*! ../utils/SupervisorTools */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -18904,6 +18154,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+var BUFFER_LOADED = 'bufferLoaded';
+var BUFFER_EMPTY = 'bufferStalled';
+var STALL_THRESHOLD = 0.5;
+var BUFFER_END_THRESHOLD = 0.5;
+var BUFFER_RANGE_CALCULATION_THRESHOLD = 0.01;
+var QUOTA_EXCEEDED_ERROR_CODE = 22;
 
 var ABANDON_LOAD = 'abandonload';
 var ALLOW_LOAD = 'allowload';
@@ -18913,6 +18169,7 @@ var QUALITY_DEFAULT = 0;
 
 function AbrController() {
 
+    config = config || {};
     var context = this.context;
     var debug = (0, _Debug2.default)(context).getInstance();
     var eventBus = (0, _EventBus2.default)(context).getInstance();
@@ -19682,10 +18939,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/BaseURLController.js":
-/*!*********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BaseURLController.js ***!
-  \*********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BaseURLController.js":
+/*!**********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BaseURLController.js ***!
+  \**********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -19696,31 +18953,31 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _BaseURLTreeModel = __webpack_require__(/*! ../models/BaseURLTreeModel */ "../../node_modules/dashjs/src/streaming/models/BaseURLTreeModel.js");
+var _BaseURLTreeModel = __webpack_require__(/*! ../models/BaseURLTreeModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/BaseURLTreeModel.js");
 
 var _BaseURLTreeModel2 = _interopRequireDefault(_BaseURLTreeModel);
 
-var _BaseURLSelector = __webpack_require__(/*! ../utils/BaseURLSelector */ "../../node_modules/dashjs/src/streaming/utils/BaseURLSelector.js");
+var _BaseURLSelector = __webpack_require__(/*! ../utils/BaseURLSelector */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BaseURLSelector.js");
 
 var _BaseURLSelector2 = _interopRequireDefault(_BaseURLSelector);
 
-var _URLUtils = __webpack_require__(/*! ../utils/URLUtils */ "../../node_modules/dashjs/src/streaming/utils/URLUtils.js");
+var _URLUtils = __webpack_require__(/*! ../utils/URLUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js");
 
 var _URLUtils2 = _interopRequireDefault(_URLUtils);
 
-var _BaseURL = __webpack_require__(/*! ../../dash/vo/BaseURL */ "../../node_modules/dashjs/src/dash/vo/BaseURL.js");
+var _BaseURL = __webpack_require__(/*! ../../dash/vo/BaseURL */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/BaseURL.js");
 
 var _BaseURL2 = _interopRequireDefault(_BaseURL);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
@@ -19859,10 +19116,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(BaseURLController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/BlacklistController.js":
-/*!***********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BlacklistController.js ***!
-  \***********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BlacklistController.js":
+/*!************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BlacklistController.js ***!
+  \************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -19873,11 +19130,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
@@ -19971,10 +19228,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(BlackListController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/BufferController.js":
-/*!********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js ***!
-  \********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js":
+/*!*********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js ***!
+  \*********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -19985,67 +19242,67 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _FragmentModel = __webpack_require__(/*! ../models/FragmentModel */ "../../node_modules/dashjs/src/streaming/models/FragmentModel.js");
+var _FragmentModel = __webpack_require__(/*! ../models/FragmentModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/FragmentModel.js");
 
 var _FragmentModel2 = _interopRequireDefault(_FragmentModel);
 
-var _SourceBufferSink = __webpack_require__(/*! ../SourceBufferSink */ "../../node_modules/dashjs/src/streaming/SourceBufferSink.js");
+var _SourceBufferSink = __webpack_require__(/*! ../SourceBufferSink */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/SourceBufferSink.js");
 
 var _SourceBufferSink2 = _interopRequireDefault(_SourceBufferSink);
 
-var _PreBufferSink = __webpack_require__(/*! ../PreBufferSink */ "../../node_modules/dashjs/src/streaming/PreBufferSink.js");
+var _PreBufferSink = __webpack_require__(/*! ../PreBufferSink */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/PreBufferSink.js");
 
 var _PreBufferSink2 = _interopRequireDefault(_PreBufferSink);
 
-var _AbrController = __webpack_require__(/*! ./AbrController */ "../../node_modules/dashjs/src/streaming/controllers/AbrController.js");
+var _AbrController = __webpack_require__(/*! ./AbrController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/AbrController.js");
 
 var _AbrController2 = _interopRequireDefault(_AbrController);
 
-var _MediaController = __webpack_require__(/*! ./MediaController */ "../../node_modules/dashjs/src/streaming/controllers/MediaController.js");
+var _MediaController = __webpack_require__(/*! ./MediaController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaController.js");
 
 var _MediaController2 = _interopRequireDefault(_MediaController);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _BoxParser = __webpack_require__(/*! ../utils/BoxParser */ "../../node_modules/dashjs/src/streaming/utils/BoxParser.js");
+var _BoxParser = __webpack_require__(/*! ../utils/BoxParser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BoxParser.js");
 
 var _BoxParser2 = _interopRequireDefault(_BoxParser);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _InitCache = __webpack_require__(/*! ../utils/InitCache */ "../../node_modules/dashjs/src/streaming/utils/InitCache.js");
+var _InitCache = __webpack_require__(/*! ../utils/InitCache */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/InitCache.js");
 
 var _InitCache2 = _interopRequireDefault(_InitCache);
 
-var _VideoModel = __webpack_require__(/*! ../models/VideoModel */ "../../node_modules/dashjs/src/streaming/models/VideoModel.js");
+var _VideoModel = __webpack_require__(/*! ../models/VideoModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/VideoModel.js");
 
 var _VideoModel2 = _interopRequireDefault(_VideoModel);
 
-var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
-var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -21003,10 +20260,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/EventController.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/EventController.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/EventController.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/EventController.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -21017,19 +20274,19 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
@@ -21293,10 +20550,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(EventController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/FragmentController.js":
-/*!**********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/FragmentController.js ***!
-  \**********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/FragmentController.js":
+/*!***********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/FragmentController.js ***!
+  \***********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -21307,41 +20564,41 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _DataChunk = __webpack_require__(/*! ../vo/DataChunk */ "../../node_modules/dashjs/src/streaming/vo/DataChunk.js");
+var _DataChunk = __webpack_require__(/*! ../vo/DataChunk */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DataChunk.js");
 
 var _DataChunk2 = _interopRequireDefault(_DataChunk);
 
-var _FragmentModel = __webpack_require__(/*! ../models/FragmentModel */ "../../node_modules/dashjs/src/streaming/models/FragmentModel.js");
+var _FragmentModel = __webpack_require__(/*! ../models/FragmentModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/FragmentModel.js");
 
 var _FragmentModel2 = _interopRequireDefault(_FragmentModel);
 
-var _FragmentLoader = __webpack_require__(/*! ../FragmentLoader */ "../../node_modules/dashjs/src/streaming/FragmentLoader.js");
+var _FragmentLoader = __webpack_require__(/*! ../FragmentLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/FragmentLoader.js");
 
 var _FragmentLoader2 = _interopRequireDefault(_FragmentLoader);
 
-var _RequestModifier = __webpack_require__(/*! ../utils/RequestModifier */ "../../node_modules/dashjs/src/streaming/utils/RequestModifier.js");
+var _RequestModifier = __webpack_require__(/*! ../utils/RequestModifier */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/RequestModifier.js");
 
 var _RequestModifier2 = _interopRequireDefault(_RequestModifier);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
@@ -21497,10 +20754,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(FragmentController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/MediaController.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaController.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaController.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaController.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -21511,27 +20768,27 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _BufferController = __webpack_require__(/*! ./BufferController */ "../../node_modules/dashjs/src/streaming/controllers/BufferController.js");
 
 var TRACK_SWITCH_MODE_NEVER_REPLACE = 'neverReplace'; /**
                                                        * The copyright in this software is being made available under the BSD License,
@@ -22051,31 +21308,57 @@ factory.DEFAULT_INIT_TRACK_SELECTION_MODE = DEFAULT_INIT_TRACK_SELECTION_MODE;
 _FactoryMaker2.default.updateSingletonFactory(MediaController.__dashjs_factory_name, factory);
 exports.default = factory;
 
-/***/ }),
+        if (!ignoreStartOffset) {
+            var uriParameters = getStartTimeFromUriParameters();
+            if (uriParameters) {
+                startTimeOffset = !isNaN(uriParameters.fragS) ? uriParameters.fragS : uriParameters.fragT;
+            } else {
+                startTimeOffset = 0;
+            }
+        } else {
+            startTimeOffset = streamInfo.start;
+        }
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/MediaSourceController.js":
-/*!*************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaSourceController.js ***!
-  \*************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaSourceController.js":
+/*!**************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaSourceController.js ***!
+  \**************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+                if (!isNaN(liveStartTime) && !isNaN(liveEdge)) {
+                    presentationStartTime = Math.min(Math.max(presentationStartTime, liveEdge - streamInfo.manifestInfo.DVRWindowSize + 60), liveStartTime);
+                }
+            }
+            presentationStartTime = presentationStartTime || liveStartTime;
+        } else {
+            if (!isNaN(startTimeOffset) && startTimeOffset < Math.max(streamInfo.manifestInfo.duration, streamInfo.duration) && startTimeOffset >= 0) {
+                presentationStartTime = startTimeOffset;
+            } else {
+                var earliestTime = commonEarliestTime[streamInfo.id]; //set by ready bufferStart after first onBytesAppended
+                presentationStartTime = earliestTime !== undefined ? Math.max(earliestTime.audio !== undefined ? earliestTime.audio : 0, earliestTime.video !== undefined ? earliestTime.video : 0, streamInfo.start) : streamInfo.start;
+            }
+        }
 
+        return presentationStartTime;
+    }
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+    function getActualPresentationTime(currentTime) {
+        var metrics = metricsModel.getReadOnlyMetricsFor(_Constants2.default.VIDEO) || metricsModel.getReadOnlyMetricsFor(_Constants2.default.AUDIO);
+        var DVRMetrics = dashMetrics.getCurrentDVRInfo(metrics);
+        var DVRWindow = DVRMetrics ? DVRMetrics.range : null;
+        var actualTime = void 0;
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+        return actualTime;
+    }
 
 /**
  * The copyright in this software is being made available under the BSD License,
@@ -22128,6 +21411,7 @@ function MediaSourceController() {
         } else if (hasWebKit) {
             return new WebKitMediaSource();
         }
+    }
 
         return null;
     }
@@ -22199,41 +21483,62 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(MediaSourceControll
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/PlaybackController.js":
-/*!**********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/PlaybackController.js ***!
-  \**********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/PlaybackController.js":
+/*!***********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/PlaybackController.js ***!
+  \***********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+    function onPlaybackRateChanged() {
+        var rate = getPlaybackRate();
+        logger.info('Native video element event: ratechange: ', rate);
+        eventBus.trigger(_Events2.default.PLAYBACK_RATE_CHANGED, {
+            playbackRate: rate
+        });
+    }
 
+    function onPlaybackMetaDataLoaded() {
+        logger.info('Native video element event: loadedmetadata');
+        eventBus.trigger(_Events2.default.PLAYBACK_METADATA_LOADED);
+        startUpdatingWallclockTime();
+    }
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+    // Event to handle the native video element ended event
+    function onNativePlaybackEnded() {
+        logger.info('Native video element event: ended');
+        pause();
+        stopUpdatingWallclockTime();
+        var activeStream = streamController.getActiveStreamInfo();
+        eventBus.trigger(_Events2.default.PLAYBACK_ENDED, { 'isLast': activeStream ? activeStream.isLast : true });
+    }
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _BufferController = __webpack_require__(/*! ./BufferController */ "../../node_modules/dashjs/src/streaming/controllers/BufferController.js");
+var _BufferController = __webpack_require__(/*! ./BufferController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js");
 
 var _BufferController2 = _interopRequireDefault(_BufferController);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
-var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
+        // Updates playback time for paused dynamic streams
+        // (video element doesn't call timeupdate when the playback is paused)
+        if (getIsDynamic() && isPaused()) {
+            updateLivePlaybackTime();
+        }
+    }
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
@@ -22475,6 +21780,7 @@ function PlaybackController() {
         } else {
             delay = streamInfo.manifestInfo.minBufferTime * 2;
         }
+    }
 
         if (mpd.availabilityStartTime) {
             availabilityStartTime = mpd.availabilityStartTime.getTime();
@@ -22956,8 +22262,6 @@ function PlaybackController() {
                 }
                 commonEarliestTime[streamInfo.id].started = true;
             }
-        }
-    }
 
     function onFragmentLoadProgress(e) {
         // If using fetch and stream mode is not available, readjust live latency so it is 20% higher than segment duration
@@ -22974,13 +22278,15 @@ function PlaybackController() {
         // do not stall playback when get an event from Stream that is not active
         if (e.streamInfo.id !== streamInfo.id) return;
 
-        if (e.state === _BufferController2.default.BUFFER_EMPTY && !isSeeking()) {
-            if (!playbackStalled) {
-                playbackStalled = true;
-                if (!mediaPlayerModel.getLowLatencyEnabled()) {
+        if (mediaPlayerModel.getLowLatencyEnabled()) {
+            if (e.state === _BufferController2.default.BUFFER_EMPTY && !isSeeking()) {
+                if (!playbackStalled) {
                     stopPlaybackCatchUp();
                 }
             }
+        } else {
+            playbackStalled = e.state === _BufferController2.default.BUFFER_EMPTY;
+            videoModel.setStallState(e.mediaType, e.state === _BufferController2.default.BUFFER_EMPTY);
         }
     }
 
@@ -23060,67 +22366,100 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(PlaybackController)
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/ScheduleController.js":
-/*!**********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/ScheduleController.js ***!
-  \**********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/ScheduleController.js":
+/*!***********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/ScheduleController.js ***!
+  \***********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+    function onQualityChanged(e) {
+        if (type !== e.mediaType || streamProcessor.getStreamInfo().id !== e.streamInfo.id) {
+            return;
+        }
 
+        currentRepresentationInfo = streamProcessor.getRepresentationInfo(e.newQuality);
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+        if (currentRepresentationInfo === null || currentRepresentationInfo === undefined) {
+            throw new Error('Unexpected error! - currentRepresentationInfo is null or undefined');
+        }
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
-var _Constants2 = _interopRequireDefault(_Constants);
+    function completeQualityChange(trigger) {
+        if (playbackController && fragmentModel) {
+            var item = fragmentModel.getRequests({
+                state: _FragmentModel2.default.FRAGMENT_MODEL_EXECUTED,
+                time: playbackController.getTime(),
+                threshold: 0
+            })[0];
+            if (item && playbackController.getTime() >= item.startTime) {
+                if ((!lastFragmentRequest.mediaInfo || item.mediaInfo.type === lastFragmentRequest.mediaInfo.type && item.mediaInfo.id !== lastFragmentRequest.mediaInfo.id) && trigger) {
+                    eventBus.trigger(_Events2.default.TRACK_CHANGE_RENDERED, {
+                        mediaType: type,
+                        oldMediaInfo: lastFragmentRequest.mediaInfo,
+                        newMediaInfo: item.mediaInfo
+                    });
+                }
+                if ((item.quality !== lastFragmentRequest.quality || item.adaptationIndex !== lastFragmentRequest.adaptationIndex) && trigger) {
+                    eventBus.trigger(_Events2.default.QUALITY_CHANGE_RENDERED, {
+                        mediaType: type,
+                        oldQuality: lastFragmentRequest.quality,
+                        newQuality: item.quality
+                    });
+                }
+                lastFragmentRequest = {
+                    mediaInfo: item.mediaInfo,
+                    quality: item.quality,
+                    adaptationIndex: item.adaptationIndex
+                };
+            }
+        }
+    }
 
-var _PlayList = __webpack_require__(/*! ../vo/metrics/PlayList */ "../../node_modules/dashjs/src/streaming/vo/metrics/PlayList.js");
+var _PlayList = __webpack_require__(/*! ../vo/metrics/PlayList */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/PlayList.js");
 
-var _AbrController = __webpack_require__(/*! ./AbrController */ "../../node_modules/dashjs/src/streaming/controllers/AbrController.js");
+var _AbrController = __webpack_require__(/*! ./AbrController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/AbrController.js");
 
 var _AbrController2 = _interopRequireDefault(_AbrController);
 
-var _BufferController = __webpack_require__(/*! ./BufferController */ "../../node_modules/dashjs/src/streaming/controllers/BufferController.js");
+var _BufferController = __webpack_require__(/*! ./BufferController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js");
 
 var _BufferController2 = _interopRequireDefault(_BufferController);
 
-var _BufferLevelRule = __webpack_require__(/*! ../rules/scheduling/BufferLevelRule */ "../../node_modules/dashjs/src/streaming/rules/scheduling/BufferLevelRule.js");
+var _BufferLevelRule = __webpack_require__(/*! ../rules/scheduling/BufferLevelRule */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/scheduling/BufferLevelRule.js");
 
 var _BufferLevelRule2 = _interopRequireDefault(_BufferLevelRule);
 
-var _NextFragmentRequestRule = __webpack_require__(/*! ../rules/scheduling/NextFragmentRequestRule */ "../../node_modules/dashjs/src/streaming/rules/scheduling/NextFragmentRequestRule.js");
+var _NextFragmentRequestRule = __webpack_require__(/*! ../rules/scheduling/NextFragmentRequestRule */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/scheduling/NextFragmentRequestRule.js");
 
 var _NextFragmentRequestRule2 = _interopRequireDefault(_NextFragmentRequestRule);
 
-var _FragmentModel = __webpack_require__(/*! ../models/FragmentModel */ "../../node_modules/dashjs/src/streaming/models/FragmentModel.js");
+var _FragmentModel = __webpack_require__(/*! ../models/FragmentModel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/FragmentModel.js");
 
 var _FragmentModel2 = _interopRequireDefault(_FragmentModel);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _MediaController = __webpack_require__(/*! ./MediaController */ "../../node_modules/dashjs/src/streaming/controllers/MediaController.js");
+var _MediaController = __webpack_require__(/*! ./MediaController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaController.js");
 
 var _MediaController2 = _interopRequireDefault(_MediaController);
 
-var _SegmentsUtils = __webpack_require__(/*! ../../dash/utils/SegmentsUtils */ "../../node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
+var _SegmentsUtils = __webpack_require__(/*! ../../dash/utils/SegmentsUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -23633,6 +22972,7 @@ function ScheduleController(config) {
         if (isStopped) {
             start();
         }
+    }
 
         var manifestUpdateInfo = dashMetrics.getCurrentManifestUpdate(metricsModel.getMetricsFor(_Constants2.default.STREAM));
         var latency = currentRepresentationInfo.DVRWindow && playbackController ? currentRepresentationInfo.DVRWindow.end - playbackController.getTime() : NaN;
@@ -23817,10 +23157,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(ScheduleController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/StreamController.js":
-/*!********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/StreamController.js ***!
-  \********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/StreamController.js":
+/*!*********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/StreamController.js ***!
+  \*********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -23831,69 +23171,69 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _MetricsConstants = __webpack_require__(/*! ../constants/MetricsConstants */ "../../node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
+var _MetricsConstants = __webpack_require__(/*! ../constants/MetricsConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
 
 var _MetricsConstants2 = _interopRequireDefault(_MetricsConstants);
 
-var _Stream = __webpack_require__(/*! ../Stream */ "../../node_modules/dashjs/src/streaming/Stream.js");
+var _Stream = __webpack_require__(/*! ../Stream */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/Stream.js");
 
 var _Stream2 = _interopRequireDefault(_Stream);
 
-var _ManifestUpdater = __webpack_require__(/*! ../ManifestUpdater */ "../../node_modules/dashjs/src/streaming/ManifestUpdater.js");
+var _ManifestUpdater = __webpack_require__(/*! ../ManifestUpdater */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/ManifestUpdater.js");
 
 var _ManifestUpdater2 = _interopRequireDefault(_ManifestUpdater);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _PlayList = __webpack_require__(/*! ../vo/metrics/PlayList */ "../../node_modules/dashjs/src/streaming/vo/metrics/PlayList.js");
+var _PlayList = __webpack_require__(/*! ../vo/metrics/PlayList */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/PlayList.js");
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _InitCache = __webpack_require__(/*! ../utils/InitCache */ "../../node_modules/dashjs/src/streaming/utils/InitCache.js");
+var _InitCache = __webpack_require__(/*! ../utils/InitCache */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/InitCache.js");
 
 var _InitCache2 = _interopRequireDefault(_InitCache);
 
-var _URLUtils = __webpack_require__(/*! ../utils/URLUtils */ "../../node_modules/dashjs/src/streaming/utils/URLUtils.js");
+var _URLUtils = __webpack_require__(/*! ../utils/URLUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js");
 
 var _URLUtils2 = _interopRequireDefault(_URLUtils);
 
-var _MediaPlayerEvents = __webpack_require__(/*! ../MediaPlayerEvents */ "../../node_modules/dashjs/src/streaming/MediaPlayerEvents.js");
+var _MediaPlayerEvents = __webpack_require__(/*! ../MediaPlayerEvents */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/MediaPlayerEvents.js");
 
 var _MediaPlayerEvents2 = _interopRequireDefault(_MediaPlayerEvents);
 
-var _TimeSyncController = __webpack_require__(/*! ./TimeSyncController */ "../../node_modules/dashjs/src/streaming/controllers/TimeSyncController.js");
+var _TimeSyncController = __webpack_require__(/*! ./TimeSyncController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/TimeSyncController.js");
 
 var _TimeSyncController2 = _interopRequireDefault(_TimeSyncController);
 
-var _BaseURLController = __webpack_require__(/*! ./BaseURLController */ "../../node_modules/dashjs/src/streaming/controllers/BaseURLController.js");
+var _BaseURLController = __webpack_require__(/*! ./BaseURLController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BaseURLController.js");
 
 var _BaseURLController2 = _interopRequireDefault(_BaseURLController);
 
-var _MediaSourceController = __webpack_require__(/*! ./MediaSourceController */ "../../node_modules/dashjs/src/streaming/controllers/MediaSourceController.js");
+var _MediaSourceController = __webpack_require__(/*! ./MediaSourceController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/MediaSourceController.js");
 
 var _MediaSourceController2 = _interopRequireDefault(_MediaSourceController);
 
-var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
@@ -24137,6 +23477,7 @@ function StreamController() {
                 addPlaylistMetrics(_PlayList.PlayList.RESUME_FROM_PAUSE_START_REASON);
                 toggleEndPeriodTimer();
             }
+            wallclockTicked = 0;
         }
     }
 
@@ -24617,7 +23958,6 @@ function StreamController() {
             metricsModel.addPlayList(playListMetrics);
             playListMetrics = null;
         }
-    }
 
     function addPlaylistMetrics(startReason) {
         playListMetrics = new _PlayList.PlayList();
@@ -24912,10 +24252,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(StreamController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/TimeSyncController.js":
-/*!**********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/TimeSyncController.js ***!
-  \**********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/TimeSyncController.js":
+/*!***********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/TimeSyncController.js ***!
+  \***********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -24926,37 +24266,37 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _DashJSError = __webpack_require__(/*! ./../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ./../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _HTTPRequest = __webpack_require__(/*! ./../vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ./../vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _EventBus = __webpack_require__(/*! ./../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ./../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ./../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ./../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _Errors = __webpack_require__(/*! ./../../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ./../../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _URLUtils = __webpack_require__(/*! ../utils/URLUtils */ "../../node_modules/dashjs/src/streaming/utils/URLUtils.js");
+var _URLUtils = __webpack_require__(/*! ../utils/URLUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js");
 
 var _URLUtils2 = _interopRequireDefault(_URLUtils);
 
@@ -25330,10 +24670,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/controllers/XlinkController.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/controllers/XlinkController.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/XlinkController.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/XlinkController.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -25344,31 +24684,31 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _XlinkLoader = __webpack_require__(/*! ../XlinkLoader */ "../../node_modules/dashjs/src/streaming/XlinkLoader.js");
+var _XlinkLoader = __webpack_require__(/*! ../XlinkLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/XlinkLoader.js");
 
 var _XlinkLoader2 = _interopRequireDefault(_XlinkLoader);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _xml2json = __webpack_require__(/*! ../../../externals/xml2json */ "../../node_modules/dashjs/externals/xml2json.js");
+var _xml2json = __webpack_require__(/*! ../../../externals/xml2json */ "./node_modules/bigscreen-player/node_modules/dashjs/externals/xml2json.js");
 
 var _xml2json2 = _interopRequireDefault(_xml2json);
 
-var _URLUtils = __webpack_require__(/*! ../utils/URLUtils */ "../../node_modules/dashjs/src/streaming/utils/URLUtils.js");
+var _URLUtils = __webpack_require__(/*! ../utils/URLUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js");
 
 var _URLUtils2 = _interopRequireDefault(_URLUtils);
 
-var _DashConstants = __webpack_require__(/*! ../../dash/constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../../dash/constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
@@ -25668,10 +25008,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(XlinkController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/MetricsReporting.js":
-/*!****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReporting.js ***!
-  \****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReporting.js":
+/*!*****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReporting.js ***!
+  \*****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -25682,23 +25022,23 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _DVBErrorsTranslator = __webpack_require__(/*! ./utils/DVBErrorsTranslator */ "../../node_modules/dashjs/src/streaming/metrics/utils/DVBErrorsTranslator.js");
+var _DVBErrorsTranslator = __webpack_require__(/*! ./utils/DVBErrorsTranslator */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/DVBErrorsTranslator.js");
 
 var _DVBErrorsTranslator2 = _interopRequireDefault(_DVBErrorsTranslator);
 
-var _MetricsReportingEvents = __webpack_require__(/*! ./MetricsReportingEvents */ "../../node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js");
+var _MetricsReportingEvents = __webpack_require__(/*! ./MetricsReportingEvents */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js");
 
 var _MetricsReportingEvents2 = _interopRequireDefault(_MetricsReportingEvents);
 
-var _MetricsCollectionController = __webpack_require__(/*! ./controllers/MetricsCollectionController */ "../../node_modules/dashjs/src/streaming/metrics/controllers/MetricsCollectionController.js");
+var _MetricsCollectionController = __webpack_require__(/*! ./controllers/MetricsCollectionController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsCollectionController.js");
 
 var _MetricsCollectionController2 = _interopRequireDefault(_MetricsCollectionController);
 
-var _MetricsHandlerFactory = __webpack_require__(/*! ./metrics/MetricsHandlerFactory */ "../../node_modules/dashjs/src/streaming/metrics/metrics/MetricsHandlerFactory.js");
+var _MetricsHandlerFactory = __webpack_require__(/*! ./metrics/MetricsHandlerFactory */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/MetricsHandlerFactory.js");
 
 var _MetricsHandlerFactory2 = _interopRequireDefault(_MetricsHandlerFactory);
 
-var _ReportingFactory = __webpack_require__(/*! ./reporting/ReportingFactory */ "../../node_modules/dashjs/src/streaming/metrics/reporting/ReportingFactory.js");
+var _ReportingFactory = __webpack_require__(/*! ./reporting/ReportingFactory */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/reporting/ReportingFactory.js");
 
 var _ReportingFactory2 = _interopRequireDefault(_ReportingFactory);
 
@@ -25789,10 +25129,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js":
-/*!**********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js ***!
-  \**********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js":
+/*!***********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js ***!
+  \***********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -25803,7 +25143,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _EventsBase2 = __webpack_require__(/*! ../../core/events/EventsBase */ "../../node_modules/dashjs/src/core/events/EventsBase.js");
+var _EventsBase2 = __webpack_require__(/*! ../../core/events/EventsBase */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/EventsBase.js");
 
 var _EventsBase3 = _interopRequireDefault(_EventsBase2);
 
@@ -25866,10 +25206,10 @@ exports.default = metricsReportingEvents;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/controllers/MetricsCollectionController.js":
-/*!***************************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsCollectionController.js ***!
-  \***************************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsCollectionController.js":
+/*!****************************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsCollectionController.js ***!
+  \****************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -25880,15 +25220,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _MetricsController = __webpack_require__(/*! ./MetricsController */ "../../node_modules/dashjs/src/streaming/metrics/controllers/MetricsController.js");
+var _MetricsController = __webpack_require__(/*! ./MetricsController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsController.js");
 
 var _MetricsController2 = _interopRequireDefault(_MetricsController);
 
-var _ManifestParsing = __webpack_require__(/*! ../utils/ManifestParsing */ "../../node_modules/dashjs/src/streaming/metrics/utils/ManifestParsing.js");
+var _ManifestParsing = __webpack_require__(/*! ../utils/ManifestParsing */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/ManifestParsing.js");
 
 var _ManifestParsing2 = _interopRequireDefault(_ManifestParsing);
 
-var _MetricsReportingEvents = __webpack_require__(/*! ../MetricsReportingEvents */ "../../node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js");
+var _MetricsReportingEvents = __webpack_require__(/*! ../MetricsReportingEvents */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js");
 
 var _MetricsReportingEvents2 = _interopRequireDefault(_MetricsReportingEvents);
 
@@ -26001,10 +25341,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(MetricsCollectionControlle
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/controllers/MetricsController.js":
-/*!*****************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsController.js ***!
-  \*****************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsController.js":
+/*!******************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsController.js ***!
+  \******************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26015,15 +25355,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _RangeController = __webpack_require__(/*! ./RangeController */ "../../node_modules/dashjs/src/streaming/metrics/controllers/RangeController.js");
+var _RangeController = __webpack_require__(/*! ./RangeController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/RangeController.js");
 
 var _RangeController2 = _interopRequireDefault(_RangeController);
 
-var _ReportingController = __webpack_require__(/*! ./ReportingController */ "../../node_modules/dashjs/src/streaming/metrics/controllers/ReportingController.js");
+var _ReportingController = __webpack_require__(/*! ./ReportingController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/ReportingController.js");
 
 var _ReportingController2 = _interopRequireDefault(_ReportingController);
 
-var _MetricsHandlersController = __webpack_require__(/*! ./MetricsHandlersController */ "../../node_modules/dashjs/src/streaming/metrics/controllers/MetricsHandlersController.js");
+var _MetricsHandlersController = __webpack_require__(/*! ./MetricsHandlersController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsHandlersController.js");
 
 var _MetricsHandlersController2 = _interopRequireDefault(_MetricsHandlersController);
 
@@ -26124,10 +25464,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(MetricsController); /* jsh
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/controllers/MetricsHandlersController.js":
-/*!*************************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsHandlersController.js ***!
-  \*************************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsHandlersController.js":
+/*!**************************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/MetricsHandlersController.js ***!
+  \**************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26138,7 +25478,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _MetricsHandlerFactory = __webpack_require__(/*! ../metrics/MetricsHandlerFactory */ "../../node_modules/dashjs/src/streaming/metrics/metrics/MetricsHandlerFactory.js");
+var _MetricsHandlerFactory = __webpack_require__(/*! ../metrics/MetricsHandlerFactory */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/MetricsHandlerFactory.js");
 
 var _MetricsHandlerFactory2 = _interopRequireDefault(_MetricsHandlerFactory);
 
@@ -26250,10 +25590,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(MetricsHandlersController)
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/controllers/RangeController.js":
-/*!***************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/RangeController.js ***!
-  \***************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/RangeController.js":
+/*!****************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/RangeController.js ***!
+  \****************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26264,7 +25604,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _CustomTimeRanges = __webpack_require__(/*! ../../utils/CustomTimeRanges */ "../../node_modules/dashjs/src/streaming/utils/CustomTimeRanges.js");
+var _CustomTimeRanges = __webpack_require__(/*! ../../utils/CustomTimeRanges */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/CustomTimeRanges.js");
 
 var _CustomTimeRanges2 = _interopRequireDefault(_CustomTimeRanges);
 
@@ -26370,10 +25710,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(RangeController); /* jshin
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/controllers/ReportingController.js":
-/*!*******************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/ReportingController.js ***!
-  \*******************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/ReportingController.js":
+/*!********************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/controllers/ReportingController.js ***!
+  \********************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26384,7 +25724,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _ReportingFactory = __webpack_require__(/*! ../reporting/ReportingFactory */ "../../node_modules/dashjs/src/streaming/metrics/reporting/ReportingFactory.js");
+var _ReportingFactory = __webpack_require__(/*! ../reporting/ReportingFactory */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/reporting/ReportingFactory.js");
 
 var _ReportingFactory2 = _interopRequireDefault(_ReportingFactory);
 
@@ -26468,10 +25808,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(ReportingController); /* j
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/metrics/MetricsHandlerFactory.js":
-/*!*****************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/MetricsHandlerFactory.js ***!
-  \*****************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/MetricsHandlerFactory.js":
+/*!******************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/MetricsHandlerFactory.js ***!
+  \******************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26482,19 +25822,19 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _BufferLevelHandler = __webpack_require__(/*! ./handlers/BufferLevelHandler */ "../../node_modules/dashjs/src/streaming/metrics/metrics/handlers/BufferLevelHandler.js");
+var _BufferLevelHandler = __webpack_require__(/*! ./handlers/BufferLevelHandler */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/BufferLevelHandler.js");
 
 var _BufferLevelHandler2 = _interopRequireDefault(_BufferLevelHandler);
 
-var _DVBErrorsHandler = __webpack_require__(/*! ./handlers/DVBErrorsHandler */ "../../node_modules/dashjs/src/streaming/metrics/metrics/handlers/DVBErrorsHandler.js");
+var _DVBErrorsHandler = __webpack_require__(/*! ./handlers/DVBErrorsHandler */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/DVBErrorsHandler.js");
 
 var _DVBErrorsHandler2 = _interopRequireDefault(_DVBErrorsHandler);
 
-var _HttpListHandler = __webpack_require__(/*! ./handlers/HttpListHandler */ "../../node_modules/dashjs/src/streaming/metrics/metrics/handlers/HttpListHandler.js");
+var _HttpListHandler = __webpack_require__(/*! ./handlers/HttpListHandler */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/HttpListHandler.js");
 
 var _HttpListHandler2 = _interopRequireDefault(_HttpListHandler);
 
-var _GenericMetricHandler = __webpack_require__(/*! ./handlers/GenericMetricHandler */ "../../node_modules/dashjs/src/streaming/metrics/metrics/handlers/GenericMetricHandler.js");
+var _GenericMetricHandler = __webpack_require__(/*! ./handlers/GenericMetricHandler */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/GenericMetricHandler.js");
 
 var _GenericMetricHandler2 = _interopRequireDefault(_GenericMetricHandler);
 
@@ -26595,10 +25935,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(MetricsHandlerFactory)
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/metrics/handlers/BufferLevelHandler.js":
-/*!***********************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/BufferLevelHandler.js ***!
-  \***********************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/BufferLevelHandler.js":
+/*!************************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/BufferLevelHandler.js ***!
+  \************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26609,7 +25949,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _HandlerHelpers = __webpack_require__(/*! ../../utils/HandlerHelpers */ "../../node_modules/dashjs/src/streaming/metrics/utils/HandlerHelpers.js");
+var _HandlerHelpers = __webpack_require__(/*! ../../utils/HandlerHelpers */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/HandlerHelpers.js");
 
 var _HandlerHelpers2 = _interopRequireDefault(_HandlerHelpers);
 
@@ -26723,10 +26063,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(BufferLevelHandler); /* js
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/metrics/handlers/DVBErrorsHandler.js":
-/*!*********************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/DVBErrorsHandler.js ***!
-  \*********************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/DVBErrorsHandler.js":
+/*!**********************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/DVBErrorsHandler.js ***!
+  \**********************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26737,7 +26077,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _MetricsReportingEvents = __webpack_require__(/*! ../../MetricsReportingEvents */ "../../node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js");
+var _MetricsReportingEvents = __webpack_require__(/*! ../../MetricsReportingEvents */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js");
 
 var _MetricsReportingEvents2 = _interopRequireDefault(_MetricsReportingEvents);
 
@@ -26824,10 +26164,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(DVBErrorsHandler); /* jshi
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/metrics/handlers/GenericMetricHandler.js":
-/*!*************************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/GenericMetricHandler.js ***!
-  \*************************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/GenericMetricHandler.js":
+/*!**************************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/GenericMetricHandler.js ***!
+  \**************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26907,10 +26247,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(GenericMetricHandler); /* 
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/metrics/handlers/HttpListHandler.js":
-/*!********************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/HttpListHandler.js ***!
-  \********************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/HttpListHandler.js":
+/*!*********************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/metrics/handlers/HttpListHandler.js ***!
+  \*********************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -26921,7 +26261,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _HandlerHelpers = __webpack_require__(/*! ../../utils/HandlerHelpers */ "../../node_modules/dashjs/src/streaming/metrics/utils/HandlerHelpers.js");
+var _HandlerHelpers = __webpack_require__(/*! ../../utils/HandlerHelpers */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/HandlerHelpers.js");
 
 var _HandlerHelpers2 = _interopRequireDefault(_HandlerHelpers);
 
@@ -27034,10 +26374,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(HttpListHandler); /* jshin
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/reporting/ReportingFactory.js":
-/*!**************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/reporting/ReportingFactory.js ***!
-  \**************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/reporting/ReportingFactory.js":
+/*!***************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/reporting/ReportingFactory.js ***!
+  \***************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -27048,7 +26388,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _DVBReporting = __webpack_require__(/*! ./reporters/DVBReporting */ "../../node_modules/dashjs/src/streaming/metrics/reporting/reporters/DVBReporting.js");
+var _DVBReporting = __webpack_require__(/*! ./reporters/DVBReporting */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/reporting/reporters/DVBReporting.js");
 
 var _DVBReporting2 = _interopRequireDefault(_DVBReporting);
 
@@ -27135,10 +26475,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(ReportingFactory); /* 
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/reporting/reporters/DVBReporting.js":
-/*!********************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/reporting/reporters/DVBReporting.js ***!
-  \********************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/reporting/reporters/DVBReporting.js":
+/*!*********************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/reporting/reporters/DVBReporting.js ***!
+  \*********************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -27149,11 +26489,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _MetricSerialiser = __webpack_require__(/*! ../../utils/MetricSerialiser */ "../../node_modules/dashjs/src/streaming/metrics/utils/MetricSerialiser.js");
+var _MetricSerialiser = __webpack_require__(/*! ../../utils/MetricSerialiser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/MetricSerialiser.js");
 
 var _MetricSerialiser2 = _interopRequireDefault(_MetricSerialiser);
 
-var _RNG = __webpack_require__(/*! ../../utils/RNG */ "../../node_modules/dashjs/src/streaming/metrics/utils/RNG.js");
+var _RNG = __webpack_require__(/*! ../../utils/RNG */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/RNG.js");
 
 var _RNG2 = _interopRequireDefault(_RNG);
 
@@ -27240,7 +26580,6 @@ function DVBReporting(config) {
         } catch (e) {
             req.onerror();
         }
-    }
 
     function report(type, vos) {
         if (!Array.isArray(vos)) {
@@ -27343,10 +26682,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(DVBReporting); /* jshint i
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/utils/DVBErrorsTranslator.js":
-/*!*************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/DVBErrorsTranslator.js ***!
-  \*************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/DVBErrorsTranslator.js":
+/*!**************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/DVBErrorsTranslator.js ***!
+  \**************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -27357,11 +26696,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _DVBErrors = __webpack_require__(/*! ../vo/DVBErrors */ "../../node_modules/dashjs/src/streaming/metrics/vo/DVBErrors.js");
+var _DVBErrors = __webpack_require__(/*! ../vo/DVBErrors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/DVBErrors.js");
 
 var _DVBErrors2 = _interopRequireDefault(_DVBErrors);
 
-var _MetricsReportingEvents = __webpack_require__(/*! ../MetricsReportingEvents */ "../../node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js");
+var _MetricsReportingEvents = __webpack_require__(/*! ../MetricsReportingEvents */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/MetricsReportingEvents.js");
 
 var _MetricsReportingEvents2 = _interopRequireDefault(_MetricsReportingEvents);
 
@@ -27533,10 +26872,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(DVBErrorsTranslator); 
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/utils/HandlerHelpers.js":
-/*!********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/HandlerHelpers.js ***!
-  \********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/HandlerHelpers.js":
+/*!*********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/HandlerHelpers.js ***!
+  \*********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -27620,10 +26959,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(HandlerHelpers); /* js
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/utils/ManifestParsing.js":
-/*!*********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/ManifestParsing.js ***!
-  \*********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/ManifestParsing.js":
+/*!**********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/ManifestParsing.js ***!
+  \**********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -27634,19 +26973,19 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Metrics = __webpack_require__(/*! ../vo/Metrics */ "../../node_modules/dashjs/src/streaming/metrics/vo/Metrics.js");
+var _Metrics = __webpack_require__(/*! ../vo/Metrics */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Metrics.js");
 
 var _Metrics2 = _interopRequireDefault(_Metrics);
 
-var _Range = __webpack_require__(/*! ../vo/Range */ "../../node_modules/dashjs/src/streaming/metrics/vo/Range.js");
+var _Range = __webpack_require__(/*! ../vo/Range */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Range.js");
 
 var _Range2 = _interopRequireDefault(_Range);
 
-var _Reporting = __webpack_require__(/*! ../vo/Reporting */ "../../node_modules/dashjs/src/streaming/metrics/vo/Reporting.js");
+var _Reporting = __webpack_require__(/*! ../vo/Reporting */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Reporting.js");
 
 var _Reporting2 = _interopRequireDefault(_Reporting);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+/***/ }),
 
 function ManifestParsing(config) {
     config = config || {};
@@ -27766,10 +27105,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(ManifestParsing); /* j
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/utils/MetricSerialiser.js":
-/*!**********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/MetricSerialiser.js ***!
-  \**********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/MetricSerialiser.js":
+/*!***********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/MetricSerialiser.js ***!
+  \***********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -27879,10 +27218,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(MetricSerialiser); /* 
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/utils/RNG.js":
-/*!*********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/RNG.js ***!
-  \*********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/RNG.js":
+/*!**********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/utils/RNG.js ***!
+  \**********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -27991,10 +27330,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(RNG); /* jshint ignore
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/vo/DVBErrors.js":
-/*!************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/DVBErrors.js ***!
-  \************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/DVBErrors.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/DVBErrors.js ***!
+  \*************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -28107,10 +27446,10 @@ exports.default = DVBErrors;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/vo/Metrics.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Metrics.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Metrics.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Metrics.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -28169,10 +27508,10 @@ exports.default = Metrics;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/vo/Range.js":
-/*!********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Range.js ***!
-  \********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Range.js":
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Range.js ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -28234,10 +27573,10 @@ exports.default = Range;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/metrics/vo/Reporting.js":
-/*!************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Reporting.js ***!
-  \************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Reporting.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/metrics/vo/Reporting.js ***!
+  \*************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -28296,10 +27635,10 @@ exports.default = Reporting;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/models/BaseURLTreeModel.js":
-/*!***************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/models/BaseURLTreeModel.js ***!
-  \***************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/BaseURLTreeModel.js":
+/*!****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/BaseURLTreeModel.js ***!
+  \****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -28310,11 +27649,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _ObjectUtils = __webpack_require__(/*! ../utils/ObjectUtils */ "../../node_modules/dashjs/src/streaming/utils/ObjectUtils.js");
+var _ObjectUtils = __webpack_require__(/*! ../utils/ObjectUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/ObjectUtils.js");
 
 var _ObjectUtils2 = _interopRequireDefault(_ObjectUtils);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -28485,20 +27824,21 @@ function BaseURLTreeModel() {
         setConfig: setConfig
     };
 
-    setup();
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
 
-    return instance;
-}
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 BaseURLTreeModel.__dashjs_factory_name = 'BaseURLTreeModel';
 exports.default = _FactoryMaker2.default.getClassFactory(BaseURLTreeModel);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/models/FragmentModel.js":
-/*!************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/models/FragmentModel.js ***!
-  \************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/FragmentModel.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/FragmentModel.js ***!
+  \*************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -28506,28 +27846,30 @@ exports.default = _FactoryMaker2.default.getClassFactory(BaseURLTreeModel);
 
 
 Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
+
+"use strict";
+
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
+
+Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
-var _EventBus2 = _interopRequireDefault(_EventBus);
+var _ObjectUtils2 = _interopRequireDefault(_ObjectUtils);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
-
-var _Events2 = _interopRequireDefault(_Events);
-
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
-
-var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
-
-var _FragmentRequest = __webpack_require__(/*! ../vo/FragmentRequest */ "../../node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
+var _FragmentRequest = __webpack_require__(/*! ../vo/FragmentRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
 
 var _FragmentRequest2 = _interopRequireDefault(_FragmentRequest);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
-var _Debug2 = _interopRequireDefault(_Debug);
+var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -28910,10 +28252,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/models/ManifestModel.js":
-/*!************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/models/ManifestModel.js ***!
-  \************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/ManifestModel.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/ManifestModel.js ***!
+  \*************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -28924,15 +28266,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -29000,10 +28342,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(ManifestModel);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/models/MediaPlayerModel.js":
-/*!***************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/models/MediaPlayerModel.js ***!
-  \***************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/MediaPlayerModel.js":
+/*!****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/MediaPlayerModel.js ***!
+  \****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -29014,25 +28356,25 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _UTCTiming = __webpack_require__(/*! ../../dash/vo/UTCTiming */ "../../node_modules/dashjs/src/dash/vo/UTCTiming.js");
+var _UTCTiming = __webpack_require__(/*! ../../dash/vo/UTCTiming */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/vo/UTCTiming.js");
 
 var _UTCTiming2 = _interopRequireDefault(_UTCTiming);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _ABRRulesCollection = __webpack_require__(/*! ../rules/abr/ABRRulesCollection */ "../../node_modules/dashjs/src/streaming/rules/abr/ABRRulesCollection.js");
+var _ABRRulesCollection = __webpack_require__(/*! ../rules/abr/ABRRulesCollection */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/ABRRulesCollection.js");
 
 var _ABRRulesCollection2 = _interopRequireDefault(_ABRRulesCollection);
 
-var _SupervisorTools = __webpack_require__(/*! ../utils/SupervisorTools */ "../../node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
+var _SupervisorTools = __webpack_require__(/*! ../utils/SupervisorTools */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -29735,10 +29077,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(MediaPlayerModel);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/models/MetricsModel.js":
-/*!***********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/models/MetricsModel.js ***!
-  \***********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/MetricsModel.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/MetricsModel.js ***!
+  \************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -29749,63 +29091,63 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _MetricsConstants = __webpack_require__(/*! ../constants/MetricsConstants */ "../../node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
+var _MetricsConstants = __webpack_require__(/*! ../constants/MetricsConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
 
 var _MetricsConstants2 = _interopRequireDefault(_MetricsConstants);
 
-var _MetricsList = __webpack_require__(/*! ../vo/MetricsList */ "../../node_modules/dashjs/src/streaming/vo/MetricsList.js");
+var _MetricsList = __webpack_require__(/*! ../vo/MetricsList */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/MetricsList.js");
 
 var _MetricsList2 = _interopRequireDefault(_MetricsList);
 
-var _TCPConnection = __webpack_require__(/*! ../vo/metrics/TCPConnection */ "../../node_modules/dashjs/src/streaming/vo/metrics/TCPConnection.js");
+var _TCPConnection = __webpack_require__(/*! ../vo/metrics/TCPConnection */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/TCPConnection.js");
 
 var _TCPConnection2 = _interopRequireDefault(_TCPConnection);
 
-var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _RepresentationSwitch = __webpack_require__(/*! ../vo/metrics/RepresentationSwitch */ "../../node_modules/dashjs/src/streaming/vo/metrics/RepresentationSwitch.js");
+var _RepresentationSwitch = __webpack_require__(/*! ../vo/metrics/RepresentationSwitch */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/RepresentationSwitch.js");
 
 var _RepresentationSwitch2 = _interopRequireDefault(_RepresentationSwitch);
 
-var _BufferLevel = __webpack_require__(/*! ../vo/metrics/BufferLevel */ "../../node_modules/dashjs/src/streaming/vo/metrics/BufferLevel.js");
+var _BufferLevel = __webpack_require__(/*! ../vo/metrics/BufferLevel */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/BufferLevel.js");
 
 var _BufferLevel2 = _interopRequireDefault(_BufferLevel);
 
-var _BufferState = __webpack_require__(/*! ../vo/metrics/BufferState */ "../../node_modules/dashjs/src/streaming/vo/metrics/BufferState.js");
+var _BufferState = __webpack_require__(/*! ../vo/metrics/BufferState */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/BufferState.js");
 
 var _BufferState2 = _interopRequireDefault(_BufferState);
 
-var _DVRInfo = __webpack_require__(/*! ../vo/metrics/DVRInfo */ "../../node_modules/dashjs/src/streaming/vo/metrics/DVRInfo.js");
+var _DVRInfo = __webpack_require__(/*! ../vo/metrics/DVRInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/DVRInfo.js");
 
 var _DVRInfo2 = _interopRequireDefault(_DVRInfo);
 
-var _DroppedFrames = __webpack_require__(/*! ../vo/metrics/DroppedFrames */ "../../node_modules/dashjs/src/streaming/vo/metrics/DroppedFrames.js");
+var _DroppedFrames = __webpack_require__(/*! ../vo/metrics/DroppedFrames */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/DroppedFrames.js");
 
 var _DroppedFrames2 = _interopRequireDefault(_DroppedFrames);
 
-var _ManifestUpdate = __webpack_require__(/*! ../vo/metrics/ManifestUpdate */ "../../node_modules/dashjs/src/streaming/vo/metrics/ManifestUpdate.js");
+var _ManifestUpdate = __webpack_require__(/*! ../vo/metrics/ManifestUpdate */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/ManifestUpdate.js");
 
-var _SchedulingInfo = __webpack_require__(/*! ../vo/metrics/SchedulingInfo */ "../../node_modules/dashjs/src/streaming/vo/metrics/SchedulingInfo.js");
+var _SchedulingInfo = __webpack_require__(/*! ../vo/metrics/SchedulingInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/SchedulingInfo.js");
 
 var _SchedulingInfo2 = _interopRequireDefault(_SchedulingInfo);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _RequestsQueue = __webpack_require__(/*! ../vo/metrics/RequestsQueue */ "../../node_modules/dashjs/src/streaming/vo/metrics/RequestsQueue.js");
+var _RequestsQueue = __webpack_require__(/*! ../vo/metrics/RequestsQueue */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/RequestsQueue.js");
 
 var _RequestsQueue2 = _interopRequireDefault(_RequestsQueue);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -29893,7 +29235,9 @@ function MetricsModel() {
             return streamMetrics[type];
         }
 
-        return null;
+        pushAndNotify(mediaType, _MetricsConstants2.default.DROPPED_FRAMES, vo);
+
+        return vo;
     }
 
     function getMetricsFor(type) {
@@ -30224,10 +29568,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(MetricsModel);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/models/URIFragmentModel.js":
-/*!***************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/models/URIFragmentModel.js ***!
-  \***************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/URIFragmentModel.js":
+/*!****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/URIFragmentModel.js ***!
+  \****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -30238,11 +29582,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _URIFragmentData = __webpack_require__(/*! ../vo/URIFragmentData */ "../../node_modules/dashjs/src/streaming/vo/URIFragmentData.js");
+var _URIFragmentData = __webpack_require__(/*! ../vo/URIFragmentData */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/URIFragmentData.js");
 
 var _URIFragmentData2 = _interopRequireDefault(_URIFragmentData);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -30333,35 +29677,42 @@ function URIFragmentModel() {
 URIFragmentModel.__dashjs_factory_name = 'URIFragmentModel';
 exports.default = _FactoryMaker2.default.getSingletonFactory(URIFragmentModel);
 
-/***/ }),
+    function isPaused() {
+        return element ? element.paused : null;
+    }
 
-/***/ "../../node_modules/dashjs/src/streaming/models/VideoModel.js":
-/*!*********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/models/VideoModel.js ***!
-  \*********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/VideoModel.js":
+/*!**********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/models/VideoModel.js ***!
+  \**********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+    function isSeeking() {
+        return element ? element.seeking : null;
+    }
 
+    function getTime() {
+        return element ? element.currentTime : null;
+    }
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+    function getPlaybackRate() {
+        return element ? element.playbackRate : null;
+    }
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
@@ -30820,10 +30171,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(VideoModel);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/net/FetchLoader.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/net/FetchLoader.js ***!
-  \*******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/FetchLoader.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/FetchLoader.js ***!
+  \********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -30834,7 +30185,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -31142,10 +30493,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/net/HTTPLoader.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/net/HTTPLoader.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/HTTPLoader.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/HTTPLoader.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -31156,29 +30507,29 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _XHRLoader = __webpack_require__(/*! ./XHRLoader */ "../../node_modules/dashjs/src/streaming/net/XHRLoader.js");
+var _XHRLoader = __webpack_require__(/*! ./XHRLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/XHRLoader.js");
 
 var _XHRLoader2 = _interopRequireDefault(_XHRLoader);
 
-var _FetchLoader = __webpack_require__(/*! ./FetchLoader */ "../../node_modules/dashjs/src/streaming/net/FetchLoader.js");
+var _FetchLoader = __webpack_require__(/*! ./FetchLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/FetchLoader.js");
 
 var _FetchLoader2 = _interopRequireDefault(_FetchLoader);
 
-var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
-var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
@@ -31498,12 +30849,16 @@ HTTPLoader.__dashjs_factory_name = 'HTTPLoader';
 var factory = _FactoryMaker2.default.getClassFactory(HTTPLoader);
 exports.default = factory;
 
-/***/ }),
+        var onabort = function onabort() {
+            if (config.abort) {
+                config.abort(request);
+            }
+        };
 
-/***/ "../../node_modules/dashjs/src/streaming/net/XHRLoader.js":
-/*!*****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/net/XHRLoader.js ***!
-  \*****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/XHRLoader.js":
+/*!******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/XHRLoader.js ***!
+  \******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -31514,7 +30869,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -31581,37 +30936,10 @@ function XHRLoader(cfg) {
         abort: abort
     };
 
+    setup();
+
     return instance;
-} /**
-   * The copyright in this software is being made available under the BSD License,
-   * included below. This software may be subject to other third party and contributor
-   * rights, including patent rights, and no such rights are granted under this license.
-   *
-   * Copyright (c) 2013, Dash Industry Forum.
-   * All rights reserved.
-   *
-   * Redistribution and use in source and binary forms, with or without modification,
-   * are permitted provided that the following conditions are met:
-   *  * Redistributions of source code must retain the above copyright notice, this
-   *  list of conditions and the following disclaimer.
-   *  * Redistributions in binary form must reproduce the above copyright notice,
-   *  this list of conditions and the following disclaimer in the documentation and/or
-   *  other materials provided with the distribution.
-   *  * Neither the name of Dash Industry Forum nor the names of its
-   *  contributors may be used to endorse or promote products derived from this software
-   *  without specific prior written permission.
-   *
-   *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
-   *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-   *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-   *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-   *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-   *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-   *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-   *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-   *  POSSIBILITY OF SUCH DAMAGE.
-   */
+}
 
 
 XHRLoader.__dashjs_factory_name = 'XHRLoader';
@@ -31621,10 +30949,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/CommonEncryption.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/CommonEncryption.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/CommonEncryption.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/CommonEncryption.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -31869,47 +31197,53 @@ var CommonEncryption = function () {
 
 exports.default = CommonEncryption;
 
-/***/ }),
+            if (data === null) return [];
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/Protection.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/Protection.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/Protection.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/Protection.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+            // TODO: Need to check every data read for end of buffer
+            var byteCursor = 0;
+            while (!done) {
 
+                var size = void 0,
+                    nextBox = void 0,
+                    version = void 0,
+                    systemID = void 0,
+                    psshDataSize = void 0;
+                var boxStart = byteCursor;
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+                if (byteCursor >= dv.buffer.byteLength) break;
 
-var _ProtectionController = __webpack_require__(/*! ./controllers/ProtectionController */ "../../node_modules/dashjs/src/streaming/protection/controllers/ProtectionController.js");
+var _ProtectionController = __webpack_require__(/*! ./controllers/ProtectionController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionController.js");
 
 var _ProtectionController2 = _interopRequireDefault(_ProtectionController);
 
-var _ProtectionKeyController = __webpack_require__(/*! ./controllers/ProtectionKeyController */ "../../node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js");
+var _ProtectionKeyController = __webpack_require__(/*! ./controllers/ProtectionKeyController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js");
 
 var _ProtectionKeyController2 = _interopRequireDefault(_ProtectionKeyController);
 
-var _ProtectionEvents = __webpack_require__(/*! ./ProtectionEvents */ "../../node_modules/dashjs/src/streaming/protection/ProtectionEvents.js");
+var _ProtectionEvents = __webpack_require__(/*! ./ProtectionEvents */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/ProtectionEvents.js");
 
 var _ProtectionEvents2 = _interopRequireDefault(_ProtectionEvents);
 
-var _ProtectionErrors = __webpack_require__(/*! ./errors/ProtectionErrors */ "../../node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
+var _ProtectionErrors = __webpack_require__(/*! ./errors/ProtectionErrors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
 
 var _ProtectionErrors2 = _interopRequireDefault(_ProtectionErrors);
 
-var _ProtectionModel_21Jan = __webpack_require__(/*! ./models/ProtectionModel_21Jan2015 */ "../../node_modules/dashjs/src/streaming/protection/models/ProtectionModel_21Jan2015.js");
+var _ProtectionModel_21Jan = __webpack_require__(/*! ./models/ProtectionModel_21Jan2015 */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_21Jan2015.js");
 
 var _ProtectionModel_21Jan2 = _interopRequireDefault(_ProtectionModel_21Jan);
 
-var _ProtectionModel_3Feb = __webpack_require__(/*! ./models/ProtectionModel_3Feb2014 */ "../../node_modules/dashjs/src/streaming/protection/models/ProtectionModel_3Feb2014.js");
+var _ProtectionModel_3Feb = __webpack_require__(/*! ./models/ProtectionModel_3Feb2014 */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_3Feb2014.js");
 
 var _ProtectionModel_3Feb2 = _interopRequireDefault(_ProtectionModel_3Feb);
 
-var _ProtectionModel_01b = __webpack_require__(/*! ./models/ProtectionModel_01b */ "../../node_modules/dashjs/src/streaming/protection/models/ProtectionModel_01b.js");
+var _ProtectionModel_01b = __webpack_require__(/*! ./models/ProtectionModel_01b */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_01b.js");
 
 var _ProtectionModel_01b2 = _interopRequireDefault(_ProtectionModel_01b);
 
@@ -32095,23 +31429,24 @@ factory.errors = _ProtectionErrors2.default;
 dashjs.FactoryMaker.updateClassFactory(Protection.__dashjs_factory_name, factory); /* jshint ignore:line */
 exports.default = factory;
 
-/***/ }),
+var _ProtectionErrors2 = _interopRequireDefault(_ProtectionErrors);
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/ProtectionEvents.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/ProtectionEvents.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/ProtectionEvents.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/ProtectionEvents.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+var _ProtectionModel_21Jan2 = _interopRequireDefault(_ProtectionModel_21Jan);
 
+var _ProtectionModel_3Feb = __webpack_require__(/*! ./models/ProtectionModel_3Feb2014 */ "../../node_modules/dashjs/src/streaming/protection/models/ProtectionModel_3Feb2014.js");
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _EventsBase2 = __webpack_require__(/*! ../../core/events/EventsBase */ "../../node_modules/dashjs/src/core/events/EventsBase.js");
+var _EventsBase2 = __webpack_require__(/*! ../../core/events/EventsBase */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/EventsBase.js");
 
 var _EventsBase3 = _interopRequireDefault(_EventsBase2);
 
@@ -32313,10 +31648,10 @@ exports.default = protectionEvents;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/controllers/ProtectionController.js":
-/*!***********************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionController.js ***!
-  \***********************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionController.js":
+/*!************************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionController.js ***!
+  \************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -32324,7 +31659,7 @@ exports.default = protectionEvents;
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+  value: true
 });
 
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; /**
@@ -32358,23 +31693,23 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
                                                                                                                                                                                                                                                                                *  POSSIBILITY OF SUCH DAMAGE.
                                                                                                                                                                                                                                                                                */
 
-var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "../../node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
+var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
 
 var _CommonEncryption2 = _interopRequireDefault(_CommonEncryption);
 
-var _MediaCapability = __webpack_require__(/*! ../vo/MediaCapability */ "../../node_modules/dashjs/src/streaming/protection/vo/MediaCapability.js");
+var _MediaCapability = __webpack_require__(/*! ../vo/MediaCapability */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/MediaCapability.js");
 
 var _MediaCapability2 = _interopRequireDefault(_MediaCapability);
 
-var _KeySystemConfiguration = __webpack_require__(/*! ../vo/KeySystemConfiguration */ "../../node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js");
+var _KeySystemConfiguration = __webpack_require__(/*! ../vo/KeySystemConfiguration */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js");
 
 var _KeySystemConfiguration2 = _interopRequireDefault(_KeySystemConfiguration);
 
-var _ProtectionErrors = __webpack_require__(/*! ../errors/ProtectionErrors */ "../../node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
+var _ProtectionErrors = __webpack_require__(/*! ../errors/ProtectionErrors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
 
 var _ProtectionErrors2 = _interopRequireDefault(_ProtectionErrors);
 
-var _DashJSError = __webpack_require__(/*! ../../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
@@ -32419,7 +31754,8 @@ function ProtectionController(config) {
         mediaInfoArr = void 0,
         protDataSet = void 0,
         sessionType = void 0,
-        robustnessLevel = void 0,
+        audioRobustness = void 0,
+        videoRobustness = void 0,
         keySystem = void 0;
 
     function setup() {
@@ -32427,7 +31763,8 @@ function ProtectionController(config) {
         pendingNeedKeyData = [];
         mediaInfoArr = [];
         sessionType = 'temporary';
-        robustnessLevel = '';
+        audioRobustness = '';
+        videoRobustness = '';
     }
 
     function checkConfig() {
@@ -32517,7 +31854,18 @@ function ProtectionController(config) {
                 }
             }
             try {
-                protectionModel.createKeySession(initDataForKS, protData, getSessionType(keySystem), cdmData);
+                if (protData.sessionId) {
+                    setSessionType('persistent-license');
+                    protectionModel.createKeySession(initDataForKS, protData, getSessionType(keySystem), cdmData, protData.sessionId);
+                } else {
+                    protectionModel.createKeySession(initDataForKS, protData, getSessionType(keySystem), cdmData);
+                }
+                if (protData.audioRobustness) {
+                    audioRobustness = protData.audioRobustness;
+                }
+                if (protData.videoRobustness) {
+                    videoRobustness = protData.videoRobustness;
+                }
             } catch (error) {
                 eventBus.trigger(events.KEY_SESSION_CREATED, { data: null, error: new _DashJSError2.default(_ProtectionErrors2.default.KEY_SESSION_CREATED_ERROR_CODE, _ProtectionErrors2.default.KEY_SESSION_CREATED_ERROR_MESSAGE + error.message) });
             }
@@ -32628,7 +31976,8 @@ function ProtectionController(config) {
      * @instance
      */
     function setRobustnessLevel(level) {
-        robustnessLevel = level;
+        audioRobustness = level;
+        videoRobustness = level;
     }
 
     /**
@@ -32708,8 +32057,8 @@ function ProtectionController(config) {
         var protData = getProtData(keySystem);
         var audioCapabilities = [];
         var videoCapabilities = [];
-        var audioRobustness = protData && protData.audioRobustness && protData.audioRobustness.length > 0 ? protData.audioRobustness : robustnessLevel;
-        var videoRobustness = protData && protData.videoRobustness && protData.videoRobustness.length > 0 ? protData.videoRobustness : robustnessLevel;
+        var audioRobustness = protData && protData.audioRobustness && protData.audioRobustness.length > 0 ? protData.audioRobustness : audioRobustness;
+        var videoRobustness = protData && protData.videoRobustness && protData.videoRobustness.length > 0 ? protData.videoRobustness : videoRobustness;
         var ksSessionType = getSessionType(keySystem);
         var distinctiveIdentifier = protData && protData.distinctiveIdentifier ? protData.distinctiveIdentifier : 'optional';
         var persistentState = protData && protData.persistentState ? protData.persistentState : ksSessionType === 'temporary' ? 'optional' : 'required';
@@ -32755,12 +32104,13 @@ function ProtectionController(config) {
                             } else {
                                 logger.info('DRM: KeySystem Access Granted');
                                 eventBus.trigger(events.KEY_SYSTEM_SELECTED, { data: event.data });
-                                if (supportedKS[ksIdx].sessionId) {
+                                if (supportedKS[ksIdx].sessionStarted && supportedKS[ksIdx].sessionId) {
                                     // Load MediaKeySession with sessionId
                                     loadKeySession(supportedKS[ksIdx].sessionId, supportedKS[ksIdx].initData);
                                 } else if (supportedKS[ksIdx].initData) {
                                     // Create new MediaKeySession with initData
                                     createKeySession(supportedKS[ksIdx].initData, supportedKS[ksIdx].cdmData);
+                                    supportedKS[ksIdx].sessionStarted = true;
                                 }
                             }
                         };
@@ -32820,12 +32170,13 @@ function ProtectionController(config) {
                                     var initData = { kids: Object.keys(protData.clearkeys) };
                                     pendingNeedKeyData[_i][ksIdx].initData = new TextEncoder().encode(JSON.stringify(initData));
                                 }
-                                if (pendingNeedKeyData[_i][ksIdx].sessionId) {
+                                if (pendingNeedKeyData[_i][ksIdx].sessionStarted && pendingNeedKeyData[_i][ksIdx].sessionId) {
                                     // Load MediaKeySession with sessionId
                                     loadKeySession(pendingNeedKeyData[_i][ksIdx].sessionId, pendingNeedKeyData[_i][ksIdx].initData);
                                 } else if (pendingNeedKeyData[_i][ksIdx].initData !== null) {
                                     // Create new MediaKeySession with initData
                                     createKeySession(pendingNeedKeyData[_i][ksIdx].initData, pendingNeedKeyData[_i][ksIdx].cdmData);
+                                    pendingNeedKeyData[_i][ksIdx].sessionStarted = true;
                                 }
                                 break;
                             }
@@ -33074,6 +32425,10 @@ function ProtectionController(config) {
                     }
                 }
             }
+        } else if (initData) {
+            protectionModel.createKeySession(initData, protData, getSessionType(keySystem), cdmData);
+        } else {
+            eventBus.trigger(events.KEY_SESSION_CREATED, { data: null, error: new _DashJSError2.default(_ProtectionErrors2.default.KEY_SESSION_CREATED_ERROR_CODE, _ProtectionErrors2.default.KEY_SESSION_CREATED_ERROR_MESSAGE + 'Selected key system is ' + keySystem.systemString + '.  needkey/encrypted event contains no initData corresponding to that key system!') });
         }
 
         logger.debug('DRM: initData:', String.fromCharCode.apply(null, new Uint8Array(abInitData)));
@@ -33117,10 +32472,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(ProtectionController); /* 
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js":
-/*!**************************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js ***!
-  \**************************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js":
+/*!***************************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js ***!
+  \***************************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -33131,43 +32486,43 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _CommonEncryption = __webpack_require__(/*! ./../CommonEncryption */ "../../node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
+var _CommonEncryption = __webpack_require__(/*! ./../CommonEncryption */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
 
 var _CommonEncryption2 = _interopRequireDefault(_CommonEncryption);
 
-var _KeySystemClearKey = __webpack_require__(/*! ./../drm/KeySystemClearKey */ "../../node_modules/dashjs/src/streaming/protection/drm/KeySystemClearKey.js");
+var _KeySystemClearKey = __webpack_require__(/*! ./../drm/KeySystemClearKey */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemClearKey.js");
 
 var _KeySystemClearKey2 = _interopRequireDefault(_KeySystemClearKey);
 
-var _KeySystemW3CClearKey = __webpack_require__(/*! ./../drm/KeySystemW3CClearKey */ "../../node_modules/dashjs/src/streaming/protection/drm/KeySystemW3CClearKey.js");
+var _KeySystemW3CClearKey = __webpack_require__(/*! ./../drm/KeySystemW3CClearKey */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemW3CClearKey.js");
 
 var _KeySystemW3CClearKey2 = _interopRequireDefault(_KeySystemW3CClearKey);
 
-var _KeySystemWidevine = __webpack_require__(/*! ./../drm/KeySystemWidevine */ "../../node_modules/dashjs/src/streaming/protection/drm/KeySystemWidevine.js");
+var _KeySystemWidevine = __webpack_require__(/*! ./../drm/KeySystemWidevine */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemWidevine.js");
 
 var _KeySystemWidevine2 = _interopRequireDefault(_KeySystemWidevine);
 
-var _KeySystemPlayReady = __webpack_require__(/*! ./../drm/KeySystemPlayReady */ "../../node_modules/dashjs/src/streaming/protection/drm/KeySystemPlayReady.js");
+var _KeySystemPlayReady = __webpack_require__(/*! ./../drm/KeySystemPlayReady */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemPlayReady.js");
 
 var _KeySystemPlayReady2 = _interopRequireDefault(_KeySystemPlayReady);
 
-var _DRMToday = __webpack_require__(/*! ./../servers/DRMToday */ "../../node_modules/dashjs/src/streaming/protection/servers/DRMToday.js");
+var _DRMToday = __webpack_require__(/*! ./../servers/DRMToday */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/DRMToday.js");
 
 var _DRMToday2 = _interopRequireDefault(_DRMToday);
 
-var _PlayReady = __webpack_require__(/*! ./../servers/PlayReady */ "../../node_modules/dashjs/src/streaming/protection/servers/PlayReady.js");
+var _PlayReady = __webpack_require__(/*! ./../servers/PlayReady */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/PlayReady.js");
 
 var _PlayReady2 = _interopRequireDefault(_PlayReady);
 
-var _Widevine = __webpack_require__(/*! ./../servers/Widevine */ "../../node_modules/dashjs/src/streaming/protection/servers/Widevine.js");
+var _Widevine = __webpack_require__(/*! ./../servers/Widevine */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/Widevine.js");
 
 var _Widevine2 = _interopRequireDefault(_Widevine);
 
-var _ClearKey = __webpack_require__(/*! ./../servers/ClearKey */ "../../node_modules/dashjs/src/streaming/protection/servers/ClearKey.js");
+var _ClearKey = __webpack_require__(/*! ./../servers/ClearKey */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/ClearKey.js");
 
 var _ClearKey2 = _interopRequireDefault(_ClearKey);
 
-var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "../../node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
+var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
 
 var _ProtectionConstants2 = _interopRequireDefault(_ProtectionConstants);
 
@@ -33519,70 +32874,89 @@ function ProtectionKeyController() {
 ProtectionKeyController.__dashjs_factory_name = 'ProtectionKeyController';
 exports.default = dashjs.FactoryMaker.getSingletonFactory(ProtectionKeyController); /* jshint ignore:line */
 
-/***/ }),
+        // Message not destined for license server
+        if (!licenseServerData) {
+            logger.debug('DRM: License server request not required for this message (type = ' + e.data.messageType + ').  Session ID = ' + sessionToken.getSessionID());
+            sendLicenseRequestCompleteEvent(eventData);
+            return;
+        }
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/drm/KeySystemClearKey.js":
-/*!************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemClearKey.js ***!
-  \************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemClearKey.js":
+/*!*************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemClearKey.js ***!
+  \*************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+        // All remaining key system scenarios require a request to a remote license server
+        // Determine license server URL
+        var url = null;
+        if (protData && protData.serverURL) {
+            var serverURL = protData.serverURL;
+            if (typeof serverURL === 'string' && serverURL !== '') {
+                url = serverURL;
+            } else if ((typeof serverURL === 'undefined' ? 'undefined' : _typeof(serverURL)) === 'object' && serverURL.hasOwnProperty(messageType)) {
+                url = serverURL[messageType];
+            }
+        } else if (protData && protData.laURL && protData.laURL !== '') {
+            // TODO: Deprecated!
+            url = protData.laURL;
+        } else {
+            url = keySystem.getLicenseServerURLFromInitData(_CommonEncryption2.default.getPSSHData(sessionToken.initData));
+            if (!url) {
+                url = e.data.laURL;
+            }
+        }
+        // Possibly update or override the URL based on the message
+        url = licenseServerData.getServerURLFromMessage(url, message, messageType);
 
+        // Ensure valid license server URL
+        if (!url) {
+            sendLicenseRequestCompleteEvent(eventData, new _DashJSError2.default(_ProtectionErrors2.default.MEDIA_KEY_MESSAGE_NO_LICENSE_SERVER_URL_ERROR_CODE, _ProtectionErrors2.default.MEDIA_KEY_MESSAGE_NO_LICENSE_SERVER_URL_ERROR_MESSAGE));
+            return;
+        }
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+        // Set optional XMLHttpRequest headers from protection data and message
+        var reqHeaders = {};
+        var withCredentials = false;
+        var updateHeaders = function updateHeaders(headers) {
+            if (headers) {
+                for (var key in headers) {
+                    if ('authorization' === key.toLowerCase()) {
+                        withCredentials = true;
+                    }
+                    reqHeaders[key] = headers[key];
+                }
+            }
+        };
+        if (protData) {
+            updateHeaders(protData.httpRequestHeaders);
+        }
+        updateHeaders(keySystem.getRequestHeadersFromMessage(message));
 
-var _KeyPair = __webpack_require__(/*! ../vo/KeyPair */ "../../node_modules/dashjs/src/streaming/protection/vo/KeyPair.js");
+var _KeyPair = __webpack_require__(/*! ../vo/KeyPair */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyPair.js");
 
 var _KeyPair2 = _interopRequireDefault(_KeyPair);
 
-var _ClearKeyKeySet = __webpack_require__(/*! ../vo/ClearKeyKeySet */ "../../node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js");
+var _ClearKeyKeySet = __webpack_require__(/*! ../vo/ClearKeyKeySet */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js");
 
 var _ClearKeyKeySet2 = _interopRequireDefault(_ClearKeyKeySet);
 
-var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "../../node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
+var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
 
 var _CommonEncryption2 = _interopRequireDefault(_CommonEncryption);
 
-var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "../../node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
+var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
 
 var _ProtectionConstants2 = _interopRequireDefault(_ProtectionConstants);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+        var onAbort = function onAbort(xhr) {
+            sendLicenseRequestCompleteEvent(eventData, new _DashJSError2.default(_ProtectionErrors2.default.MEDIA_KEY_MESSAGE_LICENSER_ERROR_CODE, _ProtectionErrors2.default.MEDIA_KEY_MESSAGE_LICENSER_ERROR_MESSAGE + keySystemString + ' update, XHR aborted. status is "' + xhr.statusText + '" (' + xhr.status + '), readyState is ' + xhr.readyState));
+        };
 
-/**
- * The copyright in this software is being made available under the BSD License,
- * included below. This software may be subject to other third party and contributor
- * rights, including patent rights, and no such rights are granted under this license.
- *
- * Copyright (c) 2013, Dash Industry Forum.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *  * Redistributions of source code must retain the above copyright notice, this
- *  list of conditions and the following disclaimer.
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation and/or
- *  other materials provided with the distribution.
- *  * Neither the name of Dash Industry Forum nor the names of its
- *  contributors may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
- *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+        var onError = function onError(xhr) {
+            sendLicenseRequestCompleteEvent(eventData, new _DashJSError2.default(_ProtectionErrors2.default.MEDIA_KEY_MESSAGE_LICENSER_ERROR_CODE, _ProtectionErrors2.default.MEDIA_KEY_MESSAGE_LICENSER_ERROR_MESSAGE + keySystemString + ' update, XHR error. status is "' + xhr.statusText + '" (' + xhr.status + '), readyState is ' + xhr.readyState));
+        };
 
 var uuid = 'e2719d58-a985-b3c9-781a-b030af78d30e';
 var systemString = _ProtectionConstants2.default.CLEARKEY_KEYSTEM_STRING;
@@ -33662,6 +33036,7 @@ function KeySystemClearKey(config) {
         getClearKeysFromProtectionData: getClearKeysFromProtectionData
     };
 
+    setup();
     return instance;
 }
 
@@ -33670,10 +33045,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(KeySystemClearKey); /*
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/drm/KeySystemPlayReady.js":
-/*!*************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemPlayReady.js ***!
-  \*************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemPlayReady.js":
+/*!**************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemPlayReady.js ***!
+  \**************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -33684,16 +33059,20 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "../../node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
+var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
 
 var _CommonEncryption2 = _interopRequireDefault(_CommonEncryption);
 
-var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "../../node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
+var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
 
 var _ProtectionConstants2 = _interopRequireDefault(_ProtectionConstants);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+/**
+ * @module ProtectionKeyController
+ * @description Media protection key system functionality that can be modified/overridden by applications
+ */
 /**
  * The copyright in this software is being made available under the BSD License,
  * included below. This software may be subject to other third party and contributor
@@ -33724,6 +33103,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+function ProtectionKeyController() {
 
 /**
  * Microsoft PlayReady DRM
@@ -33799,6 +33179,7 @@ function KeySystemPlayReady(config) {
             // return directly the challenge without wrapping it in an xml doc
             return message;
         }
+    }
 
         return licenseRequest;
     }
@@ -33930,6 +33311,7 @@ function KeySystemPlayReady(config) {
         if (protectionData) {
             protData = protectionData;
         }
+        return supportedKS;
     }
 
     /**
@@ -33997,10 +33379,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(KeySystemPlayReady); /
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/drm/KeySystemW3CClearKey.js":
-/*!***************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemW3CClearKey.js ***!
-  \***************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemW3CClearKey.js":
+/*!****************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemW3CClearKey.js ***!
+  \****************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -34011,19 +33393,19 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _KeyPair = __webpack_require__(/*! ../vo/KeyPair */ "../../node_modules/dashjs/src/streaming/protection/vo/KeyPair.js");
+var _KeyPair = __webpack_require__(/*! ../vo/KeyPair */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyPair.js");
 
 var _KeyPair2 = _interopRequireDefault(_KeyPair);
 
-var _ClearKeyKeySet = __webpack_require__(/*! ../vo/ClearKeyKeySet */ "../../node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js");
+var _ClearKeyKeySet = __webpack_require__(/*! ../vo/ClearKeyKeySet */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js");
 
 var _ClearKeyKeySet2 = _interopRequireDefault(_ClearKeyKeySet);
 
-var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "../../node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
+var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
 
 var _CommonEncryption2 = _interopRequireDefault(_CommonEncryption);
 
-var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "../../node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
+var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
 
 var _ProtectionConstants2 = _interopRequireDefault(_ProtectionConstants);
 
@@ -34146,10 +33528,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(KeySystemW3CClearKey);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/drm/KeySystemWidevine.js":
-/*!************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemWidevine.js ***!
-  \************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemWidevine.js":
+/*!*************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/drm/KeySystemWidevine.js ***!
+  \*************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -34160,11 +33542,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "../../node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
+var _CommonEncryption = __webpack_require__(/*! ../CommonEncryption */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/CommonEncryption.js");
 
 var _CommonEncryption2 = _interopRequireDefault(_CommonEncryption);
 
-var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "../../node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
+var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
 
 var _ProtectionConstants2 = _interopRequireDefault(_ProtectionConstants);
 
@@ -34276,10 +33658,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(KeySystemWidevine); /*
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js":
-/*!**************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js ***!
-  \**************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js":
+/*!***************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js ***!
+  \***************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -34290,7 +33672,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _ErrorsBase2 = __webpack_require__(/*! ../../../core/errors/ErrorsBase */ "../../node_modules/dashjs/src/core/errors/ErrorsBase.js");
+var _ErrorsBase2 = __webpack_require__(/*! ../../../core/errors/ErrorsBase */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/ErrorsBase.js");
 
 var _ErrorsBase3 = _interopRequireDefault(_ErrorsBase2);
 
@@ -34431,10 +33813,10 @@ exports.default = protectionErrors;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/models/ProtectionModel_01b.js":
-/*!*****************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_01b.js ***!
-  \*****************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_01b.js":
+/*!******************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_01b.js ***!
+  \******************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -34445,31 +33827,31 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _ProtectionKeyController = __webpack_require__(/*! ../controllers/ProtectionKeyController */ "../../node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js");
+var _ProtectionKeyController = __webpack_require__(/*! ../controllers/ProtectionKeyController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js");
 
 var _ProtectionKeyController2 = _interopRequireDefault(_ProtectionKeyController);
 
-var _NeedKey = __webpack_require__(/*! ../vo/NeedKey */ "../../node_modules/dashjs/src/streaming/protection/vo/NeedKey.js");
+var _NeedKey = __webpack_require__(/*! ../vo/NeedKey */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/NeedKey.js");
 
 var _NeedKey2 = _interopRequireDefault(_NeedKey);
 
-var _DashJSError = __webpack_require__(/*! ../../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _KeyMessage = __webpack_require__(/*! ../vo/KeyMessage */ "../../node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js");
+var _KeyMessage = __webpack_require__(/*! ../vo/KeyMessage */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js");
 
 var _KeyMessage2 = _interopRequireDefault(_KeyMessage);
 
-var _KeySystemConfiguration = __webpack_require__(/*! ../vo/KeySystemConfiguration */ "../../node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js");
+var _KeySystemConfiguration = __webpack_require__(/*! ../vo/KeySystemConfiguration */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js");
 
 var _KeySystemConfiguration2 = _interopRequireDefault(_KeySystemConfiguration);
 
-var _KeySystemAccess = __webpack_require__(/*! ../vo/KeySystemAccess */ "../../node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js");
+var _KeySystemAccess = __webpack_require__(/*! ../vo/KeySystemAccess */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js");
 
 var _KeySystemAccess2 = _interopRequireDefault(_KeySystemAccess);
 
-var _ProtectionErrors = __webpack_require__(/*! ../errors/ProtectionErrors */ "../../node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
+var _ProtectionErrors = __webpack_require__(/*! ../errors/ProtectionErrors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
 
 var _ProtectionErrors2 = _interopRequireDefault(_ProtectionErrors);
 
@@ -34901,47 +34283,48 @@ function ProtectionModel_01b(config) {
 ProtectionModel_01b.__dashjs_factory_name = 'ProtectionModel_01b';
 exports.default = dashjs.FactoryMaker.getClassFactory(ProtectionModel_01b); /* jshint ignore:line */
 
-/***/ }),
-
-/***/ "../../node_modules/dashjs/src/streaming/protection/models/ProtectionModel_21Jan2015.js":
-/*!***********************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_21Jan2015.js ***!
-  \***********************************************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _ProtectionKeyController = __webpack_require__(/*! ../controllers/ProtectionKeyController */ "../../node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js");
-
-var _ProtectionKeyController2 = _interopRequireDefault(_ProtectionKeyController);
-
-var _NeedKey = __webpack_require__(/*! ../vo/NeedKey */ "../../node_modules/dashjs/src/streaming/protection/vo/NeedKey.js");
-
 var _NeedKey2 = _interopRequireDefault(_NeedKey);
 
-var _ProtectionErrors = __webpack_require__(/*! ../errors/ProtectionErrors */ "../../node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
-
-var _ProtectionErrors2 = _interopRequireDefault(_ProtectionErrors);
-
-var _DashJSError = __webpack_require__(/*! ../../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_21Jan2015.js":
+/*!************************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_21Jan2015.js ***!
+  \************************************************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
 var _KeyMessage = __webpack_require__(/*! ../vo/KeyMessage */ "../../node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js");
 
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _ProtectionKeyController = __webpack_require__(/*! ../controllers/ProtectionKeyController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js");
+
+var _ProtectionKeyController2 = _interopRequireDefault(_ProtectionKeyController);
+
+var _NeedKey = __webpack_require__(/*! ../vo/NeedKey */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/NeedKey.js");
+
+var _NeedKey2 = _interopRequireDefault(_NeedKey);
+
+var _ProtectionErrors = __webpack_require__(/*! ../errors/ProtectionErrors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
+
+var _ProtectionErrors2 = _interopRequireDefault(_ProtectionErrors);
+
+var _DashJSError = __webpack_require__(/*! ../../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
+
+var _DashJSError2 = _interopRequireDefault(_DashJSError);
+
+var _KeyMessage = __webpack_require__(/*! ../vo/KeyMessage */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js");
+
 var _KeyMessage2 = _interopRequireDefault(_KeyMessage);
 
-var _KeySystemAccess = __webpack_require__(/*! ../vo/KeySystemAccess */ "../../node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js");
+var _KeySystemAccess = __webpack_require__(/*! ../vo/KeySystemAccess */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js");
 
 var _KeySystemAccess2 = _interopRequireDefault(_KeySystemAccess);
 
-var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "../../node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
+var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
 
 var _ProtectionConstants2 = _interopRequireDefault(_ProtectionConstants);
 
@@ -35095,25 +34478,56 @@ function ProtectionModel_21Jan2015(config) {
         });
     }
 
-    function createKeySession(initData, protData, sessionType) {
+    function createKeySession(initData, protData, sessionType, cdmData, sessionId) {
         if (!keySystem || !mediaKeys) {
             throw new Error('Can not create sessions until you have selected a key system');
         }
 
-        var session = mediaKeys.createSession(sessionType);
-        var sessionToken = createSessionToken(session, initData, sessionType);
-        var ks = this.getKeySystem();
+        if (sessionId !== undefined) {
+            loadPersistedLicence(sessionId);
+        } else {
+            var session = mediaKeys.createSession(sessionType);
+            var sessionToken = createSessionToken(session, initData, sessionType);
+            var ks = this.getKeySystem();
 
-        // Generate initial key request.
-        // keyids type is used for clearkey when keys are provided directly in the protection data and then request to a license server is not needed
-        var dataType = ks.systemString === _ProtectionConstants2.default.CLEARKEY_KEYSTEM_STRING && protData && protData.clearkeys ? 'keyids' : 'cenc';
-        session.generateRequest(dataType, initData).then(function () {
-            logger.debug('DRM: Session created.  SessionID = ' + sessionToken.getSessionID());
-            eventBus.trigger(events.KEY_SESSION_CREATED, { data: sessionToken });
-        }).catch(function (error) {
-            // TODO: Better error string
-            removeSession(sessionToken);
-            eventBus.trigger(events.KEY_SESSION_CREATED, { data: null, error: new _DashJSError2.default(_ProtectionErrors2.default.KEY_SESSION_CREATED_ERROR_CODE, _ProtectionErrors2.default.KEY_SESSION_CREATED_ERROR_MESSAGE + 'Error generating key request -- ' + error.name) });
+            // Generate initial key request.
+            // keyids type is used for clearkey when keys are provided directly in the protection data and then request to a license server is not needed
+            var dataType = ks.systemString === _ProtectionConstants2.default.CLEARKEY_KEYSTEM_STRING && protData && protData.clearkeys ? 'keyids' : 'cenc';
+            session.generateRequest(dataType, initData).then(function () {
+                logger.debug('DRM: Session created.  SessionID = ' + sessionToken.getSessionID());
+                eventBus.trigger(events.KEY_SESSION_CREATED, { data: sessionToken });
+            }).catch(function (error) {
+                // TODO: Better error string
+                removeSession(sessionToken);
+                eventBus.trigger(events.KEY_SESSION_CREATED, { data: null, error: new _DashJSError2.default(_ProtectionErrors2.default.KEY_SESSION_CREATED_ERROR_CODE, _ProtectionErrors2.default.KEY_SESSION_CREATED_ERROR_MESSAGE + 'Error generating key request -- ' + error.name) });
+            });
+        }
+    }
+
+    function loadPersistedLicence(sessionId) {
+
+        // seesionType needs to be peristent rather for new and stored licenses
+        var session = mediaKeys.createSession('persistent-license');
+
+        session.load(sessionId).then(function (success) {
+            var sessionToken = createSessionToken(session);
+            if (success) {
+                logger.debug('Successfully loaded stored session with sessionID ', sessionId);
+
+                if (sessionToken.getExpirationTime() < new Date()) {
+                    // The token/license has expired!  We should probably remove the stored license.
+                    logger.debug('The token has expired on ' + new Date(sessionToken.getExpirationTime()));
+                    removeKeySession(sessionToken);
+                }
+            } else {
+                // The application should remove its record of sessionId.
+                console.error('No stored session with the ID ' + sessionId + ' was found.');
+                eventBus.trigger(events.KEY_ERROR, { data: null, error: 'Could not load session! Invalid Session ID (' + sessionId + ')' });
+                removeKeySession(sessionToken);
+                return;
+            }
+        }).catch(function (e) {
+            console.error.bind(console, 'Unable to load or initialize the stored session with the ID ' + sessionId + '. Error ' + e.name + ': ' + e.message);
         });
     }
 
@@ -35185,6 +34599,7 @@ function ProtectionModel_21Jan2015(config) {
             eventBus.trigger(events.KEY_SYSTEM_ACCESS_COMPLETE, { error: 'Insecure origins are not allowed' });
             return;
         }
+    }
 
         (function (i) {
             var keySystem = ksConfigurations[i].ks;
@@ -35416,10 +34831,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(ProtectionModel_21Jan2015)
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/models/ProtectionModel_3Feb2014.js":
-/*!**********************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_3Feb2014.js ***!
-  \**********************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_3Feb2014.js":
+/*!***********************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/models/ProtectionModel_3Feb2014.js ***!
+  \***********************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -35430,31 +34845,31 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _ProtectionKeyController = __webpack_require__(/*! ../controllers/ProtectionKeyController */ "../../node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js");
+var _ProtectionKeyController = __webpack_require__(/*! ../controllers/ProtectionKeyController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/controllers/ProtectionKeyController.js");
 
 var _ProtectionKeyController2 = _interopRequireDefault(_ProtectionKeyController);
 
-var _NeedKey = __webpack_require__(/*! ../vo/NeedKey */ "../../node_modules/dashjs/src/streaming/protection/vo/NeedKey.js");
+var _NeedKey = __webpack_require__(/*! ../vo/NeedKey */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/NeedKey.js");
 
 var _NeedKey2 = _interopRequireDefault(_NeedKey);
 
-var _DashJSError = __webpack_require__(/*! ../../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _ProtectionErrors = __webpack_require__(/*! ../errors/ProtectionErrors */ "../../node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
+var _ProtectionErrors = __webpack_require__(/*! ../errors/ProtectionErrors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/errors/ProtectionErrors.js");
 
 var _ProtectionErrors2 = _interopRequireDefault(_ProtectionErrors);
 
-var _KeyMessage = __webpack_require__(/*! ../vo/KeyMessage */ "../../node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js");
+var _KeyMessage = __webpack_require__(/*! ../vo/KeyMessage */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js");
 
 var _KeyMessage2 = _interopRequireDefault(_KeyMessage);
 
-var _KeySystemConfiguration = __webpack_require__(/*! ../vo/KeySystemConfiguration */ "../../node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js");
+var _KeySystemConfiguration = __webpack_require__(/*! ../vo/KeySystemConfiguration */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js");
 
 var _KeySystemConfiguration2 = _interopRequireDefault(_KeySystemConfiguration);
 
-var _KeySystemAccess = __webpack_require__(/*! ../vo/KeySystemAccess */ "../../node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js");
+var _KeySystemAccess = __webpack_require__(/*! ../vo/KeySystemAccess */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js");
 
 var _KeySystemAccess2 = _interopRequireDefault(_KeySystemAccess);
 
@@ -35831,10 +35246,10 @@ exports.default = dashjs.FactoryMaker.getClassFactory(ProtectionModel_3Feb2014);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/servers/ClearKey.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/ClearKey.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/ClearKey.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/ClearKey.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -35845,11 +35260,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _KeyPair = __webpack_require__(/*! ../vo/KeyPair */ "../../node_modules/dashjs/src/streaming/protection/vo/KeyPair.js");
+var _KeyPair = __webpack_require__(/*! ../vo/KeyPair */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyPair.js");
 
 var _KeyPair2 = _interopRequireDefault(_KeyPair);
 
-var _ClearKeyKeySet = __webpack_require__(/*! ../vo/ClearKeyKeySet */ "../../node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js");
+var _ClearKeyKeySet = __webpack_require__(/*! ../vo/ClearKeyKeySet */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js");
 
 var _ClearKeyKeySet2 = _interopRequireDefault(_ClearKeyKeySet);
 
@@ -35953,10 +35368,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(ClearKey); /* jshint i
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/servers/DRMToday.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/DRMToday.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/DRMToday.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/DRMToday.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -35967,7 +35382,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "../../node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
+var _ProtectionConstants = __webpack_require__(/*! ../../constants/ProtectionConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/ProtectionConstants.js");
 
 var _ProtectionConstants2 = _interopRequireDefault(_ProtectionConstants);
 
@@ -36079,10 +35494,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(DRMToday); /* jshint i
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/servers/PlayReady.js":
-/*!********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/PlayReady.js ***!
-  \********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/PlayReady.js":
+/*!*********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/PlayReady.js ***!
+  \*********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36242,10 +35657,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(PlayReady); /* jshint 
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/servers/Widevine.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/Widevine.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/Widevine.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/servers/Widevine.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36326,10 +35741,10 @@ exports.default = dashjs.FactoryMaker.getSingletonFactory(Widevine); /* jshint i
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js":
-/*!********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js ***!
-  \********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js":
+/*!*********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/ClearKeyKeySet.js ***!
+  \*********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36441,10 +35856,10 @@ exports.default = ClearKeyKeySet;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js":
-/*!****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js ***!
-  \****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js":
+/*!*****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyMessage.js ***!
+  \*****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36514,10 +35929,10 @@ exports.default = KeyMessage;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/vo/KeyPair.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyPair.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyPair.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeyPair.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36582,10 +35997,10 @@ exports.default = KeyPair;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js":
-/*!*********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js ***!
-  \*********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js":
+/*!**********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemAccess.js ***!
+  \**********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36654,10 +36069,10 @@ exports.default = KeySystemAccess;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js":
-/*!****************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js ***!
-  \****************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js":
+/*!*****************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/KeySystemConfiguration.js ***!
+  \*****************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36734,6 +36149,8 @@ function KeySystemConfiguration(audioCapabilities, videoCapabilities, distinctiv
     }
     this.distinctiveIdentifier = distinctiveIdentifier;
     this.persistentState = persistentState;
+    // adding persistent-license to sessionTypes to allow offline playback
+    sessionTypes.push('persistent-license');
     this.sessionTypes = sessionTypes;
 };
 
@@ -36741,10 +36158,10 @@ exports.default = KeySystemConfiguration;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/vo/MediaCapability.js":
-/*!*********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/MediaCapability.js ***!
-  \*********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/MediaCapability.js":
+/*!**********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/MediaCapability.js ***!
+  \**********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36809,10 +36226,10 @@ exports.default = MediaCapability;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/protection/vo/NeedKey.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/NeedKey.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/NeedKey.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/protection/vo/NeedKey.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36876,10 +36293,10 @@ exports.default = NeedKey;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/DroppedFramesHistory.js":
-/*!******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/DroppedFramesHistory.js ***!
-  \******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/DroppedFramesHistory.js":
+/*!*******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/DroppedFramesHistory.js ***!
+  \*******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36890,7 +36307,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -36945,10 +36362,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/RulesContext.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/RulesContext.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/RulesContext.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/RulesContext.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -36959,7 +36376,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -37069,10 +36486,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(RulesContext);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js":
-/*!***********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js ***!
-  \***********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js ***!
+  \************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -37083,7 +36500,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -37168,10 +36585,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/SwitchRequestHistory.js":
-/*!******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequestHistory.js ***!
-  \******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequestHistory.js":
+/*!*******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequestHistory.js ***!
+  \*******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -37182,15 +36599,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _SwitchRequest = __webpack_require__(/*! ./SwitchRequest */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
+var _SwitchRequest = __webpack_require__(/*! ./SwitchRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
 
 var _SwitchRequest2 = _interopRequireDefault(_SwitchRequest);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 /**
  * The copyright in this software is being made available under the BSD License,
@@ -37282,10 +36699,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/ThroughputHistory.js":
-/*!***************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/ThroughputHistory.js ***!
-  \***************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/ThroughputHistory.js":
+/*!****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/ThroughputHistory.js ***!
+  \****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -37293,14 +36710,14 @@ exports.default = factory;
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+  value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -37339,6 +36756,18 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  */
+/**
+ * @classdesc NeedKey
+ * @ignore
+ */
+var NeedKey =
+/**
+ * @param {ArrayBuffer} initData the initialization data
+ * @param {string} initDataType initialization data type
+ * @class
+ */
+function NeedKey(initData, initDataType) {
+  _classCallCheck(this, NeedKey);
 
 function ThroughputHistory(config) {
 
@@ -37573,10 +37002,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(ThroughputHistory);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/abr/ABRRulesCollection.js":
-/*!********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/ABRRulesCollection.js ***!
-  \********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/ABRRulesCollection.js":
+/*!*********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/ABRRulesCollection.js ***!
+  \*********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -37587,35 +37016,35 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _ThroughputRule = __webpack_require__(/*! ./ThroughputRule */ "../../node_modules/dashjs/src/streaming/rules/abr/ThroughputRule.js");
+var _ThroughputRule = __webpack_require__(/*! ./ThroughputRule */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/ThroughputRule.js");
 
 var _ThroughputRule2 = _interopRequireDefault(_ThroughputRule);
 
-var _InsufficientBufferRule = __webpack_require__(/*! ./InsufficientBufferRule */ "../../node_modules/dashjs/src/streaming/rules/abr/InsufficientBufferRule.js");
+var _InsufficientBufferRule = __webpack_require__(/*! ./InsufficientBufferRule */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/InsufficientBufferRule.js");
 
 var _InsufficientBufferRule2 = _interopRequireDefault(_InsufficientBufferRule);
 
-var _AbandonRequestsRule = __webpack_require__(/*! ./AbandonRequestsRule */ "../../node_modules/dashjs/src/streaming/rules/abr/AbandonRequestsRule.js");
+var _AbandonRequestsRule = __webpack_require__(/*! ./AbandonRequestsRule */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/AbandonRequestsRule.js");
 
 var _AbandonRequestsRule2 = _interopRequireDefault(_AbandonRequestsRule);
 
-var _DroppedFramesRule = __webpack_require__(/*! ./DroppedFramesRule */ "../../node_modules/dashjs/src/streaming/rules/abr/DroppedFramesRule.js");
+var _DroppedFramesRule = __webpack_require__(/*! ./DroppedFramesRule */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/DroppedFramesRule.js");
 
 var _DroppedFramesRule2 = _interopRequireDefault(_DroppedFramesRule);
 
-var _SwitchHistoryRule = __webpack_require__(/*! ./SwitchHistoryRule */ "../../node_modules/dashjs/src/streaming/rules/abr/SwitchHistoryRule.js");
+var _SwitchHistoryRule = __webpack_require__(/*! ./SwitchHistoryRule */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/SwitchHistoryRule.js");
 
 var _SwitchHistoryRule2 = _interopRequireDefault(_SwitchHistoryRule);
 
-var _BolaRule = __webpack_require__(/*! ./BolaRule */ "../../node_modules/dashjs/src/streaming/rules/abr/BolaRule.js");
+var _BolaRule = __webpack_require__(/*! ./BolaRule */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/BolaRule.js");
 
 var _BolaRule2 = _interopRequireDefault(_BolaRule);
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
+var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
 
 var _SwitchRequest2 = _interopRequireDefault(_SwitchRequest);
 
@@ -37807,31 +37236,41 @@ _FactoryMaker2.default.updateSingletonFactory(ABRRulesCollection.__dashjs_factor
 
 exports.default = factory;
 
-/***/ }),
+        latencyDict[mediaType].push(latencyTimeInMilliseconds);
+        if (latencyDict[mediaType].length > MAX_MEASUREMENTS_TO_KEEP) {
+            latencyDict[mediaType].shift();
+        }
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/abr/AbandonRequestsRule.js":
-/*!*********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/AbandonRequestsRule.js ***!
-  \*********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/AbandonRequestsRule.js":
+/*!**********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/AbandonRequestsRule.js ***!
+  \**********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+    function updateEwmaEstimate(ewmaObj, value, weight, halfLife) {
+        // Note about startup:
+        // Estimates start at 0, so early values are underestimated.
+        // This effect is countered in getAverageEwma() by dividing the estimates by:
+        //     1 - Math.pow(0.5, ewmaObj.totalWeight / halfLife)
 
+        var fastAlpha = Math.pow(0.5, weight / halfLife.fast);
+        ewmaObj.fastEstimate = (1 - fastAlpha) * value + fastAlpha * ewmaObj.fastEstimate;
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+        var slowAlpha = Math.pow(0.5, weight / halfLife.slow);
+        ewmaObj.slowEstimate = (1 - slowAlpha) * value + slowAlpha * ewmaObj.slowEstimate;
 
-var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
+var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
 
 var _SwitchRequest2 = _interopRequireDefault(_SwitchRequest);
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
-var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
+    function getSampleSize(isThroughput, mediaType, isLive) {
+        var arr = void 0,
+            sampleSize = void 0;
 
-var _Debug = __webpack_require__(/*! ../../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
@@ -37996,10 +37435,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(AbandonRequestsRule);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/abr/BolaRule.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/BolaRule.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/BolaRule.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/BolaRule.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -38010,29 +37449,29 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _MetricsConstants = __webpack_require__(/*! ../../constants/MetricsConstants */ "../../node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
+var _MetricsConstants = __webpack_require__(/*! ../../constants/MetricsConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/MetricsConstants.js");
 
 var _MetricsConstants2 = _interopRequireDefault(_MetricsConstants);
 
-var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
+var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
 
 var _SwitchRequest2 = _interopRequireDefault(_SwitchRequest);
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _HTTPRequest = __webpack_require__(/*! ../../vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../../vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _EventBus = __webpack_require__(/*! ../../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _Debug = __webpack_require__(/*! ../../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
@@ -38571,17 +38010,46 @@ function BolaRule(config) {
 
     setup();
     return instance;
-}
+} /**
+   * The copyright in this software is being made available under the BSD License,
+   * included below. This software may be subject to other third party and contributor
+   * rights, including patent rights, and no such rights are granted under this license.
+   *
+   * Copyright (c) 2013, Dash Industry Forum.
+   * All rights reserved.
+   *
+   * Redistribution and use in source and binary forms, with or without modification,
+   * are permitted provided that the following conditions are met:
+   *  * Redistributions of source code must retain the above copyright notice, this
+   *  list of conditions and the following disclaimer.
+   *  * Redistributions in binary form must reproduce the above copyright notice,
+   *  this list of conditions and the following disclaimer in the documentation and/or
+   *  other materials provided with the distribution.
+   *  * Neither the name of Dash Industry Forum nor the names of its
+   *  contributors may be used to endorse or promote products derived from this software
+   *  without specific prior written permission.
+   *
+   *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
+   *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+   *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+   *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   *  POSSIBILITY OF SUCH DAMAGE.
+   */
 
 BolaRule.__dashjs_factory_name = 'BolaRule';
 exports.default = _FactoryMaker2.default.getClassFactory(BolaRule);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/abr/DroppedFramesRule.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/DroppedFramesRule.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/DroppedFramesRule.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/DroppedFramesRule.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -38592,15 +38060,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
+var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
 
 var _SwitchRequest2 = _interopRequireDefault(_SwitchRequest);
 
-var _Debug = __webpack_require__(/*! ../../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
@@ -38657,47 +38125,62 @@ function DroppedFramesRule() {
 DroppedFramesRule.__dashjs_factory_name = 'DroppedFramesRule';
 exports.default = _FactoryMaker2.default.getClassFactory(DroppedFramesRule);
 
-/***/ }),
+        var bufferTime = Math.max(stableBufferTime, MINIMUM_BUFFER_S + MINIMUM_BUFFER_PER_BITRATE_LEVEL_S * bitrates.length);
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/abr/InsufficientBufferRule.js":
-/*!************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/InsufficientBufferRule.js ***!
-  \************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/InsufficientBufferRule.js":
+/*!*************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/InsufficientBufferRule.js ***!
+  \*************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+        return { gp: gp, Vp: Vp };
+    }
 
+    function getInitialBolaState(rulesContext) {
+        var initialState = {};
+        var mediaInfo = rulesContext.getMediaInfo();
+        var bitrates = mediaInfo.bitrateList.map(function (b) {
+            return b.bandwidth;
+        });
+        var utilities = utilitiesFromBitrates(bitrates);
+        utilities = utilities.map(function (u) {
+            return u - utilities[0] + 1;
+        }); // normalize
+        var stableBufferTime = mediaPlayerModel.getStableBufferTime();
+        var params = calculateBolaParameters(stableBufferTime, bitrates, utilities);
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+        if (!params) {
+            // only happens when there is only one bitrate level
+            initialState.state = BOLA_STATE_ONE_BITRATE;
+        } else {
+            initialState.state = BOLA_STATE_STARTUP;
 
-var _Constants = __webpack_require__(/*! ../../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _BufferController = __webpack_require__(/*! ../../controllers/BufferController */ "../../node_modules/dashjs/src/streaming/controllers/BufferController.js");
+var _BufferController = __webpack_require__(/*! ../../controllers/BufferController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js");
 
 var _BufferController2 = _interopRequireDefault(_BufferController);
 
-var _EventBus = __webpack_require__(/*! ../../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
+var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
 
 var _SwitchRequest2 = _interopRequireDefault(_SwitchRequest);
 
@@ -38746,8 +38229,11 @@ function InsufficientBufferRule(config) {
         if (!rulesContext || !rulesContext.hasOwnProperty('getMediaType')) {
             return switchRequest;
         }
+    }
 
-        checkConfig();
+    function onPeriodSwitchStarted() {
+        // TODO: does this have to be handled here?
+    }
 
         var mediaType = rulesContext.getMediaType();
         var metrics = metricsModel.getReadOnlyMetricsFor(mediaType);
@@ -38854,10 +38340,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(InsufficientBufferRule)
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/abr/SwitchHistoryRule.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/SwitchHistoryRule.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/SwitchHistoryRule.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/SwitchHistoryRule.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -38868,15 +38354,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
+var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
 
 var _SwitchRequest2 = _interopRequireDefault(_SwitchRequest);
 
@@ -38940,10 +38426,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(SwitchHistoryRule);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/abr/ThroughputRule.js":
-/*!****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/ThroughputRule.js ***!
-  \****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/ThroughputRule.js":
+/*!*****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/abr/ThroughputRule.js ***!
+  \*****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -38954,27 +38440,27 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _BufferController = __webpack_require__(/*! ../../controllers/BufferController */ "../../node_modules/dashjs/src/streaming/controllers/BufferController.js");
+var _BufferController = __webpack_require__(/*! ../../controllers/BufferController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js");
 
 var _BufferController2 = _interopRequireDefault(_BufferController);
 
-var _AbrController = __webpack_require__(/*! ../../controllers/AbrController */ "../../node_modules/dashjs/src/streaming/controllers/AbrController.js");
+var _AbrController = __webpack_require__(/*! ../../controllers/AbrController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/AbrController.js");
 
 var _AbrController2 = _interopRequireDefault(_AbrController);
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "../../node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
+var _SwitchRequest = __webpack_require__(/*! ../SwitchRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/SwitchRequest.js");
 
 var _SwitchRequest2 = _interopRequireDefault(_SwitchRequest);
 
-var _Constants = __webpack_require__(/*! ../../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
@@ -39086,10 +38572,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(ThroughputRule);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/scheduling/BufferLevelRule.js":
-/*!************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/scheduling/BufferLevelRule.js ***!
-  \************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/scheduling/BufferLevelRule.js":
+/*!*************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/scheduling/BufferLevelRule.js ***!
+  \*************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -39100,11 +38586,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -39194,18 +38680,48 @@ function BufferLevelRule(config) {
     };
 
     setup();
+
     return instance;
-}
+} /**
+   * The copyright in this software is being made available under the BSD License,
+   * included below. This software may be subject to other third party and contributor
+   * rights, including patent rights, and no such rights are granted under this license.
+   *
+   * Copyright (c) 2013, Dash Industry Forum.
+   * All rights reserved.
+   *
+   * Redistribution and use in source and binary forms, with or without modification,
+   * are permitted provided that the following conditions are met:
+   *  * Redistributions of source code must retain the above copyright notice, this
+   *  list of conditions and the following disclaimer.
+   *  * Redistributions in binary form must reproduce the above copyright notice,
+   *  this list of conditions and the following disclaimer in the documentation and/or
+   *  other materials provided with the distribution.
+   *  * Neither the name of Dash Industry Forum nor the names of its
+   *  contributors may be used to endorse or promote products derived from this software
+   *  without specific prior written permission.
+   *
+   *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
+   *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+   *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+   *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   *  POSSIBILITY OF SUCH DAMAGE.
+   */
 
 BufferLevelRule.__dashjs_factory_name = 'BufferLevelRule';
 exports.default = _FactoryMaker2.default.getClassFactory(BufferLevelRule);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/rules/scheduling/NextFragmentRequestRule.js":
-/*!********************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/rules/scheduling/NextFragmentRequestRule.js ***!
-  \********************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/scheduling/NextFragmentRequestRule.js":
+/*!*********************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/rules/scheduling/NextFragmentRequestRule.js ***!
+  \*********************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -39216,19 +38732,19 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _Debug = __webpack_require__(/*! ../../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _FragmentRequest = __webpack_require__(/*! ../../../streaming/vo/FragmentRequest */ "../../node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
+var _FragmentRequest = __webpack_require__(/*! ../../../streaming/vo/FragmentRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
 
 var _FragmentRequest2 = _interopRequireDefault(_FragmentRequest);
 
@@ -39363,10 +38879,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(NextFragmentRequestRule
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/text/EmbeddedTextHtmlRender.js":
-/*!*******************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/text/EmbeddedTextHtmlRender.js ***!
-  \*******************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/EmbeddedTextHtmlRender.js":
+/*!********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/EmbeddedTextHtmlRender.js ***!
+  \********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -39377,7 +38893,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -39700,10 +39216,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(EmbeddedTextHtmlRen
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/text/NotFragmentedTextBufferController.js":
-/*!******************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/text/NotFragmentedTextBufferController.js ***!
-  \******************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/NotFragmentedTextBufferController.js":
+/*!*******************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/NotFragmentedTextBufferController.js ***!
+  \*******************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -39714,39 +39230,39 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _InitCache = __webpack_require__(/*! ../utils/InitCache */ "../../node_modules/dashjs/src/streaming/utils/InitCache.js");
+var _InitCache = __webpack_require__(/*! ../utils/InitCache */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/InitCache.js");
 
 var _InitCache2 = _interopRequireDefault(_InitCache);
 
-var _SourceBufferSink = __webpack_require__(/*! ../SourceBufferSink */ "../../node_modules/dashjs/src/streaming/SourceBufferSink.js");
+var _SourceBufferSink = __webpack_require__(/*! ../SourceBufferSink */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/SourceBufferSink.js");
 
 var _SourceBufferSink2 = _interopRequireDefault(_SourceBufferSink);
 
-var _TextController = __webpack_require__(/*! ../../streaming/text/TextController */ "../../node_modules/dashjs/src/streaming/text/TextController.js");
+var _TextController = __webpack_require__(/*! ../../streaming/text/TextController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextController.js");
 
 var _TextController2 = _interopRequireDefault(_TextController);
 
-var _DashJSError = __webpack_require__(/*! ../../streaming/vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../../streaming/vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
@@ -39971,17 +39487,46 @@ function NotFragmentedTextBufferController(config) {
     setup();
 
     return instance;
-}
+} /**
+   * The copyright in this software is being made available under the BSD License,
+   * included below. This software may be subject to other third party and contributor
+   * rights, including patent rights, and no such rights are granted under this license.
+   *
+   * Copyright (c) 2013, Dash Industry Forum.
+   * All rights reserved.
+   *
+   * Redistribution and use in source and binary forms, with or without modification,
+   * are permitted provided that the following conditions are met:
+   *  * Redistributions of source code must retain the above copyright notice, this
+   *  list of conditions and the following disclaimer.
+   *  * Redistributions in binary form must reproduce the above copyright notice,
+   *  this list of conditions and the following disclaimer in the documentation and/or
+   *  other materials provided with the distribution.
+   *  * Neither the name of Dash Industry Forum nor the names of its
+   *  contributors may be used to endorse or promote products derived from this software
+   *  without specific prior written permission.
+   *
+   *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
+   *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+   *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+   *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+   *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+   *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+   *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   *  POSSIBILITY OF SUCH DAMAGE.
+   */
 
 NotFragmentedTextBufferController.__dashjs_factory_name = BUFFER_CONTROLLER_TYPE;
 exports.default = _FactoryMaker2.default.getClassFactory(NotFragmentedTextBufferController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/text/TextBufferController.js":
-/*!*****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/text/TextBufferController.js ***!
-  \*****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextBufferController.js":
+/*!******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextBufferController.js ***!
+  \******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -39992,23 +39537,23 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _BufferController = __webpack_require__(/*! ./../controllers/BufferController */ "../../node_modules/dashjs/src/streaming/controllers/BufferController.js");
+var _BufferController = __webpack_require__(/*! ./../controllers/BufferController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js");
 
 var _BufferController2 = _interopRequireDefault(_BufferController);
 
-var _NotFragmentedTextBufferController = __webpack_require__(/*! ./NotFragmentedTextBufferController */ "../../node_modules/dashjs/src/streaming/text/NotFragmentedTextBufferController.js");
+var _NotFragmentedTextBufferController = __webpack_require__(/*! ./NotFragmentedTextBufferController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/NotFragmentedTextBufferController.js");
 
 var _NotFragmentedTextBufferController2 = _interopRequireDefault(_NotFragmentedTextBufferController);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _InitCache = __webpack_require__(/*! ../utils/InitCache */ "../../node_modules/dashjs/src/streaming/utils/InitCache.js");
 
 /**
  * The copyright in this software is being made available under the BSD License,
@@ -40161,6 +39706,12 @@ function TextBufferController(config) {
         }
     }
 
+    function updateTimestampOffset(MSETimeOffset) {
+        if (buffer.timestampOffset !== MSETimeOffset && !isNaN(MSETimeOffset)) {
+            buffer.timestampOffset = MSETimeOffset;
+        }
+    }
+
     instance = {
         getBufferControllerType: getBufferControllerType,
         initialize: initialize,
@@ -40192,10 +39743,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(TextBufferController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/text/TextController.js":
-/*!***********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/text/TextController.js ***!
-  \***********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextController.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextController.js ***!
+  \************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -40206,39 +39757,39 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _TextSourceBuffer = __webpack_require__(/*! ./TextSourceBuffer */ "../../node_modules/dashjs/src/streaming/text/TextSourceBuffer.js");
+var _TextSourceBuffer = __webpack_require__(/*! ./TextSourceBuffer */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextSourceBuffer.js");
 
 var _TextSourceBuffer2 = _interopRequireDefault(_TextSourceBuffer);
 
-var _TextTracks = __webpack_require__(/*! ./TextTracks */ "../../node_modules/dashjs/src/streaming/text/TextTracks.js");
+var _TextTracks = __webpack_require__(/*! ./TextTracks */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextTracks.js");
 
 var _TextTracks2 = _interopRequireDefault(_TextTracks);
 
-var _VTTParser = __webpack_require__(/*! ../utils/VTTParser */ "../../node_modules/dashjs/src/streaming/utils/VTTParser.js");
+var _VTTParser = __webpack_require__(/*! ../utils/VTTParser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/VTTParser.js");
 
 var _VTTParser2 = _interopRequireDefault(_VTTParser);
 
-var _TTMLParser = __webpack_require__(/*! ../utils/TTMLParser */ "../../node_modules/dashjs/src/streaming/utils/TTMLParser.js");
+var _TTMLParser = __webpack_require__(/*! ../utils/TTMLParser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/TTMLParser.js");
 
 var _TTMLParser2 = _interopRequireDefault(_TTMLParser);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _SupervisorTools = __webpack_require__(/*! ../utils/SupervisorTools */ "../../node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
+var _SupervisorTools = __webpack_require__(/*! ../utils/SupervisorTools */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -40563,75 +40114,70 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(TextController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/text/TextSourceBuffer.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/text/TextSourceBuffer.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextSourceBuffer.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextSourceBuffer.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+var _Events2 = _interopRequireDefault(_Events);
 
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
+var _HTTPRequest = __webpack_require__(/*! ../vo/metrics/HTTPRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js");
 
-var _TextTrackInfo = __webpack_require__(/*! ../vo/TextTrackInfo */ "../../node_modules/dashjs/src/streaming/vo/TextTrackInfo.js");
+var _TextTrackInfo = __webpack_require__(/*! ../vo/TextTrackInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/TextTrackInfo.js");
 
 var _TextTrackInfo2 = _interopRequireDefault(_TextTrackInfo);
 
-var _BoxParser = __webpack_require__(/*! ../utils/BoxParser */ "../../node_modules/dashjs/src/streaming/utils/BoxParser.js");
+var _BoxParser = __webpack_require__(/*! ../utils/BoxParser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BoxParser.js");
 
 var _BoxParser2 = _interopRequireDefault(_BoxParser);
 
-var _CustomTimeRanges = __webpack_require__(/*! ../utils/CustomTimeRanges */ "../../node_modules/dashjs/src/streaming/utils/CustomTimeRanges.js");
+var _CustomTimeRanges = __webpack_require__(/*! ../utils/CustomTimeRanges */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/CustomTimeRanges.js");
 
 var _CustomTimeRanges2 = _interopRequireDefault(_CustomTimeRanges);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _TextTracks = __webpack_require__(/*! ./TextTracks */ "../../node_modules/dashjs/src/streaming/text/TextTracks.js");
+var _TextTracks = __webpack_require__(/*! ./TextTracks */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextTracks.js");
 
 var _TextTracks2 = _interopRequireDefault(_TextTracks);
 
-var _EmbeddedTextHtmlRender = __webpack_require__(/*! ./EmbeddedTextHtmlRender */ "../../node_modules/dashjs/src/streaming/text/EmbeddedTextHtmlRender.js");
+var _EmbeddedTextHtmlRender = __webpack_require__(/*! ./EmbeddedTextHtmlRender */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/EmbeddedTextHtmlRender.js");
 
 var _EmbeddedTextHtmlRender2 = _interopRequireDefault(_EmbeddedTextHtmlRender);
 
-var _codemIsoboxer = __webpack_require__(/*! codem-isoboxer */ "../../node_modules/codem-isoboxer/dist/iso_boxer.js");
+var _codemIsoboxer = __webpack_require__(/*! codem-isoboxer */ "./node_modules/codem-isoboxer/dist/iso_boxer.js");
 
 var _codemIsoboxer2 = _interopRequireDefault(_codemIsoboxer);
 
-var _cea608Parser = __webpack_require__(/*! ../../../externals/cea608-parser */ "../../node_modules/dashjs/externals/cea608-parser.js");
+var _cea608Parser = __webpack_require__(/*! ../../../externals/cea608-parser */ "./node_modules/bigscreen-player/node_modules/dashjs/externals/cea608-parser.js");
 
 var _cea608Parser2 = _interopRequireDefault(_cea608Parser);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
@@ -41202,81 +40748,50 @@ function TextSourceBuffer() {
         reset: reset
     };
 
-    setup();
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
 
-    return instance;
-} /**
-   * The copyright in this software is being made available under the BSD License,
-   * included below. This software may be subject to other third party and contributor
-   * rights, including patent rights, and no such rights are granted under this license.
-   *
-   * Copyright (c) 2013, Dash Industry Forum.
-   * All rights reserved.
-   *
-   * Redistribution and use in source and binary forms, with or without modification,
-   * are permitted provided that the following conditions are met:
-   *  * Redistributions of source code must retain the above copyright notice, this
-   *  list of conditions and the following disclaimer.
-   *  * Redistributions in binary form must reproduce the above copyright notice,
-   *  this list of conditions and the following disclaimer in the documentation and/or
-   *  other materials provided with the distribution.
-   *  * Neither the name of Dash Industry Forum nor the names of its
-   *  contributors may be used to endorse or promote products derived from this software
-   *  without specific prior written permission.
-   *
-   *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
-   *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-   *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-   *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-   *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-   *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-   *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-   *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-   *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-   *  POSSIBILITY OF SUCH DAMAGE.
-   */
+var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
 
 TextSourceBuffer.__dashjs_factory_name = 'TextSourceBuffer';
 exports.default = _FactoryMaker2.default.getSingletonFactory(TextSourceBuffer);
 
-/***/ }),
+var _TextTracks2 = _interopRequireDefault(_TextTracks);
 
-/***/ "../../node_modules/dashjs/src/streaming/text/TextTracks.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/text/TextTracks.js ***!
-  \*******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextTracks.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/text/TextTracks.js ***!
+  \********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+var _EmbeddedTextHtmlRender2 = _interopRequireDefault(_EmbeddedTextHtmlRender);
 
+var _codemIsoboxer = __webpack_require__(/*! codem-isoboxer */ "../../node_modules/codem-isoboxer/dist/iso_boxer.js");
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+var _codemIsoboxer2 = _interopRequireDefault(_codemIsoboxer);
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _imsc = __webpack_require__(/*! imsc */ "../../node_modules/imsc/src/main/js/main.js");
+var _imsc = __webpack_require__(/*! imsc */ "./node_modules/imsc/src/main/js/main.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -41940,10 +41455,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(TextTracks);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/thumbnail/ThumbnailController.js":
-/*!*********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/thumbnail/ThumbnailController.js ***!
-  \*********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/thumbnail/ThumbnailController.js":
+/*!**********************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/thumbnail/ThumbnailController.js ***!
+  \**********************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -41954,27 +41469,27 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _Thumbnail = __webpack_require__(/*! ../vo/Thumbnail */ "../../node_modules/dashjs/src/streaming/vo/Thumbnail.js");
+var _Thumbnail = __webpack_require__(/*! ../vo/Thumbnail */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/Thumbnail.js");
 
 var _Thumbnail2 = _interopRequireDefault(_Thumbnail);
 
-var _ThumbnailTracks = __webpack_require__(/*! ./ThumbnailTracks */ "../../node_modules/dashjs/src/streaming/thumbnail/ThumbnailTracks.js");
+var _ThumbnailTracks = __webpack_require__(/*! ./ThumbnailTracks */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/thumbnail/ThumbnailTracks.js");
 
 var _ThumbnailTracks2 = _interopRequireDefault(_ThumbnailTracks);
 
-var _BitrateInfo = __webpack_require__(/*! ../vo/BitrateInfo */ "../../node_modules/dashjs/src/streaming/vo/BitrateInfo.js");
+var _BitrateInfo = __webpack_require__(/*! ../vo/BitrateInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/BitrateInfo.js");
 
 var _BitrateInfo2 = _interopRequireDefault(_BitrateInfo);
 
-var _SegmentsUtils = __webpack_require__(/*! ../../dash/utils/SegmentsUtils */ "../../node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
+var _SegmentsUtils = __webpack_require__(/*! ../../dash/utils/SegmentsUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -42112,10 +41627,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(ThumbnailController);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/thumbnail/ThumbnailTracks.js":
-/*!*****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/thumbnail/ThumbnailTracks.js ***!
-  \*****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/thumbnail/ThumbnailTracks.js":
+/*!******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/thumbnail/ThumbnailTracks.js ***!
+  \******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -42126,37 +41641,37 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _DashConstants = __webpack_require__(/*! ../../dash/constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
+var _DashConstants = __webpack_require__(/*! ../../dash/constants/DashConstants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 var _DashConstants2 = _interopRequireDefault(_DashConstants);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _ThumbnailTrackInfo = __webpack_require__(/*! ../vo/ThumbnailTrackInfo */ "../../node_modules/dashjs/src/streaming/vo/ThumbnailTrackInfo.js");
+var _ThumbnailTrackInfo = __webpack_require__(/*! ../vo/ThumbnailTrackInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/ThumbnailTrackInfo.js");
 
 var _ThumbnailTrackInfo2 = _interopRequireDefault(_ThumbnailTrackInfo);
 
-var _URLUtils = __webpack_require__(/*! ../../streaming/utils/URLUtils */ "../../node_modules/dashjs/src/streaming/utils/URLUtils.js");
+var _URLUtils = __webpack_require__(/*! ../../streaming/utils/URLUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js");
 
 var _URLUtils2 = _interopRequireDefault(_URLUtils);
 
-var _SegmentsUtils = __webpack_require__(/*! ../../dash/utils/SegmentsUtils */ "../../node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
+var _SegmentsUtils = __webpack_require__(/*! ../../dash/utils/SegmentsUtils */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/utils/SegmentsUtils.js");
 
-var _SegmentBaseLoader = __webpack_require__(/*! ../../dash/SegmentBaseLoader */ "../../node_modules/dashjs/src/dash/SegmentBaseLoader.js");
+var _SegmentBaseLoader = __webpack_require__(/*! ../../dash/SegmentBaseLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/dash/SegmentBaseLoader.js");
 
 var _SegmentBaseLoader2 = _interopRequireDefault(_SegmentBaseLoader);
 
-var _BoxParser = __webpack_require__(/*! ../../streaming/utils/BoxParser */ "../../node_modules/dashjs/src/streaming/utils/BoxParser.js");
+var _BoxParser = __webpack_require__(/*! ../../streaming/utils/BoxParser */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BoxParser.js");
 
 var _BoxParser2 = _interopRequireDefault(_BoxParser);
 
-var _XHRLoader = __webpack_require__(/*! ../../streaming/net/XHRLoader */ "../../node_modules/dashjs/src/streaming/net/XHRLoader.js");
+var _XHRLoader = __webpack_require__(/*! ../../streaming/net/XHRLoader */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/net/XHRLoader.js");
 
 var _XHRLoader2 = _interopRequireDefault(_XHRLoader);
 
@@ -42431,10 +41946,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(ThumbnailTracks);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/BaseURLSelector.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/BaseURLSelector.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BaseURLSelector.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BaseURLSelector.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -42445,39 +41960,39 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "../../node_modules/dashjs/src/core/errors/Errors.js");
+var _Errors = __webpack_require__(/*! ../../core/errors/Errors */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/errors/Errors.js");
 
 var _Errors2 = _interopRequireDefault(_Errors);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _BlacklistController = __webpack_require__(/*! ../controllers/BlacklistController */ "../../node_modules/dashjs/src/streaming/controllers/BlacklistController.js");
+var _BlacklistController = __webpack_require__(/*! ../controllers/BlacklistController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BlacklistController.js");
 
 var _BlacklistController2 = _interopRequireDefault(_BlacklistController);
 
-var _DVBSelector = __webpack_require__(/*! ./baseUrlResolution/DVBSelector */ "../../node_modules/dashjs/src/streaming/utils/baseUrlResolution/DVBSelector.js");
+var _DVBSelector = __webpack_require__(/*! ./baseUrlResolution/DVBSelector */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/baseUrlResolution/DVBSelector.js");
 
 var _DVBSelector2 = _interopRequireDefault(_DVBSelector);
 
-var _BasicSelector = __webpack_require__(/*! ./baseUrlResolution/BasicSelector */ "../../node_modules/dashjs/src/streaming/utils/baseUrlResolution/BasicSelector.js");
+var _BasicSelector = __webpack_require__(/*! ./baseUrlResolution/BasicSelector */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/baseUrlResolution/BasicSelector.js");
 
 var _BasicSelector2 = _interopRequireDefault(_BasicSelector);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js");
+var _DashJSError = __webpack_require__(/*! ../vo/DashJSError */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js");
 
 var _DashJSError2 = _interopRequireDefault(_DashJSError);
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
@@ -42619,10 +42134,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(BaseURLSelector);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/BoxParser.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/BoxParser.js ***!
-  \*******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BoxParser.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/BoxParser.js ***!
+  \********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -42633,23 +42148,23 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _IsoFile = __webpack_require__(/*! ./IsoFile */ "../../node_modules/dashjs/src/streaming/utils/IsoFile.js");
+var _IsoFile = __webpack_require__(/*! ./IsoFile */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/IsoFile.js");
 
 var _IsoFile2 = _interopRequireDefault(_IsoFile);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _codemIsoboxer = __webpack_require__(/*! codem-isoboxer */ "../../node_modules/codem-isoboxer/dist/iso_boxer.js");
+var _codemIsoboxer = __webpack_require__(/*! codem-isoboxer */ "./node_modules/codem-isoboxer/dist/iso_boxer.js");
 
 var _codemIsoboxer2 = _interopRequireDefault(_codemIsoboxer);
 
-var _IsoBoxSearchInfo = __webpack_require__(/*! ../vo/IsoBoxSearchInfo */ "../../node_modules/dashjs/src/streaming/vo/IsoBoxSearchInfo.js");
+var _IsoBoxSearchInfo = __webpack_require__(/*! ../vo/IsoBoxSearchInfo */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/IsoBoxSearchInfo.js");
 
 var _IsoBoxSearchInfo2 = _interopRequireDefault(_IsoBoxSearchInfo);
 
@@ -42917,10 +42432,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(BoxParser);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/Capabilities.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/Capabilities.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/Capabilities.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/Capabilities.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -42931,11 +42446,11 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _DashConstants = __webpack_require__(/*! ../../dash/constants/DashConstants */ "../../node_modules/dashjs/src/dash/constants/DashConstants.js");
 
 function Capabilities() {
 
@@ -43023,27 +42538,33 @@ function Capabilities() {
 Capabilities.__dashjs_factory_name = 'Capabilities';
 exports.default = _FactoryMaker2.default.getSingletonFactory(Capabilities);
 
-/***/ }),
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/CustomTimeRanges.js":
-/*!**************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/CustomTimeRanges.js ***!
-  \**************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/CustomTimeRanges.js":
+/*!***************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/CustomTimeRanges.js ***!
+  \***************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
 
+function ThumbnailTracks(config) {
+    var context = this.context;
+    var dashManifestModel = config.dashManifestModel;
+    var adapter = config.adapter;
+    var baseURLController = config.baseURLController;
+    var stream = config.stream;
+    var urlUtils = (0, _URLUtils2.default)(context).getInstance();
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _SupervisorTools = __webpack_require__(/*! ../utils/SupervisorTools */ "../../node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
+var _SupervisorTools = __webpack_require__(/*! ../utils/SupervisorTools */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/SupervisorTools.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -43206,10 +42727,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(CustomTimeRanges);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/DOMStorage.js":
-/*!********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/DOMStorage.js ***!
-  \********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/DOMStorage.js":
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/DOMStorage.js ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -43220,15 +42741,15 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
@@ -43307,6 +42828,7 @@ function DOMStorage(config) {
             logger.warn('DOMStorage access denied: ' + error.message);
             return supported;
         }
+    }
 
         if (!storage || type !== STORAGE_TYPE_LOCAL && type !== STORAGE_TYPE_SESSION) {
             return supported;
@@ -43449,10 +42971,10 @@ exports.default = factory;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/EBMLParser.js":
-/*!********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/EBMLParser.js ***!
-  \********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/EBMLParser.js":
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/EBMLParser.js ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -43463,7 +42985,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -43738,29 +43260,38 @@ exports.default = _FactoryMaker2.default.getClassFactory(EBMLParser);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/ErrorHandler.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/ErrorHandler.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/ErrorHandler.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/ErrorHandler.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+        dvbSelector = (0, _DVBSelector2.default)(context).create({
+            blacklistController: serviceLocationBlacklistController
+        });
 
+        selector = basicSelector;
+    }
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
+    function setConfig(config) {
+        if (config.selector) {
+            selector = config.selector;
+        }
+        if (config.dashManifestModel) {
+            dashManifestModel = config.dashManifestModel;
+        }
+    }
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -43900,23 +43431,25 @@ function ErrorHandler() {
 ErrorHandler.__dashjs_factory_name = 'ErrorHandler';
 exports.default = _FactoryMaker2.default.getSingletonFactory(ErrorHandler);
 
-/***/ }),
+        var selectedBaseUrl = selector.select(baseUrls);
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/InitCache.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/InitCache.js ***!
-  \*******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/InitCache.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/InitCache.js ***!
+  \********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+        data.selectedIdx = baseUrls.indexOf(selectedBaseUrl);
 
+        return selectedBaseUrl;
+    }
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -43991,62 +43524,32 @@ function InitCache() {
 InitCache.__dashjs_factory_name = 'InitCache';
 exports.default = _FactoryMaker2.default.getSingletonFactory(InitCache);
 
-/***/ }),
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/IsoFile.js":
-/*!*****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/IsoFile.js ***!
-  \*****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/IsoFile.js":
+/*!******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/IsoFile.js ***!
+  \******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+var _codemIsoboxer = __webpack_require__(/*! codem-isoboxer */ "../../node_modules/codem-isoboxer/dist/iso_boxer.js");
 
+var _codemIsoboxer2 = _interopRequireDefault(_codemIsoboxer);
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+var _IsoBoxSearchInfo = __webpack_require__(/*! ../vo/IsoBoxSearchInfo */ "../../node_modules/dashjs/src/streaming/vo/IsoBoxSearchInfo.js");
 
-var _IsoBox = __webpack_require__(/*! ../vo/IsoBox */ "../../node_modules/dashjs/src/streaming/vo/IsoBox.js");
+var _IsoBox = __webpack_require__(/*! ../vo/IsoBox */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/IsoBox.js");
 
 var _IsoBox2 = _interopRequireDefault(_IsoBox);
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-/**
- * The copyright in this software is being made available under the BSD License,
- * included below. This software may be subject to other third party and contributor
- * rights, including patent rights, and no such rights are granted under this license.
- *
- * Copyright (c) 2013, Dash Industry Forum.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *  * Redistributions of source code must retain the above copyright notice, this
- *  list of conditions and the following disclaimer.
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation and/or
- *  other materials provided with the distribution.
- *  * Neither the name of Dash Industry Forum nor the names of its
- *  contributors may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
- *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- */
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function IsoFile() {
 
@@ -44135,27 +43638,35 @@ function IsoFile() {
 IsoFile.__dashjs_factory_name = 'IsoFile';
 exports.default = _FactoryMaker2.default.getClassFactory(IsoFile);
 
-/***/ }),
+    /**
+     * @param {ArrayBuffer} data
+     * @returns {IsoFile|null}
+     * @memberof BoxParser#
+     */
+    function parse(data) {
+        if (!data) return null;
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/LiveEdgeFinder.js":
-/*!************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/LiveEdgeFinder.js ***!
-  \************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/LiveEdgeFinder.js":
+/*!*************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/LiveEdgeFinder.js ***!
+  \*************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+        var parsedFile = _codemIsoboxer2.default.parseBuffer(data);
+        var dashIsoFile = (0, _IsoFile2.default)(context).create();
 
+        dashIsoFile.setData(parsedFile);
 
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
@@ -44236,27 +43747,43 @@ function LiveEdgeFinder(config) {
 LiveEdgeFinder.__dashjs_factory_name = 'LiveEdgeFinder';
 exports.default = _FactoryMaker2.default.getClassFactory(LiveEdgeFinder);
 
-/***/ }),
+            if (offset + boxSize <= data.byteLength) {
+                if (types.indexOf(boxType) >= 0) {
+                    boxInfo = new _IsoBoxSearchInfo2.default(offset, true, boxSize);
+                } else {
+                    lastCompletedOffset = offset + boxSize;
+                }
+            }
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/ObjectUtils.js":
-/*!*********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/ObjectUtils.js ***!
-  \*********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/ObjectUtils.js":
+/*!**********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/ObjectUtils.js ***!
+  \**********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+        if (!boxInfo) {
+            return new _IsoBoxSearchInfo2.default(lastCompletedOffset, false);
+        }
 
+        return boxInfo;
+    }
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
+    function getSamplesInfo(ab) {
+        if (!ab || ab.byteLength === 0) {
+            return { sampleList: [], lastSequenceNumber: NaN, totalDuration: NaN, numSequences: NaN };
+        }
+        var isoFile = parse(ab);
+        // zero or more moofs
+        var moofBoxes = isoFile.getBoxes('moof');
+        // exactly one mfhd per moof
+        var mfhdBoxes = isoFile.getBoxes('mfhd');
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _fastDeepEqual = __webpack_require__(/*! fast-deep-equal */ "../../node_modules/fast-deep-equal/index.js");
+var _fastDeepEqual = __webpack_require__(/*! fast-deep-equal */ "./node_modules/fast-deep-equal/index.js");
 
 var _fastDeepEqual2 = _interopRequireDefault(_fastDeepEqual);
 
@@ -44325,10 +43852,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(ObjectUtils);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/RequestModifier.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/RequestModifier.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/RequestModifier.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/RequestModifier.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -44339,7 +43866,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -44361,6 +43888,8 @@ function RequestModifier() {
         modifyRequestURL: modifyRequestURL,
         modifyRequestHeader: modifyRequestHeader
     };
+
+    setup();
 
     return instance;
 } /**
@@ -44399,10 +43928,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(RequestModifier);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/SupervisorTools.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/SupervisorTools.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/SupervisorTools.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/SupervisorTools.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -44450,7 +43979,7 @@ exports.checkInteger = checkInteger;
 exports.checkRange = checkRange;
 exports.checkIsVideoOrAudioType = checkIsVideoOrAudioType;
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
@@ -44484,10 +44013,10 @@ function checkIsVideoOrAudioType(type) {
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/TTMLParser.js":
-/*!********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/TTMLParser.js ***!
-  \********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/TTMLParser.js":
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/TTMLParser.js ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -44498,23 +44027,23 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
-var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "../../node_modules/dashjs/src/core/EventBus.js");
+var _EventBus = __webpack_require__(/*! ../../core/EventBus */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/EventBus.js");
 
 var _EventBus2 = _interopRequireDefault(_EventBus);
 
-var _Events = __webpack_require__(/*! ../../core/events/Events */ "../../node_modules/dashjs/src/core/events/Events.js");
+var _Events = __webpack_require__(/*! ../../core/events/Events */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/events/Events.js");
 
 var _Events2 = _interopRequireDefault(_Events);
 
-var _imsc = __webpack_require__(/*! imsc */ "../../node_modules/imsc/src/main/js/main.js");
+var _imsc = __webpack_require__(/*! imsc */ "./node_modules/imsc/src/main/js/main.js");
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -44682,10 +44211,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(TTMLParser);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/URLUtils.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/URLUtils.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -44696,7 +44225,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -44968,10 +44497,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(URLUtils);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/VTTParser.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/VTTParser.js ***!
-  \*******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/VTTParser.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/VTTParser.js ***!
+  \********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -44982,45 +44511,21 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
-var _Debug = __webpack_require__(/*! ../../core/Debug */ "../../node_modules/dashjs/src/core/Debug.js");
+var _Debug = __webpack_require__(/*! ../../core/Debug */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/Debug.js");
 
 var _Debug2 = _interopRequireDefault(_Debug);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /**
- * The copyright in this software is being made available under the BSD License,
- * included below. This software may be subject to other third party and contributor
- * rights, including patent rights, and no such rights are granted under this license.
+ * Creates an instance of an EBMLParser class which implements a large subset
+ * of the functionality required to parse Matroska EBML
  *
- * Copyright (c) 2013, Dash Industry Forum.
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *  * Redistributions of source code must retain the above copyright notice, this
- *  list of conditions and the following disclaimer.
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation and/or
- *  other materials provided with the distribution.
- *  * Neither the name of Dash Industry Forum nor the names of its
- *  contributors may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS AS IS AND ANY
- *  EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- *  NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- *  PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
- *  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
+ * @param {Object} config object with data member which is the buffer to parse
  */
 var WEBVTT = 'WEBVTT';
 
@@ -45186,10 +44691,10 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(VTTParser);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/baseUrlResolution/BasicSelector.js":
-/*!*****************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/baseUrlResolution/BasicSelector.js ***!
-  \*****************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/baseUrlResolution/BasicSelector.js":
+/*!******************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/baseUrlResolution/BasicSelector.js ***!
+  \******************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45197,12 +44702,12 @@ exports.default = _FactoryMaker2.default.getSingletonFactory(VTTParser);
 
 
 Object.defineProperty(exports, "__esModule", {
-    value: true
+  value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
-var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
+var _Events2 = _interopRequireDefault(_Events);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -45269,10 +44774,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(BasicSelector);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/utils/baseUrlResolution/DVBSelector.js":
-/*!***************************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/utils/baseUrlResolution/DVBSelector.js ***!
-  \***************************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/baseUrlResolution/DVBSelector.js":
+/*!****************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/utils/baseUrlResolution/DVBSelector.js ***!
+  \****************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45283,7 +44788,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "../../node_modules/dashjs/src/core/FactoryMaker.js");
+var _FactoryMaker = __webpack_require__(/*! ../../../core/FactoryMaker */ "./node_modules/bigscreen-player/node_modules/dashjs/src/core/FactoryMaker.js");
 
 var _FactoryMaker2 = _interopRequireDefault(_FactoryMaker);
 
@@ -45382,6 +44887,7 @@ function DVBSelector(config) {
 
             return urls[idx];
         }
+        return liveEdge;
     }
 
     function select(baseUrls) {
@@ -45430,10 +44936,10 @@ exports.default = _FactoryMaker2.default.getClassFactory(DVBSelector);
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/BitrateInfo.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/BitrateInfo.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/BitrateInfo.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/BitrateInfo.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45495,10 +45001,10 @@ exports.default = BitrateInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/DashJSError.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DashJSError.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45557,10 +45063,10 @@ exports.default = DashJSError;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/DataChunk.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/DataChunk.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DataChunk.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/DataChunk.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45630,10 +45136,10 @@ exports.default = DataChunk;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/FragmentRequest.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45715,10 +45221,10 @@ exports.default = FragmentRequest;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/HeadRequest.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/HeadRequest.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/HeadRequest.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/HeadRequest.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45729,7 +45235,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _FragmentRequest2 = __webpack_require__(/*! ./FragmentRequest */ "../../node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
+var _FragmentRequest2 = __webpack_require__(/*! ./FragmentRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
 
 var _FragmentRequest3 = _interopRequireDefault(_FragmentRequest2);
 
@@ -45795,10 +45301,10 @@ exports.default = HeadRequest;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/IsoBox.js":
-/*!*************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/IsoBox.js ***!
-  \*************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/IsoBox.js":
+/*!**************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/IsoBox.js ***!
+  \**************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -45962,10 +45468,10 @@ exports.default = IsoBox;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/IsoBoxSearchInfo.js":
-/*!***********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/IsoBoxSearchInfo.js ***!
-  \***********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/IsoBoxSearchInfo.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/IsoBoxSearchInfo.js ***!
+  \************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46024,10 +45530,10 @@ exports.default = IsoBoxSearchInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/ManifestInfo.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/ManifestInfo.js ***!
-  \*******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/ManifestInfo.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/ManifestInfo.js ***!
+  \********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46090,10 +45596,10 @@ exports.default = ManifestInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/MediaInfo.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/MediaInfo.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/MediaInfo.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/MediaInfo.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46165,10 +45671,10 @@ exports.default = MediaInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/MetricsList.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/MetricsList.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/MetricsList.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/MetricsList.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46236,10 +45742,10 @@ exports.default = MetricsList;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/RepresentationInfo.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/RepresentationInfo.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/RepresentationInfo.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/RepresentationInfo.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46301,10 +45807,10 @@ exports.default = RepresentationInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/StreamInfo.js":
-/*!*****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/StreamInfo.js ***!
-  \*****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/StreamInfo.js":
+/*!******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/StreamInfo.js ***!
+  \******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46366,10 +45872,10 @@ exports.default = StreamInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/TextRequest.js":
-/*!******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/TextRequest.js ***!
-  \******************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/TextRequest.js":
+/*!*******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/TextRequest.js ***!
+  \*******************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46380,11 +45886,11 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _Constants = __webpack_require__(/*! ../constants/Constants */ "../../node_modules/dashjs/src/streaming/constants/Constants.js");
+var _Constants = __webpack_require__(/*! ../constants/Constants */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/constants/Constants.js");
 
 var _Constants2 = _interopRequireDefault(_Constants);
 
-var _FragmentRequest2 = __webpack_require__(/*! ./FragmentRequest */ "../../node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
+var _FragmentRequest2 = __webpack_require__(/*! ./FragmentRequest */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/FragmentRequest.js");
 
 var _FragmentRequest3 = _interopRequireDefault(_FragmentRequest2);
 
@@ -46452,10 +45958,10 @@ exports.default = TextRequest;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/TextTrackInfo.js":
-/*!********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/TextTrackInfo.js ***!
-  \********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/TextTrackInfo.js":
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/TextTrackInfo.js ***!
+  \*********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46518,10 +46024,10 @@ exports.default = TextTrackInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/Thumbnail.js":
-/*!****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/Thumbnail.js ***!
-  \****************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/Thumbnail.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/Thumbnail.js ***!
+  \*****************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46582,10 +46088,10 @@ exports.default = Thumbnail;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/ThumbnailTrackInfo.js":
-/*!*************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/ThumbnailTrackInfo.js ***!
-  \*************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/ThumbnailTrackInfo.js":
+/*!**************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/ThumbnailTrackInfo.js ***!
+  \**************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46651,21 +46157,42 @@ var ThumbnailTrackInfo = function ThumbnailTrackInfo() {
 
 exports.default = ThumbnailTrackInfo;
 
-/***/ }),
+        for (var i = 0; i < len; i++) {
+            var item = data[i];
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/URIFragmentData.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/URIFragmentData.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/URIFragmentData.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/URIFragmentData.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-"use strict";
+                    if (!isNaN(startTime) && !isNaN(endTime) && startTime >= lastStartTime && endTime > startTime) {
+                        if (text !== '') {
+                            lastStartTime = startTime;
+                            //TODO Make VO external so other parsers can use.
+                            captionArray.push({
+                                start: startTime,
+                                end: endTime,
+                                data: text,
+                                styles: styles
+                            });
+                        } else {
+                            logger.error('Skipping cue due to empty/malformed cue text');
+                        }
+                    } else {
+                        logger.error('Skipping cue due to incorrect cue timing');
+                    }
+                }
+            }
+        }
 
+        return captionArray;
+    }
 
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
+    function convertCuePointTimes(time) {
+        var timeArray = time.split(':');
+        var len = timeArray.length - 1;
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -46734,10 +46261,10 @@ exports.default = URIFragmentData;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/BufferLevel.js":
-/*!**************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/BufferLevel.js ***!
-  \**************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/BufferLevel.js":
+/*!***************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/BufferLevel.js ***!
+  \***************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46809,10 +46336,10 @@ exports.default = BufferLevel;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/BufferState.js":
-/*!**************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/BufferState.js ***!
-  \**************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/BufferState.js":
+/*!***************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/BufferState.js ***!
+  \***************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46823,7 +46350,7 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _BufferController = __webpack_require__(/*! ../../controllers/BufferController */ "../../node_modules/dashjs/src/streaming/controllers/BufferController.js");
+var _BufferController = __webpack_require__(/*! ../../controllers/BufferController */ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/controllers/BufferController.js");
 
 var _BufferController2 = _interopRequireDefault(_BufferController);
 
@@ -46887,10 +46414,10 @@ exports.default = BufferState;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/DVRInfo.js":
-/*!**********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/DVRInfo.js ***!
-  \**********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/DVRInfo.js":
+/*!***********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/DVRInfo.js ***!
+  \***********************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -46965,10 +46492,10 @@ exports.default = DVRInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/DroppedFrames.js":
-/*!****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/DroppedFrames.js ***!
-  \****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/DroppedFrames.js":
+/*!*****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/DroppedFrames.js ***!
+  \*****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -47037,10 +46564,10 @@ exports.default = DroppedFrames;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js":
-/*!**************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js ***!
-  \**************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js":
+/*!***************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/HTTPRequest.js ***!
+  \***************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -47225,10 +46752,10 @@ exports.HTTPRequestTrace = HTTPRequestTrace;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/ManifestUpdate.js":
-/*!*****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/ManifestUpdate.js ***!
-  \*****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/ManifestUpdate.js":
+/*!******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/ManifestUpdate.js ***!
+  \******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -47432,10 +46959,10 @@ exports.ManifestUpdateRepresentationInfo = ManifestUpdateRepresentationInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/PlayList.js":
-/*!***********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/PlayList.js ***!
-  \***********************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/PlayList.js":
+/*!************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/PlayList.js ***!
+  \************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -47601,10 +47128,10 @@ exports.PlayListTrace = PlayListTrace;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/RepresentationSwitch.js":
-/*!***********************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/RepresentationSwitch.js ***!
-  \***********************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/RepresentationSwitch.js":
+/*!************************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/RepresentationSwitch.js ***!
+  \************************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -47689,10 +47216,10 @@ exports.default = RepresentationSwitch;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/RequestsQueue.js":
-/*!****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/RequestsQueue.js ***!
-  \****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/RequestsQueue.js":
+/*!*****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/RequestsQueue.js ***!
+  \*****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -47762,10 +47289,10 @@ exports.default = RequestsQueue;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/SchedulingInfo.js":
-/*!*****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/SchedulingInfo.js ***!
-  \*****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/SchedulingInfo.js":
+/*!******************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/SchedulingInfo.js ***!
+  \******************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -47871,10 +47398,10 @@ exports.default = SchedulingInfo;
 
 /***/ }),
 
-/***/ "../../node_modules/dashjs/src/streaming/vo/metrics/TCPConnection.js":
-/*!****************************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/TCPConnection.js ***!
-  \****************************************************************************************************************/
+/***/ "./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/TCPConnection.js":
+/*!*****************************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/node_modules/dashjs/src/streaming/vo/metrics/TCPConnection.js ***!
+  \*****************************************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -47958,2644 +47485,6964 @@ exports.default = TCPConnection;
 
 /***/ }),
 
-/***/ "../../node_modules/fast-deep-equal/index.js":
-/*!****************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/fast-deep-equal/index.js ***!
-  \****************************************************************************************/
+/***/ "./node_modules/bigscreen-player/script/allowedmediatransitions.js":
+/*!*************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/allowedmediatransitions.js ***!
+  \*************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
 
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
 
-var isArray = Array.isArray;
-var keyList = Object.keys;
-var hasProp = Object.prototype.hasOwnProperty;
+  function AllowedMediaTransitions(mediaplayer) {
+    var player = mediaplayer;
 
-module.exports = function equal(a, b) {
-  if (a === b) return true;
+    var MediaPlayerState = {
+      EMPTY: 'EMPTY', // No source set
+      STOPPED: 'STOPPED', // Source set but no playback
+      BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
+      PLAYING: 'PLAYING', // Media is playing
+      PAUSED: 'PAUSED', // Media is paused
+      COMPLETE: 'COMPLETE', // Media has reached its end point
+      ERROR: 'ERROR' // An error occurred
+    };
 
-  var arrA = isArray(a),
-      arrB = isArray(b),
-      i,
-      length,
-      key;
-
-  if (arrA && arrB) {
-    length = a.length;
-    if (length != b.length) return false;
-    for (i = 0; i < length; i++) {
-      if (!equal(a[i], b[i])) return false;
-    }return true;
-  }
-
-  if (arrA != arrB) return false;
-
-  var dateA = a instanceof Date,
-      dateB = b instanceof Date;
-  if (dateA != dateB) return false;
-  if (dateA && dateB) return a.getTime() == b.getTime();
-
-  var regexpA = a instanceof RegExp,
-      regexpB = b instanceof RegExp;
-  if (regexpA != regexpB) return false;
-  if (regexpA && regexpB) return a.toString() == b.toString();
-
-  if (a instanceof Object && b instanceof Object) {
-    var keys = keyList(a);
-    length = keys.length;
-
-    if (length !== keyList(b).length) return false;
-
-    for (i = 0; i < length; i++) {
-      if (!hasProp.call(b, keys[i])) return false;
-    }for (i = 0; i < length; i++) {
-      key = keys[i];
-      if (!equal(a[key], b[key])) return false;
+    function canBePaused() {
+      var pausableStates = [MediaPlayerState.BUFFERING, MediaPlayerState.PLAYING];
+      return pausableStates.indexOf(player.getState()) !== -1;
     }
 
-    return true;
+    function canBeStopped() {
+      var unstoppableStates = [MediaPlayerState.EMPTY, MediaPlayerState.ERROR];
+      var stoppable = unstoppableStates.indexOf(player.getState()) === -1;
+      return stoppable;
+    }
+
+    function canBeginSeek() {
+      var unseekableStates = [MediaPlayerState.EMPTY, MediaPlayerState.ERROR];
+      var state = player.getState();
+      var seekable = state ? unseekableStates.indexOf(state) === -1 : false;
+      return seekable;
+    }
+
+    function canResume() {
+      return player.getState() === MediaPlayerState.PAUSED || player.getState() === MediaPlayerState.BUFFERING;
+    }
+
+    return {
+      canBePaused: canBePaused,
+      canBeStopped: canBeStopped,
+      canBeginSeek: canBeginSeek,
+      canResume: canResume
+    };
   }
 
-  return false;
-};
+  return AllowedMediaTransitions;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
 
-/***/ "../../node_modules/imsc/src/main/js/doc.js":
-/*!***************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/imsc/src/main/js/doc.js ***!
-  \***************************************************************************************/
+/***/ "./node_modules/bigscreen-player/script/bigscreenplayer.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/bigscreenplayer.js ***!
+  \*****************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-
-
-/* 
- * Copyright (c) 2016, Pierre-Anthony Lemieux <pal@sandflow.com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * * Redistributions of source code must retain the above copyright notice, this
- *   list of conditions and the following disclaimer.
- * * Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
-
-/**
- * @module imscDoc
- */
-
-;
-(function (imscDoc, sax, imscNames, imscStyles, imscUtils) {
-
-        /**
-         * Allows a client to provide callbacks to handle children of the <metadata> element
-         * @typedef {Object} MetadataHandler
-         * @property {?OpenTagCallBack} onOpenTag
-         * @property {?CloseTagCallBack} onCloseTag
-         * @property {?TextCallBack} onText
-         */
-
-        /**
-         * Called when the opening tag of an element node is encountered.
-         * @callback OpenTagCallBack
-         * @param {string} ns Namespace URI of the element
-         * @param {string} name Local name of the element
-         * @param {Object[]} attributes List of attributes, each consisting of a
-         *                              `uri`, `name` and `value`
-         */
-
-        /**
-         * Called when the closing tag of an element node is encountered.
-         * @callback CloseTagCallBack
-         */
-
-        /**
-         * Called when a text node is encountered.
-         * @callback TextCallBack
-         * @param {string} contents Contents of the text node
-         */
-
-        /**
-         * Parses an IMSC1 document into an opaque in-memory representation that exposes
-         * a single method <pre>getMediaTimeEvents()</pre> that returns a list of time
-         * offsets (in seconds) of the ISD, i.e. the points in time where the visual
-         * representation of the document change. `metadataHandler` allows the caller to
-         * be called back when nodes are present in <metadata> elements. 
-         * 
-         * @param {string} xmlstring XML document
-         * @param {?module:imscUtils.ErrorHandler} errorHandler Error callback
-         * @param {?MetadataHandler} metadataHandler Callback for <Metadata> elements
-         * @returns {Object} Opaque in-memory representation of an IMSC1 document
-         */
-
-        imscDoc.fromXML = function (xmlstring, errorHandler, metadataHandler) {
-                var p = sax.parser(true, { xmlns: true });
-                var estack = [];
-                var xmllangstack = [];
-                var xmlspacestack = [];
-                var metadata_depth = 0;
-                var doc = null;
-
-                p.onclosetag = function (node) {
-
-                        if (estack[0] instanceof Styling) {
-
-                                /* flatten chained referential styling */
-
-                                for (var sid in estack[0].styles) {
-
-                                        mergeChainedStyles(estack[0], estack[0].styles[sid], errorHandler);
-                                }
-                        } else if (estack[0] instanceof P || estack[0] instanceof Span) {
-
-                                /* merge anonymous spans */
-
-                                if (estack[0].contents.length > 1) {
-
-                                        var cs = [estack[0].contents[0]];
-
-                                        var c;
-
-                                        for (c = 1; c < estack[0].contents.length; c++) {
-
-                                                if (estack[0].contents[c] instanceof AnonymousSpan && cs[cs.length - 1] instanceof AnonymousSpan) {
-
-                                                        cs[cs.length - 1].text += estack[0].contents[c].text;
-                                                } else {
-
-                                                        cs.push(estack[0].contents[c]);
-                                                }
-                                        }
-
-                                        estack[0].contents = cs;
-                                }
-
-                                // remove redundant nested anonymous spans (9.3.3(1)(c))
-
-                                if (estack[0] instanceof Span && estack[0].contents.length === 1 && estack[0].contents[0] instanceof AnonymousSpan) {
-
-                                        estack[0].text = estack[0].contents[0].text;
-                                        delete estack[0].contents;
-                                }
-                        } else if (estack[0] instanceof ForeignElement) {
-
-                                if (estack[0].node.uri === imscNames.ns_tt && estack[0].node.local === 'metadata') {
-
-                                        /* leave the metadata element */
-
-                                        metadata_depth--;
-                                } else if (metadata_depth > 0 && metadataHandler && 'onCloseTag' in metadataHandler) {
-
-                                        /* end of child of metadata element */
-
-                                        metadataHandler.onCloseTag();
-                                }
-                        }
-
-                        // TODO: delete stylerefs?
-
-                        // maintain the xml:space stack
-
-                        xmlspacestack.shift();
-
-                        // maintain the xml:lang stack
-
-                        xmllangstack.shift();
-
-                        // prepare for the next element
-
-                        estack.shift();
-                };
-
-                p.ontext = function (str) {
-
-                        if (estack[0] === undefined) {
-
-                                /* ignoring text outside of elements */
-
-                        } else if (estack[0] instanceof Span || estack[0] instanceof P) {
-
-                                /* create an anonymous span */
-
-                                var s = new AnonymousSpan();
-
-                                s.initFromText(doc, estack[0], str, xmlspacestack[0], errorHandler);
-
-                                estack[0].contents.push(s);
-                        } else if (estack[0] instanceof ForeignElement && metadata_depth > 0 && metadataHandler && 'onText' in metadataHandler) {
-
-                                /* text node within a child of metadata element */
-
-                                metadataHandler.onText(str);
-                        }
-                };
-
-                p.onopentag = function (node) {
-
-                        // maintain the xml:space stack
-
-                        var xmlspace = node.attributes["xml:space"];
-
-                        if (xmlspace) {
-
-                                xmlspacestack.unshift(xmlspace.value);
-                        } else {
-
-                                if (xmlspacestack.length === 0) {
-
-                                        xmlspacestack.unshift("default");
-                                } else {
-
-                                        xmlspacestack.unshift(xmlspacestack[0]);
-                                }
-                        }
-
-                        /* maintain the xml:lang stack */
-
-                        var xmllang = node.attributes["xml:lang"];
-
-                        if (xmllang) {
-
-                                xmllangstack.unshift(xmllang.value);
-                        } else {
-
-                                if (xmllangstack.length === 0) {
-
-                                        xmllangstack.unshift("");
-                                } else {
-
-                                        xmllangstack.unshift(xmllangstack[0]);
-                                }
-                        }
-
-                        /* process the element */
-
-                        if (node.uri === imscNames.ns_tt) {
-
-                                if (node.local === 'tt') {
-
-                                        if (doc !== null) {
-
-                                                reportFatal(errorHandler, "Two <tt> elements at (" + this.line + "," + this.column + ")");
-                                        }
-
-                                        doc = new TT();
-
-                                        doc.initFromNode(node, errorHandler);
-
-                                        estack.unshift(doc);
-                                } else if (node.local === 'head') {
-
-                                        if (!(estack[0] instanceof TT)) {
-                                                reportFatal(errorHandler, "Parent of <head> element is not <tt> at (" + this.line + "," + this.column + ")");
-                                        }
-
-                                        if (doc.head !== null) {
-                                                reportFatal("Second <head> element at (" + this.line + "," + this.column + ")");
-                                        }
-
-                                        doc.head = new Head();
-
-                                        estack.unshift(doc.head);
-                                } else if (node.local === 'styling') {
-
-                                        if (!(estack[0] instanceof Head)) {
-                                                reportFatal(errorHandler, "Parent of <styling> element is not <head> at (" + this.line + "," + this.column + ")");
-                                        }
-
-                                        if (doc.head.styling !== null) {
-                                                reportFatal("Second <styling> element at (" + this.line + "," + this.column + ")");
-                                        }
-
-                                        doc.head.styling = new Styling();
-
-                                        estack.unshift(doc.head.styling);
-                                } else if (node.local === 'style') {
-
-                                        var s;
-
-                                        if (estack[0] instanceof Styling) {
-
-                                                s = new Style();
-
-                                                s.initFromNode(node, errorHandler);
-
-                                                /* ignore <style> element missing @id */
-
-                                                if (!s.id) {
-
-                                                        reportError(errorHandler, "<style> element missing @id attribute");
-                                                } else {
-
-                                                        doc.head.styling.styles[s.id] = s;
-                                                }
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/playercomponent */ "./node_modules/bigscreen-player/script/playercomponent.js"), __webpack_require__(/*! bigscreenplayer/models/pausetriggers */ "./node_modules/bigscreen-player/script/models/pausetriggers.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/mockbigscreenplayer */ "./node_modules/bigscreen-player/script/mockbigscreenplayer.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/debugger/chronicle */ "./node_modules/bigscreen-player/script/debugger/chronicle.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/parsers/manifestparser */ "./node_modules/bigscreen-player/script/parsers/manifestparser.js"), __webpack_require__(/*! bigscreenplayer/utils/timeutils */ "./node_modules/bigscreen-player/script/utils/timeutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestParser, SlidingWindowUtils) {
+  'use strict';
+
+  function BigscreenPlayer() {
+    var stateChangeCallbacks = [];
+    var timeUpdateCallbacks = [];
+
+    var mediaKind;
+    var windowStartTime;
+    var windowEndTime;
+    var initialPlaybackTimeEpoch;
+    var serverDate;
+    var liveSupport;
+    var playerComponent;
+    var pauseTrigger;
+    var endOfStream;
+    var windowType;
+
+    function mediaStateUpdateCallback(evt) {
+      if (evt.timeUpdate) {
+        DebugTool.time(evt.data.currentTime);
+        timeUpdateCallbacks.forEach(function (callback) {
+          callback({
+            currentTime: evt.data.currentTime,
+            endOfStream: endOfStream
+          });
+        });
+      } else {
+        var stateObject = { state: evt.data.state };
+        if (evt.data.state === MediaState.PAUSED) {
+          endOfStream = false;
+          stateObject.trigger = pauseTrigger || PauseTriggers.DEVICE;
+          pauseTrigger = undefined;
+        }
+
+        if (evt.data.state === MediaState.FATAL_ERROR) {
+          stateObject = {
+            state: MediaState.FATAL_ERROR,
+            isBufferingTimeoutError: evt.isBufferingTimeoutError
+          };
+        }
+        stateObject.endOfStream = endOfStream;
+
+        stateChangeCallbacks.forEach(function (callback) {
+          callback(stateObject);
+        });
+        DebugTool.event(stateObject);
+      }
+
+      if (evt.data.seekableRange) {
+        DebugTool.keyValue({ key: 'seekableRangeStart', value: deviceTimeToDate(evt.data.seekableRange.start) });
+        DebugTool.keyValue({ key: 'seekableRangeEnd', value: deviceTimeToDate(evt.data.seekableRange.end) });
+      }
+
+      if (evt.data.duration) {
+        DebugTool.keyValue({ key: 'duration', value: evt.data.duration });
+      }
+    }
+
+    function deviceTimeToDate(time) {
+      if (windowStartTime) {
+        return new Date(convertVideoTimeSecondsToEpochMs(time));
+      } else {
+        return new Date(time * 1000);
+      }
+    }
+
+    function convertVideoTimeSecondsToEpochMs(seconds) {
+      return windowStartTime ? windowStartTime + seconds * 1000 : undefined;
+    }
+
+    return {
+      init: function init(playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport, device) {
+        Chronicle.init();
+
+        if (newWindowType !== WindowTypes.STATIC) {
+          if (bigscreenPlayerData.time) {
+            windowStartTime = bigscreenPlayerData.time.windowStartTime;
+            windowEndTime = bigscreenPlayerData.time.windowEndTime;
+            serverDate = bigscreenPlayerData.serverDate;
+          } else if (bigscreenPlayerData.media.manifest) {
+            var manifestParser = new ManifestParser(bigscreenPlayerData.media.manifest, bigscreenPlayerData.media.manifestType, bigscreenPlayerData.serverDate);
+            var liveWindowData = manifestParser.parse();
+
+            windowStartTime = liveWindowData.windowStartTime;
+            windowEndTime = liveWindowData.windowEndTime;
+            serverDate = bigscreenPlayerData.serverDate;
+
+            bigscreenPlayerData.time = {};
+            bigscreenPlayerData.time.windowStartTime = windowStartTime;
+            bigscreenPlayerData.time.windowEndTime = windowEndTime;
+            bigscreenPlayerData.time.correction = liveWindowData.timeCorrection;
+          }
+
+          initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime;
+
+          // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
+          bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(bigscreenPlayerData.initialPlaybackTime, windowStartTime);
+        }
+
+        mediaKind = bigscreenPlayerData.media.kind;
+
+        liveSupport = newLiveSupport;
+        windowType = newWindowType;
+        endOfStream = windowType !== WindowTypes.STATIC && !bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0;
+
+        playerComponent = new PlayerComponent(playbackElement, bigscreenPlayerData, windowType, enableSubtitles, mediaStateUpdateCallback, device, liveSupport);
+
+        var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
+          return media.cdn;
+        });
+
+        DebugTool.keyValue({ key: 'available cdns', value: availableCdns });
+        DebugTool.keyValue({ key: 'current cdn', value: bigscreenPlayerData.media.urls[0].cdn });
+        DebugTool.keyValue({ key: 'url', value: bigscreenPlayerData.media.urls[0].url });
+      },
+
+      tearDown: function tearDown() {
+        if (playerComponent) {
+          playerComponent.tearDown();
+          playerComponent = undefined;
+        }
+        stateChangeCallbacks = [];
+        timeUpdateCallbacks = [];
+        endOfStream = undefined;
+        mediaKind = undefined;
+        windowStartTime = undefined;
+        windowEndTime = undefined;
+        liveSupport = undefined;
+        pauseTrigger = undefined;
+        windowType = undefined;
+        this.unregisterPlugin();
+        DebugTool.tearDown();
+        Chronicle.tearDown();
+      },
+
+      registerForStateChanges: function registerForStateChanges(callback) {
+        stateChangeCallbacks.push(callback);
+        return callback;
+      },
+      unregisterForStateChanges: function unregisterForStateChanges(callback) {
+        var indexOf = stateChangeCallbacks.indexOf(callback);
+        if (indexOf !== -1) {
+          stateChangeCallbacks.splice(indexOf, 1);
+        }
+      },
+      registerForTimeUpdates: function registerForTimeUpdates(callback) {
+        timeUpdateCallbacks.push(callback);
+        return callback;
+      },
+      unregisterForTimeUpdates: function unregisterForTimeUpdates(callback) {
+        var indexOf = timeUpdateCallbacks.indexOf(callback);
+
+        if (indexOf !== -1) {
+          timeUpdateCallbacks.splice(indexOf, 1);
+        }
+      },
+      setCurrentTime: function setCurrentTime(time) {
+        DebugTool.apicall('setCurrentTime');
+        if (playerComponent) {
+          var END_OF_STREAM_TOLERANCE = 10;
+
+          playerComponent.setCurrentTime(time);
+
+          endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
+        }
+      },
+      getCurrentTime: function getCurrentTime() {
+        return playerComponent && playerComponent.getCurrentTime() || 0;
+      },
+      getMediaKind: function getMediaKind() {
+        return mediaKind;
+      },
+      getWindowType: function getWindowType() {
+        return windowType;
+      },
+      getSeekableRange: function getSeekableRange() {
+        return playerComponent ? playerComponent.getSeekableRange() : {};
+      },
+      getLiveWindowData: function getLiveWindowData() {
+        if (windowType === WindowTypes.STATIC) {
+          return {};
+        }
+        return {
+          windowStartTime: windowStartTime,
+          windowEndTime: windowEndTime,
+          initialPlaybackTime: initialPlaybackTimeEpoch,
+          serverDate: serverDate
+        };
+      },
+      getDuration: function getDuration() {
+        return playerComponent && playerComponent.getDuration();
+      },
+      isPaused: function isPaused() {
+        return playerComponent ? playerComponent.isPaused() : true;
+      },
+      isEnded: function isEnded() {
+        return playerComponent ? playerComponent.isEnded() : false;
+      },
+      play: function play() {
+        DebugTool.apicall('play');
+        playerComponent.play();
+      },
+      pause: function pause(opts) {
+        DebugTool.apicall('pause');
+        pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
+        playerComponent.pause(opts);
+      },
+      setSubtitlesEnabled: function setSubtitlesEnabled(value) {
+        playerComponent.setSubtitlesEnabled(value);
+      },
+      isSubtitlesEnabled: function isSubtitlesEnabled() {
+        return playerComponent ? playerComponent.isSubtitlesEnabled() : false;
+      },
+      isSubtitlesAvailable: function isSubtitlesAvailable() {
+        return playerComponent ? playerComponent.isSubtitlesAvailable() : false;
+      },
+      setTransportControlsPosition: function setTransportControlsPosition(position) {
+        playerComponent.setTransportControlPosition(position);
+      },
+      canSeek: function canSeek() {
+        return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(windowStartTime, windowEndTime, liveSupport, this.getSeekableRange());
+      },
+      canPause: function canPause() {
+        return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(windowStartTime, windowEndTime, liveSupport);
+      },
+      mock: function mock(opts) {
+        MockBigscreenPlayer.mock(this, opts);
+      },
+      unmock: function unmock() {
+        MockBigscreenPlayer.unmock(this);
+      },
+      mockJasmine: function mockJasmine(opts) {
+        MockBigscreenPlayer.mockJasmine(this, opts);
+      },
+      registerPlugin: function registerPlugin(plugin) {
+        Plugins.registerPlugin(plugin);
+      },
+      unregisterPlugin: function unregisterPlugin(plugin) {
+        Plugins.unregisterPlugin(plugin);
+      },
+      transitions: function transitions() {
+        return playerComponent ? playerComponent.transitions() : {};
+      },
+      getPlayerElement: function getPlayerElement() {
+        return playerComponent && playerComponent.getPlayerElement();
+      },
+      convertEpochMsToVideoTimeSeconds: function convertEpochMsToVideoTimeSeconds(epochTime) {
+        return windowStartTime ? Math.floor((epochTime - windowStartTime) / 1000) : undefined;
+      },
+      convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs
+    };
+  }
+
+  return BigscreenPlayer;
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/captions.js":
+/*!**********************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/captions.js ***!
+  \**********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (DebugTool) {
+  'use strict';
+
+  var elementToStyleMap = [{
+    attribute: 'tts:color',
+    property: 'color'
+  }, {
+    attribute: 'tts:backgroundColor',
+    property: 'text-shadow'
+  }, {
+    attribute: 'tts:fontStyle',
+    property: 'font-style'
+  }, {
+    attribute: 'tts:textAlign',
+    property: 'text-align'
+  }];
+
+  var Captions = function Captions(id, uri, media) {
+    var timedItems = [];
+    var liveItems = [];
+    var iterator = 0;
+    var _styles = {};
+    var lastTimeSeen = 0;
+    var interval = 0;
+    var outputElement;
+
+    loadData(uri);
+
+    function loadData(dataFeedUrl) {
+      var req = new XMLHttpRequest();
+
+      req.onreadystatechange = function () {
+        if (req.readyState === 4) {
+          req.onreadystatechange = null;
+          if (req.status >= 200 && req.status < 300) {
+            if (req.responseXML) {
+              try {
+                transformXML(req.responseXML);
+              } catch (e) {
+                DebugTool.info('Error transforming captions response: ' + e);
+              }
+            }
+          } else {
+            DebugTool.info('Response Code ' + req.status + '; Error loading captions data: ' + req.responseText);
+          }
+        }
+      };
+
+      try {
+        req.open('GET', dataFeedUrl, true);
+        req.send(null);
+      } catch (e) {
+        DebugTool.info('Error transforming captions response: ' + e);
+      }
+    }
+
+    function render() {
+      if (!outputElement) {
+        outputElement = document.createElement('div');
+        outputElement.id = id;
+      }
+
+      return outputElement;
+    }
+
+    function start() {
+      interval = setInterval(function () {
+        update();
+      }, 750);
+
+      if (outputElement) {
+        outputElement.style.display = 'block';
+      }
+    }
+
+    function stop() {
+      if (outputElement) {
+        outputElement.style.display = 'none';
+      }
+
+      cleanOldCaptions(media.getDuration());
+      clearInterval(interval);
+    }
+
+    function update() {
+      if (!media) {
+        stop();
+      }
+
+      var time = media.getCurrentTime();
+      updateCaptions(time);
+    }
+
+    function transformXML(xml) {
+      // Use .getElementsByTagNameNS() when parsing XML as some implementations of .getElementsByTagName() will lowercase its argument before proceding
+      var conformsToStandardElements = xml.getElementsByTagNameNS('urn:ebu:tt:metadata', 'conformsToStandard')[0];
+      var isEBUTTD = conformsToStandardElements && conformsToStandardElements.textContent === 'urn:ebu:tt:distribution:2014-01';
+
+      var captionValues = {
+        ttml: {
+          namespace: 'http://www.w3.org/2006/10/ttaf1',
+          idAttribute: 'id'
+        },
+        ebuttd: {
+          namespace: 'http://www.w3.org/ns/ttml',
+          idAttribute: 'xml:id'
+        }
+      };
+
+      var captionStandard = isEBUTTD ? captionValues.ebuttd : captionValues.ttml;
+      var styles = _styles;
+      var styleElements = xml.getElementsByTagNameNS(captionStandard.namespace, 'style');
+
+      var max = styleElements.length;
+      // We should get at least one each time. If we don't, then the data
+      // is broken or structured in a way this can't cope with.
+      // This prevents an infinite loop.
+      var seenNonOk = false;
+      do {
+        for (var i = 0, j = styleElements.length; i < j; i++) {
+          var se = styleElements[i];
+          if (se.ok) {
+            continue;
+          }
+
+          var id = se.getAttribute(captionStandard.idAttribute);
+          var myStyles = elementToStyle(se);
+
+          if (myStyles) {
+            styles[id] = myStyles;
+            se.ok = true;
+          } else {
+            seenNonOk = true;
+          }
+        }
+      } while (seenNonOk && max--);
+
+      var body = xml.getElementsByTagNameNS(captionStandard.namespace, 'body')[0];
+      var s = elementToStyle(body);
+      var d = document.createElement('div');
+      d.setAttribute('style', s);
+      d.style.cssText = s;
+
+      if (!outputElement) {
+        outputElement = document.createElement('div');
+        outputElement.id = id;
+      }
+
+      outputElement.appendChild(d);
+      outputElement = d;
+
+      var ps = xml.getElementsByTagNameNS(captionStandard.namespace, 'p');
+      var items = [];
+
+      for (var k = 0, m = ps.length; k < m; k++) {
+        items.push(TimedPiece(ps[k], elementToStyle));
+      }
+
+      timedItems = items;
+      liveItems = [];
+      return items;
+    }
+
+    function elementToStyle(el) {
+      var stringStyle = '';
+      var styles = _styles;
+      var inherit = el.getAttribute('style');
+      if (inherit) {
+        if (styles[inherit]) {
+          stringStyle = styles[inherit];
+        } else {
+          return false;
+        }
+      }
+      for (var i = 0, j = elementToStyleMap.length; i < j; i++) {
+        var map = elementToStyleMap[i];
+        var value = el.getAttribute(map.attribute);
+        if (value === null || value === undefined) {
+          continue;
+        }
+        if (map.conversion) {
+          value = map.conversion(value);
+        }
+        if (map.attribute === 'tts:backgroundColor') {
+          value += ' 2px 2px 1px';
+        }
+
+        stringStyle += map.property + ': ' + value + '; ';
+      }
+
+      return stringStyle;
+    }
+
+    function groupUnseenFor(time) {
+      // Basic approach first.
+      // TODO - seek backwards and do fast seeking if long timestamp
+      // differences. Also add a cache for last timestamp seen. If next time is older, reset.
+      var it;
+      if (time < lastTimeSeen) {
+        it = 0;
+      } else {
+        it = iterator || 0;
+      }
+      lastTimeSeen = time;
+      var itms = timedItems;
+      var max = itms.length;
+
+      // The current iterated item was not returned last time.
+      // If its time has not come, we return nothing.
+      var ready = [];
+      var itm = itms[it];
+      while (it !== max && itm.start < time) {
+        if (itm.end > time) {
+          ready.push(itm);
+        }
+        it++;
+        itm = itms[it];
+      }
+      iterator = it;
+
+      return ready;
+    }
+
+    function updateCaptions(time) {
+      // Clear out old captions
+      cleanOldCaptions(time);
+      // Add new captions
+      addNewCaptions(time);
+    }
+
+    function cleanOldCaptions(time) {
+      var live = liveItems;
+      for (var i = live.length - 1; i >= 0; i--) {
+        if (live[i].removeFromDomIfExpired(time)) {
+          live.splice(i, 1);
+        }
+      }
+    }
+
+    function addNewCaptions(time) {
+      var live = liveItems;
+      var fresh = groupUnseenFor(time);
+      liveItems = live.concat(fresh);
+      for (var i = 0, j = fresh.length; i < j; i++) {
+        fresh[i].addToDom(outputElement);
+      }
+    }
+
+    return {
+      render: render,
+      start: start,
+      stop: stop,
+      update: update,
+      loadData: loadData,
+      transformXML: transformXML,
+      elementToStyle: elementToStyle,
+      groupUnseenFor: groupUnseenFor,
+      updateCaptions: updateCaptions,
+      cleanOldCaptions: cleanOldCaptions,
+      addNewCaptions: addNewCaptions
+    };
+  };
+
+  var TimedPiece = function TimedPiece(timedPieceNode, toStyleFunc) {
+    var start = timeStampToSeconds(timedPieceNode.getAttribute('begin'));
+    var end = timeStampToSeconds(timedPieceNode.getAttribute('end'));
+    var _node = timedPieceNode;
+    var htmlElementNode;
+
+    function timeStampToSeconds(timeStamp) {
+      var timePieces = timeStamp.split(':');
+      var timeSeconds = parseFloat(timePieces.pop(), 10);
+      if (timePieces.length) {
+        timeSeconds += 60 * parseInt(timePieces.pop(), 10);
+      }
+      if (timePieces.length) {
+        timeSeconds += 60 * 60 * parseInt(timePieces.pop(), 10);
+      }
+      return timeSeconds;
+    }
+
+    function removeFromDomIfExpired(time) {
+      if (time > end || time < start) {
+        if (htmlElementNode) {
+          var e = htmlElementNode;
+          if (e.parentNode) {
+            e.parentNode.removeChild(e);
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+
+    function addToDom(parentNode) {
+      var node = htmlElementNode || generateHtmlElementNode();
+      parentNode.appendChild(node);
+    }
+
+    function generateHtmlElementNode(node) {
+      var source = node || _node;
+
+      var localName = source.localName || source.tagName;
+      var html = document.createElement(localName);
+      var style = toStyleFunc(source);
+      if (style) {
+        html.setAttribute('style', style);
+        html.style.cssText = style;
+      }
+
+      for (var i = 0, j = source.childNodes.length; i < j; i++) {
+        var n = source.childNodes[i];
+        if (n.nodeType === 3) {
+          html.appendChild(document.createTextNode(n.data));
+        } else if (n.nodeType === 1) {
+          html.appendChild(generateHtmlElementNode(n));
+        }
+      }
+      if (!node) {
+        htmlElementNode = html;
+      }
+
+      return html;
+    }
+
+    return {
+      node: timedPieceNode,
+      start: start,
+      end: end,
+
+      timeStampToSeconds: timeStampToSeconds,
+      removeFromDomIfExpired: removeFromDomIfExpired,
+      addToDom: addToDom,
+      generateHtmlElementNode: generateHtmlElementNode
+    };
+  };
+
+  return Captions;
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/captionscontainer.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/captionscontainer.js ***!
+  \*******************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/captions */ "./node_modules/bigscreen-player/script/captions.js"), __webpack_require__(/*! bigscreenplayer/models/transportcontrolposition */ "./node_modules/bigscreen-player/script/models/transportcontrolposition.js"), __webpack_require__(/*! bigscreenplayer/domhelpers */ "./node_modules/bigscreen-player/script/domhelpers.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Captions, TransportControlPosition, DOMHelpers) {
+  'use strict';
+
+  return function (mediaPlayer, captionsURL, autoStart, parentElement) {
+    var container = document.createElement('div');
+    var captions;
+
+    container.id = 'playerCaptionsContainer';
+    DOMHelpers.addClass(container, 'playerCaptions');
+
+    if (captionsURL) {
+      captions = new Captions('playerCaptions', captionsURL, mediaPlayer, container);
+      container.appendChild(captions.render());
+    }
+
+    parentElement.appendChild(container);
+
+    if (autoStart) {
+      start();
+    }
+
+    function start() {
+      if (captions) {
+        captions.start();
+      }
+    }
+
+    function stop() {
+      if (captions) {
+        captions.stop();
+      }
+    }
+
+    function updatePosition(transportControlPosition) {
+      var classes = {
+        controlsVisible: TransportControlPosition.CONTROLS_ONLY,
+        controlsWithInfoVisible: TransportControlPosition.CONTROLS_WITH_INFO,
+        leftCarouselVisible: TransportControlPosition.LEFT_CAROUSEL,
+        bottomCarouselVisible: TransportControlPosition.BOTTOM_CAROUSEL
+      };
+
+      for (var cssClassName in classes) {
+        if (classes.hasOwnProperty(cssClassName)) {
+          // Allow multiple flags to be set at once
+          if ((classes[cssClassName] & transportControlPosition) === classes[cssClassName]) {
+            DOMHelpers.addClass(container, cssClassName);
+          } else {
+            DOMHelpers.removeClass(container, cssClassName);
+          }
+        }
+      }
+    }
+
+    function tearDown() {
+      if (container) {
+        parentElement.removeChild(container);
+      }
+    }
+
+    return {
+      start: start,
+      stop: stop,
+      updatePosition: updatePosition,
+      tearDown: tearDown
+    };
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/debugger/chronicle.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/debugger/chronicle.js ***!
+  \********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  var chronicle = [];
+  var firstTimeElement;
+  var compressTime;
+  var updateCallbacks = [];
+
+  var TYPES = {
+    INFO: 'info',
+    ERROR: 'error',
+    EVENT: 'event',
+    APICALL: 'apicall',
+    TIME: 'time',
+    KEYVALUE: 'keyvalue'
+  };
+
+  function init() {
+    clear();
+  }
+
+  function clear() {
+    firstTimeElement = true;
+    compressTime = false;
+    chronicle = [];
+  }
+
+  function registerForUpdates(callback) {
+    updateCallbacks.push(callback);
+  }
+
+  function unregisterForUpdates(callback) {
+    var indexOf = updateCallbacks.indexOf(callback);
+    if (indexOf !== -1) {
+      updateCallbacks.splice(indexOf, 1);
+    }
+  }
+
+  function info(message) {
+    pushToChronicle({ type: TYPES.INFO, message: message });
+  }
+
+  function error(err) {
+    pushToChronicle({ type: TYPES.ERROR, error: err });
+  }
+
+  function event(event) {
+    pushToChronicle({ type: TYPES.EVENT, event: event });
+  }
+
+  function apicall(callType) {
+    pushToChronicle({ type: TYPES.APICALL, calltype: callType });
+  }
+
+  function time(time) {
+    if (firstTimeElement) {
+      pushToChronicle({ type: TYPES.TIME, currentTime: time });
+      firstTimeElement = false;
+    } else if (!compressTime) {
+      pushToChronicle({ type: TYPES.TIME, currentTime: time });
+      compressTime = true;
+    } else {
+      var lastElement = chronicle.pop();
+      lastElement.currentTime = time;
+      pushToChronicle(lastElement);
+    }
+  }
+
+  function keyValue(obj) {
+    pushToChronicle({ type: TYPES.KEYVALUE, keyvalue: obj });
+  }
+
+  function retrieve() {
+    return chronicle.slice();
+  }
+
+  function timestamp(obj) {
+    obj.timestamp = new Date().getTime();
+  }
+
+  function pushToChronicle(obj) {
+    if (obj.type !== TYPES.TIME) {
+      firstTimeElement = true;
+      compressTime = false;
+    }
+    timestamp(obj);
+    chronicle.push(obj);
+    updates();
+  }
+
+  function updates() {
+    updateCallbacks.forEach(function (callback) {
+      callback(retrieve());
+    });
+  }
+
+  function tearDown() {
+    clear();
+  }
+
+  return {
+    init: init,
+    TYPES: TYPES,
+    clear: clear,
+    info: info,
+    error: error,
+    event: event,
+    apicall: apicall,
+    time: time,
+    keyValue: keyValue,
+    retrieve: retrieve,
+    tearDown: tearDown,
+    registerForUpdates: registerForUpdates,
+    unregisterForUpdates: unregisterForUpdates
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/debugger/debugpresenter.js":
+/*!*************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/debugger/debugpresenter.js ***!
+  \*************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/debugger/chronicle */ "./node_modules/bigscreen-player/script/debugger/chronicle.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, Chronicle) {
+  'use strict';
+
+  var view;
+
+  function init(newView) {
+    view = newView;
+  }
+
+  function update(logs) {
+    view.render({ static: parseStaticFields(logs), dynamic: parseDynamicFields(logs) });
+  }
+
+  function parseStaticFields(logs) {
+    var latestStaticFields = [];
+    var staticFields = logs.filter(function (log) {
+      return isStaticLog(log);
+    });
+
+    var uniqueKeys = findUniqueKeys(staticFields);
+    uniqueKeys.forEach(function (key) {
+      var matchingStaticLogs = staticFields.filter(function (log) {
+        return log.keyvalue.key === key;
+      });
+      latestStaticFields.push(matchingStaticLogs.pop());
+    });
+
+    return latestStaticFields.map(function (field) {
+      return { key: sanitiseKeyString(field.keyvalue.key), value: sanitiseValueString(field.keyvalue.value) };
+    });
+  }
+
+  function parseDynamicFields(logs) {
+    var dynamicLogs;
+
+    dynamicLogs = logs.filter(function (log) {
+      return !isStaticLog(log);
+    }).map(function (log) {
+      var dateString = new Date(log.timestamp).toISOString();
+      switch (log.type) {
+        case Chronicle.TYPES.INFO:
+          return dateString + ' - Info: ' + log.message;
+        case Chronicle.TYPES.TIME:
+          return dateString + ' - Video time: ' + parseFloat(log.currentTime).toFixed(2);
+        case Chronicle.TYPES.EVENT:
+          return dateString + ' - Event: ' + convertToReadableEvent(log.event.state);
+        case Chronicle.TYPES.ERROR:
+          return dateString + ' - Error: ' + log.error.errorId + ' | ' + log.error.message;
+        case Chronicle.TYPES.APICALL:
+          return dateString + ' - Api call: ' + log.calltype;
+        default:
+          return dateString + ' - Unknown log format';
+      }
+    });
+
+    return dynamicLogs;
+  }
+
+  function isStaticLog(log) {
+    return log.type === Chronicle.TYPES.KEYVALUE;
+  }
+
+  function findUniqueKeys(logs) {
+    var uniqueKeys = [];
+    logs.forEach(function (log) {
+      if (uniqueKeys.indexOf(log.keyvalue.key) === -1) {
+        uniqueKeys.push(log.keyvalue.key);
+      }
+    });
+    return uniqueKeys;
+  }
+
+  function sanitiseKeyString(key) {
+    return key.replace(/([A-Z])/g, ' $1').toLowerCase();
+  }
+
+  function sanitiseValueString(value) {
+    if (value instanceof Date) {
+      var hours = zeroPadTimeUnits(value.getHours()) + value.getHours();
+      var mins = zeroPadTimeUnits(value.getMinutes()) + value.getMinutes();
+      var secs = zeroPadTimeUnits(value.getSeconds()) + value.getSeconds();
+      return hours + ':' + mins + ':' + secs;
+    }
+    return value;
+  }
+
+  function zeroPadTimeUnits(unit) {
+    return unit < 10 ? '0' : '';
+  }
+
+  function convertToReadableEvent(type) {
+    for (var key in MediaState) {
+      if (MediaState[key] === type) {
+        return key;
+      }
+    }
+    return type;
+  }
+
+  function tearDown() {
+    view = undefined;
+  }
+
+  return {
+    init: init,
+    update: update,
+    tearDown: tearDown
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/debugger/debugtool.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/debugger/debugtool.js ***!
+  \********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/debugger/chronicle */ "./node_modules/bigscreen-player/script/debugger/chronicle.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugpresenter */ "./node_modules/bigscreen-player/script/debugger/debugpresenter.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugview */ "./node_modules/bigscreen-player/script/debugger/debugview.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Chronicle, DebugPresenter, DebugView) {
+  'use strict';
+
+  function DebugTool() {
+    var presenter = DebugPresenter;
+    var view;
+    var visible = false;
+
+    var staticFieldValues = {};
+
+    function toggleVisibility() {
+      if (visible) {
+        hide();
+      } else {
+        show();
+      }
+    }
+
+    function show() {
+      view = DebugView;
+      view.init();
+      presenter.init(view);
+      Chronicle.registerForUpdates(presenter.update);
+      visible = true;
+    }
+
+    function hide() {
+      presenter.tearDown();
+      view.tearDown();
+      Chronicle.unregisterForUpdates(presenter.update);
+      visible = false;
+    }
+
+    function updateKeyValue(message) {
+      var staticFieldValue = staticFieldValues[message.key];
+
+      if (staticFieldValue) {
+        var entry = Chronicle.retrieve()[staticFieldValue.index];
+        if (entry) {
+          entry.keyvalue = message;
+        }
+      } else {
+        staticFieldValues[message.key] = { value: message.value, index: Chronicle.retrieve().length };
+        Chronicle.keyValue(message);
+      }
+    }
+
+    function tearDown() {
+      staticFieldValues = {};
+    }
+
+    return {
+      toggleVisibility: toggleVisibility,
+      info: Chronicle.info,
+      error: Chronicle.error,
+      event: Chronicle.event,
+      time: Chronicle.time,
+      apicall: Chronicle.apicall,
+      keyValue: updateKeyValue,
+      tearDown: tearDown
+    };
+  }
+
+  var instance;
+
+  if (instance === undefined) {
+    instance = new DebugTool();
+  }
+
+  return instance;
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/debugger/debugview.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/debugger/debugview.js ***!
+  \********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  var logBox, logContainer, staticContainer, staticBox;
+  var appElement = document.getElementById('app');
+
+  function init() {
+    logBox = document.createElement('div');
+    logContainer = document.createElement('span');
+    staticBox = document.createElement('div');
+    staticContainer = document.createElement('span');
+
+    logBox.id = 'logBox';
+    logBox.style.position = 'absolute';
+    logBox.style.width = '63%';
+    logBox.style.left = '5%';
+    logBox.style.top = '15%';
+    logBox.style.bottom = '25%';
+    logBox.style.backgroundColor = '#1D1D1D';
+    logBox.style.opacity = 0.9;
+    logBox.style.overflow = 'hidden';
+
+    staticBox.id = 'staticBox';
+    staticBox.style.position = 'absolute';
+    staticBox.style.width = '26%';
+    staticBox.style.right = '5%';
+    staticBox.style.top = '15%';
+    staticBox.style.bottom = '25%';
+    staticBox.style.backgroundColor = '#1D1D1D';
+    staticBox.style.opacity = 0.9;
+    staticBox.style.overflow = 'hidden';
+
+    logContainer.id = 'logContainer';
+    logContainer.style.color = '#ffffff';
+    logContainer.style.fontSize = '11pt';
+    logContainer.style.position = 'absolute';
+    logContainer.style.bottom = '1%';
+    logContainer.style.left = '1%';
+    logContainer.style.wordWrap = 'break-word';
+    logContainer.style.whiteSpace = 'pre-line';
+
+    staticContainer.id = 'staticContainer';
+    staticContainer.style.color = '#ffffff';
+    staticContainer.style.fontSize = '11pt';
+    staticContainer.style.wordWrap = 'break-word';
+    staticContainer.style.left = '1%';
+    staticContainer.style.whiteSpace = 'pre-line';
+
+    logBox.appendChild(logContainer);
+    staticBox.appendChild(staticContainer);
+    appElement.appendChild(logBox);
+    appElement.appendChild(staticBox);
+  }
+
+  function render(logData) {
+    var dynamicLogs = logData.dynamic;
+    var LINES_TO_DISPLAY = 29;
+    if (dynamicLogs.length === 0) {
+      logContainer.innerHTML = '';
+    }
+
+    dynamicLogs = dynamicLogs.slice(-LINES_TO_DISPLAY);
+    logContainer.innerHTML = dynamicLogs.join('\n');
+
+    var staticLogString = '';
+    logData.static.forEach(function (log) {
+      staticLogString = staticLogString + log.key + ': ' + log.value + '\n\n';
+    });
+
+    staticContainer.innerHTML = staticLogString;
+  }
+
+  function tearDown() {
+    appElement.removeChild(document.getElementById('logBox'));
+    appElement.removeChild(document.getElementById('staticBox'));
+    staticContainer = undefined;
+    logContainer = undefined;
+    logBox = undefined;
+    staticBox = undefined;
+  }
+
+  return {
+    init: init,
+    render: render,
+    tearDown: tearDown
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/domhelpers.js":
+/*!************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/domhelpers.js ***!
+  \************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  var addClass = function addClass(el, className) {
+    if (el.classList) {
+      el.classList.add(className);
+    } else {
+      el.className += ' ' + className;
+    }
+  };
+
+  var removeClass = function removeClass(el, className) {
+    if (el.classList) {
+      el.classList.remove(className);
+    } else {
+      el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
+    }
+  };
+
+  var hasClass = function hasClass(el, className) {
+    if (el.classList) {
+      return el.classList.contains(className);
+    } else {
+      return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className);
+    }
+  };
+
+  return {
+    addClass: addClass,
+    removeClass: removeClass,
+    hasClass: hasClass
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/dynamicwindowutils.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/dynamicwindowutils.js ***!
+  \********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/livesupportenum */ "./node_modules/bigscreen-player/script/models/livesupportenum.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LiveSupport) {
+  'use strict';
+
+  var FOUR_MINUTES = 4 * 60;
+
+  function convertMilliSecondsToSeconds(timeInMilis) {
+    return Math.floor(timeInMilis / 1000);
+  }
+
+  function hasFiniteSeekableRange(seekableRange) {
+    var hasRange = true;
+    try {
+      hasRange = seekableRange.end !== Infinity;
+    } catch (e) {}
+    return hasRange;
+  }
+
+  function canSeek(windowStart, windowEnd, liveSupport, seekableRange) {
+    return supportsSeeking(liveSupport) && initialWindowIsBigEnoughForSeeking(windowStart, windowEnd) && hasFiniteSeekableRange(seekableRange);
+  }
+
+  function canPause(windowStart, windowEnd, liveSupport) {
+    return supportsPause(liveSupport) && initialWindowIsBigEnoughForSeeking(windowStart, windowEnd);
+  }
+
+  function initialWindowIsBigEnoughForSeeking(windowStart, windowEnd) {
+    var start = convertMilliSecondsToSeconds(windowStart);
+    var end = convertMilliSecondsToSeconds(windowEnd);
+    return end - start > FOUR_MINUTES;
+  }
+
+  function supportsPause(liveSupport) {
+    return liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.RESTARTABLE;
+  }
+
+  function supportsSeeking(liveSupport) {
+    return liveSupport === LiveSupport.SEEKABLE;
+  }
+
+  return {
+    canPause: canPause,
+    canSeek: canSeek
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/mockbigscreenplayer.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/mockbigscreenplayer.js ***!
+  \*********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/pausetriggers */ "./node_modules/bigscreen-player/script/models/pausetriggers.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums) {
+  var sourceList;
+  var source;
+  var cdn;
+
+  var timeUpdateCallbacks = [];
+  var stateChangeCallbacks = [];
+
+  var currentTime;
+  var seekableRange;
+  var duration;
+  var liveWindowStart;
+  var pausedState = true;
+  var endedState;
+  var mediaKind;
+  var windowType;
+  var subtitlesAvailable;
+  var subtitlesEnabled;
+  var endOfStream;
+  var canSeekState;
+  var canPauseState;
+  var shallowClone;
+  var mockModes = {
+    NONE: 0,
+    PLAIN: 1,
+    JASMINE: 2
+  };
+  var mockStatus = { currentlyMocked: false, mode: mockModes.NONE };
+  var initialised;
+  var fatalErrorBufferingTimeout;
+
+  var autoProgress;
+  var autoProgressInterval;
+  var initialBuffering = false;
+
+  var liveWindowData;
+
+  function startProgress(progressCause) {
+    setTimeout(function () {
+      if (!autoProgressInterval) {
+        mockingHooks.changeState(MediaState.PLAYING, progressCause);
+        autoProgressInterval = setInterval(function () {
+          if (windowType !== WindowTypes.STATIC && seekableRange.start && seekableRange.end) {
+            seekableRange.start += 0.5;
+            seekableRange.end += 0.5;
+          }
+          mockingHooks.progressTime(currentTime + 0.5);
+          if (currentTime >= duration) {
+            clearInterval(autoProgressInterval);
+            mockingHooks.changeState(MediaState.ENDED);
+          }
+        }, 500);
+      }
+    }, 100);
+  }
+
+  function stopProgress() {
+    if (autoProgressInterval) {
+      clearInterval(autoProgressInterval);
+      autoProgressInterval = null;
+    }
+  }
+
+  function mock(BigscreenPlayer, opts) {
+    autoProgress = opts && opts.autoProgress;
+
+    if (mockStatus.currentlyMocked) {
+      throw new Error('mock() was called while BigscreenPlayer was already mocked');
+    }
+    shallowClone = PlaybackUtils.clone(BigscreenPlayer);
+
+    // Divert existing functions
+    for (var mock in mockFunctions) {
+      BigscreenPlayer[mock] = mockFunctions[mock];
+    }
+    // Add extra functions
+    for (var hook in mockingHooks) {
+      BigscreenPlayer[hook] = mockingHooks[hook];
+    }
+    mockStatus = { currentlyMocked: true, mode: mockModes.PLAIN };
+  }
+
+  function mockJasmine(BigscreenPlayer, opts) {
+    autoProgress = opts && opts.autoProgress;
+
+    if (mockStatus.currentlyMocked) {
+      throw new Error('mockJasmine() was called while BigscreenPlayer was already mocked');
+    }
+
+    for (var mock in mockFunctions) {
+      if (BigscreenPlayer[mock]) {
+        spyOn(BigscreenPlayer, mock).and.callFake(mockFunctions[mock]);
+      }
+    }
+
+    for (var hook in mockingHooks) {
+      BigscreenPlayer[hook] = mockingHooks[hook];
+    }
+    mockStatus = { currentlyMocked: true, mode: mockModes.JASMINE };
+  }
+
+  function unmock(BigscreenPlayer) {
+    if (!mockStatus.currentlyMocked) {
+      throw new Error('unmock() was called before BigscreenPlayer was mocked');
+    }
+
+    // Remove extra functions
+    for (var hook in mockingHooks) {
+      delete BigscreenPlayer[hook];
+    }
+    // Undo divert existing functions (plain mock only)
+    if (mockStatus.mode === mockModes.PLAIN) {
+      for (var func in shallowClone) {
+        BigscreenPlayer[func] = shallowClone[func];
+      }
+    }
+
+    timeUpdateCallbacks = [];
+    stateChangeCallbacks = [];
+
+    mockStatus = { currentlyMocked: false, mode: mockModes.NONE };
+  }
+
+  var mockFunctions = {
+    init: function init(playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport) {
+      currentTime = bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime || 0;
+      liveWindowStart = undefined;
+      pausedState = true;
+      endedState = false;
+      mediaKind = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.kind || 'video';
+      windowType = newWindowType || WindowTypes.STATIC;
+      subtitlesAvailable = true;
+      subtitlesEnabled = false;
+      canSeekState = true;
+      canPauseState = true;
+      sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls;
+      source = sourceList && sourceList[0].url;
+      cdn = sourceList && sourceList[0].cdn;
+
+      duration = windowType === WindowTypes.STATIC ? 4808 : Infinity;
+      seekableRange = { start: 0, end: 4808 };
+
+      mockingHooks.changeState(MediaState.WAITING);
+
+      if (autoProgress && !initialBuffering) {
+        startProgress();
+      }
+
+      initialised = true;
+    },
+    registerForTimeUpdates: function registerForTimeUpdates(callback) {
+      timeUpdateCallbacks.push(callback);
+      return callback;
+    },
+    unregisterForTimeUpdates: function unregisterForTimeUpdates(callback) {
+      var indexOf = timeUpdateCallbacks.indexOf(callback);
+
+      if (indexOf !== -1) {
+        timeUpdateCallbacks.splice(indexOf, 1);
+      }
+    },
+    registerForStateChanges: function registerForStateChanges(callback) {
+      stateChangeCallbacks.push(callback);
+      return callback;
+    },
+    unregisterForStateChanges: function unregisterForStateChanges(callback) {
+      var indexOf = stateChangeCallbacks.indexOf(callback);
+
+      if (indexOf !== -1) {
+        stateChangeCallbacks.splice(indexOf, 1);
+      }
+    },
+    setCurrentTime: function setCurrentTime(time) {
+      currentTime = time;
+      if (autoProgress) {
+        if (!pausedState) {
+          mockingHooks.changeState(MediaState.WAITING, 'other');
+          startProgress();
+        }
+      } else {
+        mockingHooks.progressTime(currentTime);
+      }
+    },
+    getCurrentTime: function getCurrentTime() {
+      return currentTime;
+    },
+    getMediaKind: function getMediaKind() {
+      return mediaKind;
+    },
+    getWindowType: function getWindowType() {
+      return windowType;
+    },
+    getSeekableRange: function getSeekableRange() {
+      return seekableRange;
+    },
+    getDuration: function getDuration() {
+      return duration;
+    },
+    isPaused: function isPaused() {
+      return pausedState;
+    },
+    isEnded: function isEnded() {
+      return endedState;
+    },
+    play: function play() {
+      if (autoProgress) {
+        startProgress('other');
+      } else {
+        mockingHooks.changeState(MediaState.PLAYING, 'other');
+      }
+    },
+    pause: function pause(opts) {
+      mockingHooks.changeState(MediaState.PAUSED, 'other', opts);
+    },
+    setSubtitlesEnabled: function setSubtitlesEnabled(value) {
+      subtitlesEnabled = value;
+    },
+    isSubtitlesEnabled: function isSubtitlesEnabled() {
+      return subtitlesEnabled;
+    },
+    isSubtitlesAvailable: function isSubtitlesAvailable() {
+      return subtitlesAvailable;
+    },
+    setTransportControlsPosition: function setTransportControlsPosition(position) {},
+    canSeek: function canSeek() {
+      return canSeekState;
+    },
+    canPause: function canPause() {
+      return canPauseState;
+    },
+    convertVideoTimeSecondsToEpochMs: function convertVideoTimeSecondsToEpochMs(seconds) {
+      return liveWindowStart ? liveWindowStart + seconds * 1000 : undefined;
+    },
+    transitions: function transitions() {
+      return {
+        canBePaused: function canBePaused() {
+          return true;
+        },
+        canBeginSeek: function canBeginSeek() {
+          return true;
+        }
+      };
+    },
+    getPlayerElement: function getPlayerElement() {
+      return;
+    },
+    tearDown: function tearDown() {
+      if (!initialised) {
+        return;
+      }
+
+      Plugins.interface.onBufferingCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: { dismissed_by: 'teardown' }, isInitialPlay: initialBuffering }));
+      Plugins.interface.onErrorCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: { dismissed_by: 'teardown' } }));
+      Plugins.unregisterPlugin();
+
+      timeUpdateCallbacks = [];
+      stateChangeCallbacks = [];
+
+      if (autoProgress) {
+        stopProgress();
+      }
+
+      initialised = false;
+    },
+    registerPlugin: function registerPlugin(plugin) {
+      Plugins.registerPlugin(plugin);
+    },
+    unregisterPlugin: function unregisterPlugin(plugin) {
+      Plugins.unregisterPlugin(plugin);
+    },
+    getLiveWindowData: function getLiveWindowData() {
+      if (windowType === WindowTypes.STATIC) {
+        return {};
+      }
+      return {
+        windowStartTime: liveWindowData.windowStartTime,
+        windowEndTime: liveWindowData.windowEndTime,
+        initialPlaybackTime: liveWindowData.initialPlaybackTime,
+        serverDate: liveWindowData.serverDate
+      };
+    }
+  };
+
+  var mockingHooks = {
+    changeState: function changeState(state, eventTrigger, opts) {
+      eventTrigger = eventTrigger || 'device';
+      var pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
+
+      pausedState = state === MediaState.PAUSED || state === MediaState.STOPPED || state === MediaState.ENDED;
+      endedState = state === MediaState.ENDED;
+
+      if (state === MediaState.WAITING) {
+        fatalErrorBufferingTimeout = true;
+        Plugins.interface.onBuffering(new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING }));
+      } else {
+        Plugins.interface.onBufferingCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: { dismissed_by: eventTrigger }, isInitialPlay: initialBuffering }));
+      }
+      Plugins.interface.onErrorCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: { dismissed_by: eventTrigger } }));
+
+      if (state === MediaState.FATAL_ERROR) {
+        Plugins.interface.onFatalError(new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout }));
+      }
+
+      var stateObject = { state: state };
+      if (state === MediaState.PAUSED) {
+        stateObject.trigger = pauseTrigger;
+        endOfStream = false;
+      }
+      if (state === MediaState.FATAL_ERROR) {
+        stateObject.errorId = opts && opts.error;
+        stateObject.isBufferingTimeoutError = opts && opts.isBufferingTimeoutError;
+      }
+      stateObject.endOfStream = endOfStream;
+
+      stateChangeCallbacks.forEach(function (callback) {
+        callback(stateObject);
+      });
+
+      if (autoProgress) {
+        if (state !== MediaState.PLAYING) {
+          stopProgress();
+        } else {
+          startProgress();
+        }
+      }
+    },
+    progressTime: function progressTime(time) {
+      currentTime = time;
+      timeUpdateCallbacks.forEach(function (callback) {
+        callback({
+          currentTime: time,
+          endOfStream: endOfStream
+        });
+      });
+    },
+    setEndOfStream: function setEndOfStream(isEndOfStream) {
+      endOfStream = isEndOfStream;
+    },
+    setDuration: function setDuration(mediaDuration) {
+      duration = mediaDuration;
+    },
+    setSeekableRange: function setSeekableRange(newSeekableRange) {
+      seekableRange = newSeekableRange;
+    },
+    setMediaKind: function setMediaKind(kind) {
+      mediaKind = kind;
+    },
+    setWindowType: function setWindowType(type) {
+      windowType = type;
+    },
+    setCanSeek: function setCanSeek(value) {
+      canSeekState = value;
+    },
+    setCanPause: function setCanPause(value) {
+      canPauseState = value;
+    },
+    setLiveWindowStart: function setLiveWindowStart(value) {
+      liveWindowStart = value;
+    },
+    setSubtitlesAvailable: function setSubtitlesAvailable(value) {
+      subtitlesAvailable = value;
+    },
+    getSource: function getSource() {
+      return source;
+    },
+    triggerError: function triggerError() {
+      fatalErrorBufferingTimeout = false;
+      Plugins.interface.onError(new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false }));
+      this.changeState(MediaState.WAITING);
+      stopProgress();
+    },
+    triggerErrorHandled: function triggerErrorHandled() {
+      if (sourceList && sourceList.length > 1) {
+        sourceList.shift();
+        source = sourceList[0].url;
+        cdn = sourceList[0].cdn;
+      }
+      Plugins.interface.onBufferingCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: { dismissed_by: 'timeout' }, isInitialPlay: initialBuffering }));
+      Plugins.interface.onErrorCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: { dismissed_by: 'timeout' } }));
+      Plugins.interface.onErrorHandled(new PluginData({ status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout, cdn: cdn }));
+
+      if (autoProgress) {
+        stopProgress();
+        startProgress();
+      }
+    },
+    setInitialBuffering: function setInitialBuffering(value) {
+      initialBuffering = value;
+    },
+    setLiveWindowData: function setLiveWindowData(newLiveWindowData) {
+      liveWindowData = newLiveWindowData;
+    }
+  };
+
+  return {
+    mock: mock,
+    unmock: unmock,
+    mockJasmine: mockJasmine
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/models/livesupportenum.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/models/livesupportenum.js ***!
+  \************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  var LiveSupport = {
+    NONE: 'none',
+    PLAYABLE: 'playable',
+    RESTARTABLE: 'restartable',
+    SEEKABLE: 'seekable'
+  };
+
+  return LiveSupport;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/models/mediakinds.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/models/mediakinds.js ***!
+  \*******************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  return {
+    AUDIO: 'audio',
+    VIDEO: 'video'
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/models/mediastate.js":
+/*!*******************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/models/mediastate.js ***!
+  \*******************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  /**
+   * Enumeration of possible media states.
+   */
+
+  var MediaState = {
+    /** Media is stopped and is not attempting to start. */
+    STOPPED: 0,
+    /** Media is paused. */
+    PAUSED: 1,
+    /** Media is playing successfully. */
+    PLAYING: 2,
+    /** Media is waiting for data (buffering). */
+    WAITING: 4,
+    /** Media is seeking backwards or forwards. */
+    ENDED: 5,
+    /** Media has thrown a fatal error. */
+    FATAL_ERROR: 6
+  };
+
+  return MediaState;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/models/pausetriggers.js":
+/*!**********************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/models/pausetriggers.js ***!
+  \**********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  var PauseTriggers = {
+    USER: 1,
+    APP: 2,
+    DEVICE: 3
+  };
+
+  return PauseTriggers;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/models/transportcontrolposition.js":
+/*!*********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/models/transportcontrolposition.js ***!
+  \*********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  /**
+   * Enumeration of on-screen transport control positions, which can be combined as bit flags.
+   */
+
+  var TransportControlPosition = {
+    /** No transport controls are visible. */
+    NONE: 0,
+    /** The basic transport controls are visible. */
+    CONTROLS_ONLY: 1,
+    /** The transport controls are visible with an expanded info area. */
+    CONTROLS_WITH_INFO: 2,
+    /** The left-hand onwards navigation carousel is visible. */
+    LEFT_CAROUSEL: 4,
+    /** The bottom-right onwards navigation carousel is visible. */
+    BOTTOM_CAROUSEL: 8,
+    /** The whole screen is obscured by a navigation menu. */
+    FULLSCREEN: 16
+  };
+
+  return TransportControlPosition;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
                                                 estack.unshift(s);
                                         } else if (estack[0] instanceof Region) {
 
-                                                /* nested styles can be merged with specified styles
-                                                 * immediately, with lower priority
-                                                 * (see 8.4.4.2(3) at TTML1 )
-                                                 */
+/***/ "./node_modules/bigscreen-player/script/models/windowtypes.js":
+/*!********************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/models/windowtypes.js ***!
+  \********************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                                s = new Style();
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                                s.initFromNode(node, errorHandler);
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
 
-                                                mergeStylesIfNotPresent(s.styleAttrs, estack[0].styleAttrs);
+  return {
+    STATIC: 'staticWindow',
+    GROWING: 'growingWindow',
+    SLIDING: 'slidingWindow'
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
-                                                estack.unshift(s);
-                                        } else {
+/***/ }),
 
-                                                reportFatal(errorHandler, "Parent of <style> element is not <styling> or <region> at (" + this.line + "," + this.column + ")");
-                                        }
-                                } else if (node.local === 'layout') {
+/***/ "./node_modules/bigscreen-player/script/parsers/manifestfilter.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/parsers/manifestfilter.js ***!
+  \************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                        if (!(estack[0] instanceof Head)) {
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                                reportFatal(errorHandler, "Parent of <layout> element is not <head> at " + this.line + "," + this.column + ")");
-                                        }
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
 
-                                        if (doc.head.layout !== null) {
+  function filter(manifest, representationOptions) {
+    var constantFps = representationOptions.constantFps;
+    var maxFps = representationOptions.maxFps;
 
-                                                reportFatal(errorHandler, "Second <layout> element at " + this.line + "," + this.column + ")");
-                                        }
+    if (constantFps || maxFps) {
+      manifest.Period.AdaptationSet = manifest.Period.AdaptationSet.map(function (adaptationSet) {
+        if (adaptationSet.contentType === 'video') {
+          var frameRates = [];
 
-                                        doc.head.layout = new Layout();
+          adaptationSet.Representation_asArray = adaptationSet.Representation_asArray.filter(function (representation) {
+            if (!maxFps || representation.frameRate <= maxFps) {
+              frameRates.push(representation.frameRate);
+              return true;
+            }
+          }).filter(function (representation) {
+            return !constantFps || representation.frameRate === Math.max.apply(null, frameRates);
+          });
+        }
+        return adaptationSet;
+      });
+    }
+    return manifest;
+  }
 
-                                        estack.unshift(doc.head.layout);
-                                } else if (node.local === 'region') {
+  return {
+    filter: filter
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
-                                        if (!(estack[0] instanceof Layout)) {
-                                                reportFatal(errorHandler, "Parent of <region> element is not <layout> at " + this.line + "," + this.column + ")");
-                                        }
+/***/ }),
 
-                                        var r = new Region();
+/***/ "./node_modules/bigscreen-player/script/parsers/manifestparser.js":
+/*!************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/parsers/manifestparser.js ***!
+  \************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                        r.initFromNode(doc, node, errorHandler);
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                        if (!r.id || r.id in doc.head.layout.regions) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/utils/timeutils */ "./node_modules/bigscreen-player/script/utils/timeutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (TimeUtils) {
+  'use strict';
 
-                                                reportError(errorHandler, "Ignoring <region> with duplicate or missing @id at " + this.line + "," + this.column + ")");
-                                        } else {
+  return function ManifestParser(manifest, type, dateWithOffset) {
+    function parseMPD() {
+      try {
+        var mpd = manifest.getElementsByTagName('MPD')[0];
 
-                                                doc.head.layout.regions[r.id] = r;
-                                        }
+        var availabilityStartTime = Date.parse(mpd.getAttribute('availabilityStartTime'));
 
-                                        estack.unshift(r);
-                                } else if (node.local === 'body') {
+        var tsbdAttr = mpd.getAttribute('timeShiftBufferDepth');
+        var timeShiftBufferDepth = tsbdAttr && TimeUtils.durationToSeconds(tsbdAttr);
 
-                                        if (!(estack[0] instanceof TT)) {
+        // Getting zeroth SegmentTemplate may grab either audio or video
+        // data. This shouldn't matter as we only use the factor of
+        // duration/timescale, which is the same for both.
+        var segmentTemplate = manifest.getElementsByTagName('SegmentTemplate')[0];
+        var timescale = parseFloat(segmentTemplate.getAttribute('timescale'));
+        var duration = parseFloat(segmentTemplate.getAttribute('duration'));
+        var oneSegment = 1000 * duration / timescale;
 
-                                                reportFatal(errorHandler, "Parent of <body> element is not <tt> at " + this.line + "," + this.column + ")");
-                                        }
+        if (availabilityStartTime && oneSegment) {
+          var windowEndTime = dateWithOffset - (timeShiftBufferDepth ? availabilityStartTime : 0) - oneSegment;
+          var windowStartTime = timeShiftBufferDepth ? windowEndTime - timeShiftBufferDepth * 1000 : availabilityStartTime;
+          var timeCorrection = timeShiftBufferDepth ? windowStartTime / 1000 : 0;
+        } else {
+          return { error: 'Error parsing DASH manifest attributes' };
+        }
 
-                                        if (doc.body !== null) {
+        return {
+          windowStartTime: windowStartTime,
+          windowEndTime: windowEndTime,
+          timeCorrection: timeCorrection
+        };
+      } catch (e) {
+        return { error: 'Error parsing DASH manifest' };
+      }
+    }
 
-                                                reportFatal(errorHandler, "Second <body> element at " + this.line + "," + this.column + ")");
-                                        }
+    function parseM3U8() {
+      var windowStartTime = getM3U8ProgramDateTime(manifest);
+      var duration = getM3U8WindowSizeInSeconds(manifest);
 
-                                        var b = new Body();
+      if (windowStartTime && duration) {
+        var windowEndTime = windowStartTime + duration * 1000;
+      } else {
+        return { error: 'Error parsing HLS manifest' };
+      }
+      return {
+        windowStartTime: windowStartTime,
+        windowEndTime: windowEndTime
+      };
+    }
 
-                                        b.initFromNode(doc, node, errorHandler);
+    function getM3U8ProgramDateTime(data) {
+      var programDateTime;
+      var match = /^#EXT-X-PROGRAM-DATE-TIME:(.*)$/m.exec(data);
+      if (match) {
+        var parsedDate = Date.parse(match[1]);
+        if (!isNaN(parsedDate)) {
+          programDateTime = parsedDate;
+        }
+      }
+      return programDateTime;
+    }
 
-                                        doc.body = b;
+    function getM3U8WindowSizeInSeconds(data) {
+      var regex = /#EXTINF:(\d+(?:\.\d+)?)/g;
+      var matches = regex.exec(data);
+      var result = 0;
+      while (matches) {
+        result += +matches[1];
+        matches = regex.exec(data);
+      }
+      return Math.floor(result);
+    }
 
-                                        estack.unshift(b);
-                                } else if (node.local === 'div') {
+    function parse() {
+      if (type === 'mpd') {
+        return parseMPD();
+      } else if (type === 'm3u8') {
+        return parseM3U8();
+      }
+    }
 
-                                        if (!(estack[0] instanceof Div || estack[0] instanceof Body)) {
+    return {
+      parse: parse
+    };
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
-                                                reportFatal(errorHandler, "Parent of <div> element is not <body> or <div> at " + this.line + "," + this.column + ")");
-                                        }
+/***/ }),
 
-                                        var d = new Div();
+/***/ "./node_modules/bigscreen-player/script/playbackspinner.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackspinner.js ***!
+  \*****************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                        d.initFromNode(doc, estack[0], node, errorHandler);
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                        estack[0].contents.push(d);
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  return function () {
+    var spinnerContainer = document.createElement('div');
+    spinnerContainer.id = 'loadingSpinner';
+    spinnerContainer.className = 'loadingSpinner loadingSpinner--large ';
 
-                                        estack.unshift(d);
-                                } else if (node.local === 'p') {
+    var spinner = document.createElement('div');
+    spinner.className = 'loadingSpinner__spinner';
 
-                                        if (!(estack[0] instanceof Div)) {
+    spinnerContainer.appendChild(spinner);
+
+    return spinnerContainer;
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy sync recursive ^\\.\\/.*$":
+/*!*****************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy sync ^\.\/.*$ ***!
+  \*****************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var map = {
+	"./hybridstrategy": "./node_modules/bigscreen-player/script/playbackstrategy/hybridstrategy.js",
+	"./hybridstrategy.js": "./node_modules/bigscreen-player/script/playbackstrategy/hybridstrategy.js",
+	"./legacyplayeradapter": "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js",
+	"./legacyplayeradapter.js": "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js",
+	"./liveglitchcurtain": "./node_modules/bigscreen-player/script/playbackstrategy/liveglitchcurtain.js",
+	"./liveglitchcurtain.js": "./node_modules/bigscreen-player/script/playbackstrategy/liveglitchcurtain.js",
+	"./mockstrategy": "./node_modules/bigscreen-player/script/playbackstrategy/mockstrategy.js",
+	"./mockstrategy.js": "./node_modules/bigscreen-player/script/playbackstrategy/mockstrategy.js",
+	"./modifiers/html5": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
+	"./modifiers/html5.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
+	"./modifiers/live/playable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
+	"./modifiers/live/playable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
+	"./modifiers/live/restartable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
+	"./modifiers/live/restartable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
+	"./modifiers/live/seekable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js",
+	"./modifiers/live/seekable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js",
+	"./modifiers/mediaplayerbase": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js",
+	"./modifiers/mediaplayerbase.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js",
+	"./msestrategy": "./node_modules/bigscreen-player/script/playbackstrategy/msestrategy.js",
+	"./msestrategy.js": "./node_modules/bigscreen-player/script/playbackstrategy/msestrategy.js",
+	"./nativestrategy": "./node_modules/bigscreen-player/script/playbackstrategy/nativestrategy.js",
+	"./nativestrategy.js": "./node_modules/bigscreen-player/script/playbackstrategy/nativestrategy.js",
+	"./strategypicker": "./node_modules/bigscreen-player/script/playbackstrategy/strategypicker.js",
+	"./strategypicker.js": "./node_modules/bigscreen-player/script/playbackstrategy/strategypicker.js",
+	"./talstrategy": "./node_modules/bigscreen-player/script/playbackstrategy/talstrategy.js",
+	"./talstrategy.js": "./node_modules/bigscreen-player/script/playbackstrategy/talstrategy.js"
+};
+
+
+function webpackContext(req) {
+	var id = webpackContextResolve(req);
+	return __webpack_require__(id);
+}
+function webpackContextResolve(req) {
+	var id = map[req];
+	if(!(id + 1)) { // check for number or string
+		var e = new Error("Cannot find module '" + req + "'");
+		e.code = 'MODULE_NOT_FOUND';
+		throw e;
+	}
+	return id;
+}
+webpackContext.keys = function webpackContextKeys() {
+	return Object.keys(map);
+};
+webpackContext.resolve = webpackContextResolve;
+module.exports = webpackContext;
+webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy sync recursive ^\\.\\/.*$";
 
                                                 reportFatal(errorHandler, "Parent of <p> element is not <div> at " + this.line + "," + this.column + ")");
                                         }
 
-                                        var p = new P();
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/hybridstrategy.js":
+/*!*********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/hybridstrategy.js ***!
+  \*********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                        p.initFromNode(doc, estack[0], node, errorHandler);
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                        estack[0].contents.push(p);
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/nativestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/nativestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/msestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/msestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/strategypicker */ "./node_modules/bigscreen-player/script/playbackstrategy/strategypicker.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Native, MSE, StrategyPicker) {
+  return function (windowType, mediaKind, timeCorrection, videoElement, isUHD, device) {
+    var strategy = StrategyPicker(windowType, isUHD);
 
-                                        estack.unshift(p);
-                                } else if (node.local === 'span') {
+    if (strategy === 'mseStrategy') {
+      return MSE(windowType, mediaKind, timeCorrection, videoElement, isUHD);
+    }
 
-                                        if (!(estack[0] instanceof Span || estack[0] instanceof P)) {
+    return Native(windowType, mediaKind, timeCorrection, videoElement, isUHD, device);
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
-                                                reportFatal(errorHandler, "Parent of <span> element is not <span> or <p> at " + this.line + "," + this.column + ")");
-                                        }
+/***/ }),
 
-                                        var ns = new Span();
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js":
+/*!**************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js ***!
+  \**************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                        ns.initFromNode(doc, estack[0], node, xmlspacestack[0], errorHandler);
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                        estack[0].contents.push(ns);
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/allowedmediatransitions */ "./node_modules/bigscreen-player/script/allowedmediatransitions.js"), __webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/liveglitchcurtain */ "./node_modules/bigscreen-player/script/playbackstrategy/liveglitchcurtain.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (AllowedMediaTransitions, MediaState, WindowTypes, DebugTool, LiveGlitchCurtain) {
+  return function (windowType, mediaKind, timeData, playbackElement, isUHD, deviceConfig, player) {
+    var EVENT_HISTORY_LENGTH = 2;
 
-                                        estack.unshift(ns);
-                                } else if (node.local === 'br') {
+    var mediaPlayer = player;
+    var transitions = new AllowedMediaTransitions(mediaPlayer);
+    var eventHistory = [];
+    var eventCallback;
+    var errorCallback;
+    var timeUpdateCallback;
+    var currentTime;
+    var timeCorrection = timeData && timeData.correction || 0;
+    var duration = 0;
+    var _isPaused;
+    var _isEnded = false;
+    var hasStartTime;
 
-                                        if (!(estack[0] instanceof Span || estack[0] instanceof P)) {
+    var handleErrorOnExitingSeek;
+    var delayPauseOnExitSeek;
 
-                                                reportFatal(errorHandler, "Parent of <br> element is not <span> or <p> at " + this.line + "," + this.column + ")");
-                                        }
+    var pauseOnExitSeek;
+    var exitingSeek;
+    var targetSeekToTime;
 
-                                        var nb = new Br();
+    var liveGlitchCurtain;
 
-                                        nb.initFromNode(doc, estack[0], node, errorHandler);
+    var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
+    var config = deviceConfig;
+    var setSourceOpts = {
+      disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels
+    };
 
-                                        estack[0].contents.push(nb);
+    mediaPlayer.addEventCallback(this, eventHandler);
 
-                                        estack.unshift(nb);
-                                } else if (node.local === 'set') {
+    strategy = strategy.match(/.+(?=strategy)/g)[0];
 
-                                        if (!(estack[0] instanceof Span || estack[0] instanceof P || estack[0] instanceof Div || estack[0] instanceof Body || estack[0] instanceof Region || estack[0] instanceof Br)) {
+    function eventHandler(event) {
+      var handleEvent = {
+        'playing': onPlaying,
+        'paused': onPaused,
+        'buffering': onBuffering,
+        'seek-attempted': onSeekAttempted,
+        'seek-finished': onSeekFinished,
+        'status': onTimeUpdate,
+        'complete': onEnded,
+        'error': onError
+      };
 
-                                                reportFatal(errorHandler, "Parent of <set> element is not a content element or a region at " + this.line + "," + this.column + ")");
-                                        }
+      if (handleEvent.hasOwnProperty(event.type)) {
+        handleEvent[event.type].call(this, event);
+      } else {
+        DebugTool.info(getSelection() + ' Event:' + event.type);
+      }
 
-                                        var st = new Set();
+      if (event.type !== 'status') {
+        if (eventHistory.length >= EVENT_HISTORY_LENGTH) {
+          eventHistory.pop();
+        }
+        eventHistory.unshift({ type: event.type, time: new Date().getTime() });
+      }
+    }
 
-                                        st.initFromNode(doc, estack[0], node, errorHandler);
+    function onPlaying(event) {
+      currentTime = event.currentTime - timeCorrection;
+      _isPaused = false;
+      _isEnded = false;
+      duration = duration || event.duration;
+      publishMediaState(MediaState.PLAYING);
+    }
 
-                                        estack[0].sets.push(st);
+    function onPaused(event) {
+      _isPaused = true;
+      publishMediaState(MediaState.PAUSED);
+    }
 
-                                        estack.unshift(st);
-                                } else {
+    function onBuffering(event) {
+      _isEnded = false;
+      publishMediaState(MediaState.WAITING);
+    }
 
-                                        /* element in the TT namespace, but not a content element */
+    function onTimeUpdate(event) {
+      _isPaused = false;
+      currentTime = event.currentTime - timeCorrection;
+      // Must publish this time update before checkSeekSucceded - which could cause a pause event
+      // This is a device specific event ordering issue.
+      publishTimeUpdate();
+      if ((handleErrorOnExitingSeek || delayPauseOnExitSeek) && exitingSeek) {
+        checkSeekSucceeded(event.seekableRange.start, event.currentTime);
+      }
+    }
 
-                                        estack.unshift(new ForeignElement(node));
-                                }
-                        } else {
+    function onEnded() {
+      _isPaused = true;
+      _isEnded = true;
+      publishMediaState(MediaState.ENDED);
+    }
 
-                                /* ignore elements not in the TTML namespace unless in metadata element */
+    function onError(event) {
+      if (handleErrorOnExitingSeek && exitingSeek) {
+        restartMediaPlayer();
+      } else {
+        event.errorProperties = createEventHistoryLabels();
+        event.errorProperties.error_mssg = event.errorMessage;
+        publishError(event);
+      }
+    }
 
-                                estack.unshift(new ForeignElement(node));
-                        }
+    function onSeekAttempted(event) {
+      showCurtain();
+    }
 
-                        /* handle metadata callbacks */
+    function onSeekFinished(event) {
+      hideCurtain();
+    }
 
-                        if (estack[0] instanceof ForeignElement) {
+    function publishMediaState(mediaState) {
+      if (eventCallback) {
+        eventCallback(mediaState);
+      }
+    }
 
-                                if (node.uri === imscNames.ns_tt && node.local === 'metadata') {
+    function publishError(errorEvent) {
+      if (errorCallback) {
+        errorCallback(errorEvent);
+      }
+    }
 
-                                        /* enter the metadata element */
+    function publishTimeUpdate() {
+      if (timeUpdateCallback) {
+        timeUpdateCallback();
+      }
+    }
 
-                                        metadata_depth++;
-                                } else if (metadata_depth > 0 && metadataHandler && 'onOpenTag' in metadataHandler) {
+    function getStrategy() {
+      return strategy.toUpperCase();
+    }
 
-                                        /* start of child of metadata element */
+    function createEventHistoryLabels() {
+      var properties = {};
+      var now = new Date().getTime();
+      for (var i = 0; i < eventHistory.length; i++) {
+        properties['event_history_' + (i + 1)] = eventHistory[i].type;
+        properties['event_history_time_' + (i + 1)] = now - eventHistory[i].time;
+      }
+      return properties;
+    }
 
-                                        var attrs = [];
+    function setupExitSeekWorkarounds(mimeType) {
+      handleErrorOnExitingSeek = windowType !== WindowTypes.STATIC && mimeType === 'application/dash+xml';
 
-                                        for (var a in node.attributes) {
-                                                attrs[node.attributes[a].uri + " " + node.attributes[a].local] = {
-                                                        uri: node.attributes[a].uri,
-                                                        local: node.attributes[a].local,
-                                                        value: node.attributes[a].value
-                                                };
-                                        }
+      var capabilities = config.capabilities || [];
+      var deviceFailsPlayAfterPauseOnExitSeek = capabilities.indexOf('playFailsAfterPauseOnExitSeek') !== -1;
+      delayPauseOnExitSeek = handleErrorOnExitingSeek || deviceFailsPlayAfterPauseOnExitSeek;
+    }
 
-                                        metadataHandler.onOpenTag(node.uri, node.local, attrs);
-                                }
-                        }
-                };
+    function checkSeekSucceeded(seekableRangeStart, currentTime) {
+      var SEEK_TOLERANCE = 30;
 
-                // parse the document
+      var clampedSeekToTime = Math.max(seekableRangeStart, targetSeekToTime);
+      var successfullySeeked = Math.abs(currentTime - clampedSeekToTime) < SEEK_TOLERANCE;
 
-                p.write(xmlstring).close();
+      if (successfullySeeked) {
+        if (pauseOnExitSeek) {
+          // Delay call to pause until seek has completed
+          // successfully for scenarios which can error upon exiting seek.
+          mediaPlayer.pause();
+          pauseOnExitSeek = false;
+        }
+        exitingSeek = false;
+      }
+    }
 
-                // all referential styling has been flatten, so delete the styling elements if there is a head
-                // otherwise create an empty head
+    // Dash live streams can error on exiting seek when the start of the
+    // seekable range has overtaken the point where the stream was paused
+    // Workaround - reset the media player then do a fresh beginPlaybackFrom()
+    function restartMediaPlayer() {
+      exitingSeek = false;
+      pauseOnExitSeek = false;
+      var source = mediaPlayer.getSource();
+      var mimeType = mediaPlayer.getMimeType();
 
-                if (doc.head !== null) {
-                        delete doc.head.styling;
-                } else {
-                        doc.head = new Head();
-                }
+      reset();
+      mediaPlayer.initialiseMedia('video', source, mimeType, playbackElement, setSourceOpts);
+      mediaPlayer.beginPlaybackFrom(currentTime + timeCorrection || 0);
+    }
 
-                // create default region if no regions specified
+    function showCurtain() {
+      var doNotForceBeginPlaybackToEndOfWindow = {
+        forceBeginPlaybackToEndOfWindow: false
+      };
 
-                if (doc.head.layout === null) {
+      var streaming = config.streaming || {
+        overrides: doNotForceBeginPlaybackToEndOfWindow
+      };
 
-                        doc.head.layout = new Layout();
-                }
+      var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
 
-                var hasRegions = false;
+      var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
 
-                /* AFAIK the only way to determine whether an object has members */
+      if (shouldShowCurtain) {
+        liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
+        liveGlitchCurtain.showCurtain();
+      }
+    }
 
-                for (var i in doc.head.layout.regions) {
+    function hideCurtain() {
+      if (liveGlitchCurtain) {
+        liveGlitchCurtain.hideCurtain();
+      }
+    }
 
-                        hasRegions = true;
+    function reset() {
+      if (transitions.canBeStopped()) {
+        mediaPlayer.stop();
+      }
+      mediaPlayer.reset();
+    }
 
-                        break;
-                }
-
-                if (!hasRegions) {
-
-                        /* create default region */
-
-                        var dr = Region.prototype.createDefaultRegion();
-
-                        doc.head.layout.regions[dr.id] = dr;
-                }
-
-                /* resolve desired timing for regions */
-
-                for (var region_i in doc.head.layout.regions) {
-
-                        resolveTiming(doc, doc.head.layout.regions[region_i], null, null);
-                }
-
-                /* resolve desired timing for content elements */
-
-                if (doc.body) {
-                        resolveTiming(doc, doc.body, null, null);
-                }
-
-                return doc;
+    return {
+      transitions: transitions,
+      addEventCallback: function addEventCallback(thisArg, newCallback) {
+        eventCallback = function eventCallback(event) {
+          newCallback.call(thisArg, event);
         };
+      },
+      addErrorCallback: function addErrorCallback(thisArg, newErrorCallback) {
+        errorCallback = function errorCallback(event) {
+          newErrorCallback.call(thisArg, event);
+        };
+      },
+      addTimeUpdateCallback: function addTimeUpdateCallback(thisArg, newTimeUpdateCallback) {
+        timeUpdateCallback = function timeUpdateCallback() {
+          newTimeUpdateCallback.call(thisArg);
+        };
+      },
+      load: function load(src, mimeType, startTime) {
+        setupExitSeekWorkarounds(mimeType);
+        _isPaused = false;
 
-        function resolveTiming(doc, element, prev_sibling, parent) {
+        hasStartTime = startTime || startTime === 0;
+        var isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime;
 
-                /* are we in a seq container? */
+        mediaPlayer.initialiseMedia('video', src, mimeType, playbackElement, setSourceOpts);
+        if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
+          currentTime = startTime;
+          mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);
+        } else {
+          mediaPlayer.beginPlayback();
+        }
+        DebugTool.keyValue({ key: 'strategy', value: getStrategy() });
+      },
+      play: function play() {
+        _isPaused = false;
+        if (delayPauseOnExitSeek && exitingSeek) {
+          pauseOnExitSeek = false;
+        } else {
+          if (_isEnded) {
+            mediaPlayer.playFrom(0);
+          } else if (transitions.canResume()) {
+            mediaPlayer.resume();
+          } else {
+            mediaPlayer.playFrom(currentTime + timeCorrection);
+          }
+        }
+      },
+      pause: function pause(options) {
+        // TODO - transitions is checked in playerComponent. The check can be removed here.
+        if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
+          pauseOnExitSeek = true;
+        } else {
+          mediaPlayer.pause(options);
+        }
+      },
+      isPaused: function isPaused() {
+        return _isPaused;
+      },
+      isEnded: function isEnded() {
+        return _isEnded;
+      },
+      getDuration: function getDuration() {
+        return duration;
+      },
+      getPlayerElement: function getPlayerElement() {
+        return mediaPlayer.getPlayerElement && mediaPlayer.getPlayerElement();
+      },
+      getSeekableRange: function getSeekableRange() {
+        if (windowType === WindowTypes.STATIC) {
+          return {
+            start: 0,
+            end: duration
+          };
+        } else {
+          var seekableRange = mediaPlayer.getSeekableRange && mediaPlayer.getSeekableRange() || {};
+          if (seekableRange.hasOwnProperty('start')) {
+            seekableRange.start = seekableRange.start - timeCorrection;
+          }
+          if (seekableRange.hasOwnProperty('end')) {
+            seekableRange.end = seekableRange.end - timeCorrection;
+          }
+          return seekableRange;
+        }
+      },
+      getCurrentTime: function getCurrentTime() {
+        return currentTime;
+      },
+      setCurrentTime: function setCurrentTime(seekToTime) {
+        _isEnded = false;
+        currentTime = seekToTime;
+        seekToTime += timeCorrection;
 
-                var isinseq = parent && parent.timeContainer === "seq";
+        if (handleErrorOnExitingSeek || delayPauseOnExitSeek) {
+          targetSeekToTime = seekToTime;
+          exitingSeek = true;
+          pauseOnExitSeek = _isPaused;
+        }
 
-                /* determine implicit begin */
+        mediaPlayer.playFrom(seekToTime);
+        if (_isPaused && !delayPauseOnExitSeek) {
+          mediaPlayer.pause();
+        }
+      },
+      getStrategy: getStrategy(),
+      reset: reset,
+      tearDown: function tearDown() {
+        mediaPlayer.removeAllEventCallbacks();
+        pauseOnExitSeek = false;
+        exitingSeek = false;
+        pauseOnExitSeek = false;
+        delayPauseOnExitSeek = false;
+        _isPaused = true;
+        _isEnded = false;
+        if (liveGlitchCurtain) {
+          liveGlitchCurtain.tearDown();
+          liveGlitchCurtain = undefined;
+        }
+        eventCallback = undefined;
+        errorCallback = undefined;
+        timeUpdateCallback = undefined;
+      }
+    };
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
-                var implicit_begin = 0; /* default */
+/***/ }),
 
-                if (parent) {
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/liveglitchcurtain.js":
+/*!************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/liveglitchcurtain.js ***!
+  \************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                        if (isinseq && prev_sibling) {
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                /*
-                                 * if seq time container, offset from the previous sibling end
-                                 */
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackspinner */ "./node_modules/bigscreen-player/script/playbackspinner.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (PlaybackSpinner) {
+  return function (parentElement) {
+    var curtain;
+    var spinner = new PlaybackSpinner();
 
-                                implicit_begin = prev_sibling.end;
-                        } else {
+    curtain = document.createElement('div');
 
-                                implicit_begin = parent.begin;
-                        }
-                }
+    curtain.id = 'liveGlitchCurtain';
+    curtain.style.display = 'none';
+    curtain.style.position = 'absolute';
+    curtain.style.top = 0;
+    curtain.style.left = 0;
+    curtain.style.right = 0;
+    curtain.style.bottom = 0;
+    curtain.style.backgroundColor = '#3c3c3c';
 
-                /* compute desired begin */
+    curtain.appendChild(spinner);
 
-                element.begin = element.explicit_begin ? element.explicit_begin + implicit_begin : implicit_begin;
+    return {
+      showCurtain: function showCurtain() {
+        curtain.style.display = 'block';
+        parentElement.appendChild(curtain);
+      },
 
-                /* determine implicit end */
+      hideCurtain: function hideCurtain() {
+        curtain.style.display = 'none';
+        curtain.removeChild(spinner);
+      },
 
-                var implicit_end = element.begin;
+      tearDown: function tearDown() {
+        if (curtain) {
+          parentElement.removeChild(curtain);
+        }
 
-                var s = null;
+        if (spinner) {
+          spinner = undefined;
+        }
+      }
+    };
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
-                for (var set_i in element.sets) {
+/***/ }),
 
-                        resolveTiming(doc, element.sets[set_i], s, element);
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/mockstrategy.js":
+/*!*******************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/mockstrategy.js ***!
+  \*******************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                        if (element.timeContainer === "seq") {
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                implicit_end = element.sets[set_i].end;
-                        } else {
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  var eventCallback;
+  var errorCallback;
+  var timeUpdateCallback;
+  var instance = {
+    transitions: {
+      canBePaused: function canBePaused() {
+        return true;
+      },
+      canBeginSeek: function canBeginSeek() {
+        return true;
+      }
+    },
+    addEventCallback: function addEventCallback(thisArg, callback) {
+      eventCallback = function eventCallback(event) {
+        callback.call(thisArg, event);
+      };
+    },
+    addErrorCallback: function addErrorCallback(thisArg, callback) {
+      errorCallback = function errorCallback(event) {
+        callback.call(thisArg, event);
+      };
+    },
+    addTimeUpdateCallback: function addTimeUpdateCallback(thisArg, callback) {
+      timeUpdateCallback = function timeUpdateCallback() {
+        callback.call(thisArg);
+      };
+    },
+    getSeekableRange: function getSeekableRange() {
+      return {
+        start: 0,
+        end: 0
+      };
+    },
+    getCurrentTime: function getCurrentTime() {
+      return;
+    },
+    getDuration: function getDuration() {
+      return;
+    },
+    load: function load() {
+      return;
+    },
+    play: function play() {
+      return;
+    },
+    pause: function pause() {
+      return;
+    },
+    reset: function reset() {
+      return;
+    },
+    tearDown: function tearDown() {
+      return;
+    },
+    isEnded: function isEnded() {
+      return;
+    },
+    getPlayerElement: function getPlayerElement() {
+      return;
+    },
+    setCurrentTime: function setCurrentTime() {
+      return;
+    },
+    isPaused: function isPaused() {
+      return;
+    },
+    mockingHooks: {
+      fireEvent: function fireEvent(event) {
+        eventCallback(event);
+      },
+      fireErrorEvent: function fireErrorEvent(event) {
+        errorCallback(event);
+      },
+      fireTimeUpdate: function fireTimeUpdate() {
+        timeUpdateCallback();
+      }
+    }
+  };
 
-                                implicit_end = Math.max(implicit_end, element.sets[set_i].end);
-                        }
-
-                        s = element.sets[set_i];
-                }
-
-                if (!('contents' in element)) {
-
-                        /* anonymous spans and regions and <set> and <br>s and spans with only children text nodes */
-
-                        if (isinseq) {
-
-                                /* in seq container, implicit duration is zero */
-
-                                implicit_end = element.begin;
-                        } else {
-
-                                /* in par container, implicit duration is indefinite */
-
-                                implicit_end = Number.POSITIVE_INFINITY;
-                        }
-                } else {
-
-                        for (var content_i in element.contents) {
-
-                                resolveTiming(doc, element.contents[content_i], s, element);
+  return function MockStrategy(playbackFrame, playbackType, streamType, mediaType, timeData, videoContainer) {
+    return instance;
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
                                 if (element.timeContainer === "seq") {
 
-                                        implicit_end = element.contents[content_i].end;
-                                } else {
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js":
+/*!**********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js ***!
+  \**********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                        implicit_end = Math.max(implicit_end, element.contents[content_i].end);
-                                }
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                s = element.contents[content_i];
-                        }
-                }
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase) {
+  'use strict';
 
-                /* determine desired end */
-                /* it is never made really clear in SMIL that the explicit end is offset by the implicit begin */
+  function Player(logger) {
+    var eventCallback;
+    var eventCallbacks = [];
+    var state = MediaPlayerBase.STATE.EMPTY;
 
-                if (element.explicit_end !== null && element.explicit_dur !== null) {
+    var mediaElement;
+    var sourceElement;
 
-                        element.end = Math.min(element.begin + element.explicit_dur, implicit_begin + element.explicit_end);
-                } else if (element.explicit_end === null && element.explicit_dur !== null) {
+    var trustZeroes = false;
+    var ignoreNextPauseEvent = false;
+    var nearEndOfMedia;
+    var readyToPlayFrom;
 
-                        element.end = element.begin + element.explicit_dur;
-                } else if (element.explicit_end !== null && element.explicit_dur === null) {
+    var mediaType;
+    var source;
+    var mimeType;
 
-                        element.end = implicit_begin + element.explicit_end;
-                } else {
+    var postBufferingState;
+    var targetSeekTime;
 
-                        element.end = implicit_end;
-                }
+    var disableSentinels;
+    var hasSentinelTimeChangedWithinTolerance;
+    var enterBufferingSentinelAttemptCount;
+    var sentinelSeekTime;
+    var seekSentinelTolerance;
+    var sentinelInterval;
+    var sentinelIntervalNumber;
+    var lastSentinelTime;
 
-                delete element.explicit_begin;
-                delete element.explicit_dur;
-                delete element.explicit_end;
+    var sentinelLimits = {
+      pause: {
+        maximumAttempts: 2,
+        successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
+        failureEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE,
+        currentAttemptCount: 0
+      },
+      seek: {
+        maximumAttempts: 2,
+        successEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK,
+        failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
+        currentAttemptCount: 0
+      }
+    };
 
-                doc._registerEvent(element);
+    function emitEvent(eventType, eventLabels) {
+      var event = {
+        type: eventType,
+        currentTime: getCurrentTime(),
+        seekableRange: _getSeekableRange(),
+        duration: getDuration(),
+        url: getSource(),
+        mimeType: getMimeType(),
+        state: getState()
+      };
+
+      if (eventLabels) {
+        for (var key in eventLabels) {
+          if (eventLabels.hasOwnProperty(key)) {
+            event[key] = eventLabels[key];
+          }
         }
+      }
 
-        function ForeignElement(node) {
-                this.node = node;
-        }
+      for (var index = 0; index < eventCallbacks.length; index++) {
+        eventCallbacks[index](event);
+      }
+    }
 
-        function TT() {
-                this.events = [];
-                this.head = null;
-                this.body = null;
-        }
+    function getDuration() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          return undefined;
+        default:
+          if (isLiveMedia()) {
+            return Infinity;
+          }
+          return getMediaDuration();
+      }
+    }
 
-        TT.prototype.initFromNode = function (node, errorHandler) {
+    function getSource() {
+      return source;
+    }
 
-                /* compute cell resolution */
+    function getMimeType() {
+      return mimeType;
+    }
 
-                this.cellResolution = extractCellResolution(node, errorHandler);
+    function getState() {
+      return state;
+    }
 
-                /* extract frame rate and tick rate */
+    function isLiveMedia() {
+      return mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO;
+    }
 
-                var frtr = extractFrameAndTickRate(node, errorHandler);
+    function setSeekSentinelTolerance() {
+      var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15;
+      var LIVE_SEEK_SENTINEL_TOLERANCE = 30;
 
-                this.effectiveFrameRate = frtr.effectiveFrameRate;
+      seekSentinelTolerance = ON_DEMAND_SEEK_SENTINEL_TOLERANCE;
+      if (isLiveMedia()) {
+        seekSentinelTolerance = LIVE_SEEK_SENTINEL_TOLERANCE;
+      }
+    }
 
-                this.tickRate = frtr.tickRate;
+    function generateSourceElement(url, mimeType) {
+      var sourceElement = document.createElement('source');
+      sourceElement.src = url;
+      sourceElement.type = mimeType;
+      return sourceElement;
+    }
 
-                /* extract aspect ratio */
+    function appendChildElement(to, el) {
+      to.appendChild(el);
+    }
 
-                this.aspectRatio = extractAspectRatio(node, errorHandler);
+    function prependChildElement(to, el) {
+      if (to.childNodes.length > 0) {
+        to.insertBefore(el, to.childNodes[0]);
+      } else {
+        to.appendChild(el);
+      }
+    }
 
-                /* check timebase */
+    function removeElement(el) {
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    }
 
-                var attr = findAttribute(node, imscNames.ns_ttp, "timeBase");
+    function toStopped() {
+      state = MediaPlayerBase.STATE.STOPPED;
+      emitEvent(MediaPlayerBase.EVENT.STOPPED);
+      setSentinels([]);
+    }
 
-                if (attr !== null && attr !== "media") {
+    function enterBufferingSentinel() {
+      var sentinelShouldFire = !hasSentinelTimeChangedWithinTolerance && !nearEndOfMedia;
 
-                        reportFatal(errorHandler, "Unsupported time base");
-                }
+      if (getCurrentTime() === 0) {
+        sentinelShouldFire = trustZeroes && sentinelShouldFire;
+      }
 
-                /* retrieve extent */
+      if (enterBufferingSentinelAttemptCount === undefined) {
+        enterBufferingSentinelAttemptCount = 0;
+      }
 
-                var e = extractExtent(node, errorHandler);
+      if (sentinelShouldFire) {
+        enterBufferingSentinelAttemptCount++;
+      } else {
+        enterBufferingSentinelAttemptCount = 0;
+      }
 
-                if (e === null) {
+      if (enterBufferingSentinelAttemptCount === 1) {
+        sentinelShouldFire = false;
+      }
 
-                        /* TODO: remove once unit tests are ready */
-
-                        this.pxDimensions = { 'h': 480, 'w': 640 };
-                } else {
-
-                        if (e.h.unit !== "px" || e.w.unit !== "px") {
-                                reportFatal(errorHandler, "Extent on TT must be in px or absent");
-                        }
-
-                        this.pxDimensions = { 'h': e.h.value, 'w': e.w.value };
-                }
-        };
-
-        /* register a temporal events */
-        TT.prototype._registerEvent = function (elem) {
-
-                /* skip if begin is not < then end */
-
-                if (elem.end <= elem.begin) return;
-
-                /* index the begin time of the event */
-
-                var b_i = indexOf(this.events, elem.begin);
-
-                if (!b_i.found) {
-                        this.events.splice(b_i.index, 0, elem.begin);
-                }
-
-                /* index the end time of the event */
-
-                if (elem.end !== Number.POSITIVE_INFINITY) {
-
-                        var e_i = indexOf(this.events, elem.end);
-
-                        if (!e_i.found) {
-                                this.events.splice(e_i.index, 0, elem.end);
-                        }
-                }
-        };
-
-        /*
-         * Retrieves the range of ISD times covered by the document
-         * 
-         * @returns {Array} Array of two elements: min_begin_time and max_begin_time
-         * 
+      if (sentinelShouldFire) {
+        emitEvent(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING);
+        toBuffering();
+        /* Resetting the sentinel attempt count to zero means that the sentinel will only fire once
+         even if multiple iterations result in the same conditions.
+         This should not be needed as the second iteration, when the enter buffering sentinel is fired
+         will cause the media player to go into the buffering state. The enter buffering sentinel is not fired
+         when in buffering state
          */
-        TT.prototype.getMediaTimeRange = function () {
+        enterBufferingSentinelAttemptCount = 0;
+        return true;
+      }
 
-                return [this.events[0], this.events[this.events.length - 1]];
+      return false;
+    }
+
+    function exitBufferingSentinel() {
+      function fireExitBufferingSentinel() {
+        emitEvent(MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING);
+        exitBuffering();
+        return true;
+      }
+
+      if (readyToPlayFrom && mediaElement.paused) {
+        return fireExitBufferingSentinel();
+      }
+
+      if (hasSentinelTimeChangedWithinTolerance) {
+        return fireExitBufferingSentinel();
+      }
+      return false;
+    }
+
+    function shouldBeSeekedSentinel() {
+      if (sentinelSeekTime === undefined) {
+        return false;
+      }
+
+      var currentTime = getCurrentTime();
+      var sentinelActionTaken = false;
+
+      if (Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
+        sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
+          mediaElement.currentTime = sentinelSeekTime;
+        });
+      } else if (sentinelIntervalNumber < 3) {
+        sentinelSeekTime = currentTime;
+      } else {
+        sentinelSeekTime = undefined;
+      }
+
+      return sentinelActionTaken;
+    }
+
+    function shouldBePausedSentinel() {
+      var sentinelActionTaken = false;
+      if (hasSentinelTimeChangedWithinTolerance) {
+        sentinelActionTaken = nextSentinelAttempt(sentinelLimits.pause, function () {
+          pauseMediaElement();
+        });
+      }
+
+      return sentinelActionTaken;
+    }
+
+    function nextSentinelAttempt(sentinelInfo, attemptFn) {
+      var currentAttemptCount, maxAttemptCount;
+
+      sentinelInfo.currentAttemptCount += 1;
+      currentAttemptCount = sentinelInfo.currentAttemptCount;
+      maxAttemptCount = sentinelInfo.maximumAttempts;
+
+      if (currentAttemptCount === maxAttemptCount + 1) {
+        emitEvent(sentinelInfo.failureEvent);
+      }
+
+      if (currentAttemptCount <= maxAttemptCount) {
+        attemptFn();
+        emitEvent(sentinelInfo.successEvent);
+        return true;
+      }
+
+      return false;
+    }
+
+    function endOfMediaSentinel() {
+      if (!hasSentinelTimeChangedWithinTolerance && nearEndOfMedia) {
+        emitEvent(MediaPlayerBase.EVENT.SENTINEL_COMPLETE);
+        onEndOfMedia();
+        return true;
+      }
+      return false;
+    }
+
+    function clearSentinels() {
+      clearInterval(sentinelInterval);
+    }
+
+    function setSentinels(sentinels) {
+      if (disableSentinels) {
+        return;
+      }
+
+      clearSentinels();
+      sentinelIntervalNumber = 0;
+      lastSentinelTime = getCurrentTime();
+      sentinelInterval = setInterval(function () {
+        sentinelIntervalNumber += 1;
+        var newTime = getCurrentTime();
+
+        hasSentinelTimeChangedWithinTolerance = Math.abs(newTime - lastSentinelTime) > 0.2;
+        nearEndOfMedia = getDuration() - (newTime || lastSentinelTime) <= 1;
+        lastSentinelTime = newTime;
+
+        for (var i = 0; i < sentinels.length; i++) {
+          var sentinelActivated = sentinels[i].call();
+
+          if (getCurrentTime() > 0) {
+            trustZeroes = false;
+          }
+
+          if (sentinelActivated) {
+            break;
+          }
+        }
+      }, 1100);
+    }
+
+    function reportError(errorMessage) {
+      logger.error(errorMessage);
+    }
+
+    function toBuffering() {
+      state = MediaPlayerBase.STATE.BUFFERING;
+      emitEvent(MediaPlayerBase.EVENT.BUFFERING);
+      setSentinels([exitBufferingSentinel]);
+    }
+
+    function toComplete() {
+      state = MediaPlayerBase.STATE.COMPLETE;
+      emitEvent(MediaPlayerBase.EVENT.COMPLETE);
+      setSentinels([]);
+    }
+
+    function toEmpty() {
+      wipe();
+      state = MediaPlayerBase.STATE.EMPTY;
+    }
+
+    function toError(errorMessage) {
+      wipe();
+      state = MediaPlayerBase.STATE.ERROR;
+      reportError(errorMessage);
+    }
+
+    function isReadyToPlayFrom() {
+      if (readyToPlayFrom !== undefined) {
+        return readyToPlayFrom;
+      }
+      return false;
+    }
+
+    function getMediaDuration() {
+      if (mediaElement && isReadyToPlayFrom()) {
+        return mediaElement.duration;
+      }
+      return undefined;
+    }
+
+    function _getSeekableRange() {
+      if (mediaElement) {
+        if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
+          return {
+            start: mediaElement.seekable.start(0),
+            end: mediaElement.seekable.end(0)
+          };
+        } else if (mediaElement.duration !== undefined) {
+          return {
+            start: 0,
+            end: mediaElement.duration
+          };
+        } else {
+          logger.warn('No \'duration\' or \'seekable\' on media element');
+        }
+      }
+      return undefined;
+    }
+
+    function onFinishedBuffering() {
+      exitBuffering();
+    }
+
+    function pauseMediaElement() {
+      mediaElement.pause();
+      ignoreNextPauseEvent = true;
+    }
+
+    function onPause() {
+      if (ignoreNextPauseEvent) {
+        ignoreNextPauseEvent = false;
+        return;
+      }
+
+      if (getState() !== MediaPlayerBase.STATE.PAUSED) {
+        toPaused();
+      }
+    }
+
+    function onError() {
+      reportError('Media element error code: ' + mediaElement.error.code);
+    }
+
+    function onSourceError() {
+      reportError('Media source element error');
+    }
+
+    function onDeviceBuffering() {
+      if (getState() === MediaPlayerBase.STATE.PLAYING) {
+        toBuffering();
+      }
+    }
+
+    function onEndOfMedia() {
+      toComplete();
+    }
+
+    function onStatus() {
+      if (getState() === MediaPlayerBase.STATE.PLAYING) {
+        emitEvent(MediaPlayerBase.EVENT.STATUS);
+      }
+    }
+
+    function onMetadata() {
+      metadataLoaded();
+    }
+
+    function exitBuffering() {
+      metadataLoaded();
+      if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
+        return;
+      } else if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
+        toPaused();
+      } else {
+        toPlaying();
+      }
+    }
+
+    function metadataLoaded() {
+      readyToPlayFrom = true;
+      if (waitingToPlayFrom()) {
+        deferredPlayFrom();
+      }
+    }
+
+    function playFromIfReady() {
+      if (isReadyToPlayFrom()) {
+        if (waitingToPlayFrom()) {
+          deferredPlayFrom();
+        }
+      }
+    }
+
+    function waitingToPlayFrom() {
+      return targetSeekTime !== undefined;
+    }
+
+    function deferredPlayFrom() {
+      seekTo(targetSeekTime);
+      mediaElement.play();
+      if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
+        pauseMediaElement();
+      }
+      targetSeekTime = undefined;
+    }
+
+    function seekTo(seconds) {
+      var clampedTime = getClampedTimeForPlayFrom(seconds);
+      mediaElement.currentTime = clampedTime;
+      sentinelSeekTime = clampedTime;
+    }
+
+    function getCurrentTime() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          break;
+
+        default:
+          if (mediaElement) {
+            return mediaElement.currentTime;
+          }
+          break;
+      }
+      return undefined;
+    }
+
+    /**
+      * Time (in seconds) compared to current time within which seeking has no effect.
+      * @constant {Number}
+    */
+    var CURRENT_TIME_TOLERANCE = 1;
+
+    /**
+      * Check whether a time value is near to the current media play time.
+      * @param {Number} seconds The time value to test, in seconds from the start of the media
+      * @protected
+    */
+    function isNearToCurrentTime(seconds) {
+      var currentTime = getCurrentTime();
+      var targetTime = getClampedTime(seconds);
+      return Math.abs(currentTime - targetTime) <= CURRENT_TIME_TOLERANCE;
+    }
+
+    /**
+      * Clamp a time value so it does not exceed the current range.
+      * Clamps to near the end instead of the end itself to allow for devices that cannot seek to the very end of the media.
+      * @param {Number} seconds The time value to clamp in seconds from the start of the media
+      * @protected
+    */
+    function getClampedTime(seconds) {
+      var range = _getSeekableRange();
+      var offsetFromEnd = getClampOffsetFromConfig();
+      var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
+      if (seconds < range.start) {
+        return range.start;
+      } else if (seconds > nearToEnd) {
+        return nearToEnd;
+      } else {
+        return seconds;
+      }
+    }
+
+    /**
+      * Offset used when attempting to playFrom() the end of media. This allows the media to play briefly before completing.
+      * @constant {Number}
+    */
+    var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
+
+    function getClampOffsetFromConfig() {
+      var clampOffsetFromEndOfRange;
+
+      // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
+      // if (config && config.streaming && config.streaming.overrides) {
+      //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
+      // }
+
+      if (clampOffsetFromEndOfRange !== undefined) {
+        return clampOffsetFromEndOfRange;
+      } else {
+        return CLAMP_OFFSET_FROM_END_OF_RANGE;
+      }
+    }
+
+    function getClampedTimeForPlayFrom(seconds) {
+      var clampedTime = getClampedTime(seconds);
+      var range = _getSeekableRange();
+      if (clampedTime !== seconds) {
+        logger.debug('play From ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+      }
+      return clampedTime;
+    }
+
+    function wipe() {
+      mediaType = undefined;
+      source = undefined;
+      mimeType = undefined;
+      targetSeekTime = undefined;
+      sentinelSeekTime = undefined;
+      clearSentinels();
+      destroyMediaElement();
+      readyToPlayFrom = false;
+    }
+
+    function destroyMediaElement() {
+      if (mediaElement) {
+        mediaElement.removeEventListener('canplay', onFinishedBuffering, false);
+        mediaElement.removeEventListener('seeked', onFinishedBuffering, false);
+        mediaElement.removeEventListener('playing', onFinishedBuffering, false);
+        mediaElement.removeEventListener('error', onError, false);
+        mediaElement.removeEventListener('ended', onEndOfMedia, false);
+        mediaElement.removeEventListener('waiting', onDeviceBuffering, false);
+        mediaElement.removeEventListener('timeupdate', onStatus, false);
+        mediaElement.removeEventListener('loadedmetadata', onMetadata, false);
+        mediaElement.removeEventListener('pause', onPause, false);
+        sourceElement.removeEventListener('error', onSourceError, false);
+
+        removeElement(sourceElement);
+        unloadMediaSrc();
+        removeElement(mediaElement);
+
+        mediaElement = null;
+        sourceElement = null;
+      }
+    }
+
+    function unloadMediaSrc() {
+      // Reset source as advised by HTML5 video spec, section 4.8.10.15:
+      // http://www.w3.org/TR/2011/WD-html5-20110405/video.html#best-practices-for-authors-using-media-elements
+      mediaElement.removeAttribute('src');
+      mediaElement.load();
+    }
+
+    function toPaused() {
+      state = MediaPlayerBase.STATE.PAUSED;
+      emitEvent(MediaPlayerBase.EVENT.PAUSED);
+      setSentinels([shouldBeSeekedSentinel, shouldBePausedSentinel]);
+    }
+
+    function toPlaying() {
+      state = MediaPlayerBase.STATE.PLAYING;
+      emitEvent(MediaPlayerBase.EVENT.PLAYING);
+      setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel]);
+    }
+
+    return {
+      addEventCallback: function addEventCallback(thisArg, newCallback) {
+        eventCallback = function eventCallback(event) {
+          newCallback.call(thisArg, event);
         };
+        eventCallbacks.push(eventCallback);
+      },
 
-        /*
-         * Returns list of ISD begin times  
-         * 
-         * @returns {Array}
-         */
-        TT.prototype.getMediaTimeEvents = function () {
-
-                return this.events;
-        };
-
-        /*
-         * Represents a TTML Head element
-         */
-
-        function Head() {
-                this.styling = null;
-                this.layout = null;
+      removeEventCallback: function removeEventCallback(callback) {
+        var index = eventCallbacks.indexOf(callback);
+        if (index !== -1) {
+          eventCallbacks.splice(index, 1);
         }
+      },
 
-        /*
-         * Represents a TTML Styling element
-         */
+      removeAllEventCallbacks: function removeAllEventCallbacks() {
+        eventCallbacks = undefined;
+      },
 
-        function Styling() {
-                this.styles = {};
+      initialiseMedia: function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts) {
+        disableSentinels = opts.disableSentinels;
+        mediaType = type;
+        source = url;
+        mimeType = mediaMimeType;
+        opts = opts || {};
+
+        if (getState() === MediaPlayerBase.STATE.EMPTY) {
+          var idSuffix = 'Video';
+          if (mediaType === MediaPlayerBase.TYPE.AUDIO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO) {
+            idSuffix = 'Audio';
+          }
+
+          setSeekSentinelTolerance();
+
+          mediaElement = document.createElement(idSuffix.toLowerCase(), 'mediaPlayer' + idSuffix);
+          mediaElement.autoplay = false;
+          mediaElement.style.position = 'absolute';
+          mediaElement.style.top = '0px';
+          mediaElement.style.left = '0px';
+          mediaElement.style.width = '100%';
+          mediaElement.style.height = '100%';
+
+          mediaElement.addEventListener('canplay', onFinishedBuffering, false);
+          mediaElement.addEventListener('seeked', onFinishedBuffering, false);
+          mediaElement.addEventListener('playing', onFinishedBuffering, false);
+          mediaElement.addEventListener('error', onError, false);
+          mediaElement.addEventListener('ended', onEndOfMedia, false);
+          mediaElement.addEventListener('waiting', onDeviceBuffering, false);
+          mediaElement.addEventListener('timeupdate', onStatus, false);
+          mediaElement.addEventListener('loadedmetadata', onMetadata, false);
+          mediaElement.addEventListener('pause', onPause, false);
+
+          prependChildElement(sourceContainer, mediaElement);
+
+          sourceElement = generateSourceElement(url, mimeType);
+          sourceElement.addEventListener('error', onSourceError, false);
+
+          mediaElement.preload = 'auto';
+          appendChildElement(mediaElement, sourceElement);
+
+          mediaElement.load();
+
+          toStopped();
+        } else {
+          toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state');
         }
+      },
 
-        /*
-         * Represents a TTML Style element
-         */
+      playFrom: function playFrom(seconds) {
+        postBufferingState = MediaPlayerBase.STATE.PLAYING;
+        targetSeekTime = seconds;
+        sentinelLimits.seek.currentAttemptCount = 0;
 
-        function Style() {
-                this.id = null;
-                this.styleAttrs = null;
-                this.styleRefs = null;
+        switch (getState()) {
+          case MediaPlayerBase.STATE.PAUSED:
+          case MediaPlayerBase.STATE.COMPLETE:
+            trustZeroes = true;
+            toBuffering();
+            playFromIfReady();
+            break;
+
+          case MediaPlayerBase.STATE.BUFFERING:
+            playFromIfReady();
+            break;
+
+          case MediaPlayerBase.STATE.PLAYING:
+            trustZeroes = true;
+            toBuffering();
+            targetSeekTime = getClampedTimeForPlayFrom(seconds);
+            if (isNearToCurrentTime(targetSeekTime)) {
+              targetSeekTime = undefined;
+              toPlaying();
+            } else {
+              playFromIfReady();
+            }
+            break;
+
+          default:
+            toError('Cannot playFrom while in the \'' + getState() + '\' state');
+            break;
         }
+      },
 
-        Style.prototype.initFromNode = function (node, errorHandler) {
-                this.id = elementGetXMLID(node);
-                this.styleAttrs = elementGetStyles(node, errorHandler);
-                this.styleRefs = elementGetStyleRefs(node);
-        };
+      beginPlayback: function beginPlayback() {
+        postBufferingState = MediaPlayerBase.STATE.PLAYING;
+        sentinelSeekTime = undefined;
+        switch (getState()) {
+          case MediaPlayerBase.STATE.STOPPED:
+            trustZeroes = true;
+            toBuffering();
+            mediaElement.play();
+            break;
 
-        /*
-         * Represents a TTML Layout element
-         * 
-         */
-
-        function Layout() {
-                this.regions = {};
+          default:
+            toError('Cannot beginPlayback while in the \'' + getState() + '\' state');
+            break;
         }
+      },
 
-        /*
-         * TTML element utility functions
-         * 
-         */
+      beginPlaybackFrom: function beginPlaybackFrom(seconds) {
+        postBufferingState = MediaPlayerBase.STATE.PLAYING;
+        targetSeekTime = seconds;
+        sentinelLimits.seek.currentAttemptCount = 0;
 
-        function ContentElement(kind) {
-                this.kind = kind;
+        switch (this.getState()) {
+          case MediaPlayerBase.STATE.STOPPED:
+            trustZeroes = true;
+            toBuffering();
+            playFromIfReady();
+            break;
+
+          default:
+            toError('Cannot beginPlaybackFrom while in the \'' + getState() + '\' state');
+            break;
         }
+      },
 
-        function IdentifiedElement(id) {
-                this.id = id;
+      pause: function pause() {
+        postBufferingState = MediaPlayerBase.STATE.PAUSED;
+        switch (getState()) {
+          case MediaPlayerBase.STATE.PAUSED:
+            break;
+
+          case MediaPlayerBase.STATE.BUFFERING:
+            sentinelLimits.pause.currentAttemptCount = 0;
+            if (isReadyToPlayFrom()) {
+              // If we are not ready to playFrom, then calling pause would seek to the start of media, which we might not want.
+              pauseMediaElement();
+            }
+            break;
+
+          case MediaPlayerBase.STATE.PLAYING:
+            sentinelLimits.pause.currentAttemptCount = 0;
+            pauseMediaElement();
+            toPaused();
+            break;
+
+          default:
+            toError('Cannot pause while in the \'' + getState() + '\' state');
+            break;
         }
+      },
 
-        IdentifiedElement.prototype.initFromNode = function (doc, parent, node, errorHandler) {
-                this.id = elementGetXMLID(node);
-        };
+      resume: function resume() {
+        postBufferingState = MediaPlayerBase.STATE.PLAYING;
+        switch (getState()) {
+          case MediaPlayerBase.STATE.PLAYING:
+            break;
 
-        function LayoutElement(id) {
-                this.regionID = id;
+          case MediaPlayerBase.STATE.BUFFERING:
+            if (isReadyToPlayFrom()) {
+              // If we are not ready to playFrom, then calling play would seek to the start of media, which we might not want.
+              mediaElement.play();
+            }
+            break;
+
+          case MediaPlayerBase.STATE.PAUSED:
+            mediaElement.play();
+            toPlaying();
+            break;
+
+          default:
+            toError('Cannot resume while in the \'' + getState() + '\' state');
+            break;
         }
+      },
 
-        LayoutElement.prototype.initFromNode = function (doc, parent, node, errorHandler) {
-                this.regionID = elementGetRegionID(node);
-        };
+      stop: function stop() {
+        switch (getState()) {
+          case MediaPlayerBase.STATE.STOPPED:
+            break;
 
-        function StyledElement(styleAttrs) {
-                this.styleAttrs = styleAttrs;
+          case MediaPlayerBase.STATE.BUFFERING:
+          case MediaPlayerBase.STATE.PLAYING:
+          case MediaPlayerBase.STATE.PAUSED:
+          case MediaPlayerBase.STATE.COMPLETE:
+            pauseMediaElement();
+            toStopped();
+            break;
+
+          default:
+            toError('Cannot stop while in the \'' + getState() + '\' state');
+            break;
         }
+      },
 
-        StyledElement.prototype.initFromNode = function (doc, parent, node, errorHandler) {
+      reset: function reset() {
+        switch (getState()) {
+          case MediaPlayerBase.STATE.EMPTY:
+            break;
 
-                this.styleAttrs = elementGetStyles(node, errorHandler);
+          case MediaPlayerBase.STATE.STOPPED:
+          case MediaPlayerBase.STATE.ERROR:
+            toEmpty();
+            break;
 
-                if (doc.head !== null && doc.head.styling !== null) {
-                        mergeReferencedStyles(doc.head.styling, elementGetStyleRefs(node), this.styleAttrs, errorHandler);
-                }
-        };
-
-        function AnimatedElement(sets) {
-                this.sets = sets;
+          default:
+            toError('Cannot reset while in the \'' + getState() + '\' state');
+            break;
         }
+      },
 
-        AnimatedElement.prototype.initFromNode = function (doc, parent, node, errorHandler) {
-                this.sets = [];
-        };
+      getSeekableRange: function getSeekableRange() {
+        switch (getState()) {
+          case MediaPlayerBase.STATE.STOPPED:
+          case MediaPlayerBase.STATE.ERROR:
+            break;
 
-        function ContainerElement(contents) {
-                this.contents = contents;
+          default:
+            return _getSeekableRange();
         }
+        return undefined;
+      },
 
-        ContainerElement.prototype.initFromNode = function (doc, parent, node, errorHandler) {
-                this.contents = [];
-        };
+      getState: function getState() {
+        return state;
+      },
 
-        function TimedElement(explicit_begin, explicit_end, explicit_dur) {
-                this.explicit_begin = explicit_begin;
-                this.explicit_end = explicit_end;
-                this.explicit_dur = explicit_dur;
-        }
+      getPlayerElement: function getPlayerElement() {
+        return mediaElement;
+      },
 
-        TimedElement.prototype.initFromNode = function (doc, parent, node, errorHandler) {
-                var t = processTiming(doc, parent, node, errorHandler);
-                this.explicit_begin = t.explicit_begin;
-                this.explicit_end = t.explicit_end;
-                this.explicit_dur = t.explicit_dur;
+      getSource: getSource,
 
-                this.timeContainer = elementGetTimeContainer(node, errorHandler);
-        };
+      getMimeType: getMimeType,
 
-        /*
-         * Represents a TTML body element
-         */
+      getCurrentTime: getCurrentTime,
 
-        function Body() {
-                ContentElement.call(this, 'body');
-        }
+      getDuration: getDuration,
 
-        Body.prototype.initFromNode = function (doc, node, errorHandler) {
-                StyledElement.prototype.initFromNode.call(this, doc, null, node, errorHandler);
-                TimedElement.prototype.initFromNode.call(this, doc, null, node, errorHandler);
-                AnimatedElement.prototype.initFromNode.call(this, doc, null, node, errorHandler);
-                LayoutElement.prototype.initFromNode.call(this, doc, null, node, errorHandler);
-                ContainerElement.prototype.initFromNode.call(this, doc, null, node, errorHandler);
-        };
+      toPaused: toPaused,
 
-        /*
-         * Represents a TTML div element
-         */
+      toPlaying: toPlaying
 
-        function Div() {
-                ContentElement.call(this, 'div');
-        }
+    };
+  }
 
-        Div.prototype.initFromNode = function (doc, parent, node, errorHandler) {
-                StyledElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                TimedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                AnimatedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                LayoutElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                ContainerElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-        };
+  return Player;
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
-        /*
-         * Represents a TTML p element
-         */
+/***/ }),
 
-        function P() {
-                ContentElement.call(this, 'p');
-        }
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live sync recursive ^\\.\\/.*$":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live sync ^\.\/.*$ ***!
+  \********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-        P.prototype.initFromNode = function (doc, parent, node, errorHandler) {
-                StyledElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                TimedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                AnimatedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                LayoutElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                ContainerElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-        };
+var map = {
+	"./playable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
+	"./playable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
+	"./restartable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
+	"./restartable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
+	"./seekable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js",
+	"./seekable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js"
+};
 
-        /*
-         * Represents a TTML span element
-         */
 
-        function Span() {
-                ContentElement.call(this, 'span');
-        }
-
-        Span.prototype.initFromNode = function (doc, parent, node, xmlspace, errorHandler) {
-                StyledElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                TimedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                AnimatedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                LayoutElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                ContainerElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-
-                this.space = xmlspace;
-        };
-
-        /*
-         * Represents a TTML anonymous span element
-         */
-
-        function AnonymousSpan() {
-                ContentElement.call(this, 'span');
-        }
-
-        AnonymousSpan.prototype.initFromText = function (doc, parent, text, xmlspace, errorHandler) {
-                TimedElement.prototype.initFromNode.call(this, doc, parent, null, errorHandler);
-
-                this.text = text;
-                this.space = xmlspace;
-        };
-
-        /*
-         * Represents a TTML br element
-         */
-
-        function Br() {
-                ContentElement.call(this, 'br');
-        }
-
-        Br.prototype.initFromNode = function (doc, parent, node, errorHandler) {
-                LayoutElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-                TimedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-        };
-
-        /*
-         * Represents a TTML Region element
-         * 
-         */
-
-        function Region() {}
-
-        Region.prototype.createDefaultRegion = function () {
-                var r = new Region();
-
-                IdentifiedElement.call(r, '');
-                StyledElement.call(r, {});
-                AnimatedElement.call(r, []);
-                TimedElement.call(r, 0, Number.POSITIVE_INFINITY, null);
-
-                return r;
-        };
-
-        Region.prototype.initFromNode = function (doc, node, errorHandler) {
-                IdentifiedElement.prototype.initFromNode.call(this, doc, null, node, errorHandler);
-                StyledElement.prototype.initFromNode.call(this, doc, null, node, errorHandler);
-                TimedElement.prototype.initFromNode.call(this, doc, null, node, errorHandler);
-                AnimatedElement.prototype.initFromNode.call(this, doc, null, node, errorHandler);
-
-                /* immediately merge referenced styles */
-
-                if (doc.head !== null && doc.head.styling !== null) {
-                        mergeReferencedStyles(doc.head.styling, elementGetStyleRefs(node), this.styleAttrs, errorHandler);
-                }
-        };
-
-        /*
-         * Represents a TTML Set element
-         * 
-         */
-
-        function Set() {}
-
-        Set.prototype.initFromNode = function (doc, parent, node, errorHandler) {
-
-                TimedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
-
-                var styles = elementGetStyles(node, errorHandler);
-
-                this.qname = null;
-                this.value = null;
-
-                for (var qname in styles) {
-
-                        if (this.qname) {
-
-                                reportError(errorHandler, "More than one style specified on set");
-                                break;
-                        }
-
-                        this.qname = qname;
-                        this.value = styles[qname];
-                }
-        };
-
-        /*
-         * Utility functions
-         * 
-         */
-
-        function elementGetXMLID(node) {
-                return node && 'xml:id' in node.attributes ? node.attributes['xml:id'].value || null : null;
-        }
-
-        function elementGetRegionID(node) {
-                return node && 'region' in node.attributes ? node.attributes.region.value : '';
-        }
-
-        function elementGetTimeContainer(node, errorHandler) {
-
-                var tc = node && 'timeContainer' in node.attributes ? node.attributes.timeContainer.value : null;
-
-                if (!tc || tc === "par") {
-
-                        return "par";
-                } else if (tc === "seq") {
-
-                        return "seq";
-                } else {
-
-                        reportError(errorHandler, "Illegal value of timeContainer (assuming 'par')");
-
-                        return "par";
-                }
-        }
-
-        function elementGetStyleRefs(node) {
-
-                return node && 'style' in node.attributes ? node.attributes.style.value.split(" ") : [];
-        }
-
-        function elementGetStyles(node, errorHandler) {
-
-                var s = {};
-
-                if (node !== null) {
+function webpackContext(req) {
+	var id = webpackContextResolve(req);
+	return __webpack_require__(id);
+}
+function webpackContextResolve(req) {
+	var id = map[req];
+	if(!(id + 1)) { // check for number or string
+		var e = new Error("Cannot find module '" + req + "'");
+		e.code = 'MODULE_NOT_FOUND';
+		throw e;
+	}
+	return id;
+}
+webpackContext.keys = function webpackContextKeys() {
+	return Object.keys(map);
+};
+webpackContext.resolve = webpackContextResolve;
+module.exports = webpackContext;
+webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live sync recursive ^\\.\\/.*$";
 
                         for (var i in node.attributes) {
 
-                                var qname = node.attributes[i].uri + " " + node.attributes[i].local;
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js":
+/*!******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js ***!
+  \******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                var sa = imscStyles.byQName[qname];
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                if (sa !== undefined) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
+  'use strict';
 
-                                        var val = sa.parse(node.attributes[i].value);
+  function PlayableLivePlayer(deviceConfig, logger) {
+    var mediaPlayer = Html5Player(logger);
+    return {
+      beginPlayback: function beginPlayback() {
+        mediaPlayer.beginPlayback();
+      },
 
-                                        if (val !== null) {
-
-                                                s[qname] = val;
-
-                                                /* TODO: consider refactoring errorHandler into parse and compute routines */
-
-                                                if (sa === imscStyles.byName.zIndex) {
-                                                        reportWarning(errorHandler, "zIndex attribute present but not used by IMSC1 since regions do not overlap");
-                                                }
-                                        } else {
-
-                                                reportError(errorHandler, "Cannot parse styling attribute " + qname + " --> " + node.attributes[i].value);
-                                        }
-                                }
-                        }
-                }
-
-                return s;
+      initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
+        if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
+          mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
+        } else {
+          mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO;
         }
 
-        function findAttribute(node, ns, name) {
-                for (var i in node.attributes) {
+        mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts);
+      },
 
-                        if (node.attributes[i].uri === ns && node.attributes[i].local === name) {
+      stop: function stop() {
+        mediaPlayer.stop();
+      },
 
-                                return node.attributes[i].value;
-                        }
-                }
+      reset: function reset() {
+        mediaPlayer.reset();
+      },
 
-                return null;
+      getState: function getState() {
+        return mediaPlayer.getState();
+      },
+
+      getSource: function getSource() {
+        return mediaPlayer.getSource();
+      },
+
+      getMimeType: function getMimeType() {
+        return mediaPlayer.getMimeType();
+      },
+
+      addEventCallback: function addEventCallback(thisArg, callback) {
+        mediaPlayer.addEventCallback(thisArg, callback);
+      },
+
+      removeEventCallback: function removeEventCallback(thisArg, callback) {
+        mediaPlayer.removeEventCallback(thisArg, callback);
+      },
+
+      removeAllEventCallbacks: function removeAllEventCallbacks() {
+        mediaPlayer.removeAllEventCallbacks();
+      },
+
+      getPlayerElement: function getPlayerElement() {
+        return mediaPlayer.getPlayerElement();
+      }
+    };
+  }
+
+  return PlayableLivePlayer;
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js":
+/*!*********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js ***!
+  \*********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
+  'use strict';
+
+  var AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS = 8000;
+
+  function RestartableLivePlayer(deviceConfig, logger) {
+    var mediaPlayer = Html5Player(logger);
+    var millisecondsUntilStartOfWindow;
+    var bufferingStarted;
+    var self = this;
+
+    function determineTimeUntilStartOfWindow() {
+      mediaPlayer.addEventCallback(self, detectCurrentTimeCallback);
+    }
+
+    function stopDeterminingTimeUntilStartOfWindow() {
+      mediaPlayer.removeEventCallback(self, detectCurrentTimeCallback);
+    }
+
+    function detectCurrentTimeCallback(event) {
+      if (event.state === MediaPlayerBase.STATE.PLAYING && event.currentTime > 0) {
+        removeEventCallback(self, detectCurrentTimeCallback);
+        millisecondsUntilStartOfWindow = event.currentTime * 1000;
+        determineTimeSpentBuffering();
+      }
+    }
+
+    function autoResumeAtStartOfRange() {
+      if (millisecondsUntilStartOfWindow !== null) {
+        var resumeTimeOut = Math.max(0, millisecondsUntilStartOfWindow - AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS);
+        var pauseStarted = new Date().getTime();
+        var autoResumeTimer = setTimeout(function () {
+          removeEventCallback(self, detectIfUnpaused);
+          millisecondsUntilStartOfWindow = 0;
+          resume();
+        }, resumeTimeOut);
+
+        addEventCallback(self, detectIfUnpaused);
+      }
+
+      function detectIfUnpaused(event) {
+        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
+          removeEventCallback(self, detectIfUnpaused);
+          clearTimeout(autoResumeTimer);
+          var timePaused = new Date().getTime() - pauseStarted;
+          millisecondsUntilStartOfWindow -= timePaused;
+        }
+      }
+    }
+
+    function addEventCallback(thisArg, callback) {
+      mediaPlayer.addEventCallback(thisArg, callback);
+    }
+
+    function removeEventCallback(thisArg, callback) {
+      mediaPlayer.removeEventCallback(thisArg, callback);
+    }
+
+    function removeAllEventCallbacks() {
+      mediaPlayer.removeAllEventCallbacks();
+    }
+
+    function determineTimeSpentBuffering() {
+      bufferingStarted = null;
+      addEventCallback(self, determineBufferingCallback);
+    }
+
+    function stopDeterminingTimeSpentBuffering() {
+      removeEventCallback(self, determineBufferingCallback);
+    }
+
+    function determineBufferingCallback(event) {
+      if (event.state === MediaPlayerBase.STATE.BUFFERING && bufferingStarted === null) {
+        bufferingStarted = new Date().getTime();
+      } else if (event.state !== MediaPlayerBase.STATE.BUFFERING && bufferingStarted !== null) {
+        var timeBuffering = new Date().getTime() - bufferingStarted;
+        millisecondsUntilStartOfWindow = Math.max(0, millisecondsUntilStartOfWindow - timeBuffering);
+        bufferingStarted = null;
+      }
+    }
+
+    function resume() {
+      mediaPlayer.resume();
+    }
+
+    function pause(opts) {
+      mediaPlayer.pause();
+      opts = opts || {};
+      if (opts.disableAutoResume !== true) {
+        autoResumeAtStartOfRange();
+      }
+    }
+
+    return {
+      beginPlayback: function beginPlayback() {
+        var config = deviceConfig;
+
+        if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
+          mediaPlayer.beginPlaybackFrom(Infinity);
+        } else {
+          mediaPlayer.beginPlayback();
         }
 
-        function extractAspectRatio(node, errorHandler) {
+        determineTimeUntilStartOfWindow();
+      },
 
-                var ar = findAttribute(node, imscNames.ns_ittp, "aspectRatio");
+      beginPlaybackFrom: function beginPlaybackFrom(offset) {
+        millisecondsUntilStartOfWindow = offset * 1000;
+        mediaPlayer.beginPlaybackFrom(offset);
+        determineTimeSpentBuffering();
+      },
 
-                var rslt = null;
-
-                if (ar !== null) {
-
-                        var ASPECT_RATIO_RE = /(\d+) (\d+)/;
-
-                        var m = ASPECT_RATIO_RE.exec(ar);
-
-                        if (m !== null) {
-
-                                var w = parseInt(m[1]);
-
-                                var h = parseInt(m[2]);
-
-                                if (w !== 0 && h !== 0) {
-
-                                        rslt = w / h;
-                                } else {
-
-                                        reportError(errorHandler, "Illegal aspectRatio values (ignoring)");
-                                }
-                        } else {
-
-                                reportError(errorHandler, "Malformed aspectRatio attribute (ignoring)");
-                        }
-                }
-
-                return rslt;
+      initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
+        if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
+          mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
+        } else {
+          mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO;
         }
 
-        /*
-         * Returns the cellResolution attribute from a node
-         * 
-         */
-        function extractCellResolution(node, errorHandler) {
+        mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts);
+      },
 
-                var cr = findAttribute(node, imscNames.ns_ttp, "cellResolution");
+      pause: pause,
 
-                // initial value
+      resume: resume,
 
-                var h = 15;
-                var w = 32;
+      stop: function stop() {
+        mediaPlayer.stop();
+        stopDeterminingTimeUntilStartOfWindow();
+        stopDeterminingTimeSpentBuffering();
+      },
 
-                if (cr !== null) {
+      reset: function reset() {
+        mediaPlayer.reset();
+      },
 
-                        var CELL_RESOLUTION_RE = /(\d+) (\d+)/;
+      getState: function getState() {
+        return mediaPlayer.getState();
+      },
 
-                        var m = CELL_RESOLUTION_RE.exec(cr);
+      getSource: function getSource() {
+        return mediaPlayer.getSource();
+      },
 
-                        if (m !== null) {
+      getMimeType: function getMimeType() {
+        return mediaPlayer.getMimeType();
+      },
 
-                                w = parseInt(m[1]);
+      addEventCallback: addEventCallback,
 
-                                h = parseInt(m[2]);
-                        } else {
+      removeEventCallback: removeEventCallback,
 
-                                reportWarning(errorHandler, "Malformed cellResolution value (using initial value instead)");
-                        }
-                }
+      removeAllEventCallbacks: removeAllEventCallbacks,
 
-                return { 'w': w, 'h': h };
-        }
+      getPlayerElement: function getPlayerElement() {
+        return mediaPlayer.getPlayerElement();
+      }
 
-        function extractFrameAndTickRate(node, errorHandler) {
+    };
+  }
 
-                // subFrameRate is ignored per IMSC1 specification
-
-                // extract frame rate
-
-                var fps_attr = findAttribute(node, imscNames.ns_ttp, "frameRate");
-
-                // initial value
+  return RestartableLivePlayer;
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
                 var fps = 30;
 
-                // match variable
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js":
+/*!******************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js ***!
+  \******************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                var m;
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-                if (fps_attr !== null) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
+  'use strict';
 
-                        var FRAME_RATE_RE = /(\d+)/;
+  function SeekableLivePlayer(deviceConfig, logger) {
+    var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
-                        m = FRAME_RATE_RE.exec(fps_attr);
+    var mediaPlayer = Html5Player(logger);
 
-                        if (m !== null) {
+    function addEventCallback(thisArg, callback) {
+      mediaPlayer.addEventCallback(thisArg, callback);
+    }
 
-                                fps = parseInt(m[1]);
-                        } else {
+    function removeEventCallback(thisArg, callback) {
+      mediaPlayer.removeEventCallback(thisArg, callback);
+    }
 
-                                reportWarning(errorHandler, "Malformed frame rate attribute (using initial value instead)");
-                        }
-                }
+    function removeAllEventCallbacks() {
+      mediaPlayer.removeAllEventCallbacks();
+    }
 
-                // extract frame rate multiplier
+    function autoResumeAtStartOfRange() {
+      var secondsUntilAutoResume = Math.max(0, mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
+      var self = this;
+      var autoResumeTimer = setTimeout(function () {
+        removeEventCallback(self, detectIfUnpaused);
+        resume();
+      }, secondsUntilAutoResume * 1000);
 
-                var frm_attr = findAttribute(node, imscNames.ns_ttp, "frameRateMultiplier");
+      addEventCallback(self, detectIfUnpaused);
+      function detectIfUnpaused(event) {
+        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
+          removeEventCallback(self, detectIfUnpaused);
+          clearTimeout(autoResumeTimer);
+        }
+      }
+    }
 
-                // initial value
+    function resume() {
+      mediaPlayer.resume();
+    }
 
-                var frm = 1;
+    return {
+      initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
+        if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
+          mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
+        } else {
+          mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO;
+        }
 
-                if (frm_attr !== null) {
+        mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts);
+      },
 
-                        var FRAME_RATE_MULT_RE = /(\d+) (\d+)/;
+      beginPlayback: function beginPlayback() {
+        var config = deviceConfig;
+        if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
+          mediaPlayer.beginPlaybackFrom(Infinity);
+        } else {
+          mediaPlayer.beginPlayback();
+        }
+      },
 
-                        m = FRAME_RATE_MULT_RE.exec(frm_attr);
+      beginPlaybackFrom: function beginPlaybackFrom(offset) {
+        mediaPlayer.beginPlaybackFrom(offset);
+      },
 
-                        if (m !== null) {
+      playFrom: function playFrom(offset) {
+        mediaPlayer.playFrom(offset);
+      },
 
-                                frm = parseInt(m[1]) / parseInt(m[2]);
-                        } else {
+      pause: function pause(opts) {
+        opts = opts || {};
+        var secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start;
 
-                                reportWarning(errorHandler, "Malformed frame rate multiplier attribute (using initial value instead)");
-                        }
-                }
+        if (opts.disableAutoResume) {
+          mediaPlayer.pause();
+        } else if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
+          mediaPlayer.toPaused();
+          mediaPlayer.toPlaying();
+        } else {
+          mediaPlayer.pause();
+          autoResumeAtStartOfRange();
+        }
+      },
+      resume: resume,
 
-                var efps = frm * fps;
+      stop: function stop() {
+        mediaPlayer.stop();
+      },
 
-                // extract tick rate
+      reset: function reset() {
+        mediaPlayer.reset();
+      },
 
-                var tr = 1;
+      getState: function getState() {
+        return mediaPlayer.getState();
+      },
 
-                var trattr = findAttribute(node, imscNames.ns_ttp, "tickRate");
+      getSource: function getSource() {
+        return mediaPlayer.getSource();
+      },
 
-                if (trattr === null) {
+      getCurrentTime: function getCurrentTime() {
+        return mediaPlayer.getCurrentTime();
+      },
 
-                        if (fps_attr !== null) tr = efps;
-                } else {
+      getSeekableRange: function getSeekableRange() {
+        return mediaPlayer.getSeekableRange();
+      },
 
-                        var TICK_RATE_RE = /(\d+)/;
+      getMimeType: function getMimeType() {
+        return mediaPlayer.getMimeType();
+      },
+
+      addEventCallback: addEventCallback,
+
+      removeEventCallback: removeEventCallback,
+
+      removeAllEventCallbacks: removeAllEventCallbacks,
+
+      getPlayerElement: function getPlayerElement() {
+        return mediaPlayer.getPlayerElement();
+      },
+
+      getLiveSupport: function getLiveSupport() {
+        return MediaPlayerBase.LIVE_SUPPORT.SEEKABLE;
+      },
+
+      autoResumeAtStartOfRange: autoResumeAtStartOfRange
+
+    };
+  }
+
+  return SeekableLivePlayer;
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
                         m = TICK_RATE_RE.exec(trattr);
 
-                        if (m !== null) {
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js":
+/*!********************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js ***!
+  \********************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                tr = parseInt(m[1]);
-                        } else {
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
 
-                                reportWarning(errorHandler, "Malformed tick rate attribute (using initial value instead)");
-                        }
-                }
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  return {
 
-                return { effectiveFrameRate: efps, tickRate: tr };
+    STATE: {
+      EMPTY: 'EMPTY', // No source set
+      STOPPED: 'STOPPED', // Source set but no playback
+      BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
+      PLAYING: 'PLAYING', // Media is playing
+      PAUSED: 'PAUSED', // Media is paused
+      COMPLETE: 'COMPLETE', // Media has reached its end point
+      ERROR: 'ERROR' // An error occurred
+    },
+
+    EVENT: {
+      STOPPED: 'stopped', // Event fired when playback is stopped
+      BUFFERING: 'buffering', // Event fired when playback has to suspend due to buffering
+      PLAYING: 'playing', // Event fired when starting (or resuming) playing of the media
+      PAUSED: 'paused', // Event fired when media playback pauses
+      COMPLETE: 'complete', // Event fired when media playback has reached the end of the media
+      ERROR: 'error', // Event fired when an error condition occurs
+      STATUS: 'status', // Event fired regularly during play
+      SENTINEL_ENTER_BUFFERING: 'sentinel-enter-buffering', // Event fired when a sentinel has to act because the device has started buffering but not reported it
+      SENTINEL_EXIT_BUFFERING: 'sentinel-exit-buffering', // Event fired when a sentinel has to act because the device has finished buffering but not reported it
+      SENTINEL_PAUSE: 'sentinel-pause', // Event fired when a sentinel has to act because the device has failed to pause when expected
+      SENTINEL_PLAY: 'sentinel-play', // Event fired when a sentinel has to act because the device has failed to play when expected
+      SENTINEL_SEEK: 'sentinel-seek', // Event fired when a sentinel has to act because the device has failed to seek to the correct location
+      SENTINEL_COMPLETE: 'sentinel-complete', // Event fired when a sentinel has to act because the device has completed the media but not reported it
+      SENTINEL_PAUSE_FAILURE: 'sentinel-pause-failure', // Event fired when the pause sentinel has failed twice, so it is giving up
+      SENTINEL_SEEK_FAILURE: 'sentinel-seek-failure', // Event fired when the seek sentinel has failed twice, so it is giving up
+      SEEK_ATTEMPTED: 'seek-attempted', // Event fired when a device using a seekfinishedemitevent modifier sets the source
+      SEEK_FINISHED: 'seek-finished' // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
+    },
+
+    TYPE: {
+      VIDEO: 'video',
+      AUDIO: 'audio',
+      LIVE_VIDEO: 'live-video',
+      LIVE_AUDIO: 'live-audio'
+    }
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/msestrategy.js":
+/*!******************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/msestrategy.js ***!
+  \******************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/mediakinds */ "./node_modules/bigscreen-player/script/models/mediakinds.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/parsers/manifestfilter */ "./node_modules/bigscreen-player/script/parsers/manifestfilter.js"),
+
+// static imports
+__webpack_require__(/*! dashjs */ "./node_modules/bigscreen-player/node_modules/dashjs/index.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestFilter) {
+  return function (windowType, mediaKind, timeData, playbackElement) {
+    var mediaPlayer;
+    var eventCallback;
+    var errorCallback;
+    var timeUpdateCallback;
+    var timeCorrection = timeData && timeData.correction || 0;
+
+    var failoverTime;
+    var _isEnded = false;
+    var mediaElement;
+
+    var bitrateInfoList;
+    var mediaMetrics;
+    var dashMetrics;
+
+    var playerMetadata = {
+      playbackBitrate: undefined,
+      bufferLength: undefined
+    };
+
+    var DashJSEvents = {
+      ERROR: 'error',
+      MANIFEST_LOADED: 'manifestLoaded',
+      MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
+      QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
+      METRIC_ADDED: 'metricAdded',
+      METRIC_CHANGED: 'metricChanged'
+    };
+
+    function onPlaying() {
+      _isEnded = false;
+      publishMediaState(MediaState.PLAYING);
+    }
+
+    function onPaused() {
+      publishMediaState(MediaState.PAUSED);
+    }
+
+    function onBuffering() {
+      _isEnded = false;
+      publishMediaState(MediaState.WAITING);
+    }
+
+    function onSeeked() {
+      DebugTool.info('Seeked Event');
+      publishMediaState(isPaused() ? MediaState.PAUSED : MediaState.PLAYING);
+    }
+
+    function onEnded() {
+      _isEnded = true;
+      publishMediaState(MediaState.ENDED);
+    }
+
+    function onTimeUpdate() {
+      var IN_STREAM_BUFFERING_SECONDS = 20;
+      var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor('video'));
+
+      if (dvrInfo && windowType === WindowTypes.SLIDING) {
+        failoverTime = Math.max(0, parseInt(dvrInfo.time - dvrInfo.range.start) - IN_STREAM_BUFFERING_SECONDS);
+      } else {
+        failoverTime = mediaElement.currentTime;
+      }
+
+      publishTimeUpdate();
+    }
+
+    function onError(event) {
+      if (event.error && event.error.data) {
+        delete event.error.data;
+      }
+
+      event.errorProperties = { error_mssg: event.error };
+
+      if (event.error) {
+        if (event.error.message) {
+          DebugTool.info('MSE Error: ' + event.error.message);
+        } else {
+          DebugTool.info('MSE Error: ' + event.error);
+        }
+      }
+      publishError(event);
+    }
+
+    function onManifestLoaded(event) {
+      DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
+    }
+
+    function onManifestValidityChange(event) {
+      DebugTool.info('Manifest validity changed. Duration is: ' + event.newDuration);
+    }
+
+    function onQualityChangeRendered(event) {
+      if (event.mediaType === mediaKind) {
+        if (!bitrateInfoList) {
+          bitrateInfoList = mediaPlayer.getBitrateInfoListFor(event.mediaType);
+        }
+        if (bitrateInfoList && event.newQuality !== undefined) {
+          playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
+
+          var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
+          var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
+          var newRepresentation = event.newQuality + ' (' + playerMetadata.playbackBitrate + ' kbps)';
+          DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
+          DebugTool.info('ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
+        }
+        Plugins.interface.onPlayerInfoUpdated(playerMetadata);
+      }
+    }
+
+    function onMetricAdded(event) {
+      if (event.mediaType === 'video') {
+        if (event.metric === 'DroppedFrames') {
+          DebugTool.keyValue({ key: 'Dropped Frames', value: event.value.droppedFrames });
+        }
+      }
+      if (event.mediaType === mediaKind && event.metric === 'BufferLevel') {
+        mediaMetrics = mediaPlayer.getMetricsFor(event.mediaType);
+        dashMetrics = mediaPlayer.getDashMetrics();
+
+        if (mediaMetrics && dashMetrics) {
+          playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
+          DebugTool.keyValue({ key: 'Buffer Length', value: playerMetadata.bufferLength });
+          Plugins.interface.onPlayerInfoUpdated(playerMetadata);
+        }
+      }
+    }
+
+    function publishMediaState(mediaState) {
+      if (eventCallback) {
+        eventCallback(mediaState);
+      }
+    }
+
+    function publishTimeUpdate() {
+      if (timeUpdateCallback) {
+        timeUpdateCallback();
+      }
+    }
+
+    function publishError(errorEvent) {
+      if (errorCallback) {
+        errorCallback(errorEvent);
+      }
+    }
+
+    function isPaused() {
+      return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.isPaused() : undefined;
+    }
+
+    function getClampedTime(time, range) {
+      return Math.min(Math.max(time, range.start), range.end - 1.1);
+    }
+
+    function setUpMediaElement(playbackElement) {
+      if (mediaKind === MediaKinds.AUDIO) {
+        mediaElement = document.createElement('audio');
+      } else {
+        mediaElement = document.createElement('video');
+      }
+      mediaElement.style.position = 'absolute';
+      mediaElement.style.width = '100%';
+      mediaElement.style.height = '100%';
+
+      playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
+    }
+
+    function setUpMediaPlayer(src) {
+      mediaPlayer = dashjs.MediaPlayer().create();
+      mediaPlayer.getDebug().setLogToBrowserConsole(false);
+
+      mediaPlayer.setBufferToKeep(0);
+      mediaPlayer.setBufferAheadToKeep(20);
+
+      mediaPlayer.setBufferTimeAtTopQuality(12);
+      mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
+
+      mediaPlayer.initialize(mediaElement, null, true);
+      modifySource(src);
+    }
+
+    function modifySource(src) {
+      mediaPlayer.retrieveManifest(src, function (manifest) {
+        var filteredManifest = ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+        mediaPlayer.attachSource(filteredManifest);
+      });
+    }
+
+    function setUpMediaListeners() {
+      mediaElement.addEventListener('timeupdate', onTimeUpdate);
+      mediaElement.addEventListener('playing', onPlaying);
+      mediaElement.addEventListener('pause', onPaused);
+      mediaElement.addEventListener('waiting', onBuffering);
+      mediaElement.addEventListener('seeking', onBuffering);
+      mediaElement.addEventListener('seeked', onSeeked);
+      mediaElement.addEventListener('ended', onEnded);
+      mediaElement.addEventListener('error', onError);
+      mediaPlayer.on(DashJSEvents.ERROR, onError);
+      mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
+      mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
+      mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
+      mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
+    }
+
+    /**
+     * Calculates a source url with anchor tags for playback within dashjs
+     *
+     * Anchor tags applied to the MPD source for playback:
+     *
+     * #r - relative to the start of the first period defined in the DASH manifest
+     * #t - time since the beginning of the first period defined in the DASH manifest
+     * @param {String} source
+     * @param {Number} startTime
+     */
+    function calculateSourceAnchor(source, startTime) {
+      if (startTime === undefined || isNaN(startTime)) {
+        return source;
+      }
+
+      if (windowType === WindowTypes.STATIC) {
+        return startTime === 0 ? source : source + '#t=' + parseInt(startTime);
+      }
+
+      if (windowType === WindowTypes.SLIDING) {
+        return startTime === 0 ? source : source + '#r=' + parseInt(startTime);
+      }
+
+      if (windowType === WindowTypes.GROWING) {
+        var windowStartTimeSeconds = timeData.windowStartTime / 1000;
+        var srcWithTimeAnchor = source + '#t=';
+
+        startTime = parseInt(startTime);
+        return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
+      }
+    }
+
+    return {
+      transitions: {
+        canBePaused: function canBePaused() {
+          return true;
+        },
+        canBeginSeek: function canBeginSeek() {
+          return true;
+        }
+      },
+      addEventCallback: function addEventCallback(thisArg, newCallback) {
+        eventCallback = function eventCallback(event) {
+          newCallback.call(thisArg, event);
+        };
+      },
+      addErrorCallback: function addErrorCallback(thisArg, newErrorCallback) {
+        errorCallback = function errorCallback(event) {
+          newErrorCallback.call(thisArg, event);
+        };
+      },
+      addTimeUpdateCallback: function addTimeUpdateCallback(thisArg, newTimeUpdateCallback) {
+        timeUpdateCallback = function timeUpdateCallback() {
+          newTimeUpdateCallback.call(thisArg);
+        };
+      },
+      load: function load(src, mimeType, playbackTime) {
+        if (!mediaPlayer) {
+          failoverTime = playbackTime;
+          setUpMediaElement(playbackElement);
+          setUpMediaPlayer(calculateSourceAnchor(src, playbackTime));
+          setUpMediaListeners();
+        } else {
+          modifySource(calculateSourceAnchor(src, failoverTime));
+        }
+      },
+      getSeekableRange: function getSeekableRange() {
+        if (mediaPlayer && mediaPlayer.isReady() && windowType !== WindowTypes.STATIC) {
+          var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
+          if (dvrInfo) {
+            return {
+              start: dvrInfo.range.start - timeCorrection,
+              end: dvrInfo.range.end - timeCorrection
+            };
+          }
+        }
+        return {
+          start: 0,
+          end: this.getDuration()
+        };
+      },
+      getCurrentTime: function getCurrentTime() {
+        return mediaElement ? mediaElement.currentTime - timeCorrection : 0;
+      },
+      getDuration: function getDuration() {
+        return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.duration() : 0;
+      },
+      tearDown: function tearDown() {
+        mediaPlayer.reset();
+
+        mediaElement.removeEventListener('timeupdate', onTimeUpdate);
+        mediaElement.removeEventListener('playing', onPlaying);
+        mediaElement.removeEventListener('pause', onPaused);
+        mediaElement.removeEventListener('waiting', onBuffering);
+        mediaElement.removeEventListener('seeking', onBuffering);
+        mediaElement.removeEventListener('seeked', onSeeked);
+        mediaElement.removeEventListener('ended', onEnded);
+        mediaElement.removeEventListener('error', onError);
+        mediaPlayer.off(DashJSEvents.ERROR, onError);
+        mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
+        mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
+        mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
+        mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
+
+        mediaElement.parentElement.removeChild(mediaElement);
+
+        mediaPlayer = undefined;
+        mediaElement = undefined;
+        eventCallback = undefined;
+        errorCallback = undefined;
+        timeUpdateCallback = undefined;
+        _isEnded = undefined;
+        failoverTime = undefined;
+        timeCorrection = undefined;
+        windowType = undefined;
+      },
+      reset: function reset() {
+        return;
+      },
+      isEnded: function isEnded() {
+        return _isEnded;
+      },
+      isPaused: isPaused,
+      pause: function pause() {
+        mediaPlayer.pause();
+      },
+      play: function play() {
+        mediaPlayer.play();
+      },
+      setCurrentTime: function setCurrentTime(time) {
+        if (windowType === WindowTypes.GROWING) {
+          DebugTool.info('Seeking and refreshing the manifest');
+          mediaPlayer.refreshManifest();
         }
 
-        function extractExtent(node, errorHandler) {
+        var seekToTime = getClampedTime(time, this.getSeekableRange());
 
-                var attr = findAttribute(node, imscNames.ns_tts, "extent");
-
-                if (attr === null) return null;
-
-                var s = attr.split(" ");
-
-                if (s.length !== 2) {
-
-                        reportWarning(errorHandler, "Malformed extent (ignoring)");
-
-                        return null;
-                }
-
-                var w = imscUtils.parseLength(s[0]);
-
-                var h = imscUtils.parseLength(s[1]);
-
-                if (!h || !w) {
-
-                        reportWarning(errorHandler, "Malformed extent values (ignoring)");
-
-                        return null;
-                }
-
-                return { 'h': h, 'w': w };
+        if (windowType === WindowTypes.SLIDING) {
+          mediaElement.currentTime = seekToTime + timeCorrection;
+        } else {
+          mediaPlayer.seek(seekToTime);
         }
-
-        function parseTimeExpression(tickRate, effectiveFrameRate, str) {
-
-                var CLOCK_TIME_FRACTION_RE = /^(\d{2,}):(\d\d):(\d\d(?:\.\d+)?)$/;
-                var CLOCK_TIME_FRAMES_RE = /^(\d{2,}):(\d\d):(\d\d)\:(\d{2,})$/;
-                var OFFSET_FRAME_RE = /^(\d+(?:\.\d+)?)f$/;
-                var OFFSET_TICK_RE = /^(\d+(?:\.\d+)?)t$/;
-                var OFFSET_MS_RE = /^(\d+(?:\.\d+)?)ms$/;
-                var OFFSET_S_RE = /^(\d+(?:\.\d+)?)s$/;
-                var OFFSET_H_RE = /^(\d+(?:\.\d+)?)h$/;
-                var OFFSET_M_RE = /^(\d+(?:\.\d+)?)m$/;
-                var m;
-                var r = null;
-                if ((m = OFFSET_FRAME_RE.exec(str)) !== null) {
-
-                        if (effectiveFrameRate !== null) {
-
-                                r = parseFloat(m[1]) / effectiveFrameRate;
-                        }
-                } else if ((m = OFFSET_TICK_RE.exec(str)) !== null) {
-
-                        if (tickRate !== null) {
-
-                                r = parseFloat(m[1]) / tickRate;
-                        }
-                } else if ((m = OFFSET_MS_RE.exec(str)) !== null) {
-
-                        r = parseFloat(m[1]) / 1000.0;
-                } else if ((m = OFFSET_S_RE.exec(str)) !== null) {
-
-                        r = parseFloat(m[1]);
-                } else if ((m = OFFSET_H_RE.exec(str)) !== null) {
-
-                        r = parseFloat(m[1]) * 3600.0;
-                } else if ((m = OFFSET_M_RE.exec(str)) !== null) {
-
-                        r = parseFloat(m[1]) * 60.0;
-                } else if ((m = CLOCK_TIME_FRACTION_RE.exec(str)) !== null) {
-
-                        r = parseInt(m[1]) * 3600 + parseInt(m[2]) * 60 + parseFloat(m[3]);
-                } else if ((m = CLOCK_TIME_FRAMES_RE.exec(str)) !== null) {
-
-                        /* this assumes that HH:MM:SS is a clock-time-with-fraction */
-
-                        if (effectiveFrameRate !== null) {
-
-                                r = parseInt(m[1]) * 3600 + parseInt(m[2]) * 60 + parseInt(m[3]) + (m[4] === null ? 0 : parseInt(m[4]) / effectiveFrameRate);
-                        }
-                }
-
-                return r;
-        }
-
-        function processTiming(doc, parent, node, errorHandler) {
-
-                /* determine explicit begin */
-
-                var explicit_begin = null;
-
-                if (node && 'begin' in node.attributes) {
-
-                        explicit_begin = parseTimeExpression(doc.tickRate, doc.effectiveFrameRate, node.attributes.begin.value);
-
-                        if (explicit_begin === null) {
-
-                                reportWarning(errorHandler, "Malformed begin value " + node.attributes.begin.value + " (using 0)");
-                        }
-                }
-
-                /* determine explicit duration */
-
-                var explicit_dur = null;
-
-                if (node && 'dur' in node.attributes) {
-
-                        explicit_dur = parseTimeExpression(doc.tickRate, doc.effectiveFrameRate, node.attributes.dur.value);
-
-                        if (explicit_dur === null) {
-
-                                reportWarning(errorHandler, "Malformed dur value " + node.attributes.dur.value + " (ignoring)");
-                        }
-                }
-
-                /* determine explicit end */
-
-                var explicit_end = null;
-
-                if (node && 'end' in node.attributes) {
-
-                        explicit_end = parseTimeExpression(doc.tickRate, doc.effectiveFrameRate, node.attributes.end.value);
-
-                        if (explicit_end === null) {
-
-                                reportWarning(errorHandler, "Malformed end value (ignoring)");
-                        }
-                }
-
-                return { explicit_begin: explicit_begin,
-                        explicit_end: explicit_end,
-                        explicit_dur: explicit_dur };
-        }
-
-        function mergeChainedStyles(styling, style, errorHandler) {
-
-                while (style.styleRefs.length > 0) {
-
-                        var sref = style.styleRefs.pop();
+      }
+    };
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
                         if (!(sref in styling.styles)) {
                                 reportError(errorHandler, "Non-existant style id referenced");
                                 continue;
                         }
 
-                        mergeChainedStyles(styling, styling.styles[sref], errorHandler);
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/nativestrategy.js":
+/*!*********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/nativestrategy.js ***!
+  \*********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                        mergeStylesIfNotPresent(styling.styles[sref].styleAttrs, style.styleAttrs);
-                }
-        }
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-        function mergeReferencedStyles(styling, stylerefs, styleattrs, errorHandler) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/legacyplayeradapter */ "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live sync recursive ^\\.\\/.*$")("./" + (window.bigscreenPlayer.liveSupport || 'playable'))], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LegacyAdapter, WindowTypes, Html5Player, LivePlayer) {
+  return function (windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+    var mediaPlayer;
+    var logger = device.getLogger();
+    var tempConfig = device.getConfig();
 
-                for (var i = stylerefs.length - 1; i >= 0; i--) {
+    if (windowType !== WindowTypes.STATIC) {
+      mediaPlayer = LivePlayer(tempConfig, logger);
+    } else {
+      mediaPlayer = Html5Player(logger);
+    }
 
-                        var sref = stylerefs[i];
+    return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
-                        if (!(sref in styling.styles)) {
-                                reportError(errorHandler, "Non-existant style id referenced");
-                                continue;
-                        }
+/***/ }),
 
-                        mergeStylesIfNotPresent(styling.styles[sref].styleAttrs, styleattrs);
-                }
-        }
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/strategypicker.js":
+/*!*********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/strategypicker.js ***!
+  \*********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-        function mergeStylesIfNotPresent(from_styles, into_styles) {
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
 
-                for (var sname in from_styles) {
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  return function (windowType, isUHD) {
+    var strategy = 'mseStrategy';
 
-                        if (sname in into_styles) continue;
+    var mseExceptions = window.bigscreenPlayer.mseExceptions || [];
 
-                        into_styles[sname] = from_styles[sname];
-                }
-        }
+    if (mseExceptions.indexOf(windowType) !== -1) {
+      strategy = 'talStrategy';
+    }
 
-        /* TODO: validate style format at parsing */
+    if (isUHD && mseExceptions.indexOf('uhd') !== -1) {
+      strategy = 'talStrategy';
+    }
 
-        /*
-         * ERROR HANDLING UTILITY FUNCTIONS
-         * 
-         */
+    return strategy;
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
-        function reportInfo(errorHandler, msg) {
+/***/ }),
 
-                if (errorHandler && errorHandler.info && errorHandler.info(msg)) throw msg;
-        }
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/talstrategy.js":
+/*!******************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/talstrategy.js ***!
+  \******************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-        function reportWarning(errorHandler, msg) {
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/legacyplayeradapter */ "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LegacyAdapter, WindowTypes) {
+  return function (windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+    var mediaPlayer;
+
+    if (windowType === WindowTypes.STATIC) {
+      mediaPlayer = device.getMediaPlayer();
+    } else {
+      mediaPlayer = device.getLivePlayer();
+    }
+
+    return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
                 if (errorHandler && errorHandler.warn && errorHandler.warn(msg)) throw msg;
         }
 
-        function reportError(errorHandler, msg) {
-
-                if (errorHandler && errorHandler.error && errorHandler.error(msg)) throw msg;
-        }
-
-        function reportFatal(errorHandler, msg) {
-
-                if (errorHandler && errorHandler.fatal) errorHandler.fatal(msg);
-
-                throw msg;
-        }
-
-        /*
-         * Binary search utility function
-         * 
-         * @typedef {Object} BinarySearchResult
-         * @property {boolean} found Was an exact match found?
-         * @property {number} index Position of the exact match or insert position
-         * 
-         * @returns {BinarySearchResult}
-         */
-
-        function indexOf(arr, searchval) {
-
-                var min = 0;
-                var max = arr.length - 1;
-                var cur;
-
-                while (min <= max) {
-
-                        cur = Math.floor((min + max) / 2);
-
-                        var curval = arr[cur];
-
-                        if (curval < searchval) {
-
-                                min = cur + 1;
-                        } else if (curval > searchval) {
-
-                                max = cur - 1;
-                        } else {
-
-                                return { found: true, index: cur };
-                        }
-                }
-
-                return { found: false, index: min };
-        }
-})( false ? undefined : exports, typeof sax === 'undefined' ? __webpack_require__(/*! sax */ "../../node_modules/sax/lib/sax.js") : sax, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "../../node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscStyles === 'undefined' ? __webpack_require__(/*! ./styles */ "../../node_modules/imsc/src/main/js/styles.js") : imscStyles, typeof imscUtils === 'undefined' ? __webpack_require__(/*! ./utils */ "../../node_modules/imsc/src/main/js/utils.js") : imscUtils);
-
-/***/ }),
-
-/***/ "../../node_modules/imsc/src/main/js/html.js":
-/*!****************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/imsc/src/main/js/html.js ***!
-  \****************************************************************************************/
+/***/ "./node_modules/bigscreen-player/script/playercomponent.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playercomponent.js ***!
+  \*****************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/captionscontainer */ "./node_modules/bigscreen-player/script/captionscontainer.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy sync recursive ^\\.\\/.*$")("./" + window.bigscreenPlayer.playbackStrategy), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/models/livesupportenum */ "./node_modules/bigscreen-player/script/models/livesupportenum.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, LiveSupport, PluginData, PluginEnums, Plugins, DebugTool) {
+  'use strict';
 
-/* 
- * Copyright (c) 2016, Pierre-Anthony Lemieux <pal@sandflow.com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * * Redistributions of source code must retain the above copyright notice, this
- *   list of conditions and the following disclaimer.
- * * Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+  return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device, newLiveSupport) {
+    var isInitialPlay = true;
+    var captionsURL = bigscreenPlayerData.media.captionsUrl;
+    var errorTimeoutID = null;
+    var mediaKind = bigscreenPlayerData.media.kind;
+    var subtitlesEnabled;
+    var userInteracted = false;
+    var stateUpdateCallback = callback;
+    var playbackStrategy;
+    var captionsContainer;
+    var mediaMetaData;
+    var fatalErrorTimeout;
+    var fatalError;
+    var transferFormat = bigscreenPlayerData.media.manifestType === 'mpd' ? 'dash' : 'hls';
+    var liveSupport = newLiveSupport;
 
-/**
- * @module imscHTML
- */
+    playbackStrategy = PlaybackStrategy(windowType, mediaKind, bigscreenPlayerData.time, playbackElement, bigscreenPlayerData.media.isUHD, device);
 
-;
-(function (imscHTML, imscNames, imscStyles) {
+    playbackStrategy.addEventCallback(this, eventCallback);
+    playbackStrategy.addErrorCallback(this, onError);
+    playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate);
 
-                /**
-                 * Function that maps <pre>smpte:background</pre> URIs to URLs resolving to image resource
-                 * @callback IMGResolver
-                 * @param {string} <pre>smpte:background</pre> URI
-                 * @return {string} PNG resource URL
-                 */
+    bubbleErrorCleared(createPlaybackProperties());
 
-                /**
-                 * Renders an ISD object (returned by <pre>generateISD()</pre>) into a 
-                 * parent element, that must be attached to the DOM. The ISD will be rendered
-                 * into a child <pre>div</pre>
-                 * with heigh and width equal to the clientHeight and clientWidth of the element,
-                 * unless explicitly specified otherwise by the caller. Images URIs specified 
-                 * by <pre>smpte:background</pre> attributes are mapped to image resource URLs
-                 * by an <pre>imgResolver</pre> function. The latter takes the value of <code>smpte:background</code>
-                 * attribute and an <code>img</code> DOM element as input, and is expected to
-                 * set the <code>src</code> attribute of the <code>img</code> to the absolute URI of the image.
-                 * <pre>displayForcedOnlyMode</pre> sets the (boolean)
-                 * value of the IMSC1 displayForcedOnlyMode parameter. The function returns
-                 * an opaque object that should passed in <code>previousISDState</code> when this function
-                 * is called for the next ISD, otherwise <code>previousISDState</code> should be set to 
-                 * <code>null</code>.
-                 * 
-                 * @param {Object} isd ISD to be rendered
-                 * @param {Object} element Element into which the ISD is rendered
-                 * @param {?IMGResolver} imgResolver Resolve <pre>smpte:background</pre> URIs into URLs.
-                 * @param {?number} eheight Height (in pixel) of the child <div>div</div> or null 
-                 *                  to use clientHeight of the parent element
-                 * @param {?number} ewidth Width (in pixel) of the child <div>div</div> or null
-                 *                  to use clientWidth of the parent element
-                 * @param {?boolean} displayForcedOnlyMode Value of the IMSC1 displayForcedOnlyMode parameter,
-                 *                   or false if null         
-                 * @param {?module:imscUtils.ErrorHandler} errorHandler Error callback
-                 * @param {Object} previousISDState State saved during processing of the previous ISD, or null if initial call
-                 * @param {?boolean} enableRollUp Enables roll-up animations (see CEA 708)
-                 * @return {Object} ISD state to be provided when this funtion is called for the next ISD
-                 */
+    setSubtitlesEnabled(enableSubtitles || false);
 
-                imscHTML.render = function (isd, element, imgResolver, eheight, ewidth, displayForcedOnlyMode, errorHandler, previousISDState, enableRollUp) {
+    initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime);
 
-                                /* maintain aspect ratio if specified */
+    function play() {
+      userInteracted = true;
+      playbackStrategy.play();
+    }
 
-                                var height = eheight || element.clientHeight;
-                                var width = ewidth || element.clientWidth;
+    function isEnded() {
+      return playbackStrategy.isEnded();
+    }
 
-                                if (isd.aspectRatio !== null) {
+    function pause(opts) {
+      opts = opts || {};
+      userInteracted = true;
+      if (transitions().canBePaused()) {
+        var disableAutoResume = windowType === WindowTypes.GROWING ? true : opts.disableAutoResume;
+        playbackStrategy.pause({ disableAutoResume: disableAutoResume });
+      }
+    }
 
-                                                var twidth = height * isd.aspectRatio;
+    function getDuration() {
+      return playbackStrategy.getDuration();
+    }
 
-                                                if (twidth > width) {
+    function getPlayerElement() {
+      var element = null;
+      if (playbackStrategy && playbackStrategy.getPlayerElement) {
+        element = playbackStrategy.getPlayerElement();
+      }
+      return element;
+    }
 
-                                                                height = Math.round(width / isd.aspectRatio);
-                                                } else {
+    function getCurrentTime() {
+      return playbackStrategy.getCurrentTime();
+    }
 
-                                                                width = twidth;
-                                                }
-                                }
+    function getSeekableRange() {
+      return playbackStrategy.getSeekableRange();
+    }
 
-                                var rootcontainer = document.createElement("div");
+    function setSubtitlesEnabled(enabled) {
+      subtitlesEnabled = enabled || false;
+      if (isSubtitlesAvailable() && captionsContainer) {
+        subtitlesEnabled ? captionsContainer.start() : captionsContainer.stop();
+      }
+    }
 
-                                rootcontainer.style.position = "relative";
-                                rootcontainer.style.width = width + "px";
-                                rootcontainer.style.height = height + "px";
-                                rootcontainer.style.margin = "auto";
-                                rootcontainer.style.top = 0;
-                                rootcontainer.style.bottom = 0;
-                                rootcontainer.style.left = 0;
-                                rootcontainer.style.right = 0;
-                                rootcontainer.style.zIndex = 0;
+    function isSubtitlesEnabled() {
+      return subtitlesEnabled;
+    }
 
-                                var context = {
-                                                h: height,
-                                                w: width,
-                                                regionH: null,
-                                                regionW: null,
-                                                imgResolver: imgResolver,
-                                                displayForcedOnlyMode: displayForcedOnlyMode || false,
-                                                isd: isd,
-                                                errorHandler: errorHandler,
-                                                previousISDState: previousISDState,
-                                                enableRollUp: enableRollUp || false,
-                                                currentISDState: {},
-                                                flg: null, /* current fillLineGap value if active, null otherwise */
-                                                lp: null, /* current linePadding value if active, null otherwise */
-                                                mra: null, /* current multiRowAlign value if active, null otherwise */
-                                                ipd: null, /* inline progression direction (lr, rl, tb) */
-                                                bpd: null /* block progression direction (lr, rl, tb) */
-                                };
+    function isSubtitlesAvailable() {
+      return !!captionsURL;
+    }
 
-                                element.appendChild(rootcontainer);
+    function isPaused() {
+      return playbackStrategy.isPaused();
+    }
 
-                                for (var i in isd.contents) {
+    function setTransportControlPosition(flags) {
+      captionsContainer.updatePosition(flags);
+    }
 
-                                                processElement(context, rootcontainer, isd.contents[i]);
-                                }
+    function setCurrentTime(time) {
+      userInteracted = true;
+      if (transitions().canBeginSeek()) {
+        playbackStrategy.setCurrentTime(time);
+      }
+    }
 
-                                return context.currentISDState;
-                };
+    function transitions() {
+      return playbackStrategy.transitions;
+    }
 
-                function processElement(context, dom_parent, isd_element) {
+    function tearDownMediaElement() {
+      var playbackProperties = createPlaybackProperties();
+      playbackProperties.dismissed_by = 'teardown';
+      playout(playbackProperties);
+      playbackStrategy.reset();
+    }
 
-                                var e;
+    function eventCallback(mediaState) {
+      switch (mediaState) {
+        case MediaState.PLAYING:
+          onPlaying();
+          break;
+        case MediaState.PAUSED:
+          onPaused();
+          break;
+        case MediaState.WAITING:
+          onBuffering();
+          break;
+        case MediaState.ENDED:
+          onEnded();
+          break;
+      }
+    }
 
-                                if (isd_element.kind === 'region') {
+    function onPlaying() {
+      playout(createPlaybackProperties());
+      publishMediaStateUpdate(MediaState.PLAYING, {});
+      isInitialPlay = false;
+    }
 
-                                                e = document.createElement("div");
-                                                e.style.position = "absolute";
-                                } else if (isd_element.kind === 'body') {
+    function onPaused() {
+      publishMediaStateUpdate(MediaState.PAUSED);
+      playout(createPlaybackProperties());
+    }
 
-                                                e = document.createElement("div");
-                                } else if (isd_element.kind === 'div') {
+    function onBuffering() {
+      publishMediaStateUpdate(MediaState.WAITING);
+      var playbackProperties = createPlaybackProperties();
+      startErrorTimeout(playbackProperties);
+      bubbleErrorCleared(playbackProperties);
+      bubbleBufferingRaised(playbackProperties);
+      userInteracted = false;
+    }
 
-                                                e = document.createElement("div");
-                                } else if (isd_element.kind === 'p') {
+    function onEnded() {
+      playout(createPlaybackProperties());
+      publishMediaStateUpdate(MediaState.ENDED);
+    }
 
-                                                e = document.createElement("p");
-                                } else if (isd_element.kind === 'span') {
+    function onTimeUpdate() {
+      publishMediaStateUpdate(undefined, { timeUpdate: true });
+    }
 
-                                                e = document.createElement("span");
+    function onError(event) {
+      var playbackProperties = createPlaybackProperties();
+      playbackProperties.dismissed_by = 'error';
+      bubbleBufferingCleared(playbackProperties);
 
-                                                //e.textContent = isd_element.text;
-                                } else if (isd_element.kind === 'br') {
+      var playbackErrorProperties = createPlaybackErrorProperties(event);
+      raiseError(playbackErrorProperties);
+    }
 
-                                                e = document.createElement("br");
-                                }
+    function startErrorTimeout(properties) {
+      var bufferingTimeout = isInitialPlay ? 30000 : 20000;
+      var bufferingClearedProperties = PlaybackUtils.clone(properties);
+      clearErrorTimeout();
+      errorTimeoutID = setTimeout(function () {
+        bufferingClearedProperties.dismissed_by = 'timeout';
+        bubbleBufferingCleared(bufferingClearedProperties);
+        properties.error_mssg = 'Buffering timed out';
+        attemptCdnFailover(properties, true);
+      }, bufferingTimeout);
+    }
 
-                                if (!e) {
+    function raiseError(properties, bufferingTimeoutError) {
+      clearErrorTimeout();
+      publishMediaStateUpdate(MediaState.WAITING);
+      bubbleErrorRaised(properties, bufferingTimeoutError);
+      startFatalErrorTimeout(properties, bufferingTimeoutError);
+    }
 
-                                                reportError(context.errorHandler, "Error processing ISD element kind: " + isd_element.kind);
+    function startFatalErrorTimeout(errorProperties, bufferingTimeoutError) {
+      if (!fatalErrorTimeout && !fatalError) {
+        fatalErrorTimeout = setTimeout(function () {
+          fatalErrorTimeout = null;
+          fatalError = true;
+          attemptCdnFailover(errorProperties, bufferingTimeoutError);
+        }, 5000);
+      }
+    }
 
-                                                return;
-                                }
+    function attemptCdnFailover(errorProperties, bufferingTimeoutError) {
+      var hasNextCDN = mediaMetaData.urls.length > 1;
+      var aboutToEndVod = getDuration() > 0 && getDuration() - getCurrentTime() <= 5;
+      var canVodFailover = windowType === WindowTypes.STATIC && !aboutToEndVod;
+      var canHlsLiveFailover = windowType === WindowTypes.GROWING && (liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.PLAYABLE) && transferFormat === 'hls';
+      var canDashLiveFailover = windowType !== WindowTypes.STATIC && transferFormat === 'dash';
 
-                                /* override UA default margin */
-                                /* TODO: should apply to <p> only */
+      if (hasNextCDN && (canVodFailover || canHlsLiveFailover || canDashLiveFailover)) {
+        cdnFailover(errorProperties, bufferingTimeoutError);
+      } else {
+        var evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError });
+        Plugins.interface.onFatalError(evt);
+        publishMediaStateUpdate(MediaState.FATAL_ERROR, { isBufferingTimeoutError: bufferingTimeoutError });
+      }
+    }
 
-                                e.style.margin = "0";
+    function cdnFailover(errorProperties, bufferingTimeoutError) {
+      var thenPause = playbackStrategy.isPaused();
+      tearDownMediaElement();
+      mediaMetaData.urls.shift();
+      var evt = new PluginData({ status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn });
+      Plugins.interface.onErrorHandled(evt);
 
-                                /* tranform TTML styles to CSS styles */
+      var availableCdns = mediaMetaData.urls.map(function (media) {
+        return media.cdn;
+      });
 
-                                for (var i in STYLING_MAP_DEFS) {
+      DebugTool.keyValue({ key: 'available cdns', value: availableCdns });
+      DebugTool.keyValue({ key: 'current cdn', value: mediaMetaData.urls[0].cdn });
+      DebugTool.keyValue({ key: 'url', value: mediaMetaData.urls[0].url });
+      loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, getCurrentTime(), thenPause);
+    }
 
-                                                var sm = STYLING_MAP_DEFS[i];
+    function clearFatalErrorTimeout() {
+      if (fatalErrorTimeout !== null) {
+        clearTimeout(fatalErrorTimeout);
+        fatalErrorTimeout = null;
+      }
+    }
 
-                                                var attr = isd_element.styleAttrs[sm.qname];
+    function clearErrorTimeout() {
+      if (errorTimeoutID !== null) {
+        clearTimeout(errorTimeoutID);
+        errorTimeoutID = null;
+      }
+    }
 
-                                                if (attr !== undefined && sm.map !== null) {
+    function playout(playbackProperties) {
+      clearErrorTimeout();
+      clearFatalErrorTimeout();
+      fatalError = false;
+      bubbleBufferingCleared(playbackProperties);
+      bubbleErrorCleared(playbackProperties);
+      userInteracted = false;
+    }
 
-                                                                sm.map(context, e, isd_element, attr);
-                                                }
-                                }
+    function bubbleErrorCleared(playbackProperties) {
+      var errorProperties = PlaybackUtils.clone(playbackProperties);
+      if (!errorProperties.dismissed_by) {
+        if (userInteracted) {
+          errorProperties.dismissed_by = 'other';
+        } else {
+          errorProperties.dismissed_by = 'device';
+        }
+      }
+      var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties });
+      Plugins.interface.onErrorCleared(evt);
+    }
 
-                                var proc_e = e;
+    function bubbleErrorRaised(errorProperties, bufferingTimeoutError) {
+      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError });
+      Plugins.interface.onError(evt);
+    }
 
-                                /* remember writing direction */
+    function bubbleBufferingRaised(playbackProperties) {
+      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING, properties: playbackProperties });
+      Plugins.interface.onBuffering(evt);
+    }
 
-                                if (isd_element.kind === "region") {
+    function bubbleBufferingCleared(playbackProperties) {
+      var bufferingProperties = PlaybackUtils.clone(playbackProperties);
+      if (!bufferingProperties.dismissed_by) {
+        if (userInteracted) {
+          bufferingProperties.dismissed_by = 'other';
+        } else {
+          bufferingProperties.dismissed_by = 'device';
+        }
+      }
+      var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: bufferingProperties, isInitialPlay: isInitialPlay });
+      Plugins.interface.onBufferingCleared(evt);
+    }
 
-                                                var wdir = isd_element.styleAttrs[imscStyles.byName.writingMode.qname];
+    function createPlaybackProperties() {
+      var playbackProperties = {};
 
-                                                if (wdir === "lrtb" || wdir === "lr") {
+      playbackProperties.seekable_range = getSeekableRange().start + ' to ' + getSeekableRange().end;
+      playbackProperties.current_time = getCurrentTime();
+      playbackProperties.duration = getDuration();
 
-                                                                context.ipd = "lr";
-                                                                context.bpd = "tb";
-                                                } else if (wdir === "rltb" || wdir === "rl") {
+      return playbackProperties;
+    }
 
-                                                                context.ipd = "rl";
-                                                                context.bpd = "tb";
-                                                } else if (wdir === "tblr") {
+    function createPlaybackErrorProperties(event) {
+      return PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
+    }
 
-                                                                context.ipd = "tb";
-                                                                context.bpd = "lr";
-                                                } else if (wdir === "tbrl" || wdir === "tb") {
+    function publishMediaStateUpdate(state, opts) {
+      var mediaData = {};
+      mediaData.currentTime = getCurrentTime();
+      mediaData.seekableRange = getSeekableRange();
+      mediaData.subtitles = {
+        enabled: isSubtitlesEnabled(),
+        available: isSubtitlesAvailable()
+      };
+      mediaData.state = state;
+      mediaData.duration = getDuration();
 
-                                                                context.ipd = "tb";
-                                                                context.bpd = "rl";
-                                                }
-                                }
+      stateUpdateCallback({ data: mediaData, timeUpdate: opts && opts.timeUpdate, isBufferingTimeoutError: opts && opts.isBufferingTimeoutError || false });
+    }
 
-                                /* do we have linePadding ? */
+    function initialMediaPlay(media, startTime) {
+      mediaMetaData = media;
+      loadMedia(media.urls[0].url, media.type, startTime);
+
+      if (!captionsContainer) {
+        captionsContainer = new CaptionsContainer(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
+      }
+    }
+
+    function loadMedia(url, type, startTime, thenPause) {
+      playbackStrategy.load(url, type, startTime);
+      if (thenPause) {
+        pause();
+      }
+    }
+
+    function tearDown() {
+      userInteracted = false;
+      tearDownMediaElement();
+
+      playbackStrategy.tearDown();
+      playbackStrategy = null;
+
+      if (captionsContainer) {
+        captionsContainer.stop();
+        captionsContainer.tearDown();
+        captionsContainer = null;
+      }
+
+      isInitialPlay = true;
+      captionsURL = undefined;
+      errorTimeoutID = undefined;
+      windowType = undefined;
+      mediaKind = undefined;
+      subtitlesEnabled = undefined;
+      userInteracted = undefined;
+      stateUpdateCallback = undefined;
+      mediaMetaData = undefined;
+      fatalErrorTimeout = undefined;
+      fatalError = undefined;
+    }
+
+    return {
+      play: play,
+      pause: pause,
+      transitions: transitions,
+      isEnded: isEnded,
+      setCurrentTime: setCurrentTime,
+      getCurrentTime: getCurrentTime,
+      getDuration: getDuration,
+      getSeekableRange: getSeekableRange,
+      getPlayerElement: getPlayerElement,
+      isSubtitlesAvailable: isSubtitlesAvailable,
+      isSubtitlesEnabled: isSubtitlesEnabled,
+      setSubtitlesEnabled: setSubtitlesEnabled,
+      isPaused: isPaused,
+      setTransportControlPosition: setTransportControlPosition,
+      tearDown: tearDown
+    };
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/plugindata.js":
+/*!************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/plugindata.js ***!
+  \************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  function PluginData(args) {
+    this.status = args.status;
+    this.stateType = args.stateType;
+    this.properties = args.properties || {};
+    this.isBufferingTimeoutError = args.isBufferingTimeoutError || false;
+    this.isInitialPlay = args.isInitialPlay;
+    this.cdn = args.cdn;
+    this.timeStamp = new Date();
+  }
+
+  return PluginData;
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/pluginenums.js":
+/*!*************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/pluginenums.js ***!
+  \*************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  return {
+    STATUS: {
+      STARTED: 'started',
+      DISMISSED: 'dismissed',
+      FATAL: 'fatal',
+      FAILOVER: 'failover'
+    },
+    TYPE: {
+      BUFFERING: 'buffering',
+      ERROR: 'error'
+    }
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/plugins.js":
+/*!*********************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/plugins.js ***!
+  \*********************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (PlaybackUtils) {
+  var plugins = [];
+
+  function callOnAllPlugins(funcKey, evt) {
+    var clonedEvent = PlaybackUtils.deepClone(evt);
+    for (var i in plugins) {
+      if (plugins[i][funcKey]) {
+        plugins[i][funcKey](clonedEvent);
+      }
+    }
+  }
+
+  return {
+    registerPlugin: function registerPlugin(plugin) {
+      plugins.push(plugin);
+    },
+    unregisterPlugin: function unregisterPlugin(plugin) {
+      if (!plugin && plugins.length > 0) {
+        plugins = [];
+      } else {
+        for (var i = plugins.length - 1; i >= 0; i--) {
+          if (plugins[i] === plugin) {
+            plugins.splice(i, 1);
+          }
+        }
+      }
+    },
+    interface: {
+      onError: function onError(evt) {
+        callOnAllPlugins('onError', evt);
+      },
+      onFatalError: function onFatalError(evt) {
+        callOnAllPlugins('onFatalError', evt);
+      },
+      onErrorCleared: function onErrorCleared(evt) {
+        callOnAllPlugins('onErrorCleared', evt);
+      },
+      onErrorHandled: function onErrorHandled(evt) {
+        callOnAllPlugins('onErrorHandled', evt);
+      },
+      onBuffering: function onBuffering(evt) {
+        callOnAllPlugins('onBuffering', evt);
+      },
+      onBufferingCleared: function onBufferingCleared(evt) {
+        callOnAllPlugins('onBufferingCleared', evt);
+      },
+      onScreenCapabilityDetermined: function onScreenCapabilityDetermined(tvInfo) {
+        callOnAllPlugins('onScreenCapabilityDetermined', tvInfo);
+      },
+      onPlayerInfoUpdated: function onPlayerInfoUpdated(evt) {
+        callOnAllPlugins('onPlayerInfoUpdated', evt);
+      }
+    }
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
                                 var lp = isd_element.styleAttrs[imscStyles.byName.linePadding.qname];
 
-                                if (lp && lp > 0) {
-
-                                                /* apply padding to the <p> so that line padding does not cause line wraps */
-
-                                                var padmeasure = Math.ceil(lp * context.h) + "px";
-
-                                                if (context.bpd === "tb") {
-
-                                                                proc_e.style.paddingLeft = padmeasure;
-                                                                proc_e.style.paddingRight = padmeasure;
-                                                } else {
-
-                                                                proc_e.style.paddingTop = padmeasure;
-                                                                proc_e.style.paddingBottom = padmeasure;
-                                                }
-
-                                                context.lp = lp;
-                                }
-
-                                // do we have multiRowAlign?
-
-                                var mra = isd_element.styleAttrs[imscStyles.byName.multiRowAlign.qname];
-
-                                if (mra && mra !== "auto") {
-
-                                                /* create inline block to handle multirowAlign */
-
-                                                var s = document.createElement("span");
-
-                                                s.style.display = "inline-block";
-
-                                                s.style.textAlign = mra;
-
-                                                e.appendChild(s);
-
-                                                proc_e = s;
-
-                                                context.mra = mra;
-                                }
-
-                                /* remember we are filling line gaps */
-
-                                if (isd_element.styleAttrs[imscStyles.byName.fillLineGap.qname]) {
-                                                context.flg = true;
-                                }
-
-                                if (isd_element.kind === "span" && isd_element.text) {
-
-                                                if (context.lp || context.mra || context.flg) {
-
-                                                                // wrap characters in spans to find the line wrap locations
-
-                                                                var cbuf = '';
-
-                                                                for (var j = 0; j < isd_element.text.length; j++) {
-
-                                                                                cbuf += isd_element.text.charAt(j);
-
-                                                                                var cc = isd_element.text.charCodeAt(j);
-
-                                                                                if (cc < 0xD800 || cc > 0xDBFF || j === isd_element.text.length) {
-
-                                                                                                /* wrap the character(s) in a span unless it is a high surrogate */
-
-                                                                                                var span = document.createElement("span");
-
-                                                                                                span.textContent = cbuf;
-
-                                                                                                e.appendChild(span);
-
-                                                                                                cbuf = '';
-                                                                                }
-                                                                }
-                                                } else {
-
-                                                                e.textContent = isd_element.text;
-                                                }
-                                }
-
-                                dom_parent.appendChild(e);
-
-                                /* process the children of the ISD element */
-
-                                for (var k in isd_element.contents) {
-
-                                                processElement(context, proc_e, isd_element.contents[k]);
-                                }
-
-                                /* list of lines */
-
-                                var linelist = [];
-
-                                /* paragraph processing */
-                                /* TODO: linePadding only supported for horizontal scripts */
-
-                                if ((context.lp || context.mra || context.flg) && isd_element.kind === "p") {
-
-                                                constructLineList(context, proc_e, linelist, null);
-
-                                                /* insert line breaks for multirowalign */
-
-                                                if (context.mra) {
-
-                                                                applyMultiRowAlign(linelist);
-
-                                                                context.mra = null;
-                                                }
-
-                                                /* add linepadding */
-
-                                                if (context.lp) {
-
-                                                                applyLinePadding(linelist, context.lp * context.h, context);
-
-                                                                context.lp = null;
-                                                }
-
-                                                /* fill line gaps linepadding */
-
-                                                if (context.flg) {
-
-                                                                var par_edges = rect2edges(proc_e.getBoundingClientRect(), context);
-
-                                                                applyFillLineGap(linelist, par_edges.before, par_edges.after, context);
-
-                                                                context.flg = null;
-                                                }
-                                }
-
-                                /* region processing */
-
-                                if (isd_element.kind === "region") {
-
-                                                /* build line list */
-
-                                                constructLineList(context, proc_e, linelist);
-
-                                                /* perform roll up if needed */
-
-                                                if (context.bpd === "tb" && context.enableRollUp && isd_element.contents.length > 0 && isd_element.styleAttrs[imscStyles.byName.displayAlign.qname] === 'after') {
-
-                                                                /* horrible hack, perhaps default region id should be underscore everywhere? */
-
-                                                                var rid = isd_element.id === '' ? '_' : isd_element.id;
-
-                                                                var rb = new RegionPBuffer(rid, linelist);
-
-                                                                context.currentISDState[rb.id] = rb;
-
-                                                                if (context.previousISDState && rb.id in context.previousISDState && context.previousISDState[rb.id].plist.length > 0 && rb.plist.length > 1 && rb.plist[rb.plist.length - 2].text === context.previousISDState[rb.id].plist[context.previousISDState[rb.id].plist.length - 1].text) {
-
-                                                                                var body_elem = e.firstElementChild;
-
-                                                                                var h = rb.plist[rb.plist.length - 1].after - rb.plist[rb.plist.length - 1].before;
-
-                                                                                body_elem.style.bottom = "-" + h + "px";
-                                                                                body_elem.style.transition = "transform 0.4s";
-                                                                                body_elem.style.position = "relative";
-                                                                                body_elem.style.transform = "translateY(-" + h + "px)";
-                                                                }
-                                                }
-
-                                                /* TODO: clean-up the spans ? */
-                                }
-                }
-
-                function applyLinePadding(lineList, lp, context) {
-
-                                for (var i in lineList) {
-
-                                                var l = lineList[i].elements.length;
-
-                                                var se = lineList[i].elements[lineList[i].start_elem];
-
-                                                var ee = lineList[i].elements[lineList[i].end_elem];
-
-                                                var pospadpxlen = Math.ceil(lp) + "px";
-
-                                                var negpadpxlen = "-" + Math.ceil(lp) + "px";
-
-                                                if (l !== 0) {
-
-                                                                if (context.ipd === "lr") {
-
-                                                                                se.node.style.borderLeftColor = se.bgcolor || "#00000000";
-                                                                                se.node.style.borderLeftStyle = "solid";
-                                                                                se.node.style.borderLeftWidth = pospadpxlen;
-                                                                                se.node.style.marginLeft = negpadpxlen;
-                                                                } else if (context.ipd === "rl") {
-
-                                                                                se.node.style.borderRightColor = se.bgcolor || "#00000000";
-                                                                                se.node.style.borderRightStyle = "solid";
-                                                                                se.node.style.borderRightWidth = pospadpxlen;
-                                                                                se.node.style.marginRight = negpadpxlen;
-                                                                } else if (context.ipd === "tb") {
-
-                                                                                se.node.style.borderTopColor = se.bgcolor || "#00000000";
-                                                                                se.node.style.borderTopStyle = "solid";
-                                                                                se.node.style.borderTopWidth = pospadpxlen;
-                                                                                se.node.style.marginTop = negpadpxlen;
-                                                                }
-
-                                                                if (context.ipd === "lr") {
-
-                                                                                ee.node.style.borderRightColor = ee.bgcolor || "#00000000";
-                                                                                ee.node.style.borderRightStyle = "solid";
-                                                                                ee.node.style.borderRightWidth = pospadpxlen;
-                                                                                ee.node.style.marginRight = negpadpxlen;
-                                                                } else if (context.ipd === "rl") {
-
-                                                                                ee.node.style.borderLeftColor = ee.bgcolor || "#00000000";
-                                                                                ee.node.style.borderLeftStyle = "solid";
-                                                                                ee.node.style.borderLeftWidth = pospadpxlen;
-                                                                                ee.node.style.marginLeft = negpadpxlen;
-                                                                } else if (context.ipd === "tb") {
-
-                                                                                ee.node.style.borderBottomColor = ee.bgcolor || "#00000000";
-                                                                                ee.node.style.borderBottomStyle = "solid";
-                                                                                ee.node.style.borderBottomWidth = pospadpxlen;
-                                                                                ee.node.style.marginBottom = negpadpxlen;
-                                                                }
-                                                }
-                                }
-                }
-
-                function applyMultiRowAlign(lineList) {
-
-                                /* apply an explicit br to all but the last line */
-
-                                for (var i = 0; i < lineList.length - 1; i++) {
-
-                                                var l = lineList[i].elements.length;
-
-                                                if (l !== 0 && lineList[i].br === false) {
-                                                                var br = document.createElement("br");
-
-                                                                var lastnode = lineList[i].elements[l - 1].node;
-
-                                                                lastnode.parentElement.insertBefore(br, lastnode.nextSibling);
-                                                }
-                                }
-                }
-
-                function applyFillLineGap(lineList, par_before, par_after, context) {
-
-                                /* positive for BPD = lr and tb, negative for BPD = rl */
-                                var s = Math.sign(par_after - par_before);
-
-                                for (var i = 0; i <= lineList.length; i++) {
-
-                                                /* compute frontier between lines */
-
-                                                var frontier;
-
-                                                if (i === 0) {
-
-                                                                frontier = par_before;
-                                                } else if (i === lineList.length) {
-
-                                                                frontier = par_after;
-                                                } else {
-
-                                                                frontier = (lineList[i].before + lineList[i - 1].after) / 2;
-                                                }
-
-                                                /* padding amount */
-
-                                                var pad;
-
-                                                /* current element */
-
-                                                var e;
-
-                                                /* before line */
-
-                                                if (i > 0) {
-
-                                                                for (var j = 0; j < lineList[i - 1].elements.length; j++) {
-
-                                                                                if (lineList[i - 1].elements[j].bgcolor === null) continue;
-
-                                                                                e = lineList[i - 1].elements[j];
-
-                                                                                if (s * (e.after - frontier) < 0) {
-
-                                                                                                pad = Math.ceil(Math.abs(frontier - e.after)) + "px";
-
-                                                                                                e.node.style.backgroundColor = e.bgcolor;
-
-                                                                                                if (context.bpd === "lr") {
-
-                                                                                                                e.node.style.paddingRight = pad;
-                                                                                                } else if (context.bpd === "rl") {
-
-                                                                                                                e.node.style.paddingLeft = pad;
-                                                                                                } else if (context.bpd === "tb") {
-
-                                                                                                                e.node.style.paddingBottom = pad;
-                                                                                                }
-                                                                                }
-                                                                }
-                                                }
-
-                                                /* after line */
-
-                                                if (i < lineList.length) {
-
-                                                                for (var k = 0; k < lineList[i].elements.length; k++) {
-
-                                                                                e = lineList[i].elements[k];
-
-                                                                                if (e.bgcolor === null) continue;
-
-                                                                                if (s * (e.before - frontier) > 0) {
-
-                                                                                                pad = Math.ceil(Math.abs(e.before - frontier)) + "px";
-
-                                                                                                e.node.style.backgroundColor = e.bgcolor;
-
-                                                                                                if (context.bpd === "lr") {
-
-                                                                                                                e.node.style.paddingLeft = pad;
-                                                                                                } else if (context.bpd === "rl") {
-
-                                                                                                                e.node.style.paddingRight = pad;
-                                                                                                } else if (context.bpd === "tb") {
-
-                                                                                                                e.node.style.paddingTop = pad;
-                                                                                                }
-                                                                                }
-                                                                }
-                                                }
-                                }
-                }
-
-                function RegionPBuffer(id, lineList) {
-
-                                this.id = id;
-
-                                this.plist = lineList;
-                }
-
-                function pruneEmptySpans(element) {
-
-                                var child = element.firstChild;
-
-                                while (child) {
-
-                                                var nchild = child.nextSibling;
-
-                                                if (child.nodeType === Node.ELEMENT_NODE && child.localName === 'span') {
-
-                                                                pruneEmptySpans(child);
-
-                                                                if (child.childElementCount === 0 && child.textContent.length === 0) {
-
-                                                                                element.removeChild(child);
-                                                                }
-                                                }
-
-                                                child = nchild;
-                                }
-                }
-
-                function rect2edges(rect, context) {
-
-                                var edges = { before: null, after: null, start: null, end: null };
-
-                                if (context.bpd === "tb") {
-
-                                                edges.before = rect.top;
-                                                edges.after = rect.bottom;
-
-                                                if (context.ipd === "lr") {
-
-                                                                edges.start = rect.left;
-                                                                edges.end = rect.right;
-                                                } else {
-
-                                                                edges.start = rect.right;
-                                                                edges.end = rect.left;
-                                                }
-                                } else if (context.bpd === "lr") {
-
-                                                edges.before = rect.left;
-                                                edges.after = rect.right;
-                                                edges.start = rect.top;
-                                                edges.end = rect.bottom;
-                                } else if (context.bpd === "rl") {
-
-                                                edges.before = rect.right;
-                                                edges.after = rect.left;
-                                                edges.start = rect.top;
-                                                edges.end = rect.bottom;
-                                }
-
-                                return edges;
-                }
-
-                function constructLineList(context, element, llist, bgcolor) {
-
-                                var curbgcolor = element.style.backgroundColor || bgcolor;
-
-                                if (element.childElementCount === 0) {
-
-                                                if (element.localName === 'span') {
-
-                                                                var r = element.getBoundingClientRect();
-
-                                                                /* skip if span is not displayed */
-
-                                                                if (r.height === 0 || r.width === 0) return;
-
-                                                                var edges = rect2edges(r, context);
-
-                                                                if (llist.length === 0 || !isSameLine(edges.before, edges.after, llist[llist.length - 1].before, llist[llist.length - 1].after)) {
-
-                                                                                llist.push({
-                                                                                                before: edges.before,
-                                                                                                after: edges.after,
-                                                                                                start: edges.start,
-                                                                                                end: edges.end,
-                                                                                                start_elem: 0,
-                                                                                                end_elem: 0,
-                                                                                                elements: [],
-                                                                                                text: "",
-                                                                                                br: false
-                                                                                });
-                                                                } else {
-
-                                                                                /* positive for BPD = lr and tb, negative for BPD = rl */
-                                                                                var bpd_dir = Math.sign(edges.after - edges.before);
-
-                                                                                /* positive for IPD = lr and tb, negative for IPD = rl */
-                                                                                var ipd_dir = Math.sign(edges.end - edges.start);
-
-                                                                                /* check if the line height has increased */
-
-                                                                                if (bpd_dir * (edges.before - llist[llist.length - 1].before) < 0) {
-                                                                                                llist[llist.length - 1].before = edges.before;
-                                                                                }
-
-                                                                                if (bpd_dir * (edges.after - llist[llist.length - 1].after) > 0) {
-                                                                                                llist[llist.length - 1].after = edges.after;
-                                                                                }
-
-                                                                                if (ipd_dir * (edges.start - llist[llist.length - 1].start) < 0) {
-                                                                                                llist[llist.length - 1].start = edges.start;
-                                                                                                llist[llist.length - 1].start_elem = llist[llist.length - 1].elements.length;
-                                                                                }
-
-                                                                                if (ipd_dir * (edges.end - llist[llist.length - 1].end) > 0) {
-                                                                                                llist[llist.length - 1].end = edges.end;
-                                                                                                llist[llist.length - 1].end_elem = llist[llist.length - 1].elements.length;
-                                                                                }
-                                                                }
-
-                                                                llist[llist.length - 1].text += element.textContent;
-
-                                                                llist[llist.length - 1].elements.push({
-                                                                                node: element,
-                                                                                bgcolor: curbgcolor,
-                                                                                before: edges.before,
-                                                                                after: edges.after
-                                                                });
-                                                } else if (element.localName === 'br' && llist.length !== 0) {
-
-                                                                llist[llist.length - 1].br = true;
-                                                }
-                                } else {
-
-                                                var child = element.firstChild;
-
-                                                while (child) {
-
-                                                                if (child.nodeType === Node.ELEMENT_NODE) {
-
-                                                                                constructLineList(context, child, llist, curbgcolor);
-                                                                }
-
-                                                                child = child.nextSibling;
-                                                }
-                                }
-                }
-
-                function isSameLine(before1, after1, before2, after2) {
-
-                                return after1 < after2 && before1 > before2 || after2 <= after1 && before2 >= before1;
-                }
-
-                function HTMLStylingMapDefintion(qName, mapFunc) {
-                                this.qname = qName;
-                                this.map = mapFunc;
-                }
-
-                var STYLING_MAP_DEFS = [new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling backgroundColor", function (context, dom_element, isd_element, attr) {
-
-                                /* skip if transparent */
-                                if (attr[3] === 0) return;
-
-                                dom_element.style.backgroundColor = "rgba(" + attr[0].toString() + "," + attr[1].toString() + "," + attr[2].toString() + "," + (attr[3] / 255).toString() + ")";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling color", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.color = "rgba(" + attr[0].toString() + "," + attr[1].toString() + "," + attr[2].toString() + "," + (attr[3] / 255).toString() + ")";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling direction", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.direction = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling display", function (context, dom_element, isd_element, attr) {}), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling displayAlign", function (context, dom_element, isd_element, attr) {
-
-                                /* see https://css-tricks.com/snippets/css/a-guide-to-flexbox/ */
-
-                                /* TODO: is this affected by writing direction? */
-
-                                dom_element.style.display = "flex";
-                                dom_element.style.flexDirection = "column";
-
-                                if (attr === "before") {
-
-                                                dom_element.style.justifyContent = "flex-start";
-                                } else if (attr === "center") {
-
-                                                dom_element.style.justifyContent = "center";
-                                } else if (attr === "after") {
-
-                                                dom_element.style.justifyContent = "flex-end";
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling extent", function (context, dom_element, isd_element, attr) {
-                                /* TODO: this is super ugly */
-
-                                context.regionH = attr.h * context.h;
-                                context.regionW = attr.w * context.w;
-
-                                /* 
-                                 * CSS height/width are measured against the content rectangle,
-                                 * whereas TTML height/width include padding
-                                 */
-
-                                var hdelta = 0;
-                                var wdelta = 0;
-
-                                var p = isd_element.styleAttrs["http://www.w3.org/ns/ttml#styling padding"];
-
-                                if (!p) {
-
-                                                /* error */
-
-                                } else {
-
-                                                hdelta = (p[0] + p[2]) * context.h;
-                                                wdelta = (p[1] + p[3]) * context.w;
-                                }
-
-                                dom_element.style.height = context.regionH - hdelta + "px";
-                                dom_element.style.width = context.regionW - wdelta + "px";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontFamily", function (context, dom_element, isd_element, attr) {
-
-                                var rslt = [];
-
-                                /* per IMSC1 */
-
-                                for (var i in attr) {
-
-                                                if (attr[i] === "monospaceSerif") {
-
-                                                                rslt.push("Courier New");
-                                                                rslt.push('"Liberation Mono"');
-                                                                rslt.push("Courier");
-                                                                rslt.push("monospace");
-                                                } else if (attr[i] === "proportionalSansSerif") {
-
-                                                                rslt.push("Arial");
-                                                                rslt.push("Helvetica");
-                                                                rslt.push('"Liberation Sans"');
-                                                                rslt.push("sans-serif");
-                                                } else if (attr[i] === "monospace") {
-
-                                                                rslt.push("monospace");
-                                                } else if (attr[i] === "sansSerif") {
-
-                                                                rslt.push("sans-serif");
-                                                } else if (attr[i] === "serif") {
-
-                                                                rslt.push("serif");
-                                                } else if (attr[i] === "monospaceSansSerif") {
-
-                                                                rslt.push("Consolas");
-                                                                rslt.push("monospace");
-                                                } else if (attr[i] === "proportionalSerif") {
-
-                                                                rslt.push("serif");
-                                                } else {
-
-                                                                rslt.push(attr[i]);
-                                                }
-                                }
-
-                                dom_element.style.fontFamily = rslt.join(",");
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontSize", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.fontSize = attr * context.h + "px";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontStyle", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.fontStyle = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontWeight", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.fontWeight = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling lineHeight", function (context, dom_element, isd_element, attr) {
-                                if (attr === "normal") {
-
-                                                dom_element.style.lineHeight = "normal";
-                                } else {
-
-                                                dom_element.style.lineHeight = attr * context.h + "px";
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling opacity", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.opacity = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling origin", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.top = attr.h * context.h + "px";
-                                dom_element.style.left = attr.w * context.w + "px";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling overflow", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.overflow = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling padding", function (context, dom_element, isd_element, attr) {
-
-                                /* attr: top,left,bottom,right*/
-
-                                /* style: top right bottom left*/
-
-                                var rslt = [];
-
-                                rslt[0] = attr[0] * context.h + "px";
-                                rslt[1] = attr[3] * context.w + "px";
-                                rslt[2] = attr[2] * context.h + "px";
-                                rslt[3] = attr[1] * context.w + "px";
-
-                                dom_element.style.padding = rslt.join(" ");
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling showBackground", null), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textAlign", function (context, dom_element, isd_element, attr) {
-
-                                var ta;
-                                var dir = isd_element.styleAttrs[imscStyles.byName.direction.qname];
-
-                                /* handle UAs that do not understand start or end */
-
-                                if (attr === "start") {
-
-                                                ta = dir === "rtl" ? "right" : "left";
-                                } else if (attr === "end") {
-
-                                                ta = dir === "rtl" ? "left" : "right";
-                                } else {
-
-                                                ta = attr;
-                                }
-
-                                dom_element.style.textAlign = ta;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textDecoration", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.textDecoration = attr.join(" ").replace("lineThrough", "line-through");
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textOutline", function (context, dom_element, isd_element, attr) {
-
-                                if (attr === "none") {
-
-                                                dom_element.style.textShadow = "";
-                                } else {
-
-                                                dom_element.style.textShadow = "rgba(" + attr.color[0].toString() + "," + attr.color[1].toString() + "," + attr.color[2].toString() + "," + (attr.color[3] / 255).toString() + ")" + " 0px 0px " + attr.thickness * context.h + "px";
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling unicodeBidi", function (context, dom_element, isd_element, attr) {
-
-                                var ub;
-
-                                if (attr === 'bidiOverride') {
-                                                ub = "bidi-override";
-                                } else {
-                                                ub = attr;
-                                }
-
-                                dom_element.style.unicodeBidi = ub;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling visibility", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.visibility = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling wrapOption", function (context, dom_element, isd_element, attr) {
-
-                                if (attr === "wrap") {
-
-                                                if (isd_element.space === "preserve") {
-                                                                dom_element.style.whiteSpace = "pre-wrap";
-                                                } else {
-                                                                dom_element.style.whiteSpace = "normal";
-                                                }
-                                } else {
-
-                                                if (isd_element.space === "preserve") {
-
-                                                                dom_element.style.whiteSpace = "pre";
-                                                } else {
-                                                                dom_element.style.whiteSpace = "noWrap";
-                                                }
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling writingMode", function (context, dom_element, isd_element, attr) {
-                                if (attr === "lrtb" || attr === "lr") {
-
-                                                dom_element.style.writingMode = "horizontal-tb";
-                                } else if (attr === "rltb" || attr === "rl") {
-
-                                                dom_element.style.writingMode = "horizontal-tb";
-                                } else if (attr === "tblr") {
-
-                                                dom_element.style.writingMode = "vertical-lr";
-                                } else if (attr === "tbrl" || attr === "tb") {
-
-                                                dom_element.style.writingMode = "vertical-rl";
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling zIndex", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.zIndex = attr;
-                }), new HTMLStylingMapDefintion("http://www.smpte-ra.org/schemas/2052-1/2010/smpte-tt backgroundImage", function (context, dom_element, isd_element, attr) {
-
-                                if (context.imgResolver !== null && attr !== null) {
-
-                                                var img = document.createElement("img");
-
-                                                var uri = context.imgResolver(attr, img);
-
-                                                if (uri) img.src = uri;
-
-                                                img.height = context.regionH;
-                                                img.width = context.regionW;
-
-                                                dom_element.appendChild(img);
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml/profile/imsc1#styling forcedDisplay", function (context, dom_element, isd_element, attr) {
-
-                                if (context.displayForcedOnlyMode && attr === false) {
-                                                dom_element.style.visibility = "hidden";
-                                }
-                })];
-
-                var STYLMAP_BY_QNAME = {};
-
-                for (var i in STYLING_MAP_DEFS) {
-
-                                STYLMAP_BY_QNAME[STYLING_MAP_DEFS[i].qname] = STYLING_MAP_DEFS[i];
-                }
-
-                function reportError(errorHandler, msg) {
-
-                                if (errorHandler && errorHandler.error && errorHandler.error(msg)) throw msg;
-                }
-})( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "../../node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscStyles === 'undefined' ? __webpack_require__(/*! ./styles */ "../../node_modules/imsc/src/main/js/styles.js") : imscStyles);
-
-/***/ }),
-
-/***/ "../../node_modules/imsc/src/main/js/isd.js":
-/*!***************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/imsc/src/main/js/isd.js ***!
-  \***************************************************************************************/
+/***/ "./node_modules/bigscreen-player/script/utils/playbackutils.js":
+/*!*********************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/utils/playbackutils.js ***!
+  \*********************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+var __WEBPACK_AMD_DEFINE_RESULT__;
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-/* 
- * Copyright (c) 2016, Pierre-Anthony Lemieux <pal@sandflow.com>
- * All rights reserved.
+!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  return {
+    clone: function clone(args) {
+      var clone = {};
+      for (var prop in args) {
+        if (args.hasOwnProperty(prop)) {
+          clone[prop] = args[prop];
+        }
+      }
+      return clone;
+    },
+
+    deepClone: function deepClone(objectToClone) {
+      if (!objectToClone) {
+        return objectToClone;
+      }
+
+      var clone, propValue, propName;
+      clone = Array.isArray(objectToClone) ? [] : {};
+      for (propName in objectToClone) {
+        propValue = objectToClone[propName];
+
+        // check for date
+        if (propValue && Object.prototype.toString.call(propValue) === '[object Date]') {
+          clone[propName] = new Date(propValue);
+          continue;
+        }
+
+        clone[propName] = (typeof propValue === 'undefined' ? 'undefined' : _typeof(propValue)) === 'object' ? this.deepClone(propValue) : propValue;
+      }
+      return clone;
+    },
+
+    cloneArray: function cloneArray(arr) {
+      var clone = [];
+
+      for (var i = 0, n = arr.length; i < n; i++) {
+        clone.push(this.clone(arr[i]));
+      }
+
+      return clone;
+    },
+
+    merge: function merge() {
+      var merged = {};
+
+      for (var i = 0; i < arguments.length; i++) {
+        var obj = arguments[i];
+        for (var param in obj) {
+          merged[param] = obj[param];
+        }
+      }
+
+      return merged;
+    },
+
+    arrayStartsWith: function arrayStartsWith(array, partial) {
+      for (var i = 0; i < partial.length; i++) {
+        if (array[i] !== partial[i]) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+
+    find: function find(array, predicate) {
+      return array.reduce(function (acc, it, i) {
+        return acc !== false ? acc : predicate(it) && it;
+      }, false);
+    },
+
+    findIndex: function findIndex(array, predicate) {
+      return array.reduce(function (acc, it, i) {
+        return acc !== false ? acc : predicate(it) && i;
+      }, false);
+    },
+
+    swap: function swap(array, i, j) {
+      var arr = array.slice();
+      var temp = arr[i];
+
+      arr[i] = arr[j];
+      arr[j] = temp;
+
+      return arr;
+    },
+
+    pluck: function pluck(array, property) {
+      var plucked = [];
+
+      for (var i = 0; i < array.length; i++) {
+        plucked.push(array[i][property]);
+      }
+
+      return plucked;
+    },
+
+    flatten: function flatten(arr) {
+      return [].concat.apply([], arr);
+    },
+
+    without: function without(arr, value) {
+      var newArray = [];
+
+      for (var i = 0; i < arr.length; i++) {
+        if (arr[i] !== value) {
+          newArray.push(arr[i]);
+        }
+      }
+
+      return newArray;
+    },
+
+    contains: function contains(arr, subset) {
+      return [].concat(subset).every(function (item) {
+        return [].concat(arr).indexOf(item) > -1;
+      });
+    },
+
+    pickRandomFromArray: function pickRandomFromArray(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    },
+
+    filter: function filter(arr, predicate) {
+      var filteredArray = [];
+
+      for (var i = 0; i < arr.length; i++) {
+        if (predicate(arr[i])) {
+          filteredArray.push(arr[i]);
+        }
+      }
+
+      return filteredArray;
+    },
+
+    noop: function noop() {},
+
+    generateUUID: function generateUUID() {
+      var d = new Date().getTime();
+
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        var r = (d + Math.random() * 16) % 16 | 0;
+        d = Math.floor(d / 16);
+        return (c === 'x' ? r : r & 0x3 | 0x8).toString(16);
+      });
+    },
+
+    path: function path(object, keys) {
+      return (keys || []).reduce(function (accum, key) {
+        return (accum || {})[key];
+      }, object || {});
+    }
+  };
+}).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/utils/timeutils.js":
+/*!*****************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/utils/timeutils.js ***!
+  \*****************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  function durationToSeconds(duration) {
+    var matches = duration.match(/^PT(\d+(?:[,\.]\d+)?H)?(\d+(?:[,\.]\d+)?M)?(\d+(?:[,\.]\d+)?S)?/) || [];
+
+    var hours = parseFloat(matches[1] || 0) * 60 * 60;
+    var mins = parseFloat(matches[2] || 0) * 60;
+    var secs = parseFloat(matches[3] || 0);
+
+    return hours + mins + secs || undefined;
+  }
+
+  function convertToSeekableVideoTime(epochTime, windowStartEpochTime) {
+    // Wont allow a 0 value for this due to device issue, this should be sorted in the TAL strategy.
+    return Math.max(0.1, convertToVideoTime(epochTime, windowStartEpochTime));
+  }
+
+  function convertToVideoTime(epochTime, windowStartEpochTime) {
+    return Math.floor(convertMilliSecondsToSeconds(epochTime - windowStartEpochTime));
+  }
+
+  function convertMilliSecondsToSeconds(timeInMilis) {
+    return Math.floor(timeInMilis / 1000);
+  }
+
+  return {
+    durationToSeconds: durationToSeconds,
+    convertToSeekableVideoTime: convertToSeekableVideoTime,
+    convertToVideoTime: convertToVideoTime
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+                                if ((context.lp || context.mra || context.flg) && isd_element.kind === "p") {
+
+/***/ "./node_modules/buffer/index.js":
+/*!**************************************!*\
+  !*** ./node_modules/buffer/index.js ***!
+  \**************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(global) {/*!
+ * The buffer module from node.js, for the browser.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * * Redistributions of source code must retain the above copyright notice, this
- *   list of conditions and the following disclaimer.
- * * Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
+ * @license  MIT
  */
+/* eslint-disable no-proto */
+
+                                                if (context.mra) {
+
+
+var base64 = __webpack_require__(/*! base64-js */ "./node_modules/base64-js/index.js");
+var ieee754 = __webpack_require__(/*! ieee754 */ "./node_modules/ieee754/index.js");
+var isArray = __webpack_require__(/*! isarray */ "./node_modules/isarray/index.js");
+
+exports.Buffer = Buffer;
+exports.SlowBuffer = SlowBuffer;
+exports.INSPECT_MAX_BYTES = 50;
 
 /**
- * @module imscISD
+ * If `Buffer.TYPED_ARRAY_SUPPORT`:
+ *   === true    Use Uint8Array implementation (fastest)
+ *   === false   Use Object implementation (most compatible, even IE6)
+ *
+ * Browsers that support typed arrays are IE 10+, Firefox 4+, Chrome 7+, Safari 5.1+,
+ * Opera 11.6+, iOS 4.2+.
+ *
+ * Due to various browser bugs, sometimes the Object implementation will be used even
+ * when the browser supports typed arrays.
+ *
+ * Note:
+ *
+ *   - Firefox 4-29 lacks support for adding new properties to `Uint8Array` instances,
+ *     See: https://bugzilla.mozilla.org/show_bug.cgi?id=695438.
+ *
+ *   - Chrome 9-10 is missing the `TypedArray.prototype.subarray` function.
+ *
+ *   - IE10 has a broken `TypedArray.prototype.subarray` function which returns arrays of
+ *     incorrect length in some situations.
+
+ * We detect these buggy browsers and set `Buffer.TYPED_ARRAY_SUPPORT` to `false` so they
+ * get the Object implementation, which is slower but behaves correctly.
+ */
+Buffer.TYPED_ARRAY_SUPPORT = global.TYPED_ARRAY_SUPPORT !== undefined ? global.TYPED_ARRAY_SUPPORT : typedArraySupport();
+
+/*
+ * Export kMaxLength after typed array support is determined.
+ */
+exports.kMaxLength = kMaxLength();
+
+function typedArraySupport() {
+  try {
+    var arr = new Uint8Array(1);
+    arr.__proto__ = { __proto__: Uint8Array.prototype, foo: function foo() {
+        return 42;
+      } };
+    return arr.foo() === 42 && // typed array instances can be augmented
+    typeof arr.subarray === 'function' && // chrome 9-10 lack `subarray`
+    arr.subarray(1, 1).byteLength === 0; // ie10 has broken `subarray`
+  } catch (e) {
+    return false;
+  }
+}
+
+function kMaxLength() {
+  return Buffer.TYPED_ARRAY_SUPPORT ? 0x7fffffff : 0x3fffffff;
+}
+
+function createBuffer(that, length) {
+  if (kMaxLength() < length) {
+    throw new RangeError('Invalid typed array length');
+  }
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = new Uint8Array(length);
+    that.__proto__ = Buffer.prototype;
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    if (that === null) {
+      that = new Buffer(length);
+    }
+    that.length = length;
+  }
+
+  return that;
+}
+
+/**
+ * The Buffer constructor returns instances of `Uint8Array` that have their
+ * prototype changed to `Buffer.prototype`. Furthermore, `Buffer` is a subclass of
+ * `Uint8Array`, so the returned instances will have all the node `Buffer` methods
+ * and the `Uint8Array` methods. Square bracket notation works as expected -- it
+ * returns a single octet.
+ *
+ * The `Uint8Array` prototype remains unmodified.
  */
 
-;
-(function (imscISD, imscNames, imscStyles) {
-        // wrapper for non-node envs
+function Buffer(arg, encodingOrOffset, length) {
+  if (!Buffer.TYPED_ARRAY_SUPPORT && !(this instanceof Buffer)) {
+    return new Buffer(arg, encodingOrOffset, length);
+  }
 
-        /** 
-         * Creates a canonical representation of an IMSC1 document returned by <pre>imscDoc.fromXML()</pre>
-         * at a given absolute offset in seconds. This offset does not have to be one of the values returned
-         * by <pre>getMediaTimeEvents()</pre>.
-         * 
-         * @param {Object} tt IMSC1 document
-         * @param {number} offset Absolute offset (in seconds)
-         * @param {?module:imscUtils.ErrorHandler} errorHandler Error callback
-         * @returns {Object} Opaque in-memory representation of an ISD
-         */
+  // Common case.
+  if (typeof arg === 'number') {
+    if (typeof encodingOrOffset === 'string') {
+      throw new Error('If encoding is specified then the first argument must be a string');
+    }
+    return allocUnsafe(this, arg);
+  }
+  return from(this, arg, encodingOrOffset, length);
+}
 
-        imscISD.generateISD = function (tt, offset, errorHandler) {
+Buffer.poolSize = 8192; // not used by this implementation
 
-                /* TODO check for tt and offset validity */
+// TODO: Legacy, not needed anymore. Remove in next major version.
+Buffer._augment = function (arr) {
+  arr.__proto__ = Buffer.prototype;
+  return arr;
+};
 
-                /* create the ISD object from the IMSC1 doc */
+function from(that, value, encodingOrOffset, length) {
+  if (typeof value === 'number') {
+    throw new TypeError('"value" argument must not be a number');
+  }
 
-                var isd = new ISD(tt);
+  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+    return fromArrayBuffer(that, value, encodingOrOffset, length);
+  }
 
-                /* context */
+  if (typeof value === 'string') {
+    return fromString(that, value, encodingOrOffset);
+  }
 
-                var context = {
+  return fromObject(that, value);
+}
 
-                        /* empty for now */
+/**
+ * Functionally equivalent to Buffer(arg, encoding) but throws a TypeError
+ * if value is a number.
+ * Buffer.from(str[, encoding])
+ * Buffer.from(array)
+ * Buffer.from(buffer)
+ * Buffer.from(arrayBuffer[, byteOffset[, length]])
+ **/
+Buffer.from = function (value, encodingOrOffset, length) {
+  return from(null, value, encodingOrOffset, length);
+};
 
-                };
+if (Buffer.TYPED_ARRAY_SUPPORT) {
+  Buffer.prototype.__proto__ = Uint8Array.prototype;
+  Buffer.__proto__ = Uint8Array;
+  if (typeof Symbol !== 'undefined' && Symbol.species && Buffer[Symbol.species] === Buffer) {
+    // Fix subarray() in ES2016. See: https://github.com/feross/buffer/pull/97
+    Object.defineProperty(Buffer, Symbol.species, {
+      value: null,
+      configurable: true
+    });
+  }
+}
 
-                /* process regions */
+function assertSize(size) {
+  if (typeof size !== 'number') {
+    throw new TypeError('"size" argument must be a number');
+  } else if (size < 0) {
+    throw new RangeError('"size" argument must not be negative');
+  }
+}
 
-                for (var r in tt.head.layout.regions) {
+function alloc(that, size, fill, encoding) {
+  assertSize(size);
+  if (size <= 0) {
+    return createBuffer(that, size);
+  }
+  if (fill !== undefined) {
+    // Only pay attention to encoding if it's a string. This
+    // prevents accidentally sending in a number that would
+    // be interpretted as a start offset.
+    return typeof encoding === 'string' ? createBuffer(that, size).fill(fill, encoding) : createBuffer(that, size).fill(fill);
+  }
+  return createBuffer(that, size);
+}
 
-                        /* post-order traversal of the body tree per [construct intermediate document] */
+/**
+ * Creates a new filled Buffer instance.
+ * alloc(size[, fill[, encoding]])
+ **/
+Buffer.alloc = function (size, fill, encoding) {
+  return alloc(null, size, fill, encoding);
+};
 
-                        var c = isdProcessContentElement(tt, offset, tt.head.layout.regions[r], tt.body, null, '', tt.head.layout.regions[r], errorHandler, context);
+function allocUnsafe(that, size) {
+  assertSize(size);
+  that = createBuffer(that, size < 0 ? 0 : checked(size) | 0);
+  if (!Buffer.TYPED_ARRAY_SUPPORT) {
+    for (var i = 0; i < size; ++i) {
+      that[i] = 0;
+    }
+  }
+  return that;
+}
 
-                        if (c !== null) {
+/**
+ * Equivalent to Buffer(num), by default creates a non-zero-filled Buffer instance.
+ * */
+Buffer.allocUnsafe = function (size) {
+  return allocUnsafe(null, size);
+};
+/**
+ * Equivalent to SlowBuffer(num), by default creates a non-zero-filled Buffer instance.
+ */
+Buffer.allocUnsafeSlow = function (size) {
+  return allocUnsafe(null, size);
+};
 
-                                /* add the region to the ISD */
+function fromString(that, string, encoding) {
+  if (typeof encoding !== 'string' || encoding === '') {
+    encoding = 'utf8';
+  }
 
-                                isd.contents.push(c.element);
-                        }
-                }
+  if (!Buffer.isEncoding(encoding)) {
+    throw new TypeError('"encoding" must be a valid string encoding');
+  }
 
-                return isd;
-        };
+  var length = byteLength(string, encoding) | 0;
+  that = createBuffer(that, length);
 
-        function isdProcessContentElement(doc, offset, region, body, parent, inherited_region_id, elem, errorHandler, context) {
+  var actual = that.write(string, encoding);
 
-                /* prune if temporally inactive */
+  if (actual !== length) {
+    // Writing a hex string, for example, that contains invalid characters will
+    // cause everything after the first invalid character to be ignored. (e.g.
+    // 'abxxcd' will be treated as 'ab')
+    that = that.slice(0, actual);
+  }
 
-                if (offset < elem.begin || offset >= elem.end) {
-                        return null;
-                }
+  return that;
+}
 
-                /* 
-                 * set the associated region as specified by the regionID attribute, or the 
-                 * inherited associated region otherwise
-                 */
+function fromArrayLike(that, array) {
+  var length = array.length < 0 ? 0 : checked(array.length) | 0;
+  that = createBuffer(that, length);
+  for (var i = 0; i < length; i += 1) {
+    that[i] = array[i] & 255;
+  }
+  return that;
+}
 
-                var associated_region_id = 'regionID' in elem && elem.regionID !== '' ? elem.regionID : inherited_region_id;
+function fromArrayBuffer(that, array, byteOffset, length) {
+  array.byteLength; // this throws if `array` is not a valid ArrayBuffer
 
-                /* prune the element if either:
-                 * - the element is not terminal and the associated region is neither the default
-                 *   region nor the parent region (this allows children to be associated with a 
-                 *   region later on)
-                 * - the element is terminal and the associated region is not the parent region
-                 */
+  if (byteOffset < 0 || array.byteLength < byteOffset) {
+    throw new RangeError('\'offset\' is out of bounds');
+  }
 
-                /* TODO: improve detection of terminal elements since <region> has no contents */
+  if (array.byteLength < byteOffset + (length || 0)) {
+    throw new RangeError('\'length\' is out of bounds');
+  }
 
-                if (parent !== null /* are we in the region element */ && associated_region_id !== region.id && (!('contents' in elem) || 'contents' in elem && elem.contents.length === 0 || associated_region_id !== '')) return null;
+  if (byteOffset === undefined && length === undefined) {
+    array = new Uint8Array(array);
+  } else if (length === undefined) {
+    array = new Uint8Array(array, byteOffset);
+  } else {
+    array = new Uint8Array(array, byteOffset, length);
+  }
 
-                /* create an ISD element, including applying specified styles */
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    // Return an augmented `Uint8Array` instance, for best performance
+    that = array;
+    that.__proto__ = Buffer.prototype;
+  } else {
+    // Fallback: Return an object instance of the Buffer class
+    that = fromArrayLike(that, array);
+  }
+  return that;
+}
 
-                var isd_element = new ISDContentElement(elem);
+function fromObject(that, obj) {
+  if (Buffer.isBuffer(obj)) {
+    var len = checked(obj.length) | 0;
+    that = createBuffer(that, len);
 
-                /* apply set (animation) styling */
+    if (that.length === 0) {
+      return that;
+    }
 
-                for (var i in elem.sets) {
+    obj.copy(that, 0, 0, len);
+    return that;
+  }
+
+  if (obj) {
+    if (typeof ArrayBuffer !== 'undefined' && obj.buffer instanceof ArrayBuffer || 'length' in obj) {
+      if (typeof obj.length !== 'number' || isnan(obj.length)) {
+        return createBuffer(that, 0);
+      }
+      return fromArrayLike(that, obj);
+    }
+
+    if (obj.type === 'Buffer' && isArray(obj.data)) {
+      return fromArrayLike(that, obj.data);
+    }
+  }
+
+  throw new TypeError('First argument must be a string, Buffer, ArrayBuffer, Array, or array-like object.');
+}
+
+function checked(length) {
+  // Note: cannot use `length < kMaxLength()` here because that fails when
+  // length is NaN (which is otherwise coerced to zero.)
+  if (length >= kMaxLength()) {
+    throw new RangeError('Attempt to allocate Buffer larger than maximum ' + 'size: 0x' + kMaxLength().toString(16) + ' bytes');
+  }
+  return length | 0;
+}
+
+function SlowBuffer(length) {
+  if (+length != length) {
+    // eslint-disable-line eqeqeq
+    length = 0;
+  }
+  return Buffer.alloc(+length);
+}
+
+Buffer.isBuffer = function isBuffer(b) {
+  return !!(b != null && b._isBuffer);
+};
+
+Buffer.compare = function compare(a, b) {
+  if (!Buffer.isBuffer(a) || !Buffer.isBuffer(b)) {
+    throw new TypeError('Arguments must be Buffers');
+  }
+
+  if (a === b) return 0;
+
+  var x = a.length;
+  var y = b.length;
+
+  for (var i = 0, len = Math.min(x, y); i < len; ++i) {
+    if (a[i] !== b[i]) {
+      x = a[i];
+      y = b[i];
+      break;
+    }
+  }
+
+  if (x < y) return -1;
+  if (y < x) return 1;
+  return 0;
+};
+
+Buffer.isEncoding = function isEncoding(encoding) {
+  switch (String(encoding).toLowerCase()) {
+    case 'hex':
+    case 'utf8':
+    case 'utf-8':
+    case 'ascii':
+    case 'latin1':
+    case 'binary':
+    case 'base64':
+    case 'ucs2':
+    case 'ucs-2':
+    case 'utf16le':
+    case 'utf-16le':
+      return true;
+    default:
+      return false;
+  }
+};
+
+Buffer.concat = function concat(list, length) {
+  if (!isArray(list)) {
+    throw new TypeError('"list" argument must be an Array of Buffers');
+  }
+
+  if (list.length === 0) {
+    return Buffer.alloc(0);
+  }
+
+  var i;
+  if (length === undefined) {
+    length = 0;
+    for (i = 0; i < list.length; ++i) {
+      length += list[i].length;
+    }
+  }
+
+  var buffer = Buffer.allocUnsafe(length);
+  var pos = 0;
+  for (i = 0; i < list.length; ++i) {
+    var buf = list[i];
+    if (!Buffer.isBuffer(buf)) {
+      throw new TypeError('"list" argument must be an Array of Buffers');
+    }
+    buf.copy(buffer, pos);
+    pos += buf.length;
+  }
+  return buffer;
+};
+
+function byteLength(string, encoding) {
+  if (Buffer.isBuffer(string)) {
+    return string.length;
+  }
+  if (typeof ArrayBuffer !== 'undefined' && typeof ArrayBuffer.isView === 'function' && (ArrayBuffer.isView(string) || string instanceof ArrayBuffer)) {
+    return string.byteLength;
+  }
+  if (typeof string !== 'string') {
+    string = '' + string;
+  }
+
+  var len = string.length;
+  if (len === 0) return 0;
+
+  // Use a for loop to avoid recursion
+  var loweredCase = false;
+  for (;;) {
+    switch (encoding) {
+      case 'ascii':
+      case 'latin1':
+      case 'binary':
+        return len;
+      case 'utf8':
+      case 'utf-8':
+      case undefined:
+        return utf8ToBytes(string).length;
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return len * 2;
+      case 'hex':
+        return len >>> 1;
+      case 'base64':
+        return base64ToBytes(string).length;
+      default:
+        if (loweredCase) return utf8ToBytes(string).length; // assume utf8
+        encoding = ('' + encoding).toLowerCase();
+        loweredCase = true;
+    }
+  }
+}
+Buffer.byteLength = byteLength;
+
+function slowToString(encoding, start, end) {
+  var loweredCase = false;
+
+  // No need to verify that "this.length <= MAX_UINT32" since it's a read-only
+  // property of a typed array.
+
+  // This behaves neither like String nor Uint8Array in that we set start/end
+  // to their upper/lower bounds if the value passed is out of range.
+  // undefined is handled specially as per ECMA-262 6th Edition,
+  // Section 13.3.3.7 Runtime Semantics: KeyedBindingInitialization.
+  if (start === undefined || start < 0) {
+    start = 0;
+  }
+  // Return early if start > this.length. Done here to prevent potential uint32
+  // coercion fail below.
+  if (start > this.length) {
+    return '';
+  }
+
+  if (end === undefined || end > this.length) {
+    end = this.length;
+  }
+
+  if (end <= 0) {
+    return '';
+  }
+
+  // Force coersion to uint32. This will also coerce falsey/NaN values to 0.
+  end >>>= 0;
+  start >>>= 0;
+
+  if (end <= start) {
+    return '';
+  }
+
+  if (!encoding) encoding = 'utf8';
+
+  while (true) {
+    switch (encoding) {
+      case 'hex':
+        return hexSlice(this, start, end);
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Slice(this, start, end);
+
+      case 'ascii':
+        return asciiSlice(this, start, end);
+
+      case 'latin1':
+      case 'binary':
+        return latin1Slice(this, start, end);
+
+      case 'base64':
+        return base64Slice(this, start, end);
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return utf16leSlice(this, start, end);
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding);
+        encoding = (encoding + '').toLowerCase();
+        loweredCase = true;
+    }
+  }
+}
+
+// The property is used by `Buffer.isBuffer` and `is-buffer` (in Safari 5-7) to detect
+// Buffer instances.
+Buffer.prototype._isBuffer = true;
+
+function swap(b, n, m) {
+  var i = b[n];
+  b[n] = b[m];
+  b[m] = i;
+}
+
+Buffer.prototype.swap16 = function swap16() {
+  var len = this.length;
+  if (len % 2 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 16-bits');
+  }
+  for (var i = 0; i < len; i += 2) {
+    swap(this, i, i + 1);
+  }
+  return this;
+};
+
+Buffer.prototype.swap32 = function swap32() {
+  var len = this.length;
+  if (len % 4 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 32-bits');
+  }
+  for (var i = 0; i < len; i += 4) {
+    swap(this, i, i + 3);
+    swap(this, i + 1, i + 2);
+  }
+  return this;
+};
+
+Buffer.prototype.swap64 = function swap64() {
+  var len = this.length;
+  if (len % 8 !== 0) {
+    throw new RangeError('Buffer size must be a multiple of 64-bits');
+  }
+  for (var i = 0; i < len; i += 8) {
+    swap(this, i, i + 7);
+    swap(this, i + 1, i + 6);
+    swap(this, i + 2, i + 5);
+    swap(this, i + 3, i + 4);
+  }
+  return this;
+};
+
+Buffer.prototype.toString = function toString() {
+  var length = this.length | 0;
+  if (length === 0) return '';
+  if (arguments.length === 0) return utf8Slice(this, 0, length);
+  return slowToString.apply(this, arguments);
+};
+
+Buffer.prototype.equals = function equals(b) {
+  if (!Buffer.isBuffer(b)) throw new TypeError('Argument must be a Buffer');
+  if (this === b) return true;
+  return Buffer.compare(this, b) === 0;
+};
+
+Buffer.prototype.inspect = function inspect() {
+  var str = '';
+  var max = exports.INSPECT_MAX_BYTES;
+  if (this.length > 0) {
+    str = this.toString('hex', 0, max).match(/.{2}/g).join(' ');
+    if (this.length > max) str += ' ... ';
+  }
+  return '<Buffer ' + str + '>';
+};
+
+Buffer.prototype.compare = function compare(target, start, end, thisStart, thisEnd) {
+  if (!Buffer.isBuffer(target)) {
+    throw new TypeError('Argument must be a Buffer');
+  }
+
+  if (start === undefined) {
+    start = 0;
+  }
+  if (end === undefined) {
+    end = target ? target.length : 0;
+  }
+  if (thisStart === undefined) {
+    thisStart = 0;
+  }
+  if (thisEnd === undefined) {
+    thisEnd = this.length;
+  }
+
+  if (start < 0 || end > target.length || thisStart < 0 || thisEnd > this.length) {
+    throw new RangeError('out of range index');
+  }
+
+  if (thisStart >= thisEnd && start >= end) {
+    return 0;
+  }
+  if (thisStart >= thisEnd) {
+    return -1;
+  }
+  if (start >= end) {
+    return 1;
+  }
+
+  start >>>= 0;
+  end >>>= 0;
+  thisStart >>>= 0;
+  thisEnd >>>= 0;
+
+  if (this === target) return 0;
+
+  var x = thisEnd - thisStart;
+  var y = end - start;
+  var len = Math.min(x, y);
+
+  var thisCopy = this.slice(thisStart, thisEnd);
+  var targetCopy = target.slice(start, end);
+
+  for (var i = 0; i < len; ++i) {
+    if (thisCopy[i] !== targetCopy[i]) {
+      x = thisCopy[i];
+      y = targetCopy[i];
+      break;
+    }
+  }
+
+  if (x < y) return -1;
+  if (y < x) return 1;
+  return 0;
+};
+
+// Finds either the first index of `val` in `buffer` at offset >= `byteOffset`,
+// OR the last index of `val` in `buffer` at offset <= `byteOffset`.
+//
+// Arguments:
+// - buffer - a Buffer to search
+// - val - a string, Buffer, or number
+// - byteOffset - an index into `buffer`; will be clamped to an int32
+// - encoding - an optional encoding, relevant is val is a string
+// - dir - true for indexOf, false for lastIndexOf
+function bidirectionalIndexOf(buffer, val, byteOffset, encoding, dir) {
+  // Empty buffer means no match
+  if (buffer.length === 0) return -1;
+
+  // Normalize byteOffset
+  if (typeof byteOffset === 'string') {
+    encoding = byteOffset;
+    byteOffset = 0;
+  } else if (byteOffset > 0x7fffffff) {
+    byteOffset = 0x7fffffff;
+  } else if (byteOffset < -0x80000000) {
+    byteOffset = -0x80000000;
+  }
+  byteOffset = +byteOffset; // Coerce to Number.
+  if (isNaN(byteOffset)) {
+    // byteOffset: it it's undefined, null, NaN, "foo", etc, search whole buffer
+    byteOffset = dir ? 0 : buffer.length - 1;
+  }
+
+  // Normalize byteOffset: negative offsets start from the end of the buffer
+  if (byteOffset < 0) byteOffset = buffer.length + byteOffset;
+  if (byteOffset >= buffer.length) {
+    if (dir) return -1;else byteOffset = buffer.length - 1;
+  } else if (byteOffset < 0) {
+    if (dir) byteOffset = 0;else return -1;
+  }
+
+  // Normalize val
+  if (typeof val === 'string') {
+    val = Buffer.from(val, encoding);
+  }
+
+  // Finally, search either indexOf (if dir is true) or lastIndexOf
+  if (Buffer.isBuffer(val)) {
+    // Special case: looking for empty string/buffer always fails
+    if (val.length === 0) {
+      return -1;
+    }
+    return arrayIndexOf(buffer, val, byteOffset, encoding, dir);
+  } else if (typeof val === 'number') {
+    val = val & 0xFF; // Search for a byte value [0-255]
+    if (Buffer.TYPED_ARRAY_SUPPORT && typeof Uint8Array.prototype.indexOf === 'function') {
+      if (dir) {
+        return Uint8Array.prototype.indexOf.call(buffer, val, byteOffset);
+      } else {
+        return Uint8Array.prototype.lastIndexOf.call(buffer, val, byteOffset);
+      }
+    }
+    return arrayIndexOf(buffer, [val], byteOffset, encoding, dir);
+  }
+
+  throw new TypeError('val must be string, number or Buffer');
+}
+
+function arrayIndexOf(arr, val, byteOffset, encoding, dir) {
+  var indexSize = 1;
+  var arrLength = arr.length;
+  var valLength = val.length;
+
+  if (encoding !== undefined) {
+    encoding = String(encoding).toLowerCase();
+    if (encoding === 'ucs2' || encoding === 'ucs-2' || encoding === 'utf16le' || encoding === 'utf-16le') {
+      if (arr.length < 2 || val.length < 2) {
+        return -1;
+      }
+      indexSize = 2;
+      arrLength /= 2;
+      valLength /= 2;
+      byteOffset /= 2;
+    }
+  }
+
+  function read(buf, i) {
+    if (indexSize === 1) {
+      return buf[i];
+    } else {
+      return buf.readUInt16BE(i * indexSize);
+    }
+  }
+
+  var i;
+  if (dir) {
+    var foundIndex = -1;
+    for (i = byteOffset; i < arrLength; i++) {
+      if (read(arr, i) === read(val, foundIndex === -1 ? 0 : i - foundIndex)) {
+        if (foundIndex === -1) foundIndex = i;
+        if (i - foundIndex + 1 === valLength) return foundIndex * indexSize;
+      } else {
+        if (foundIndex !== -1) i -= i - foundIndex;
+        foundIndex = -1;
+      }
+    }
+  } else {
+    if (byteOffset + valLength > arrLength) byteOffset = arrLength - valLength;
+    for (i = byteOffset; i >= 0; i--) {
+      var found = true;
+      for (var j = 0; j < valLength; j++) {
+        if (read(arr, i + j) !== read(val, j)) {
+          found = false;
+          break;
+        }
+      }
+      if (found) return i;
+    }
+  }
+
+  return -1;
+}
+
+Buffer.prototype.includes = function includes(val, byteOffset, encoding) {
+  return this.indexOf(val, byteOffset, encoding) !== -1;
+};
+
+Buffer.prototype.indexOf = function indexOf(val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, true);
+};
+
+Buffer.prototype.lastIndexOf = function lastIndexOf(val, byteOffset, encoding) {
+  return bidirectionalIndexOf(this, val, byteOffset, encoding, false);
+};
+
+function hexWrite(buf, string, offset, length) {
+  offset = Number(offset) || 0;
+  var remaining = buf.length - offset;
+  if (!length) {
+    length = remaining;
+  } else {
+    length = Number(length);
+    if (length > remaining) {
+      length = remaining;
+    }
+  }
+
+  // must be an even number of digits
+  var strLen = string.length;
+  if (strLen % 2 !== 0) throw new TypeError('Invalid hex string');
+
+  if (length > strLen / 2) {
+    length = strLen / 2;
+  }
+  for (var i = 0; i < length; ++i) {
+    var parsed = parseInt(string.substr(i * 2, 2), 16);
+    if (isNaN(parsed)) return i;
+    buf[offset + i] = parsed;
+  }
+  return i;
+}
+
+function utf8Write(buf, string, offset, length) {
+  return blitBuffer(utf8ToBytes(string, buf.length - offset), buf, offset, length);
+}
+
+function asciiWrite(buf, string, offset, length) {
+  return blitBuffer(asciiToBytes(string), buf, offset, length);
+}
+
+function latin1Write(buf, string, offset, length) {
+  return asciiWrite(buf, string, offset, length);
+}
+
+function base64Write(buf, string, offset, length) {
+  return blitBuffer(base64ToBytes(string), buf, offset, length);
+}
+
+function ucs2Write(buf, string, offset, length) {
+  return blitBuffer(utf16leToBytes(string, buf.length - offset), buf, offset, length);
+}
+
+Buffer.prototype.write = function write(string, offset, length, encoding) {
+  // Buffer#write(string)
+  if (offset === undefined) {
+    encoding = 'utf8';
+    length = this.length;
+    offset = 0;
+    // Buffer#write(string, encoding)
+  } else if (length === undefined && typeof offset === 'string') {
+    encoding = offset;
+    length = this.length;
+    offset = 0;
+    // Buffer#write(string, offset[, length][, encoding])
+  } else if (isFinite(offset)) {
+    offset = offset | 0;
+    if (isFinite(length)) {
+      length = length | 0;
+      if (encoding === undefined) encoding = 'utf8';
+    } else {
+      encoding = length;
+      length = undefined;
+    }
+    // legacy write(string, encoding, offset, length) - remove in v0.13
+  } else {
+    throw new Error('Buffer.write(string, encoding, offset[, length]) is no longer supported');
+  }
+
+  var remaining = this.length - offset;
+  if (length === undefined || length > remaining) length = remaining;
+
+  if (string.length > 0 && (length < 0 || offset < 0) || offset > this.length) {
+    throw new RangeError('Attempt to write outside buffer bounds');
+  }
+
+  if (!encoding) encoding = 'utf8';
+
+  var loweredCase = false;
+  for (;;) {
+    switch (encoding) {
+      case 'hex':
+        return hexWrite(this, string, offset, length);
+
+      case 'utf8':
+      case 'utf-8':
+        return utf8Write(this, string, offset, length);
+
+      case 'ascii':
+        return asciiWrite(this, string, offset, length);
+
+      case 'latin1':
+      case 'binary':
+        return latin1Write(this, string, offset, length);
+
+      case 'base64':
+        // Warning: maxLength not taken into account in base64Write
+        return base64Write(this, string, offset, length);
+
+      case 'ucs2':
+      case 'ucs-2':
+      case 'utf16le':
+      case 'utf-16le':
+        return ucs2Write(this, string, offset, length);
+
+      default:
+        if (loweredCase) throw new TypeError('Unknown encoding: ' + encoding);
+        encoding = ('' + encoding).toLowerCase();
+        loweredCase = true;
+    }
+  }
+};
+
+Buffer.prototype.toJSON = function toJSON() {
+  return {
+    type: 'Buffer',
+    data: Array.prototype.slice.call(this._arr || this, 0)
+  };
+};
+
+function base64Slice(buf, start, end) {
+  if (start === 0 && end === buf.length) {
+    return base64.fromByteArray(buf);
+  } else {
+    return base64.fromByteArray(buf.slice(start, end));
+  }
+}
+
+function utf8Slice(buf, start, end) {
+  end = Math.min(buf.length, end);
+  var res = [];
+
+  var i = start;
+  while (i < end) {
+    var firstByte = buf[i];
+    var codePoint = null;
+    var bytesPerSequence = firstByte > 0xEF ? 4 : firstByte > 0xDF ? 3 : firstByte > 0xBF ? 2 : 1;
+
+    if (i + bytesPerSequence <= end) {
+      var secondByte, thirdByte, fourthByte, tempCodePoint;
+
+      switch (bytesPerSequence) {
+        case 1:
+          if (firstByte < 0x80) {
+            codePoint = firstByte;
+          }
+          break;
+        case 2:
+          secondByte = buf[i + 1];
+          if ((secondByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0x1F) << 0x6 | secondByte & 0x3F;
+            if (tempCodePoint > 0x7F) {
+              codePoint = tempCodePoint;
+            }
+          }
+          break;
+        case 3:
+          secondByte = buf[i + 1];
+          thirdByte = buf[i + 2];
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0xC | (secondByte & 0x3F) << 0x6 | thirdByte & 0x3F;
+            if (tempCodePoint > 0x7FF && (tempCodePoint < 0xD800 || tempCodePoint > 0xDFFF)) {
+              codePoint = tempCodePoint;
+            }
+          }
+          break;
+        case 4:
+          secondByte = buf[i + 1];
+          thirdByte = buf[i + 2];
+          fourthByte = buf[i + 3];
+          if ((secondByte & 0xC0) === 0x80 && (thirdByte & 0xC0) === 0x80 && (fourthByte & 0xC0) === 0x80) {
+            tempCodePoint = (firstByte & 0xF) << 0x12 | (secondByte & 0x3F) << 0xC | (thirdByte & 0x3F) << 0x6 | fourthByte & 0x3F;
+            if (tempCodePoint > 0xFFFF && tempCodePoint < 0x110000) {
+              codePoint = tempCodePoint;
+            }
+          }
+      }
+    }
+
+    if (codePoint === null) {
+      // we did not generate a valid codePoint so insert a
+      // replacement char (U+FFFD) and advance only 1 byte
+      codePoint = 0xFFFD;
+      bytesPerSequence = 1;
+    } else if (codePoint > 0xFFFF) {
+      // encode to utf16 (surrogate pair dance)
+      codePoint -= 0x10000;
+      res.push(codePoint >>> 10 & 0x3FF | 0xD800);
+      codePoint = 0xDC00 | codePoint & 0x3FF;
+    }
+
+    res.push(codePoint);
+    i += bytesPerSequence;
+  }
+
+  return decodeCodePointsArray(res);
+}
+
+// Based on http://stackoverflow.com/a/22747272/680742, the browser with
+// the lowest limit is Chrome, with 0x10000 args.
+// We go 1 magnitude less, for safety
+var MAX_ARGUMENTS_LENGTH = 0x1000;
+
+function decodeCodePointsArray(codePoints) {
+  var len = codePoints.length;
+  if (len <= MAX_ARGUMENTS_LENGTH) {
+    return String.fromCharCode.apply(String, codePoints); // avoid extra slice()
+  }
+
+  // Decode in chunks to avoid "call stack size exceeded".
+  var res = '';
+  var i = 0;
+  while (i < len) {
+    res += String.fromCharCode.apply(String, codePoints.slice(i, i += MAX_ARGUMENTS_LENGTH));
+  }
+  return res;
+}
+
+function asciiSlice(buf, start, end) {
+  var ret = '';
+  end = Math.min(buf.length, end);
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i] & 0x7F);
+  }
+  return ret;
+}
+
+function latin1Slice(buf, start, end) {
+  var ret = '';
+  end = Math.min(buf.length, end);
+
+  for (var i = start; i < end; ++i) {
+    ret += String.fromCharCode(buf[i]);
+  }
+  return ret;
+}
+
+function hexSlice(buf, start, end) {
+  var len = buf.length;
+
+  if (!start || start < 0) start = 0;
+  if (!end || end < 0 || end > len) end = len;
+
+  var out = '';
+  for (var i = start; i < end; ++i) {
+    out += toHex(buf[i]);
+  }
+  return out;
+}
+
+function utf16leSlice(buf, start, end) {
+  var bytes = buf.slice(start, end);
+  var res = '';
+  for (var i = 0; i < bytes.length; i += 2) {
+    res += String.fromCharCode(bytes[i] + bytes[i + 1] * 256);
+  }
+  return res;
+}
+
+Buffer.prototype.slice = function slice(start, end) {
+  var len = this.length;
+  start = ~~start;
+  end = end === undefined ? len : ~~end;
+
+  if (start < 0) {
+    start += len;
+    if (start < 0) start = 0;
+  } else if (start > len) {
+    start = len;
+  }
+
+  if (end < 0) {
+    end += len;
+    if (end < 0) end = 0;
+  } else if (end > len) {
+    end = len;
+  }
+
+  if (end < start) end = start;
+
+  var newBuf;
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    newBuf = this.subarray(start, end);
+    newBuf.__proto__ = Buffer.prototype;
+  } else {
+    var sliceLen = end - start;
+    newBuf = new Buffer(sliceLen, undefined);
+    for (var i = 0; i < sliceLen; ++i) {
+      newBuf[i] = this[i + start];
+    }
+  }
+
+  return newBuf;
+};
+
+/*
+ * Need to make sure that buffer isn't trying to write out of bounds.
+ */
+function checkOffset(offset, ext, length) {
+  if (offset % 1 !== 0 || offset < 0) throw new RangeError('offset is not uint');
+  if (offset + ext > length) throw new RangeError('Trying to access beyond buffer length');
+}
+
+Buffer.prototype.readUIntLE = function readUIntLE(offset, byteLength, noAssert) {
+  offset = offset | 0;
+  byteLength = byteLength | 0;
+  if (!noAssert) checkOffset(offset, byteLength, this.length);
+
+  var val = this[offset];
+  var mul = 1;
+  var i = 0;
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul;
+  }
+
+  return val;
+};
+
+Buffer.prototype.readUIntBE = function readUIntBE(offset, byteLength, noAssert) {
+  offset = offset | 0;
+  byteLength = byteLength | 0;
+  if (!noAssert) {
+    checkOffset(offset, byteLength, this.length);
+  }
+
+  var val = this[offset + --byteLength];
+  var mul = 1;
+  while (byteLength > 0 && (mul *= 0x100)) {
+    val += this[offset + --byteLength] * mul;
+  }
+
+  return val;
+};
+
+Buffer.prototype.readUInt8 = function readUInt8(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length);
+  return this[offset];
+};
+
+Buffer.prototype.readUInt16LE = function readUInt16LE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length);
+  return this[offset] | this[offset + 1] << 8;
+};
+
+Buffer.prototype.readUInt16BE = function readUInt16BE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length);
+  return this[offset] << 8 | this[offset + 1];
+};
+
+Buffer.prototype.readUInt32LE = function readUInt32LE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length);
+
+  return (this[offset] | this[offset + 1] << 8 | this[offset + 2] << 16) + this[offset + 3] * 0x1000000;
+};
+
+Buffer.prototype.readUInt32BE = function readUInt32BE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length);
+
+  return this[offset] * 0x1000000 + (this[offset + 1] << 16 | this[offset + 2] << 8 | this[offset + 3]);
+};
+
+Buffer.prototype.readIntLE = function readIntLE(offset, byteLength, noAssert) {
+  offset = offset | 0;
+  byteLength = byteLength | 0;
+  if (!noAssert) checkOffset(offset, byteLength, this.length);
+
+  var val = this[offset];
+  var mul = 1;
+  var i = 0;
+  while (++i < byteLength && (mul *= 0x100)) {
+    val += this[offset + i] * mul;
+  }
+  mul *= 0x80;
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength);
+
+  return val;
+};
+
+Buffer.prototype.readIntBE = function readIntBE(offset, byteLength, noAssert) {
+  offset = offset | 0;
+  byteLength = byteLength | 0;
+  if (!noAssert) checkOffset(offset, byteLength, this.length);
+
+  var i = byteLength;
+  var mul = 1;
+  var val = this[offset + --i];
+  while (i > 0 && (mul *= 0x100)) {
+    val += this[offset + --i] * mul;
+  }
+  mul *= 0x80;
+
+  if (val >= mul) val -= Math.pow(2, 8 * byteLength);
+
+  return val;
+};
+
+Buffer.prototype.readInt8 = function readInt8(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 1, this.length);
+  if (!(this[offset] & 0x80)) return this[offset];
+  return (0xff - this[offset] + 1) * -1;
+};
+
+Buffer.prototype.readInt16LE = function readInt16LE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length);
+  var val = this[offset] | this[offset + 1] << 8;
+  return val & 0x8000 ? val | 0xFFFF0000 : val;
+};
+
+Buffer.prototype.readInt16BE = function readInt16BE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 2, this.length);
+  var val = this[offset + 1] | this[offset] << 8;
+  return val & 0x8000 ? val | 0xFFFF0000 : val;
+};
+
+Buffer.prototype.readInt32LE = function readInt32LE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length);
+
+  return this[offset] | this[offset + 1] << 8 | this[offset + 2] << 16 | this[offset + 3] << 24;
+};
+
+Buffer.prototype.readInt32BE = function readInt32BE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length);
+
+  return this[offset] << 24 | this[offset + 1] << 16 | this[offset + 2] << 8 | this[offset + 3];
+};
+
+Buffer.prototype.readFloatLE = function readFloatLE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length);
+  return ieee754.read(this, offset, true, 23, 4);
+};
+
+Buffer.prototype.readFloatBE = function readFloatBE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 4, this.length);
+  return ieee754.read(this, offset, false, 23, 4);
+};
+
+Buffer.prototype.readDoubleLE = function readDoubleLE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length);
+  return ieee754.read(this, offset, true, 52, 8);
+};
+
+Buffer.prototype.readDoubleBE = function readDoubleBE(offset, noAssert) {
+  if (!noAssert) checkOffset(offset, 8, this.length);
+  return ieee754.read(this, offset, false, 52, 8);
+};
+
+function checkInt(buf, value, offset, ext, max, min) {
+  if (!Buffer.isBuffer(buf)) throw new TypeError('"buffer" argument must be a Buffer instance');
+  if (value > max || value < min) throw new RangeError('"value" argument is out of bounds');
+  if (offset + ext > buf.length) throw new RangeError('Index out of range');
+}
+
+Buffer.prototype.writeUIntLE = function writeUIntLE(value, offset, byteLength, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  byteLength = byteLength | 0;
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1;
+    checkInt(this, value, offset, byteLength, maxBytes, 0);
+  }
+
+  var mul = 1;
+  var i = 0;
+  this[offset] = value & 0xFF;
+  while (++i < byteLength && (mul *= 0x100)) {
+    this[offset + i] = value / mul & 0xFF;
+  }
+
+  return offset + byteLength;
+};
+
+Buffer.prototype.writeUIntBE = function writeUIntBE(value, offset, byteLength, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  byteLength = byteLength | 0;
+  if (!noAssert) {
+    var maxBytes = Math.pow(2, 8 * byteLength) - 1;
+    checkInt(this, value, offset, byteLength, maxBytes, 0);
+  }
+
+  var i = byteLength - 1;
+  var mul = 1;
+  this[offset + i] = value & 0xFF;
+  while (--i >= 0 && (mul *= 0x100)) {
+    this[offset + i] = value / mul & 0xFF;
+  }
+
+  return offset + byteLength;
+};
+
+Buffer.prototype.writeUInt8 = function writeUInt8(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 1, 0xff, 0);
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value);
+  this[offset] = value & 0xff;
+  return offset + 1;
+};
+
+function objectWriteUInt16(buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffff + value + 1;
+  for (var i = 0, j = Math.min(buf.length - offset, 2); i < j; ++i) {
+    buf[offset + i] = (value & 0xff << 8 * (littleEndian ? i : 1 - i)) >>> (littleEndian ? i : 1 - i) * 8;
+  }
+}
+
+Buffer.prototype.writeUInt16LE = function writeUInt16LE(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0);
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value & 0xff;
+    this[offset + 1] = value >>> 8;
+  } else {
+    objectWriteUInt16(this, value, offset, true);
+  }
+  return offset + 2;
+};
+
+Buffer.prototype.writeUInt16BE = function writeUInt16BE(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 2, 0xffff, 0);
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value >>> 8;
+    this[offset + 1] = value & 0xff;
+  } else {
+    objectWriteUInt16(this, value, offset, false);
+  }
+  return offset + 2;
+};
+
+function objectWriteUInt32(buf, value, offset, littleEndian) {
+  if (value < 0) value = 0xffffffff + value + 1;
+  for (var i = 0, j = Math.min(buf.length - offset, 4); i < j; ++i) {
+    buf[offset + i] = value >>> (littleEndian ? i : 3 - i) * 8 & 0xff;
+  }
+}
+
+Buffer.prototype.writeUInt32LE = function writeUInt32LE(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0);
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset + 3] = value >>> 24;
+    this[offset + 2] = value >>> 16;
+    this[offset + 1] = value >>> 8;
+    this[offset] = value & 0xff;
+  } else {
+    objectWriteUInt32(this, value, offset, true);
+  }
+  return offset + 4;
+};
+
+Buffer.prototype.writeUInt32BE = function writeUInt32BE(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 4, 0xffffffff, 0);
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value >>> 24;
+    this[offset + 1] = value >>> 16;
+    this[offset + 2] = value >>> 8;
+    this[offset + 3] = value & 0xff;
+  } else {
+    objectWriteUInt32(this, value, offset, false);
+  }
+  return offset + 4;
+};
+
+Buffer.prototype.writeIntLE = function writeIntLE(value, offset, byteLength, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1);
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit);
+  }
+
+  var i = 0;
+  var mul = 1;
+  var sub = 0;
+  this[offset] = value & 0xFF;
+  while (++i < byteLength && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i - 1] !== 0) {
+      sub = 1;
+    }
+    this[offset + i] = (value / mul >> 0) - sub & 0xFF;
+  }
+
+  return offset + byteLength;
+};
+
+Buffer.prototype.writeIntBE = function writeIntBE(value, offset, byteLength, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) {
+    var limit = Math.pow(2, 8 * byteLength - 1);
+
+    checkInt(this, value, offset, byteLength, limit - 1, -limit);
+  }
+
+  var i = byteLength - 1;
+  var mul = 1;
+  var sub = 0;
+  this[offset + i] = value & 0xFF;
+  while (--i >= 0 && (mul *= 0x100)) {
+    if (value < 0 && sub === 0 && this[offset + i + 1] !== 0) {
+      sub = 1;
+    }
+    this[offset + i] = (value / mul >> 0) - sub & 0xFF;
+  }
+
+  return offset + byteLength;
+};
+
+Buffer.prototype.writeInt8 = function writeInt8(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 1, 0x7f, -0x80);
+  if (!Buffer.TYPED_ARRAY_SUPPORT) value = Math.floor(value);
+  if (value < 0) value = 0xff + value + 1;
+  this[offset] = value & 0xff;
+  return offset + 1;
+};
+
+Buffer.prototype.writeInt16LE = function writeInt16LE(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000);
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value & 0xff;
+    this[offset + 1] = value >>> 8;
+  } else {
+    objectWriteUInt16(this, value, offset, true);
+  }
+  return offset + 2;
+};
+
+Buffer.prototype.writeInt16BE = function writeInt16BE(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 2, 0x7fff, -0x8000);
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value >>> 8;
+    this[offset + 1] = value & 0xff;
+  } else {
+    objectWriteUInt16(this, value, offset, false);
+  }
+  return offset + 2;
+};
+
+Buffer.prototype.writeInt32LE = function writeInt32LE(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000);
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value & 0xff;
+    this[offset + 1] = value >>> 8;
+    this[offset + 2] = value >>> 16;
+    this[offset + 3] = value >>> 24;
+  } else {
+    objectWriteUInt32(this, value, offset, true);
+  }
+  return offset + 4;
+};
+
+Buffer.prototype.writeInt32BE = function writeInt32BE(value, offset, noAssert) {
+  value = +value;
+  offset = offset | 0;
+  if (!noAssert) checkInt(this, value, offset, 4, 0x7fffffff, -0x80000000);
+  if (value < 0) value = 0xffffffff + value + 1;
+  if (Buffer.TYPED_ARRAY_SUPPORT) {
+    this[offset] = value >>> 24;
+    this[offset + 1] = value >>> 16;
+    this[offset + 2] = value >>> 8;
+    this[offset + 3] = value & 0xff;
+  } else {
+    objectWriteUInt32(this, value, offset, false);
+  }
+  return offset + 4;
+};
+
+function checkIEEE754(buf, value, offset, ext, max, min) {
+  if (offset + ext > buf.length) throw new RangeError('Index out of range');
+  if (offset < 0) throw new RangeError('Index out of range');
+}
+
+function writeFloat(buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 4, 3.4028234663852886e+38, -3.4028234663852886e+38);
+  }
+  ieee754.write(buf, value, offset, littleEndian, 23, 4);
+  return offset + 4;
+}
+
+Buffer.prototype.writeFloatLE = function writeFloatLE(value, offset, noAssert) {
+  return writeFloat(this, value, offset, true, noAssert);
+};
+
+Buffer.prototype.writeFloatBE = function writeFloatBE(value, offset, noAssert) {
+  return writeFloat(this, value, offset, false, noAssert);
+};
+
+function writeDouble(buf, value, offset, littleEndian, noAssert) {
+  if (!noAssert) {
+    checkIEEE754(buf, value, offset, 8, 1.7976931348623157E+308, -1.7976931348623157E+308);
+  }
+  ieee754.write(buf, value, offset, littleEndian, 52, 8);
+  return offset + 8;
+}
+
+Buffer.prototype.writeDoubleLE = function writeDoubleLE(value, offset, noAssert) {
+  return writeDouble(this, value, offset, true, noAssert);
+};
+
+Buffer.prototype.writeDoubleBE = function writeDoubleBE(value, offset, noAssert) {
+  return writeDouble(this, value, offset, false, noAssert);
+};
+
+// copy(targetBuffer, targetStart=0, sourceStart=0, sourceEnd=buffer.length)
+Buffer.prototype.copy = function copy(target, targetStart, start, end) {
+  if (!start) start = 0;
+  if (!end && end !== 0) end = this.length;
+  if (targetStart >= target.length) targetStart = target.length;
+  if (!targetStart) targetStart = 0;
+  if (end > 0 && end < start) end = start;
+
+  // Copy 0 bytes; we're done
+  if (end === start) return 0;
+  if (target.length === 0 || this.length === 0) return 0;
+
+  // Fatal error conditions
+  if (targetStart < 0) {
+    throw new RangeError('targetStart out of bounds');
+  }
+  if (start < 0 || start >= this.length) throw new RangeError('sourceStart out of bounds');
+  if (end < 0) throw new RangeError('sourceEnd out of bounds');
+
+  // Are we oob?
+  if (end > this.length) end = this.length;
+  if (target.length - targetStart < end - start) {
+    end = target.length - targetStart + start;
+  }
+
+  var len = end - start;
+  var i;
+
+  if (this === target && start < targetStart && targetStart < end) {
+    // descending copy from end
+    for (i = len - 1; i >= 0; --i) {
+      target[i + targetStart] = this[i + start];
+    }
+  } else if (len < 1000 || !Buffer.TYPED_ARRAY_SUPPORT) {
+    // ascending copy from start
+    for (i = 0; i < len; ++i) {
+      target[i + targetStart] = this[i + start];
+    }
+  } else {
+    Uint8Array.prototype.set.call(target, this.subarray(start, start + len), targetStart);
+  }
+
+  return len;
+};
+
+// Usage:
+//    buffer.fill(number[, offset[, end]])
+//    buffer.fill(buffer[, offset[, end]])
+//    buffer.fill(string[, offset[, end]][, encoding])
+Buffer.prototype.fill = function fill(val, start, end, encoding) {
+  // Handle string cases:
+  if (typeof val === 'string') {
+    if (typeof start === 'string') {
+      encoding = start;
+      start = 0;
+      end = this.length;
+    } else if (typeof end === 'string') {
+      encoding = end;
+      end = this.length;
+    }
+    if (val.length === 1) {
+      var code = val.charCodeAt(0);
+      if (code < 256) {
+        val = code;
+      }
+    }
+    if (encoding !== undefined && typeof encoding !== 'string') {
+      throw new TypeError('encoding must be a string');
+    }
+    if (typeof encoding === 'string' && !Buffer.isEncoding(encoding)) {
+      throw new TypeError('Unknown encoding: ' + encoding);
+    }
+  } else if (typeof val === 'number') {
+    val = val & 255;
+  }
+
+  // Invalid ranges are not set to a default, so can range check early.
+  if (start < 0 || this.length < start || this.length < end) {
+    throw new RangeError('Out of range index');
+  }
+
+  if (end <= start) {
+    return this;
+  }
+
+  start = start >>> 0;
+  end = end === undefined ? this.length : end >>> 0;
+
+  if (!val) val = 0;
+
+  var i;
+  if (typeof val === 'number') {
+    for (i = start; i < end; ++i) {
+      this[i] = val;
+    }
+  } else {
+    var bytes = Buffer.isBuffer(val) ? val : utf8ToBytes(new Buffer(val, encoding).toString());
+    var len = bytes.length;
+    for (i = 0; i < end - start; ++i) {
+      this[i + start] = bytes[i % len];
+    }
+  }
+
+  return this;
+};
+
+// HELPER FUNCTIONS
+// ================
+
+var INVALID_BASE64_RE = /[^+\/0-9A-Za-z-_]/g;
+
+function base64clean(str) {
+  // Node strips out invalid characters like \n and \t from the string, base64-js does not
+  str = stringtrim(str).replace(INVALID_BASE64_RE, '');
+  // Node converts strings with length < 2 to ''
+  if (str.length < 2) return '';
+  // Node allows for non-padded base64 strings (missing trailing ===), base64-js does not
+  while (str.length % 4 !== 0) {
+    str = str + '=';
+  }
+  return str;
+}
+
+function stringtrim(str) {
+  if (str.trim) return str.trim();
+  return str.replace(/^\s+|\s+$/g, '');
+}
+
+function toHex(n) {
+  if (n < 16) return '0' + n.toString(16);
+  return n.toString(16);
+}
+
+function utf8ToBytes(string, units) {
+  units = units || Infinity;
+  var codePoint;
+  var length = string.length;
+  var leadSurrogate = null;
+  var bytes = [];
+
+  for (var i = 0; i < length; ++i) {
+    codePoint = string.charCodeAt(i);
+
+    // is surrogate component
+    if (codePoint > 0xD7FF && codePoint < 0xE000) {
+      // last char was a lead
+      if (!leadSurrogate) {
+        // no lead yet
+        if (codePoint > 0xDBFF) {
+          // unexpected trail
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
+          continue;
+        } else if (i + 1 === length) {
+          // unpaired lead
+          if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
+          continue;
+        }
+
+        // valid lead
+        leadSurrogate = codePoint;
+
+        continue;
+      }
+
+      // 2 leads in a row
+      if (codePoint < 0xDC00) {
+        if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
+        leadSurrogate = codePoint;
+        continue;
+      }
+
+      // valid surrogate pair
+      codePoint = (leadSurrogate - 0xD800 << 10 | codePoint - 0xDC00) + 0x10000;
+    } else if (leadSurrogate) {
+      // valid bmp char, but last char was a lead
+      if ((units -= 3) > -1) bytes.push(0xEF, 0xBF, 0xBD);
+    }
+
+    leadSurrogate = null;
+
+    // encode utf8
+    if (codePoint < 0x80) {
+      if ((units -= 1) < 0) break;
+      bytes.push(codePoint);
+    } else if (codePoint < 0x800) {
+      if ((units -= 2) < 0) break;
+      bytes.push(codePoint >> 0x6 | 0xC0, codePoint & 0x3F | 0x80);
+    } else if (codePoint < 0x10000) {
+      if ((units -= 3) < 0) break;
+      bytes.push(codePoint >> 0xC | 0xE0, codePoint >> 0x6 & 0x3F | 0x80, codePoint & 0x3F | 0x80);
+    } else if (codePoint < 0x110000) {
+      if ((units -= 4) < 0) break;
+      bytes.push(codePoint >> 0x12 | 0xF0, codePoint >> 0xC & 0x3F | 0x80, codePoint >> 0x6 & 0x3F | 0x80, codePoint & 0x3F | 0x80);
+    } else {
+      throw new Error('Invalid code point');
+    }
+  }
+
+  return bytes;
+}
+
+function asciiToBytes(str) {
+  var byteArray = [];
+  for (var i = 0; i < str.length; ++i) {
+    // Node's code seems to be doing this and not & 0x7F..
+    byteArray.push(str.charCodeAt(i) & 0xFF);
+  }
+  return byteArray;
+}
+
+function utf16leToBytes(str, units) {
+  var c, hi, lo;
+  var byteArray = [];
+  for (var i = 0; i < str.length; ++i) {
+    if ((units -= 2) < 0) break;
+
+    c = str.charCodeAt(i);
+    hi = c >> 8;
+    lo = c % 256;
+    byteArray.push(lo);
+    byteArray.push(hi);
+  }
+
+  return byteArray;
+}
+
+function base64ToBytes(str) {
+  return base64.toByteArray(base64clean(str));
+}
+
+function blitBuffer(src, dst, offset, length) {
+  for (var i = 0; i < length; ++i) {
+    if (i + offset >= dst.length || i >= src.length) break;
+    dst[i + offset] = src[i];
+  }
+  return i;
+}
+
+function isnan(val) {
+  return val !== val; // eslint-disable-line no-self-compare
+}
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
                         if (offset < elem.sets[i].begin || offset >= elem.sets[i].end) continue;
 
-                        isd_element.styleAttrs[elem.sets[i].qname] = elem.sets[i].value;
-                }
+/***/ "./node_modules/codem-isoboxer/dist/iso_boxer.js":
+/*!*******************************************************!*\
+  !*** ./node_modules/codem-isoboxer/dist/iso_boxer.js ***!
+  \*******************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
                 /* 
                  * keep track of specified styling attributes so that we
@@ -50604,443 +54451,1303 @@ module.exports = function equal(a, b) {
 
                 var spec_attr = {};
 
-                for (var qname in isd_element.styleAttrs) {
-
-                        spec_attr[qname] = true;
-
-                        /* special rule for tts:writingMode (section 7.29.1 of XSL)
-                         * direction is set consistently with writingMode only
-                         * if writingMode sets inline-direction to LTR or RTL  
-                         */
-
-                        if (qname === imscStyles.byName.writingMode.qname && !(imscStyles.byName.direction.qname in isd_element.styleAttrs)) {
-
-                                var wm = isd_element.styleAttrs[qname];
-
-                                if (wm === "lrtb" || wm === "lr") {
-
-                                        isd_element.styleAttrs[imscStyles.byName.direction.qname] = "ltr";
-                                } else if (wm === "rltb" || wm === "rl") {
-
-                                        isd_element.styleAttrs[imscStyles.byName.direction.qname] = "rtl";
-                                }
-                        }
-                }
-
-                /* inherited styling */
-
-                if (parent !== null) {
-
-                        for (var j in imscStyles.all) {
-
-                                var sa = imscStyles.all[j];
-
-                                /* textDecoration has special inheritance rules */
-
-                                if (sa.qname === imscStyles.byName.textDecoration.qname) {
-
-                                        /* handle both textDecoration inheritance and specification */
-
-                                        var ps = parent.styleAttrs[sa.qname];
-                                        var es = isd_element.styleAttrs[sa.qname];
-                                        var outs = [];
-
-                                        if (es === undefined) {
-
-                                                outs = ps;
-                                        } else if (es.indexOf("none") === -1) {
-
-                                                if (es.indexOf("noUnderline") === -1 && ps.indexOf("underline") !== -1 || es.indexOf("underline") !== -1) {
-
-                                                        outs.push("underline");
-                                                }
-
-                                                if (es.indexOf("noLineThrough") === -1 && ps.indexOf("lineThrough") !== -1 || es.indexOf("lineThrough") !== -1) {
-
-                                                        outs.push("lineThrough");
-                                                }
-
-                                                if (es.indexOf("noOverline") === -1 && ps.indexOf("overline") !== -1 || es.indexOf("overline") !== -1) {
-
-                                                        outs.push("overline");
-                                                }
-                                        } else {
-
-                                                outs.push("none");
-                                        }
-
-                                        isd_element.styleAttrs[sa.qname] = outs;
-                                } else if (sa.inherit && sa.qname in parent.styleAttrs && !(sa.qname in isd_element.styleAttrs)) {
-
-                                        isd_element.styleAttrs[sa.qname] = parent.styleAttrs[sa.qname];
-                                }
-                        }
-                }
-
-                /* initial value styling */
-
-                for (var k in imscStyles.all) {
-
-                        var ivs = imscStyles.all[k];
-
-                        /* skip if value is already specified */
-
-                        if (ivs.qname in isd_element.styleAttrs) continue;
-
-                        /* apply initial value to elements other than region only if non-inherited */
-
-                        if (isd_element.kind === 'region' || ivs.inherit === false && ivs.initial !== null) {
-
-                                isd_element.styleAttrs[ivs.qname] = ivs.parse(ivs.initial);
-
-                                /* keep track of the style as specified */
-
-                                spec_attr[ivs.qname] = true;
-                        }
-                }
-
-                /* compute styles (only for non-inherited styles) */
-                /* TODO: get rid of spec_attr */
-
-                for (var z in imscStyles.all) {
-
-                        var cs = imscStyles.all[z];
-
-                        if (!(cs.qname in spec_attr)) continue;
-
-                        if (cs.compute !== null) {
-
-                                var cstyle = cs.compute(
-                                /*doc, parent, element, attr, context*/
-                                doc, parent, isd_element, isd_element.styleAttrs[cs.qname], context);
-
-                                if (cstyle !== null) {
-                                        isd_element.styleAttrs[cs.qname] = cstyle;
-                                } else {
-                                        reportError(errorHandler, "Style '" + cs.qname + "' on element '" + isd_element.kind + "' cannot be computed");
-                                }
-                        }
-                }
-
-                /* prune if tts:display is none */
-
-                if (isd_element.styleAttrs[imscStyles.byName.display.qname] === "none") return null;
-
-                /* process contents of the element */
-
-                var contents;
-
-                if (parent === null) {
-
-                        /* we are processing the region */
-
-                        if (body === null) {
-
-                                /* if there is no body, still process the region but with empty content */
-
-                                contents = [];
-                        } else {
-
-                                /*use the body element as contents */
-
-                                contents = [body];
-                        }
-                } else if ('contents' in elem) {
-
-                        contents = elem.contents;
-                }
-
-                for (var x in contents) {
-
-                        var c = isdProcessContentElement(doc, offset, region, body, isd_element, associated_region_id, contents[x], errorHandler, context);
-
-                        /* 
-                         * keep child element only if they are non-null and their region match 
-                         * the region of this element
-                         */
-
-                        if (c !== null) {
-
-                                isd_element.contents.push(c.element);
-                        }
-                }
-
-                /* compute used value of lineHeight="normal" */
-
-                /*        if (isd_element.styleAttrs[imscStyles.byName.lineHeight.qname] === "normal"  ) {
-                 
-                 isd_element.styleAttrs[imscStyles.byName.lineHeight.qname] =
-                 isd_element.styleAttrs[imscStyles.byName.fontSize.qname] * 1.2;
-                 
-                 }
-                 */
-
-                /* remove styles that are not applicable */
-
-                for (var qnameb in isd_element.styleAttrs) {
-                        var da = imscStyles.byQName[qnameb];
-
-                        if (da.applies.indexOf(isd_element.kind) === -1) {
-                                delete isd_element.styleAttrs[qnameb];
-                        }
-                }
-
-                /* collapse white space if space is "default" */
-
-                if (isd_element.kind === 'span' && isd_element.text && isd_element.space === "default") {
-
-                        var trimmedspan = isd_element.text.replace(/\s+/g, ' ');
-
-                        isd_element.text = trimmedspan;
-                }
-
-                /* trim whitespace around explicit line breaks */
-
-                if (isd_element.kind === 'p') {
-
-                        var elist = [];
-
-                        constructSpanList(isd_element, elist);
-
-                        var l = 0;
-
-                        var state = "after_br";
-                        var br_pos = 0;
-
-                        while (true) {
-
-                                if (state === "after_br") {
-
-                                        if (l >= elist.length || elist[l].kind === "br") {
-
-                                                state = "before_br";
-                                                br_pos = l;
-                                                l--;
-                                        } else {
-
-                                                if (elist[l].space !== "preserve") {
-
-                                                        elist[l].text = elist[l].text.replace(/^\s+/g, '');
-                                                }
-
-                                                if (elist[l].text.length > 0) {
-
-                                                        state = "looking_br";
-                                                        l++;
-                                                } else {
-
-                                                        elist.splice(l, 1);
-                                                }
-                                        }
-                                } else if (state === "before_br") {
-
-                                        if (l < 0 || elist[l].kind === "br") {
-
-                                                state = "after_br";
-                                                l = br_pos + 1;
-
-                                                if (l >= elist.length) break;
-                                        } else {
-
-                                                if (elist[l].space !== "preserve") {
-
-                                                        elist[l].text = elist[l].text.replace(/\s+$/g, '');
-                                                }
-
-                                                if (elist[l].text.length > 0) {
-
-                                                        state = "after_br";
-                                                        l = br_pos + 1;
-
-                                                        if (l >= elist.length) break;
-                                                } else {
-
-                                                        elist.splice(l, 1);
-                                                        l--;
-                                                }
-                                        }
-                                } else {
-
-                                        if (l >= elist.length || elist[l].kind === "br") {
-
-                                                state = "before_br";
-                                                br_pos = l;
-                                                l--;
-                                        } else {
-
-                                                l++;
-                                        }
-                                }
-                        }
-
-                        pruneEmptySpans(isd_element);
-                }
-
-                /* keep element if:
-                 * * contains a background image
-                 * * <br/>
-                 * * if there are children
-                 * * if <span> and has text
-                 * * if region and showBackground = always
-                 */
-
-                if (isd_element.kind === 'div' && imscStyles.byName.backgroundImage.qname in isd_element.styleAttrs || isd_element.kind === 'br' || 'contents' in isd_element && isd_element.contents.length > 0 || isd_element.kind === 'span' && isd_element.text !== null || isd_element.kind === 'region' && isd_element.styleAttrs[imscStyles.byName.showBackground.qname] === 'always') {
-
-                        return {
-                                region_id: associated_region_id,
-                                element: isd_element
-                        };
-                }
-
-                return null;
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+/*! codem-isoboxer v0.3.6 https://github.com/madebyhiro/codem-isoboxer/blob/master/LICENSE.txt */
+var ISOBoxer = {};
+
+ISOBoxer.parseBuffer = function (arrayBuffer) {
+  return new ISOFile(arrayBuffer).parse();
+};
+
+ISOBoxer.addBoxProcessor = function (type, parser) {
+  if (typeof type !== 'string' || typeof parser !== 'function') {
+    return;
+  }
+  ISOBox.prototype._boxProcessors[type] = parser;
+};
+
+ISOBoxer.createFile = function () {
+  return new ISOFile();
+};
+
+// See ISOBoxer.append() for 'pos' parameter syntax
+ISOBoxer.createBox = function (type, parent, pos) {
+  var newBox = ISOBox.create(type);
+  if (parent) {
+    parent.append(newBox, pos);
+  }
+  return newBox;
+};
+
+// See ISOBoxer.append() for 'pos' parameter syntax
+ISOBoxer.createFullBox = function (type, parent, pos) {
+  var newBox = ISOBoxer.createBox(type, parent, pos);
+  newBox.version = 0;
+  newBox.flags = 0;
+  return newBox;
+};
+
+ISOBoxer.Utils = {};
+ISOBoxer.Utils.dataViewToString = function (dataView, encoding) {
+  var impliedEncoding = encoding || 'utf-8';
+  if (typeof TextDecoder !== 'undefined') {
+    return new TextDecoder(impliedEncoding).decode(dataView);
+  }
+  var a = [];
+  var i = 0;
+
+  if (impliedEncoding === 'utf-8') {
+    /* The following algorithm is essentially a rewrite of the UTF8.decode at
+    http://bannister.us/weblog/2007/simple-base64-encodedecode-javascript/
+    */
+
+    while (i < dataView.byteLength) {
+      var c = dataView.getUint8(i++);
+      if (c < 0x80) {
+        // 1-byte character (7 bits)
+      } else if (c < 0xe0) {
+        // 2-byte character (11 bits)
+        c = (c & 0x1f) << 6;
+        c |= dataView.getUint8(i++) & 0x3f;
+      } else if (c < 0xf0) {
+        // 3-byte character (16 bits)
+        c = (c & 0xf) << 12;
+        c |= (dataView.getUint8(i++) & 0x3f) << 6;
+        c |= dataView.getUint8(i++) & 0x3f;
+      } else {
+        // 4-byte character (21 bits)
+        c = (c & 0x7) << 18;
+        c |= (dataView.getUint8(i++) & 0x3f) << 12;
+        c |= (dataView.getUint8(i++) & 0x3f) << 6;
+        c |= dataView.getUint8(i++) & 0x3f;
+      }
+      a.push(String.fromCharCode(c));
+    }
+  } else {
+    // Just map byte-by-byte (probably wrong)
+    while (i < dataView.byteLength) {
+      a.push(String.fromCharCode(dataView.getUint8(i++)));
+    }
+  }
+  return a.join('');
+};
+
+ISOBoxer.Utils.utf8ToByteArray = function (string) {
+  // Only UTF-8 encoding is supported by TextEncoder
+  var u, i;
+  if (typeof TextEncoder !== 'undefined') {
+    u = new TextEncoder().encode(string);
+  } else {
+    u = [];
+    for (i = 0; i < string.length; ++i) {
+      var c = string.charCodeAt(i);
+      if (c < 0x80) {
+        u.push(c);
+      } else if (c < 0x800) {
+        u.push(0xC0 | c >> 6);
+        u.push(0x80 | 63 & c);
+      } else if (c < 0x10000) {
+        u.push(0xE0 | c >> 12);
+        u.push(0x80 | 63 & c >> 6);
+        u.push(0x80 | 63 & c);
+      } else {
+        u.push(0xF0 | c >> 18);
+        u.push(0x80 | 63 & c >> 12);
+        u.push(0x80 | 63 & c >> 6);
+        u.push(0x80 | 63 & c);
+      }
+    }
+  }
+  return u;
+};
+
+// Method to append a box in the list of child boxes
+// The 'pos' parameter can be either:
+//   - (number) a position index at which to insert the new box
+//   - (string) the type of the box after which to insert the new box
+//   - (object) the box after which to insert the new box
+ISOBoxer.Utils.appendBox = function (parent, box, pos) {
+  box._offset = parent._cursor.offset;
+  box._root = parent._root ? parent._root : parent;
+  box._raw = parent._raw;
+  box._parent = parent;
+
+  if (pos === -1) {
+    // The new box is a sub-box of the parent but not added in boxes array,
+    // for example when the new box is set as an entry (see dref and stsd for example)
+    return;
+  }
+
+  if (pos === undefined || pos === null) {
+    parent.boxes.push(box);
+    return;
+  }
+
+  var index = -1,
+      type;
+
+  if (typeof pos === "number") {
+    index = pos;
+  } else {
+    if (typeof pos === "string") {
+      type = pos;
+    } else if ((typeof pos === 'undefined' ? 'undefined' : _typeof(pos)) === "object" && pos.type) {
+      type = pos.type;
+    } else {
+      parent.boxes.push(box);
+      return;
+    }
+
+    for (var i = 0; i < parent.boxes.length; i++) {
+      if (type === parent.boxes[i].type) {
+        index = i + 1;
+        break;
+      }
+    }
+  }
+  parent.boxes.splice(index, 0, box);
+};
+
+if (true) {
+  exports.parseBuffer = ISOBoxer.parseBuffer;
+  exports.addBoxProcessor = ISOBoxer.addBoxProcessor;
+  exports.createFile = ISOBoxer.createFile;
+  exports.createBox = ISOBoxer.createBox;
+  exports.createFullBox = ISOBoxer.createFullBox;
+  exports.Utils = ISOBoxer.Utils;
+}
+
+ISOBoxer.Cursor = function (initialOffset) {
+  this.offset = typeof initialOffset == 'undefined' ? 0 : initialOffset;
+};
+
+var ISOFile = function ISOFile(arrayBuffer) {
+  this._cursor = new ISOBoxer.Cursor();
+  this.boxes = [];
+  if (arrayBuffer) {
+    this._raw = new DataView(arrayBuffer);
+  }
+};
+
+ISOFile.prototype.fetch = function (type) {
+  var result = this.fetchAll(type, true);
+  return result.length ? result[0] : null;
+};
+
+ISOFile.prototype.fetchAll = function (type, returnEarly) {
+  var result = [];
+  ISOFile._sweep.call(this, type, result, returnEarly);
+  return result;
+};
+
+ISOFile.prototype.parse = function () {
+  this._cursor.offset = 0;
+  this.boxes = [];
+  while (this._cursor.offset < this._raw.byteLength) {
+    var box = ISOBox.parse(this);
+
+    // Box could not be parsed
+    if (typeof box.type === 'undefined') break;
+
+    this.boxes.push(box);
+  }
+  return this;
+};
+
+ISOFile._sweep = function (type, result, returnEarly) {
+  if (this.type && this.type == type) result.push(this);
+  for (var box in this.boxes) {
+    if (result.length && returnEarly) return;
+    ISOFile._sweep.call(this.boxes[box], type, result, returnEarly);
+  }
+};
+
+ISOFile.prototype.write = function () {
+
+  var length = 0,
+      i;
+
+  for (i = 0; i < this.boxes.length; i++) {
+    length += this.boxes[i].getLength(false);
+  }
+
+  var bytes = new Uint8Array(length);
+  this._rawo = new DataView(bytes.buffer);
+  this.bytes = bytes;
+  this._cursor.offset = 0;
+
+  for (i = 0; i < this.boxes.length; i++) {
+    this.boxes[i].write();
+  }
+
+  return bytes.buffer;
+};
+
+ISOFile.prototype.append = function (box, pos) {
+  ISOBoxer.Utils.appendBox(this, box, pos);
+};
+var ISOBox = function ISOBox() {
+  this._cursor = new ISOBoxer.Cursor();
+};
+
+ISOBox.parse = function (parent) {
+  var newBox = new ISOBox();
+  newBox._offset = parent._cursor.offset;
+  newBox._root = parent._root ? parent._root : parent;
+  newBox._raw = parent._raw;
+  newBox._parent = parent;
+  newBox._parseBox();
+  parent._cursor.offset = newBox._raw.byteOffset + newBox._raw.byteLength;
+  return newBox;
+};
+
+ISOBox.create = function (type) {
+  var newBox = new ISOBox();
+  newBox.type = type;
+  newBox.boxes = [];
+  return newBox;
+};
+
+ISOBox.prototype._boxContainers = ['dinf', 'edts', 'mdia', 'meco', 'mfra', 'minf', 'moof', 'moov', 'mvex', 'stbl', 'strk', 'traf', 'trak', 'tref', 'udta', 'vttc', 'sinf', 'schi', 'encv', 'enca'];
+
+ISOBox.prototype._boxProcessors = {};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Generic read/write functions
+
+ISOBox.prototype._procField = function (name, type, size) {
+  if (this._parsing) {
+    this[name] = this._readField(type, size);
+  } else {
+    this._writeField(type, size, this[name]);
+  }
+};
+
+ISOBox.prototype._procFieldArray = function (name, length, type, size) {
+  var i;
+  if (this._parsing) {
+    this[name] = [];
+    for (i = 0; i < length; i++) {
+      this[name][i] = this._readField(type, size);
+    }
+  } else {
+    for (i = 0; i < this[name].length; i++) {
+      this._writeField(type, size, this[name][i]);
+    }
+  }
+};
+
+ISOBox.prototype._procFullBox = function () {
+  this._procField('version', 'uint', 8);
+  this._procField('flags', 'uint', 24);
+};
+
+ISOBox.prototype._procEntries = function (name, length, fn) {
+  var i;
+  if (this._parsing) {
+    this[name] = [];
+    for (i = 0; i < length; i++) {
+      this[name].push({});
+      fn.call(this, this[name][i]);
+    }
+  } else {
+    for (i = 0; i < length; i++) {
+      fn.call(this, this[name][i]);
+    }
+  }
+};
+
+ISOBox.prototype._procSubEntries = function (entry, name, length, fn) {
+  var i;
+  if (this._parsing) {
+    entry[name] = [];
+    for (i = 0; i < length; i++) {
+      entry[name].push({});
+      fn.call(this, entry[name][i]);
+    }
+  } else {
+    for (i = 0; i < length; i++) {
+      fn.call(this, entry[name][i]);
+    }
+  }
+};
+
+ISOBox.prototype._procEntryField = function (entry, name, type, size) {
+  if (this._parsing) {
+    entry[name] = this._readField(type, size);
+  } else {
+    this._writeField(type, size, entry[name]);
+  }
+};
+
+ISOBox.prototype._procSubBoxes = function (name, length) {
+  var i;
+  if (this._parsing) {
+    this[name] = [];
+    for (i = 0; i < length; i++) {
+      this[name].push(ISOBox.parse(this));
+    }
+  } else {
+    for (i = 0; i < length; i++) {
+      if (this._rawo) {
+        this[name][i].write();
+      } else {
+        this.size += this[name][i].getLength();
+      }
+    }
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Read/parse functions
+
+ISOBox.prototype._readField = function (type, size) {
+  switch (type) {
+    case 'uint':
+      return this._readUint(size);
+    case 'int':
+      return this._readInt(size);
+    case 'template':
+      return this._readTemplate(size);
+    case 'string':
+      return size === -1 ? this._readTerminatedString() : this._readString(size);
+    case 'data':
+      return this._readData(size);
+    case 'utf8':
+      return this._readUTF8String();
+    default:
+      return -1;
+  }
+};
+
+ISOBox.prototype._readInt = function (size) {
+  var result = null,
+      offset = this._cursor.offset - this._raw.byteOffset;
+  switch (size) {
+    case 8:
+      result = this._raw.getInt8(offset);
+      break;
+    case 16:
+      result = this._raw.getInt16(offset);
+      break;
+    case 32:
+      result = this._raw.getInt32(offset);
+      break;
+    case 64:
+      // Warning: JavaScript cannot handle 64-bit integers natively.
+      // This will give unexpected results for integers >= 2^53
+      var s1 = this._raw.getInt32(offset);
+      var s2 = this._raw.getInt32(offset + 4);
+      result = s1 * Math.pow(2, 32) + s2;
+      break;
+  }
+  this._cursor.offset += size >> 3;
+  return result;
+};
+
+ISOBox.prototype._readUint = function (size) {
+  var result = null,
+      offset = this._cursor.offset - this._raw.byteOffset,
+      s1,
+      s2;
+  switch (size) {
+    case 8:
+      result = this._raw.getUint8(offset);
+      break;
+    case 16:
+      result = this._raw.getUint16(offset);
+      break;
+    case 24:
+      s1 = this._raw.getUint16(offset);
+      s2 = this._raw.getUint8(offset + 2);
+      result = (s1 << 8) + s2;
+      break;
+    case 32:
+      result = this._raw.getUint32(offset);
+      break;
+    case 64:
+      // Warning: JavaScript cannot handle 64-bit integers natively.
+      // This will give unexpected results for integers >= 2^53
+      s1 = this._raw.getUint32(offset);
+      s2 = this._raw.getUint32(offset + 4);
+      result = s1 * Math.pow(2, 32) + s2;
+      break;
+  }
+  this._cursor.offset += size >> 3;
+  return result;
+};
+
+ISOBox.prototype._readString = function (length) {
+  var str = '';
+  for (var c = 0; c < length; c++) {
+    var char = this._readUint(8);
+    str += String.fromCharCode(char);
+  }
+  return str;
+};
+
+ISOBox.prototype._readTemplate = function (size) {
+  var pre = this._readUint(size / 2);
+  var post = this._readUint(size / 2);
+  return pre + post / Math.pow(2, size / 2);
+};
+
+ISOBox.prototype._readTerminatedString = function () {
+  var str = '';
+  while (this._cursor.offset - this._offset < this._raw.byteLength) {
+    var char = this._readUint(8);
+    if (char === 0) break;
+    str += String.fromCharCode(char);
+  }
+  return str;
+};
+
+ISOBox.prototype._readData = function (size) {
+  var length = size > 0 ? size : this._raw.byteLength - (this._cursor.offset - this._offset);
+  if (length > 0) {
+    var data = new Uint8Array(this._raw.buffer, this._cursor.offset, length);
+
+    this._cursor.offset += length;
+    return data;
+  } else {
+    return null;
+  }
+};
+
+ISOBox.prototype._readUTF8String = function () {
+  var length = this._raw.byteLength - (this._cursor.offset - this._offset);
+  var data = null;
+  if (length > 0) {
+    data = new DataView(this._raw.buffer, this._cursor.offset, length);
+    this._cursor.offset += length;
+  }
+
+  return data ? ISOBoxer.Utils.dataViewToString(data) : data;
+};
+
+ISOBox.prototype._parseBox = function () {
+  this._parsing = true;
+  this._cursor.offset = this._offset;
+
+  // return immediately if there are not enough bytes to read the header
+  if (this._offset + 8 > this._raw.buffer.byteLength) {
+    this._root._incomplete = true;
+    return;
+  }
+
+  this._procField('size', 'uint', 32);
+  this._procField('type', 'string', 4);
+
+  if (this.size === 1) {
+    this._procField('largesize', 'uint', 64);
+  }
+  if (this.type === 'uuid') {
+    this._procFieldArray('usertype', 16, 'uint', 8);
+  }
+
+  switch (this.size) {
+    case 0:
+      this._raw = new DataView(this._raw.buffer, this._offset, this._raw.byteLength - this._cursor.offset + 8);
+      break;
+    case 1:
+      if (this._offset + this.size > this._raw.buffer.byteLength) {
+        this._incomplete = true;
+        this._root._incomplete = true;
+      } else {
+        this._raw = new DataView(this._raw.buffer, this._offset, this.largesize);
+      }
+      break;
+    default:
+      if (this._offset + this.size > this._raw.buffer.byteLength) {
+        this._incomplete = true;
+        this._root._incomplete = true;
+      } else {
+        this._raw = new DataView(this._raw.buffer, this._offset, this.size);
+      }
+  }
+
+  // additional parsing
+  if (!this._incomplete) {
+    if (this._boxProcessors[this.type]) {
+      this._boxProcessors[this.type].call(this);
+    }
+    if (this._boxContainers.indexOf(this.type) !== -1) {
+      this._parseContainerBox();
+    } else {
+      // Unknown box => read and store box content
+      this._data = this._readData();
+    }
+  }
+};
+
+ISOBox.prototype._parseFullBox = function () {
+  this.version = this._readUint(8);
+  this.flags = this._readUint(24);
+};
+
+ISOBox.prototype._parseContainerBox = function () {
+  this.boxes = [];
+  while (this._cursor.offset - this._raw.byteOffset < this._raw.byteLength) {
+    this.boxes.push(ISOBox.parse(this));
+  }
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Write functions
+
+ISOBox.prototype.append = function (box, pos) {
+  ISOBoxer.Utils.appendBox(this, box, pos);
+};
+
+ISOBox.prototype.getLength = function () {
+  this._parsing = false;
+  this._rawo = null;
+
+  this.size = 0;
+  this._procField('size', 'uint', 32);
+  this._procField('type', 'string', 4);
+
+  if (this.size === 1) {
+    this._procField('largesize', 'uint', 64);
+  }
+  if (this.type === 'uuid') {
+    this._procFieldArray('usertype', 16, 'uint', 8);
+  }
+
+  if (this._boxProcessors[this.type]) {
+    this._boxProcessors[this.type].call(this);
+  }
+
+  if (this._boxContainers.indexOf(this.type) !== -1) {
+    for (var i = 0; i < this.boxes.length; i++) {
+      this.size += this.boxes[i].getLength();
+    }
+  }
+
+  if (this._data) {
+    this._writeData(this._data);
+  }
+
+  return this.size;
+};
+
+ISOBox.prototype.write = function () {
+  this._parsing = false;
+  this._cursor.offset = this._parent._cursor.offset;
+
+  switch (this.size) {
+    case 0:
+      this._rawo = new DataView(this._parent._rawo.buffer, this._cursor.offset, this.parent._rawo.byteLength - this._cursor.offset);
+      break;
+    case 1:
+      this._rawo = new DataView(this._parent._rawo.buffer, this._cursor.offset, this.largesize);
+      break;
+    default:
+      this._rawo = new DataView(this._parent._rawo.buffer, this._cursor.offset, this.size);
+  }
+
+  this._procField('size', 'uint', 32);
+  this._procField('type', 'string', 4);
+
+  if (this.size === 1) {
+    this._procField('largesize', 'uint', 64);
+  }
+  if (this.type === 'uuid') {
+    this._procFieldArray('usertype', 16, 'uint', 8);
+  }
+
+  if (this._boxProcessors[this.type]) {
+    this._boxProcessors[this.type].call(this);
+  }
+
+  if (this._boxContainers.indexOf(this.type) !== -1) {
+    for (var i = 0; i < this.boxes.length; i++) {
+      this.boxes[i].write();
+    }
+  }
+
+  if (this._data) {
+    this._writeData(this._data);
+  }
+
+  this._parent._cursor.offset += this.size;
+
+  return this.size;
+};
+
+ISOBox.prototype._writeInt = function (size, value) {
+  if (this._rawo) {
+    var offset = this._cursor.offset - this._rawo.byteOffset;
+    switch (size) {
+      case 8:
+        this._rawo.setInt8(offset, value);
+        break;
+      case 16:
+        this._rawo.setInt16(offset, value);
+        break;
+      case 32:
+        this._rawo.setInt32(offset, value);
+        break;
+      case 64:
+        // Warning: JavaScript cannot handle 64-bit integers natively.
+        // This will give unexpected results for integers >= 2^53
+        var s1 = Math.floor(value / Math.pow(2, 32));
+        var s2 = value - s1 * Math.pow(2, 32);
+        this._rawo.setUint32(offset, s1);
+        this._rawo.setUint32(offset + 4, s2);
+        break;
+    }
+    this._cursor.offset += size >> 3;
+  } else {
+    this.size += size >> 3;
+  }
+};
+
+ISOBox.prototype._writeUint = function (size, value) {
+
+  if (this._rawo) {
+    var offset = this._cursor.offset - this._rawo.byteOffset,
+        s1,
+        s2;
+    switch (size) {
+      case 8:
+        this._rawo.setUint8(offset, value);
+        break;
+      case 16:
+        this._rawo.setUint16(offset, value);
+        break;
+      case 24:
+        s1 = (value & 0xFFFF00) >> 8;
+        s2 = value & 0x0000FF;
+        this._rawo.setUint16(offset, s1);
+        this._rawo.setUint8(offset + 2, s2);
+        break;
+      case 32:
+        this._rawo.setUint32(offset, value);
+        break;
+      case 64:
+        // Warning: JavaScript cannot handle 64-bit integers natively.
+        // This will give unexpected results for integers >= 2^53
+        s1 = Math.floor(value / Math.pow(2, 32));
+        s2 = value - s1 * Math.pow(2, 32);
+        this._rawo.setUint32(offset, s1);
+        this._rawo.setUint32(offset + 4, s2);
+        break;
+    }
+    this._cursor.offset += size >> 3;
+  } else {
+    this.size += size >> 3;
+  }
+};
+
+ISOBox.prototype._writeString = function (size, str) {
+  for (var c = 0; c < size; c++) {
+    this._writeUint(8, str.charCodeAt(c));
+  }
+};
+
+ISOBox.prototype._writeTerminatedString = function (str) {
+  if (str.length === 0) {
+    return;
+  }
+  for (var c = 0; c < str.length; c++) {
+    this._writeUint(8, str.charCodeAt(c));
+  }
+  this._writeUint(8, 0);
+};
+
+ISOBox.prototype._writeTemplate = function (size, value) {
+  var pre = Math.floor(value);
+  var post = (value - pre) * Math.pow(2, size / 2);
+  this._writeUint(size / 2, pre);
+  this._writeUint(size / 2, post);
+};
+
+ISOBox.prototype._writeData = function (data) {
+  var i;
+  //data to copy
+  if (data) {
+    if (this._rawo) {
+      //Array and Uint8Array has also to be managed
+      if (data instanceof Array) {
+        var offset = this._cursor.offset - this._rawo.byteOffset;
+        for (var i = 0; i < data.length; i++) {
+          this._rawo.setInt8(offset + i, data[i]);
         }
+        this._cursor.offset += data.length;
+      }
 
-        function constructSpanList(element, elist) {
+      if (data instanceof Uint8Array) {
+        this._root.bytes.set(data, this._cursor.offset);
+        this._cursor.offset += data.length;
+      }
+    } else {
+      //nothing to copy only size to compute
+      this.size += data.length;
+    }
+  }
+};
 
-                if ('contents' in element) {
+ISOBox.prototype._writeUTF8String = function (string) {
+  var u = ISOBoxer.Utils.utf8ToByteArray(string);
+  if (this._rawo) {
+    var dataView = new DataView(this._rawo.buffer, this._cursor.offset, u.length);
+    for (var i = 0; i < u.length; i++) {
+      dataView.setUint8(i, u[i]);
+    }
+  } else {
+    this.size += u.length;
+  }
+};
 
-                        for (var i in element.contents) {
-                                constructSpanList(element.contents[i], elist);
-                        }
-                } else {
+ISOBox.prototype._writeField = function (type, size, value) {
+  switch (type) {
+    case 'uint':
+      this._writeUint(size, value);
+      break;
+    case 'int':
+      this._writeInt(size, value);
+      break;
+    case 'template':
+      this._writeTemplate(size, value);
+      break;
+    case 'string':
+      if (size == -1) {
+        this._writeTerminatedString(value);
+      } else {
+        this._writeString(size, value);
+      }
+      break;
+    case 'data':
+      this._writeData(value);
+      break;
+    case 'utf8':
+      this._writeUTF8String(value);
+      break;
+    default:
+      break;
+  }
+};
 
-                        elist.push(element);
-                }
-        }
+// ISO/IEC 14496-15:2014 - avc1 box
+ISOBox.prototype._boxProcessors['avc1'] = ISOBox.prototype._boxProcessors['encv'] = function () {
+  // SampleEntry fields
+  this._procFieldArray('reserved1', 6, 'uint', 8);
+  this._procField('data_reference_index', 'uint', 16);
+  // VisualSampleEntry fields
+  this._procField('pre_defined1', 'uint', 16);
+  this._procField('reserved2', 'uint', 16);
+  this._procFieldArray('pre_defined2', 3, 'uint', 32);
+  this._procField('width', 'uint', 16);
+  this._procField('height', 'uint', 16);
+  this._procField('horizresolution', 'template', 32);
+  this._procField('vertresolution', 'template', 32);
+  this._procField('reserved3', 'uint', 32);
+  this._procField('frame_count', 'uint', 16);
+  this._procFieldArray('compressorname', 32, 'uint', 8);
+  this._procField('depth', 'uint', 16);
+  this._procField('pre_defined3', 'int', 16);
+  // AVCSampleEntry fields
+  this._procField('config', 'data', -1);
+};
 
-        function pruneEmptySpans(element) {
+// ISO/IEC 14496-12:2012 - 8.7.2 Data Reference Box
+ISOBox.prototype._boxProcessors['dref'] = function () {
+  this._procFullBox();
+  this._procField('entry_count', 'uint', 32);
+  this._procSubBoxes('entries', this.entry_count);
+};
 
-                if (element.kind === 'br') {
+// ISO/IEC 14496-12:2012 - 8.6.6 Edit List Box
+ISOBox.prototype._boxProcessors['elst'] = function () {
+  this._procFullBox();
+  this._procField('entry_count', 'uint', 32);
+  this._procEntries('entries', this.entry_count, function (entry) {
+    this._procEntryField(entry, 'segment_duration', 'uint', this.version === 1 ? 64 : 32);
+    this._procEntryField(entry, 'media_time', 'int', this.version === 1 ? 64 : 32);
+    this._procEntryField(entry, 'media_rate_integer', 'int', 16);
+    this._procEntryField(entry, 'media_rate_fraction', 'int', 16);
+  });
+};
 
-                        return false;
-                } else if ('text' in element) {
+// ISO/IEC 23009-1:2014 - 5.10.3.3 Event Message Box
+ISOBox.prototype._boxProcessors['emsg'] = function () {
+  this._procFullBox();
+  if (this.version == 1) {
+    this._procField('timescale', 'uint', 32);
+    this._procField('presentation_time', 'uint', 64);
+    this._procField('event_duration', 'uint', 32);
+    this._procField('id', 'uint', 32);
+    this._procField('scheme_id_uri', 'string', -1);
+    this._procField('value', 'string', -1);
+  } else {
+    this._procField('scheme_id_uri', 'string', -1);
+    this._procField('value', 'string', -1);
+    this._procField('timescale', 'uint', 32);
+    this._procField('presentation_time_delta', 'uint', 32);
+    this._procField('event_duration', 'uint', 32);
+    this._procField('id', 'uint', 32);
+  }
+  this._procField('message_data', 'data', -1);
+};
+// ISO/IEC 14496-12:2012 - 8.1.2 Free Space Box
+ISOBox.prototype._boxProcessors['free'] = ISOBox.prototype._boxProcessors['skip'] = function () {
+  this._procField('data', 'data', -1);
+};
 
-                        return element.text.length === 0;
-                } else if ('contents' in element) {
+// ISO/IEC 14496-12:2012 - 8.12.2 Original Format Box
+ISOBox.prototype._boxProcessors['frma'] = function () {
+  this._procField('data_format', 'uint', 32);
+};
+// ISO/IEC 14496-12:2012 - 4.3 File Type Box / 8.16.2 Segment Type Box
+ISOBox.prototype._boxProcessors['ftyp'] = ISOBox.prototype._boxProcessors['styp'] = function () {
+  this._procField('major_brand', 'string', 4);
+  this._procField('minor_version', 'uint', 32);
+  var nbCompatibleBrands = -1;
+  if (this._parsing) {
+    nbCompatibleBrands = (this._raw.byteLength - (this._cursor.offset - this._raw.byteOffset)) / 4;
+  }
+  this._procFieldArray('compatible_brands', nbCompatibleBrands, 'string', 4);
+};
 
-                        var i = element.contents.length;
+// ISO/IEC 14496-12:2012 - 8.4.3 Handler Reference Box
+ISOBox.prototype._boxProcessors['hdlr'] = function () {
+  this._procFullBox();
+  this._procField('pre_defined', 'uint', 32);
+  this._procField('handler_type', 'string', 4);
+  this._procFieldArray('reserved', 3, 'uint', 32);
+  this._procField('name', 'string', -1);
+};
 
-                        while (i--) {
+// ISO/IEC 14496-12:2012 - 8.1.1 Media Data Box
+ISOBox.prototype._boxProcessors['mdat'] = function () {
+  this._procField('data', 'data', -1);
+};
 
-                                if (pruneEmptySpans(element.contents[i])) {
-                                        element.contents.splice(i, 1);
-                                }
-                        }
+// ISO/IEC 14496-12:2012 - 8.4.2 Media Header Box
+ISOBox.prototype._boxProcessors['mdhd'] = function () {
+  this._procFullBox();
+  this._procField('creation_time', 'uint', this.version == 1 ? 64 : 32);
+  this._procField('modification_time', 'uint', this.version == 1 ? 64 : 32);
+  this._procField('timescale', 'uint', 32);
+  this._procField('duration', 'uint', this.version == 1 ? 64 : 32);
+  if (!this._parsing && typeof this.language === 'string') {
+    // In case of writing and language has been set as a string, then convert it into char codes array
+    this.language = this.language.charCodeAt(0) - 0x60 << 10 | this.language.charCodeAt(1) - 0x60 << 5 | this.language.charCodeAt(2) - 0x60;
+  }
+  this._procField('language', 'uint', 16);
+  if (this._parsing) {
+    this.language = String.fromCharCode((this.language >> 10 & 0x1F) + 0x60, (this.language >> 5 & 0x1F) + 0x60, (this.language & 0x1F) + 0x60);
+  }
+  this._procField('pre_defined', 'uint', 16);
+};
 
-                        return element.contents.length === 0;
-                }
-        }
+// ISO/IEC 14496-12:2012 - 8.8.2 Movie Extends Header Box
+ISOBox.prototype._boxProcessors['mehd'] = function () {
+  this._procFullBox();
+  this._procField('fragment_duration', 'uint', this.version == 1 ? 64 : 32);
+};
 
-        function ISD(tt) {
-                this.contents = [];
-                this.aspectRatio = tt.aspectRatio;
-        }
+// ISO/IEC 14496-12:2012 - 8.8.5 Movie Fragment Header Box
+ISOBox.prototype._boxProcessors['mfhd'] = function () {
+  this._procFullBox();
+  this._procField('sequence_number', 'uint', 32);
+};
 
-        function ISDContentElement(ttelem) {
+// ISO/IEC 14496-12:2012 - 8.8.11 Movie Fragment Random Access Box
+ISOBox.prototype._boxProcessors['mfro'] = function () {
+  this._procFullBox();
+  this._procField('mfra_size', 'uint', 32); // Called mfra_size to distinguish from the normal "size" attribute of a box
+};
 
-                /* assume the element is a region if it does not have a kind */
+// ISO/IEC 14496-12:2012 - 8.5.2.2 mp4a box (use AudioSampleEntry definition and naming)
+ISOBox.prototype._boxProcessors['mp4a'] = ISOBox.prototype._boxProcessors['enca'] = function () {
+  // SampleEntry fields
+  this._procFieldArray('reserved1', 6, 'uint', 8);
+  this._procField('data_reference_index', 'uint', 16);
+  // AudioSampleEntry fields
+  this._procFieldArray('reserved2', 2, 'uint', 32);
+  this._procField('channelcount', 'uint', 16);
+  this._procField('samplesize', 'uint', 16);
+  this._procField('pre_defined', 'uint', 16);
+  this._procField('reserved3', 'uint', 16);
+  this._procField('samplerate', 'template', 32);
+  // ESDescriptor fields
+  this._procField('esds', 'data', -1);
+};
 
-                this.kind = ttelem.kind || 'region';
+// ISO/IEC 14496-12:2012 - 8.2.2 Movie Header Box
+ISOBox.prototype._boxProcessors['mvhd'] = function () {
+  this._procFullBox();
+  this._procField('creation_time', 'uint', this.version == 1 ? 64 : 32);
+  this._procField('modification_time', 'uint', this.version == 1 ? 64 : 32);
+  this._procField('timescale', 'uint', 32);
+  this._procField('duration', 'uint', this.version == 1 ? 64 : 32);
+  this._procField('rate', 'template', 32);
+  this._procField('volume', 'template', 16);
+  this._procField('reserved1', 'uint', 16);
+  this._procFieldArray('reserved2', 2, 'uint', 32);
+  this._procFieldArray('matrix', 9, 'template', 32);
+  this._procFieldArray('pre_defined', 6, 'uint', 32);
+  this._procField('next_track_ID', 'uint', 32);
+};
 
-                /* copy id */
+// ISO/IEC 14496-30:2014 - WebVTT Cue Payload Box.
+ISOBox.prototype._boxProcessors['payl'] = function () {
+  this._procField('cue_text', 'utf8');
+};
 
-                if (ttelem.id) {
-                        this.id = ttelem.id;
-                }
+//ISO/IEC 23001-7:2011 - 8.1 Protection System Specific Header Box
+ISOBox.prototype._boxProcessors['pssh'] = function () {
+  this._procFullBox();
 
-                /* deep copy of style attributes */
-                this.styleAttrs = {};
+  this._procFieldArray('SystemID', 16, 'uint', 8);
+  this._procField('DataSize', 'uint', 32);
+  this._procFieldArray('Data', this.DataSize, 'uint', 8);
+};
+// ISO/IEC 14496-12:2012 - 8.12.5 Scheme Type Box
+ISOBox.prototype._boxProcessors['schm'] = function () {
+  this._procFullBox();
 
-                for (var sname in ttelem.styleAttrs) {
+  this._procField('scheme_type', 'uint', 32);
+  this._procField('scheme_version', 'uint', 32);
 
-                        this.styleAttrs[sname] = ttelem.styleAttrs[sname];
-                }
+  if (this.flags & 0x000001) {
+    this._procField('scheme_uri', 'string', -1);
+  }
+};
+// ISO/IEC 14496-12:2012 - 8.6.4.1 sdtp box 
+ISOBox.prototype._boxProcessors['sdtp'] = function () {
+  this._procFullBox();
 
-                /* TODO: clean this! */
+  var sample_count = -1;
+  if (this._parsing) {
+    sample_count = this._raw.byteLength - (this._cursor.offset - this._raw.byteOffset);
+  }
 
-                if ('text' in ttelem) {
+  this._procFieldArray('sample_dependency_table', sample_count, 'uint', 8);
+};
 
-                        this.text = ttelem.text;
-                } else if (ttelem.kind !== 'br') {
+// ISO/IEC 14496-12:2012 - 8.16.3 Segment Index Box
+ISOBox.prototype._boxProcessors['sidx'] = function () {
+  this._procFullBox();
+  this._procField('reference_ID', 'uint', 32);
+  this._procField('timescale', 'uint', 32);
+  this._procField('earliest_presentation_time', 'uint', this.version == 1 ? 64 : 32);
+  this._procField('first_offset', 'uint', this.version == 1 ? 64 : 32);
+  this._procField('reserved', 'uint', 16);
+  this._procField('reference_count', 'uint', 16);
+  this._procEntries('references', this.reference_count, function (entry) {
+    if (!this._parsing) {
+      entry.reference = (entry.reference_type & 0x00000001) << 31;
+      entry.reference |= entry.referenced_size & 0x7FFFFFFF;
+      entry.sap = (entry.starts_with_SAP & 0x00000001) << 31;
+      entry.sap |= (entry.SAP_type & 0x00000003) << 28;
+      entry.sap |= entry.SAP_delta_time & 0x0FFFFFFF;
+    }
+    this._procEntryField(entry, 'reference', 'uint', 32);
+    this._procEntryField(entry, 'subsegment_duration', 'uint', 32);
+    this._procEntryField(entry, 'sap', 'uint', 32);
+    if (this._parsing) {
+      entry.reference_type = entry.reference >> 31 & 0x00000001;
+      entry.referenced_size = entry.reference & 0x7FFFFFFF;
+      entry.starts_with_SAP = entry.sap >> 31 & 0x00000001;
+      entry.SAP_type = entry.sap >> 28 & 0x00000007;
+      entry.SAP_delta_time = entry.sap & 0x0FFFFFFF;
+    }
+  });
+};
+
+// ISO/IEC 14496-12:2012 - 8.4.5.3 Sound Media Header Box
+ISOBox.prototype._boxProcessors['smhd'] = function () {
+  this._procFullBox();
+  this._procField('balance', 'uint', 16);
+  this._procField('reserved', 'uint', 16);
+};
+
+// ISO/IEC 14496-12:2012 - 8.16.4 Subsegment Index Box
+ISOBox.prototype._boxProcessors['ssix'] = function () {
+  this._procFullBox();
+  this._procField('subsegment_count', 'uint', 32);
+  this._procEntries('subsegments', this.subsegment_count, function (subsegment) {
+    this._procEntryField(subsegment, 'ranges_count', 'uint', 32);
+    this._procSubEntries(subsegment, 'ranges', subsegment.ranges_count, function (range) {
+      this._procEntryField(range, 'level', 'uint', 8);
+      this._procEntryField(range, 'range_size', 'uint', 24);
+    });
+  });
+};
+
+// ISO/IEC 14496-12:2012 - 8.5.2 Sample Description Box
+ISOBox.prototype._boxProcessors['stsd'] = function () {
+  this._procFullBox();
+  this._procField('entry_count', 'uint', 32);
+  this._procSubBoxes('entries', this.entry_count);
+};
+
+// ISO/IEC 14496-12:2015 - 8.7.7 Sub-Sample Information Box
+ISOBox.prototype._boxProcessors['subs'] = function () {
+  this._procFullBox();
+  this._procField('entry_count', 'uint', 32);
+  this._procEntries('entries', this.entry_count, function (entry) {
+    this._procEntryField(entry, 'sample_delta', 'uint', 32);
+    this._procEntryField(entry, 'subsample_count', 'uint', 16);
+    this._procSubEntries(entry, 'subsamples', entry.subsample_count, function (subsample) {
+      this._procEntryField(subsample, 'subsample_size', 'uint', this.version === 1 ? 32 : 16);
+      this._procEntryField(subsample, 'subsample_priority', 'uint', 8);
+      this._procEntryField(subsample, 'discardable', 'uint', 8);
+      this._procEntryField(subsample, 'codec_specific_parameters', 'uint', 32);
+    });
+  });
+};
+
+//ISO/IEC 23001-7:2011 - 8.2 Track Encryption Box
+ISOBox.prototype._boxProcessors['tenc'] = function () {
+  this._procFullBox();
+
+  this._procField('default_IsEncrypted', 'uint', 24);
+  this._procField('default_IV_size', 'uint', 8);
+  this._procFieldArray('default_KID', 16, 'uint', 8);
+};
+
+// ISO/IEC 14496-12:2012 - 8.8.12 Track Fragmnent Decode Time
+ISOBox.prototype._boxProcessors['tfdt'] = function () {
+  this._procFullBox();
+  this._procField('baseMediaDecodeTime', 'uint', this.version == 1 ? 64 : 32);
+};
+
+// ISO/IEC 14496-12:2012 - 8.8.7 Track Fragment Header Box
+ISOBox.prototype._boxProcessors['tfhd'] = function () {
+  this._procFullBox();
+  this._procField('track_ID', 'uint', 32);
+  if (this.flags & 0x01) this._procField('base_data_offset', 'uint', 64);
+  if (this.flags & 0x02) this._procField('sample_description_offset', 'uint', 32);
+  if (this.flags & 0x08) this._procField('default_sample_duration', 'uint', 32);
+  if (this.flags & 0x10) this._procField('default_sample_size', 'uint', 32);
+  if (this.flags & 0x20) this._procField('default_sample_flags', 'uint', 32);
+};
+
+// ISO/IEC 14496-12:2012 - 8.8.10 Track Fragment Random Access Box
+ISOBox.prototype._boxProcessors['tfra'] = function () {
+  this._procFullBox();
+  this._procField('track_ID', 'uint', 32);
+  if (!this._parsing) {
+    this.reserved = 0;
+    this.reserved |= (this.length_size_of_traf_num & 0x00000030) << 4;
+    this.reserved |= (this.length_size_of_trun_num & 0x0000000C) << 2;
+    this.reserved |= this.length_size_of_sample_num & 0x00000003;
+  }
+  this._procField('reserved', 'uint', 32);
+  if (this._parsing) {
+    this.length_size_of_traf_num = (this.reserved & 0x00000030) >> 4;
+    this.length_size_of_trun_num = (this.reserved & 0x0000000C) >> 2;
+    this.length_size_of_sample_num = this.reserved & 0x00000003;
+  }
+  this._procField('number_of_entry', 'uint', 32);
+  this._procEntries('entries', this.number_of_entry, function (entry) {
+    this._procEntryField(entry, 'time', 'uint', this.version === 1 ? 64 : 32);
+    this._procEntryField(entry, 'moof_offset', 'uint', this.version === 1 ? 64 : 32);
+    this._procEntryField(entry, 'traf_number', 'uint', (this.length_size_of_traf_num + 1) * 8);
+    this._procEntryField(entry, 'trun_number', 'uint', (this.length_size_of_trun_num + 1) * 8);
+    this._procEntryField(entry, 'sample_number', 'uint', (this.length_size_of_sample_num + 1) * 8);
+  });
+};
+
+// ISO/IEC 14496-12:2012 - 8.3.2 Track Header Box
+ISOBox.prototype._boxProcessors['tkhd'] = function () {
+  this._procFullBox();
+  this._procField('creation_time', 'uint', this.version == 1 ? 64 : 32);
+  this._procField('modification_time', 'uint', this.version == 1 ? 64 : 32);
+  this._procField('track_ID', 'uint', 32);
+  this._procField('reserved1', 'uint', 32);
+  this._procField('duration', 'uint', this.version == 1 ? 64 : 32);
+  this._procFieldArray('reserved2', 2, 'uint', 32);
+  this._procField('layer', 'uint', 16);
+  this._procField('alternate_group', 'uint', 16);
+  this._procField('volume', 'template', 16);
+  this._procField('reserved3', 'uint', 16);
+  this._procFieldArray('matrix', 9, 'template', 32);
+  this._procField('width', 'template', 32);
+  this._procField('height', 'template', 32);
+};
+
+// ISO/IEC 14496-12:2012 - 8.8.3 Track Extends Box
+ISOBox.prototype._boxProcessors['trex'] = function () {
+  this._procFullBox();
+  this._procField('track_ID', 'uint', 32);
+  this._procField('default_sample_description_index', 'uint', 32);
+  this._procField('default_sample_duration', 'uint', 32);
+  this._procField('default_sample_size', 'uint', 32);
+  this._procField('default_sample_flags', 'uint', 32);
+};
+
+// ISO/IEC 14496-12:2012 - 8.8.8 Track Run Box
+// Note: the 'trun' box has a direct relation to the 'tfhd' box for defaults.
+// These defaults are not set explicitly here, but are left to resolve for the user.
+ISOBox.prototype._boxProcessors['trun'] = function () {
+  this._procFullBox();
+  this._procField('sample_count', 'uint', 32);
+  if (this.flags & 0x1) this._procField('data_offset', 'int', 32);
+  if (this.flags & 0x4) this._procField('first_sample_flags', 'uint', 32);
+  this._procEntries('samples', this.sample_count, function (sample) {
+    if (this.flags & 0x100) this._procEntryField(sample, 'sample_duration', 'uint', 32);
+    if (this.flags & 0x200) this._procEntryField(sample, 'sample_size', 'uint', 32);
+    if (this.flags & 0x400) this._procEntryField(sample, 'sample_flags', 'uint', 32);
+    if (this.flags & 0x800) this._procEntryField(sample, 'sample_composition_time_offset', this.version === 1 ? 'int' : 'uint', 32);
+  });
+};
+
+// ISO/IEC 14496-12:2012 - 8.7.2 Data Reference Box
+ISOBox.prototype._boxProcessors['url '] = ISOBox.prototype._boxProcessors['urn '] = function () {
+  this._procFullBox();
+  if (this.type === 'urn ') {
+    this._procField('name', 'string', -1);
+  }
+  this._procField('location', 'string', -1);
+};
+
+// ISO/IEC 14496-30:2014 - WebVTT Source Label Box
+ISOBox.prototype._boxProcessors['vlab'] = function () {
+  this._procField('source_label', 'utf8');
+};
+
+// ISO/IEC 14496-12:2012 - 8.4.5.2 Video Media Header Box
+ISOBox.prototype._boxProcessors['vmhd'] = function () {
+  this._procFullBox();
+  this._procField('graphicsmode', 'uint', 16);
+  this._procFieldArray('opcolor', 3, 'uint', 16);
+};
+
+// ISO/IEC 14496-30:2014 - WebVTT Configuration Box
+ISOBox.prototype._boxProcessors['vttC'] = function () {
+  this._procField('config', 'utf8');
+};
+
+// ISO/IEC 14496-30:2014 - WebVTT Empty Sample Box
+ISOBox.prototype._boxProcessors['vtte'] = function () {
+  // Nothing should happen here.
+};
 
                         this.contents = [];
                 }
 
-                if ('space' in ttelem) {
-
-                        this.space = ttelem.space;
-                }
-        }
-
-        /*
-         * ERROR HANDLING UTILITY FUNCTIONS
-         * 
-         */
-
-        function reportInfo(errorHandler, msg) {
-
-                if (errorHandler && errorHandler.info && errorHandler.info(msg)) throw msg;
-        }
-
-        function reportWarning(errorHandler, msg) {
-
-                if (errorHandler && errorHandler.warn && errorHandler.warn(msg)) throw msg;
-        }
-
-        function reportError(errorHandler, msg) {
-
-                if (errorHandler && errorHandler.error && errorHandler.error(msg)) throw msg;
-        }
-
-        function reportFatal(errorHandler, msg) {
-
-                if (errorHandler && errorHandler.fatal) errorHandler.fatal(msg);
-
-                throw msg;
-        }
-})( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "../../node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscStyles === 'undefined' ? __webpack_require__(/*! ./styles */ "../../node_modules/imsc/src/main/js/styles.js") : imscStyles);
-
-/***/ }),
-
-/***/ "../../node_modules/imsc/src/main/js/main.js":
-/*!****************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/node_modules/imsc/src/main/js/main.js ***!
-  \****************************************************************************************/
+/***/ "./node_modules/core-util-is/lib/util.js":
+/*!***********************************************!*\
+  !*** ./node_modules/core-util-is/lib/util.js ***!
+  \***********************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
+/* WEBPACK VAR INJECTION */(function(Buffer) {
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
-/* 
- * Copyright (c) 2016, Pierre-Anthony Lemieux <pal@sandflow.com>
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * * Redistributions of source code must retain the above copyright notice, this
- *   list of conditions and the following disclaimer.
- * * Redistributions in binary form must reproduce the above copyright notice,
- *   this list of conditions and the following disclaimer in the documentation
- *   and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
- * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright Joyent, Inc. and other Node contributors.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a
+// copy of this software and associated documentation files (the
+// "Software"), to deal in the Software without restriction, including
+// without limitation the rights to use, copy, modify, merge, publish,
+// distribute, sublicense, and/or sell copies of the Software, and to permit
+// persons to whom the Software is furnished to do so, subject to the
+// following conditions:
+//
+// The above copyright notice and this permission notice shall be included
+// in all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+// USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-exports.generateISD = __webpack_require__(/*! ./isd */ "../../node_modules/imsc/src/main/js/isd.js").generateISD;
-exports.fromXML = __webpack_require__(/*! ./doc */ "../../node_modules/imsc/src/main/js/doc.js").fromXML;
-exports.renderHTML = __webpack_require__(/*! ./html */ "../../node_modules/imsc/src/main/js/html.js").render;
+// NOTE: These type checking functions intentionally don't use `instanceof`
+// because it is fragile and can be easily faked with `Object.create()`.
+
+function isArray(arg) {
+  if (Array.isArray) {
+    return Array.isArray(arg);
+  }
+  return objectToString(arg) === '[object Array]';
+}
+exports.isArray = isArray;
+
+function isBoolean(arg) {
+  return typeof arg === 'boolean';
+}
+exports.isBoolean = isBoolean;
+
+function isNull(arg) {
+  return arg === null;
+}
+exports.isNull = isNull;
+
+function isNullOrUndefined(arg) {
+  return arg == null;
+}
+exports.isNullOrUndefined = isNullOrUndefined;
+
+function isNumber(arg) {
+  return typeof arg === 'number';
+}
+exports.isNumber = isNumber;
+
+function isString(arg) {
+  return typeof arg === 'string';
+}
+exports.isString = isString;
+
+function isSymbol(arg) {
+  return (typeof arg === 'undefined' ? 'undefined' : _typeof(arg)) === 'symbol';
+}
+exports.isSymbol = isSymbol;
+
+function isUndefined(arg) {
+  return arg === void 0;
+}
+exports.isUndefined = isUndefined;
+
+function isRegExp(re) {
+  return objectToString(re) === '[object RegExp]';
+}
+exports.isRegExp = isRegExp;
+
+function isObject(arg) {
+  return (typeof arg === 'undefined' ? 'undefined' : _typeof(arg)) === 'object' && arg !== null;
+}
+exports.isObject = isObject;
+
+function isDate(d) {
+  return objectToString(d) === '[object Date]';
+}
+exports.isDate = isDate;
+
+function isError(e) {
+  return objectToString(e) === '[object Error]' || e instanceof Error;
+}
+exports.isError = isError;
+
+function isFunction(arg) {
+  return typeof arg === 'function';
+}
+exports.isFunction = isFunction;
+
+function isPrimitive(arg) {
+  return arg === null || typeof arg === 'boolean' || typeof arg === 'number' || typeof arg === 'string' || (typeof arg === 'undefined' ? 'undefined' : _typeof(arg)) === 'symbol' || // ES6 symbol
+  typeof arg === 'undefined';
+}
+exports.isPrimitive = isPrimitive;
+
+exports.isBuffer = Buffer.isBuffer;
+
+function objectToString(o) {
+  return Object.prototype.toString.call(o);
+}
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../buffer/index.js */ "./node_modules/buffer/index.js").Buffer))
 
 /***/ }),
 
@@ -64549,7 +69256,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
   }
 
-  // Create event listeners 
+  // Create event listeners
   function setupControls() {
 
     window.addEventListener('keydown', function () {
@@ -64626,7 +69333,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     media: {
       mimeType: 'video/mp4',
       urls: [{
-        // Content from DASH IF testing assests (used in their reference player) 
+        // Content from DASH IF testing assests (used in their reference player)
         // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
         url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd'
       }]
@@ -64640,7 +69347,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
   // Initialise the player
   // At this point TAL environment can be injected, if needed
-  bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles, liveSupport);
+  bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles);
 }).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
@@ -64668,5 +69375,5 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 /***/ })
 
-/******/ })});;
+/******/ });
 //# sourceMappingURL=index.js.map

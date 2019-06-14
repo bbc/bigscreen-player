@@ -6,8 +6,7 @@ module.exports = {
   entry: path.resolve(__dirname, 'script/index.js'),
   output: {
     path: path.resolve(__dirname, 'dist/'),
-    filename: 'index.js',
-    libraryTarget: 'amd'
+    filename: 'index.js'
   },
   resolve: {
     alias: {

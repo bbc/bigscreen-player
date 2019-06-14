@@ -295,6 +295,7 @@ define(
 
       function reportError (errorMessage) {
         logger.error(errorMessage);
+        emitEvent(MediaPlayerBase.EVENT.ERROR);
       }
 
       function toBuffering () {

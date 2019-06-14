@@ -5,29 +5,58 @@ require(
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/pausetriggers',
     'bigscreenplayer/pluginenums',
-    'bigscreenplayer/plugins'
+    'bigscreenplayer/plugins',
+    'bigscreenplayer/models/transferformats',
+    'bigscreenplayer/models/livesupport'
   ],
-    function (Squire, MediaState, WindowTypes, PauseTriggers, PluginEnums, Plugins) {
-      var MediaPlayerLiveSupport = {
-        NONE: 'none',
-        PLAYABLE: 'playable',
-        RESTARTABLE: 'restartable',
-        SEEKABLE: 'seekable'
-      };
+    function (Squire, MediaState, WindowTypes, PauseTriggers, PluginEnums, Plugins, TransferFormats, LiveSupport) {
       var injector = new Squire();
       var bigscreenPlayer;
       var bigscreenPlayerData;
       var playbackElement;
-      var manifestParserMock;
+      var manifestData;
+      var liveSupport;
+      var forceManifestLoadError;
+      var successCallback = jasmine.createSpy('successCallback');
+      var errorCallback = jasmine.createSpy('errorCallback');
+      var noCallbacks = false;
 
       var mockEventHook;
       var mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
         'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-        'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown']);
+        'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
+        'getWindowStartTime', 'getWindowEndTime']);
 
       var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
         mockEventHook = callback;
         return mockPlayerComponentInstance;
+      };
+
+      mockPlayerComponent.getLiveSupport = function () {
+        return liveSupport;
+      };
+
+      function setupManifestData (options) {
+        manifestData = {
+          transferFormat: options && options.transferFormat || 'dash',
+          time: options && options.time || {
+            windowStartTime: 724000,
+            windowEndTime: 4324000,
+            correction: 0
+          }
+        };
+        mockPlayerComponentInstance.getWindowStartTime.and.returnValue(manifestData.time.windowStartTime);
+        mockPlayerComponentInstance.getWindowEndTime.and.returnValue(manifestData.time.windowStartTime);
+      }
+
+      var manifestLoaderMock = {
+        load: function (urls, serverDate, callbacks) {
+          if (forceManifestLoadError) {
+            callbacks.onError();
+          } else {
+            callbacks.onSuccess(manifestData);
+          }
+        }
       };
 
       function initialiseBigscreenPlayer (options) {
@@ -35,7 +64,6 @@ require(
         options = options || {};
 
         var windowType = options.windowType || WindowTypes.STATIC;
-        var liveSupport = options.liveSupport || MediaPlayerLiveSupport.SEEKABLE;
         var device = options.device;
         var subtitlesEnabled = options.subtitlesEnabled || false;
 
@@ -49,33 +77,44 @@ require(
             kind: options.mediaKind || 'video',
             type: 'mimeType',
             bitrate: 'bitrate',
-            manifest: options.manifest,
-            manifestType: options.manifestType
+            transferFormat: options.transferFormat
           },
           serverDate: options.serverDate,
           initialPlaybackTime: options.initialPlaybackTime
         };
 
-        if (windowType === WindowTypes.SLIDING && options.manifest === undefined) {
+        if (options.windowStartTime && options.windowEndTime) {
           bigscreenPlayerData.time = {
-            windowStartTime: options.windowStartTime !== undefined ? options.windowStartTime : 724000,
-            windowEndTime: options.windowEndTime || 4324000
+            windowStartTime: options.windowStartTime,
+            windowEndTime: options.windowEndTime
           };
+          mockPlayerComponentInstance.getWindowStartTime.and.returnValue(options.windowStartTime);
+          mockPlayerComponentInstance.getWindowEndTime.and.returnValue(options.windowEndTime);
+        } else {
+          mockPlayerComponentInstance.getWindowStartTime.and.returnValue(manifestData.time.windowStartTime);
+          mockPlayerComponentInstance.getWindowEndTime.and.returnValue(manifestData.time.windowEndTime);
         }
 
         if (options.subtitlesAvailable) {
           bigscreenPlayerData.media.captionsUrl = 'captions';
         }
 
-        bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, liveSupport, device);
+        var callbacks;
+        if (!noCallbacks) {
+          callbacks = {onSuccess: successCallback, onError: errorCallback};
+        }
+        bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, device, callbacks);
       }
 
       describe('Bigscreen Player', function () {
         beforeEach(function (done) {
-          manifestParserMock = jasmine.createSpyObj('manifestParserSpy', ['parse']);
+          setupManifestData();
+          liveSupport = LiveSupport.SEEKABLE;
+          forceManifestLoadError = false;
+          noCallbacks = false;
 
           injector.mock({
-            'bigscreenplayer/parsers/manifestparser': function () { return manifestParserMock; },
+            'bigscreenplayer/manifest/manifestloader': manifestLoaderMock,
             'bigscreenplayer/playercomponent': mockPlayerComponent,
             'bigscreenplayer/plugins': Plugins
           });
@@ -90,6 +129,8 @@ require(
           Object.keys(mockPlayerComponentInstance).forEach(function (spyFunction) {
             mockPlayerComponentInstance[spyFunction].calls.reset();
           });
+          successCallback.calls.reset();
+          errorCallback.calls.reset();
           bigscreenPlayer.tearDown();
         });
 
@@ -123,6 +164,43 @@ require(
             mockEventHook({data: {currentTime: 0}, timeUpdate: true, isBufferingTimeoutError: false});
 
             expect(callback).toHaveBeenCalledWith({currentTime: 0, endOfStream: false});
+          });
+
+          it('should call the suppiled success callback if playing VOD', function () {
+            initialiseBigscreenPlayer();
+
+            expect(successCallback).toHaveBeenCalledWith();
+            expect(errorCallback).not.toHaveBeenCalled();
+          });
+
+          it('should call the suppiled success callback if playing LIVE and the manifest loads', function () {
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+
+            expect(successCallback).toHaveBeenCalledWith();
+            expect(errorCallback).not.toHaveBeenCalled();
+          });
+
+          it('should call the supplied error callback if manifest fails to load', function () {
+            forceManifestLoadError = true;
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+
+            expect(errorCallback).toHaveBeenCalledWith({error: 'manifest'});
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('should not attempt to call onSuccess callback if one is not provided', function () {
+            noCallbacks = true;
+            initialiseBigscreenPlayer();
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('should not attempt to call onSuccess callback if one is not provided', function () {
+            noCallbacks = true;
+            forceManifestLoadError = true;
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+
+            expect(errorCallback).not.toHaveBeenCalled();
           });
         });
 
@@ -298,9 +376,15 @@ require(
           });
 
           it('should set endOfStream to true when seeking to the end of a simulcast', function () {
-            manifestParserMock.parse.and.returnValue({windowStartTime: 10, windowEndTime: 100, correction: 0});
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 10,
+                windowEndTime: 100
+              }
+            });
 
-            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING, manifest: {}, manifestType: 'mpd'});
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
 
             var callback = jasmine.createSpy();
             var endOfStreamWindow = bigscreenPlayerData.time.windowEndTime - 2;
@@ -318,6 +402,14 @@ require(
           });
 
           it('should set endOfStream to false when seeking into a simulcast', function () {
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 10,
+                windowEndTime: 100
+              }
+            });
+
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
 
             var callback = jasmine.createSpy();
@@ -388,11 +480,16 @@ require(
             expect(bigscreenPlayer.getLiveWindowData()).toEqual({});
           });
 
-          it('should return liveWindowData when the windowType is sliding and manifest is provided', function () {
-            var mockLiveData = {windowStartTime: 1, windowEndTime: 2};
-            manifestParserMock.parse.and.returnValue(mockLiveData);
+          it('should return liveWindowData when the windowType is sliding and manifest is loaded', function () {
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 1,
+                windowEndTime: 2
+              }
+            });
 
-            var initialisationData = {windowType: WindowTypes.SLIDING, manifest: true, serverDate: new Date(), initialPlaybackTime: new Date().getTime()};
+            var initialisationData = {windowType: WindowTypes.SLIDING, serverDate: new Date(), initialPlaybackTime: new Date().getTime()};
             initialiseBigscreenPlayer(initialisationData);
 
             expect(bigscreenPlayer.getLiveWindowData()).toEqual({windowStartTime: 1, windowEndTime: 2, serverDate: initialisationData.serverDate, initialPlaybackTime: initialisationData.initialPlaybackTime});
@@ -545,36 +642,38 @@ require(
 
           describe('live', function () {
             it('should return true when it can seek', function () {
-              manifestParserMock.parse.and.returnValue({windowStartTime: 0, windowEndTime: 150000000, correction: 0});
               mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
 
-              initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.SEEKABLE,
-                manifest: {},
-                manifestType: 'mpd'
+              initialiseBigscreenPlayer({
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canSeek()).toBe(true);
             });
 
             it('should return false when seekable range is infinite', function () {
-              manifestParserMock.parse.and.returnValue({windowStartTime: 0, windowEndTime: Infinity, correction: 0});
               mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: Infinity});
 
-              initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING, liveSupport: MediaPlayerLiveSupport.SEEKABLE});
+              initialiseBigscreenPlayer({
+                windowType: WindowTypes.SLIDING
+              });
 
               expect(bigscreenPlayer.canSeek()).toBe(false);
             });
 
             it('should return false when window length less than four minutes', function () {
-              manifestParserMock.parse.and.returnValue({windowStartTime: 0, windowEndTime: 239999, correction: 0});
+              setupManifestData({
+                transferFormat: 'dash',
+                time: {
+                  windowStartTime: 0,
+                  windowEndTime: 239999,
+                  correction: 0
+                }
+              });
               mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
 
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.SEEKABLE,
-                windowStartTime: 0,
-                windowEndTime: 239999
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canSeek()).toBe(false);
@@ -583,7 +682,11 @@ require(
             it('should return false when device does not support seeking', function () {
               mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
 
-              initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING, liveSupport: MediaPlayerLiveSupport.RESTARTABLE});
+              liveSupport = LiveSupport.RESTARTABLE;
+
+              initialiseBigscreenPlayer({
+                windowType: WindowTypes.SLIDING
+              });
 
               expect(bigscreenPlayer.canSeek()).toBe(false);
             });
@@ -599,35 +702,38 @@ require(
 
           describe('live', function () {
             it('should return true when it can pause', function () {
-              manifestParserMock.parse.and.returnValue({windowStartTime: 0, windowEndTime: 150000000, correction: 0});
+              liveSupport = LiveSupport.RESTARTABLE;
+
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.RESTARTABLE,
-                manifest: {},
-                manifestType: 'mpd'
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canPause()).toBe(true);
             });
 
             it('should return false when window length less than four minutes', function () {
-              manifestParserMock.parse.and.returnValue({windowStartTime: 0, windowEndTime: 239999, correction: 0});
+              setupManifestData({
+                transferFormat: TransferFormats.DASH,
+                time: {
+                  windowStartTime: 0,
+                  windowEndTime: 239999,
+                  correction: 0
+                }
+              });
+              liveSupport = LiveSupport.RESTARTABLE;
 
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                manifest: {},
-                manifestType: 'mpd',
-                liveSupport: MediaPlayerLiveSupport.RESTARTABLE
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canPause()).toBe(false);
             });
 
             it('should return false when device does not support pausing', function () {
-              manifestParserMock.parse.and.returnValue({windowStartTime: 0, windowEndTime: 150000000, correction: 0});
+              liveSupport = LiveSupport.PLAYABLE;
+
               initialiseBigscreenPlayer({
-                windowType: WindowTypes.SLIDING,
-                liveSupport: MediaPlayerLiveSupport.PLAYABLE
+                windowType: WindowTypes.SLIDING
               });
 
               expect(bigscreenPlayer.canPause()).toBe(false);
@@ -637,18 +743,21 @@ require(
 
         describe('convertVideoTimeSecondsToEpochMs', function () {
           it('converts video time to epoch time when windowStartTime is supplied', function () {
-            manifestParserMock.parse.and.returnValue({windowStartTime: 4200, windowEndTime: 150000000, correction: 0});
             initialiseBigscreenPlayer({
-              windowType: WindowTypes.SLIDING,
-              manifest: {},
-              manifestType: 'mpd'
+              windowType: WindowTypes.SLIDING
             });
 
-            expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(bigscreenPlayerData.time.windowStartTime + 1000000);
+            mockPlayerComponentInstance.getWindowStartTime.and.returnValue(4200);
+            mockPlayerComponentInstance.getWindowEndTime.and.returnValue(150000000);
+
+            expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(4200 + 1000000);
           });
 
           it('does not convert video time to epoch time when windowStartTime is not supplied', function () {
             initialiseBigscreenPlayer();
+
+            mockPlayerComponentInstance.getWindowStartTime.and.returnValue(undefined);
+            mockPlayerComponentInstance.getWindowEndTime.and.returnValue(undefined);
 
             expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBeUndefined();
           });
@@ -656,14 +765,14 @@ require(
 
         describe('covertEpochMsToVideoTimeSeconds', function () {
           it('converts epoch time to video time when windowStartTime is available', function () {
+            initialiseBigscreenPlayer({
+              windowType: WindowTypes.SLIDING
+            });
+
             // windowStartTime - 16 January 2019 12:00:00
             // windowEndTime - 16 January 2019 14:00:00
-            manifestParserMock.parse.and.returnValue({windowStartTime: 1547640000000, windowEndTime: 1547647200000, correction: 0});
-            initialiseBigscreenPlayer({
-              windowType: WindowTypes.SLIDING,
-              manifest: {},
-              manifestType: 'mpd'
-            });
+            mockPlayerComponentInstance.getWindowStartTime.and.returnValue(1547640000000);
+            mockPlayerComponentInstance.getWindowEndTime.and.returnValue(1547647200000);
 
             // Time to convert - 16 January 2019 13:00:00 - one hour (3600 seconds)
             expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBe(3600);
@@ -671,6 +780,9 @@ require(
 
           it('does not convert epoch time to video time when windowStartTime is not available', function () {
             initialiseBigscreenPlayer();
+
+            mockPlayerComponentInstance.getWindowStartTime.and.returnValue(undefined);
+            mockPlayerComponentInstance.getWindowEndTime.and.returnValue(undefined);
 
             expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBeUndefined();
           });
@@ -738,4 +850,3 @@ require(
       });
     }
   );
-
