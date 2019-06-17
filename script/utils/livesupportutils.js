@@ -1,5 +1,5 @@
 define(
-  'bigscreenplayer/utils/manifestutils', [
+  'bigscreenplayer/utils/livesupportutils', [
     'bigscreenplayer/models/windowtypes'
   ],
   function (WindowTypes) {

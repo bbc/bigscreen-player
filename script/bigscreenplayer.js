@@ -11,9 +11,9 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/utils/manifestutils'
+    'bigscreenplayer/utils/livesupportutils'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, ManifestUtils) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, LiveSupportUtils) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -133,7 +133,7 @@ define('bigscreenplayer/bigscreenplayer',
             callbacks = {};
           }
 
-          if (ManifestUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
+          if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
             ManifestLoader.load(
               bigscreenPlayerData.media.urls,
               serverDate,
