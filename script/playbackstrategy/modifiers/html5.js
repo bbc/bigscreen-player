@@ -1,12 +1,13 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/playbackstrategy/modifiers/seekfinishedemitevent'
   ],
-  function (MediaPlayerBase) {
+  function (MediaPlayerBase, SeekFinishedEmitEvent) {
     'use strict';
 
-    function Player (logger) {
+    function Player (deviceConfig, logger) {
       var eventCallback;
       var eventCallbacks = [];
       var state = MediaPlayerBase.STATE.EMPTY;
@@ -34,6 +35,8 @@ define(
       var sentinelInterval;
       var sentinelIntervalNumber;
       var lastSentinelTime;
+
+      var seekFinishedEmitEvent;
 
       var sentinelLimits = {
         pause: {
@@ -393,6 +396,10 @@ define(
       }
 
       function onStatus () {
+        if (window.bigscreenPlayer.seekFinishedEmitEvent) {
+          seekFinishedEmitEvent.onStatus(getState(), getCurrentTime(), sentinelSeekTime, seekSentinelTolerance);
+        }
+
         if (getState() === MediaPlayerBase.STATE.PLAYING) {
           emitEvent(MediaPlayerBase.EVENT.STATUS);
         }
@@ -600,6 +607,10 @@ define(
         },
 
         initialiseMedia: function (type, url, mediaMimeType, sourceContainer, opts) {
+          if (window.bigscreenPlayer.seekFinishedEmitEvent) {
+            seekFinishedEmitEvent = new SeekFinishedEmitEvent(getState(), deviceConfig.restartTimeout, emitEvent);
+          }
+
           disableSentinels = opts.disableSentinels;
           mediaType = type;
           source = url;
@@ -833,7 +844,6 @@ define(
         toPaused: toPaused,
 
         toPlaying: toPlaying
-
       };
     }
 

@@ -56,7 +56,7 @@ require(
           var windowType = WindowTypes.STATIC;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(html5player).toHaveBeenCalledWith(mockLogger);
+          expect(html5player).toHaveBeenCalledWith(mockConfig, mockLogger);
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
