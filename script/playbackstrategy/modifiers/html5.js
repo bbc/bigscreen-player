@@ -28,6 +28,7 @@ define(
       var targetSeekTime;
 
       var disableSentinels;
+      var disableSeekSentinel;
       var hasSentinelTimeChangedWithinTolerance;
       var enterBufferingSentinelAttemptCount;
       var sentinelSeekTime;
@@ -202,7 +203,7 @@ define(
       }
 
       function shouldBeSeekedSentinel () {
-        if (sentinelSeekTime === undefined) {
+        if (sentinelSeekTime === undefined || disableSeekSentinel) {
           return false;
         }
 
@@ -612,6 +613,7 @@ define(
           }
 
           disableSentinels = opts.disableSentinels;
+          disableSeekSentinel = opts.disableSeekSentinel;
           mediaType = type;
           source = url;
           mimeType = mediaMimeType;

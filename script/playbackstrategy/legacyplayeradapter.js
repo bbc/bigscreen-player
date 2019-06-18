@@ -35,7 +35,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
       var config = deviceConfig;
       var setSourceOpts = {
-        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels
+        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels,
+        disableSeekSentinel: true
       };
 
       mediaPlayer.addEventCallback(this, eventHandler);
