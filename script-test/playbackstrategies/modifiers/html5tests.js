@@ -16,17 +16,11 @@ require(
         var endedCallback;
         var timeupdateCallback;
         var waitingCallback;
+        var playingCallback;
 
         var recentEvents;
 
         var logger = jasmine.createSpyObj('logger', ['warn', 'debug', 'error']);
-        var config = {
-          streaming: {
-            overrides: {
-              forceBeginPlaybackToEndOfWindow: true
-            }
-          }
-        };
 
         function eventCallbackReporter (event) {
           recentEvents.push(event.type);
@@ -57,7 +51,21 @@ require(
           }
         }
 
+        function createPlayer (config, logger) {
+          player = Html5MediaPlayer(config, logger);
+          spyOn(player, 'toPaused').and.callThrough();
+
+          player.addEventCallback(this, eventCallbackReporter);
+        }
+
         beforeEach(function (done) {
+          var config = {
+            streaming: {
+              overrides: {
+                forceBeginPlaybackToEndOfWindow: true
+              }
+            }
+          };
           mockSourceElement = document.createElement('source');
           mockVideoMediaElement = document.createElement('video');
           mockAudioMediaElement = document.createElement('audio');
@@ -65,11 +73,6 @@ require(
           logger = jasmine.createSpyObj('logger', ['warn', 'debug', 'error']);
           sourceContainer = document.createElement('div');
           recentEvents = [];
-
-          player = Html5MediaPlayer(config, logger);
-          spyOn(player, 'toPaused').and.callThrough();
-
-          player.addEventCallback(this, eventCallbackReporter);
 
           spyOn(document, 'createElement').and.callFake(function (type) {
             if (type === 'source') {
@@ -92,6 +95,8 @@ require(
               endedCallback = methodCall;
             } else if (name === 'waiting') {
               waitingCallback = methodCall;
+            } else if (name === 'playing') {
+              playingCallback = methodCall;
             } else if (name === 'timeupdate') {
               timeupdateCallback = methodCall;
             }
@@ -114,10 +119,11 @@ require(
           spyOn(mockVideoMediaElement, 'play');
           spyOn(mockVideoMediaElement, 'load');
           spyOn(mockVideoMediaElement, 'pause');
+
+          createPlayer(config, logger);
           done();
         });
 
-          // These tests are media player common tests and can be extracted and reused.
         describe('Media Player Common Tests', function () {
           describe('Empty State Tests', function () {
             it('Get Source Returns Undefined In Empty State', function () {
@@ -1603,7 +1609,6 @@ require(
 
         describe('Current Time', function () {
           it(' Play From Sets Current Time And Calls Play On Media Element When In Stopped State', function () {
-            player = Html5MediaPlayer(config, logger);
             player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
 
             player.beginPlaybackFrom(50);
@@ -1624,7 +1629,6 @@ require(
           });
 
           it(' Begin Playback From Sets Current Time And Calls Play On Media Element When In Stopped State', function () {
-            player = Html5MediaPlayer(config, logger);
             player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
             player.beginPlaybackFrom(10);
             metaDataCallback({start: 0, end: 100});
@@ -1959,6 +1963,14 @@ require(
         });
 
         describe('Events', function () {
+          beforeEach(function () {
+            jasmine.clock().install();
+          });
+
+          afterEach(function () {
+            jasmine.clock().uninstall();
+          });
+
           it(' Waiting Html5 Event While Buffering Only Gives Single Buffering Event', function () {
             player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
 
@@ -1966,6 +1978,98 @@ require(
             waitingCallback();
 
             expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING);
+          });
+
+          it(' Seek Attempted Event Emitted On Initialise Media If The State Is Empty', function () {
+            player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+          });
+
+          it('Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing', function () {
+            player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+
+            player.beginPlaybackFrom(0);
+            waitingCallback();
+            playingCallback();
+
+            // initialise player.
+            // emit 5 status updates with time. (But why 5 though?)
+            // make sure the current time is within the seek sentinel threshold otherwise the seek finished event won't be fired! This appears not to matter if the time is 0 anyway...
+            // This means that in the event that sentinels aren't fired all this does is increment and decrement counters!
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+          });
+
+          it('Seek Finished Event Is Emitted Only Once', function () {
+            player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+
+            player.beginPlaybackFrom(0);
+            waitingCallback();
+            playingCallback();
+
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+            recentEvents = [];
+            timeupdateCallback();
+
+            expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+          });
+
+          it('testIfTimeIsInRangeAndHasBeenPlaying5TimesWith10SecondTimeoutWeFireSeekFinishedEvent', function () {
+            var restartTimeoutConfig = {
+              streaming: {
+                overrides: {
+                  forceBeginPlaybackToEndOfWindow: true
+                }
+              },
+              restartTimeout: 10000
+            };
+
+            createPlayer(restartTimeoutConfig, logger);
+
+            player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+
+            player.beginPlaybackFrom(0);
+            waitingCallback();
+            playingCallback();
+
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            timeupdateCallback();
+            jasmine.clock().tick(10000);
+
+            expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+
+            jasmine.clock().tick(1100);
+            timeupdateCallback();
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
           });
         });
 
