@@ -422,7 +422,7 @@ define(
           isAtCorrectStartingPoint = true;
         }
 
-        var isPlayingAtCorrectTime = state === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint;
+        var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint;
 
         if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
           emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED);
