@@ -2032,7 +2032,7 @@ require(
             expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
           });
 
-          it('testIfTimeIsInRangeAndHasBeenPlaying5TimesWith10SecondTimeoutWeFireSeekFinishedEvent', function () {
+          it(' Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
             var restartTimeoutConfig = {
               streaming: {
                 overrides: {
