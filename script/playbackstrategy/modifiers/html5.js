@@ -1,10 +1,9 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/playbackstrategy/modifiers/seekfinishedemitevent'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-  function (MediaPlayerBase, SeekFinishedEmitEvent) {
+  function (MediaPlayerBase) {
     'use strict';
 
     function Player (deviceConfig, logger) {

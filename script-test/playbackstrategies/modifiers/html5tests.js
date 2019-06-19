@@ -3,9 +3,8 @@ require(
     'bigscreenplayer/playbackstrategy/modifiers/html5',
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-    function (Html5MediaPLayer, MediaPlayerBase) {
+    function (Html5MediaPlayer, MediaPlayerBase) {
       describe('HTML5 Base', function () {
-        var html5Player;
         var sourceContainer;
         var player;
         var mockSourceElement;
@@ -65,12 +64,9 @@ require(
 
           logger = jasmine.createSpyObj('logger', ['warn', 'debug', 'error']);
           sourceContainer = document.createElement('div');
-
-          html5Player = Html5MediaPLayer;
-
           recentEvents = [];
 
-          player = html5Player(config, logger);
+          player = Html5MediaPlayer(config, logger);
           spyOn(player, 'toPaused').and.callThrough();
 
           player.addEventCallback(this, eventCallbackReporter);
@@ -1607,7 +1603,7 @@ require(
 
         describe('Current Time', function () {
           it(' Play From Sets Current Time And Calls Play On Media Element When In Stopped State', function () {
-            player = html5Player(config, logger);
+            player = Html5MediaPlayer(config, logger);
             player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
 
             player.beginPlaybackFrom(50);
@@ -1628,7 +1624,7 @@ require(
           });
 
           it(' Begin Playback From Sets Current Time And Calls Play On Media Element When In Stopped State', function () {
-            player = html5Player(config, logger);
+            player = Html5MediaPlayer(config, logger);
             player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
             player.beginPlaybackFrom(10);
             metaDataCallback({start: 0, end: 100});
