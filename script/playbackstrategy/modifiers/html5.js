@@ -26,6 +26,10 @@ define(
 
       var postBufferingState;
       var targetSeekTime;
+      var seekFinished;
+
+      var count;
+      var timeoutHappened;
 
       var disableSentinels;
       var disableSeekSentinel;
@@ -36,8 +40,6 @@ define(
       var sentinelInterval;
       var sentinelIntervalNumber;
       var lastSentinelTime;
-
-      var seekFinishedEmitEvent;
 
       var sentinelLimits = {
         pause: {
@@ -396,10 +398,44 @@ define(
         toComplete();
       }
 
-      function onStatus () {
-        if (window.bigscreenPlayer.seekFinishedEmitEvent) {
-          seekFinishedEmitEvent.onStatus(getState(), getCurrentTime(), sentinelSeekTime, seekSentinelTolerance);
+      function emitSeekAttempted () {
+        if (getState() === MediaPlayerBase.STATE.EMPTY) {
+          emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+          seekFinished = false;
         }
+
+        count = 0;
+        timeoutHappened = false;
+        if (deviceConfig.restartTimeout) {
+          setTimeout(function () {
+            timeoutHappened = true;
+          }, deviceConfig.restartTimeout);
+        } else {
+          timeoutHappened = true;
+        }
+      }
+
+      function emitSeekFinishedAtCorrectStartingPoint () {
+        var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance;
+
+        if (sentinelSeekTime === undefined) {
+          isAtCorrectStartingPoint = true;
+        }
+
+        var isPlayingAtCorrectTime = state === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint;
+
+        if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
+          emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED);
+          seekFinished = true;
+        } else if (isPlayingAtCorrectTime) {
+          count++;
+        } else {
+          count = 0;
+        }
+      }
+
+      function onStatus () {
+        emitSeekFinishedAtCorrectStartingPoint();
 
         if (getState() === MediaPlayerBase.STATE.PLAYING) {
           emitEvent(MediaPlayerBase.EVENT.STATUS);
@@ -608,16 +644,14 @@ define(
         },
 
         initialiseMedia: function (type, url, mediaMimeType, sourceContainer, opts) {
-          if (window.bigscreenPlayer.seekFinishedEmitEvent) {
-            seekFinishedEmitEvent = new SeekFinishedEmitEvent(getState(), deviceConfig.restartTimeout, emitEvent);
-          }
-
           disableSentinels = opts.disableSentinels;
           disableSeekSentinel = opts.disableSeekSentinel;
           mediaType = type;
           source = url;
           mimeType = mediaMimeType;
           opts = opts || {};
+
+          emitSeekAttempted();
 
           if (getState() === MediaPlayerBase.STATE.EMPTY) {
             var idSuffix = 'Video';
