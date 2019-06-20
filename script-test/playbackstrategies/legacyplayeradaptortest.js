@@ -539,7 +539,10 @@ require(
 
       describe('live glitch curtain', function () {
         it('should show curtain for a live restart and we get a seek-attempted event', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+          var configReplacement = {
+            capabilities: ['liveCurtain']
+          };
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement});
 
           legacyAdaptor.load(cdnArray, 'video/mp4', 10);
 
@@ -549,7 +552,10 @@ require(
         });
 
         it('should show curtain for a live restart to 0 and we get a seek-attempted event', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+          var configReplacement = {
+            capabilities: ['liveCurtain']
+          };
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement});
 
           legacyAdaptor.load(cdnArray, 'video/mp4', 0);
 
@@ -559,7 +565,10 @@ require(
         });
 
         it('should not show curtain when playing from the live point and we get a seek-attempted event', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+          var configReplacement = {
+            capabilities: ['liveCurtain']
+          };
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement});
 
           legacyAdaptor.load(cdnArray, 'video/mp4');
 
@@ -576,7 +585,8 @@ require(
               overrides: {
                 forceBeginPlaybackToEndOfWindow: true
               }
-            }
+            },
+            capabilities: ['liveCurtain']
           };
 
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement});
@@ -587,7 +597,10 @@ require(
         });
 
         it('should not show curtain when the config overide is not set and we are playing live', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+          var configReplacement = {
+            capabilities: ['liveCurtain']
+          };
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement});
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
@@ -595,7 +608,10 @@ require(
         });
 
         it('should hide the curtain when we get a seek-finished event', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+          var configReplacement = {
+            capabilities: ['liveCurtain']
+          };
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement});
 
           legacyAdaptor.load(cdnArray, 'video/mp4', 0);
 
@@ -609,7 +625,10 @@ require(
         });
 
         it('should tear down the curtain on strategy tearDown if it has been shown', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+          var configReplacement = {
+            capabilities: ['liveCurtain']
+          };
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement});
 
           legacyAdaptor.load(cdnArray, 'video/mp4', 0);
 

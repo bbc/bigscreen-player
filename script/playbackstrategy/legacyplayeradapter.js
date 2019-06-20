@@ -115,11 +115,32 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       }
 
       function onSeekAttempted (event) {
-        showCurtain();
+        if (requiresLiveCurtain()) {
+          var doNotForceBeginPlaybackToEndOfWindow = {
+            forceBeginPlaybackToEndOfWindow: false
+          };
+
+          var streaming = config.streaming || {
+            overrides: doNotForceBeginPlaybackToEndOfWindow
+          };
+
+          var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
+
+          var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
+
+          if (shouldShowCurtain) {
+            liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
+            liveGlitchCurtain.showCurtain();
+          }
+        }
       }
 
       function onSeekFinished (event) {
-        hideCurtain();
+        if (requiresLiveCurtain()) {
+          if (liveGlitchCurtain) {
+            liveGlitchCurtain.hideCurtain();
+          }
+        }
       }
 
       function publishMediaState (mediaState) {
@@ -193,29 +214,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
         mediaPlayer.beginPlaybackFrom(currentTime + timeCorrection || 0);
       }
 
-      function showCurtain () {
-        var doNotForceBeginPlaybackToEndOfWindow = {
-          forceBeginPlaybackToEndOfWindow: false
-        };
-
-        var streaming = config.streaming || {
-          overrides: doNotForceBeginPlaybackToEndOfWindow
-        };
-
-        var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
-
-        var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
-
-        if (shouldShowCurtain) {
-          liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
-          liveGlitchCurtain.showCurtain();
-        }
-      }
-
-      function hideCurtain () {
-        if (liveGlitchCurtain) {
-          liveGlitchCurtain.hideCurtain();
-        }
+      function requiresLiveCurtain () {
+        return deviceConfig.capabilities.indexOf('liveCurtain') !== -1;
       }
 
       function reset () {
