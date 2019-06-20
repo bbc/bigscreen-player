@@ -1995,10 +1995,6 @@ require(
             waitingCallback();
             playingCallback();
 
-            // initialise player.
-            // emit 5 status updates with time. (But why 5 though?)
-            // make sure the current time is within the seek sentinel threshold otherwise the seek finished event won't be fired! This appears not to matter if the time is 0 anyway...
-            // This means that in the event that sentinels aren't fired all this does is increment and decrement counters!
             timeupdateCallback();
             timeupdateCallback();
             timeupdateCallback();
@@ -2032,7 +2028,6 @@ require(
             expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
           });
 
-          // testIfTimeIsInRangeAndHasBeenPlaying5TimesWith10SecondTimeoutWeFireSeekFinishedEvent
           it(' Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
             var restartTimeoutConfig = {
               streaming: {
