@@ -2032,6 +2032,7 @@ require(
             expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
           });
 
+          // testIfTimeIsInRangeAndHasBeenPlaying5TimesWith10SecondTimeoutWeFireSeekFinishedEvent
           it(' Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
             var restartTimeoutConfig = {
               streaming: {
@@ -2057,11 +2058,7 @@ require(
             timeupdateCallback();
             timeupdateCallback();
             timeupdateCallback();
-            timeupdateCallback();
-            timeupdateCallback();
-            timeupdateCallback();
-            timeupdateCallback();
-            timeupdateCallback();
+
             jasmine.clock().tick(10000);
 
             expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
