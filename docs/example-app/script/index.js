@@ -97,7 +97,7 @@ define([
         if (state === 'WAITING') {
           playbackElement.appendChild(playbackSpinner);
         } else {
-          playbackElement.removeChild(playbackSpinner);
+          if (playbackElement.contains(playbackSpinner)) playbackElement.removeChild(playbackSpinner);
         }
       });
     }
