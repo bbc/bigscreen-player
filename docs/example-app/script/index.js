@@ -109,7 +109,7 @@ define([
     setupControls();
 
     // Set initial focus
-    playButton.focus();
+    playButton.focus(); 
 
     // Create data source for bigscreen-plauer
     var minimalData = {
