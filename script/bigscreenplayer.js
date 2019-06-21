@@ -213,7 +213,7 @@ define('bigscreenplayer/bigscreenplayer',
         },
         isPlayingAtLiveEdge: function () {
           var END_OF_STREAM_TOLERANCE = 10;
-          return playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
+          return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
         },
         getLiveWindowData: function () {
           if (windowType === WindowTypes.STATIC) {

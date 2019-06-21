@@ -473,6 +473,36 @@ require(
           });
         });
 
+        describe('isAtLiveEdge', function () {
+          it('should return false when playing on demand content', function () {
+            initialiseBigscreenPlayer();
+
+            expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false);
+          });
+
+          it('should return false when bigscreen-player has not been initialised', function () {
+            expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false);
+          });
+
+          it('should return true when playing live and current time is within tolerance of seekable range end', function () {
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+
+            mockPlayerComponentInstance.getCurrentTime.and.returnValue(100);
+            mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 105});
+
+            expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(true);
+          });
+
+          it('should return false when playing live and current time is outside the tolerance of seekable range end', function () {
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+
+            mockPlayerComponentInstance.getCurrentTime.and.returnValue(95);
+            mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 105});
+
+            expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false);
+          });
+        });
+
         describe('getLiveWindowData', function () {
           it('should return undefined values when windowType is static', function () {
             initialiseBigscreenPlayer({windowType: WindowTypes.STATIC});
