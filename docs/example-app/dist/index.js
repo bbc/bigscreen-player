@@ -65568,7 +65568,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       if (state === 'WAITING') {
         playbackElement.appendChild(playbackSpinner);
       } else {
-        playbackElement.removeChild(playbackSpinner);
+        if (playbackElement.contains(playbackSpinner)) playbackElement.removeChild(playbackSpinner);
       }
     });
   }
