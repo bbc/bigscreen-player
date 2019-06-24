@@ -465,7 +465,9 @@ define(
       }
 
       function getFakeCurrentTimeAndIncrement () {
-        if (!fakeTimer.runningTime) fakeTimer.runningTime = Date.now();
+        if (!fakeTimer.runningTime) {
+          fakeTimer.runningTime = Date.now();
+        }
         var deltaTime = (Date.now() - fakeTimer.runningTime) / 1000;
         fakeTimer.currentTime += deltaTime;
         fakeTimer.runningTime = Date.now();
