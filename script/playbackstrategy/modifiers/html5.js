@@ -2,9 +2,10 @@ define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/models/windowtypes'
+    'bigscreenplayer/models/windowtypes',
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaPlayerBase, WindowTypes) {
+  function (MediaPlayerBase, WindowTypes, DebugTool) {
     'use strict';
 
     function Player (logger, useFakeTime, windowType, timeData) {
@@ -61,6 +62,7 @@ define(
       };
 
       function emitEvent (eventType, eventLabels, useFakeTime) {
+        DebugTool.keyValue({key: 'Date.now', value: Date.now()});
         var event = {
           type: eventType,
           currentTime: useFakeTime ? getFakeCurrentTimeAndIncrement() : getCurrentTime(),
