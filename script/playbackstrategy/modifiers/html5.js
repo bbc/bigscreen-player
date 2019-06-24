@@ -63,6 +63,7 @@ define(
 
       function emitEvent (eventType, eventLabels, useFakeTime) {
         DebugTool.keyValue({key: 'Date.now', value: Date.now()});
+        DebugTool.keyValue({key: 'Date.now iso', value: new Date().toISOString()});
         var event = {
           type: eventType,
           currentTime: useFakeTime ? getFakeCurrentTimeAndIncrement() : getCurrentTime(),
@@ -409,7 +410,6 @@ define(
       }
 
       function onStatus () {
-        console.log('html5::onStatus >>> ', new Date().toISOString());
         if (getState() === MediaPlayerBase.STATE.PLAYING) {
           emitEvent(MediaPlayerBase.EVENT.STATUS, null, true);
         }
@@ -466,13 +466,9 @@ define(
 
       function getFakeCurrentTimeAndIncrement () {
         if (!fakeTimer.runningTime) fakeTimer.runningTime = Date.now();
-        // if (fakeTimer.currentTime === undefined) {
-        //   fakeTimer.currentTime = fakeTimer.cachedStartTime ? fakeTimer.cachedStartTime : 0.1;
-        // }
         var deltaTime = (Date.now() - fakeTimer.runningTime) / 1000;
         fakeTimer.currentTime += deltaTime;
         fakeTimer.runningTime = Date.now();
-        console.log('FakeTime: ', fakeTimer.currentTime, 'Media Element Time: ', mediaElement.currentTime);
 
         if (windowType !== WindowTypes.STATIC) {
           if (windowType === WindowTypes.SLIDING) {
@@ -491,8 +487,6 @@ define(
             break;
 
           default:
-            // if (mediaElement) return mediaElement.currentTime;
-            // if (mediaElement && !useFakeTime) return mediaElement.currentTime;
             return mediaElement && !useFakeTime ? mediaElement.currentTime : fakeTimer.currentTime;
             break;
         }
