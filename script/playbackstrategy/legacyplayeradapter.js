@@ -36,7 +36,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var config = deviceConfig;
       var setSourceOpts = {
         disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels,
-        disableSeekSentinel: true
+        disableSeekSentinel: window.bigscreenPlayer.disableSeekSentinel
       };
 
       mediaPlayer.addEventCallback(this, eventHandler);
@@ -215,7 +215,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       }
 
       function requiresLiveCurtain () {
-        return deviceConfig.capabilities.indexOf('liveCurtain') !== -1;
+        return !!window.bigscreenPlayer.showLiveCurtain;
       }
 
       function reset () {
