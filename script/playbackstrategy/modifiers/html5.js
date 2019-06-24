@@ -219,7 +219,7 @@ define(
         var currentTime = getCurrentTime();
         var sentinelActionTaken = false;
 
-        if (currentTime === undefined || isNaN(currentTime) || Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
+        if (Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
           sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
             mediaElement.currentTime = sentinelSeekTime;
             fakeTimer.currentTime = sentinelSeekTime;
@@ -716,6 +716,11 @@ define(
         beginPlayback: function () {
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           sentinelSeekTime = undefined;
+
+          fakeTimer.window.start = 0;
+          fakeTimer.window.end = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+          fakeTimer.currentTime = fakeTimer.window.end;
+
           switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
               trustZeroes = true;
@@ -736,6 +741,7 @@ define(
 
           fakeTimer.window.start = 0;
           fakeTimer.window.end = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+          fakeTimer.currentTime = fakeTimer.window.end;
 
           switch (this.getState()) {
             case MediaPlayerBase.STATE.STOPPED:
