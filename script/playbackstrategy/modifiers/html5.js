@@ -219,7 +219,7 @@ define(
         var currentTime = getCurrentTime();
         var sentinelActionTaken = false;
 
-        if (currentTime === undefined || Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
+        if (currentTime === undefined || isNaN(currentTime) || Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
           sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
             mediaElement.currentTime = sentinelSeekTime;
             fakeTimer.currentTime = sentinelSeekTime;
@@ -486,13 +486,10 @@ define(
         switch (getState()) {
           case MediaPlayerBase.STATE.STOPPED:
           case MediaPlayerBase.STATE.ERROR:
-            break;
-
+            return;
           default:
             return mediaElement && !useFakeTime ? mediaElement.currentTime : fakeTimer.currentTime;
-            break;
         }
-        return undefined;
       }
 
       /**
