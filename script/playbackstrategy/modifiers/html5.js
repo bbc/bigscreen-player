@@ -1,12 +1,13 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/models/windowtypes'
   ],
-  function (MediaPlayerBase) {
+  function (MediaPlayerBase, WindowTypes) {
     'use strict';
 
-    function Player (logger) {
+    function Player (logger, useFakeTime, windowType, timeData) {
       var eventCallback;
       var eventCallbacks = [];
       var state = MediaPlayerBase.STATE.EMPTY;
@@ -35,6 +36,15 @@ define(
       var sentinelIntervalNumber;
       var lastSentinelTime;
 
+      var fakeTimer = {
+        currentTime: undefined,
+        runningTime: undefined,
+        window: {
+          start: undefined,
+          end: undefined
+        }
+      };
+
       var sentinelLimits = {
         pause: {
           maximumAttempts: 2,
@@ -50,10 +60,10 @@ define(
         }
       };
 
-      function emitEvent (eventType, eventLabels) {
+      function emitEvent (eventType, eventLabels, useFakeTime) {
         var event = {
           type: eventType,
-          currentTime: getCurrentTime(),
+          currentTime: useFakeTime ? getFakeCurrentTimeAndIncrement() : getCurrentTime(),
           seekableRange: getSeekableRange(),
           duration: getDuration(),
           url: getSource(),
@@ -206,9 +216,10 @@ define(
         var currentTime = getCurrentTime();
         var sentinelActionTaken = false;
 
-        if (Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
+        if (currentTime === undefined || Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
           sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
             mediaElement.currentTime = sentinelSeekTime;
+            fakeTimer.currentTime = sentinelSeekTime;
           });
         } else if (sentinelIntervalNumber < 3) {
           sentinelSeekTime = currentTime;
@@ -336,6 +347,9 @@ define(
       }
 
       function getSeekableRange () {
+        if (useFakeTime) {
+          return fakeTimer.window;
+        }
         if (mediaElement) {
           if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
             return {
@@ -393,8 +407,9 @@ define(
       }
 
       function onStatus () {
+        console.log('html5::onStatus >>> ', new Date().toISOString());
         if (getState() === MediaPlayerBase.STATE.PLAYING) {
-          emitEvent(MediaPlayerBase.EVENT.STATUS);
+          emitEvent(MediaPlayerBase.EVENT.STATUS, null, true);
         }
       }
 
@@ -447,6 +462,26 @@ define(
         sentinelSeekTime = clampedTime;
       }
 
+      function getFakeCurrentTimeAndIncrement () {
+        if (!fakeTimer.runningTime) fakeTimer.runningTime = Date.now();
+        // if (fakeTimer.currentTime === undefined) {
+        //   fakeTimer.currentTime = fakeTimer.cachedStartTime ? fakeTimer.cachedStartTime : 0.1;
+        // }
+        var deltaTime = (Date.now() - fakeTimer.runningTime) / 1000;
+        fakeTimer.currentTime += deltaTime;
+        fakeTimer.runningTime = Date.now();
+        console.log('FakeTime: ', fakeTimer.currentTime, 'Media Element Time: ', mediaElement.currentTime);
+
+        if (windowType !== WindowTypes.STATIC) {
+          if (windowType === WindowTypes.SLIDING) {
+            fakeTimer.window.start += deltaTime;
+          }
+          fakeTimer.window.end += deltaTime;
+        }
+
+        return fakeTimer.currentTime;
+      }
+
       function getCurrentTime () {
         switch (getState()) {
           case MediaPlayerBase.STATE.STOPPED:
@@ -454,9 +489,9 @@ define(
             break;
 
           default:
-            if (mediaElement) {
-              return mediaElement.currentTime;
-            }
+            // if (mediaElement) return mediaElement.currentTime;
+            // if (mediaElement && !useFakeTime) return mediaElement.currentTime;
+            return mediaElement && !useFakeTime ? mediaElement.currentTime : fakeTimer.currentTime;
             break;
         }
         return undefined;
@@ -703,6 +738,9 @@ define(
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           targetSeekTime = seconds;
           sentinelLimits.seek.currentAttemptCount = 0;
+
+          fakeTimer.window.start = 0;
+          fakeTimer.window.end = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
 
           switch (this.getState()) {
             case MediaPlayerBase.STATE.STOPPED:

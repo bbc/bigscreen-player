@@ -2,14 +2,15 @@ define(
     'bigscreenplayer/playbackstrategy/modifiers/live/restartable',
   [
     'bigscreenplayer/playbackstrategy/modifiers/html5',
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/models/windowtypes'
   ],
-    function (Html5Player, MediaPlayerBase) {
+    function (Html5Player, MediaPlayerBase, WindowTypes) {
       'use strict';
       var AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS = 8000;
 
-      function RestartableLivePlayer (deviceConfig, logger) {
-        var mediaPlayer = Html5Player(logger);
+      function RestartableLivePlayer (deviceConfig, logger, timeData) {
+        var mediaPlayer = Html5Player(logger, true, WindowTypes.SLIDING, timeData);
         var millisecondsUntilStartOfWindow;
         var bufferingStarted;
         var self = this;
@@ -159,6 +160,10 @@ define(
 
           getPlayerElement: function () {
             return mediaPlayer.getPlayerElement();
+          },
+
+          getSeekableRange: function getSeekableRange () {
+            return mediaPlayer.getSeekableRange();
           }
 
         };

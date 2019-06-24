@@ -12,7 +12,7 @@ define('bigscreenplayer/playbackstrategy/nativestrategy',
       var tempConfig = device.getConfig();
 
       if (windowType !== WindowTypes.STATIC) {
-        mediaPlayer = LivePlayer(tempConfig, logger);
+        mediaPlayer = LivePlayer(tempConfig, logger, timeData);
       } else {
         mediaPlayer = Html5Player(logger);
       }
