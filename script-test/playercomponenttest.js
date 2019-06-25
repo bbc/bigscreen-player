@@ -303,6 +303,16 @@ require(
 
           expect(mockStrategy.setCurrentTime).toHaveBeenCalledWith(10);
         });
+
+        it('should reload the element if restartable', function () {
+          liveSupport = LiveSupport.RESTARTABLE;
+          setUpPlayerComponent({ windowType: WindowTypes.SLIDING });
+
+          spyOn(mockStrategy, 'load');
+          playerComponent.setCurrentTime(10);
+
+          expect(mockStrategy.load).toHaveBeenCalledWith([{ url: 'a', cdn: 'cdn-a' }], 'application/dash+xml', 10);
+        });
       });
 
       describe('events', function () {

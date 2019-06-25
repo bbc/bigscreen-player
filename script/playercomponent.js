@@ -136,31 +136,17 @@ define(
       }
 
       function reloadMediaElement (time) {
+        var thenPause = playbackStrategy.isPaused();
+        tearDownMediaElement();
+
         function doSeek (time) {
           loadMedia(mediaMetaData.urls, mediaMetaData.type, time, thenPause);
         }
+        var errorCallback = function () {
+          bubbleFatalError(createPlaybackErrorProperties(event), false);
+        };
 
-        var thenPause = playbackStrategy.isPaused();
-        tearDownMediaElement();
-        if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
-          ManifestLoader.load(
-            bigscreenPlayerData.media.urls,
-            bigscreenPlayerData.serverDate,
-            {
-              onSuccess: function (manifestData) {
-                var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
-                bigscreenPlayerData.time = manifestData.time;
-                time -= windowOffset / 1000;
-                doSeek(time);
-              },
-              onError: function (event) {
-                bubbleFatalError(createPlaybackErrorProperties(event), false);
-              }
-            }
-          );
-        } else {
-          doSeek(time);
-        }
+        reloadManifest(time, doSeek, errorCallback);
       }
 
       function transitions () {
@@ -261,37 +247,41 @@ define(
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
         var shouldFailover = MediaResilience.shouldFailover(mediaMetaData.urls.length, getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
 
+        var failover = function (time) {
+          cdnFailover(time, thenPause, errorProperties, bufferingTimeoutError);
+        };
+        var errorCallback = function () {
+          bubbleFatalError(errorProperties, bufferingTimeoutError);
+        };
+
         if (shouldFailover) {
           var thenPause = playbackStrategy.isPaused();
           tearDownMediaElement();
 
           var failoverTime = getCurrentTime();
-          if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
-            manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-          } else {
-            cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-          }
+          reloadManifest(failoverTime, failover, errorCallback);
         } else {
-          bubbleFatalError(errorProperties, bufferingTimeoutError);
+          errorCallback();
         }
       }
 
-      function manifestReloadFailover (failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-        ManifestLoader.load(
-          bigscreenPlayerData.media.urls,
-          bigscreenPlayerData.serverDate,
-          {
-            onSuccess: function (manifestData) {
-              var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
-              bigscreenPlayerData.time = manifestData.time;
-              failoverTime -= windowOffset / 1000;
-              cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-            },
-            onError: function () {
-              bubbleFatalError(errorProperties, bufferingTimeoutError);
+      function reloadManifest (time, successCallback, errorCallback) {
+        if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
+          ManifestLoader.load(
+            bigscreenPlayerData.media.urls,
+            bigscreenPlayerData.serverDate,
+            {
+              onSuccess: function (manifestData) {
+                var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
+                bigscreenPlayerData.time = manifestData.time;
+                successCallback(time - windowOffset / 1000);
+              },
+              onError: errorCallback
             }
-          }
-        );
+          );
+        } else {
+          successCallback(time);
+        }
       }
 
       function cdnFailover (failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
