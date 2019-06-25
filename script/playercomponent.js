@@ -136,13 +136,13 @@ define(
       }
 
       function reloadMediaElement (time) {
-        var thenPause = playbackStrategy.isPaused();
-        tearDownMediaElement();
-
         function doSeek (time) {
+          var thenPause = playbackStrategy.isPaused();
+          tearDownMediaElement();
           loadMedia(mediaMetaData.urls, mediaMetaData.type, time, thenPause);
         }
         var errorCallback = function () {
+          tearDownMediaElement();
           bubbleFatalError(createPlaybackErrorProperties(event), false);
         };
 
