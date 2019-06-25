@@ -128,20 +128,20 @@ define(
         userInteracted = true;
         if (transitions().canBeginSeek()) {
           if (windowType !== WindowTypes.STATIC && getLiveSupport(device) === LiveSupport.RESTARTABLE) {
-            failoverStyleSeek(time);
+            reloadMediaElement(time);
           } else {
             playbackStrategy.setCurrentTime(time);
           }
         }
       }
 
-      function failoverStyleSeek (time) {
+      function reloadMediaElement (time) {
         function doSeek (time) {
-          var thenPause = playbackStrategy.isPaused();
-          tearDownMediaElement();
           loadMedia(mediaMetaData.urls, mediaMetaData.type, time, thenPause);
         }
 
+        var thenPause = playbackStrategy.isPaused();
+        tearDownMediaElement();
         if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
           ManifestLoader.load(
             bigscreenPlayerData.media.urls,
@@ -153,8 +153,8 @@ define(
                 time -= windowOffset / 1000;
                 doSeek(time);
               },
-              onError: function (e) {
-                // handle error; 04002?
+              onError: function (event) {
+                bubbleFatalError(createPlaybackErrorProperties(event), false);
               }
             }
           );

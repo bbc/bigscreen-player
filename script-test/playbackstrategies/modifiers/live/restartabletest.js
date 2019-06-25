@@ -32,7 +32,7 @@ require(
             player = jasmine.createSpyObj('player',
               ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
                 'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement', 'pause',
-                'resume', 'beginPlaybackFrom', 'getCurrentTime']);
+                'resume', 'beginPlaybackFrom', 'getCurrentTime', 'getSeekableRange']);
 
             function mockMediaPlayer () {
               return player;
@@ -106,6 +106,14 @@ require(
             it('calls pause on the media player', function () {
               wrapperTests('pause');
             });
+
+            it('getCurrentTime', function () {
+              wrapperTests('getCurrentTime');
+            });
+
+            it('getSeekableRange', function () {
+              wrapperTests('getSeekableRange');
+            });
           });
 
           describe('should not have methods for', function () {
@@ -119,14 +127,6 @@ require(
 
             it('playFrom', function () {
               isUndefined('playFrom');
-            });
-
-            it('getCurrentTime', function () {
-              isUndefined('getCurrentTime');
-            });
-
-            it('getSeekableRange', function () {
-              isUndefined('getSeekableRange');
             });
           });
 

@@ -2,10 +2,9 @@ define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/models/windowtypes'
   ],
-  function (MediaPlayerBase, WindowTypes, DebugTool) {
+  function (MediaPlayerBase, WindowTypes) {
     'use strict';
 
     function Player (logger, useFakeTime, windowType, timeData) {
@@ -61,9 +60,7 @@ define(
         }
       };
 
-      function emitEvent (eventType, eventLabels, useFakeTime) {
-        DebugTool.keyValue({key: 'Date.now', value: Date.now()});
-        DebugTool.keyValue({key: 'Date.now iso', value: new Date().toISOString()});
+      function emitEvent (eventType, eventLabels) {
         var event = {
           type: eventType,
           currentTime: useFakeTime ? getFakeCurrentTimeAndIncrement() : getCurrentTime(),
@@ -222,7 +219,9 @@ define(
         if (Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
           sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
             mediaElement.currentTime = sentinelSeekTime;
-            fakeTimer.currentTime = sentinelSeekTime;
+            if (useFakeTime) {
+              fakeTimer.currentTime = sentinelSeekTime;
+            }
           });
         } else if (sentinelIntervalNumber < 3) {
           sentinelSeekTime = currentTime;
@@ -411,7 +410,7 @@ define(
 
       function onStatus () {
         if (getState() === MediaPlayerBase.STATE.PLAYING) {
-          emitEvent(MediaPlayerBase.EVENT.STATUS, null, true);
+          emitEvent(MediaPlayerBase.EVENT.STATUS);
         }
       }
 
@@ -488,7 +487,11 @@ define(
           case MediaPlayerBase.STATE.ERROR:
             return;
           default:
-            return mediaElement && !useFakeTime ? mediaElement.currentTime : fakeTimer.currentTime;
+            if (useFakeTime) {
+              return fakeTimer.currentTime;
+            } else if (mediaElement) {
+              return mediaElement.currentTime;
+            }
         }
       }
 
@@ -610,6 +613,18 @@ define(
         setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel]);
       }
 
+      function setUpFakeTimer () {
+        var windowLength = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+        fakeTimer = {
+          currentTime: windowLength,
+          runningTime: Date.now(),
+          window: {
+            start: 0,
+            end: windowLength
+          }
+        };
+      }
+
       return {
         addEventCallback: function (thisArg, newCallback) {
           eventCallback = function (event) {
@@ -717,9 +732,9 @@ define(
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           sentinelSeekTime = undefined;
 
-          fakeTimer.window.start = 0;
-          fakeTimer.window.end = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
-          fakeTimer.currentTime = fakeTimer.window.end;
+          if (useFakeTime) {
+            setUpFakeTimer();
+          }
 
           switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
@@ -739,9 +754,9 @@ define(
           targetSeekTime = seconds;
           sentinelLimits.seek.currentAttemptCount = 0;
 
-          fakeTimer.window.start = 0;
-          fakeTimer.window.end = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
-          fakeTimer.currentTime = fakeTimer.window.end;
+          if (useFakeTime) {
+            setUpFakeTimer();
+          }
 
           switch (this.getState()) {
             case MediaPlayerBase.STATE.STOPPED:

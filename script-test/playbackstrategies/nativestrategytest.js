@@ -65,7 +65,7 @@ require(
           var windowType = WindowTypes.GROWING;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(livePlayer).toHaveBeenCalledWith(mockConfig, mockLogger);
+          expect(livePlayer).toHaveBeenCalledWith(mockConfig, mockLogger, WindowTypes.GROWING, 'timeData');
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
@@ -74,7 +74,7 @@ require(
           var windowType = WindowTypes.SLIDING;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(livePlayer).toHaveBeenCalledWith(mockConfig, mockLogger);
+          expect(livePlayer).toHaveBeenCalledWith(mockConfig, mockLogger, WindowTypes.SLIDING, 'timeData');
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
