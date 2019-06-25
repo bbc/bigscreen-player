@@ -42,7 +42,8 @@ define(
         window: {
           start: undefined,
           end: undefined
-        }
+        },
+        wasPlaying: false
       };
 
       var sentinelLimits = {
@@ -61,9 +62,13 @@ define(
       };
 
       function emitEvent (eventType, eventLabels) {
+        if (useFakeTime) {
+          updateFakeTimer();
+        }
+
         var event = {
           type: eventType,
-          currentTime: useFakeTime ? getFakeCurrentTimeAndIncrement() : getCurrentTime(),
+          currentTime: getCurrentTime(),
           seekableRange: getSeekableRange(),
           duration: getDuration(),
           url: getSource(),
@@ -463,24 +468,6 @@ define(
         sentinelSeekTime = clampedTime;
       }
 
-      function getFakeCurrentTimeAndIncrement () {
-        if (!fakeTimer.runningTime) {
-          fakeTimer.runningTime = Date.now();
-        }
-        var deltaTime = (Date.now() - fakeTimer.runningTime) / 1000;
-        fakeTimer.currentTime += deltaTime;
-        fakeTimer.runningTime = Date.now();
-
-        if (windowType !== WindowTypes.STATIC) {
-          if (windowType === WindowTypes.SLIDING) {
-            fakeTimer.window.start += deltaTime;
-          }
-          fakeTimer.window.end += deltaTime;
-        }
-
-        return fakeTimer.currentTime;
-      }
-
       function getCurrentTime () {
         switch (getState()) {
           case MediaPlayerBase.STATE.STOPPED:
@@ -621,8 +608,29 @@ define(
           window: {
             start: 0,
             end: windowLength
-          }
+          },
+          wasPlaying: false
         };
+      }
+
+      function updateFakeTimer () {
+        if (!fakeTimer.runningTime) {
+          fakeTimer.runningTime = Date.now();
+        }
+        var deltaTime = (Date.now() - fakeTimer.runningTime) / 1000;
+        fakeTimer.runningTime = Date.now();
+
+        if (fakeTimer.wasPlaying) {
+          fakeTimer.currentTime += deltaTime;
+        }
+        fakeTimer.wasPlaying = getState() === MediaPlayerBase.STATE.PLAYING;
+
+        if (windowType !== WindowTypes.STATIC) {
+          if (windowType === WindowTypes.SLIDING) {
+            fakeTimer.window.start += deltaTime;
+          }
+          fakeTimer.window.end += deltaTime;
+        }
       }
 
       return {

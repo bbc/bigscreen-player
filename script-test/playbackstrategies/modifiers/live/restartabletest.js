@@ -104,6 +104,8 @@ require(
             });
 
             it('calls pause on the media player', function () {
+              player.getSeekableRange.and.returnValue({start: 0});
+
               wrapperTests('pause');
             });
 
@@ -184,6 +186,7 @@ require(
             var mockCallback = [];
 
             function startPlaybackAndPause (startTime, disableAutoResume) {
+              player.getCurrentTime.and.returnValue(startTime);
               restartableMediaPlayer.beginPlaybackFrom(startTime);
               restartableMediaPlayer.pause({disableAutoResume: disableAutoResume});
             }
@@ -195,6 +198,7 @@ require(
               player.addEventCallback.and.callFake(function (self, callback) {
                 mockCallback.push(callback);
               });
+              player.getSeekableRange.and.returnValue({start: 0});
 
               initialiseRestartableMediaPlayer();
             });
@@ -267,6 +271,7 @@ require(
               startPlaybackAndPause(20, false);
 
               jasmine.clock().tick(12 * 1000);
+              player.getSeekableRange.and.returnValue({start: 12});
 
               restartableMediaPlayer.pause();
 
