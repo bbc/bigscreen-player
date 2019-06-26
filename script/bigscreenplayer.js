@@ -136,7 +136,7 @@ define('bigscreenplayer/bigscreenplayer',
               bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
             },
             onError: function () {
-              if (bigscreenPlayerData.media.urls > 0) {
+              if (bigscreenPlayerData.media.urls.length > 0) {
                 bigscreenPlayerData.media.urls.shift();
                 initialManifestLoad(bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
               } else {
