@@ -27,6 +27,7 @@ require(
           mockDevice = jasmine.createSpyObj('mockDevice', ['getConfig', 'getLogger']);
 
           mockLegacyAdapter = jasmine.createSpy('LegacyAdapter');
+          mediaPlayer = jasmine.createSpy('MediaPlayer');
           html5player = jasmine.createSpy('Html5Player');
           livePlayer = jasmine.createSpy('LivePlayer');
 
@@ -70,8 +71,8 @@ require(
           var windowType = WindowTypes.GROWING;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(html5player).toHaveBeenCalledWith(mockLogger, false, WindowTypes.GROWING, 'timeData');
-          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig);
+          expect(html5player).toHaveBeenCalledWith(mockLogger);
+          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.GROWING, 'timeData');
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
@@ -80,19 +81,8 @@ require(
           var windowType = WindowTypes.SLIDING;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(html5player).toHaveBeenCalledWith(mockLogger, false, WindowTypes.SLIDING, 'timeData');
-          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig);
-
-          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
-        });
-
-        it('calls LegacyAdapter with useFakeTime if live support is RESTARTABLE', function () {
-          var windowType = WindowTypes.SLIDING;
-          window.bigscreenPlayer.liveSupport = LiveSupport.RESTARTABLE;
-          nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
-
-          expect(html5player).toHaveBeenCalledWith(mockLogger, true, WindowTypes.SLIDING, 'timeData');
-          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig);
+          expect(html5player).toHaveBeenCalledWith(mockLogger);
+          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.SLIDING, 'timeData');
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });

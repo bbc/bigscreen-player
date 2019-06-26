@@ -1,15 +1,17 @@
 require(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/playbackstrategy/modifiers/live/restartable'
+    'bigscreenplayer/playbackstrategy/modifiers/live/restartable',
+    'bigscreenplayer/models/windowtypes'
   ],
-      function (MediaPlayerBase, RestartableMediaPlayer) {
+      function (MediaPlayerBase, RestartableMediaPlayer, WindowTypes) {
         var sourceContainer = document.createElement('div');
         var player;
         var restartableMediaPlayer;
 
-        function initialiseRestartableMediaPlayer (config) {
-          restartableMediaPlayer = RestartableMediaPlayer(player, config);
+        function initialiseRestartableMediaPlayer (config, windowType) {
+          windowType = windowType || WindowTypes.SLIDING;
+          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, { windowStartTime: 0, windowEndTime: 100000 });
         }
 
         describe('restartable HMTL5 Live Player', function () {
@@ -29,7 +31,7 @@ require(
             player = jasmine.createSpyObj('player',
               ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
                 'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement', 'pause',
-                'resume', 'beginPlaybackFrom', 'getCurrentTime', 'getSeekableRange']);
+                'resume', 'beginPlaybackFrom']);
           });
 
           describe('methods call the appropriate media player methods', function () {
@@ -70,15 +72,16 @@ require(
               var callback = function () { return; };
               restartableMediaPlayer.addEventCallback(thisArg, callback);
 
-              expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, callback);
+              expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, jasmine.any(Function));
             });
 
             it('calls removeEventCallback on the media player', function () {
               var thisArg = 'arg';
               var callback = function () { return; };
+              restartableMediaPlayer.addEventCallback(thisArg, callback);
               restartableMediaPlayer.removeEventCallback(thisArg, callback);
 
-              expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback);
+              expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, jasmine.any(Function));
             });
 
             it('calls removeAllEventCallbacks on the media player', function () {
@@ -90,17 +93,7 @@ require(
             });
 
             it('calls pause on the media player', function () {
-              player.getSeekableRange.and.returnValue({start: 0});
-
               wrapperTests('pause');
-            });
-
-            it('getCurrentTime', function () {
-              wrapperTests('getCurrentTime');
-            });
-
-            it('getSeekableRange', function () {
-              wrapperTests('getSeekableRange');
             });
           });
 
@@ -115,6 +108,80 @@ require(
 
             it('playFrom', function () {
               isUndefined('playFrom');
+            });
+          });
+
+          describe('should use fake time for', function () {
+            var timeUpdate;
+
+            beforeEach(function () {
+              jasmine.clock().install();
+              jasmine.clock().mockDate();
+
+              player.addEventCallback.and.callFake(function (self, callback) {
+                timeUpdate = callback;
+              });
+
+              initialiseRestartableMediaPlayer();
+              restartableMediaPlayer.addEventCallback(this, function () {});
+              timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+            });
+
+            afterEach(function () {
+              jasmine.clock().uninstall();
+            });
+
+            describe('getCurrentTime', function () {
+              it('should start at live point', function () {
+                restartableMediaPlayer.beginPlayback();
+
+                expect(restartableMediaPlayer.getCurrentTime()).toBe(100);
+              });
+
+              it('should start at supplied time', function () {
+                restartableMediaPlayer.beginPlaybackFrom(10);
+
+                expect(restartableMediaPlayer.getCurrentTime()).toBe(10);
+              });
+
+              it('should increase when playing', function () {
+                restartableMediaPlayer.beginPlaybackFrom(10);
+
+                jasmine.clock().tick(1000);
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
+                expect(restartableMediaPlayer.getCurrentTime()).toBe(11);
+              });
+
+              it('should not increase when paused', function () {
+                restartableMediaPlayer.beginPlaybackFrom(10);
+                timeUpdate({ state: MediaPlayerBase.STATE.PAUSED });
+
+                jasmine.clock().tick(1000);
+
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
+                expect(restartableMediaPlayer.getCurrentTime()).toBe(10);
+              });
+            });
+
+            describe('getSeekableRange', function () {
+              it('should start at the window time', function () {
+                expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 0, end: 100 });
+              });
+
+              it('should increase with time', function () {
+                jasmine.clock().tick(1000);
+
+                expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 1, end: 101 });
+              });
+
+              it('should not increase start for growing', function () {
+                initialiseRestartableMediaPlayer({}, WindowTypes.GROWING);
+                jasmine.clock().tick(1000);
+
+                expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 0, end: 101 });
+              });
             });
           });
 
@@ -172,7 +239,6 @@ require(
             var mockCallback = [];
 
             function startPlaybackAndPause (startTime, disableAutoResume) {
-              player.getCurrentTime.and.returnValue(startTime);
               restartableMediaPlayer.beginPlaybackFrom(startTime);
               restartableMediaPlayer.pause({disableAutoResume: disableAutoResume});
             }
@@ -184,7 +250,6 @@ require(
               player.addEventCallback.and.callFake(function (self, callback) {
                 mockCallback.push(callback);
               });
-              player.getSeekableRange.and.returnValue({start: 0});
 
               initialiseRestartableMediaPlayer();
             });
@@ -257,7 +322,6 @@ require(
               startPlaybackAndPause(20, false);
 
               jasmine.clock().tick(12 * 1000);
-              player.getSeekableRange.and.returnValue({start: 12});
 
               restartableMediaPlayer.pause();
 

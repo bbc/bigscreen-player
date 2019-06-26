@@ -1,13 +1,12 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/models/windowtypes'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-  function (MediaPlayerBase, WindowTypes) {
+  function (MediaPlayerBase) {
     'use strict';
 
-    function Player (logger, useFakeTime, windowType, timeData) {
+    function Player (logger) {
       var eventCallback;
       var eventCallbacks = [];
       var state = MediaPlayerBase.STATE.EMPTY;
@@ -36,8 +35,6 @@ define(
       var sentinelIntervalNumber;
       var lastSentinelTime;
 
-      var fakeTimer = {};
-
       var sentinelLimits = {
         pause: {
           maximumAttempts: 2,
@@ -54,10 +51,6 @@ define(
       };
 
       function emitEvent (eventType, eventLabels) {
-        if (useFakeTime) {
-          updateFakeTimer();
-        }
-
         var event = {
           type: eventType,
           currentTime: getCurrentTime(),
@@ -216,9 +209,6 @@ define(
         if (Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
           sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
             mediaElement.currentTime = sentinelSeekTime;
-            if (useFakeTime) {
-              fakeTimer.currentTime = sentinelSeekTime;
-            }
           });
         } else if (sentinelIntervalNumber < 3) {
           sentinelSeekTime = currentTime;
@@ -346,9 +336,6 @@ define(
       }
 
       function getSeekableRange () {
-        if (useFakeTime) {
-          return fakeTimer.seekableRange;
-        }
         if (mediaElement) {
           if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
             return {
@@ -466,9 +453,7 @@ define(
           case MediaPlayerBase.STATE.ERROR:
             return;
           default:
-            if (useFakeTime) {
-              return fakeTimer.currentTime;
-            } else if (mediaElement) {
+            if (mediaElement) {
               return mediaElement.currentTime;
             }
         }
@@ -592,39 +577,6 @@ define(
         setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel]);
       }
 
-      function setUpFakeTimer () {
-        var windowLength = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
-        fakeTimer = {
-          currentTime: windowLength,
-          runningTime: Date.now(),
-          seekableRange: {
-            start: 0,
-            end: windowLength
-          },
-          wasPlaying: false
-        };
-      }
-
-      function updateFakeTimer () {
-        if (!fakeTimer.runningTime) {
-          fakeTimer.runningTime = Date.now();
-        }
-        var deltaTime = (Date.now() - fakeTimer.runningTime) / 1000;
-        fakeTimer.runningTime = Date.now();
-
-        if (fakeTimer.wasPlaying) {
-          fakeTimer.currentTime += deltaTime;
-        }
-        fakeTimer.wasPlaying = getState() === MediaPlayerBase.STATE.PLAYING;
-
-        if (fakeTimer.seekableRange && windowType !== WindowTypes.STATIC) {
-          if (windowType === WindowTypes.SLIDING) {
-            fakeTimer.seekableRange.start += deltaTime;
-          }
-          fakeTimer.seekableRange.end += deltaTime;
-        }
-      }
-
       return {
         addEventCallback: function (thisArg, newCallback) {
           eventCallback = function (event) {
@@ -732,10 +684,6 @@ define(
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           sentinelSeekTime = undefined;
 
-          if (useFakeTime) {
-            setUpFakeTimer();
-          }
-
           switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
               trustZeroes = true;
@@ -753,10 +701,6 @@ define(
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           targetSeekTime = seconds;
           sentinelLimits.seek.currentAttemptCount = 0;
-
-          if (useFakeTime) {
-            setUpFakeTimer();
-          }
 
           switch (this.getState()) {
             case MediaPlayerBase.STATE.STOPPED:
