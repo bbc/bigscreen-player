@@ -36,15 +36,7 @@ define(
       var sentinelIntervalNumber;
       var lastSentinelTime;
 
-      var fakeTimer = {
-        currentTime: undefined,
-        runningTime: undefined,
-        window: {
-          start: undefined,
-          end: undefined
-        },
-        wasPlaying: false
-      };
+      var fakeTimer = {};
 
       var sentinelLimits = {
         pause: {
@@ -355,7 +347,7 @@ define(
 
       function getSeekableRange () {
         if (useFakeTime) {
-          return fakeTimer.window;
+          return fakeTimer.seekableRange;
         }
         if (mediaElement) {
           if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
@@ -605,7 +597,7 @@ define(
         fakeTimer = {
           currentTime: windowLength,
           runningTime: Date.now(),
-          window: {
+          seekableRange: {
             start: 0,
             end: windowLength
           },
@@ -625,11 +617,11 @@ define(
         }
         fakeTimer.wasPlaying = getState() === MediaPlayerBase.STATE.PLAYING;
 
-        if (windowType !== WindowTypes.STATIC) {
+        if (fakeTimer.seekableRange && windowType !== WindowTypes.STATIC) {
           if (windowType === WindowTypes.SLIDING) {
-            fakeTimer.window.start += deltaTime;
+            fakeTimer.seekableRange.start += deltaTime;
           }
-          fakeTimer.window.end += deltaTime;
+          fakeTimer.seekableRange.end += deltaTime;
         }
       }
 

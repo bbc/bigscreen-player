@@ -1,9 +1,10 @@
 require(
   [
     'bigscreenplayer/models/windowtypes',
+    'bigscreenplayer/models/livesupport',
     'squire'
   ],
-    function (WindowTypes, Squire) {
+    function (WindowTypes, LiveSupport, Squire) {
       describe('Native Strategy', function () {
         var nativeStrategy;
         var html5player;
@@ -52,6 +53,10 @@ require(
           });
         });
 
+        afterEach(function () {
+          window.bigscreenPlayer.liveSupport = LiveSupport.PLAYABLE;
+        });
+
         it('calls LegacyAdapter with a static media player when called for STATIC window', function () {
           var windowType = WindowTypes.STATIC;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
@@ -65,7 +70,8 @@ require(
           var windowType = WindowTypes.GROWING;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(livePlayer).toHaveBeenCalledWith(mockConfig, mockLogger, WindowTypes.GROWING, 'timeData');
+          expect(html5player).toHaveBeenCalledWith(mockLogger, false, WindowTypes.GROWING, 'timeData');
+          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig);
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
@@ -74,10 +80,21 @@ require(
           var windowType = WindowTypes.SLIDING;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(livePlayer).toHaveBeenCalledWith(mockConfig, mockLogger, WindowTypes.SLIDING, 'timeData');
+          expect(html5player).toHaveBeenCalledWith(mockLogger, false, WindowTypes.SLIDING, 'timeData');
+          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig);
+
+          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
+        });
+
+        it('calls LegacyAdapter with useFakeTime if live support is RESTARTABLE', function () {
+          var windowType = WindowTypes.SLIDING;
+          window.bigscreenPlayer.liveSupport = LiveSupport.RESTARTABLE;
+          nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
+
+          expect(html5player).toHaveBeenCalledWith(mockLogger, true, WindowTypes.SLIDING, 'timeData');
+          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig);
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
       });
     });
-

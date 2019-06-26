@@ -1,16 +1,13 @@
 define(
     'bigscreenplayer/playbackstrategy/modifiers/live/seekable',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/html5',
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-    function (Html5Player, MediaPlayerBase) {
+    function (MediaPlayerBase) {
       'use strict';
 
-      function SeekableLivePlayer (deviceConfig, logger) {
+      function SeekableLivePlayer (mediaPlayer, deviceConfig) {
         var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
-
-        var mediaPlayer = Html5Player(logger);
 
         function addEventCallback (thisArg, callback) {
           mediaPlayer.addEventCallback(thisArg, callback);

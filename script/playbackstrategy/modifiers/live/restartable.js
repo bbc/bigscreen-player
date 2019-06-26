@@ -1,15 +1,13 @@
 define(
     'bigscreenplayer/playbackstrategy/modifiers/live/restartable',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/html5',
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-    function (Html5Player, MediaPlayerBase) {
+    function (MediaPlayerBase) {
       'use strict';
       var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
-      function RestartableLivePlayer (deviceConfig, logger, windowType, timeData) {
-        var mediaPlayer = Html5Player(logger, true, windowType, timeData);
+      function RestartableLivePlayer (mediaPlayer, deviceConfig) {
         var self = this;
 
         function autoResumeAtStartOfRange () {

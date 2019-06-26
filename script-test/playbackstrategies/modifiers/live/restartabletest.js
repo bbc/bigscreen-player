@@ -1,16 +1,15 @@
 require(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'squire'
+    'bigscreenplayer/playbackstrategy/modifiers/live/restartable'
   ],
-      function (MediaPlayerBase, Squire) {
+      function (MediaPlayerBase, RestartableMediaPlayer) {
         var sourceContainer = document.createElement('div');
         var player;
-        var restartableMediaConstructor;
         var restartableMediaPlayer;
 
-        function initialiseRestartableMediaPlayer (config, logger) {
-          restartableMediaPlayer = restartableMediaConstructor(config, logger);
+        function initialiseRestartableMediaPlayer (config) {
+          restartableMediaPlayer = RestartableMediaPlayer(player, config);
         }
 
         describe('restartable HMTL5 Live Player', function () {
@@ -26,24 +25,11 @@ require(
             }
           }
 
-          beforeEach(function (done) {
-            var injector = new Squire();
-
+          beforeEach(function () {
             player = jasmine.createSpyObj('player',
               ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
                 'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement', 'pause',
                 'resume', 'beginPlaybackFrom', 'getCurrentTime', 'getSeekableRange']);
-
-            function mockMediaPlayer () {
-              return player;
-            }
-
-            injector.mock({'bigscreenplayer/playbackstrategy/modifiers/html5': mockMediaPlayer});
-
-            injector.require(['bigscreenplayer/playbackstrategy/modifiers/live/restartable'], function (mediaPlayer) {
-              restartableMediaConstructor = mediaPlayer;
-              done();
-            });
           });
 
           describe('methods call the appropriate media player methods', function () {
