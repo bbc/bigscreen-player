@@ -125,6 +125,30 @@ define('bigscreenplayer/bigscreenplayer',
         return playerComponent && playerComponent.getWindowEndTime();
       }
 
+      function initialManifestLoad (bigscreenPlayerData, playbackElement, enableSubtitles, callbacks) {
+        ManifestLoader.load(
+          bigscreenPlayerData.media.urls,
+          serverDate,
+          {
+            onSuccess: function (manifestData) {
+              bigscreenPlayerData.media.transferFormat = manifestData.transferFormat;
+              bigscreenPlayerData.time = manifestData.time;
+              bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
+            },
+            onError: function () {
+              if (bigscreenPlayerData.media.urls > 0) {
+                bigscreenPlayerData.media.urls.shift();
+                initialManifestLoad(bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
+              } else {
+                if (callbacks.onError) {
+                  callbacks.onError({error: 'manifest'});
+                }
+              }
+            }
+          }
+        );
+      }
+
       return {
         init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, callbacks) {
           Chronicle.init();
@@ -136,22 +160,7 @@ define('bigscreenplayer/bigscreenplayer',
           }
 
           if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
-            ManifestLoader.load(
-              bigscreenPlayerData.media.urls,
-              serverDate,
-              {
-                onSuccess: function (manifestData) {
-                  bigscreenPlayerData.media.transferFormat = manifestData.transferFormat;
-                  bigscreenPlayerData.time = manifestData.time;
-                  bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
-                },
-                onError: function () {
-                  if (callbacks.onError) {
-                    callbacks.onError({error: 'manifest'});
-                  }
-                }
-              }
-            );
+            initialManifestLoad(bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
           } else {
             bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
           }

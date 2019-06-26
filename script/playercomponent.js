@@ -255,7 +255,13 @@ define(
               cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
             },
             onError: function () {
-              bubbleFatalError(errorProperties, bufferingTimeoutError);
+              // Annoying but it needs to be done!
+              if (mediaMetaData.urls.length > 0) {
+                mediaMetaData.urls.shift();
+                manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
+              } else {
+                bubbleFatalError(errorProperties, bufferingTimeoutError);
+              }
             }
           }
         );
