@@ -1133,6 +1133,7 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
+          expect(corePlaybackData.media.urls.length).toBe(0);
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
         });
 

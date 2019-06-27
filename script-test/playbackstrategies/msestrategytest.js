@@ -411,6 +411,25 @@ require(
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
         });
 
+        it('should call plugin handler on dash download manifest error', function () {
+          setUpMSE();
+          var mockErrorCallback = jasmine.createSpy();
+          mseStrategy.addErrorCallback(null, mockErrorCallback);
+          mseStrategy.load(cdnArray, WindowTypes.GROWING, 3);
+
+          var testError = {
+            error: {
+              event: {
+                id: 'manifest'
+              }
+            }
+          };
+
+          dashEventCallback(dashjsMediaPlayerEvents.ERROR, testError);
+
+          expect(mockErrorCallback).toHaveBeenCalledWith(jasmine.objectContaining(testError));
+        });
+
         it('should call plugin handler on dash baseUrl changed event', function () {
           setUpMSE();
           cdnArray.push({url: 'http://testcdn2/test/', cdn: 'cdn2'});

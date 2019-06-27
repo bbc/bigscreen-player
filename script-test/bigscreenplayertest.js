@@ -186,6 +186,7 @@ require(
 
             expect(errorCallback).toHaveBeenCalledWith({error: 'manifest'});
             expect(successCallback).not.toHaveBeenCalled();
+            expect(bigscreenPlayerData.media.urls.length).toBe(0);
           });
 
           it('should not attempt to call onSuccess callback if one is not provided', function () {
