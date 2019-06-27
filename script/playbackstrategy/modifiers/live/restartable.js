@@ -97,6 +97,7 @@ define(
           beginPlayback: function () {
             var config = deviceConfig;
 
+            startTime = Date.now();
             fakeTimer.currentTime = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
 
             if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
@@ -107,6 +108,7 @@ define(
           },
 
           beginPlaybackFrom: function (offset) {
+            startTime = Date.now();
             fakeTimer.currentTime = offset;
             mediaPlayer.beginPlaybackFrom(offset);
           },
