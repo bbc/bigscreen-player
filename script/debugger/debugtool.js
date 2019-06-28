@@ -13,7 +13,6 @@ define('bigscreenplayer/debugger/debugtool',
 
      var LOG_LEVELS = {
        ERROR: 0,
-       DEBUG: 1,
        INFO: 2,
        VERBOSE: 3
      };
@@ -31,8 +30,7 @@ define('bigscreenplayer/debugger/debugtool',
      }
 
      function setLogLevel (newLogLevel) {
-       var level = LOG_LEVELS[logLevel];
-       if (level) {
+       if (newLogLevel !== undefined) {
          logLevel = newLogLevel;
        }
      }
@@ -60,13 +58,13 @@ define('bigscreenplayer/debugger/debugtool',
      }
 
      function event (log) {
-       if (logLevel >= LOG_LEVELS.ERROR) {
+       if (logLevel >= LOG_LEVELS.INFO) {
          Chronicle.event(log);
        }
      }
 
      function time (log) {
-       if (logLevel >= LOG_LEVELS.ERROR) {
+       if (logLevel >= LOG_LEVELS.INFO) {
          Chronicle.time(log);
        }
      }
@@ -104,7 +102,7 @@ define('bigscreenplayer/debugger/debugtool',
      return {
        toggleVisibility: toggleVisibility,
        setLogLevel: setLogLevel,
-       getLogLevels: LOG_LEVELS,
+       logLevels: LOG_LEVELS,
        verbose: verbose,
        info: info,
        error: error,
