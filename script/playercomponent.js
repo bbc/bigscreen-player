@@ -139,7 +139,7 @@ define(
         function doSeek (time) {
           var thenPause = playbackStrategy.isPaused();
           tearDownMediaElement();
-          if (time > (bigscreenPlayerData.time.windowEndTime - bigscreenPlayerData.time.windowStartTime) / 1000 - 10) {
+          if (time > (bigscreenPlayerData.time.windowEndTime - bigscreenPlayerData.time.windowStartTime) / 1000 - 30) {
             time = undefined;
           }
           loadMedia(mediaMetaData.urls, mediaMetaData.type, time, thenPause);
