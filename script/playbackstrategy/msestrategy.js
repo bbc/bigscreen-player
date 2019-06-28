@@ -7,14 +7,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/plugins',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
-    'bigscreenplayer/manifest/manifestfilter',
+    'bigscreenplayer/manifest/manifestmodifier',
     'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/models/livesupport',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestFilter, PlaybackUtils, LiveSupport) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestModifier, PlaybackUtils, LiveSupport) {
     var MSEStrategy = function (windowType, mediaKind, timeData, playbackElement, isUHD, device, cdnDebugOutput) {
       var mediaPlayer;
       var mediaElement;
@@ -123,11 +123,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         if (event.data) {
           var manifest = event.data;
-          ManifestFilter.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-
-          manifest.BaseURL_asArray = generateBaseUrls(mediaSources);
-          if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
-          if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
+          ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {});
+          ManifestModifier.generateBaseUrls(manifest, mediaSources);
         }
       }
 
@@ -163,7 +160,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function propagateCdnFailover (event, cdn) {
         // Initial playback
-        if (cdn === mediaSources[0].cdn) return;
+        if (mediaSources.length <= 1 || cdn !== mediaSources[1].cdn) return;
 
         var errorProperties = PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
         var evt = new PluginData({
@@ -237,19 +234,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function getClampedTime (time, range) {
         return Math.min(Math.max(time, range.start), range.end - 1.1);
-      }
-
-      function generateBaseUrls (sources) {
-        var regexp = /.*\//;
-        return sources.map(function (source, priority) {
-          var sourceUrl = regexp.exec(source.url)[0];
-
-          return {
-            __text: sourceUrl + 'dash/',
-            'dvb:priority': priority,
-            serviceLocation: source.cdn
-          };
-        });
       }
 
       function setUpMediaElement (playbackElement) {

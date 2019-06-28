@@ -46,9 +46,20 @@ require(
         filter: function () {}
       };
 
+      var testManifestObject;
+
       beforeEach(function (done) {
         cdnArray = [];
-        cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
+        cdnArray.push({url: 'http://testcdn1/test/', cdn: 'cdn1'});
+
+        testManifestObject = {
+          type: 'manifestLoaded',
+          data: {
+            Period: {
+              BaseURL: 'dash/'
+            }
+          }
+        };
 
         injector.mock({
           'dashjs': mockDashjs,
@@ -192,13 +203,8 @@ require(
 
         it('should modify the manifest when dashjs fires a manifest loaded event', function () {
           setUpMSE();
-          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          cdnArray.push({url: 'http://testcdn2/test/', cdn: 'cdn2'});
           mseStrategy.load(cdnArray, null, 0);
-
-          var testManifestObject = {
-            type: 'manifestLoaded',
-            data: {}
-          };
 
           dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject);
 
@@ -330,7 +336,7 @@ require(
         it('should attach a new source with the expected parameters', function () {
           setUpMSE();
 
-          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          cdnArray.push({url: 'http://testcdn2/test/', cdn: 'cdn2'});
 
           mockDashInstance.getSource.and.returnValue('src');
 
@@ -349,8 +355,8 @@ require(
         it('should a new source with the expected parameters called before we have a valid currentTime', function () {
           setUpMSE();
 
-          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
-          cdnArray.push({url: 'testcdn3/test/', cdn: 'cdn3'});
+          cdnArray.push({url: 'http://testcdn2/test/', cdn: 'cdn2'});
+          cdnArray.push({url: 'http://testcdn3/test/', cdn: 'cdn3'});
 
           mockDashInstance.getSource.and.returnValue('src');
 
@@ -375,7 +381,7 @@ require(
         it('should attach a new source with expected parameters at the current playback time', function () {
           setUpMSE();
 
-          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          cdnArray.push({url: 'http://testcdn2/test/', cdn: 'cdn2'});
 
           mockDashInstance.getSource.and.returnValue('src');
 
@@ -407,9 +413,9 @@ require(
 
         it('should call plugin handler on dash baseUrl changed event', function () {
           setUpMSE();
-          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
-
+          cdnArray.push({url: 'http://testcdn2/test/', cdn: 'cdn2'});
           mseStrategy.load(cdnArray, WindowTypes.STATIC, 3);
+          dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject);
 
           eventHandlers.baseUrlSelected({
             baseUrl: {
@@ -793,8 +799,9 @@ require(
 
           setUpMSE();
 
-          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          cdnArray.push({url: 'http://testcdn2/test/', cdn: 'cdn2'});
           mseStrategy.load(cdnArray, null, 0);
+          dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject);
 
           dashEventCallback(dashjsMediaPlayerEvents.CDN_FAILOVER, mockEvent);
 
@@ -814,7 +821,7 @@ require(
           var mockErrorCallback = jasmine.createSpy();
           mseStrategy.addErrorCallback(null, mockErrorCallback);
 
-          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          cdnArray.push({url: 'http://testcdn2/test/', cdn: 'cdn2'});
           mseStrategy.load(cdnArray, null, 0);
 
           dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
@@ -835,7 +842,7 @@ require(
           var mockErrorCallback = jasmine.createSpy();
           mseStrategy.addErrorCallback(null, mockErrorCallback);
 
-          cdnArray.push({url: 'testcdn2/test/', cdn: 'cdn2'});
+          cdnArray.push({url: 'http://testcdn2/test/', cdn: 'cdn2'});
           mseStrategy.load(cdnArray, null, 0);
 
           dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);

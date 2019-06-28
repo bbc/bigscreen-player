@@ -11,11 +11,11 @@ define(
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/manifest/manifestloader',
-    'bigscreenplayer/utils/manifestutils',
+    'bigscreenplayer/utils/livesupportutils',
     'bigscreenplayer/mediaresilience',
     'bigscreenplayer/debugger/cdndebugoutput'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, ManifestUtils, MediaResilience, CdnDebugOutput) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, LiveSupportUtils, MediaResilience, CdnDebugOutput) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
@@ -233,7 +233,7 @@ define(
           tearDownMediaElement();
 
           var failoverTime = getCurrentTime();
-          if (transferFormat === TransferFormats.HLS && ManifestUtils.needToGetManifest(windowType, getLiveSupport(device))) {
+          if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
             manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
           } else {
             cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);

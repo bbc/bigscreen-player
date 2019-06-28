@@ -11,9 +11,9 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/utils/manifestutils'
+    'bigscreenplayer/utils/livesupportutils'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, ManifestUtils) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, LiveSupportUtils) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -27,6 +27,8 @@ define('bigscreenplayer/bigscreenplayer',
       var endOfStream;
       var windowType;
       var device;
+
+      var END_OF_STREAM_TOLERANCE = 10;
 
       function mediaStateUpdateCallback (evt) {
         if (evt.timeUpdate) {
@@ -133,7 +135,7 @@ define('bigscreenplayer/bigscreenplayer',
             callbacks = {};
           }
 
-          if (ManifestUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
+          if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
             ManifestLoader.load(
               bigscreenPlayerData.media.urls,
               serverDate,
@@ -195,10 +197,7 @@ define('bigscreenplayer/bigscreenplayer',
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
           if (playerComponent) {
-            var END_OF_STREAM_TOLERANCE = 10;
-
             playerComponent.setCurrentTime(time);
-
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
           }
         },
@@ -213,6 +212,9 @@ define('bigscreenplayer/bigscreenplayer',
         },
         getSeekableRange: function () {
           return playerComponent ? playerComponent.getSeekableRange() : {};
+        },
+        isPlayingAtLiveEdge: function () {
+          return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
         },
         getLiveWindowData: function () {
           if (windowType === WindowTypes.STATIC) {
