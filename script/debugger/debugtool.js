@@ -18,7 +18,7 @@ define('bigscreenplayer/debugger/debugtool',
        VERBOSE: 3
      };
 
-     var logLevel = LOG_LEVELS.VERBOSE;
+     var logLevel = LOG_LEVELS.INFO;
 
      var staticFieldValues = {};
 
