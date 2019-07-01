@@ -195,12 +195,12 @@ define(
         }
 
         if (readyToPlayFrom && mediaElement.paused) {
-          DebugTool.info('readyToPlayFrom && mediaElement.paused');
+          DebugTool.info('readyToPlayFrom: ' + readyToPlayFrom);
+          DebugTool.info('mediaElement.paused: ' + mediaElement.paused);
           return fireExitBufferingSentinel();
         }
 
         if (hasSentinelTimeChangedWithinTolerance) {
-          DebugTool.info('hasSentinelTimeChangedWithinTolerance');
           return fireExitBufferingSentinel();
         }
         return false;
@@ -452,7 +452,6 @@ define(
         metadataLoaded();
         DebugTool.info('exitBuffering. State: ' + getState());
         if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
-          DebugTool.info('exitBuffering. return early');
           return;
         } else if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
           toPaused();
@@ -462,6 +461,7 @@ define(
       }
 
       function metadataLoaded () {
+        DebugTool.info('metadataLoaded. Setting readyToPlayFrom to true');
         readyToPlayFrom = true;
         if (waitingToPlayFrom()) {
           deferredPlayFrom();
@@ -584,6 +584,7 @@ define(
         sentinelSeekTime = undefined;
         clearSentinels();
         destroyMediaElement();
+        DebugTool.info('Wipe. Clearing sentinels, media element, readToPlayFrom to false');
         readyToPlayFrom = false;
       }
 
