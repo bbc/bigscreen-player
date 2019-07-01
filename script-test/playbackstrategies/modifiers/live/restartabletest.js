@@ -11,7 +11,7 @@ require(
 
         function initialiseRestartableMediaPlayer (config, windowType) {
           windowType = windowType || WindowTypes.SLIDING;
-          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, { windowStartTime: 0, windowEndTime: 100000 });
+          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType);
         }
 
         describe('restartable HMTL5 Live Player', function () {
@@ -31,7 +31,7 @@ require(
             player = jasmine.createSpyObj('player',
               ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
                 'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement', 'pause',
-                'resume', 'beginPlaybackFrom']);
+                'resume', 'beginPlaybackFrom', 'getSeekableRange']);
           });
 
           describe('methods call the appropriate media player methods', function () {
@@ -124,7 +124,7 @@ require(
 
               initialiseRestartableMediaPlayer();
               restartableMediaPlayer.addEventCallback(this, function () {});
-              timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+              player.getSeekableRange.and.returnValue({start: 0, end: 100});
             });
 
             afterEach(function () {
@@ -132,8 +132,12 @@ require(
             });
 
             describe('getCurrentTime', function () {
-              it('should start at live point', function () {
+              it('should be set on first time update to the end of the seekable range', function () {
                 restartableMediaPlayer.beginPlayback();
+
+                expect(restartableMediaPlayer.getCurrentTime()).toBe(undefined);
+
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
 
                 expect(restartableMediaPlayer.getCurrentTime()).toBe(100);
               });
@@ -147,7 +151,10 @@ require(
               it('should increase when playing', function () {
                 restartableMediaPlayer.beginPlaybackFrom(10);
 
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
                 jasmine.clock().tick(1000);
+
                 timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
 
                 expect(restartableMediaPlayer.getCurrentTime()).toBe(11);
@@ -167,10 +174,18 @@ require(
 
             describe('getSeekableRange', function () {
               it('should start at the window time', function () {
+                restartableMediaPlayer.beginPlaybackFrom(0);
+
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
                 expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 0, end: 100 });
               });
 
               it('should increase with time', function () {
+                restartableMediaPlayer.beginPlaybackFrom(0);
+
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
                 jasmine.clock().tick(1000);
 
                 expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 1, end: 101 });
@@ -178,6 +193,8 @@ require(
 
               it('should not increase start for growing', function () {
                 initialiseRestartableMediaPlayer({}, WindowTypes.GROWING);
+                restartableMediaPlayer.beginPlaybackFrom(0);
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
                 jasmine.clock().tick(1000);
 
                 expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 0, end: 101 });
@@ -240,7 +257,16 @@ require(
 
             function startPlaybackAndPause (startTime, disableAutoResume) {
               restartableMediaPlayer.beginPlaybackFrom(startTime);
+
+              for (var index = 0; index < mockCallback.length; index++) {
+                mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING});
+              }
+
               restartableMediaPlayer.pause({disableAutoResume: disableAutoResume});
+
+              for (index = 0; index < mockCallback.length; index++) {
+                mockCallback[index]({state: MediaPlayerBase.STATE.PAUSED});
+              }
             }
 
             beforeEach(function () {
@@ -252,6 +278,12 @@ require(
               });
 
               initialiseRestartableMediaPlayer();
+
+              player.getSeekableRange.and.returnValue({start: 0, end: 100});
+
+              for (var index = 0; index < mockCallback.length; index++) {
+                mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING});
+              }
             });
 
             afterEach(function () {

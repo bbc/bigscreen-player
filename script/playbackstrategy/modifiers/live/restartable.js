@@ -8,19 +8,31 @@ define(
       'use strict';
       var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
-      function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, timeData) {
+      function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType) {
         var self = this;
 
         var callbacksMap = [];
-        var startTime = Date.now();
+        var startTime;
         var fakeTimer = {};
+        var windowLength;
 
-        function updateFakeTimer (state) {
+        function updateFakeTimer (event) {
+          var seekableRange = mediaPlayer.getSeekableRange();
+          if (seekableRange && seekableRange.end) {
+            if (fakeTimer.currentTime === undefined) {
+              fakeTimer.currentTime = seekableRange.end - seekableRange.start;
+            }
+            if (windowLength === undefined) {
+              windowLength = seekableRange.end - seekableRange.start;
+            }
+          }
+
           if (fakeTimer.wasPlaying && fakeTimer.runningTime) {
             fakeTimer.currentTime += (Date.now() - fakeTimer.runningTime) / 1000;
           }
+
           fakeTimer.runningTime = Date.now();
-          fakeTimer.wasPlaying = state === MediaPlayerBase.STATE.PLAYING;
+          fakeTimer.wasPlaying = event.state === MediaPlayerBase.STATE.PLAYING;
         }
 
         function autoResumeAtStartOfRange () {
@@ -42,8 +54,6 @@ define(
 
         function addEventCallback (thisArg, callback) {
           function newCallback (event) {
-            updateFakeTimer(event.state);
-
             event.currentTime = getCurrentTime();
             event.seekableRange = getSeekableRange();
             callback(event);
@@ -85,12 +95,14 @@ define(
         }
 
         function getSeekableRange () {
-          var windowLength = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
-          var delta = (Date.now() - startTime) / 1000;
-          return {
-            start: windowType === WindowTypes.SLIDING ? delta : 0,
-            end: windowLength + delta
-          };
+          if (windowLength) {
+            var delta = (Date.now() - startTime) / 1000;
+            return {
+              start: windowType === WindowTypes.SLIDING ? delta : 0,
+              end: windowLength + delta
+            };
+          }
+          return {};
         }
 
         return {
@@ -98,7 +110,9 @@ define(
             var config = deviceConfig;
 
             startTime = Date.now();
-            fakeTimer.currentTime = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+            // fakeTimer.currentTime = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+
+            addEventCallback(this, updateFakeTimer);
 
             if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
               mediaPlayer.beginPlaybackFrom(Infinity);
@@ -110,6 +124,7 @@ define(
           beginPlaybackFrom: function (offset) {
             startTime = Date.now();
             fakeTimer.currentTime = offset;
+            addEventCallback(this, updateFakeTimer);
             mediaPlayer.beginPlaybackFrom(offset);
           },
 
@@ -129,6 +144,7 @@ define(
 
           stop: function () {
             mediaPlayer.stop();
+            removeEventCallback(this, updateFakeTimer);
           },
 
           reset: function () {

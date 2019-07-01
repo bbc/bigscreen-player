@@ -294,6 +294,15 @@ require(
       });
 
       describe('setCurrentTime', function () {
+        var currentStrategy;
+        beforeEach(function () {
+          currentStrategy = window.bigscreenPlayer.playbackStrategy;
+        });
+
+        afterEach(function () {
+          window.bigscreenPlayer.playbackStrategy = currentStrategy;
+        });
+
         it('should setCurrentTime on the strategy when in a seekable state', function () {
           setUpPlayerComponent();
 
@@ -305,10 +314,12 @@ require(
         });
 
         it('should reload the element if restartable', function () {
+          window.bigscreenPlayer.playbackStrategy = 'nativestrategy';
           liveSupport = LiveSupport.RESTARTABLE;
           setUpPlayerComponent({ windowType: WindowTypes.SLIDING });
 
           spyOn(mockStrategy, 'load');
+          spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
           playerComponent.setCurrentTime(10);
 
           expect(mockStrategy.load).toHaveBeenCalledWith([{ url: 'a', cdn: 'cdn-a' }], 'application/dash+xml', 10);

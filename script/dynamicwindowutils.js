@@ -42,7 +42,9 @@ define(
     }
 
     function supportsSeeking (liveSupport) {
-      return liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.RESTARTABLE;
+      return liveSupport === LiveSupport.SEEKABLE ||
+        (liveSupport === LiveSupport.RESTARTABLE &&
+        window.bigscreenPlayer.playbackStrategy === 'nativestrategy');
     }
 
     return {

@@ -127,7 +127,7 @@ define(
       function setCurrentTime (time) {
         userInteracted = true;
         if (transitions().canBeginSeek()) {
-          if (windowType !== WindowTypes.STATIC && getLiveSupport(device) === LiveSupport.RESTARTABLE) {
+          if (windowType !== WindowTypes.STATIC && getLiveSupport(device) === LiveSupport.RESTARTABLE && window.bigscreenPlayer.playbackStrategy === 'nativestrategy') {
             reloadMediaElement(time);
           } else {
             playbackStrategy.setCurrentTime(time);
@@ -138,8 +138,9 @@ define(
       function reloadMediaElement (time) {
         function doSeek (time) {
           var thenPause = playbackStrategy.isPaused();
+          var seekableRange = playbackStrategy.getSeekableRange();
           tearDownMediaElement();
-          if (time > (bigscreenPlayerData.time.windowEndTime - bigscreenPlayerData.time.windowStartTime) / 1000 - 30) {
+          if (time > seekableRange.end - seekableRange.start) {
             time = undefined;
           }
           loadMedia(mediaMetaData.urls, mediaMetaData.type, time, thenPause);
