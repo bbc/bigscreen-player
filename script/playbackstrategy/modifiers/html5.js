@@ -1,9 +1,10 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaPlayerBase) {
+  function (MediaPlayerBase, DebugTool) {
     'use strict';
 
     function Player (deviceConfig, logger) {
@@ -194,10 +195,12 @@ define(
         }
 
         if (readyToPlayFrom && mediaElement.paused) {
+          DebugTool.info('readyToPlayFrom && mediaElement.paused');
           return fireExitBufferingSentinel();
         }
 
         if (hasSentinelTimeChangedWithinTolerance) {
+          DebugTool.info('hasSentinelTimeChangedWithinTolerance');
           return fireExitBufferingSentinel();
         }
         return false;
@@ -447,7 +450,9 @@ define(
 
       function exitBuffering () {
         metadataLoaded();
+        DebugTool.info('exitBuffering. State: ' + getState());
         if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
+          DebugTool.info('exitBuffering. return early');
           return;
         } else if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
           toPaused();
