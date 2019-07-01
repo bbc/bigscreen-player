@@ -434,11 +434,11 @@ define(
       }
 
       function onStatus () {
-        emitSeekFinishedAtCorrectStartingPoint();
-
         if (getState() === MediaPlayerBase.STATE.PLAYING) {
           emitEvent(MediaPlayerBase.EVENT.STATUS);
         }
+
+        emitSeekFinishedAtCorrectStartingPoint();
       }
 
       function onMetadata () {
