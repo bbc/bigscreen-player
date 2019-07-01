@@ -140,7 +140,7 @@ define(
           var thenPause = playbackStrategy.isPaused();
           var seekableRange = playbackStrategy.getSeekableRange();
           tearDownMediaElement();
-          if (time > seekableRange.end - seekableRange.start) {
+          if (time > seekableRange.end - seekableRange.start - 30) {
             time = undefined;
           }
           loadMedia(mediaMetaData.urls, mediaMetaData.type, time, thenPause);

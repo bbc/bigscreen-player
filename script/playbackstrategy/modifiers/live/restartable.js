@@ -110,7 +110,7 @@ define(
             var config = deviceConfig;
 
             startTime = Date.now();
-            // fakeTimer.currentTime = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+            fakeTimer.currentTime = undefined;
 
             addEventCallback(this, updateFakeTimer);
 
