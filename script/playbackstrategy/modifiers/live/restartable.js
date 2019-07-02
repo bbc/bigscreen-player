@@ -2,15 +2,13 @@ define(
     'bigscreenplayer/playbackstrategy/modifiers/live/restartable',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/models/windowtypes'
+    'bigscreenplayer/models/windowtypes',
+    'bigscreenplayer/dynamicwindowutils'
   ],
-    function (MediaPlayerBase, WindowTypes) {
+    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
       'use strict';
-      var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
       function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType) {
-        var self = this;
-
         var callbacksMap = [];
         var startTime;
         var fakeTimer = {};
@@ -33,23 +31,6 @@ define(
 
           fakeTimer.runningTime = Date.now();
           fakeTimer.wasPlaying = event.state === MediaPlayerBase.STATE.PLAYING;
-        }
-
-        function autoResumeAtStartOfRange () {
-          var resumeTimeOut = Math.max(0, getCurrentTime() - getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
-          var autoResumeTimer = setTimeout(function () {
-            removeEventCallback(self, detectIfUnpaused);
-            resume();
-          }, resumeTimeOut * 1000);
-
-          addEventCallback(self, detectIfUnpaused);
-
-          function detectIfUnpaused (event) {
-            if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-              removeEventCallback(self, detectIfUnpaused);
-              clearTimeout(autoResumeTimer);
-            }
-          }
         }
 
         function addEventCallback (thisArg, callback) {
@@ -86,7 +67,7 @@ define(
           mediaPlayer.pause();
           opts = opts || {};
           if (opts.disableAutoResume !== true) {
-            autoResumeAtStartOfRange();
+            DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), addEventCallback, removeEventCallback, resume);
           }
         }
 
