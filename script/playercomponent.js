@@ -142,6 +142,7 @@ define(
           tearDownMediaElement();
           if (time > seekableRange.end - seekableRange.start - 30) {
             time = undefined;
+            thenPause = false;
           }
           loadMedia(mediaMetaData.urls, mediaMetaData.type, time, thenPause);
         }

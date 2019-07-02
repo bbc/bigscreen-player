@@ -13,6 +13,7 @@ define(
         var startTime;
         var fakeTimer = {};
         var windowLength;
+        addEventCallback(this, updateFakeTimer);
 
         function updateFakeTimer (event) {
           var seekableRange = mediaPlayer.getSeekableRange();
@@ -93,8 +94,6 @@ define(
             startTime = Date.now();
             fakeTimer.currentTime = undefined;
 
-            addEventCallback(this, updateFakeTimer);
-
             if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
               mediaPlayer.beginPlaybackFrom(Infinity);
             } else {
@@ -105,7 +104,6 @@ define(
           beginPlaybackFrom: function (offset) {
             startTime = Date.now();
             fakeTimer.currentTime = offset;
-            addEventCallback(this, updateFakeTimer);
             mediaPlayer.beginPlaybackFrom(offset);
           },
 

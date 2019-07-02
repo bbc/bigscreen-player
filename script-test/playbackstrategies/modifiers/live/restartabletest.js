@@ -122,9 +122,9 @@ require(
                 timeUpdate = callback;
               });
 
-              initialiseRestartableMediaPlayer();
               restartableMediaPlayer.addEventCallback(this, function () {});
               player.getSeekableRange.and.returnValue({start: 0, end: 100});
+              initialiseRestartableMediaPlayer();
             });
 
             afterEach(function () {
