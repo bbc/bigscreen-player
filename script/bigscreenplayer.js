@@ -28,6 +28,8 @@ define('bigscreenplayer/bigscreenplayer',
       var windowType;
       var device;
 
+      var END_OF_STREAM_TOLERANCE = 10;
+
       function mediaStateUpdateCallback (evt) {
         if (evt.timeUpdate) {
           DebugTool.time(evt.data.currentTime);
@@ -195,10 +197,7 @@ define('bigscreenplayer/bigscreenplayer',
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
           if (playerComponent) {
-            var END_OF_STREAM_TOLERANCE = 10;
-
             playerComponent.setCurrentTime(time);
-
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
           }
         },
@@ -213,6 +212,9 @@ define('bigscreenplayer/bigscreenplayer',
         },
         getSeekableRange: function () {
           return playerComponent ? playerComponent.getSeekableRange() : {};
+        },
+        isPlayingAtLiveEdge: function () {
+          return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
         },
         getLiveWindowData: function () {
           if (windowType === WindowTypes.STATIC) {
