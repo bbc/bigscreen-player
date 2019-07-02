@@ -195,8 +195,6 @@ define(
         }
 
         if (readyToPlayFrom && mediaElement.paused) {
-          DebugTool.info('readyToPlayFrom: ' + readyToPlayFrom);
-          DebugTool.info('mediaElement.paused: ' + mediaElement.paused);
           return fireExitBufferingSentinel();
         }
 
@@ -461,7 +459,6 @@ define(
       }
 
       function metadataLoaded () {
-        DebugTool.info('metadataLoaded. Setting readyToPlayFrom to true');
         readyToPlayFrom = true;
         if (waitingToPlayFrom()) {
           deferredPlayFrom();
@@ -569,9 +566,10 @@ define(
 
       function getClampedTimeForPlayFrom (seconds) {
         var clampedTime = getClampedTime(seconds);
-        var range = getSeekableRange();
         if (clampedTime !== seconds) {
+          var range = getSeekableRange();
           logger.debug('play From ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+          DebugTool.info('play From ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
         }
         return clampedTime;
       }
