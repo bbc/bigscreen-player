@@ -67,6 +67,8 @@ define(
           state: getState()
         };
 
+        DebugTool.keyValue({ key: 'STATE', value: event.state });
+
         if (eventLabels) {
           for (var key in eventLabels) {
             if (eventLabels.hasOwnProperty(key)) {
