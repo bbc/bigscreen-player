@@ -10,7 +10,7 @@ define(
       function SeekableLivePlayer (deviceConfig, logger) {
         var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
-        var mediaPlayer = Html5Player(logger);
+        var mediaPlayer = Html5Player(deviceConfig, logger);
 
         function addEventCallback (thisArg, callback) {
           mediaPlayer.addEventCallback(thisArg, callback);

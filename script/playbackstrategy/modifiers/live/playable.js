@@ -7,7 +7,7 @@ define(
     function (Html5Player, MediaPlayerBase) {
       'use strict';
       function PlayableLivePlayer (deviceConfig, logger) {
-        var mediaPlayer = Html5Player(logger);
+        var mediaPlayer = Html5Player(deviceConfig, logger);
         return {
           beginPlayback: function beginPlayback () {
             mediaPlayer.beginPlayback();

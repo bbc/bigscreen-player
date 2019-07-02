@@ -9,7 +9,7 @@ define(
       var AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS = 8000;
 
       function RestartableLivePlayer (deviceConfig, logger) {
-        var mediaPlayer = Html5Player(logger);
+        var mediaPlayer = Html5Player(deviceConfig, logger);
         var millisecondsUntilStartOfWindow;
         var bufferingStarted;
         var self = this;
