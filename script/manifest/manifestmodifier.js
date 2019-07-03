@@ -1,5 +1,8 @@
 define('bigscreenplayer/manifest/manifestmodifier',
-  function () {
+  [
+    'bigscreenplayer/debugger/debugtool'
+  ],
+  function (DebugTool) {
     'use strict';
 
     function filter (manifest, representationOptions, oldDashCodecRequired) {
@@ -25,7 +28,10 @@ define('bigscreenplayer/manifest/manifestmodifier',
       }
 
       if (oldDashCodecRequired) {
+        DebugTool.keyValue({ key: 'Video Container', value: 'avc1' });
         manifest = rewriteDashCodec(manifest);
+      } else {
+        DebugTool.keyValue({ key: 'Video Container', value: 'avc3' });
       }
 
       return manifest;
