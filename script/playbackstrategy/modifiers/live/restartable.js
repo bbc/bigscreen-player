@@ -3,9 +3,10 @@ define(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/dynamicwindowutils'
+    'bigscreenplayer/dynamicwindowutils',
+    'bigscreenplayer/debugger/debugtool'
   ],
-    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
+    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils, DebugTool) {
       'use strict';
 
       function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType) {
@@ -18,11 +19,14 @@ define(
         function updateFakeTimer (event) {
           var seekableRange = mediaPlayer.getSeekableRange();
           if (seekableRange && seekableRange.end) {
+            DebugTool.info('Seekable range start: ' + seekableRange.start + ' |||||| Seekable range end: ' + seekableRange.end);
             if (fakeTimer.currentTime === undefined) {
               fakeTimer.currentTime = seekableRange.end - seekableRange.start;
             }
             if (windowLength === undefined) {
+              DebugTool.info('windowLength start: ' + seekableRange.start + ' |||||| windowLength end: ' + seekableRange.end);
               windowLength = seekableRange.end - seekableRange.start;
+              DebugTool.keyValue({key: 'windowLength', value: windowLength});
             }
           }
 
