@@ -188,7 +188,7 @@ require(
                 expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 1, end: 101 });
               });
 
-              it('should only increase end for growing window', function () {
+              it('should only increase end for a growing window', function () {
                 initialiseRestartableMediaPlayer({}, WindowTypes.GROWING);
                 restartableMediaPlayer.beginPlaybackFrom(0);
                 timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
