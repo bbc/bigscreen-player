@@ -72,7 +72,7 @@ require(
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
           expect(html5player).toHaveBeenCalledWith(mockLogger);
-          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.GROWING);
+          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.GROWING, timeData);
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
@@ -82,7 +82,7 @@ require(
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
           expect(html5player).toHaveBeenCalledWith(mockLogger);
-          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.SLIDING);
+          expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.SLIDING, timeData);
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });

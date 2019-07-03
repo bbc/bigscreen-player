@@ -9,27 +9,13 @@ define(
     function (MediaPlayerBase, WindowTypes, DynamicWindowUtils, DebugTool) {
       'use strict';
 
-      function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType) {
+      function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, timeData) {
         var callbacksMap = [];
         var startTime;
         var fakeTimer = {};
-        var windowLength;
         addEventCallback(this, updateFakeTimer);
 
         function updateFakeTimer (event) {
-          var seekableRange = mediaPlayer.getSeekableRange();
-          if (seekableRange && seekableRange.end) {
-            DebugTool.info('Seekable range start: ' + seekableRange.start + ' |||||| Seekable range end: ' + seekableRange.end);
-            if (fakeTimer.currentTime === undefined) {
-              fakeTimer.currentTime = seekableRange.end - seekableRange.start;
-            }
-            if (windowLength === undefined) {
-              DebugTool.info('windowLength start: ' + seekableRange.start + ' |||||| windowLength end: ' + seekableRange.end);
-              windowLength = seekableRange.end - seekableRange.start;
-              DebugTool.keyValue({key: 'windowLength', value: windowLength});
-            }
-          }
-
           if (fakeTimer.wasPlaying && fakeTimer.runningTime) {
             fakeTimer.currentTime += (Date.now() - fakeTimer.runningTime) / 1000;
           }
@@ -81,14 +67,12 @@ define(
         }
 
         function getSeekableRange () {
-          if (windowLength) {
-            var delta = (Date.now() - startTime) / 1000;
-            return {
-              start: windowType === WindowTypes.SLIDING ? delta : 0,
-              end: windowLength + delta
-            };
-          }
-          return {};
+          var windowLength = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+          var delta = (Date.now() - startTime) / 1000;
+          return {
+            start: windowType === WindowTypes.SLIDING ? delta : 0,
+            end: windowLength + delta
+          };
         }
 
         return {
@@ -96,7 +80,7 @@ define(
             var config = deviceConfig;
 
             startTime = Date.now();
-            fakeTimer.currentTime = undefined;
+            fakeTimer.currentTime = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
 
             if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
               mediaPlayer.beginPlaybackFrom(Infinity);

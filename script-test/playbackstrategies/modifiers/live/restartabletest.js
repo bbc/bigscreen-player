@@ -11,7 +11,7 @@ require(
 
         function initialiseRestartableMediaPlayer (config, windowType) {
           windowType = windowType || WindowTypes.SLIDING;
-          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType);
+          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, {windowStartTime: 0, windowEndTime: 100000});
         }
 
         describe('restartable HMTL5 Live Player', function () {
@@ -31,7 +31,7 @@ require(
             player = jasmine.createSpyObj('player',
               ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
                 'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement', 'pause',
-                'resume', 'beginPlaybackFrom', 'getSeekableRange']);
+                'resume', 'beginPlaybackFrom']);
           });
 
           describe('methods call the appropriate media player methods', function () {
@@ -112,18 +112,19 @@ require(
           });
 
           describe('should use fake time for', function () {
-            var timeUpdate;
+            var timeUpdates = [];
+            function timeUpdate (opts) {
+              timeUpdates.forEach(function (fn) { fn(opts); });
+            }
 
             beforeEach(function () {
               jasmine.clock().install();
               jasmine.clock().mockDate();
 
               player.addEventCallback.and.callFake(function (self, callback) {
-                timeUpdate = callback;
+                timeUpdates.push(callback);
               });
 
-              restartableMediaPlayer.addEventCallback(this, function () {});
-              player.getSeekableRange.and.returnValue({start: 0, end: 100});
               initialiseRestartableMediaPlayer();
             });
 
@@ -132,12 +133,8 @@ require(
             });
 
             describe('getCurrentTime', function () {
-              it('should be set on first time update to the end of the seekable range', function () {
+              it('should be set on to the window length on beginPlayback', function () {
                 restartableMediaPlayer.beginPlayback();
-
-                expect(restartableMediaPlayer.getCurrentTime()).toBe(undefined);
-
-                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
 
                 expect(restartableMediaPlayer.getCurrentTime()).toBe(100);
               });
@@ -278,8 +275,6 @@ require(
               });
 
               initialiseRestartableMediaPlayer();
-
-              player.getSeekableRange.and.returnValue({start: 0, end: 100});
 
               for (var index = 0; index < mockCallback.length; index++) {
                 mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING});
