@@ -42,7 +42,7 @@ require(
           describe('and transfer format is HLS', function () {
             it('should return correct value for live support', function () {
               expect(MediaResilience.shouldFailover(2, 100, 10, LiveSupport.SEEKABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(true);
-              expect(MediaResilience.shouldFailover(2, 100, 10, LiveSupport.RESTARTABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(false);
+              expect(MediaResilience.shouldFailover(2, 100, 10, LiveSupport.RESTARTABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(true);
               expect(MediaResilience.shouldFailover(2, 100, 10, LiveSupport.PLAYABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(true);
             });
           });
@@ -60,7 +60,7 @@ require(
           describe('and transfer format is HLS', function () {
             it('should return correct value for live support', function () {
               expect(MediaResilience.shouldFailover(2, 100, 10, LiveSupport.SEEKABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
-              expect(MediaResilience.shouldFailover(2, 100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(false);
+              expect(MediaResilience.shouldFailover(2, 100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
               expect(MediaResilience.shouldFailover(2, 100, 10, LiveSupport.PLAYABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
             });
           });
