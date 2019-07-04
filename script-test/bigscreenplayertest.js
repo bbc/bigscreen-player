@@ -713,7 +713,7 @@ require(
             it('should return false when device does not support seeking', function () {
               mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
 
-              liveSupport = LiveSupport.RESTARTABLE;
+              liveSupport = LiveSupport.PLAYABLE;
 
               initialiseBigscreenPlayer({
                 windowType: WindowTypes.SLIDING

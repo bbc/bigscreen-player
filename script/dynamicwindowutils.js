@@ -1,10 +1,12 @@
 define(
   'bigscreenplayer/dynamicwindowutils', [
-    'bigscreenplayer/models/livesupport'
+    'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-  function (LiveSupport) {
+  function (LiveSupport, MediaPlayerBase) {
     'use strict';
 
+    var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
     var FOUR_MINUTES = 4 * 60;
 
     function convertMilliSecondsToSeconds (timeInMilis) {
@@ -42,10 +44,30 @@ define(
     }
 
     function supportsSeeking (liveSupport) {
-      return liveSupport === LiveSupport.SEEKABLE;
+      return liveSupport === LiveSupport.SEEKABLE ||
+        (liveSupport === LiveSupport.RESTARTABLE &&
+        window.bigscreenPlayer.playbackStrategy === 'nativestrategy');
+    }
+
+    function autoResumeAtStartOfRange (currentTime, seekableRange, addEventCallback, removeEventCallback, resume) {
+      var resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
+      var autoResumeTimer = setTimeout(function () {
+        removeEventCallback(undefined, detectIfUnpaused);
+        resume();
+      }, resumeTimeOut * 1000);
+
+      addEventCallback(undefined, detectIfUnpaused);
+
+      function detectIfUnpaused (event) {
+        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
+          removeEventCallback(undefined, detectIfUnpaused);
+          clearTimeout(autoResumeTimer);
+        }
+      }
     }
 
     return {
+      autoResumeAtStartOfRange: autoResumeAtStartOfRange,
       canPause: canPause,
       canSeek: canSeek
     };

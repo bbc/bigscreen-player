@@ -1,87 +1,53 @@
 define(
     'bigscreenplayer/playbackstrategy/modifiers/live/restartable',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/html5',
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/models/windowtypes',
+    'bigscreenplayer/dynamicwindowutils',
+    'bigscreenplayer/debugger/debugtool'
   ],
-    function (Html5Player, MediaPlayerBase) {
+    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils, DebugTool) {
       'use strict';
-      var AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS = 8000;
 
-      function RestartableLivePlayer (deviceConfig, logger) {
-        var mediaPlayer = Html5Player(logger);
-        var millisecondsUntilStartOfWindow;
-        var bufferingStarted;
-        var self = this;
+      function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, timeData) {
+        var callbacksMap = [];
+        var startTime;
+        var fakeTimer = {};
+        addEventCallback(this, updateFakeTimer);
 
-        function determineTimeUntilStartOfWindow () {
-          mediaPlayer.addEventCallback(self, detectCurrentTimeCallback);
-        }
-
-        function stopDeterminingTimeUntilStartOfWindow () {
-          mediaPlayer.removeEventCallback(self, detectCurrentTimeCallback);
-        }
-
-        function detectCurrentTimeCallback (event) {
-          if (event.state === MediaPlayerBase.STATE.PLAYING && event.currentTime > 0) {
-            removeEventCallback(self, detectCurrentTimeCallback);
-            millisecondsUntilStartOfWindow = event.currentTime * 1000;
-            determineTimeSpentBuffering();
-          }
-        }
-
-        function autoResumeAtStartOfRange () {
-          if (millisecondsUntilStartOfWindow !== null) {
-            var resumeTimeOut = Math.max(0, millisecondsUntilStartOfWindow - AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS);
-            var pauseStarted = new Date().getTime();
-            var autoResumeTimer = setTimeout(function () {
-              removeEventCallback(self, detectIfUnpaused);
-              millisecondsUntilStartOfWindow = 0;
-              resume();
-            }, resumeTimeOut);
-
-            addEventCallback(self, detectIfUnpaused);
+        function updateFakeTimer (event) {
+          if (fakeTimer.wasPlaying && fakeTimer.runningTime) {
+            fakeTimer.currentTime += (Date.now() - fakeTimer.runningTime) / 1000;
           }
 
-          function detectIfUnpaused (event) {
-            if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-              removeEventCallback(self, detectIfUnpaused);
-              clearTimeout(autoResumeTimer);
-              var timePaused = new Date().getTime() - pauseStarted;
-              millisecondsUntilStartOfWindow -= timePaused;
-            }
-          }
+          fakeTimer.runningTime = Date.now();
+          fakeTimer.wasPlaying = event.state === MediaPlayerBase.STATE.PLAYING;
         }
 
         function addEventCallback (thisArg, callback) {
-          mediaPlayer.addEventCallback(thisArg, callback);
+          function newCallback (event) {
+            event.currentTime = getCurrentTime();
+            event.seekableRange = getSeekableRange();
+            callback(event);
+          }
+          callbacksMap.push({ from: callback, to: newCallback });
+          mediaPlayer.addEventCallback(thisArg, newCallback);
         }
 
         function removeEventCallback (thisArg, callback) {
-          mediaPlayer.removeEventCallback(thisArg, callback);
+          var filteredCallbacks = callbacksMap.filter(function (cb) {
+            return cb.from === callback;
+          });
+
+          if (filteredCallbacks.length > 0) {
+            callbacksMap = callbacksMap.splice(callbacksMap.indexOf(filteredCallbacks[0]));
+
+            mediaPlayer.removeEventCallback(thisArg, filteredCallbacks[0].to);
+          }
         }
 
         function removeAllEventCallbacks () {
           mediaPlayer.removeAllEventCallbacks();
-        }
-
-        function determineTimeSpentBuffering () {
-          bufferingStarted = null;
-          addEventCallback(self, determineBufferingCallback);
-        }
-
-        function stopDeterminingTimeSpentBuffering () {
-          removeEventCallback(self, determineBufferingCallback);
-        }
-
-        function determineBufferingCallback (event) {
-          if (event.state === MediaPlayerBase.STATE.BUFFERING && bufferingStarted === null) {
-            bufferingStarted = new Date().getTime();
-          } else if (event.state !== MediaPlayerBase.STATE.BUFFERING && bufferingStarted !== null) {
-            var timeBuffering = new Date().getTime() - bufferingStarted;
-            millisecondsUntilStartOfWindow = Math.max(0, millisecondsUntilStartOfWindow - timeBuffering);
-            bufferingStarted = null;
-          }
         }
 
         function resume () {
@@ -92,27 +58,41 @@ define(
           mediaPlayer.pause();
           opts = opts || {};
           if (opts.disableAutoResume !== true) {
-            autoResumeAtStartOfRange();
+            DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), addEventCallback, removeEventCallback, resume);
           }
+        }
+
+        function getCurrentTime () {
+          return fakeTimer.currentTime;
+        }
+
+        function getSeekableRange () {
+          var windowLength = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+          var delta = (Date.now() - startTime) / 1000;
+          return {
+            start: windowType === WindowTypes.SLIDING ? delta : 0,
+            end: windowLength + delta
+          };
         }
 
         return {
           beginPlayback: function () {
             var config = deviceConfig;
 
+            startTime = Date.now();
+            fakeTimer.currentTime = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+
             if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
               mediaPlayer.beginPlaybackFrom(Infinity);
             } else {
               mediaPlayer.beginPlayback();
             }
-
-            determineTimeUntilStartOfWindow();
           },
 
           beginPlaybackFrom: function (offset) {
-            millisecondsUntilStartOfWindow = offset * 1000;
+            startTime = Date.now();
+            fakeTimer.currentTime = offset;
             mediaPlayer.beginPlaybackFrom(offset);
-            determineTimeSpentBuffering();
           },
 
           initialiseMedia: function (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
@@ -131,8 +111,7 @@ define(
 
           stop: function () {
             mediaPlayer.stop();
-            stopDeterminingTimeUntilStartOfWindow();
-            stopDeterminingTimeSpentBuffering();
+            removeEventCallback(this, updateFakeTimer);
           },
 
           reset: function () {
@@ -159,7 +138,11 @@ define(
 
           getPlayerElement: function () {
             return mediaPlayer.getPlayerElement();
-          }
+          },
+
+          getCurrentTime: getCurrentTime,
+
+          getSeekableRange: getSeekableRange
 
         };
       }
