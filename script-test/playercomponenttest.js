@@ -8,9 +8,10 @@ require(
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/models/transferformats',
-    'squire'
+    'squire',
+    'bigscreenplayer/mediasources'
   ],
-  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, LiveSupport, PluginEnums, TransferFormats, Squire) {
+  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, LiveSupport, PluginEnums, TransferFormats, Squire, MediaSources) {
     'use strict';
 
     describe('Player Component', function () {
@@ -52,6 +53,8 @@ require(
           }
         };
 
+        var mediaSources = new MediaSources(corePlaybackData.media.urls);
+
         var windowType = opts.windowType || WindowTypes.STATIC;
 
         mockStateUpdateCallback = jasmine.createSpy('mockStateUpdateCallback');
@@ -59,6 +62,7 @@ require(
         playerComponent = new PlayerComponentWithMocks(
           playbackElement,
           corePlaybackData,
+          mediaSources,
           windowType,
           opts.subtitlesEnabled || false,
           mockStateUpdateCallback,

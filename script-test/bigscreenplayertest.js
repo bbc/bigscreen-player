@@ -27,7 +27,7 @@ require(
         'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
         'getWindowStartTime', 'getWindowEndTime']);
 
-      var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
+      var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
         mockEventHook = callback;
         return mockPlayerComponentInstance;
       };
@@ -186,7 +186,6 @@ require(
 
             expect(errorCallback).toHaveBeenCalledWith({error: 'manifest'});
             expect(successCallback).not.toHaveBeenCalled();
-            expect(bigscreenPlayerData.media.urls.length).toBe(0);
           });
 
           it('should not attempt to call onSuccess callback if one is not provided', function () {

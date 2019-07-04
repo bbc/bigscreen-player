@@ -8,18 +8,15 @@ define(
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/utils/livesupportutils',
-    'bigscreenplayer/mediaresilience',
-    'bigscreenplayer/debugger/cdndebugoutput',
     'bigscreenplayer/models/livesupport'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, LiveSupportUtils, MediaResilience, CdnDebugOutput, LiveSupport) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, ManifestLoader, LiveSupportUtils, LiveSupport) {
     'use strict';
 
-    var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
+    var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
       var isInitialPlay = true;
       var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
@@ -32,7 +29,6 @@ define(
       var mediaMetaData;
       var fatalErrorTimeout;
       var fatalError;
-      var cdnDebugOutput = new CdnDebugOutput(bigscreenPlayerData.media.urls);
       var transferFormat = bigscreenPlayerData.media.transferFormat;
 
       playbackStrategy = PlaybackStrategy(
@@ -41,8 +37,7 @@ define(
         bigscreenPlayerData.time,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        device,
-        cdnDebugOutput
+        device
       );
 
       playbackStrategy.addEventCallback(this, eventCallback);
@@ -250,7 +245,7 @@ define(
       }
 
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
-        var shouldFailover = MediaResilience.shouldFailover(mediaMetaData.urls.length, getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
+        var shouldFailover = mediaSources.shouldFailover(getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
 
         var failover = function (time) {
           cdnFailover(time, thenPause, errorProperties, bufferingTimeoutError);
@@ -305,7 +300,6 @@ define(
         });
         Plugins.interface.onErrorHandled(evt);
         mediaMetaData.urls.shift();
-        cdnDebugOutput.update();
         loadMedia(mediaMetaData.urls, mediaMetaData.type, failoverTime, thenPause);
       }
 
@@ -429,11 +423,6 @@ define(
           captionsContainer.stop();
           captionsContainer.tearDown();
           captionsContainer = null;
-        }
-
-        if (cdnDebugOutput) {
-          cdnDebugOutput.tearDown();
-          cdnDebugOutput = undefined;
         }
 
         isInitialPlay = true;

@@ -11,9 +11,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/utils/livesupportutils'
+    'bigscreenplayer/utils/livesupportutils',
+    'bigscreenplayer/mediasources'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, LiveSupportUtils) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, LiveSupportUtils, MediaSources) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -27,6 +28,7 @@ define('bigscreenplayer/bigscreenplayer',
       var endOfStream;
       var windowType;
       var device;
+      var mediaSources;
 
       var END_OF_STREAM_TOLERANCE = 10;
 
@@ -98,6 +100,7 @@ define('bigscreenplayer/bigscreenplayer',
         playerComponent = new PlayerComponent(
           playbackElement,
           bigscreenPlayerData,
+          mediaSources,
           windowType,
           enableSubtitles,
           mediaStateUpdateCallback,
@@ -107,14 +110,6 @@ define('bigscreenplayer/bigscreenplayer',
         if (successCallback) {
           successCallback();
         }
-
-        var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
-          return media.cdn;
-        });
-
-        DebugTool.keyValue({key: 'available cdns', value: availableCdns});
-        DebugTool.keyValue({key: 'current cdn', value: bigscreenPlayerData.media.urls[0].cdn});
-        DebugTool.keyValue({key: 'url', value: bigscreenPlayerData.media.urls[0].url});
       }
 
       function getWindowStartTime () {
@@ -126,6 +121,7 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function initialManifestLoad (bigscreenPlayerData, playbackElement, enableSubtitles, callbacks) {
+        // Normally this would be fine. However,
         ManifestLoader.load(
           bigscreenPlayerData.media.urls,
           serverDate,
@@ -136,13 +132,19 @@ define('bigscreenplayer/bigscreenplayer',
               bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
             },
             onError: function () {
-              if (bigscreenPlayerData.media.urls.length > 0) {
-                bigscreenPlayerData.media.urls.shift();
-                initialManifestLoad(bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
+              // spike idea!
+              // Function we want to do after along with its partially applied arguments.
+              // Then we can just do it... what about callbacks.onError though? Should really be set at all times.
+              var reloadManifest = initialManifestLoad.bind(null, bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
+
+              var errorCallback = function () {
+                callbacks.onError({error: 'manifest'});
+              };
+
+              if (callbacks.onError) {
+                mediaSources.failover(reloadManifest, errorCallback);
               } else {
-                if (callbacks.onError) {
-                  callbacks.onError({error: 'manifest'});
-                }
+                mediaSources.failover(reloadManifest, function () {});
               }
             }
           }
@@ -158,6 +160,8 @@ define('bigscreenplayer/bigscreenplayer',
           if (!callbacks) {
             callbacks = {};
           }
+
+          mediaSources = new MediaSources(bigscreenPlayerData.media.urls);
 
           if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
             initialManifestLoad(bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
@@ -177,6 +181,7 @@ define('bigscreenplayer/bigscreenplayer',
           mediaKind = undefined;
           pauseTrigger = undefined;
           windowType = undefined;
+          mediaSources = undefined;
           this.unregisterPlugin();
           DebugTool.tearDown();
           Chronicle.tearDown();
