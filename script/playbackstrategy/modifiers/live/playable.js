@@ -1,13 +1,11 @@
 define(
     'bigscreenplayer/playbackstrategy/modifiers/live/playable',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/html5',
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-    function (Html5Player, MediaPlayerBase) {
+    function (MediaPlayerBase) {
       'use strict';
-      function PlayableLivePlayer (deviceConfig, logger) {
-        var mediaPlayer = Html5Player(deviceConfig, logger);
+      function PlayableLivePlayer (mediaPlayer) {
         return {
           beginPlayback: function beginPlayback () {
             mediaPlayer.beginPlayback();

@@ -498,15 +498,12 @@ define(
         switch (getState()) {
           case MediaPlayerBase.STATE.STOPPED:
           case MediaPlayerBase.STATE.ERROR:
-            break;
-
+            return;
           default:
             if (mediaElement) {
               return mediaElement.currentTime;
             }
-            break;
         }
-        return undefined;
       }
 
       /**
@@ -738,6 +735,7 @@ define(
         beginPlayback: function () {
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           sentinelSeekTime = undefined;
+
           switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
               trustZeroes = true;
