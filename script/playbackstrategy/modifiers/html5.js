@@ -1,13 +1,12 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-  function (MediaPlayerBase, DebugTool) {
+  function (MediaPlayerBase) {
     'use strict';
 
-    function Player (deviceConfig, logger) {
+    function Player (deviceConfig) {
       var eventCallback;
       var eventCallbacks = [];
       var state = MediaPlayerBase.STATE.EMPTY;
@@ -66,8 +65,6 @@ define(
           mimeType: getMimeType(),
           state: getState()
         };
-
-        DebugTool.keyValue({ key: 'STATE', value: event.state });
 
         if (eventLabels) {
           for (var key in eventLabels) {
@@ -302,7 +299,6 @@ define(
       }
 
       function reportError (errorMessage) {
-        logger.error(errorMessage);
         emitEvent(MediaPlayerBase.EVENT.ERROR);
       }
 
@@ -355,8 +351,6 @@ define(
               start: 0,
               end: mediaElement.duration
             };
-          } else {
-            logger.warn('No \'duration\' or \'seekable\' on media element');
           }
         }
         return undefined;
@@ -450,7 +444,6 @@ define(
 
       function exitBuffering () {
         metadataLoaded();
-        DebugTool.info('exitBuffering. State: ' + getState());
         if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
           return;
         } else if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
@@ -564,13 +557,7 @@ define(
       }
 
       function getClampedTimeForPlayFrom (seconds) {
-        var clampedTime = getClampedTime(seconds);
-        if (clampedTime !== seconds) {
-          var range = getSeekableRange();
-          logger.debug('play From ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
-          DebugTool.info('play From ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
-        }
-        return clampedTime;
+        return getClampedTime(seconds);
       }
 
       function wipe () {
@@ -581,7 +568,6 @@ define(
         sentinelSeekTime = undefined;
         clearSentinels();
         destroyMediaElement();
-        DebugTool.info('Wipe. Clearing sentinels, media element, readToPlayFrom to false');
         readyToPlayFrom = false;
       }
 

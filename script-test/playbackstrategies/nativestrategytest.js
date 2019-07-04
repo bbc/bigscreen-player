@@ -13,7 +13,6 @@ require(
 
         var mockLegacyAdapter;
         var mockDevice;
-        var mockLogger = 'logger';
         var mockConfig = 'config';
 
         var mediaKind = 'mediaKind';
@@ -33,10 +32,6 @@ require(
 
           html5player.and.returnValue(mediaPlayer);
           livePlayer.and.returnValue(mediaPlayer);
-
-          mockDevice.getLogger.and.returnValue(
-            mockLogger
-          );
 
           mockDevice.getConfig.and.returnValue(
             mockConfig
@@ -62,7 +57,7 @@ require(
           var windowType = WindowTypes.STATIC;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(html5player).toHaveBeenCalledWith(mockConfig, mockLogger);
+          expect(html5player).toHaveBeenCalledWith(mockConfig);
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
@@ -71,7 +66,7 @@ require(
           var windowType = WindowTypes.GROWING;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(html5player).toHaveBeenCalledWith(mockConfig, mockLogger);
+          expect(html5player).toHaveBeenCalledWith(mockConfig);
           expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.GROWING, timeData);
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
@@ -81,7 +76,7 @@ require(
           var windowType = WindowTypes.SLIDING;
           nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
-          expect(html5player).toHaveBeenCalledWith(mockConfig, mockLogger);
+          expect(html5player).toHaveBeenCalledWith(mockConfig);
           expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.SLIDING, timeData);
 
           expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
