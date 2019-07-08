@@ -195,7 +195,7 @@ require(
             expect(successCallback).not.toHaveBeenCalled();
           });
 
-          it('should not attempt to call onSuccess callback if one is not provided', function () {
+          it('should not attempt to call onError callback if one is not provided', function () {
             noCallbacks = true;
             forceManifestLoadError = true;
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});

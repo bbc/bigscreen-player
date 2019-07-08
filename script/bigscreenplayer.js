@@ -132,9 +132,6 @@ define('bigscreenplayer/bigscreenplayer',
               bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
             },
             onError: function () {
-              // spike idea!
-              // Function we want to do after along with its partially applied arguments.
-              // Then we can just do it... what about callbacks.onError though? Should really be set at all times.
               var reloadManifest = initialManifestLoad.bind(null, bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
 
               var errorCallback = function () {
@@ -143,8 +140,6 @@ define('bigscreenplayer/bigscreenplayer',
 
               if (callbacks.onError) {
                 mediaSources.failover(reloadManifest, errorCallback);
-              } else {
-                mediaSources.failover(reloadManifest, function () {});
               }
             }
           }
