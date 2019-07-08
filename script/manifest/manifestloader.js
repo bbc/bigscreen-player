@@ -7,28 +7,6 @@ define(
   function (ManifestParser, TransferFormats, LoadUrl) {
     'use strict';
 
-    function filterHLS (urls) {
-      var filtered = [];
-      for (var i = 0; i < urls.length; i++) {
-        var isHLS = /\.m3u8($|\?.*$)/.test(urls[i].url);
-        if (isHLS) {
-          filtered.push(urls[i].url);
-        }
-      }
-      return filtered;
-    }
-
-    function filterDash (urls) {
-      var filtered = [];
-      for (var i = 0; i < urls.length; i++) {
-        var isDash = /\.mpd($|\?.*$)/.test(urls[i].url);
-        if (isDash) {
-          filtered.push(urls[i].url);
-        }
-      }
-      return filtered;
-    }
-
     function retrieveDashManifest (url, dateWithOffset, callbacks) {
       var xhr = LoadUrl(
         url,
@@ -120,14 +98,11 @@ define(
     }
 
     return {
-      load: function (mediaUrls, serverDate, callbacks) {
-        var hlsUrl = filterHLS(mediaUrls)[0];
-        var dashUrl = filterDash(mediaUrls)[0];
-
-        if (hlsUrl) {
-          retrieveHLSManifest(hlsUrl, serverDate, callbacks);
-        } else if (dashUrl) {
-          retrieveDashManifest(dashUrl, serverDate, callbacks);
+      load: function (mediaUrl, serverDate, callbacks) {
+        if (/\.m3u8($|\?.*$)/.test(mediaUrl)) {
+          retrieveHLSManifest(mediaUrl, serverDate, callbacks);
+        } else if (/\.mpd($|\?.*$)/.test(mediaUrl)) {
+          retrieveDashManifest(mediaUrl, serverDate, callbacks);
         } else {
           callbacks.onError('Invalid media url');
         }

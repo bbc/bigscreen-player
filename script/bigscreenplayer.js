@@ -123,7 +123,7 @@ define('bigscreenplayer/bigscreenplayer',
       function initialManifestLoad (bigscreenPlayerData, playbackElement, enableSubtitles, callbacks) {
         // Normally this would be fine. However,
         ManifestLoader.load(
-          bigscreenPlayerData.media.urls,
+          mediaSources.currentSource(),
           serverDate,
           {
             onSuccess: function (manifestData) {
