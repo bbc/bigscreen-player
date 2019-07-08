@@ -60,13 +60,13 @@ define('bigscreenplayer/manifest/manifestmodifier',
     }
 
     function rewriteDashCodec (manifest) {
-      var periods = manifest.Period_asArray;
+      var periods = manifest.Period_asArray || [manifest.Period];
       if (periods) {
         for (var i = 0; i < periods.length; i++) {
-          var sets = periods[i].AdaptationSet_asArray;
+          var sets = periods[i].AdaptationSet_asArray || periods[i].AdaptationSet;
           if (sets) {
             for (var j = 0; j < sets.length; j++) {
-              var representations = sets[j].Representation_asArray;
+              var representations = sets[j].Representation_asArray || [sets[j].Representation];
               if (representations) {
                 for (var k = 0; k < representations.length; k++) {
                   var rep = representations[k];
