@@ -212,7 +212,7 @@ define(
         bubbleBufferingCleared(playbackProperties);
 
         var playbackErrorProperties = createPlaybackErrorProperties(event);
-        raiseError(playbackErrorProperties, false);
+        raiseError(playbackErrorProperties);
       }
 
       function startErrorTimeout (properties) {
@@ -227,19 +227,19 @@ define(
         }, bufferingTimeout);
       }
 
-      function raiseError (properties, bufferingTimeoutError) {
+      function raiseError (properties) {
         clearErrorTimeout();
         publishMediaStateUpdate(MediaState.WAITING);
-        bubbleErrorRaised(properties, bufferingTimeoutError);
-        startFatalErrorTimeout(properties, bufferingTimeoutError);
+        bubbleErrorRaised(properties);
+        startFatalErrorTimeout(properties);
       }
 
-      function startFatalErrorTimeout (errorProperties, bufferingTimeoutError) {
+      function startFatalErrorTimeout (errorProperties) {
         if (!fatalErrorTimeout && !fatalError) {
           fatalErrorTimeout = setTimeout(function () {
             fatalErrorTimeout = null;
             fatalError = true;
-            attemptCdnFailover(errorProperties, bufferingTimeoutError);
+            attemptCdnFailover(errorProperties, false);
           }, 5000);
         }
       }
@@ -339,8 +339,8 @@ define(
         Plugins.interface.onErrorCleared(evt);
       }
 
-      function bubbleErrorRaised (errorProperties, bufferingTimeoutError) {
-        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError });
+      function bubbleErrorRaised (errorProperties) {
+        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: false });
         Plugins.interface.onError(evt);
       }
 

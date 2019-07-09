@@ -3,9 +3,10 @@ define('bigscreenplayer/mediasources',
     'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/models/transferformats'
+    'bigscreenplayer/models/transferformats',
+    'bigscreenplayer/plugins'
   ],
-function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats) {
+function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins) {
   var mediaSources;
   'use strict';
 

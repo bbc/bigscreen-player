@@ -1,21 +1,45 @@
 require(
   [
-    'bigscreenplayer/mediasources',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/models/transferformats'
+    'bigscreenplayer/models/transferformats',
+    'bigscreenplayer/pluginenums',
+    'squire'
   ],
-  function (MediaSources, WindowTypes, LiveSupport, TransferFormats) {
+  function (WindowTypes, LiveSupport, TransferFormats, PluginEnums, Squire) {
     describe('Media Sources', function () {
+      var injector;
+      var mockPlugins;
+      var mockPluginsInterface;
+      var MediaSources;
+
       var mediaSources;
       var testSources;
 
-      beforeEach(function () {
-        testSources = [
-          {url: 'source1', cdn: 'supplier1'},
-          {url: 'source2', cdn: 'supplier1'}
-        ];
-        mediaSources = new MediaSources(testSources);
+      beforeEach(function (done) {
+        injector = new Squire();
+
+        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
+
+        mockPlugins = {
+          interface: mockPluginsInterface
+        };
+
+        injector.mock({
+          'bigscreenplayer/plugins': mockPlugins
+        });
+
+        injector.require(['bigscreenplayer/mediasources'], function (SquiredMediaSources) {
+          MediaSources = SquiredMediaSources;
+
+          testSources = [
+            {url: 'source1', cdn: 'supplier1'},
+            {url: 'source2', cdn: 'supplier1'}
+          ];
+          mediaSources = new MediaSources(testSources);
+
+          done();
+        });
       });
 
       afterEach(function () {
@@ -36,9 +60,10 @@ require(
           mediaSources.failover(postFailoverAction, onFailureAction);
 
           expect(postFailoverAction).toHaveBeenCalledWith();
+          expect(onFailureAction).not.toHaveBeenCalledWith();
         });
 
-        it('When there are no more sources to failover to, it calls onError callback', function () {
+        it('When there are no more sources to failover to, it calls failure action callback', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
 
@@ -46,12 +71,46 @@ require(
           mediaSources.failover(postFailoverAction, onFailureAction);
 
           expect(onFailureAction).toHaveBeenCalledWith();
+          expect(postFailoverAction).not.toHaveBeenCalledWith();
+        });
+
+        xit('When there are sources to failover to, it emits correct plugin event', function () {
+          var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
+          var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+
+          mediaSources.failover(postFailoverAction, onFailureAction);
+
+          var pluginData = {
+            status: PluginEnums.STATUS.FAILOVER,
+            stateType: PluginEnums.TYPE.ERROR,
+            // properties: errorProperties,
+            isBufferingTimeoutError: false,
+            cdn: 'source1',
+            newCdn: 'source2'
+          };
+
+          expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
         });
       });
 
       describe('currentSource', function () {
         it('returns the first media source url', function () {
           expect(mediaSources.currentSource()).toBe(testSources[0].url);
+        });
+
+        it('returns the second media source following a failover', function () {
+          var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
+          var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+
+          mediaSources.failover(postFailoverAction, onFailureAction);
+
+          expect(mediaSources.currentSource()).toBe(testSources[1].url);
+        });
+
+        it('returns empty string if querying when there are no sources', function () {
+          mediaSources = new MediaSources([]);
+
+          expect(mediaSources.currentSource()).toBe('');
         });
       });
 
