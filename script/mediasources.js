@@ -4,21 +4,22 @@ define('bigscreenplayer/mediasources',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/models/transferformats',
-    'bigscreenplayer/plugins'
+    'bigscreenplayer/plugins',
+    'bigscreenplayer/pluginenums',
+    'bigscreenplayer/plugindata'
   ],
-function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins) {
+function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, PluginEnums, PluginData) {
   var mediaSources;
   'use strict';
 
   // remove the failing CDN
   // Make the new point of truth the new CDN
   // Report to the debug tool, plugins and any other logging.
-  function failover (postFailoverAction, failoverErrorAction) {
-    updateCdns();
-    emitCdnFailover();
-    cdnLog();
-
-    if (hasMoreCdns()) {
+  function failover (postFailoverAction, failoverErrorAction, errorProperties, isBufferingTimeoutError) {
+    if (hasSourcesToFailoverTo()) {
+      emitCdnFailover(errorProperties, isBufferingTimeoutError);
+      updateCdns();
+      cdnLog();
       postFailoverAction();
     } else {
       failoverErrorAction();
@@ -27,18 +28,26 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins) {
 
     // When we know we're failing over from a CDN, the point of truth needs updating somehow.
   function updateCdns () {
-    if (hasMoreCdns()) {
+    if (hasSourcesToFailoverTo()) {
       mediaSources.shift();
     }
   }
 
-  function hasMoreCdns () {
-    return mediaSources.length > 0;
+  function hasSourcesToFailoverTo () {
+    return mediaSources.length > 1;
   }
 
   // Fire off to the plugins
-  function emitCdnFailover () {
-
+  function emitCdnFailover (errorProperties, isBufferingTimeoutError) {
+    var evt = new PluginData({
+      status: PluginEnums.STATUS.FAILOVER,
+      stateType: PluginEnums.TYPE.ERROR,
+      properties: errorProperties,
+      isBufferingTimeoutError: isBufferingTimeoutError,
+      cdn: mediaSources[0].cdn,
+      newCdn: mediaSources[1].cdn
+    });
+    Plugins.interface.onErrorHandled(evt);
   }
 
   // Log any output
@@ -47,7 +56,7 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins) {
   }
 
   function getCurrentUrl () {
-    if (hasMoreCdns()) {
+    if (mediaSources.length > 0) {
       return mediaSources[0].url.toString();
     }
 

@@ -34,7 +34,7 @@ require(
 
           testSources = [
             {url: 'source1', cdn: 'supplier1'},
-            {url: 'source2', cdn: 'supplier1'}
+            {url: 'source2', cdn: 'supplier2'}
           ];
           mediaSources = new MediaSources(testSources);
 
@@ -67,26 +67,35 @@ require(
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
 
-          mediaSources = new MediaSources([]);
+          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}]);
           mediaSources.failover(postFailoverAction, onFailureAction);
 
           expect(onFailureAction).toHaveBeenCalledWith();
           expect(postFailoverAction).not.toHaveBeenCalledWith();
         });
 
-        xit('When there are sources to failover to, it emits correct plugin event', function () {
+        it('When there are sources to failover to, it emits correct plugin event', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
 
-          mediaSources.failover(postFailoverAction, onFailureAction);
+          var errorProperties = {
+            seekableRange: {start: 0, end: 100},
+            current_time: 50,
+            duration: 100,
+            error_mssg: 'test error'
+          };
+
+          mediaSources.failover(postFailoverAction, onFailureAction, errorProperties, true);
 
           var pluginData = {
             status: PluginEnums.STATUS.FAILOVER,
             stateType: PluginEnums.TYPE.ERROR,
-            // properties: errorProperties,
-            isBufferingTimeoutError: false,
-            cdn: 'source1',
-            newCdn: 'source2'
+            properties: errorProperties,
+            isBufferingTimeoutError: true,
+            cdn: 'supplier1',
+            newCdn: 'supplier2',
+            isInitialPlay: undefined,
+            timeStamp: jasmine.any(Object)
           };
 
           expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
