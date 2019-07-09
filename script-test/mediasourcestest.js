@@ -100,6 +100,16 @@ require(
 
           expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
         });
+
+        it('Plugin event not emitted when there are no sources to failover to', function () {
+          var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
+          var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+
+          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}]);
+          mediaSources.failover(postFailoverAction, onFailureAction, {}, {});
+
+          expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
+        });
       });
 
       describe('currentSource', function () {
