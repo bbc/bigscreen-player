@@ -917,6 +917,7 @@ require(
           currentTimeSpy.and.returnValue(currentTime);
           spyOn(mockStrategy, 'getDuration').and.returnValue(100);
           spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
+          spyOn(mediaSources, 'failover').and.callThrough();
         });
 
         afterEach(function () {
@@ -931,15 +932,13 @@ require(
           jasmine.clock().tick(29999);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-          expect(corePlaybackData.media.urls).toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+          expect(mediaSources.failover).not.toHaveBeenCalled();
 
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-
-          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
-          expect(corePlaybackData.media.urls.length).toBe(2);
-          expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime);
+          expect(mediaSources.failover).toHaveBeenCalled();
         });
 
         it('should failover after buffering for 20 seconds on normal playback', function () {
@@ -953,18 +952,13 @@ require(
           jasmine.clock().tick(19999);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-
-          expect(corePlaybackData.media.urls.length).toBe(3);
-          expect(corePlaybackData.media.urls).toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+          expect(mediaSources.failover).not.toHaveBeenCalled();
 
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-
-          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
-
-          expect(corePlaybackData.media.urls.length).toBe(2);
-          expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime);
+          expect(mediaSources.failover).toHaveBeenCalled();
         });
 
         it('should failover after 5 seconds if we have not cleared an error from the device', function () {
@@ -975,16 +969,13 @@ require(
           jasmine.clock().tick(4999);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-          expect(corePlaybackData.media.urls.length).toBe(3);
-          expect(corePlaybackData.media.urls).toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+          expect(mediaSources.failover).not.toHaveBeenCalled();
 
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-
-          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
-          expect(corePlaybackData.media.urls.length).toBe(2);
-          expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime);
+          expect(mediaSources.failover).toHaveBeenCalled();
         });
 
         it('should fire a fatal error on the plugins if there is only one cdn', function () {
@@ -1044,15 +1035,13 @@ require(
           jasmine.clock().tick(19999);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-          expect(corePlaybackData.media.urls.length).toBe(3);
-          expect(corePlaybackData.media.urls).toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+          expect(mediaSources.failover).not.toHaveBeenCalled();
 
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime - 20);
-          expect(corePlaybackData.media.urls.length).toBe(2);
-          expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime - 20);
+          expect(mediaSources.failover).toHaveBeenCalled();
         });
 
         it('should failover for with updated failover time for multiple failovers', function () {
@@ -1075,7 +1064,7 @@ require(
           jasmine.clock().tick(20000);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime - 20);
+          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime - 20);
 
           currentTimeSpy.and.returnValue(currentTime - 20);
 
@@ -1093,7 +1082,7 @@ require(
           jasmine.clock().tick(20000);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(3);
-          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime - 40);
+          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime - 40);
         });
 
         it('should failover on a without reloading the manifest', function () {
@@ -1109,40 +1098,15 @@ require(
           jasmine.clock().tick(19999);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-          expect(corePlaybackData.media.urls.length).toBe(3);
-
-          expect(corePlaybackData.media.urls.length).toBe(3);
-          expect(corePlaybackData.media.urls).toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
+          expect(mediaSources.failover).not.toHaveBeenCalled();
 
           jasmine.clock().tick(1);
 
           expect(manifestLoaderMock.load).not.toHaveBeenCalled();
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(corePlaybackData.media.urls, type, currentTime);
-          expect(corePlaybackData.media.urls.length).toBe(2);
-          expect(corePlaybackData.media.urls).not.toContain(jasmine.objectContaining({cdn: 'cdn-a'}));
-        });
-
-        it('should fire an error handled event on the plugins with the erroring CDN', function () {
-          setUpPlayerComponent({multiCdn: true});
-
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {}});
-
-          jasmine.clock().tick(5000);
-
-          var pluginData = {
-            status: PluginEnums.STATUS.FAILOVER,
-            stateType: PluginEnums.TYPE.ERROR,
-            properties: errorProperties,
-            isBufferingTimeoutError: false,
-            cdn: 'cdn-a',
-            newCdn: 'cdn-b',
-            isInitialPlay: undefined,
-            timeStamp: jasmine.any(Object)
-          };
-
-          expect(mockPluginsInterface.onErrorHandled).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
+          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime);
+          expect(mediaSources.failover).toHaveBeenCalled();
         });
 
         it('should fire a fatal error if the manifest fails to reload', function () {

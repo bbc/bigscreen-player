@@ -139,7 +139,7 @@ define(
             time = undefined;
             thenPause = false;
           }
-          loadMedia(mediaMetaData.urls, mediaMetaData.type, time, thenPause);
+          loadMedia(mediaSources.availableSources(), mediaMetaData.type, time, thenPause);
         }
         var errorCallback = function () {
           tearDownMediaElement();
@@ -287,17 +287,24 @@ define(
       }
 
       function cdnFailover (failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-        var evt = new PluginData({
-          status: PluginEnums.STATUS.FAILOVER,
-          stateType: PluginEnums.TYPE.ERROR,
-          properties: errorProperties,
-          isBufferingTimeoutError: bufferingTimeoutError,
-          cdn: mediaMetaData.urls[0].cdn,
-          newCdn: mediaMetaData.urls[1].cdn
-        });
-        Plugins.interface.onErrorHandled(evt);
-        mediaMetaData.urls.shift();
-        loadMedia(mediaMetaData.urls, mediaMetaData.type, failoverTime, thenPause);
+        // var evt = new PluginData({
+        //   status: PluginEnums.STATUS.FAILOVER,
+        //   stateType: PluginEnums.TYPE.ERROR,
+        //   properties: errorProperties,
+        //   isBufferingTimeoutError: bufferingTimeoutError,
+        //   cdn: mediaMetaData.urls[0].cdn,
+        //   newCdn: mediaMetaData.urls[1].cdn
+        // });
+        // Plugins.interface.onErrorHandled(evt);
+        // mediaMetaData.urls.shift();
+
+        var failoverInfo = {
+          errorMessage: errorProperties.error_mssg,
+          isBufferingTimeoutError: bufferingTimeoutError
+        };
+        mediaSources.failover(function () {
+          loadMedia(mediaSources.availableSources(), mediaMetaData.type, failoverTime, thenPause);
+        }, function () {}, failoverInfo);
       }
 
       function clearFatalErrorTimeout () {
@@ -395,7 +402,7 @@ define(
 
       function initialMediaPlay (media, startTime) {
         mediaMetaData = media;
-        loadMedia(media.urls, media.type, startTime);
+        loadMedia(mediaSources.availableSources(), media.type, startTime);
 
         if (!captionsContainer) {
           captionsContainer = new CaptionsContainer(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
