@@ -6,27 +6,24 @@ define('bigscreenplayer/mediasources',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/plugins',
     'bigscreenplayer/pluginenums',
-    'bigscreenplayer/plugindata'
+    'bigscreenplayer/plugindata',
+    'bigscreenplayer/debugger/debugtool'
   ],
-function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, PluginEnums, PluginData) {
+function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, PluginEnums, PluginData, DebugTool) {
   var mediaSources;
   'use strict';
 
-  // remove the failing CDN
-  // Make the new point of truth the new CDN
-  // Report to the debug tool, plugins and any other logging.
   function failover (postFailoverAction, failoverErrorAction, errorProperties, isBufferingTimeoutError) {
     if (hasSourcesToFailoverTo()) {
       emitCdnFailover(errorProperties, isBufferingTimeoutError);
       updateCdns();
-      cdnLog();
+      updateDebugOutput();
       postFailoverAction();
     } else {
       failoverErrorAction();
     }
   }
 
-    // When we know we're failing over from a CDN, the point of truth needs updating somehow.
   function updateCdns () {
     if (hasSourcesToFailoverTo()) {
       mediaSources.shift();
@@ -37,7 +34,6 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     return mediaSources.length > 1;
   }
 
-  // Fire off to the plugins
   function emitCdnFailover (errorProperties, isBufferingTimeoutError) {
     var evt = new PluginData({
       status: PluginEnums.STATUS.FAILOVER,
@@ -50,14 +46,17 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     Plugins.interface.onErrorHandled(evt);
   }
 
-  // Log any output
-  function cdnLog () {
-
-  }
-
   function getCurrentUrl () {
     if (mediaSources.length > 0) {
       return mediaSources[0].url.toString();
+    }
+
+    return '';
+  }
+
+  function getCurrentCdn () {
+    if (mediaSources.length > 0) {
+      return mediaSources[0].cdn.toString();
     }
 
     return '';
@@ -69,6 +68,12 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     });
   }
 
+  function availableCdns () {
+    return mediaSources.map(function (mediaSource) {
+      return mediaSource.cdn;
+    });
+  }
+
   function shouldFailover (duration, currentTime, liveSupport, windowType, transferFormat) {
     var aboutToEnd = duration && currentTime > duration - 5;
     var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
@@ -76,9 +81,16 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     return hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
   }
 
+  function updateDebugOutput () {
+    DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
+    DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
+    DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
+  }
+
   // Constructor
   return function (urls) {
     mediaSources = PlaybackUtils.cloneArray(urls);
+    updateDebugOutput();
 
     return {
       failover: failover,

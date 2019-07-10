@@ -15,7 +15,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'dashjs'
   ],
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestModifier, PlaybackUtils, LiveSupport) {
-    var MSEStrategy = function (windowType, mediaKind, timeData, playbackElement, isUHD, device, cdnDebugOutput) {
+    var MSEStrategy = function (windowType, mediaKind, timeData, playbackElement, isUHD, device) {
       var mediaPlayer;
       var mediaElement;
 
@@ -174,7 +174,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         // TODO: Remove this horrible mutation when failover is pushed down per strategy.
         Plugins.interface.onErrorHandled(evt);
         mediaSources.shift();
-        cdnDebugOutput.update();
       }
 
       function onCdnFailover (event) {
