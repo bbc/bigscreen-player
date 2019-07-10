@@ -138,7 +138,7 @@ define('bigscreenplayer/bigscreenplayer',
               };
 
               if (callbacks.onError) {
-                mediaSources.failover(reloadManifest, errorCallback);
+                mediaSources.failover(reloadManifest, errorCallback, {errorMessage: 'manifest-load', isBufferingTimeoutError: false});
               }
             }
           }

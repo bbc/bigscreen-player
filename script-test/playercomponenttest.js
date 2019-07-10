@@ -28,6 +28,7 @@ require(
       var liveSupport;
       var manifestData;
       var forceManifestLoadError;
+      var mediaSources;
 
       // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
       function setUpPlayerComponent (opts) {
@@ -53,7 +54,7 @@ require(
           }
         };
 
-        var mediaSources = new MediaSources(corePlaybackData.media.urls);
+        mediaSources = new MediaSources(corePlaybackData.media.urls);
 
         var windowType = opts.windowType || WindowTypes.STATIC;
 
@@ -1158,7 +1159,7 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(1);
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
-          expect(corePlaybackData.media.urls.length).toBe(0);
+          expect(mediaSources.availableSources().length).toBe(1);
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
         });
 

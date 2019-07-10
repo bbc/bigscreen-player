@@ -13,9 +13,9 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
   var mediaSources;
   'use strict';
 
-  function failover (postFailoverAction, failoverErrorAction, errorProperties, isBufferingTimeoutError) {
+  function failover (postFailoverAction, failoverErrorAction, failoverInfo) {
     if (hasSourcesToFailoverTo()) {
-      emitCdnFailover(errorProperties, isBufferingTimeoutError);
+      emitCdnFailover(failoverInfo);
       updateCdns();
       updateDebugOutput();
       postFailoverAction();
@@ -34,12 +34,12 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     return mediaSources.length > 1;
   }
 
-  function emitCdnFailover (errorProperties, isBufferingTimeoutError) {
+  function emitCdnFailover (failoverInfo) {
     var evt = new PluginData({
       status: PluginEnums.STATUS.FAILOVER,
       stateType: PluginEnums.TYPE.ERROR,
-      properties: errorProperties,
-      isBufferingTimeoutError: isBufferingTimeoutError,
+      properties: {error_mssg: failoverInfo.errorMessage},
+      isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
       cdn: mediaSources[0].cdn,
       newCdn: mediaSources[1].cdn
     });

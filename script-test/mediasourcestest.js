@@ -56,8 +56,9 @@ require(
         it('When there are sources to failover to, it calls the post failover callback', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+          var failoverInfo = {errorMessage: 'failover', isBufferingTimeout: true};
 
-          mediaSources.failover(postFailoverAction, onFailureAction);
+          mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(postFailoverAction).toHaveBeenCalledWith();
           expect(onFailureAction).not.toHaveBeenCalledWith();
@@ -66,9 +67,10 @@ require(
         it('When there are no more sources to failover to, it calls failure action callback', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+          var failoverInfo = {errorMessage: 'failover', isBufferingTimeout: true};
 
           mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}]);
-          mediaSources.failover(postFailoverAction, onFailureAction);
+          mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(onFailureAction).toHaveBeenCalledWith();
           expect(postFailoverAction).not.toHaveBeenCalledWith();
@@ -78,19 +80,17 @@ require(
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
 
-          var errorProperties = {
-            seekableRange: {start: 0, end: 100},
-            current_time: 50,
-            duration: 100,
-            error_mssg: 'test error'
+          var failoverInfo = {
+            errorMessage: 'test error',
+            isBufferingTimeoutError: true
           };
 
-          mediaSources.failover(postFailoverAction, onFailureAction, errorProperties, true);
+          mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           var pluginData = {
             status: PluginEnums.STATUS.FAILOVER,
             stateType: PluginEnums.TYPE.ERROR,
-            properties: errorProperties,
+            properties: {error_mssg: 'test error'},
             isBufferingTimeoutError: true,
             cdn: 'supplier1',
             newCdn: 'supplier2',
@@ -106,7 +106,7 @@ require(
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
 
           mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}]);
-          mediaSources.failover(postFailoverAction, onFailureAction, {}, {});
+          mediaSources.failover(postFailoverAction, onFailureAction, {});
 
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
         });
@@ -120,8 +120,9 @@ require(
         it('returns the second media source following a failover', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+          var failoverInfo = {errorMessage: 'failover', isBufferingTimeout: true};
 
-          mediaSources.failover(postFailoverAction, onFailureAction);
+          mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mediaSources.currentSource()).toBe(testSources[1].url);
         });

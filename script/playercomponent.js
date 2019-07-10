@@ -251,12 +251,9 @@ define(
           cdnFailover(time, thenPause, errorProperties, bufferingTimeoutError);
         };
         var errorCallback = function () {
-          if (mediaMetaData.urls.length > 0) {
-            mediaMetaData.urls.shift();
-            attemptCdnFailover(errorProperties, bufferingTimeoutError);
-          } else {
-            bubbleFatalError(errorProperties, bufferingTimeoutError);
-          }
+          var doFailover = attemptCdnFailover.bind(null, errorProperties, bufferingTimeoutError);
+          var doFatalError = bubbleFatalError.bind(null, errorProperties, bufferingTimeoutError);
+          mediaSources.failover(doFailover, doFatalError, {errorMessage: errorProperties.error_mssg, isBufferingTimeoutError: bufferingTimeoutError});
         };
 
         if (shouldFailover) {
@@ -273,7 +270,7 @@ define(
       function reloadManifest (time, successCallback, errorCallback) {
         if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
           ManifestLoader.load(
-            bigscreenPlayerData.media.urls,
+            mediaSources.availableSources(),
             bigscreenPlayerData.serverDate,
             {
               onSuccess: function (manifestData) {
