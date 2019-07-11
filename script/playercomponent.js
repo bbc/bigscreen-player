@@ -244,16 +244,17 @@ define(
         }
       }
 
+      function errorCallback (errorProperties, isBufferingTimeoutError) {
+        var doFailover = attemptCdnFailover.bind(null, errorProperties, isBufferingTimeoutError);
+        var doFatalError = bubbleFatalError.bind(null, errorProperties, isBufferingTimeoutError);
+        mediaSources.failover(doFailover, doFatalError, {errorMessage: errorProperties.error_mssg, isBufferingTimeoutError: isBufferingTimeoutError});
+      }
+
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
         var shouldFailover = mediaSources.shouldFailover(getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
 
         var failover = function (time) {
           cdnFailover(time, thenPause, errorProperties, bufferingTimeoutError);
-        };
-        var errorCallback = function () {
-          var doFailover = attemptCdnFailover.bind(null, errorProperties, bufferingTimeoutError);
-          var doFatalError = bubbleFatalError.bind(null, errorProperties, bufferingTimeoutError);
-          mediaSources.failover(doFailover, doFatalError, {errorMessage: errorProperties.error_mssg, isBufferingTimeoutError: bufferingTimeoutError});
         };
 
         if (shouldFailover) {
@@ -263,7 +264,7 @@ define(
           var failoverTime = getCurrentTime();
           reloadManifest(failoverTime, failover, errorCallback);
         } else {
-          errorCallback();
+          errorCallback(errorProperties, bufferingTimeoutError);
         }
       }
 
@@ -278,7 +279,9 @@ define(
                 bigscreenPlayerData.time = manifestData.time;
                 successCallback(time - windowOffset / 1000);
               },
-              onError: errorCallback
+              onError: function (errorMessage) {
+                errorCallback({ error_mssg: errorMessage }, false);
+              }
             }
           );
         } else {
@@ -287,24 +290,20 @@ define(
       }
 
       function cdnFailover (failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-        // var evt = new PluginData({
-        //   status: PluginEnums.STATUS.FAILOVER,
-        //   stateType: PluginEnums.TYPE.ERROR,
-        //   properties: errorProperties,
-        //   isBufferingTimeoutError: bufferingTimeoutError,
-        //   cdn: mediaMetaData.urls[0].cdn,
-        //   newCdn: mediaMetaData.urls[1].cdn
-        // });
-        // Plugins.interface.onErrorHandled(evt);
-        // mediaMetaData.urls.shift();
-
         var failoverInfo = {
           errorMessage: errorProperties.error_mssg,
           isBufferingTimeoutError: bufferingTimeoutError
         };
-        mediaSources.failover(function () {
+
+        var doLoadMedia = function () {
           loadMedia(mediaSources.availableSources(), mediaMetaData.type, failoverTime, thenPause);
-        }, function () {}, failoverInfo);
+        };
+
+        var doErrorCallback = function () {
+          errorCallback(errorProperties, bufferingTimeoutError);
+        };
+
+        mediaSources.failover(doLoadMedia, doErrorCallback, failoverInfo);
       }
 
       function clearFatalErrorTimeout () {
