@@ -32,6 +32,7 @@ define(
       var transferFormat = bigscreenPlayerData.media.transferFormat;
 
       playbackStrategy = PlaybackStrategy(
+        mediaSources,
         windowType,
         mediaKind,
         bigscreenPlayerData.time,
@@ -139,7 +140,7 @@ define(
             time = undefined;
             thenPause = false;
           }
-          loadMedia(mediaSources.availableSources(), mediaMetaData.type, time, thenPause);
+          loadMedia(mediaMetaData.type, time, thenPause);
         }
         var errorCallback = function () {
           tearDownMediaElement();
@@ -296,7 +297,7 @@ define(
         };
 
         var doLoadMedia = function () {
-          loadMedia(mediaSources.availableSources(), mediaMetaData.type, failoverTime, thenPause);
+          loadMedia(mediaMetaData.type, failoverTime, thenPause);
         };
 
         var doErrorCallback = function () {
@@ -401,15 +402,15 @@ define(
 
       function initialMediaPlay (media, startTime) {
         mediaMetaData = media;
-        loadMedia(mediaSources.availableSources(), media.type, startTime);
+        loadMedia(media.type, startTime);
 
         if (!captionsContainer) {
           captionsContainer = new CaptionsContainer(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
         }
       }
 
-      function loadMedia (urls, type, startTime, thenPause) {
-        playbackStrategy.load(urls, type, startTime);
+      function loadMedia (type, startTime, thenPause) {
+        playbackStrategy.load(type, startTime);
         if (thenPause) {
           pause();
         }

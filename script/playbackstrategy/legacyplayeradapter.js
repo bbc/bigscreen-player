@@ -7,7 +7,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
     'bigscreenplayer/playbackstrategy/liveglitchcurtain'
   ],
   function (AllowedMediaTransitions, MediaState, WindowTypes, DebugTool, LiveGlitchCurtain) {
-    return function (windowType, mediaKind, timeData, playbackElement, isUHD, deviceConfig, player) {
+    return function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, deviceConfig, player) {
       var EVENT_HISTORY_LENGTH = 2;
 
       var mediaPlayer = player;
@@ -241,15 +241,14 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (cdns, mimeType, startTime) {
-          var source = cdns[0].url;
+        load: function (mimeType, startTime) {
           setupExitSeekWorkarounds(mimeType);
           isPaused = false;
 
           hasStartTime = startTime || startTime === 0;
           var isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime;
 
-          mediaPlayer.initialiseMedia('video', source, mimeType, playbackElement, setSourceOpts);
+          mediaPlayer.initialiseMedia('video', mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts);
           if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
             currentTime = startTime;
             mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);

@@ -327,7 +327,7 @@ require(
           spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
           playerComponent.setCurrentTime(10);
 
-          expect(mockStrategy.load).toHaveBeenCalledWith([corePlaybackData.media.urls[0].url], 'application/dash+xml', 10);
+          expect(mockStrategy.load).toHaveBeenCalledWith('application/dash+xml', 10);
         });
       });
 
@@ -935,7 +935,7 @@ require(
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime);
         });
 
         it('should failover after buffering for 20 seconds on normal playback', function () {
@@ -953,7 +953,7 @@ require(
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime);
         });
 
         it('should failover after 5 seconds if we have not cleared an error from the device', function () {
@@ -968,7 +968,7 @@ require(
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime);
         });
 
         it('should fire a fatal error on the plugins if there is only one cdn', function () {
@@ -1032,7 +1032,7 @@ require(
           jasmine.clock().tick(1);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime - 20);
+          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime - 20);
         });
 
         it('should failover for with updated failover time for multiple failovers', function () {
@@ -1055,7 +1055,7 @@ require(
           jasmine.clock().tick(20000);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime - 20);
+          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime - 20);
 
           currentTimeSpy.and.returnValue(currentTime - 20);
 
@@ -1073,7 +1073,7 @@ require(
           jasmine.clock().tick(20000);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(3);
-          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime - 40);
+          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime - 40);
         });
 
         it('should failover on a without reloading the manifest', function () {
@@ -1095,7 +1095,7 @@ require(
           expect(manifestLoaderMock.load).not.toHaveBeenCalled();
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(mediaSources.availableSources(), type, currentTime);
+          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime);
         });
 
         it('should fire a fatal error if the manifest fails to reload', function () {

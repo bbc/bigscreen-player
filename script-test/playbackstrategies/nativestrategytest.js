@@ -2,9 +2,10 @@ require(
   [
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/mediasources',
     'squire'
   ],
-    function (WindowTypes, LiveSupport, Squire) {
+    function (WindowTypes, LiveSupport, MediaSources, Squire) {
       describe('Native Strategy', function () {
         var nativeStrategy;
         var html5player;
@@ -20,8 +21,11 @@ require(
         var timeData = 'timeData';
         var playbackElement = 'playbackElement';
         var isUHD = 'isUHD';
+        var mediaSources;
 
         beforeEach(function (done) {
+          mediaSources = new MediaSources([{url: 'http://a', cdn: 'supplierA'}]);
+
           var injector = new Squire();
 
           mockDevice = jasmine.createSpyObj('mockDevice', ['getConfig', 'getLogger']);
@@ -60,31 +64,31 @@ require(
 
         it('calls LegacyAdapter with a static media player when called for STATIC window', function () {
           var windowType = WindowTypes.STATIC;
-          nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
+          nativeStrategy(mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
           expect(html5player).toHaveBeenCalledWith(mockLogger);
 
-          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
+          expect(mockLegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
 
         it('calls LegacyAdapter with a live media player when called for a GROWING window', function () {
           var windowType = WindowTypes.GROWING;
-          nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
+          nativeStrategy(mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
           expect(html5player).toHaveBeenCalledWith(mockLogger);
           expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.GROWING, timeData);
 
-          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
+          expect(mockLegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
 
         it('calls LegacyAdapter with a live media player when called for a SLIDING window', function () {
           var windowType = WindowTypes.SLIDING;
-          nativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
+          nativeStrategy(mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, mockDevice);
 
           expect(html5player).toHaveBeenCalledWith(mockLogger);
           expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, mockConfig, WindowTypes.SLIDING, timeData);
 
-          expect(mockLegacyAdapter).toHaveBeenCalledWith(windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
+          expect(mockLegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, mockConfig, mediaPlayer);
         });
       });
     });

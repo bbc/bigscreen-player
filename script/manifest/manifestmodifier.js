@@ -35,11 +35,11 @@ define('bigscreenplayer/manifest/manifestmodifier',
       if (!baseUrl || baseUrl.match(/^https?:\/\//)) return;
 
       var baseUrls = sources.map(function (source, priority) {
-        var sourceUrl = new URL(baseUrl, source.url);
+        var sourceUrl = new URL(baseUrl, source);
         return {
           __text: sourceUrl.href,
           'dvb:priority': priority,
-          serviceLocation: source.cdn
+          serviceLocation: source
         };
       });
 

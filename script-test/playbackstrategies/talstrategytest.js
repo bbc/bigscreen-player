@@ -1,9 +1,10 @@
 require(
   [
     'bigscreenplayer/models/windowtypes',
+    'bigscreenplayer/mediasources',
     'squire'
   ],
-  function (WindowTypes, Squire) {
+  function (WindowTypes, MediaSources, Squire) {
     describe('TAL Strategy', function () {
       var injector = new Squire();
       var TalStrategy;
@@ -11,8 +12,11 @@ require(
 
       var mockLegacyAdapter;
       var mockDevice;
+      var mediaSources;
 
       beforeEach(function (done) {
+        mediaSources = new MediaSources([{url: 'http://a', cdn: 'supplierA'}]);
+
         mockDevice = jasmine.createSpyObj('mockDevice', ['getMediaPlayer', 'getLivePlayer', 'getConfig']);
         mediaPlayer = jasmine.createSpyObj('mockMediaPlayer', ['addEventCallback']);
 
@@ -30,21 +34,21 @@ require(
       });
 
       it('calls LegacyAdapter with a static media player when called for STATIC window', function () {
-        TalStrategy(WindowTypes.STATIC, null, null, null, null, mockDevice);
+        TalStrategy(mediaSources, WindowTypes.STATIC, null, null, null, null, mockDevice);
 
         // getMediaPlayer is called to get a non-live player
         expect(mockDevice.getMediaPlayer).toHaveBeenCalledWith();
       });
 
       it('calls LegacyAdapter with a live media player when called for a GROWING window', function () {
-        TalStrategy(WindowTypes.GROWING, null, null, null, null, mockDevice);
+        TalStrategy(mediaSources, WindowTypes.GROWING, null, null, null, null, mockDevice);
 
         // getMediaPlayer is called to get a non-live player
         expect(mockDevice.getLivePlayer).toHaveBeenCalledWith();
       });
 
       it('calls LegacyAdapter with a live media player when called for a SLIDING window', function () {
-        TalStrategy(WindowTypes.SLIDING, null, null, null, null, mockDevice);
+        TalStrategy(mediaSources, WindowTypes.SLIDING, null, null, null, null, mockDevice);
 
         // getMediaPlayer is called to get a non-live player
         expect(mockDevice.getLivePlayer).toHaveBeenCalledWith();

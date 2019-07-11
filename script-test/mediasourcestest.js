@@ -37,7 +37,6 @@ require(
             {url: 'source2', cdn: 'supplier2'}
           ];
           mediaSources = new MediaSources(testSources);
-
           done();
         });
       });
@@ -113,6 +112,14 @@ require(
       });
 
       describe('currentSource', function () {
+        beforeEach(function () {
+          testSources = [
+            {url: 'source1', cdn: 'supplier1'},
+            {url: 'source2', cdn: 'supplier2'}
+          ];
+          mediaSources = new MediaSources(testSources);
+        });
+
         it('returns the first media source url', function () {
           expect(mediaSources.currentSource()).toBe(testSources[0].url);
         });
@@ -127,10 +134,11 @@ require(
           expect(mediaSources.currentSource()).toBe(testSources[1].url);
         });
 
-        it('returns empty string if querying when there are no sources', function () {
-          mediaSources = new MediaSources([]);
-
-          expect(mediaSources.currentSource()).toBe('');
+        it('throws an error when constructed with no sources', function () {
+          expect(function () {
+            var mediaSources = new MediaSources([]);
+            mediaSources.currentSource();
+          }).toThrow(new Error('Media Sources urls are undefined'));
         });
       });
 

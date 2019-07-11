@@ -2,9 +2,10 @@ require(
   [
     'squire',
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/models/mediastate'
+    'bigscreenplayer/models/mediastate',
+    'bigscreenplayer/mediasources'
   ],
-  function (Squire, WindowTypes, MediaState) {
+  function (Squire, WindowTypes, MediaState, MediaSources) {
     var MediaPlayerEvent = {
       STOPPED: 'stopped',   // Event fired when playback is stopped
       BUFFERING: 'buffering', // Event fired when playback has to suspend due to buffering
@@ -75,6 +76,8 @@ require(
 
         cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
 
+        var mediaSources = new MediaSources(cdnArray);
+
         var config = options.config || device.getConfig();
 
         var timeData = {correction: options.timeCorrection || 0};
@@ -94,7 +97,7 @@ require(
         videoContainer.id = 'app';
         document.body.appendChild(videoContainer);
 
-        legacyAdaptor = squiredLegacyAdaptor(windowType, undefined, timeData, videoContainer, options.isUHD, config, mediaPlayer);
+        legacyAdaptor = squiredLegacyAdaptor(mediaSources, windowType, undefined, timeData, videoContainer, options.isUHD, config, mediaPlayer);
       }
       describe('transitions', function () {
         it('should pass back possible transitions', function () {
@@ -113,7 +116,7 @@ require(
         it('should initialise the media player', function () {
           setUpLegacyAdaptor();
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', 0);
+          legacyAdaptor.load('video/mp4', 0);
 
           expect(mediaPlayer.initialiseMedia).toHaveBeenCalledWith('video', cdnArray[0].url, 'video/mp4', videoContainer, jasmine.any(Object));
         });
@@ -121,7 +124,7 @@ require(
         it('should begin playback from the passed in start time + time correction if we are watching live on a restartable device', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, timeCorrection: 10});
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', 50);
+          legacyAdaptor.load('video/mp4', 50);
 
           expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(60);
         });
@@ -129,7 +132,7 @@ require(
         it('should begin playback at the live point if no start time is passed in and we are watching live on a playable device', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, playableDevice: true});
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', undefined);
+          legacyAdaptor.load('video/mp4', undefined);
 
           expect(mediaPlayer.beginPlayback).toHaveBeenCalledWith();
         });
@@ -137,7 +140,7 @@ require(
         it('should begin playback from the passed in start time if we are watching vod', function () {
           setUpLegacyAdaptor();
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', 50);
+          legacyAdaptor.load('video/mp4', 50);
 
           expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(50);
         });
@@ -145,7 +148,7 @@ require(
         it('should begin playback from if no start time is passed in when watching vod', function () {
           setUpLegacyAdaptor();
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', undefined);
+          legacyAdaptor.load('video/mp4', undefined);
 
           expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0);
         });
@@ -161,7 +164,7 @@ require(
 
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement, isUHD: true});
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', undefined);
+          legacyAdaptor.load('video/mp4', undefined);
 
           var properties = mediaPlayer.initialiseMedia.calls.mostRecent().args[4];
 
@@ -223,7 +226,7 @@ require(
         it('should not pause when we need to delay a call to pause', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'application/dash+xml', undefined);
+          legacyAdaptor.load('application/dash+xml', undefined);
 
           legacyAdaptor.setCurrentTime(10);
 
@@ -239,7 +242,7 @@ require(
         it('should be set to false once we have loaded', function () {
           setUpLegacyAdaptor();
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', undefined);
+          legacyAdaptor.load('video/mp4', undefined);
 
           expect(legacyAdaptor.isPaused()).toEqual(false);
         });
@@ -477,7 +480,7 @@ require(
         it('should not pause after a seek if we are not on capable device and watching a dash stream', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'application/dash+xml', undefined);
+          legacyAdaptor.load('application/dash+xml', undefined);
 
           eventCallbacks({type: MediaPlayerEvent.PAUSED});
 
@@ -541,7 +544,7 @@ require(
         it('should show curtain for a live restart and we get a seek-attempted event', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', 10);
+          legacyAdaptor.load('video/mp4', 10);
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
@@ -551,7 +554,7 @@ require(
         it('should show curtain for a live restart to 0 and we get a seek-attempted event', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', 0);
+          legacyAdaptor.load('video/mp4', 0);
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
@@ -561,7 +564,7 @@ require(
         it('should not show curtain when playing from the live point and we get a seek-attempted event', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'video/mp4');
+          legacyAdaptor.load('video/mp4');
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
@@ -597,7 +600,7 @@ require(
         it('should hide the curtain when we get a seek-finished event', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', 0);
+          legacyAdaptor.load('video/mp4', 0);
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
@@ -611,7 +614,7 @@ require(
         it('should tear down the curtain on strategy tearDown if it has been shown', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', 0);
+          legacyAdaptor.load('video/mp4', 0);
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
@@ -626,7 +629,7 @@ require(
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
           // set up the values handleErrorOnExitingSeek && exitingSeek so they are truthy then fire an error event so we restart.
-          legacyAdaptor.load(cdnArray, 'application/dash+xml', undefined);
+          legacyAdaptor.load('application/dash+xml', undefined);
 
           legacyAdaptor.setCurrentTime(10);
 
@@ -638,7 +641,7 @@ require(
         it('should initialise the player', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'application/dash+xml', undefined);
+          legacyAdaptor.load('application/dash+xml', undefined);
 
           legacyAdaptor.setCurrentTime(10);
 
@@ -650,7 +653,7 @@ require(
         it('should begin playback from the currentTime', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'application/dash+xml', undefined);
+          legacyAdaptor.load('application/dash+xml', undefined);
 
           legacyAdaptor.setCurrentTime(10);
 
@@ -662,7 +665,7 @@ require(
         it('should begin playback from the currentTime + time correction', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, timeCorrection: 10});
 
-          legacyAdaptor.load(cdnArray, 'application/dash+xml', undefined);
+          legacyAdaptor.load('application/dash+xml', undefined);
 
           legacyAdaptor.setCurrentTime(10);
 
@@ -676,7 +679,7 @@ require(
         it('should pause the player if we were in a paused state on dash live', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
-          legacyAdaptor.load(cdnArray, 'application/dash+xml', undefined);
+          legacyAdaptor.load('application/dash+xml', undefined);
 
           eventCallbacks({type: MediaPlayerEvent.PAUSED});
 
@@ -698,7 +701,7 @@ require(
 
           setUpLegacyAdaptor({config: configReplacement});
 
-          legacyAdaptor.load(cdnArray, 'video/mp4', undefined);
+          legacyAdaptor.load('video/mp4', undefined);
 
           eventCallbacks({type: MediaPlayerEvent.PAUSED});
 

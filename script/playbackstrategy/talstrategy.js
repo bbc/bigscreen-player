@@ -4,7 +4,7 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
     'bigscreenplayer/models/windowtypes'
   ],
   function (LegacyAdapter, WindowTypes) {
-    var TALStrategy = function (windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+    var TALStrategy = function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, device) {
       var mediaPlayer;
 
       if (windowType === WindowTypes.STATIC) {
@@ -13,7 +13,7 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
         mediaPlayer = device.getLivePlayer();
       }
 
-      return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
+      return LegacyAdapter(mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
     };
 
     TALStrategy.getLiveSupport = function (device) {

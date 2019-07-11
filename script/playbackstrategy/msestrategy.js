@@ -15,7 +15,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'dashjs'
   ],
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestModifier, PlaybackUtils, LiveSupport) {
-    var MSEStrategy = function (windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+    var MSEStrategy = function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, device) {
       var mediaPlayer;
       var mediaElement;
 
@@ -31,8 +31,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var mediaMetrics;
       var dashMetrics;
 
-      var mediaSources;
-
       var playerMetadata = {
         playbackBitrate: undefined,
         bufferLength: undefined
@@ -47,7 +45,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         DOWNLOAD_ERROR_MESSAGE: 'download',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-        CDN_FAILOVER: 'baseUrlSelected',
+        BASE_URL_SELECTED: 'baseUrlSelected',
         METRIC_ADDED: 'metricAdded',
         METRIC_CHANGED: 'metricChanged'
       };
@@ -123,7 +121,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         if (event.data) {
           var manifest = event.data;
           ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-          ManifestModifier.generateBaseUrls(manifest, mediaSources);
+          ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources());
         }
       }
 
@@ -149,41 +147,28 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
-      function createPlaybackProperties () {
-        return {
-          seekable_range: getSeekableRange().start + ' to ' + getSeekableRange().end,
-          current_time: getCurrentTime(),
-          duration: getDuration()
-        };
-      }
+      /**
+       * Base url selected events are fired from dash.js whenever a priority weighted url is selected from a manifest
+       * Note: we ignore the initial selection as it isn't a failover.
+       * @param {*} event
+       */
+      function onBaseUrlSelected (event) {
+        if (mediaSources.isFirstSource(event.baseUrl.serviceLocation)) return;
 
-      function propagateCdnFailover (event, cdn) {
-        // Initial playback
-        if (mediaSources.length <= 1 || cdn !== mediaSources[1].cdn) return;
-
-        var errorProperties = PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
-        var evt = new PluginData({
-          status: PluginEnums.STATUS.FAILOVER,
-          stateType: PluginEnums.TYPE.ERROR,
-          properties: errorProperties,
-          isBufferingTimeoutError: false,
-          cdn: mediaSources[0].cdn,
-          newCdn: mediaSources[1].cdn
-        });
-        // urls -> sources -> mediaSources (shift the cdns for correct behaviour with buffering timeout failover)
-        // TODO: Remove this horrible mutation when failover is pushed down per strategy.
-        Plugins.interface.onErrorHandled(evt);
-        mediaSources.shift();
-      }
-
-      function onCdnFailover (event) {
-        var pluginEvent = {
-          errorProperties: {
-            error_mssg: 'download'
-          }
+        var failoverInfo = {
+          error_mssg: 'download',
+          isBufferingTimeoutError: false
         };
 
-        propagateCdnFailover(pluginEvent, event.baseUrl.serviceLocation);
+        function onSuccess () {
+          DebugTool.info('BaseUrl failover to: ' + event.baseUrl.url);
+        }
+
+        function onFailure () {
+          DebugTool.info('BaseUrl failover to : ' + event.baseUrl.url + ' failed');
+        }
+
+        mediaSources.failover(onSuccess, onFailure, failoverInfo);
       }
 
       function onMetricAdded (event) {
@@ -243,7 +228,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
       }
 
-      function setUpMediaPlayer (sources, playbackTime) {
+      function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.getDebug().setLogToBrowserConsole(false);
 
@@ -254,13 +239,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
 
         mediaPlayer.initialize(mediaElement, null, true);
-        modifySource(sources, playbackTime);
+        modifySource(playbackTime);
       }
 
-      function modifySource (sources, playbackTime) {
-        mediaSources = sources;
-        var initialSource = calculateSourceAnchor(sources[0].url, playbackTime);
-        mediaPlayer.attachSource(initialSource);
+      function modifySource (playbackTime) {
+        mediaPlayer.attachSource(calculateSourceAnchor(mediaSources.currentSource(), playbackTime));
       }
 
       function setUpMediaListeners () {
@@ -276,7 +259,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
-        mediaPlayer.on(DashJSEvents.CDN_FAILOVER, onCdnFailover);
+        mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
       }
 
@@ -356,16 +339,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (sources, mimeType, playbackTime) {
-          if (sources && sources.length === 0) return;
-
+        load: function (mimeType, playbackTime) {
           if (!mediaPlayer) {
             failoverTime = playbackTime;
             setUpMediaElement(playbackElement);
-            setUpMediaPlayer(sources, playbackTime);
+            setUpMediaPlayer(playbackTime);
             setUpMediaListeners();
           } else {
-            modifySource(sources, failoverTime);
+            modifySource(failoverTime);
           }
         },
         getSeekableRange: getSeekableRange,
@@ -387,7 +368,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
-          mediaPlayer.off(DashJSEvents.CDN_FAILOVER, onCdnFailover);
+          mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
 
           mediaElement.parentElement.removeChild(mediaElement);
 
@@ -402,7 +383,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           bitrateInfoList = undefined;
           mediaMetrics = undefined;
           dashMetrics = undefined;
-          mediaSources = undefined;
         },
         reset: function () {
           return;

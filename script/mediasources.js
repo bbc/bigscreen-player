@@ -11,6 +11,7 @@ define('bigscreenplayer/mediasources',
   ],
 function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, PluginEnums, PluginData, DebugTool) {
   var mediaSources;
+  var initialUrl;
   'use strict';
 
   function failover (postFailoverAction, failoverErrorAction, failoverInfo) {
@@ -74,6 +75,10 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     });
   }
 
+  function isFirstSource (url) {
+    return url === initialUrl;
+  }
+
   function shouldFailover (duration, currentTime, liveSupport, windowType, transferFormat) {
     var aboutToEnd = duration && currentTime > duration - 5;
     var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
@@ -89,6 +94,9 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
 
   // Constructor
   return function (urls) {
+    if (urls === undefined || urls.length === 0) throw new Error('Media Sources urls are undefined');
+
+    initialUrl = urls.length > 0 ? urls[0].url : '';
     mediaSources = PlaybackUtils.cloneArray(urls);
     updateDebugOutput();
 
@@ -96,7 +104,8 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
       failover: failover,
       shouldFailover: shouldFailover,
       currentSource: getCurrentUrl,
-      availableSources: availableUrls
+      availableSources: availableUrls,
+      isFirstSource: isFirstSource
     };
   };
 }
