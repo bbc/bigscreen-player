@@ -17,15 +17,12 @@ require(
       var manifestData;
       var liveSupport;
       var forceManifestLoadError;
-      var successCallback = jasmine.createSpy('successCallback');
-      var errorCallback = jasmine.createSpy('errorCallback');
+      var successCallback;
+      var errorCallback;
       var noCallbacks = false;
 
       var mockEventHook;
-      var mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
-        'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-        'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
-        'getWindowStartTime', 'getWindowEndTime']);
+      var mockPlayerComponentInstance;
 
       var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
         mockEventHook = callback;
@@ -108,6 +105,12 @@ require(
 
       describe('Bigscreen Player', function () {
         beforeEach(function (done) {
+          mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
+            'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
+            'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
+            'getWindowStartTime', 'getWindowEndTime']);
+          successCallback = jasmine.createSpy('successCallback');
+          errorCallback = jasmine.createSpy('errorCallback');
           setupManifestData();
           liveSupport = LiveSupport.SEEKABLE;
           forceManifestLoadError = false;
@@ -649,7 +652,7 @@ require(
 
             bigscreenPlayer.isSubtitlesEnabled();
 
-            expect(mockPlayerComponentInstance.isSubtitlesEnabled).toHaveBeenCalled();
+            expect(mockPlayerComponentInstance.isSubtitlesEnabled).toHaveBeenCalledWith();
           });
         });
 
@@ -659,12 +662,12 @@ require(
 
             bigscreenPlayer.isSubtitlesAvailable();
 
-            expect(mockPlayerComponentInstance.isSubtitlesAvailable).toHaveBeenCalled();
+            expect(mockPlayerComponentInstance.isSubtitlesAvailable).toHaveBeenCalledWith();
           });
         });
 
         describe('canSeek', function () {
-          it('VOD should return true', function () {
+          it('should return true when in VOD playback', function () {
             initialiseBigscreenPlayer();
 
             expect(bigscreenPlayer.canSeek()).toBe(true);
@@ -730,7 +733,7 @@ require(
             expect(bigscreenPlayer.canPause()).toBe(true);
           });
 
-          describe('live', function () {
+          describe('LIVE', function () {
             it('should return true when it can pause', function () {
               liveSupport = LiveSupport.RESTARTABLE;
 
@@ -741,7 +744,7 @@ require(
               expect(bigscreenPlayer.canPause()).toBe(true);
             });
 
-            it('should return false when window length less than four minutes', function () {
+            it('should be false when window length less than four minutes', function () {
               setupManifestData({
                 transferFormat: TransferFormats.DASH,
                 time: {
