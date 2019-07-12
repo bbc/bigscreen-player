@@ -142,21 +142,6 @@ require(
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
-        it('parses long time to formatted string representation', function () {
-          presenter.update([
-            {type: 'time', currentTime: 788.9999, timestamp: 1518018558259}
-          ]);
-          var expectedObject = {
-            static: [
-            ],
-            dynamic: [
-              '2018-02-07T15:49:18.259Z - Video time: 789.00'
-            ]
-          };
-
-          expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
-        });
-
         it('parses apicall to a formatted string representation', function () {
           presenter.update([
             {type: 'apicall', calltype: 'Play', timestamp: 1518018558259}
