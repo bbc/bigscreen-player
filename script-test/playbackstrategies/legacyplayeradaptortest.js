@@ -34,6 +34,7 @@ require(
       var mediaPlayer;
       var videoContainer;
       var eventCallbacks;
+      var mockGlitchCurtainInstance;
 
       var cdnArray = [];
 
@@ -48,13 +49,17 @@ require(
 
       var injector = new Squire();
 
-      var mockGlitchCurtainInstance = jasmine.createSpyObj('mockGlitchCurtain', ['showCurtain', 'hideCurtain', 'tearDown']);
-
       var mockGlitchCurtainConstructorInstance = function () {
         return mockGlitchCurtainInstance;
       };
 
       beforeEach(function (done) {
+        mockGlitchCurtainInstance = jasmine.createSpyObj('mockGlitchCurtain', ['showCurtain', 'hideCurtain', 'tearDown']);
+        mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['addEventCallback', 'initialiseMedia', 'beginPlayback',
+          'getState', 'resume', 'getPlayerElement', 'getSeekableRange',
+          'reset', 'stop', 'removeAllEventCallbacks', 'getSource',
+          'getMimeType', 'beginPlaybackFrom', 'playFrom', 'pause']);
+
         injector.mock({
           'bigscreenplayer/playbackstrategy/liveglitchcurtain': mockGlitchCurtainConstructorInstance
         });
@@ -82,10 +87,6 @@ require(
 
         var timeData = {correction: options.timeCorrection || 0};
         var windowType = options.windowType || WindowTypes.STATIC;
-        var playableMediaPlayer = ['addEventCallback', 'initialiseMedia', 'beginPlayback', 'getState', 'resume', 'getPlayerElement', 'getSeekableRange', 'reset', 'stop', 'removeAllEventCallbacks', 'getSource', 'getMimeType'];
-        var seekableMediaPlayer = playableMediaPlayer.concat(['beginPlaybackFrom', 'playFrom', 'pause']);
-
-        mediaPlayer = jasmine.createSpyObj('mediaPlayer', options.playableDevice ? playableMediaPlayer : seekableMediaPlayer);
 
         mediaPlayer.addEventCallback.and.callFake(function (component, callback) {
           eventCallbacks = function (event) {
@@ -315,7 +316,7 @@ require(
           expect(legacyAdaptor.isEnded()).toEqual(true);
         });
 
-        it('should be set to false when we get a playing event', function () {
+        it('should be set to false when we a playing event is recieved', function () {
           setUpLegacyAdaptor();
 
           eventCallbacks({type: MediaPlayerEvent.PLAYING});
@@ -547,7 +548,7 @@ require(
           expect(legacyAdaptor.isPaused()).toEqual(true);
         });
 
-        it('should set isEnded to false', function () {
+        it('should return isEnded as false', function () {
           expect(legacyAdaptor.isEnded()).toEqual(false);
         });
       });
@@ -568,7 +569,7 @@ require(
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
-          expect(mockGlitchCurtainInstance.showCurtain).toHaveBeenCalled();
+          expect(mockGlitchCurtainInstance.showCurtain).toHaveBeenCalledWith();
         });
 
         it('should show curtain for a live restart to 0 and we get a seek-attempted event', function () {
@@ -578,7 +579,7 @@ require(
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
-          expect(mockGlitchCurtainInstance.showCurtain).toHaveBeenCalled();
+          expect(mockGlitchCurtainInstance.showCurtain).toHaveBeenCalledWith();
         });
 
         it('should not show curtain when playing from the live point and we get a seek-attempted event', function () {
@@ -624,11 +625,11 @@ require(
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
-          expect(mockGlitchCurtainInstance.showCurtain).toHaveBeenCalled();
+          expect(mockGlitchCurtainInstance.showCurtain).toHaveBeenCalledWith();
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_FINISHED});
 
-          expect(mockGlitchCurtainInstance.hideCurtain).toHaveBeenCalled();
+          expect(mockGlitchCurtainInstance.hideCurtain).toHaveBeenCalledWith();
         });
 
         it('should tear down the curtain on strategy tearDown if it has been shown', function () {
@@ -640,12 +641,12 @@ require(
 
           legacyAdaptor.tearDown();
 
-          expect(mockGlitchCurtainInstance.tearDown).toHaveBeenCalled();
+          expect(mockGlitchCurtainInstance.tearDown).toHaveBeenCalledWith();
         });
       });
 
       describe('dash live on error after exiting seek', function () {
-        it('should reset the player', function () {
+        it('should have called reset on the player', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
           // set up the values handleErrorOnExitingSeek && exitingSeek so they are truthy then fire an error event so we restart.
