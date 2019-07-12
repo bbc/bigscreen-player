@@ -192,16 +192,16 @@ require(
         });
 
         describe('when window type is SLIDING', function () {
-          describe('and transfer format is DASH', function () {
-            it('should return true', function () {
+          describe('with transfer format DASH', function () {
+            it('will return true', function () {
               expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
               expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
               expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
             });
           });
 
-          describe('and transfer format is HLS', function () {
-            it('should return correct value for live support', function () {
+          describe('with transfer format HLS', function () {
+            it('should return the correct value for live support', function () {
               expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
               expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(false);
               expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
