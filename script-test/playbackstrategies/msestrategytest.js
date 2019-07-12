@@ -343,8 +343,10 @@ require(
 
       describe('Load when a mediaPlayer exists (e.g. CDN failover)', function () {
         var noop;
+        var failoverInfo;
         beforeEach(function () {
           noop = function () {};
+          failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: false};
         });
 
         it('should attach a new source with the expected parameters', function () {
@@ -358,7 +360,7 @@ require(
           expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url);
 
           // Player component would do this with its buffering timeout logic
-          mediaSources.failover(noop, noop, {});
+          mediaSources.failover(noop, noop, failoverInfo);
 
           mseStrategy.load(null, 0);
 
@@ -375,12 +377,12 @@ require(
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
           expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=45');
 
-          mediaSources.failover(noop, noop, {});
+          mediaSources.failover(noop, noop, failoverInfo);
           mseStrategy.load(null, 0);
 
           expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[1].url + '#t=45');
 
-          mediaSources.failover(noop, noop, {});
+          mediaSources.failover(noop, noop, failoverInfo);
           mseStrategy.load(null, 0);
 
           expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[2].url + '#t=45');
@@ -396,7 +398,7 @@ require(
           expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
           expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=45');
 
-          mediaSources.failover(noop, noop, {});
+          mediaSources.failover(noop, noop, failoverInfo);
 
           mockVideoElement.currentTime = 86;
           eventHandlers.timeupdate();

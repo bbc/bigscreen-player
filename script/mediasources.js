@@ -15,7 +15,7 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
   'use strict';
 
   function failover (postFailoverAction, failoverErrorAction, failoverInfo) {
-    if (hasSourcesToFailoverTo()) {
+    if (hasSourcesToFailoverTo() && isFailoverInfoValid(failoverInfo)) {
       emitCdnFailover(failoverInfo);
       updateCdns();
       updateDebugOutput();
@@ -23,6 +23,18 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     } else {
       failoverErrorAction();
     }
+  }
+
+  function isFailoverInfoValid (failoverInfo) {
+    var infoValid = typeof failoverInfo === 'object' &&
+                    typeof failoverInfo.errorMessage === 'string' &&
+                    typeof failoverInfo.isBufferingTimeoutError === 'boolean';
+
+    if (!infoValid) {
+      DebugTool.info('failoverInfo is not valid');
+    }
+
+    return infoValid;
   }
 
   function updateCdns () {

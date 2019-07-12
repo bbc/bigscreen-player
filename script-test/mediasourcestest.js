@@ -55,7 +55,7 @@ require(
         it('When there are sources to failover to, it calls the post failover callback', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
-          var failoverInfo = {errorMessage: 'failover', isBufferingTimeout: true};
+          var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
@@ -66,7 +66,7 @@ require(
         it('When there are no more sources to failover to, it calls failure action callback', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
-          var failoverInfo = {errorMessage: 'failover', isBufferingTimeout: true};
+          var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}]);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
@@ -103,9 +103,10 @@ require(
         it('Plugin event not emitted when there are no sources to failover to', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+          var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}]);
-          mediaSources.failover(postFailoverAction, onFailureAction, {});
+          mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
         });
@@ -127,7 +128,7 @@ require(
         it('returns the second media source following a failover', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
-          var failoverInfo = {errorMessage: 'failover', isBufferingTimeout: true};
+          var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 

@@ -156,7 +156,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         if (mediaSources.isFirstSource(event.baseUrl.serviceLocation)) return;
 
         var failoverInfo = {
-          error_mssg: 'download',
+          errorMessage: 'download',
           isBufferingTimeoutError: false
         };
 
