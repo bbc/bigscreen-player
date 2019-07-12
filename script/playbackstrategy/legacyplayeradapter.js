@@ -35,7 +35,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
       var config = deviceConfig;
       var setSourceOpts = {
-        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels
+        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels,
+        disableSeekSentinel: window.bigscreenPlayer.disableSeekSentinel
       };
 
       mediaPlayer.addEventCallback(this, eventHandler);
@@ -114,11 +115,32 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       }
 
       function onSeekAttempted (event) {
-        showCurtain();
+        if (requiresLiveCurtain()) {
+          var doNotForceBeginPlaybackToEndOfWindow = {
+            forceBeginPlaybackToEndOfWindow: false
+          };
+
+          var streaming = config.streaming || {
+            overrides: doNotForceBeginPlaybackToEndOfWindow
+          };
+
+          var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
+
+          var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
+
+          if (shouldShowCurtain) {
+            liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
+            liveGlitchCurtain.showCurtain();
+          }
+        }
       }
 
       function onSeekFinished (event) {
-        hideCurtain();
+        if (requiresLiveCurtain()) {
+          if (liveGlitchCurtain) {
+            liveGlitchCurtain.hideCurtain();
+          }
+        }
       }
 
       function publishMediaState (mediaState) {
@@ -192,29 +214,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
         mediaPlayer.beginPlaybackFrom(currentTime + timeCorrection || 0);
       }
 
-      function showCurtain () {
-        var doNotForceBeginPlaybackToEndOfWindow = {
-          forceBeginPlaybackToEndOfWindow: false
-        };
-
-        var streaming = config.streaming || {
-          overrides: doNotForceBeginPlaybackToEndOfWindow
-        };
-
-        var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
-
-        var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
-
-        if (shouldShowCurtain) {
-          liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
-          liveGlitchCurtain.showCurtain();
-        }
-      }
-
-      function hideCurtain () {
-        if (liveGlitchCurtain) {
-          liveGlitchCurtain.hideCurtain();
-        }
+      function requiresLiveCurtain () {
+        return !!window.bigscreenPlayer.showLiveCurtain;
       }
 
       function reset () {

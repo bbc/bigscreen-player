@@ -3,10 +3,9 @@ define(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/dynamicwindowutils',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/dynamicwindowutils'
   ],
-    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils, DebugTool) {
+    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
       'use strict';
 
       function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, timeData) {

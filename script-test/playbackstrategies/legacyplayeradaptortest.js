@@ -153,7 +153,7 @@ require(
           expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0);
         });
 
-        it('should disable sentinals if we are watching UHD and configured to do so', function () {
+        it('should disable sentinels if we are watching UHD and configured to do so', function () {
           var configReplacement = {
             brand: 'default',
             model: 'webkit',
@@ -169,6 +169,18 @@ require(
           var properties = mediaPlayer.initialiseMedia.calls.mostRecent().args[4];
 
           expect(properties.disableSentinels).toEqual(true);
+        });
+
+        it('should disable seek sentinels if we are configured to do so', function () {
+          window.bigscreenPlayer.disableSeekSentinel = true;
+
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+
+          legacyAdaptor.load(cdnArray, 'video/mp4', undefined);
+
+          var properties = mediaPlayer.initialiseMedia.calls.mostRecent().args[4];
+
+          expect(properties.disableSeekSentinel).toEqual(true);
         });
       });
 
@@ -541,6 +553,14 @@ require(
       });
 
       describe('live glitch curtain', function () {
+        beforeEach(function () {
+          window.bigscreenPlayer.showLiveCurtain = true;
+        });
+
+        afterEach(function () {
+          delete window.bigscreenPlayer.showLiveCurtain;
+        });
+
         it('should show curtain for a live restart and we get a seek-attempted event', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
