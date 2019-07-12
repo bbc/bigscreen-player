@@ -10,7 +10,11 @@
     "spec": "grunt --force spec-web",
     "lint": "npx eslint .",
     "lint:code:changed": "git diff-index --name-only HEAD | egrep '.js$' | xargs eslint",
-    "build:example-app": "cd docs/example-app/ && npm install && npm run build && cd ../../"
+    "build:example-app": "cd docs/example-app/ && npm install && npm run build && cd ../../",
+    "build": "npx tsc && npm run fix:exports && npm run fix:livesupport && npm run fix:playbackstrategy",
+    "fix:exports": "find script -name \"*.js\" -exec sed -i \"\" -e \"s/exports\\[\\\"default\\\"\\] =/return/\" $1 {} \\;",
+    "fix:livesupport": "find script -name \"*.js\" -exec sed -i \"\" -e \"s/%livesupport%/\\\" + (window.bigscreenPlayer.liveSupport || \\\"playable\\\") + \\\"/\" $1 {} \\;",
+    "fix:playbackstrategy": "find script -name \"*.js\" -exec sed -i \"\" -e \"s/%playbackstrategy%/\\\" + window.bigscreenPlayer.playbackStrategy + \\\"/\" $1 {} \\;"
   },
   "pre-commit": [
     "test"

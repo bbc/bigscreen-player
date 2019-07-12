@@ -10,11 +10,7 @@ import ManifestLoader from "./manifest/manifestloader";
 import ManifestUtils from "./utils/manifestutils";
 import MediaResilience from "./mediaresilience";
 import CdnDebugOutput from "./debugger/cdndebugoutput";
-
-let PlaybackStrategy;
-import(`./playbackstrategy/${window.bigscreenPlayer.playbackStrategy}`).then(
-  ({ default: ps }) => (PlaybackStrategy = ps)
-);
+import PlaybackStrategy from "./playbackstrategy/%playbackstrategy%";
 
 var PlayerComponent = (
   playbackElement,
