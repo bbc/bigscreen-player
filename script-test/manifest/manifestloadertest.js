@@ -9,12 +9,12 @@ require(
     'use strict';
 
     describe('Manifest Loader', function () {
-      var loadUrl = jasmine.createSpy('loadUrl');
-
-      var injector = new Squire();
+      var loadUrl;
       var mockedLoader;
 
       beforeEach(function (done) {
+        var injector = new Squire();
+        loadUrl = jasmine.createSpy('loadUrl');
         injector.mock({
           'bigscreenplayer/utils/loadurl': loadUrl
         });
