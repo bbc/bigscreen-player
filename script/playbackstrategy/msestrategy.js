@@ -5,16 +5,13 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/plugindata',
-    'bigscreenplayer/pluginenums',
     'bigscreenplayer/manifest/manifestmodifier',
-    'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/models/livesupport',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestModifier, PlaybackUtils, LiveSupport) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, device) {
       var mediaPlayer;
       var mediaElement;
