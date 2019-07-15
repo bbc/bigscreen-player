@@ -1,19 +1,20 @@
 define('bigscreenplayer/playbackstrategy/strategypicker',
-  function () {
+  [
+    'bigscreenplayer/models/playbackstrategy'
+  ],
+  function (PlaybackStrategy) {
     return function (windowType, isUHD) {
-      var strategy = 'mseStrategy';
-
       var mseExceptions = window.bigscreenPlayer.mseExceptions || [];
 
       if (mseExceptions.indexOf(windowType) !== -1) {
-        strategy = 'talStrategy';
+        return PlaybackStrategy.NATIVE;
       }
 
       if (isUHD && mseExceptions.indexOf('uhd') !== -1) {
-        strategy = 'talStrategy';
+        return PlaybackStrategy.NATIVE;
       }
 
-      return strategy;
+      return PlaybackStrategy.MSE;
     };
   }
 );
