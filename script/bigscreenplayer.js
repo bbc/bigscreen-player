@@ -164,7 +164,7 @@ define('bigscreenplayer/bigscreenplayer',
             }
           };
 
-          mediaSources = new MediaSources(bigscreenPlayerData.media.urls, WindowTypes.STATIC, getLiveSupport(device), mediaSourceCallbacks);
+          mediaSources = new MediaSources(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(device), mediaSourceCallbacks);
 
           if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
             initialManifestLoad(bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);

@@ -56,7 +56,7 @@ require(
 
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
 
-        mediaSources = new MediaSources(corePlaybackData.media.urls, WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
+        mediaSources = new MediaSources(corePlaybackData.media.urls, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         var windowType = opts.windowType || WindowTypes.STATIC;
 

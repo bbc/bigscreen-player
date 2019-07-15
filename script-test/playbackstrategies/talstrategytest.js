@@ -17,7 +17,7 @@ require(
 
       beforeEach(function (done) {
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-        mediaSources = new MediaSources([{url: 'http://a', cdn: 'supplierA'}], WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
+        mediaSources = new MediaSources([{url: 'http://a', cdn: 'supplierA'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         mockDevice = jasmine.createSpyObj('mockDevice', ['getMediaPlayer', 'getLivePlayer', 'getConfig']);
         mediaPlayer = jasmine.createSpyObj('mockMediaPlayer', ['addEventCallback']);

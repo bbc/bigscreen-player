@@ -7,12 +7,15 @@ define('bigscreenplayer/mediasources',
     'bigscreenplayer/plugins',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugindata',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/manifest/manifestloader'
   ],
-function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, PluginEnums, PluginData, DebugTool) {
+function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader) {
+  'use strict';
   var mediaSources;
   var initialUrl;
-  'use strict';
+  // var transferFormat;
+  var time;
 
   function failover (postFailoverAction, failoverErrorAction, failoverInfo) {
     if (hasSourcesToFailoverTo() && isFailoverInfoValid(failoverInfo)) {
@@ -104,8 +107,23 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
   }
 
+  function needToGetManifest (windowType, liveSupport) {
+    var requiresSeekingData = {
+      restartable: true,
+      seekable: true,
+      playable: false,
+      none: false
+    };
+
+    return windowType !== WindowTypes.STATIC && requiresSeekingData[liveSupport];
+  }
+
+  function generateTime () {
+    return time;
+  }
+
   // Constructor
-  return function (urls, windowType, liveSupport, callbacks) {
+  return function (urls, serverDate, windowType, liveSupport, callbacks) {
     if (urls === undefined || urls.length === 0) {
       throw new Error('Media Sources urls are undefined');
     }
@@ -120,12 +138,41 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     mediaSources = PlaybackUtils.cloneArray(urls);
     updateDebugOutput();
 
+    if (needToGetManifest(windowType, liveSupport)) {
+      ManifestLoader.load(
+        getCurrentUrl(),
+        serverDate,
+        {
+          onSuccess: function (manifestData) {
+            // transferFormat = manifestData.transferFormat;
+            time = manifestData.time;
+            callbacks.onSuccess();
+          },
+          onError: function () {
+            callbacks.onError();
+            // var reloadManifest = initialManifestLoad.bind(null, bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
+
+            // var errorCallback = function () {
+            //   callbacks.onError({error: 'manifest'});
+            // };
+
+            // if (callbacks.onError) {
+            //   mediaSources.failover(reloadManifest, errorCallback, {errorMessage: 'manifest-load', isBufferingTimeoutError: false});
+            // }
+          }
+        }
+      );
+    } else {
+      callbacks.onSuccess();
+    }
+
     return {
       failover: failover,
       shouldFailover: shouldFailover,
       currentSource: getCurrentUrl,
       availableSources: availableUrls,
-      isFirstSource: isFirstSource
+      isFirstSource: isFirstSource,
+      time: generateTime
     };
   };
 }
