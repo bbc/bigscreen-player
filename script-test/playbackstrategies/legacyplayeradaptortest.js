@@ -3,9 +3,10 @@ require(
     'squire',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/mediastate',
-    'bigscreenplayer/mediasources'
+    'bigscreenplayer/mediasources',
+    'bigscreenplayer/models/livesupport'
   ],
-  function (Squire, WindowTypes, MediaState, MediaSources) {
+  function (Squire, WindowTypes, MediaState, MediaSources, LiveSupport) {
     var MediaPlayerEvent = {
       STOPPED: 'stopped',   // Event fired when playback is stopped
       BUFFERING: 'buffering', // Event fired when playback has to suspend due to buffering
@@ -81,7 +82,9 @@ require(
 
         cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
 
-        var mediaSources = new MediaSources(cdnArray);
+        var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+
+        var mediaSources = new MediaSources(cdnArray, WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         var config = options.config || device.getConfig();
 

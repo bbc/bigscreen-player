@@ -15,9 +15,11 @@ require(
 
       var mediaSources;
       var testSources;
+      var testCallbacks;
 
       beforeEach(function (done) {
         injector = new Squire();
+        testCallbacks = jasmine.createSpyObj('', ['onSuccess', 'onError']);
 
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
 
@@ -36,7 +38,7 @@ require(
             {url: 'source1', cdn: 'supplier1'},
             {url: 'source2', cdn: 'supplier2'}
           ];
-          mediaSources = new MediaSources(testSources);
+          mediaSources = new MediaSources(testSources, WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           done();
         });
       });
@@ -45,11 +47,41 @@ require(
 
       });
 
-      // API Design - Command/Query segregation - explicit not implicit behaviour
-      // failover - do something, its a command...
-      // currentSource - query, just returns a value.
-      // shouldFailover - query, doesn't feel right (tell don't ask)
-      // availableSources - query, runs the risk of maintaining state somewhere else.
+      describe('construction', function () {
+        it('throws an error when constructed with no sources', function () {
+          expect(function () {
+            var mediaSources = new MediaSources([], WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+            mediaSources.currentSource();
+          }).toThrow(new Error('Media Sources urls are undefined'));
+        });
+
+        it('clones the urls', function () {
+          testSources[0].url = 'clonetest';
+
+          expect(mediaSources.currentSource()).toEqual('source1');
+        });
+
+        it('throws an error when callbacks are undefined', function () {
+          expect(function () {
+            var mediaSources = new MediaSources(testSources, WindowTypes.STATIC, LiveSupport.SEEKABLE, {});
+            mediaSources.currentSource();
+          }).toThrow(new Error('Media Sources callbacks are undefined'));
+
+          expect(function () {
+            var mediaSources = new MediaSources(testSources, WindowTypes.STATIC, LiveSupport.SEEKABLE, {onSuccess: function () {}});
+            mediaSources.currentSource();
+          }).toThrow(new Error('Media Sources callbacks are undefined'));
+
+          expect(function () {
+            var mediaSources = new MediaSources(testSources, WindowTypes.STATIC, LiveSupport.SEEKABLE, {onError: function () {}});
+            mediaSources.currentSource();
+          }).toThrow(new Error('Media Sources callbacks are undefined'));
+        });
+
+        it('calls onSuccess callback on successful load of manifest', function () {
+
+        });
+      });
 
       describe('failover', function () {
         it('When there are sources to failover to, it calls the post failover callback', function () {
@@ -68,7 +100,7 @@ require(
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
-          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}]);
+          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(onFailureAction).toHaveBeenCalledWith();
@@ -105,7 +137,7 @@ require(
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
-          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}]);
+          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
@@ -118,7 +150,7 @@ require(
             {url: 'source1', cdn: 'supplier1'},
             {url: 'source2', cdn: 'supplier2'}
           ];
-          mediaSources = new MediaSources(testSources);
+          mediaSources = new MediaSources(testSources, WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
         });
 
         it('returns the first media source url', function () {
@@ -134,13 +166,6 @@ require(
 
           expect(mediaSources.currentSource()).toBe(testSources[1].url);
         });
-
-        it('throws an error when constructed with no sources', function () {
-          expect(function () {
-            var mediaSources = new MediaSources([]);
-            mediaSources.currentSource();
-          }).toThrow(new Error('Media Sources urls are undefined'));
-        });
       });
 
       describe('availableSources', function () {
@@ -151,7 +176,7 @@ require(
 
       describe('shouldFailover', function () {
         it('should return false when there are insufficient urls to failover', function () {
-          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}]);
+          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
           expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(false);
         });

@@ -23,7 +23,8 @@ require(
         var mediaSources;
 
         beforeEach(function (done) {
-          mediaSources = new MediaSources([{url: 'http://a', cdn: 'supplierA'}]);
+          var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+          mediaSources = new MediaSources([{url: 'http://a', cdn: 'supplierA'}], WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
           var injector = new Squire();
 

@@ -105,8 +105,16 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
   }
 
   // Constructor
-  return function (urls) {
-    if (urls === undefined || urls.length === 0) throw new Error('Media Sources urls are undefined');
+  return function (urls, windowType, liveSupport, callbacks) {
+    if (urls === undefined || urls.length === 0) {
+      throw new Error('Media Sources urls are undefined');
+    }
+
+    if (callbacks === undefined ||
+        callbacks.onSuccess === undefined ||
+        callbacks.onError === undefined) {
+      throw new Error('Media Sources callbacks are undefined');
+    }
 
     initialUrl = urls.length > 0 ? urls[0].url : '';
     mediaSources = PlaybackUtils.cloneArray(urls);

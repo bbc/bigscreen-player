@@ -155,7 +155,16 @@ define('bigscreenplayer/bigscreenplayer',
             callbacks = {};
           }
 
-          mediaSources = new MediaSources(bigscreenPlayerData.media.urls);
+          var mediaSourceCallbacks = {
+            onSuccess: function () {
+
+            },
+            onError: function () {
+
+            }
+          };
+
+          mediaSources = new MediaSources(bigscreenPlayerData.media.urls, WindowTypes.STATIC, getLiveSupport(device), mediaSourceCallbacks);
 
           if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
             initialManifestLoad(bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);

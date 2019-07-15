@@ -3,9 +3,10 @@ require(
     'squire',
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/mediasources'
+    'bigscreenplayer/mediasources',
+    'bigscreenplayer/models/livesupport'
   ],
-  function (Squire, MediaKinds, WindowTypes, MediaSources) {
+  function (Squire, MediaKinds, WindowTypes, MediaSources, LiveSupport) {
     var injector = new Squire();
     var MSEStrategy;
     var mseStrategy;
@@ -105,7 +106,8 @@ require(
           { url: 'http://testcdn3/test/', cdn: 'cdn3' }
         ];
 
-        mediaSources = new MediaSources(cdnArray);
+        var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+        mediaSources = new MediaSources(cdnArray, WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         testManifestObject = {
           type: 'manifestLoaded',

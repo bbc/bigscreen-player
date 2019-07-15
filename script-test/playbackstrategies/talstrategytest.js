@@ -2,9 +2,10 @@ require(
   [
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/mediasources',
+    'bigscreenplayer/models/livesupport',
     'squire'
   ],
-  function (WindowTypes, MediaSources, Squire) {
+  function (WindowTypes, MediaSources, LiveSupport, Squire) {
     describe('TAL Strategy', function () {
       var injector = new Squire();
       var TalStrategy;
@@ -15,7 +16,8 @@ require(
       var mediaSources;
 
       beforeEach(function (done) {
-        mediaSources = new MediaSources([{url: 'http://a', cdn: 'supplierA'}]);
+        var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+        mediaSources = new MediaSources([{url: 'http://a', cdn: 'supplierA'}], WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         mockDevice = jasmine.createSpyObj('mockDevice', ['getMediaPlayer', 'getLivePlayer', 'getConfig']);
         mediaPlayer = jasmine.createSpyObj('mockMediaPlayer', ['addEventCallback']);
