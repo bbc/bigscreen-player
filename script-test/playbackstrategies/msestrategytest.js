@@ -68,6 +68,7 @@ require(
         mockDashInstance.duration.and.returnValue(101);
         mockDashInstance.isReady.and.returnValue(true);
         mockDashInstance.getDebug.and.returnValue(mockDashDebug);
+        mockDashInstance.getMetricsFor.and.returnValue(true);
 
         mockDashInstance.on.and.callFake(function (eventType, handler) {
           eventHandlers[eventType] = handler;
@@ -85,12 +86,15 @@ require(
                 end: 101
               }
             };
+          },
+          getCurrentBufferLevel: function () {
+            return 'buffer';
           }
         });
-        window.dashjs = mockDashjs;
       });
 
       beforeEach(function (done) {
+        window.dashjs = mockDashjs;
         playbackElement = document.createElement('div');
         playbackElement.id = 'app';
         document.body.appendChild(playbackElement);
@@ -726,13 +730,6 @@ require(
           setUpMSE();
           mseStrategy.load(null, 0);
 
-          mockDashInstance.getMetricsFor.and.returnValue(true);
-          mockDashInstance.getDashMetrics.and.returnValue({
-            getCurrentBufferLevel: function () {
-              return 'buffer';
-            }
-          });
-
           dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
 
           expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
@@ -749,13 +746,6 @@ require(
 
           setUpMSE();
           mseStrategy.load(null, 0);
-
-          mockDashInstance.getMetricsFor.and.returnValue(true);
-          mockDashInstance.getDashMetrics.and.returnValue({
-            getCurrentBufferLevel: function () {
-              return 'buffer';
-            }
-          });
 
           dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
 
