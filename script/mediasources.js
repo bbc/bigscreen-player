@@ -122,6 +122,40 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     return time;
   }
 
+  function loadManifest (serverDate, callbacks) {
+    ManifestLoader.load(
+      getCurrentUrl(),
+      serverDate,
+      {
+        onSuccess: function (manifestData) {
+          // transferFormat = manifestData.transferFormat;
+          time = manifestData.time;
+          callbacks.onSuccess();
+        },
+        onError: function () {
+          callbacks.onError();
+          // var reloadManifest = initialManifestLoad.bind(null, bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
+
+          // var errorCallback = function () {
+          //   callbacks.onError({error: 'manifest'});
+          // };
+
+          // if (callbacks.onError) {
+          //   mediaSources.failover(reloadManifest, errorCallback, {errorMessage: 'manifest-load', isBufferingTimeoutError: false});
+          // }
+        }
+      }
+    );
+  }
+
+  function updateTimeData (serverDate, windowType, liveSupport, callbacks) {
+    if (needToGetManifest(windowType, liveSupport)) {
+      loadManifest(serverDate, callbacks);
+    } else {
+      callbacks.onSuccess();
+    }
+  }
+
   // Constructor
   return function (urls, serverDate, windowType, liveSupport, callbacks) {
     if (urls === undefined || urls.length === 0) {
@@ -137,34 +171,7 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     initialUrl = urls.length > 0 ? urls[0].url : '';
     mediaSources = PlaybackUtils.cloneArray(urls);
     updateDebugOutput();
-
-    if (needToGetManifest(windowType, liveSupport)) {
-      ManifestLoader.load(
-        getCurrentUrl(),
-        serverDate,
-        {
-          onSuccess: function (manifestData) {
-            // transferFormat = manifestData.transferFormat;
-            time = manifestData.time;
-            callbacks.onSuccess();
-          },
-          onError: function () {
-            callbacks.onError();
-            // var reloadManifest = initialManifestLoad.bind(null, bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
-
-            // var errorCallback = function () {
-            //   callbacks.onError({error: 'manifest'});
-            // };
-
-            // if (callbacks.onError) {
-            //   mediaSources.failover(reloadManifest, errorCallback, {errorMessage: 'manifest-load', isBufferingTimeoutError: false});
-            // }
-          }
-        }
-      );
-    } else {
-      callbacks.onSuccess();
-    }
+    updateTimeData(serverDate, windowType, liveSupport, callbacks);
 
     return {
       failover: failover,
