@@ -6,6 +6,16 @@ require(
     'bigscreenplayer/mediasources'
   ],
   function (Squire, MediaKinds, WindowTypes, MediaSources) {
+    var injector = new Squire();
+    var MSEStrategy;
+    var mseStrategy;
+    var eventCallbacks;
+    var dashEventCallback;
+    var eventHandlers = {};
+    var playbackElement;
+    var cdnArray = [];
+    var mediaSources;
+
     var mockDashjs;
     var mockDashInstance;
     var mockDashMediaPlayer;
@@ -14,6 +24,17 @@ require(
     var mockPluginsInterface;
     var mockAudioElement = document.createElement('audio');
     var mockVideoElement = document.createElement('video');
+    var testManifestObject;
+
+    var dashjsMediaPlayerEvents = {
+      ERROR: 'error',
+      MANIFEST_LOADED: 'manifestLoaded',
+      MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
+      QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
+      BASE_URL_SELECTED: 'baseUrlSelected',
+      METRIC_ADDED: 'metricAdded',
+      METRIC_CHANGED: 'metricChanged'
+    };
 
     describe('Media Source Extensions Playback Strategy', function () {
       beforeAll(function () {
@@ -39,35 +60,41 @@ require(
             eventHandlers[event].call(event);
           };
         });
+
+        mockDashjs.MediaPlayer.and.returnValue(mockDashMediaPlayer);
+        mockDashMediaPlayer.create.and.returnValue(mockDashInstance);
+
+        // For DVRInfo Based Seekable Range
+        mockDashInstance.duration.and.returnValue(101);
+        mockDashInstance.isReady.and.returnValue(true);
+        mockDashInstance.getDebug.and.returnValue(mockDashDebug);
+
+        mockDashInstance.on.and.callFake(function (eventType, handler) {
+          eventHandlers[eventType] = handler;
+
+          dashEventCallback = function (eventType, event) {
+            eventHandlers[eventType].call(eventType, event);
+          };
+        });
+
+        mockDashInstance.getDashMetrics.and.returnValue({
+          getCurrentDVRInfo: function () {
+            return {
+              range: {
+                start: 0,
+                end: 101
+              }
+            };
+          }
+        });
+        window.dashjs = mockDashjs;
       });
 
-      var injector = new Squire();
-      var playbackElement;
-      var MSEStrategy;
-      var mseStrategy;
-      var eventCallbacks;
-      var dashEventCallback;
-      var eventHandlers = {};
-      var cdnArray = [];
-      var mediaSources;
-
-      var dashjsMediaPlayerEvents = {
-        ERROR: 'error',
-        MANIFEST_LOADED: 'manifestLoaded',
-        MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
-        QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-        CDN_FAILOVER: 'baseUrlSelected',
-        METRIC_ADDED: 'metricAdded',
-        METRIC_CHANGED: 'metricChanged'
-      };
-
-      var mockManifestFilter = {
-        filter: function () { }
-      };
-
-      var testManifestObject;
-
       beforeEach(function (done) {
+        playbackElement = document.createElement('div');
+        playbackElement.id = 'app';
+        document.body.appendChild(playbackElement);
+
         cdnArray = [
           { url: 'http://testcdn1/test/', cdn: 'cdn1' },
           { url: 'http://testcdn2/test/', cdn: 'cdn2' },
@@ -87,12 +114,19 @@ require(
 
         injector.mock({
           'dashjs': mockDashjs,
-          'bigscreenplayer/plugins': mockPlugins,
-          'bigscreenplayer/manifest/manifestfilter': mockManifestFilter
+          'bigscreenplayer/plugins': mockPlugins
         });
 
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
           MSEStrategy = SquiredMSEStrategy;
+
+          spyOn(document, 'createElement').and.callFake(function (elementType) {
+            if (elementType === 'audio') {
+              return mockAudioElement;
+            } else if (elementType === 'video') {
+              return mockVideoElement;
+            }
+          });
           done();
         });
       });
@@ -107,49 +141,7 @@ require(
           windowEndTime: windowEndTimeMS || 0
         };
 
-        playbackElement = document.createElement('div');
-        playbackElement.id = 'app';
-        document.body.appendChild(playbackElement);
-
         mseStrategy = MSEStrategy(mediaSources, defaultWindowType, defaultMediaKind, timeModel, playbackElement, {}, false);
-
-        mockDashInstance.duration.and.returnValue(101);
-
-        mockDashjs.MediaPlayer.and.returnValue(mockDashMediaPlayer);
-        mockDashMediaPlayer.create.and.returnValue(mockDashInstance);
-
-        mockDashInstance.on.and.callFake(function (eventType, handler) {
-          eventHandlers[eventType] = handler;
-
-          dashEventCallback = function (eventType, event) {
-            eventHandlers[eventType].call(eventType, event);
-          };
-        });
-
-        // For DVRInfo Based Seekable Range
-        mockDashInstance.isReady.and.returnValue(true);
-        mockDashInstance.getDashMetrics.and.returnValue({
-          getCurrentDVRInfo: function () {
-            return {
-              range: {
-                start: 0,
-                end: 101
-              }
-            };
-          }
-        });
-
-        window.dashjs = mockDashjs;
-
-        spyOn(document, 'createElement').and.callFake(function (elementType) {
-          if (elementType === 'audio') {
-            return mockAudioElement;
-          } else if (elementType === 'video') {
-            return mockVideoElement;
-          }
-        });
-
-        mockDashInstance.getDebug.and.returnValue(mockDashDebug);
       }
 
       afterEach(function () {
@@ -771,7 +763,7 @@ require(
         });
       });
 
-      describe('dashJS CDN_FAILOVER event', function () {
+      describe('dashJS BASE_URL_SELECTED event', function () {
         beforeEach(function () {
           mockPluginsInterface.onErrorHandled.calls.reset();
         });
@@ -788,7 +780,7 @@ require(
           setUpMSE();
           mseStrategy.load(null, 0);
 
-          dashEventCallback(dashjsMediaPlayerEvents.CDN_FAILOVER, mockEvent);
+          dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, mockEvent);
 
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalledWith();
         });
