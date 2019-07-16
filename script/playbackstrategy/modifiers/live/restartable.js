@@ -12,6 +12,7 @@ define(
         var callbacksMap = [];
         var startTime;
         var fakeTimer = {};
+        var timeCorrection = timeData.correction || 0;
         addEventCallback(this, updateFakeTimer);
 
         function updateFakeTimer (event) {
@@ -62,15 +63,15 @@ define(
         }
 
         function getCurrentTime () {
-          return fakeTimer.currentTime;
+          return fakeTimer.currentTime + timeCorrection;
         }
 
         function getSeekableRange () {
           var windowLength = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
           var delta = (Date.now() - startTime) / 1000;
           return {
-            start: windowType === WindowTypes.SLIDING ? delta : 0,
-            end: windowLength + delta
+            start: (windowType === WindowTypes.SLIDING ? delta : 0) + timeCorrection,
+            end: windowLength + delta + timeCorrection
           };
         }
 

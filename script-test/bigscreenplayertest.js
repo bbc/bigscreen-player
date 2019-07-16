@@ -157,8 +157,8 @@ require(
           errorCallback.calls.reset();
           forceMediaSourcesConstructionFailure = false;
           forceMediaSourcesMockFailure = false;
-          mediaSourcesCallbackSuccessSpy.calls.reset();
-          mediaSourcesCallbackErrorSpy.calls.reset();
+          mediaSourcesCallbackSuccessSpy && mediaSourcesCallbackSuccessSpy.calls && mediaSourcesCallbackSuccessSpy.calls.reset();
+          mediaSourcesCallbackErrorSpy && mediaSourcesCallbackErrorSpy.calls && mediaSourcesCallbackErrorSpy.calls.reset();
           bigscreenPlayer.tearDown();
         });
 

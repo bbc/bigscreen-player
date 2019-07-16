@@ -893,6 +893,7 @@ require(
         var currentTime;
         var type;
         var currentTimeSpy;
+        var currentStrategy;
 
         beforeEach(function () {
           jasmine.clock().install();
@@ -922,9 +923,11 @@ require(
           currentTimeSpy.and.returnValue(currentTime);
           spyOn(mockStrategy, 'getDuration').and.returnValue(100);
           spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
+          currentStrategy = window.bigscreenPlayer.playbackStrategy;
         });
 
         afterEach(function () {
+          window.bigscreenPlayer.playbackStrategy = currentStrategy;
           jasmine.clock().uninstall();
         });
 
@@ -1001,6 +1004,7 @@ require(
         });
 
         it('should publish a media state update of fatal when failover is disabled', function () {
+          window.bigscreenPlayer.playbackStrategy = 'talstrategy';
           liveSupport = LiveSupport.RESTARTABLE;
           setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.GROWING});
 

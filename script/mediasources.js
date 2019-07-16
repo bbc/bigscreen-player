@@ -2,19 +2,17 @@ define('bigscreenplayer/mediasources',
   [
     'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/models/transferformats',
     'bigscreenplayer/plugins',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/debugger/debugtool',
-    'bigscreenplayer/manifest/manifestloader'
+    'bigscreenplayer/manifest/manifestloader',
+    'bigscreenplayer/models/playbackstrategy'
   ],
-function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader) {
+function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy) {
   'use strict';
   var mediaSources;
   var initialUrl;
-  var transferFormat;
   var time = {};
 
   function failover (postFailoverAction, failoverErrorAction, failoverInfo) {
@@ -97,7 +95,7 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
   function shouldFailover (duration, currentTime, liveSupport, windowType) {
     var aboutToEnd = duration && currentTime > duration - 5;
     var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
-    var shouldLiveFailover = windowType !== WindowTypes.STATIC && (transferFormat === TransferFormats.DASH || liveSupport !== LiveSupport.RESTARTABLE);
+    var shouldLiveFailover = windowType !== WindowTypes.STATIC && window.bigscreenPlayer.playbackStrategy !== PlaybackStrategy.TAL && !window.bigscreenPlayer.disableLiveFailover;
     return hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
   }
 
@@ -124,7 +122,6 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
 
   function loadManifest (serverDate, callbacks) {
     var onManifestLoadSuccess = function (manifestData) {
-      transferFormat = manifestData.transferFormat;
       time = manifestData.time;
       callbacks.onSuccess();
     };
