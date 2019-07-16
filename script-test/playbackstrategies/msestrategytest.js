@@ -107,7 +107,8 @@ require(
         ];
 
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-        mediaSources = new MediaSources(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
+        mediaSources = new MediaSources();
+        mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         testManifestObject = {
           type: 'manifestLoaded',

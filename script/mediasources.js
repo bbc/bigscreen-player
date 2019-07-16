@@ -15,7 +15,7 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
   var mediaSources;
   var initialUrl;
   var transferFormat;
-  var time;
+  var time = {};
 
   function failover (postFailoverAction, failoverErrorAction, failoverInfo) {
     if (hasSourcesToFailoverTo() && isFailoverInfoValid(failoverInfo)) {
@@ -108,14 +108,14 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
   }
 
   function needToGetManifest (windowType, liveSupport) {
-    var requiresSeekingData = {
+    var requiresManifestLoad = {
       restartable: true,
       seekable: true,
       playable: false,
       none: false
     };
 
-    return windowType !== WindowTypes.STATIC && requiresSeekingData[liveSupport];
+    return windowType !== WindowTypes.STATIC && requiresManifestLoad[liveSupport];
   }
 
   function generateTime () {
@@ -151,14 +151,14 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     load();
   }
 
-  return function (urls, serverDate, windowType, liveSupport, callbacks) {
+  function init (urls, serverDate, windowType, liveSupport, callbacks) {
     if (urls === undefined || urls.length === 0) {
       throw new Error('Media Sources urls are undefined');
     }
 
     if (callbacks === undefined ||
-        callbacks.onSuccess === undefined ||
-        callbacks.onError === undefined) {
+      callbacks.onSuccess === undefined ||
+      callbacks.onError === undefined) {
       throw new Error('Media Sources callbacks are undefined');
     }
 
@@ -171,8 +171,11 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     } else {
       callbacks.onSuccess();
     }
+  }
 
+  return function () {
     return {
+      init: init,
       failover: failover,
       shouldFailover: shouldFailover,
       currentSource: getCurrentUrl,
@@ -181,6 +184,4 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
       time: generateTime
     };
   };
-}
-);
-
+});

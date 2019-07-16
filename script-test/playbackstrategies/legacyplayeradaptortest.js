@@ -84,7 +84,8 @@ require(
 
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
 
-        var mediaSources = new MediaSources(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
+        var mediaSources = new MediaSources();
+        mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         var config = options.config || device.getConfig();
 

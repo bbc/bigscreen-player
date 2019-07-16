@@ -9,12 +9,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/plugins',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
-    'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/utils/livesupportutils',
     'bigscreenplayer/mediasources'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, LiveSupportUtils, MediaSources) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -86,7 +84,8 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function bigscreenPlayerDataLoaded (playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback) {
-        if (bigscreenPlayerData.time) {
+        if (windowType !== WindowTypes.STATIC) {
+          bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
 
           initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime;
@@ -113,36 +112,11 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function getWindowStartTime () {
-        return playerComponent && playerComponent.getWindowStartTime();
+        return mediaSources.time().windowStartTime;
       }
 
       function getWindowEndTime () {
-        return playerComponent && playerComponent.getWindowEndTime();
-      }
-
-      function initialManifestLoad (bigscreenPlayerData, playbackElement, enableSubtitles, callbacks) {
-        ManifestLoader.load(
-          mediaSources.currentSource(),
-          serverDate,
-          {
-            onSuccess: function (manifestData) {
-              bigscreenPlayerData.media.transferFormat = manifestData.transferFormat;
-              bigscreenPlayerData.time = manifestData.time;
-              bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
-            },
-            onError: function () {
-              var reloadManifest = initialManifestLoad.bind(null, bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
-
-              var errorCallback = function () {
-                callbacks.onError({error: 'manifest'});
-              };
-
-              if (callbacks.onError) {
-                mediaSources.failover(reloadManifest, errorCallback, {errorMessage: 'manifest-load', isBufferingTimeoutError: false});
-              }
-            }
-          }
-        );
+        return mediaSources.time().windowEndTime;
       }
 
       return {
@@ -157,20 +131,17 @@ define('bigscreenplayer/bigscreenplayer',
 
           var mediaSourceCallbacks = {
             onSuccess: function () {
-
+              bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
             },
-            onError: function () {
-
+            onError: function (error) {
+              if (callbacks.onError) {
+                callbacks.onError(error);
+              }
             }
           };
 
-          mediaSources = new MediaSources(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(device), mediaSourceCallbacks);
-
-          if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
-            initialManifestLoad(bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
-          } else {
-            bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
-          }
+          mediaSources = new MediaSources();
+          mediaSources.init(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(device), mediaSourceCallbacks);
         },
 
         tearDown: function () {
@@ -237,6 +208,7 @@ define('bigscreenplayer/bigscreenplayer',
           if (windowType === WindowTypes.STATIC) {
             return {};
           }
+
           return {
             windowStartTime: getWindowStartTime(),
             windowEndTime: getWindowEndTime(),

@@ -10,11 +10,10 @@ define(
     'bigscreenplayer/plugins',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/manifest/manifestloader',
-    'bigscreenplayer/utils/livesupportutils',
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, ManifestLoader, LiveSupportUtils, LiveSupport, DebugTool) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, ManifestLoader, LiveSupport, DebugTool) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
@@ -271,7 +270,7 @@ define(
       }
 
       function reloadManifest (time, successCallback, errorCallback) {
-        if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
+        if (transferFormat === TransferFormats.HLS) {
           ManifestLoader.load(
             mediaSources.availableSources(),
             bigscreenPlayerData.serverDate,
