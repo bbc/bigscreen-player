@@ -14,7 +14,7 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
   'use strict';
   var mediaSources;
   var initialUrl;
-  // var transferFormat;
+  var transferFormat;
   var time;
 
   function failover (postFailoverAction, failoverErrorAction, failoverInfo) {
@@ -94,7 +94,7 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     return url === initialUrl;
   }
 
-  function shouldFailover (duration, currentTime, liveSupport, windowType, transferFormat) {
+  function shouldFailover (duration, currentTime, liveSupport, windowType) {
     var aboutToEnd = duration && currentTime > duration - 5;
     var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
     var shouldLiveFailover = windowType !== WindowTypes.STATIC && (transferFormat === TransferFormats.DASH || liveSupport !== LiveSupport.RESTARTABLE);
@@ -123,40 +123,34 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
   }
 
   function loadManifest (serverDate, callbacks) {
-    ManifestLoader.load(
-      getCurrentUrl(),
-      serverDate,
-      {
-        onSuccess: function (manifestData) {
-          // transferFormat = manifestData.transferFormat;
-          time = manifestData.time;
-          callbacks.onSuccess();
-        },
-        onError: function () {
-          callbacks.onError();
-          // var reloadManifest = initialManifestLoad.bind(null, bigscreenPlayerData, playbackElement, enableSubtitles, callbacks);
-
-          // var errorCallback = function () {
-          //   callbacks.onError({error: 'manifest'});
-          // };
-
-          // if (callbacks.onError) {
-          //   mediaSources.failover(reloadManifest, errorCallback, {errorMessage: 'manifest-load', isBufferingTimeoutError: false});
-          // }
-        }
-      }
-    );
-  }
-
-  function updateTimeData (serverDate, windowType, liveSupport, callbacks) {
-    if (needToGetManifest(windowType, liveSupport)) {
-      loadManifest(serverDate, callbacks);
-    } else {
+    var onManifestLoadSuccess = function (manifestData) {
+      transferFormat = manifestData.transferFormat;
+      time = manifestData.time;
       callbacks.onSuccess();
+    };
+
+    var failoverError = function () {
+      callbacks.onError({error: 'manifest'});
+    };
+
+    var onManifestLoadError = function () {
+      failover(load, failoverError, {errorMessage: 'manifest-load', isBufferingTimeoutError: false});
+    };
+
+    function load () {
+      ManifestLoader.load(
+        getCurrentUrl(),
+        serverDate,
+        {
+          onSuccess: onManifestLoadSuccess,
+          onError: onManifestLoadError
+        }
+      );
     }
+
+    load();
   }
 
-  // Constructor
   return function (urls, serverDate, windowType, liveSupport, callbacks) {
     if (urls === undefined || urls.length === 0) {
       throw new Error('Media Sources urls are undefined');
@@ -171,7 +165,12 @@ function (PlaybackUtils, WindowTypes, LiveSupport, TransferFormats, Plugins, Plu
     initialUrl = urls.length > 0 ? urls[0].url : '';
     mediaSources = PlaybackUtils.cloneArray(urls);
     updateDebugOutput();
-    updateTimeData(serverDate, windowType, liveSupport, callbacks);
+
+    if (needToGetManifest(windowType, liveSupport)) {
+      loadManifest(serverDate, callbacks);
+    } else {
+      callbacks.onSuccess();
+    }
 
     return {
       failover: failover,

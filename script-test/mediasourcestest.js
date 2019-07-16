@@ -12,9 +12,9 @@ require(
       var mockPlugins;
       var mockPluginsInterface;
       var mockTimeObject = { windowStartTime: 10, windowEndTime: 100, timeCorrection: 0 };
+      var mockTransferFormat = 'dash';
       var MediaSources;
 
-      var mediaSources;
       var testSources;
       var testCallbacks;
       var triggerManifestLoadError = false;
@@ -35,7 +35,7 @@ require(
             if (triggerManifestLoadError) {
               callbacks.onError();
             } else {
-              callbacks.onSuccess({time: mockTimeObject});
+              callbacks.onSuccess({transferFormat: mockTransferFormat, time: mockTimeObject});
             }
           }
         };
@@ -52,7 +52,6 @@ require(
             {url: 'source1', cdn: 'supplier1'},
             {url: 'source2', cdn: 'supplier2'}
           ];
-          mediaSources = new MediaSources(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           done();
         });
       });
@@ -72,6 +71,7 @@ require(
         });
 
         it('clones the urls', function () {
+          var mediaSources = new MediaSources(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           testSources[0].url = 'clonetest';
 
           expect(mediaSources.currentSource()).toEqual('source1');
@@ -95,6 +95,9 @@ require(
         });
 
         it('calls onSuccess callback immediately for STATIC window content', function () {
+          var mediaSources = new MediaSources(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.currentSource();
+
           expect(testCallbacks.onSuccess).toHaveBeenCalledWith();
         });
 
@@ -121,13 +124,13 @@ require(
           expect(mediaSources.time()).toEqual(mockTimeObject);
         });
 
-        it('calls onError callback when manifest loader returns on error for SLIDING window content', function () {
+        it('calls onError callback when manifest loader fails and there are insufficent sources to failover to', function () {
           testCallbacks.onError.calls.reset();
           triggerManifestLoadError = true;
           var mediaSources = new MediaSources(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.currentSource();
 
-          expect(testCallbacks.onError).toHaveBeenCalledWith();
+          expect(testCallbacks.onError).toHaveBeenCalledWith({error: 'manifest'});
         });
       });
 
@@ -137,6 +140,7 @@ require(
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
+          var mediaSources = new MediaSources(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(postFailoverAction).toHaveBeenCalledWith();
@@ -148,7 +152,7 @@ require(
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
-          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          var mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(onFailureAction).toHaveBeenCalledWith();
@@ -164,6 +168,7 @@ require(
             isBufferingTimeoutError: true
           };
 
+          var mediaSources = new MediaSources(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           var pluginData = {
@@ -185,7 +190,7 @@ require(
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
-          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          var mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
@@ -198,10 +203,11 @@ require(
             {url: 'source1', cdn: 'supplier1'},
             {url: 'source2', cdn: 'supplier2'}
           ];
-          mediaSources = new MediaSources(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
         });
 
         it('returns the first media source url', function () {
+          var mediaSources = new MediaSources(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
           expect(mediaSources.currentSource()).toBe(testSources[0].url);
         });
 
@@ -210,6 +216,7 @@ require(
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
+          var mediaSources = new MediaSources(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mediaSources.currentSource()).toBe(testSources[1].url);
@@ -218,70 +225,85 @@ require(
 
       describe('availableSources', function () {
         it('returns an array of media source urls', function () {
+          var mediaSources = new MediaSources(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
           expect(mediaSources.availableSources()).toEqual(['source1', 'source2']);
         });
       });
 
-      describe('shouldFailover', function () {
-        it('should return false when there are insufficient urls to failover', function () {
-          mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+      // describe('shouldFailover', function () {
+      //   var mediaSources;
+      //   it('should return false when there are insufficient urls to failover', function () {
+      //     var mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
-          expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(false);
-        });
+      //     expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(false);
+      //   });
 
-        describe('when window type is STATIC', function () {
-          it('should return true if current time is 5 seconds from duration', function () {
-            expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(true);
-            expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(true);
-          });
+      //   describe('when window type is STATIC', function () {
+      //     beforeEach(function () {
+      //       mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+      //     });
 
-          it('should return false if current time is within 5 seconds of duration', function () {
-            expect(mediaSources.shouldFailover(100, 96, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(false);
-            expect(mediaSources.shouldFailover(100, 96, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(false);
-          });
+      //     it('should return true if current time is 5 seconds from duration', function () {
+      //       expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(true);
+      //       expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(true);
+      //     });
 
-          it('should return true if playback has not yet started', function () {
-            expect(mediaSources.shouldFailover(0, undefined, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(true);
-            expect(mediaSources.shouldFailover(0, undefined, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(true);
-          });
-        });
+      //     it('should return false if current time is within 5 seconds of duration', function () {
+      //       expect(mediaSources.shouldFailover(100, 96, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(false);
+      //       expect(mediaSources.shouldFailover(100, 96, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(false);
+      //     });
 
-        describe('when window type is GROWING', function () {
-          describe('and transfer format is DASH', function () {
-            it('should return true', function () {
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.GROWING, TransferFormats.DASH)).toBe(true);
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.GROWING, TransferFormats.DASH)).toBe(true);
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.GROWING, TransferFormats.DASH)).toBe(true);
-            });
-          });
+      //     it('should return true if playback has not yet started', function () {
+      //       expect(mediaSources.shouldFailover(0, undefined, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(true);
+      //       expect(mediaSources.shouldFailover(0, undefined, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(true);
+      //     });
+      //   });
 
-          describe('and transfer format is HLS', function () {
-            it('should return correct value for live support', function () {
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(true);
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(false);
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(true);
-            });
-          });
-        });
+      //   describe('when window type is GROWING', function () {
+      //     beforeEach(function () {
+      //       mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
+      //     });
 
-        describe('when window type is SLIDING', function () {
-          describe('with transfer format DASH', function () {
-            it('will return true', function () {
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
-            });
-          });
+      //     describe('and transfer format is DASH', function () {
+      //       it('should return true', function () {
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.GROWING, TransferFormats.DASH)).toBe(true);
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.GROWING, TransferFormats.DASH)).toBe(true);
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.GROWING, TransferFormats.DASH)).toBe(true);
+      //       });
+      //     });
 
-          describe('with transfer format HLS', function () {
-            it('should return the correct value for live support', function () {
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(false);
-              expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
-            });
-          });
-        });
-      });
+      //     describe('and transfer format is HLS', function () {
+      //       it('should return correct value for live support', function () {
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(true);
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(false);
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(true);
+      //       });
+      //     });
+      //   });
+
+      //   describe('when window type is SLIDING', function () {
+      //     beforeEach(function () {
+      //       mediaSources = new MediaSources([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
+      //     });
+
+      //     describe('with transfer format DASH', function () {
+      //       it('will return true', function () {
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
+      //       });
+      //     });
+
+      //     describe('with transfer format HLS', function () {
+      //       it('should return the correct value for live support', function () {
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(false);
+      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
+      //       });
+      //     });
+      //   });
+      // });
     });
   }
 );
