@@ -332,21 +332,21 @@ define(
         }
       }
 
-      // function reset () {
-      //   switch (getState()) {
-      //     case MediaPlayerBase.STATE.EMPTY:
-      //       break;
+      function reset () {
+        switch (getState()) {
+          case MediaPlayerBase.STATE.EMPTY:
+            break;
 
-      //     case MediaPlayerBase.STATE.STOPPED:
-      //     case MediaPlayerBase.STATE.ERROR:
-      //       toEmpty();
-      //       break;
+          case MediaPlayerBase.STATE.STOPPED:
+          case MediaPlayerBase.STATE.ERROR:
+            toEmpty();
+            break;
 
-      //     default:
-      //       toError('Cannot reset while in the \'' + getState() + '\' state');
-      //       break;
-      //   }
-      // }
+          default:
+            toError('Cannot reset while in the \'' + getState() + '\' state');
+            break;
+        }
+      }
 
       function getCurrentTime () {
         switch (getState()) {
@@ -592,10 +592,10 @@ define(
         clearSentinels();
       }
 
-      // function toEmpty () {
-      //   wipe();
-      //   state = MediaPlayerBase.STATE.EMPTY;
-      // }
+      function toEmpty () {
+        wipe();
+        state = MediaPlayerBase.STATE.EMPTY;
+      }
 
       function toError (errorMessage) {
         wipe();
@@ -762,7 +762,7 @@ define(
           beginPlaybackFrom: beginPlaybackFrom,
           pause: pause,
           stop: stop,
-          reset: resizeTo,
+          reset: reset,
           getSource: getSource,
           getMimeType: getMimeType,
           getSeekableRange: getSeekableRange,
