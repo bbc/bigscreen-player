@@ -12,7 +12,6 @@ define(
     function (MediaPlayerBase) {
       'use strict';
 
-      var CURRENT_TIME_TOLERANCE = 1;
       var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
 
       var eventCallback;
@@ -57,10 +56,6 @@ define(
           currentAttemptCount: 0
         }
       };
-
-      function init (newDevice) {
-        device = newDevice;
-      }
 
       function addEventCallback (thisArg, newCallback) {
         eventCallback = function (event) {
@@ -178,7 +173,7 @@ define(
         var LIVE_SEEK_SENTINEL_TOLERANCE = 30;
 
         seekSentinelTolerance = ON_DEMAND_SEEK_SENTINEL_TOLERANCE;
-        if (this._isLiveMedia()) {
+        if (isLiveMedia()) {
           seekSentinelTolerance = LIVE_SEEK_SENTINEL_TOLERANCE;
         }
       }
@@ -205,7 +200,7 @@ define(
 
       function resume () {
         postBufferingState = MediaPlayerBase.STATE.PLAYING;
-        switch (this.getState()) {
+        switch (getState()) {
           case MediaPlayerBase.STATE.PLAYING:
           case MediaPlayerBase.STATE.BUFFERING:
             break;
@@ -286,7 +281,7 @@ define(
         postBufferingState = MediaPlayerBase.STATE.PLAYING;
         sentinelLimits.seek.currentAttemptCount = 0;
 
-        switch (this.getState()) {
+        switch (getState()) {
           case MediaPlayerBase.STATE.STOPPED:
                     // Seeking past 0 requires calling play first when media has not been loaded
             toBuffering();
@@ -438,36 +433,46 @@ define(
       }
 
       function createElement () {
-        this._mediaElement = device._createElement('object', 'mediaPlayer');
-        this._mediaElement.type = this._mimeType;
-        this._mediaElement.style.position = 'absolute';
-        this._mediaElement.style.top = '0px';
-        this._mediaElement.style.left = '0px';
-        this._mediaElement.style.width = '100%';
-        this._mediaElement.style.height = '100%';
+        mediaElement = device._createElement('object', 'mediaPlayer');
+        mediaElement.type = mimeType;
+        mediaElement.style.position = 'absolute';
+        mediaElement.style.top = '0px';
+        mediaElement.style.left = '0px';
+        mediaElement.style.width = '100%';
+        mediaElement.style.height = '100%';
       }
+
+      var states = {
+        PLAY_STATE_STOPPED: 0,
+        PLAY_STATE_PLAYING: 1,
+        PLAY_STATE_PAUSED: 2,
+        PLAY_STATE_CONNECTING: 3,
+        PLAY_STATE_BUFFERING: 4,
+        PLAY_STATE_FINISHED: 5,
+        PLAY_STATE_ERROR: 6
+      };
 
       function registerEventHandlers () {
         var DEVICE_UPDATE_PERIOD_MS = 500;
 
         mediaElement.onPlayStateChange = function () {
           switch (mediaElement.playState) {
-            case Player.PLAY_STATE_STOPPED:
+            case states.PLAY_STATE_STOPPED:
               break;
-            case Player.PLAY_STATE_PLAYING:
+            case states.PLAY_STATE_PLAYING:
               onFinishedBuffering();
               break;
-            case Player.PLAY_STATE_PAUSED:
+            case states.PLAY_STATE_PAUSED:
               break;
-            case Player.PLAY_STATE_CONNECTING:
+            case states.PLAY_STATE_CONNECTING:
               break;
-            case Player.PLAY_STATE_BUFFERING:
+            case states.PLAY_STATE_BUFFERING:
               onDeviceBuffering();
               break;
-            case Player.PLAY_STATE_FINISHED:
+            case states.PLAY_STATE_FINISHED:
               onEndOfMedia();
               break;
-            case Player.PLAY_STATE_ERROR:
+            case states.PLAY_STATE_ERROR:
               onDeviceError();
               break;
             default:
@@ -476,7 +481,7 @@ define(
           }
         };
 
-        this._updateInterval = setInterval(function () {
+        updateInterval = setInterval(function () {
           onStatus();
         }, DEVICE_UPDATE_PERIOD_MS);
       }
@@ -490,7 +495,7 @@ define(
         if (mediaElement) {
           range = {
             start: 0,
-            end: this._mediaElement.playTime / 1000
+            end: mediaElement.playTime / 1000
           };
         }
       }
@@ -514,7 +519,7 @@ define(
       function seekTo (seconds) {
         var clampedTime = getClampedTime(seconds);
         if (clampedTime !== seconds) {
-          device.getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + this._range.start + ', end: ' + this._range.end + ' }');
+          device.getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
         }
         sentinelSeekTime = clampedTime;
         return mediaElement.seek(clampedTime * 1000);
@@ -545,7 +550,7 @@ define(
 
       function reportError (errorMessage) {
         device.getLogger().error(errorMessage);
-        this._emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
+        emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
       }
 
       function toStopped () {
@@ -608,19 +613,18 @@ define(
         }
 
         sentinelLimits.pause.currentAttemptCount = 0;
-        var self = this;
         timeAtLastSentinelInterval = getCurrentTime();
         clearSentinels();
         sentinelIntervalNumber = 0;
         sentinelInterval = setInterval(function () {
           var newTime = getCurrentTime();
-          self._sentinelIntervalNumber++;
+          sentinelIntervalNumber++;
 
           timeHasAdvanced = newTime ? (newTime > (timeAtLastSentinelInterval + 0.2)) : false;
           sentinelTimeIsNearEnd = isNearToEnd(newTime || timeAtLastSentinelInterval);
 
           for (var i = 0; i < sentinels.length; i++) {
-            var sentinelActionPerformed = sentinels[i].call(self);
+            var sentinelActionPerformed = sentinels[i].call(this);
             if (sentinelActionPerformed) {
               break;
             }
@@ -728,7 +732,7 @@ define(
 
         if (currentAttemptCount <= maxAttemptCount) {
           attemptFn();
-          this._emitEvent(sentinelInfo.successEvent);
+          emitEvent(sentinelInfo.successEvent);
           return true;
         }
 
@@ -744,27 +748,28 @@ define(
        * @class
        * @extends antie.devices.mediaplayer.MediaPlayer
        */
-      var Player = {
-        init: init,
-        addEventCallback: addEventCallback,
-        removeEventCallback: removeEventCallback,
-        removeAllEventCallbacks: removeAllEventCallbacks,
-        initialiseMedia: initialiseMedia,
-        resume: resume,
-        playFrom: playFrom,
-        beginPlayback: beginPlayback,
-        beginPlaybackFrom: beginPlaybackFrom,
-        pause: pause,
-        stop: stop,
-        reset: resizeTo,
-        getSource: getSource,
-        getMimeType: getMimeType,
-        getSeekableRange: getSeekableRange,
-        getMediaDuration: getMediaDuration,
-        getState: getState,
-        getPlayerElement: getPlayerElement,
-        getDuration: getDuration
-      };
+      return function (newDevice) {
+        device = newDevice;
 
-      return Player;
+        return {
+          addEventCallback: addEventCallback,
+          removeEventCallback: removeEventCallback,
+          removeAllEventCallbacks: removeAllEventCallbacks,
+          initialiseMedia: initialiseMedia,
+          resume: resume,
+          playFrom: playFrom,
+          beginPlayback: beginPlayback,
+          beginPlaybackFrom: beginPlaybackFrom,
+          pause: pause,
+          stop: stop,
+          reset: resizeTo,
+          getSource: getSource,
+          getMimeType: getMimeType,
+          getSeekableRange: getSeekableRange,
+          getMediaDuration: getMediaDuration,
+          getState: getState,
+          getPlayerElement: getPlayerElement,
+          getDuration: getDuration
+        };
+      };
     });
