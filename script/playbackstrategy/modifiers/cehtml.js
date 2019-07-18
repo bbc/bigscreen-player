@@ -20,13 +20,6 @@ define(
       var state = MediaPlayerBase.STATE.EMPTY;
 
       var mediaElement;
-      var sourceElement;
-
-      var trustZeroes = false;
-      var ignoreNextPauseEvent = false;
-      var nearEndOfMedia;
-      var readyToPlayFrom;
-
       var updateInterval;
 
       var mediaType;
@@ -37,23 +30,18 @@ define(
       var range;
 
       var postBufferingState;
-      var targetSeekTime;
-      var seekFinished;
-
-      var count;
-      var timeoutHappened;
+      var device;
 
       var disableSentinels;
-      var disableSeekSentinel;
-      var hasSentinelTimeChangedWithinTolerance;
-      var enterBufferingSentinelAttemptCount;
+
       var sentinelSeekTime;
       var seekSentinelTolerance;
       var sentinelInterval;
       var sentinelIntervalNumber;
-      var lastSentinelTime;
-
       var timeAtLastSentinelInterval;
+
+      var sentinelTimeIsNearEnd;
+      var timeHasAdvanced;
 
       var sentinelLimits = {
         pause: {
@@ -70,8 +58,8 @@ define(
         }
       };
 
-      function init () {
-        // noop
+      function init (newDevice) {
+        device = newDevice;
       }
 
       function addEventCallback (thisArg, newCallback) {
@@ -129,6 +117,21 @@ define(
         }
       }
 
+      function getClampOffsetFromConfig () {
+        var clampOffsetFromEndOfRange;
+
+        // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
+        // if (config && config.streaming && config.streaming.overrides) {
+        //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
+        // }
+
+        if (clampOffsetFromEndOfRange !== undefined) {
+          return clampOffsetFromEndOfRange;
+        } else {
+          return CLAMP_OFFSET_FROM_END_OF_RANGE;
+        }
+      }
+
       function isLiveMedia () {
         return (mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO) || (mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO);
       }
@@ -145,30 +148,30 @@ define(
         return state;
       }
 
-      function generateSourceElement (url, mimeType) {
-        var sourceElement = document.createElement('source');
-        sourceElement.src = url;
-        sourceElement.type = mimeType;
-        return sourceElement;
-      }
+      // function generateSourceElement (url, mimeType) {
+      //   var sourceElement = document.createElement('source');
+      //   sourceElement.src = url;
+      //   sourceElement.type = mimeType;
+      //   return sourceElement;
+      // }
 
-      function appendChildElement (to, el) {
-        to.appendChild(el);
-      }
+      // function appendChildElement (to, el) {
+      //   to.appendChild(el);
+      // }
 
-      function prependChildElement (to, el) {
-        if (to.childNodes.length > 0) {
-          to.insertBefore(el, to.childNodes[0]);
-        } else {
-          to.appendChild(el);
-        }
-      }
+      // function prependChildElement (to, el) {
+      //   if (to.childNodes.length > 0) {
+      //     to.insertBefore(el, to.childNodes[0]);
+      //   } else {
+      //     to.appendChild(el);
+      //   }
+      // }
 
-      function removeElement (el) {
-        if (el.parentNode) {
-          el.parentNode.removeChild(el);
-        }
-      }
+      // function removeElement (el) {
+      //   if (el.parentNode) {
+      //     el.parentNode.removeChild(el);
+      //   }
+      // }
 
       function setSeekSentinelTolerance () {
         var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15;
@@ -182,7 +185,6 @@ define(
 
       function initialiseMedia (type, url, mediaMimeType, sourceContainer, opts) {
         disableSentinels = opts.disableSentinels;
-        disableSeekSentinel = opts.disableSeekSentinel;
         mediaType = type;
         source = url;
         mimeType = mediaMimeType;
@@ -335,21 +337,21 @@ define(
         }
       }
 
-      function reset () {
-        switch (getState()) {
-          case MediaPlayerBase.STATE.EMPTY:
-            break;
+      // function reset () {
+      //   switch (getState()) {
+      //     case MediaPlayerBase.STATE.EMPTY:
+      //       break;
 
-          case MediaPlayerBase.STATE.STOPPED:
-          case MediaPlayerBase.STATE.ERROR:
-            toEmpty();
-            break;
+      //     case MediaPlayerBase.STATE.STOPPED:
+      //     case MediaPlayerBase.STATE.ERROR:
+      //       toEmpty();
+      //       break;
 
-          default:
-            toError('Cannot reset while in the \'' + getState() + '\' state');
-            break;
-        }
-      }
+      //     default:
+      //       toError('Cannot reset while in the \'' + getState() + '\' state');
+      //       break;
+      //   }
+      // }
 
       function getCurrentTime () {
         switch (getState()) {
@@ -436,7 +438,6 @@ define(
       }
 
       function createElement () {
-        var device = RuntimeContext.getDevice();
         this._mediaElement = device._createElement('object', 'mediaPlayer');
         this._mediaElement.type = this._mimeType;
         this._mediaElement.style.position = 'absolute';
@@ -481,7 +482,6 @@ define(
       }
 
       function addElementToDOM () {
-        var device = RuntimeContext.getDevice();
         var body = document.getElementsByTagName('body')[0];
         device.prependChildElement(body, mediaElement);
       }
@@ -514,7 +514,7 @@ define(
       function seekTo (seconds) {
         var clampedTime = getClampedTime(seconds);
         if (clampedTime !== seconds) {
-          RuntimeContext.getDevice().getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + this._range.start + ', end: ' + this._range.end + ' }');
+          device.getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + this._range.start + ', end: ' + this._range.end + ' }');
         }
         sentinelSeekTime = clampedTime;
         return mediaElement.seek(clampedTime * 1000);
@@ -525,7 +525,7 @@ define(
       }
 
       function wipe () {
-        type = undefined;
+        mediaType = undefined;
         source = undefined;
         mimeType = undefined;
         sentinelSeekTime = undefined;
@@ -538,14 +538,13 @@ define(
       }
 
       function destroyMediaElement () {
-        var device = RuntimeContext.getDevice();
         delete mediaElement.onPlayStateChange;
         device.removeElement(mediaElement);
         mediaElement = undefined;
       }
 
       function reportError (errorMessage) {
-        RuntimeContext.getDevice().getLogger().error(errorMessage);
+        device.getLogger().error(errorMessage);
         this._emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
       }
 
@@ -588,10 +587,10 @@ define(
         clearSentinels();
       }
 
-      function toEmpty () {
-        wipe();
-        state = MediaPlayerBase.STATE.EMPTY;
-      }
+      // function toEmpty () {
+      //   wipe();
+      //   state = MediaPlayerBase.STATE.EMPTY;
+      // }
 
       function toError (errorMessage) {
         wipe();
@@ -610,15 +609,15 @@ define(
 
         sentinelLimits.pause.currentAttemptCount = 0;
         var self = this;
-        timeAtLastSenintelInterval = getCurrentTime();
+        timeAtLastSentinelInterval = getCurrentTime();
         clearSentinels();
         sentinelIntervalNumber = 0;
         sentinelInterval = setInterval(function () {
-          var newTime = setCurrentTime();
+          var newTime = getCurrentTime();
           self._sentinelIntervalNumber++;
 
-          timeHasAdvanced = newTime ? (newTime > (timeAtLastSenintelInterval + 0.2)) : false;
-          sentinelTimeIsNearEnd = isNearToEnd(newTime || timeAtLastSenintelInterval);
+          timeHasAdvanced = newTime ? (newTime > (timeAtLastSentinelInterval + 0.2)) : false;
+          sentinelTimeIsNearEnd = isNearToEnd(newTime || timeAtLastSentinelInterval);
 
           for (var i = 0; i < sentinels.length; i++) {
             var sentinelActionPerformed = sentinels[i].call(self);
@@ -627,26 +626,26 @@ define(
             }
           }
 
-          timeAtLastSenintelInterval = newTime;
+          timeAtLastSentinelInterval = newTime;
         }, 1100);
       }
 
-      function setSentinelLimits () {
-        sentinelLimits = {
-          pause: {
-            maximumAttempts: 2,
-            successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
-            failureEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE,
-            currentAttemptCount: 0
-          },
-          seek: {
-            maximumAttempts: 2,
-            successEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK,
-            failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
-            currentAttemptCount: 0
-          }
-        };
-      }
+      // function setSentinelLimits () {
+      //   sentinelLimits = {
+      //     pause: {
+      //       maximumAttempts: 2,
+      //       successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
+      //       failureEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE,
+      //       currentAttemptCount: 0
+      //     },
+      //     seek: {
+      //       maximumAttempts: 2,
+      //       successEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK,
+      //       failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
+      //       currentAttemptCount: 0
+      //     }
+      //   };
+      // }
 
       function clearSentinels () {
         clearInterval(sentinelInterval);
