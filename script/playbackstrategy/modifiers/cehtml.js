@@ -24,7 +24,6 @@ define(
       return function () {
         var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
 
-        var eventCallback;
         var eventCallbacks = [];
         var state = MediaPlayerBase.STATE.EMPTY;
 
@@ -66,22 +65,22 @@ define(
           }
         };
 
-        function addEventCallback (thisArg, newCallback) {
-          eventCallback = function (event) {
-            newCallback.call(thisArg, event);
+        function addEventCallback (thisArg, callback) {
+          var eventCallback = function (event) {
+            callback.call(thisArg, event);
           };
-          eventCallbacks.push(eventCallback);
+
+          eventCallbacks.push({ from: callback, to: eventCallback });
         }
 
-        function removeEventCallback (callback) {
-          var index = eventCallbacks.indexOf(callback);
-          if (index !== -1) {
-            eventCallbacks.splice(index, 1);
-          }
+        function removeEventCallback (thisArg, callback) {
+          eventCallbacks = eventCallbacks.filter(function (cb) {
+            return cb.from !== callback;
+          });
         }
 
         function removeAllEventCallbacks () {
-          eventCallbacks = undefined;
+          eventCallbacks = [];
         }
 
         function emitEvent (eventType, eventLabels) {
@@ -103,9 +102,9 @@ define(
             }
           }
 
-          for (var index = 0; index < eventCallbacks.length; index++) {
-            eventCallbacks[index](event);
-          }
+          eventCallbacks.forEach(function (callback) {
+            callback.to(event);
+          });
         }
 
         function getClampedTime (seconds) {
@@ -766,8 +765,7 @@ define(
           getMediaDuration: getMediaDuration,
           getState: getState,
           getPlayerElement: getPlayerElement,
-          getDuration: getDuration,
-          toPaused: toPaused
+          getDuration: getDuration
         };
       };
     });
