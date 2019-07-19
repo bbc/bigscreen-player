@@ -552,7 +552,9 @@ define(
 
         function destroyMediaElement () {
           delete mediaElement.onPlayStateChange;
-          mediaElement.remove();
+          if (mediaElement.parentElement) {
+            mediaElement.parentElement.removeChild(mediaElement);
+          }
           mediaElement = undefined;
         }
 
