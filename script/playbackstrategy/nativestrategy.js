@@ -10,7 +10,7 @@ define('bigscreenplayer/playbackstrategy/nativestrategy',
       var mediaPlayer;
       var tempConfig = device.getConfig();
 
-      mediaPlayer = MediaPlayer(window.bigscreenPlayer.mediaPlayer === 'cehtml' ? device : tempConfig);
+      mediaPlayer = MediaPlayer(tempConfig);
       if (windowType !== WindowTypes.STATIC) {
         mediaPlayer = LivePlayer(mediaPlayer, tempConfig, windowType, timeData);
       }

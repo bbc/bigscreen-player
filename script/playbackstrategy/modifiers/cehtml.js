@@ -7,9 +7,10 @@
 define(
     'bigscreenplayer/playbackstrategy/modifiers/cehtml',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/debugger/debugtool'
   ],
-    function (MediaPlayerBase) {
+    function (MediaPlayerBase, DebugTool) {
       'use strict';
       /**
        * Main MediaPlayer implementation for CEHTML devices.
@@ -20,7 +21,7 @@ define(
        * @class
        * @extends antie.devices.mediaplayer.MediaPlayer
        */
-      return function (device) {
+      return function () {
         var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
 
         var eventCallback;
@@ -441,7 +442,7 @@ define(
         }
 
         function createElement () {
-          mediaElement = device._createElement('object', 'mediaPlayer');
+          mediaElement = document.createElement('object', 'mediaPlayer');
           mediaElement.type = mimeType;
           mediaElement.style.position = 'absolute';
           mediaElement.style.top = '0px';
@@ -496,7 +497,7 @@ define(
 
         function addElementToDOM () {
           var body = document.getElementsByTagName('body')[0];
-          device.prependChildElement(body, mediaElement);
+          body.insertBefore(mediaElement, body.firstChild);
         }
 
         function cacheRange () {
@@ -527,7 +528,7 @@ define(
         function seekTo (seconds) {
           var clampedTime = getClampedTime(seconds);
           if (clampedTime !== seconds) {
-            device.getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+            DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
           }
           sentinelSeekTime = clampedTime;
           return mediaElement.seek(clampedTime * 1000);
@@ -552,12 +553,12 @@ define(
 
         function destroyMediaElement () {
           delete mediaElement.onPlayStateChange;
-          device.removeElement(mediaElement);
+          mediaElement.remove();
           mediaElement = undefined;
         }
 
         function reportError (errorMessage) {
-          device.getLogger().error(errorMessage);
+          DebugTool.info(errorMessage);
           emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
         }
 
@@ -765,7 +766,8 @@ define(
           getMediaDuration: getMediaDuration,
           getState: getState,
           getPlayerElement: getPlayerElement,
-          getDuration: getDuration
+          getDuration: getDuration,
+          toPaused: toPaused
         };
       };
     });
