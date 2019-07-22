@@ -3,10 +3,9 @@ define(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/dynamicwindowutils',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/dynamicwindowutils'
   ],
-    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils, DebugTool) {
+    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
       'use strict';
 
       function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, timeData) {
@@ -17,18 +16,12 @@ define(
         addEventCallback(this, updateFakeTimer);
 
         function updateFakeTimer (event) {
-          DebugTool.info('Update fake time');
           if (fakeTimer.wasPlaying && fakeTimer.runningTime) {
             fakeTimer.currentTime += (Date.now() - fakeTimer.runningTime) / 1000;
           }
 
           fakeTimer.runningTime = Date.now();
           fakeTimer.wasPlaying = event.state === MediaPlayerBase.STATE.PLAYING;
-
-          DebugTool.keyValue({key: 'event.state: ', value: event.state});
-          DebugTool.keyValue({key: 'fakeTimer.wasPlaying: ', value: fakeTimer.wasPlaying});
-          DebugTool.keyValue({key: 'fakeTimer.runningTime: ', value: fakeTimer.runningTime});
-          DebugTool.keyValue({key: 'fakeTimer.currentTime: ', value: fakeTimer.currentTime});
         }
 
         function addEventCallback (thisArg, callback) {
