@@ -17,6 +17,7 @@ define(
         addEventCallback(this, updateFakeTimer);
 
         function updateFakeTimer (event) {
+          DebugTool.info('Update fake time');
           if (fakeTimer.wasPlaying && fakeTimer.runningTime) {
             fakeTimer.currentTime += (Date.now() - fakeTimer.runningTime) / 1000;
           }
