@@ -187,6 +187,7 @@ define(
         }
 
         function initialiseMedia (type, url, mediaMimeType, sourceContainer, opts) {
+          DebugTool.info('Start init media');
           disableSentinels = opts.disableSentinels;
           mediaType = type;
           source = url;
@@ -341,6 +342,7 @@ define(
         }
 
         function reset () {
+          DebugTool.info('Start reset');
           switch (getState()) {
             case MediaPlayerBase.STATE.EMPTY:
               break;
@@ -492,6 +494,7 @@ define(
           updateInterval = setInterval(function () {
             onStatus();
           }, DEVICE_UPDATE_PERIOD_MS);
+          DebugTool.info('set interval');
         }
 
         function addElementToDOM () {
@@ -545,6 +548,7 @@ define(
           range = undefined;
           if (mediaElement) {
             clearInterval(updateInterval);
+            DebugTool.info('clear interval');
             clearSentinels();
             destroyMediaElement();
           }
