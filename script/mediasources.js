@@ -16,7 +16,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
   var windowType;
   var liveSupport;
   var serverDate;
-  var initialUrl;
   var time = {};
   var transferFormat;
 
@@ -47,6 +46,10 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
   }
 
   function shouldFailover (failoverParams) {
+    if (failoverParams.serviceLocation === getCurrentUrl()) {
+      return false;
+    }
+
     var aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5;
     var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
     var shouldLiveFailover = windowType !== WindowTypes.STATIC && window.bigscreenPlayer.playbackStrategy !== PlaybackStrategy.TAL && !window.bigscreenPlayer.disableLiveFailover;
@@ -113,10 +116,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     return mediaSources.map(function (mediaSource) {
       return mediaSource.cdn;
     });
-  }
-
-  function isFirstSource (url) {
-    return url === initialUrl;
   }
 
   function updateDebugOutput () {
@@ -187,7 +186,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     windowType = newWindowType;
     liveSupport = newLiveSupport;
     serverDate = newServerDate;
-    initialUrl = urls.length > 0 ? urls[0].url : '';
     mediaSources = PlaybackUtils.cloneArray(urls);
     updateDebugOutput();
 
@@ -204,7 +202,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
       failover: failover,
       currentSource: getCurrentUrl,
       availableSources: availableUrls,
-      isFirstSource: isFirstSource,
       time: generateTime
     };
   };

@@ -150,8 +150,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
        * @param {*} event
        */
       function onBaseUrlSelected (event) {
-        if (mediaSources.isFirstSource(event.baseUrl.serviceLocation)) return;
-
         var failoverInfo = {
           errorMessage: 'download',
           isBufferingTimeoutError: false
@@ -165,6 +163,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           DebugTool.info('BaseUrl failover to : ' + event.baseUrl.url + ' failed');
         }
 
+        failoverInfo.serviceLocation = event.baseUrl.serviceLocation;
         mediaSources.failover(onSuccess, onFailure, failoverInfo);
       }
 
