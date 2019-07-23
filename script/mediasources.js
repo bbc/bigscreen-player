@@ -7,9 +7,10 @@ define('bigscreenplayer/mediasources',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/manifest/manifestloader',
-    'bigscreenplayer/models/playbackstrategy'
+    'bigscreenplayer/models/playbackstrategy',
+    'bigscreenplayer/models/transferformats'
   ],
-function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy) {
+function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy, TransferFormats) {
   'use strict';
   var mediaSources;
   var windowType;
@@ -17,6 +18,7 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
   var serverDate;
   var initialUrl;
   var time = {};
+  var transferFormat;
 
   function failover (postFailoverAction, failoverErrorAction, failoverParams) {
     function doFailover () {
@@ -131,7 +133,8 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
       none: false
     };
 
-    return windowType !== WindowTypes.STATIC && requiresManifestLoad[liveSupport];
+    var requiredTransferFormat = transferFormat === TransferFormats.HLS || transferFormat === undefined;
+    return requiredTransferFormat && windowType !== WindowTypes.STATIC && requiresManifestLoad[liveSupport];
   }
 
   function generateTime () {
@@ -141,6 +144,7 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
   function loadManifest (serverDate, callbacks) {
     var onManifestLoadSuccess = function (manifestData) {
       time = manifestData.time;
+      transferFormat = manifestData.transferFormat;
       callbacks.onSuccess();
     };
 

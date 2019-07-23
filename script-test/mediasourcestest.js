@@ -4,9 +4,10 @@ require(
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/pluginenums',
-    'squire'
+    'squire',
+    'bigscreenplayer/models/playbackstrategy'
   ],
-  function (WindowTypes, LiveSupport, TransferFormats, PluginEnums, Squire) {
+  function (WindowTypes, LiveSupport, TransferFormats, PluginEnums, Squire, PlaybackStrategy) {
     describe('Media Sources', function () {
       var injector;
       var mockPlugins;
@@ -20,6 +21,8 @@ require(
       var triggerManifestLoadError = false;
 
       var mockManifestLoader;
+
+      var currentStrategy = window.bigscreenPlayer.playbackStrategy;
 
       beforeEach(function (done) {
         injector = new Squire();
@@ -40,6 +43,7 @@ require(
           }
         };
 
+        spyOn(mockManifestLoader, 'load').and.callThrough();
         injector.mock({
           'bigscreenplayer/plugins': mockPlugins,
           'bigscreenplayer/manifest/manifestloader': mockManifestLoader
@@ -60,6 +64,10 @@ require(
         triggerManifestLoadError = false;
         testCallbacks.onSuccess.calls.reset();
         testCallbacks.onError.calls.reset();
+        mockManifestLoader.load.calls.reset();
+
+        window.bigscreenPlayer.playbackStrategy = currentStrategy;
+        window.bigscreenPlayer.disableLiveFailover = false;
       });
 
       describe('construction', function () {
@@ -247,83 +255,137 @@ require(
         });
       });
 
-      // describe('shouldFailover', function () {
-      //   var mediaSources;
-      //   it('should return false when there are insufficient urls to failover', function () {
-      //     var mediaSources = new MediaSources();
-      // mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+      describe('shouldFailover', function () {
+        var mediaSources;
+        describe('when window type is STATIC', function () {
+          beforeEach(function () {
+            mediaSources = new MediaSources();
+            mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          });
 
-      //     expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(false);
-      //   });
+          it('should failover if current time is greater than 5 seconds from duration', function () {
+            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
 
-      //   describe('when window type is STATIC', function () {
-      //     beforeEach(function () {
-      //       mediaSources = new MediaSources();
-      // mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
-      //     });
+            var failoverParams = {
+              duration: 100,
+              currentTime: 94,
+              errorMessage: 'test error',
+              isBufferingTimeoutError: false
+            };
 
-      //     it('should return true if current time is 5 seconds from duration', function () {
-      //       expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(true);
-      //       expect(mediaSources.shouldFailover(100, 95, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(true);
-      //     });
+            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
 
-      //     it('should return false if current time is within 5 seconds of duration', function () {
-      //       expect(mediaSources.shouldFailover(100, 96, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(false);
-      //       expect(mediaSources.shouldFailover(100, 96, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(false);
-      //     });
+            expect(mediaSourceCallbacks.onSuccess).toHaveBeenCalledTimes(1);
+          });
 
-      //     it('should return true if playback has not yet started', function () {
-      //       expect(mediaSources.shouldFailover(0, undefined, undefined, WindowTypes.STATIC, TransferFormats.DASH)).toBe(true);
-      //       expect(mediaSources.shouldFailover(0, undefined, undefined, WindowTypes.STATIC, TransferFormats.HLS)).toBe(true);
-      //     });
-      //   });
+          it('should not failover if current time is within 5 seconds of duration', function () {
+            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
 
-      //   describe('when window type is GROWING', function () {
-      //     beforeEach(function () {
-      //       mediaSources = new MediaSources();
-      // mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
-      //     });
+            var failoverParams = {
+              duration: 100,
+              currentTime: 96,
+              errorMessage: 'test error',
+              isBufferingTimeoutError: false
+            };
 
-      //     describe('and transfer format is DASH', function () {
-      //       it('should return true', function () {
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.GROWING, TransferFormats.DASH)).toBe(true);
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.GROWING, TransferFormats.DASH)).toBe(true);
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.GROWING, TransferFormats.DASH)).toBe(true);
-      //       });
-      //     });
+            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
 
-      //     describe('and transfer format is HLS', function () {
-      //       it('should return correct value for live support', function () {
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(true);
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(false);
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.GROWING, TransferFormats.HLS)).toBe(true);
-      //       });
-      //     });
-      //   });
+            expect(mediaSourceCallbacks.onError).toHaveBeenCalledTimes(1);
+          });
 
-      //   describe('when window type is SLIDING', function () {
-      //     beforeEach(function () {
-      //       mediaSources = new MediaSources();
-      // mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
-      //     });
+          it('should failover if playback has not yet started', function () {
+            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
 
-      //     describe('with transfer format DASH', function () {
-      //       it('will return true', function () {
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.SLIDING, TransferFormats.DASH)).toBe(true);
-      //       });
-      //     });
+            var failoverParams = {
+              duration: 0,
+              currentTime: undefined,
+              errorMessage: 'test error',
+              isBufferingTimeoutError: false
+            };
 
-      //     describe('with transfer format HLS', function () {
-      //       it('should return the correct value for live support', function () {
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.SEEKABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.RESTARTABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(false);
-      //         expect(mediaSources.shouldFailover(100, 10, LiveSupport.PLAYABLE, WindowTypes.SLIDING, TransferFormats.HLS)).toBe(true);
-      //       });
-      //     });
-      //   });
-      // });
+            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
+
+            expect(mediaSourceCallbacks.onSuccess).toHaveBeenCalledTimes(1);
+          });
+
+          // This should be TAL restartable...
+          it('should not failover for live playback where strategy is TAL', function () {
+            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+
+            var failoverParams = {
+              errorMessage: 'test error',
+              isBufferingTimeoutError: false
+            };
+
+            window.bigscreenPlayer.playbackStrategy = PlaybackStrategy.TAL;
+
+            mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
+
+            expect(mediaSourceCallbacks.onError).toHaveBeenCalledTimes(1);
+          });
+
+          it('should not failover for live playback and we disable failover', function () {
+            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+
+            var failoverParams = {
+              errorMessage: 'test error',
+              isBufferingTimeoutError: false
+            };
+
+            window.bigscreenPlayer.disableLiveFailover = true;
+
+            mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
+
+            expect(mediaSourceCallbacks.onError).toHaveBeenCalledTimes(1);
+          });
+        });
+
+        describe('when window type is not STATIC', function () {
+          describe('and transfer format is DASH', function () {
+            it('should not reload the manifest', function () {
+              mediaSources = new MediaSources();
+              mockTransferFormat = 'dash';
+              mediaSources.init(testSources, new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
+
+              var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+
+              var failoverParams = {
+                errorMessage: 'test error',
+                isBufferingTimeoutError: false
+              };
+
+              mockManifestLoader.load.calls.reset();
+
+              mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
+
+              expect(mockManifestLoader.load).not.toHaveBeenCalled();
+            });
+          });
+
+          describe('and transfer format is HLS', function () {
+            it('should reload the manifest', function () {
+              mediaSources = new MediaSources();
+              mockTransferFormat = 'hls';
+              mediaSources.init(testSources, new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
+
+              var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+
+              var failoverParams = {
+                errorMessage: 'test error',
+                isBufferingTimeoutError: false
+              };
+
+              mockManifestLoader.load.calls.reset();
+
+              mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
+
+              expect(mockManifestLoader.load).toHaveBeenCalledTimes(1);
+            });
+          });
+        });
+      });
     });
   }
 );
