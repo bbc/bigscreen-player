@@ -138,7 +138,6 @@ require(
           triggerManifestLoadError = true;
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
-          mediaSources.currentSource();
 
           expect(testCallbacks.onError).toHaveBeenCalledWith({error: 'manifest'});
         });

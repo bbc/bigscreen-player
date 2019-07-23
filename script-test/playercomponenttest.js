@@ -8,10 +8,9 @@ require(
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/models/transferformats',
-    'squire',
-    'bigscreenplayer/mediasources'
+    'squire'
   ],
-  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, LiveSupport, PluginEnums, TransferFormats, Squire, MediaSources) {
+  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, LiveSupport, PluginEnums, TransferFormats, Squire) {
     'use strict';
 
     describe('Player Component', function () {
@@ -26,9 +25,13 @@ require(
       var mockStateUpdateCallback;
       var corePlaybackData;
       var liveSupport;
-      var manifestData;
-      var forceManifestLoadError;
-      var mediaSources;
+      var forceMediaSourcesError;
+      var mockMediaSources;
+      var testTime = {
+        windowStartTime: 724000,
+        windowEndTime: 4324000,
+        correction: 0
+      };
 
       // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
       function setUpPlayerComponent (opts) {
@@ -41,23 +44,27 @@ require(
           media: {
             kind: opts.mediaKind || MediaKinds.VIDEO,
             codec: undefined,
-            urls: opts.multiCdn ? [{url: 'a', cdn: 'cdn-a'}, {url: 'b', cdn: 'cdn-b'}, {url: 'c', cdn: 'cdn-c'}] : [{url: 'a', cdn: 'cdn-a'}],
+            urls: [{url: 'a.mpd', cdn: 'cdn-a'}, {url: 'b.mpd', cdn: 'cdn-b'}, {url: 'c.mpd', cdn: 'cdn-c'}],
             type: opts.type || 'application/dash+xml',
             transferFormat: opts.transferFormat || TransferFormats.DASH,
             bitrate: undefined,
             captionsUrl: opts.subtitlesAvailable ? 'captionsUrl' : undefined
           },
-          time: {
-            windowStartTime: 724000,
-            windowEndTime: 4324000,
-            correction: 0
-          }
+          time: testTime
         };
 
-        var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-
-        mediaSources = new MediaSources();
-        mediaSources.init(corePlaybackData.media.urls, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
+        mockMediaSources = {
+          failover: function (successCallback, errorCallback, failoverParams) {
+            if (forceMediaSourcesError) {
+              errorCallback();
+            } else {
+              successCallback();
+            }
+          },
+          time: function () {
+            return testTime;
+          }
+        };
 
         var windowType = opts.windowType || WindowTypes.STATIC;
 
@@ -66,34 +73,13 @@ require(
         playerComponent = new PlayerComponentWithMocks(
           playbackElement,
           corePlaybackData,
-          mediaSources,
+          mockMediaSources,
           windowType,
           opts.subtitlesEnabled || false,
           mockStateUpdateCallback,
           null
         );
       }
-
-      function setupManifestData (options) {
-        manifestData = {
-          transferFormat: options && options.transferFormat || 'dash',
-          time: options && options.time || {
-            windowStartTime: 724000,
-            windowEndTime: 4324000,
-            correction: 0
-          }
-        };
-      }
-
-      var manifestLoaderMock = {
-        load: function (urls, serverDate, callbacks) {
-          if (forceManifestLoadError) {
-            callbacks.onError('Mock Manifest Load Error');
-          } else {
-            callbacks.onSuccess(manifestData);
-          }
-        }
-      };
 
       beforeEach(function (done) {
         injector = new Squire();
@@ -122,19 +108,14 @@ require(
         injector.mock({
           'bigscreenplayer/captionscontainer': mockCaptionsContainerConstructor,
           'bigscreenplayer/playbackstrategy/mockstrategy': mockStrategyConstructor,
-          'bigscreenplayer/plugins': mockPlugins,
-          'bigscreenplayer/manifest/manifestloader': manifestLoaderMock
+          'bigscreenplayer/plugins': mockPlugins
         });
-
-        spyOn(manifestLoaderMock, 'load');
-        manifestLoaderMock.load.and.callThrough();
-
         injector.require(['bigscreenplayer/playercomponent'], function (PlayerComponent) {
           PlayerComponentWithMocks = PlayerComponent;
           done();
         });
 
-        forceManifestLoadError = false;
+        forceMediaSourcesError = false;
       });
 
       describe('init', function () {
@@ -866,24 +847,6 @@ require(
 
             expect(mockPluginsInterface.onError).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
           });
-
-          // raise error
-          it('should start the fatal error timeout', function () {
-            jasmine.clock().install();
-
-            setUpPlayerComponent();
-
-            // trigger a error event to start the fatal error timeout,
-            // after 5 seconds it should fire a media state update of FATAL
-            // it is exptected to be cleared
-            mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
-
-            jasmine.clock().tick(5000);
-
-            expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
-
-            jasmine.clock().uninstall();
-          });
         });
       });
 
@@ -919,10 +882,11 @@ require(
           type = 'application/dash+xml';
 
           spyOn(mockStrategy, 'load');
-          currentTimeSpy = spyOn(mockStrategy, 'getCurrentTime');
-          currentTimeSpy.and.returnValue(currentTime);
+          spyOn(mockStrategy, 'reset');
           spyOn(mockStrategy, 'getDuration').and.returnValue(100);
           spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
+          currentTimeSpy = spyOn(mockStrategy, 'getCurrentTime');
+          currentTimeSpy.and.returnValue(currentTime);
           currentStrategy = window.bigscreenPlayer.playbackStrategy;
         });
 
@@ -932,8 +896,7 @@ require(
         });
 
         it('should failover after buffering for 30 seconds on initial playback', function () {
-          setUpPlayerComponent({multiCdn: true});
-
+          setUpPlayerComponent();
           mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
 
           jasmine.clock().tick(29999);
@@ -947,11 +910,8 @@ require(
         });
 
         it('should failover after buffering for 20 seconds on normal playback', function () {
-          setUpPlayerComponent({multiCdn: true});
-
-          // Set playback cause to normal
-          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
-
+          setUpPlayerComponent();
+          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING); // Set playback cause to normal
           mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
 
           jasmine.clock().tick(19999);
@@ -965,8 +925,7 @@ require(
         });
 
         it('should failover after 5 seconds if we have not cleared an error from the device', function () {
-          setUpPlayerComponent({multiCdn: true});
-
+          setUpPlayerComponent();
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
 
           jasmine.clock().tick(4999);
@@ -977,10 +936,12 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
           expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime);
+          expect(mockStrategy.reset).toHaveBeenCalledWith();
         });
 
-        it('should fire a fatal error on the plugins if there is only one cdn', function () {
+        it('should fire a fatal error on the plugins if failover is not possible', function () {
           setUpPlayerComponent();
+          forceMediaSourcesError = true;
 
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
 
@@ -991,44 +952,26 @@ require(
           expect(mockPluginsInterface.onFatalError).toHaveBeenCalledWith(jasmine.objectContaining(fatalErrorPluginData));
         });
 
-        it('should publish a media state update of fatal if there is only one cdn', function () {
+        it('should publish a media state update of fatal if failover is not possible', function () {
+          setUpPlayerComponent();
+          forceMediaSourcesError = true;
+
+          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+
+          jasmine.clock().tick(5000);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
+
+          expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
+        });
+
+        it('should failover for with updated failover time when window time data has changed', function () {
           setUpPlayerComponent();
 
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
-
-          jasmine.clock().tick(5000);
-
-          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-
-          expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
-        });
-
-        it('should publish a media state update of fatal when failover is disabled', function () {
-          window.bigscreenPlayer.playbackStrategy = 'talstrategy';
-          liveSupport = LiveSupport.RESTARTABLE;
-          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.GROWING});
-
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
-
-          jasmine.clock().tick(5000);
-
-          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-
-          expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
-        });
-
-        it('should failover for with updated failover time from manifest load', function () {
-          type = 'application/vnd.apple.mpegurl';
-
-          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.SLIDING, type: type});
-
-          setupManifestData({
-            transferFormat: TransferFormats.HLS,
-            time: {
-              windowStartTime: 744000,
-              windowEndTime: 1000000
-            }
-          });
+          testTime = {
+            windowStartTime: 744000,
+            windowEndTime: 1000000
+          };
 
           // Set playback cause to normal
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
@@ -1042,120 +985,27 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
           expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime - 20);
-        });
-
-        it('should failover for with updated failover time for multiple failovers', function () {
-          type = 'application/vnd.apple.mpegurl';
-
-          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.SLIDING, type: type});
-
-          // Set playback cause to normal
-          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
-          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
-
-          setupManifestData({
-            transferFormat: TransferFormats.HLS,
-            time: {
-              windowStartTime: 744000,
-              windowEndTime: 1000000
-            }
-          });
-
-          jasmine.clock().tick(20000);
-
-          expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime - 20);
-
-          currentTimeSpy.and.returnValue(currentTime - 20);
-
-          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
-          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
-
-          setupManifestData({
-            transferFormat: TransferFormats.HLS,
-            time: {
-              windowStartTime: 764000,
-              windowEndTime: 1000000
-            }
-          });
-
-          jasmine.clock().tick(20000);
-
-          expect(mockStrategy.load).toHaveBeenCalledTimes(3);
-          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime - 40);
-        });
-
-        it('should failover on a without reloading the manifest', function () {
-          type = 'application/vnd.apple.mpegurl';
-
-          setUpPlayerComponent({multiCdn: true, manifestType: 'm3u8', windowType: WindowTypes.GROWING, type: type});
-
-          // Set playback cause to normal
-          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
-
-          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
-
-          jasmine.clock().tick(19999);
-
-          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-
-          jasmine.clock().tick(1);
-
-          expect(manifestLoaderMock.load).not.toHaveBeenCalled();
-
-          expect(mockStrategy.load).toHaveBeenCalledTimes(2);
-          expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime);
-        });
-
-        it('should fire a fatal error if the manifest fails to reload', function () {
-          forceManifestLoadError = true;
-
-          setUpPlayerComponent({multiCdn: true, transferFormat: TransferFormats.HLS, windowType: WindowTypes.SLIDING});
-
-          // Set playback cause to normal
-          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
-
-          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
-
-          jasmine.clock().tick(20000);
-
-          expect(mockStrategy.load).toHaveBeenCalledTimes(1);
-          expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
-          expect(mediaSources.availableSources().length).toBe(1);
-          expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.FATAL_ERROR);
-        });
-
-        it('should reset the strategy', function () {
-          spyOn(mockStrategy, 'reset');
-
-          setUpPlayerComponent({multiCdn: true});
-
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
-
-          jasmine.clock().tick(5000);
-
-          expect(mockStrategy.reset).toHaveBeenCalledWith();
         });
 
         // playout logic
-        it('should clear error timeout', function () {
-          setUpPlayerComponent({multiCdn: true});
+        it('should clear buffering timeout error timeout', function () {
+          setUpPlayerComponent();
+          forceMediaSourcesError = true;
 
           // trigger a buffering event to start the error timeout,
           // after 30 seconds it should fire a media state update of FATAL
           // it is exptected to be cleared
           mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
-
           mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
 
           jasmine.clock().tick(30000);
 
-          expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).not.toEqual(MediaState.FATAL_ERROR);
+          expect(mockStateUpdateCallback.calls.mostRecent().args[0].isBufferingTimeoutError).toBe(false);
         });
 
         // playout logic
         it('should clear fatal error timeout', function () {
-          setUpPlayerComponent({multiCdn: true});
+          setUpPlayerComponent();
 
           // trigger a error event to start the fatal error timeout,
           // after 5 seconds it should fire a media state update of FATAL

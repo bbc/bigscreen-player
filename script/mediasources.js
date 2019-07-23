@@ -12,24 +12,49 @@ define('bigscreenplayer/mediasources',
 function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy) {
   'use strict';
   var mediaSources;
+  var windowType;
+  var liveSupport;
+  var serverDate;
   var initialUrl;
   var time = {};
 
-  function failover (postFailoverAction, failoverErrorAction, failoverInfo) {
-    if (hasSourcesToFailoverTo() && isFailoverInfoValid(failoverInfo)) {
-      emitCdnFailover(failoverInfo);
+  function failover (postFailoverAction, failoverErrorAction, failoverParams) {
+    function doFailover () {
+      emitCdnFailover(failoverParams);
       updateCdns();
       updateDebugOutput();
       postFailoverAction();
+    }
+
+    function error () {
+      emitCdnFailover(failoverParams);
+      updateCdns();
+      updateDebugOutput();
+      failoverErrorAction();
+    }
+
+    if (shouldFailover(failoverParams)) {
+      if (needToGetManifest(windowType, liveSupport)) {
+        loadManifest(serverDate, { onSuccess: doFailover, onError: error });
+      } else {
+        doFailover();
+      }
     } else {
       failoverErrorAction();
     }
   }
 
-  function isFailoverInfoValid (failoverInfo) {
-    var infoValid = typeof failoverInfo === 'object' &&
-                    typeof failoverInfo.errorMessage === 'string' &&
-                    typeof failoverInfo.isBufferingTimeoutError === 'boolean';
+  function shouldFailover (failoverParams) {
+    var aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5;
+    var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
+    var shouldLiveFailover = windowType !== WindowTypes.STATIC && window.bigscreenPlayer.playbackStrategy !== PlaybackStrategy.TAL && !window.bigscreenPlayer.disableLiveFailover;
+    return isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
+  }
+
+  function isFailoverInfoValid (failoverParams) {
+    var infoValid = typeof failoverParams === 'object' &&
+                    typeof failoverParams.errorMessage === 'string' &&
+                    typeof failoverParams.isBufferingTimeoutError === 'boolean';
 
     if (!infoValid) {
       DebugTool.info('failoverInfo is not valid');
@@ -92,13 +117,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     return url === initialUrl;
   }
 
-  function shouldFailover (duration, currentTime, liveSupport, windowType) {
-    var aboutToEnd = duration && currentTime > duration - 5;
-    var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
-    var shouldLiveFailover = windowType !== WindowTypes.STATIC && window.bigscreenPlayer.playbackStrategy !== PlaybackStrategy.TAL && !window.bigscreenPlayer.disableLiveFailover;
-    return hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
-  }
-
   function updateDebugOutput () {
     DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
     DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
@@ -131,6 +149,9 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     };
 
     var onManifestLoadError = function () {
+      emitCdnFailover({errorMessage: 'manifest-load', isBufferingTimeoutError: false});
+      updateCdns();
+      updateDebugOutput();
       failover(load, failoverError, {errorMessage: 'manifest-load', isBufferingTimeoutError: false});
     };
 
@@ -148,7 +169,7 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     load();
   }
 
-  function init (urls, serverDate, windowType, liveSupport, callbacks) {
+  function init (urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
     if (urls === undefined || urls.length === 0) {
       throw new Error('Media Sources urls are undefined');
     }
@@ -159,6 +180,9 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
       throw new Error('Media Sources callbacks are undefined');
     }
 
+    windowType = newWindowType;
+    liveSupport = newLiveSupport;
+    serverDate = newServerDate;
     initialUrl = urls.length > 0 ? urls[0].url : '';
     mediaSources = PlaybackUtils.cloneArray(urls);
     updateDebugOutput();
@@ -174,7 +198,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     return {
       init: init,
       failover: failover,
-      shouldFailover: shouldFailover,
       currentSource: getCurrentUrl,
       availableSources: availableUrls,
       isFirstSource: isFirstSource,

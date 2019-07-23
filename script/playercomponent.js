@@ -192,7 +192,7 @@ define(
       function onBuffering () {
         publishMediaStateUpdate(MediaState.WAITING);
         var playbackProperties = createPlaybackProperties();
-        startErrorTimeout(playbackProperties);
+        startBufferingErrorTimeout(playbackProperties);
         bubbleErrorCleared(playbackProperties);
         bubbleBufferingRaised(playbackProperties);
         userInteracted = false;
@@ -216,10 +216,10 @@ define(
         raiseError(playbackErrorProperties);
       }
 
-      function startErrorTimeout (properties) {
+      function startBufferingErrorTimeout (properties) {
         var bufferingTimeout = isInitialPlay ? 30000 : 20000;
         var bufferingClearedProperties = PlaybackUtils.clone(properties);
-        clearErrorTimeout();
+        clearBufferingErrorTimeout();
         errorTimeoutID = setTimeout(function () {
           bufferingClearedProperties.dismissed_by = 'timeout';
           bubbleBufferingCleared(bufferingClearedProperties);
@@ -229,7 +229,7 @@ define(
       }
 
       function raiseError (properties) {
-        clearErrorTimeout();
+        clearBufferingErrorTimeout();
         publishMediaStateUpdate(MediaState.WAITING);
         bubbleErrorRaised(properties);
         startFatalErrorTimeout(properties);
@@ -245,28 +245,28 @@ define(
         }
       }
 
-      function errorCallback (errorProperties, isBufferingTimeoutError) {
-        var doFailover = attemptCdnFailover.bind(null, errorProperties, isBufferingTimeoutError);
-        var doFatalError = bubbleFatalError.bind(null, errorProperties, isBufferingTimeoutError);
-        mediaSources.failover(doFailover, doFatalError, {errorMessage: errorProperties.error_mssg, isBufferingTimeoutError: isBufferingTimeoutError});
-      }
-
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
-        var shouldFailover = mediaSources.shouldFailover(getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
-
-        var failover = function (time) {
-          cdnFailover(time, thenPause, errorProperties, bufferingTimeoutError);
+        var failoverParams = {
+          errorMessage: errorProperties.error_mssg,
+          isBufferingTimeoutError: bufferingTimeoutError,
+          currentTime: getCurrentTime(),
+          duration: getDuration()
         };
 
-        if (shouldFailover) {
-          var thenPause = playbackStrategy.isPaused();
+        var doLoadMedia = function () {
+          var thenPause = isPaused();
+          var windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000;
+          var failoverTime = getCurrentTime() - windowOffset;
           tearDownMediaElement();
+          loadMedia(mediaMetaData.type, failoverTime, thenPause);
+        };
 
-          var failoverTime = getCurrentTime();
-          reloadManifest(failoverTime, failover, errorCallback);
-        } else {
-          errorCallback(errorProperties, bufferingTimeoutError);
-        }
+        var doErrorCallback = function () {
+          bubbleFatalError(errorProperties, bufferingTimeoutError);
+        };
+
+        var oldWindowStartTime = getWindowStartTime();
+        mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams);
       }
 
       function reloadManifest (time, successCallback, errorCallback) {
@@ -291,23 +291,6 @@ define(
         }
       }
 
-      function cdnFailover (failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-        var failoverInfo = {
-          errorMessage: errorProperties.error_mssg,
-          isBufferingTimeoutError: bufferingTimeoutError
-        };
-
-        var doLoadMedia = function () {
-          loadMedia(mediaMetaData.type, failoverTime, thenPause);
-        };
-
-        var doErrorCallback = function () {
-          errorCallback(errorProperties, bufferingTimeoutError);
-        };
-
-        mediaSources.failover(doLoadMedia, doErrorCallback, failoverInfo);
-      }
-
       function clearFatalErrorTimeout () {
         if (fatalErrorTimeout !== null) {
           clearTimeout(fatalErrorTimeout);
@@ -315,7 +298,7 @@ define(
         }
       }
 
-      function clearErrorTimeout () {
+      function clearBufferingErrorTimeout () {
         if (errorTimeoutID !== null) {
           clearTimeout(errorTimeoutID);
           errorTimeoutID = null;
@@ -323,7 +306,7 @@ define(
       }
 
       function playout (playbackProperties) {
-        clearErrorTimeout();
+        clearBufferingErrorTimeout();
         clearFatalErrorTimeout();
         fatalError = false;
         bubbleBufferingCleared(playbackProperties);
