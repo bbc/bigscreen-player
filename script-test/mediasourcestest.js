@@ -255,7 +255,7 @@ require(
         });
       });
 
-      describe('shouldFailover', function () {
+      describe('should Failover', function () {
         var mediaSources;
         describe('when window type is STATIC', function () {
           beforeEach(function () {
@@ -384,6 +384,33 @@ require(
               expect(mockManifestLoader.load).toHaveBeenCalledTimes(1);
             });
           });
+        });
+      });
+
+      describe('refresh', function () {
+        var mediaSources;
+        beforeEach(function () {
+          mediaSources = new MediaSources();
+          mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+        });
+
+        it('updates the mediasources time data', function () {
+          var existingSource = mediaSources.currentSource();
+
+          var expectedTime = {
+            windowStartTime: 1000000,
+            windowEndTime: 1234567
+          };
+
+          // test the current time hasn't changed
+          expect(mediaSources.time()).toEqual(mockTimeObject);
+
+          // update it
+          mockTimeObject = expectedTime;
+          mediaSources.refresh();
+
+          expect(mediaSources.time()).toEqual(expectedTime);
+          expect(mediaSources.currentSource()).toEqual(existingSource);
         });
       });
     });
