@@ -42,21 +42,10 @@ require(
         };
       }
 
-      // var manifestLoaderMock = {
-      //   load: function (urls, serverDate, callbacks) {
-      //     if (forceManifestLoadError) {
-      //       callbacks.onError();
-      //     } else {
-      //       callbacks.onSuccess(manifestData);
-      //     }
-      //   }
-      // };
-
       var mediaSourcesMock;
       var mediaSourcesCallbackSuccessSpy;
       var mediaSourcesCallbackErrorSpy;
       var forceMediaSourcesConstructionFailure = false;
-      var forceMediaSourcesMockFailure = false;
 
       function initialiseBigscreenPlayer (options) {
         // options = subtitlesAvailable, windowType, windowStartTime, windowEndTime
@@ -116,13 +105,6 @@ require(
 
               time: function () {
                 return manifestData.time;
-              },
-              failover: function (postFailoverAction, failoverErrorAction, failoverInfo) {
-                if (forceMediaSourcesMockFailure) {
-                  // callbacks.onError();
-                } else {
-                  // callbacks.onSuccess();
-                }
               }
             };
           };
@@ -156,7 +138,7 @@ require(
           successCallback.calls.reset();
           errorCallback.calls.reset();
           forceMediaSourcesConstructionFailure = false;
-          forceMediaSourcesMockFailure = false;
+
           mediaSourcesCallbackSuccessSpy && mediaSourcesCallbackSuccessSpy.calls && mediaSourcesCallbackSuccessSpy.calls.reset();
           mediaSourcesCallbackErrorSpy && mediaSourcesCallbackErrorSpy.calls && mediaSourcesCallbackErrorSpy.calls.reset();
           bigscreenPlayer.tearDown();
@@ -227,7 +209,7 @@ require(
 
           it('should not attempt to call onError callback if one is not provided', function () {
             noCallbacks = true;
-            forceMediaSourcesMockFailure = true;
+
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
 
             expect(errorCallback).not.toHaveBeenCalled();
