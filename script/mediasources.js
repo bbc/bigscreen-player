@@ -110,9 +110,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     };
 
     var onManifestLoadError = function () {
-      emitCdnFailover({errorMessage: 'manifest-load', isBufferingTimeoutError: false});
-      updateCdns();
-      updateDebugOutput();
       failover(load, failoverError, {errorMessage: 'manifest-load', isBufferingTimeoutError: false});
     };
 
