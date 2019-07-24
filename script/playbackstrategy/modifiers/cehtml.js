@@ -342,7 +342,9 @@ define(
             case MediaPlayerBase.STATE.COMPLETE:
               DebugTool.info('cehtml::stop --> in MediaPlayerBase.STATE.COMPLETE, resetting sentinel seek time and stopping media element!');
               sentinelSeekTime = undefined;
-              mediaElement.stop();
+              if (mediaElement.stop) {
+                mediaElement.stop();
+              }
               DebugTool.info('cehtml::stop --> in MediaPlayerBase.STATE.COMPLETE, media element stopped! attempting toStopped() call...');
               toStopped();
               DebugTool.info('cehtml::stop --> in MediaPlayerBase.STATE.COMPLETE, toStopped() called!');
