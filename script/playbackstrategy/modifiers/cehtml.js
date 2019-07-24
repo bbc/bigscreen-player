@@ -187,7 +187,6 @@ define(
         }
 
         function initialiseMedia (type, url, mediaMimeType, sourceContainer, opts) {
-          DebugTool.info('cehtml::initialiseMedia');
           disableSentinels = opts.disableSentinels;
           mediaType = type;
           source = url;
@@ -195,22 +194,14 @@ define(
           opts = opts || {};
 
           if (getState() === MediaPlayerBase.STATE.EMPTY) {
-            DebugTool.info('cehtml::initialiseMedia --> MediaPlayerBase.STATE.EMPTY, attempting initialization');
             timeAtLastSentinelInterval = 0;
             setSeekSentinelTolerance();
-            DebugTool.info('cehtml::initialiseMedia --> MediaPlayerBase.STATE.EMPTY, seekSentinelTolerance set!');
             createElement();
-            DebugTool.info('cehtml::initialiseMedia --> MediaPlayerBase.STATE.EMPTY, media element created!');
             addElementToDOM();
-            DebugTool.info('cehtml::initialiseMedia --> MediaPlayerBase.STATE.EMPTY, media element added to DOM!');
             mediaElement.data = source;
-            DebugTool.info('cehtml::initialiseMedia --> MediaPlayerBase.STATE.EMPTY, mediaElement.data set to source!');
             registerEventHandlers();
-            DebugTool.info('cehtml::initialiseMedia --> MediaPlayerBase.STATE.EMPTY, eventHandlers registered!');
             toStopped();
-            DebugTool.info('cehtml::initialiseMedia --> MediaPlayerBase.STATE.EMPTY, toStopped() called!');
           } else {
-            DebugTool.info('cehtml::initialiseMedia --> !MediaPlayerBase.STATE.EMPTY, failed to initialize');
             toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state');
           }
         }
@@ -330,24 +321,19 @@ define(
         }
 
         function stop () {
-          DebugTool.info('cehtml::stop()');
           switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
-              DebugTool.info('cehtml::stop --> already in stopped state!');
               break;
 
             case MediaPlayerBase.STATE.BUFFERING:
             case MediaPlayerBase.STATE.PLAYING:
             case MediaPlayerBase.STATE.PAUSED:
             case MediaPlayerBase.STATE.COMPLETE:
-              DebugTool.info('cehtml::stop --> in MediaPlayerBase.STATE.COMPLETE, resetting sentinel seek time and stopping media element!');
               sentinelSeekTime = undefined;
               if (mediaElement.stop) {
                 mediaElement.stop();
               }
-              DebugTool.info('cehtml::stop --> in MediaPlayerBase.STATE.COMPLETE, media element stopped! attempting toStopped() call...');
               toStopped();
-              DebugTool.info('cehtml::stop --> in MediaPlayerBase.STATE.COMPLETE, toStopped() called!');
               break;
 
             default:
@@ -357,16 +343,13 @@ define(
         }
 
         function reset () {
-          DebugTool.info('cehtml::reset()');
           switch (getState()) {
             case MediaPlayerBase.STATE.EMPTY:
               break;
 
             case MediaPlayerBase.STATE.STOPPED:
             case MediaPlayerBase.STATE.ERROR:
-              DebugTool.info('cehtml::reset --> in MediaPlayerBase.STATE.ERROR, calling toEmpty()...');
               toEmpty();
-              DebugTool.info('cehtml::reset --> in MediaPlayerBase.STATE.ERROR, toEmpty() called!');
               break;
 
             default:
@@ -438,8 +421,6 @@ define(
         }
 
         function onDeviceError () {
-          DebugTool.info('cehtml::onDeviceError occured!');
-          DebugTool.info('cehtml::onDeviceError -->' + mediaElement.error);
           reportError('Media element error code: ' + mediaElement.error);
         }
 
@@ -462,9 +443,7 @@ define(
         }
 
         function createElement () {
-          DebugTool.info('cehtml::createElement --> creating object element...');
           mediaElement = document.createElement('object', 'mediaPlayer');
-          DebugTool.info('cehtml::createElement --> styling object element...');
           mediaElement.type = mimeType;
           mediaElement.style.position = 'absolute';
           mediaElement.style.top = '0px';
@@ -518,11 +497,8 @@ define(
         }
 
         function addElementToDOM () {
-          DebugTool.info('cehtml::addElementToDOM()');
           var body = document.getElementsByTagName('body')[0];
-          DebugTool.info('cehtml::addElementToDOM --> inserting mediaElement before body.firstChild...');
           body.insertBefore(mediaElement, body.firstChild);
-          DebugTool.info('cehtml::addElementToDOM --> mediaElement insertBefore() call successful!');
         }
 
         function cacheRange () {
@@ -564,34 +540,24 @@ define(
         }
 
         function wipe () {
-          DebugTool.info('cehtml::wipe()');
           mediaType = undefined;
           source = undefined;
           mimeType = undefined;
           sentinelSeekTime = undefined;
           range = undefined;
-          DebugTool.info('cehtml::wipe --> checking mediaElement exists...');
           if (mediaElement) {
             clearInterval(updateInterval);
             clearSentinels();
-            DebugTool.info('destroying media element');
             destroyMediaElement();
-            DebugTool.info('destroyed media element');
           } else {
-            DebugTool.info('cehtml::wipe --> mediaElement does not exist!');
           }
         }
 
         function destroyMediaElement () {
-          DebugTool.info('cehtml::destroyMediaElement()');
           delete mediaElement.onPlayStateChange;
-          DebugTool.info('cehtml::destroyMediaElement --> Checking mediaElement.parentElement exists...');
           if (mediaElement.parentElement) {
-            DebugTool.info('cehtml::destroyMediaElement --> mediaElement.parentElement exists! removing itself...');
             mediaElement.parentElement.removeChild(mediaElement);
-            DebugTool.info('cehtml::destroyMediaElement --> mediaElement.parentElement exists! sucessfully removed itself');
           } else {
-            DebugTool.info('cehtml::destroyMediaElement --> mediaElement.parentElement does not exist!');
           }
           mediaElement = undefined;
         }
