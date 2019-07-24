@@ -19,26 +19,40 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
   var time = {};
   var transferFormat;
 
+  function init (urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
+    if (urls === undefined || urls.length === 0) {
+      throw new Error('Media Sources urls are undefined');
+    }
+
+    if (callbacks === undefined ||
+      callbacks.onSuccess === undefined ||
+      callbacks.onError === undefined) {
+      throw new Error('Media Sources callbacks are undefined');
+    }
+
+    windowType = newWindowType;
+    liveSupport = newLiveSupport;
+    serverDate = newServerDate;
+    mediaSources = PlaybackUtils.cloneArray(urls);
+    updateDebugOutput();
+
+    if (needToGetManifest(windowType, liveSupport)) {
+      loadManifest(serverDate, callbacks);
+    } else {
+      callbacks.onSuccess();
+    }
+  }
+
   function failover (postFailoverAction, failoverErrorAction, failoverParams) {
-    function doFailover () {
-      emitCdnFailover(failoverParams);
-      updateCdns();
-      updateDebugOutput();
-      postFailoverAction();
-    }
-
-    function error () {
-      emitCdnFailover(failoverParams);
-      updateCdns();
-      updateDebugOutput();
-      failoverErrorAction();
-    }
-
     if (shouldFailover(failoverParams)) {
+      emitCdnFailover(failoverParams);
+      updateCdns();
+      updateDebugOutput();
+
       if (needToGetManifest(windowType, liveSupport)) {
-        loadManifest(serverDate, { onSuccess: doFailover, onError: error });
+        loadManifest(serverDate, { onSuccess: postFailoverAction, onError: failoverErrorAction });
       } else {
-        doFailover();
+        postFailoverAction();
       }
     } else {
       failoverErrorAction();
@@ -68,68 +82,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     return infoValid;
   }
 
-  function updateCdns () {
-    if (hasSourcesToFailoverTo()) {
-      mediaSources.shift();
-    }
-  }
-
-  function hasSourcesToFailoverTo () {
-    return mediaSources.length > 1;
-  }
-
-  function emitCdnFailover (failoverInfo) {
-    var evt = new PluginData({
-      status: PluginEnums.STATUS.FAILOVER,
-      stateType: PluginEnums.TYPE.ERROR,
-      properties: {error_mssg: failoverInfo.errorMessage},
-      isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
-      cdn: mediaSources[0].cdn,
-      newCdn: mediaSources[1].cdn
-    });
-    Plugins.interface.onErrorHandled(evt);
-  }
-
-  // refresh -> onSuccess do whatever, we now have updated data for our api consumer...
-  // refresh -> onError - hopefully do some fallback option...
-  function refresh (onSuccess, onError) {
-    loadManifest(serverDate, {onSuccess: onSuccess, onError: onError});
-  }
-
-  function getCurrentUrl () {
-    if (mediaSources.length > 0) {
-      return mediaSources[0].url.toString();
-    }
-
-    return '';
-  }
-
-  function getCurrentCdn () {
-    if (mediaSources.length > 0) {
-      return mediaSources[0].cdn.toString();
-    }
-
-    return '';
-  }
-
-  function availableUrls () {
-    return mediaSources.map(function (mediaSource) {
-      return mediaSource.url;
-    });
-  }
-
-  function availableCdns () {
-    return mediaSources.map(function (mediaSource) {
-      return mediaSource.cdn;
-    });
-  }
-
-  function updateDebugOutput () {
-    DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
-    DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
-    DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
-  }
-
   function needToGetManifest (windowType, liveSupport) {
     var requiresManifestLoad = {
       restartable: true,
@@ -142,8 +94,8 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     return requiredTransferFormat && windowType !== WindowTypes.STATIC && requiresManifestLoad[liveSupport];
   }
 
-  function generateTime () {
-    return time;
+  function refresh (onSuccess, onError) {
+    loadManifest(serverDate, {onSuccess: onSuccess, onError: onError});
   }
 
   function loadManifest (serverDate, callbacks) {
@@ -166,8 +118,8 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
 
     function load () {
       ManifestLoader.load(
-        getCurrentUrl(),
-        serverDate,
+          getCurrentUrl(),
+          serverDate,
         {
           onSuccess: onManifestLoadSuccess,
           onError: onManifestLoadError
@@ -178,28 +130,64 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     load();
   }
 
-  function init (urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
-    if (urls === undefined || urls.length === 0) {
-      throw new Error('Media Sources urls are undefined');
+  function getCurrentUrl () {
+    if (mediaSources.length > 0) {
+      return mediaSources[0].url.toString();
     }
 
-    if (callbacks === undefined ||
-      callbacks.onSuccess === undefined ||
-      callbacks.onError === undefined) {
-      throw new Error('Media Sources callbacks are undefined');
+    return '';
+  }
+
+  function availableUrls () {
+    return mediaSources.map(function (mediaSource) {
+      return mediaSource.url;
+    });
+  }
+
+  function generateTime () {
+    return time;
+  }
+
+  function updateCdns () {
+    if (hasSourcesToFailoverTo()) {
+      mediaSources.shift();
+    }
+  }
+
+  function hasSourcesToFailoverTo () {
+    return mediaSources.length > 1;
+  }
+
+  function emitCdnFailover (failoverInfo) {
+    var evt = new PluginData({
+      status: PluginEnums.STATUS.FAILOVER,
+      stateType: PluginEnums.TYPE.ERROR,
+      properties: {error_mssg: failoverInfo.errorMessage},
+      isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
+      cdn: mediaSources[0].cdn,
+      newCdn: mediaSources[1].cdn
+    });
+    Plugins.interface.onErrorHandled(evt);
+  }
+
+  function getCurrentCdn () {
+    if (mediaSources.length > 0) {
+      return mediaSources[0].cdn.toString();
     }
 
-    windowType = newWindowType;
-    liveSupport = newLiveSupport;
-    serverDate = newServerDate;
-    mediaSources = PlaybackUtils.cloneArray(urls);
-    updateDebugOutput();
+    return '';
+  }
 
-    if (needToGetManifest(windowType, liveSupport)) {
-      loadManifest(serverDate, callbacks);
-    } else {
-      callbacks.onSuccess();
-    }
+  function availableCdns () {
+    return mediaSources.map(function (mediaSource) {
+      return mediaSource.cdn;
+    });
+  }
+
+  function updateDebugOutput () {
+    DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
+    DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
+    DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
   }
 
   return function () {

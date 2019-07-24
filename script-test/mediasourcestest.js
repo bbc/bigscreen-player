@@ -34,7 +34,7 @@ require(
         };
 
         mockManifestLoader = {
-          load: function (urls, serverDate, callbacks) {
+          load: function (url, serverDate, callbacks) {
             if (triggerManifestLoadError) {
               callbacks.onError();
             } else {
@@ -151,6 +151,24 @@ require(
       });
 
       describe('failover', function () {
+        it('should load the manifest from the next url if manifest load is required', function () {
+          var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
+          var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+          var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
+
+          mockTransferFormat = 'hls';
+
+          var serverDate = new Date();
+          var mediaSources = new MediaSources();
+          mediaSources.init(testSources, serverDate, WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+
+          mockManifestLoader.load.calls.reset();
+
+          mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
+
+          expect(mockManifestLoader.load).toHaveBeenCalledWith(testSources[1].url, serverDate, jasmine.anything());
+        });
+
         it('When there are sources to failover to, it calls the post failover callback', function () {
           var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
