@@ -52,7 +52,7 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
 
     var aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5;
     var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
-    var shouldLiveFailover = windowType !== WindowTypes.STATIC && window.bigscreenPlayer.playbackStrategy !== PlaybackStrategy.TAL && !window.bigscreenPlayer.disableLiveFailover;
+    var shouldLiveFailover = windowType !== WindowTypes.STATIC && window.bigscreenPlayer.playbackStrategy !== PlaybackStrategy.TAL;
     return isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
   }
 

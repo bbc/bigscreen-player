@@ -67,7 +67,6 @@ require(
         mockManifestLoader.load.calls.reset();
 
         window.bigscreenPlayer.playbackStrategy = currentStrategy;
-        window.bigscreenPlayer.disableLiveFailover = false;
       });
 
       describe('construction', function () {
@@ -318,22 +317,6 @@ require(
             };
 
             window.bigscreenPlayer.playbackStrategy = PlaybackStrategy.TAL;
-
-            mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
-            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
-
-            expect(mediaSourceCallbacks.onError).toHaveBeenCalledTimes(1);
-          });
-
-          it('should not failover for live playback and we disable failover', function () {
-            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-
-            var failoverParams = {
-              errorMessage: 'test error',
-              isBufferingTimeoutError: false
-            };
-
-            window.bigscreenPlayer.disableLiveFailover = true;
 
             mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
             mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
