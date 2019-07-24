@@ -13,7 +13,7 @@ require(
       var mockPlugins;
       var mockPluginsInterface;
       var mockTimeObject = { windowStartTime: 10, windowEndTime: 100, timeCorrection: 0 };
-      var mockTransferFormat = 'dash';
+      var mockTransferFormat = TransferFormats.DASH;
       var MediaSources;
 
       var testSources;
@@ -156,7 +156,7 @@ require(
           var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
-          mockTransferFormat = 'hls';
+          mockTransferFormat = TransferFormats.HLS;
 
           var serverDate = new Date();
           var mediaSources = new MediaSources();
@@ -347,7 +347,7 @@ require(
           describe('and transfer format is DASH', function () {
             it('should not reload the manifest', function () {
               mediaSources = new MediaSources();
-              mockTransferFormat = 'dash';
+              mockTransferFormat = TransferFormats.DASH;
               mediaSources.init(testSources, new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
 
               var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
@@ -368,7 +368,7 @@ require(
           describe('and transfer format is HLS', function () {
             it('should reload the manifest', function () {
               mediaSources = new MediaSources();
-              mockTransferFormat = 'hls';
+              mockTransferFormat = TransferFormats.HLS;
               mediaSources.init(testSources, new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
 
               var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
