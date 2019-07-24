@@ -243,7 +243,6 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           };
         },
         load: function (cdns, mimeType, startTime) {
-          DebugTool.info('mediaPlayer = ' + window.bigscreenPlayer.mediaPlayer);
           var source = cdns[0].url;
           setupExitSeekWorkarounds(mimeType);
           isPaused = false;
