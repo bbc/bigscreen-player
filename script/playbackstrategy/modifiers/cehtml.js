@@ -187,6 +187,7 @@ define(
         }
 
         function initialiseMedia (type, url, mediaMimeType, sourceContainer, opts) {
+          DebugTool.info('Starting...');
           disableSentinels = opts.disableSentinels;
           mediaType = type;
           source = url;
@@ -538,6 +539,7 @@ define(
         }
 
         function wipe () {
+          DebugTool.info('wipe()');
           mediaType = undefined;
           source = undefined;
           mimeType = undefined;
@@ -546,7 +548,9 @@ define(
           if (mediaElement) {
             clearInterval(updateInterval);
             clearSentinels();
+            DebugTool.info('destroying media element');
             destroyMediaElement();
+            DebugTool.info('destroyed media element');
           }
         }
 
