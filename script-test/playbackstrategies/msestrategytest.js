@@ -101,9 +101,9 @@ require(
         document.body.appendChild(playbackElement);
 
         cdnArray = [
-          { url: 'http://testcdn1/test/', cdn: 'cdn1' },
-          { url: 'http://testcdn2/test/', cdn: 'cdn2' },
-          { url: 'http://testcdn3/test/', cdn: 'cdn3' }
+          { url: 'http://testcdn1/test/', cdn: 'http://testcdn1/test/' },
+          { url: 'http://testcdn2/test/', cdn: 'http://testcdn2/test/' },
+          { url: 'http://testcdn3/test/', cdn: 'http://testcdn3/test/' }
         ];
 
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
@@ -449,6 +449,23 @@ require(
           });
 
           expect(mediaSources.availableSources().length).toBe(2);
+        });
+
+        it('should call mediaSources failover on dash baseUrl changed event but do nothing on the current url', function () {
+          setUpMSE();
+          mseStrategy.load(WindowTypes.STATIC, 10);
+
+          expect(mediaSources.availableSources().length).toBe(3);
+          dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject);
+
+          eventHandlers.baseUrlSelected({
+            baseUrl: {
+              url: cdnArray[0].cdn,
+              serviceLocation: cdnArray[0].cdn
+            }
+          });
+
+          expect(mediaSources.availableSources().length).toBe(3);
         });
       });
 
