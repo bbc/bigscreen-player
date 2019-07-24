@@ -11,9 +11,10 @@ define(
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/models/playbackstrategy'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, ManifestLoader, LiveSupport, DebugTool) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, ManifestLoader, LiveSupport, DebugTool, PlaybackStrategyModel) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
@@ -123,31 +124,42 @@ define(
       function setCurrentTime (time) {
         userInteracted = true;
         if (transitions().canBeginSeek()) {
-          if (windowType !== WindowTypes.STATIC && getLiveSupport(device) === LiveSupport.RESTARTABLE && window.bigscreenPlayer.playbackStrategy === 'nativestrategy') {
-            reloadMediaElement(time);
-          } else {
-            playbackStrategy.setCurrentTime(time);
-          }
+          isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy.setCurrentTime(time);
         }
       }
 
+      function isNativeHLSRestartable () {
+        return window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
+               transferFormat === TransferFormats.HLS &&
+               windowType !== WindowTypes.STATIC &&
+               getLiveSupport(device) === LiveSupport.RESTARTABLE;
+      }
+
       function reloadMediaElement (time) {
-        function doSeek (time) {
+        var originalWindowStartOffset = getWindowStartTime();
+
+        var doSeek = function () {
+          var windowOffset = mediaSources.time().windowStartTime - originalWindowStartOffset;
+          var seekToTime = time - windowOffset / 1000;
+
           var thenPause = playbackStrategy.isPaused();
           var seekableRange = playbackStrategy.getSeekableRange();
           tearDownMediaElement();
-          if (time > seekableRange.end - seekableRange.start - 30) {
-            time = undefined;
+
+          if (seekToTime > seekableRange.end - seekableRange.start - 30) {
+            seekToTime = undefined;
             thenPause = false;
           }
-          loadMedia(mediaMetaData.type, time, thenPause);
-        }
-        var errorCallback = function () {
+          loadMedia(mediaMetaData.type, seekToTime, thenPause);
+        };
+
+        var onError = function (errorMessage) {
+          DebugTool.info(errorMessage);
           tearDownMediaElement();
           bubbleFatalError(createPlaybackErrorProperties(event), false);
         };
 
-        reloadManifest(time, doSeek, errorCallback);
+        mediaSources.refresh(doSeek, onError);
       }
 
       function transitions () {
@@ -267,28 +279,6 @@ define(
 
         var oldWindowStartTime = getWindowStartTime();
         mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams);
-      }
-
-      function reloadManifest (time, successCallback, errorCallback) {
-        if (transferFormat === TransferFormats.HLS) {
-          ManifestLoader.load(
-            mediaSources.availableSources(),
-            bigscreenPlayerData.serverDate,
-            {
-              onSuccess: function (manifestData) {
-                var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
-                bigscreenPlayerData.time = manifestData.time;
-                successCallback(time - windowOffset / 1000);
-              },
-              onError: function (errorMessage) {
-                DebugTool.info(errorMessage);
-                errorCallback({ error_mssg: 'manifest-load' }, false);
-              }
-            }
-          );
-        } else {
-          successCallback(time);
-        }
       }
 
       function clearFatalErrorTimeout () {

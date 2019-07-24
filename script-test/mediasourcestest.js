@@ -391,7 +391,7 @@ require(
         var mediaSources;
         beforeEach(function () {
           mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
         });
 
         it('updates the mediasources time data', function () {
@@ -407,7 +407,9 @@ require(
 
           // update it
           mockTimeObject = expectedTime;
-          mediaSources.refresh();
+
+          var callbacks = jasmine.createSpyObj('refreshCallbacks', ['onSuccess', 'onError']);
+          mediaSources.refresh(callbacks.onSuccess, callbacks.onError);
 
           expect(mediaSources.time()).toEqual(expectedTime);
           expect(mediaSources.currentSource()).toEqual(existingSource);

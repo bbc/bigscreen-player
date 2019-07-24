@@ -90,6 +90,12 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     Plugins.interface.onErrorHandled(evt);
   }
 
+  // refresh -> onSuccess do whatever, we now have updated data for our api consumer...
+  // refresh -> onError - hopefully do some fallback option...
+  function refresh (onSuccess, onError) {
+    loadManifest(serverDate, {onSuccess: onSuccess, onError: onError});
+  }
+
   function getCurrentUrl () {
     if (mediaSources.length > 0) {
       return mediaSources[0].url.toString();
@@ -200,6 +206,7 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     return {
       init: init,
       failover: failover,
+      refresh: refresh,
       currentSource: getCurrentUrl,
       availableSources: availableUrls,
       time: generateTime

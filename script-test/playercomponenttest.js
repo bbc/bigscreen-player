@@ -27,11 +27,7 @@ require(
       var liveSupport;
       var forceMediaSourcesError;
       var mockMediaSources;
-      var testTime = {
-        windowStartTime: 724000,
-        windowEndTime: 4324000,
-        correction: 0
-      };
+      var testTime;
 
       // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
       function setUpPlayerComponent (opts) {
@@ -63,6 +59,9 @@ require(
           },
           time: function () {
             return testTime;
+          },
+          refresh: function (successCallback, errorCallback) {
+            successCallback();
           }
         };
 
@@ -116,6 +115,11 @@ require(
         });
 
         forceMediaSourcesError = false;
+        testTime = {
+          windowStartTime: 724000,
+          windowEndTime: 4324000,
+          correction: 0
+        };
       });
 
       describe('init', function () {
@@ -286,32 +290,65 @@ require(
         var currentStrategy;
         beforeEach(function () {
           currentStrategy = window.bigscreenPlayer.playbackStrategy;
+
+          spyOn(mockStrategy, 'setCurrentTime');
+          spyOn(mockStrategy, 'load');
         });
 
         afterEach(function () {
           window.bigscreenPlayer.playbackStrategy = currentStrategy;
+
+          mockStrategy.setCurrentTime.calls.reset();
+          mockStrategy.load.calls.reset();
+          mockStrategy.getSeekableRange.calls.reset();
         });
 
         it('should setCurrentTime on the strategy when in a seekable state', function () {
+          spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
           setUpPlayerComponent();
 
-          spyOn(mockStrategy, 'setCurrentTime');
-
+          mockStrategy.load.calls.reset();
           playerComponent.setCurrentTime(10);
 
           expect(mockStrategy.setCurrentTime).toHaveBeenCalledWith(10);
+          expect(mockStrategy.load).not.toHaveBeenCalled();
         });
 
         it('should reload the element if restartable', function () {
+          spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
           window.bigscreenPlayer.playbackStrategy = 'nativestrategy';
           liveSupport = LiveSupport.RESTARTABLE;
-          setUpPlayerComponent({ windowType: WindowTypes.SLIDING });
+          setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormats.HLS, type: 'applesomething' });
 
-          spyOn(mockStrategy, 'load');
-          spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 100});
-          playerComponent.setCurrentTime(10);
+          testTime = {
+            windowStartTime: 744000,
+            windowEndTime: 4344000,
+            correction: 0
+          };
 
-          expect(mockStrategy.load).toHaveBeenCalledWith('application/dash+xml', 10);
+          playerComponent.setCurrentTime(50);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(2);
+          expect(mockStrategy.load).toHaveBeenCalledWith('applesomething', 30);
+        });
+
+        it('should reload the element with no time if the new time is within 30 seconds of the end of the window', function () {
+          spyOn(mockStrategy, 'getSeekableRange').and.returnValue({start: 0, end: 70});
+          window.bigscreenPlayer.playbackStrategy = 'nativestrategy';
+          liveSupport = LiveSupport.RESTARTABLE;
+          setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormats.HLS, type: 'applesomething' });
+
+          // this will move the window forward by 20 seconds from it's original position
+          testTime = {
+            windowStartTime: 744000,
+            windowEndTime: 4344000,
+            correction: 0
+          };
+
+          playerComponent.setCurrentTime(50);
+
+          expect(mockStrategy.load).toHaveBeenCalledTimes(2);
+          expect(mockStrategy.load).toHaveBeenCalledWith('applesomething', undefined);
         });
       });
 
