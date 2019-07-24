@@ -9,12 +9,11 @@ define(
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
     'bigscreenplayer/models/transferformats',
-    'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/playbackstrategy'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, ManifestLoader, LiveSupport, DebugTool, PlaybackStrategyModel) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, DebugTool, PlaybackStrategyModel) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
