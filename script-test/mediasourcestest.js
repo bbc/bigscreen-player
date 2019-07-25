@@ -124,7 +124,6 @@ require(
         });
 
         it('calls onSuccess callback immediately for LIVE content on a PLAYABLE device', function () {
-          testCallbacks.onSuccess.calls.reset();
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.PLAYABLE, testCallbacks);
 
@@ -132,32 +131,13 @@ require(
         });
 
         it('calls onSuccess callback when manifest loader returns on success for SLIDING window content', function () {
-          testCallbacks.onSuccess.calls.reset();
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
 
           expect(testCallbacks.onSuccess).toHaveBeenCalledWith();
         });
 
-        it('sets time data correcly when manifest loader successfully returns', function () {
-          testCallbacks.onSuccess.calls.reset();
-          var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
-
-          expect(mediaSources.time()).toEqual(mockTimeObject);
-        });
-
-        it('calls onError callback when manifest loader fails and there are insufficent sources to failover to', function () {
-          testCallbacks.onError.calls.reset();
-          triggerManifestLoadError = true;
-          var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
-
-          expect(testCallbacks.onError).toHaveBeenCalledWith({error: 'manifest'});
-        });
-
-        it('calls onSuccess callback when the manifest loader fails and there is a source to failover to that completes', function () {
-          testCallbacks.onSuccess.calls.reset();
+        it('calls onSuccess callback when manifest loader fails and there is a source to failover to that completes', function () {
           triggerManifestLoadError = true;
           triggerFailOnce = true;
           var mediaSources = new MediaSources();
@@ -166,12 +146,33 @@ require(
 
           expect(testCallbacks.onSuccess).toHaveBeenCalledTimes(1);
         });
+
+        it('calls onError callback when manifest loader fails and there are insufficent sources to failover to', function () {
+          triggerManifestLoadError = true;
+          var mediaSources = new MediaSources();
+          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(testCallbacks.onError).toHaveBeenCalledWith({error: 'manifest'});
+        });
+
+        it('sets time data correcly when manifest loader successfully returns', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.time()).toEqual(mockTimeObject);
+        });
       });
 
       describe('failover', function () {
+        var postFailoverAction;
+        var onFailureAction;
+
+        beforeEach(function () {
+          postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
+          onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+        });
+
         it('should load the manifest from the next url if manifest load is required', function () {
-          var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
-          var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           mockTransferFormat = TransferFormats.HLS;
@@ -188,8 +189,6 @@ require(
         });
 
         it('When there are sources to failover to, it calls the post failover callback', function () {
-          var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
-          var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
@@ -201,8 +200,6 @@ require(
         });
 
         it('When there are no more sources to failover to, it calls failure action callback', function () {
-          var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
-          var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
@@ -214,13 +211,7 @@ require(
         });
 
         it('When there are sources to failover to, it emits correct plugin event', function () {
-          var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
-          var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
-
-          var failoverInfo = {
-            errorMessage: 'test error',
-            isBufferingTimeoutError: true
-          };
+          var failoverInfo = {errorMessage: 'test error', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
@@ -241,8 +232,6 @@ require(
         });
 
         it('Plugin event not emitted when there are no sources to failover to', function () {
-          var postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
-          var onFailureAction = jasmine.createSpy('onFailureAction', function () {});
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
