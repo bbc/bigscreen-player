@@ -82,8 +82,8 @@ require(
         window.bigscreenPlayer.playbackStrategy = currentStrategy;
       });
 
-      describe('construction', function () {
-        it('throws an error when constructed with no sources', function () {
+      describe('init', function () {
+        it('throws an error when initialised with no sources', function () {
           expect(function () {
             var mediaSources = new MediaSources();
             mediaSources.init([], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
@@ -103,26 +103,22 @@ require(
           expect(function () {
             var mediaSources = new MediaSources();
             mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {});
-            mediaSources.currentSource();
           }).toThrow(new Error('Media Sources callbacks are undefined'));
 
           expect(function () {
             var mediaSources = new MediaSources();
             mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {onSuccess: function () {}});
-            mediaSources.currentSource();
           }).toThrow(new Error('Media Sources callbacks are undefined'));
 
           expect(function () {
             var mediaSources = new MediaSources();
             mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {onError: function () {}});
-            mediaSources.currentSource();
           }).toThrow(new Error('Media Sources callbacks are undefined'));
         });
 
         it('calls onSuccess callback immediately for STATIC window content', function () {
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
-          mediaSources.currentSource();
 
           expect(testCallbacks.onSuccess).toHaveBeenCalledWith();
         });
@@ -131,7 +127,6 @@ require(
           testCallbacks.onSuccess.calls.reset();
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.PLAYABLE, testCallbacks);
-          mediaSources.currentSource();
 
           expect(testCallbacks.onSuccess).toHaveBeenCalledWith();
         });
@@ -140,7 +135,6 @@ require(
           testCallbacks.onSuccess.calls.reset();
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
-          mediaSources.currentSource();
 
           expect(testCallbacks.onSuccess).toHaveBeenCalledWith();
         });
