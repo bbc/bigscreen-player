@@ -24,6 +24,7 @@ require(
 
       var currentStrategy = window.bigscreenPlayer.playbackStrategy;
       var triggerFailOnce;
+      var hasFailedOnce;
 
       beforeEach(function (done) {
         injector = new Squire();
@@ -36,9 +37,17 @@ require(
 
         mockManifestLoader = {
           load: function (url, serverDate, callbacks) {
-            if (triggerFailOnce && triggerManifestLoadError) {
-              triggerFailOnce = false;
-              callbacks.onError();
+            if (triggerManifestLoadError) {
+              if (triggerFailOnce) {
+                if (hasFailedOnce) {
+                  callbacks.onSuccess({transferFormat: mockTransferFormat, time: mockTimeObject});
+                } else {
+                  hasFailedOnce = true;
+                  callbacks.onError();
+                }
+              } else {
+                callbacks.onError();
+              }
             } else {
               callbacks.onSuccess({transferFormat: mockTransferFormat, time: mockTimeObject});
             }
@@ -64,6 +73,8 @@ require(
 
       afterEach(function () {
         triggerManifestLoadError = false;
+        triggerFailOnce = false;
+        hasFailedOnce = false;
         testCallbacks.onSuccess.calls.reset();
         testCallbacks.onError.calls.reset();
         mockManifestLoader.load.calls.reset();
@@ -155,8 +166,6 @@ require(
           testCallbacks.onSuccess.calls.reset();
           triggerManifestLoadError = true;
           triggerFailOnce = true;
-          // TODO: There needs to be a good way of doing trigger fail once just for this test as now the above test
-          // 'calls onError callback when manifest loader fails and there are insufficent sources to failover to' fails!
           var mediaSources = new MediaSources();
 
           mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
