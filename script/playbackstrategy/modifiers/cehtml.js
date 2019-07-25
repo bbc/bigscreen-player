@@ -332,8 +332,10 @@ define(
               sentinelSeekTime = undefined;
               if (mediaElement.stop) {
                 mediaElement.stop();
+                toStopped();
+              } else {
+                toError('mediaElement.stop is not a function : failed to stop the media player');
               }
-              toStopped();
               break;
 
             default:
