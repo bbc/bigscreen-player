@@ -1,9 +1,3 @@
-/**
- * @fileOverview Requirejs module containing device modifier for CEHTML media playback
- * @preserve Copyright (c) 2013-present British Broadcasting Corporation. All rights reserved.
- * @license See https://github.com/bbc/tal/blob/master/LICENSE for full licence
- */
-
 define(
     'bigscreenplayer/playbackstrategy/modifiers/cehtml',
   [
@@ -12,15 +6,7 @@ define(
   ],
     function (MediaPlayerBase, DebugTool) {
       'use strict';
-      /**
-       * Main MediaPlayer implementation for CEHTML devices.
-       * Use this device modifier if a device implements the CEHTML media playback standard.
-       * It must support creation of &lt;object&gt; elements for media mime types, and those objects must expose an
-       * API in accordance with the CEHTML specification.
-       * @name antie.devices.mediaplayer.CEHTML
-       * @class
-       * @extends antie.devices.mediaplayer.MediaPlayer
-       */
+
       return function () {
         var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
 
@@ -151,31 +137,6 @@ define(
           return state;
         }
 
-        // function generateSourceElement (url, mimeType) {
-        //   var sourceElement = document.createElement('source');
-        //   sourceElement.src = url;
-        //   sourceElement.type = mimeType;
-        //   return sourceElement;
-        // }
-
-        // function appendChildElement (to, el) {
-        //   to.appendChild(el);
-        // }
-
-        // function prependChildElement (to, el) {
-        //   if (to.childNodes.length > 0) {
-        //     to.insertBefore(el, to.childNodes[0]);
-        //   } else {
-        //     to.appendChild(el);
-        //   }
-        // }
-
-        // function removeElement (el) {
-        //   if (el.parentNode) {
-        //     el.parentNode.removeChild(el);
-        //   }
-        // }
-
         function setSeekSentinelTolerance () {
           var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15;
           var LIVE_SEEK_SENTINEL_TOLERANCE = 30;
@@ -291,7 +252,7 @@ define(
 
           switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
-                      // Seeking past 0 requires calling play first when media has not been loaded
+              // Seeking past 0 requires calling play first when media has not been loaded
               toBuffering();
               playAndSetDeferredSeek(seconds);
               break;
@@ -649,23 +610,6 @@ define(
             timeAtLastSentinelInterval = newTime;
           }, 1100);
         }
-
-        // function setSentinelLimits () {
-        //   sentinelLimits = {
-        //     pause: {
-        //       maximumAttempts: 2,
-        //       successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
-        //       failureEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE,
-        //       currentAttemptCount: 0
-        //     },
-        //     seek: {
-        //       maximumAttempts: 2,
-        //       successEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK,
-        //       failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
-        //       currentAttemptCount: 0
-        //     }
-        //   };
-        // }
 
         function clearSentinels () {
           clearInterval(sentinelInterval);
