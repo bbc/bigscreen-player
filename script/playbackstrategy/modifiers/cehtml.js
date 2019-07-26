@@ -6,10 +6,19 @@ define(
   ],
     function (MediaPlayerBase, DebugTool) {
       'use strict';
+      var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
+
+      var STATE = {
+        STOPPED: 0,
+        PLAYING: 1,
+        PAUSED: 2,
+        CONNECTING: 3,
+        BUFFERING: 4,
+        FINISHED: 5,
+        ERROR: 6
+      };
 
       return function () {
-        var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
-
         var eventCallbacks = [];
         var state = MediaPlayerBase.STATE.EMPTY;
 
@@ -415,37 +424,27 @@ define(
           mediaElement.style.height = '100%';
         }
 
-        var states = {
-          PLAY_STATE_STOPPED: 0,
-          PLAY_STATE_PLAYING: 1,
-          PLAY_STATE_PAUSED: 2,
-          PLAY_STATE_CONNECTING: 3,
-          PLAY_STATE_BUFFERING: 4,
-          PLAY_STATE_FINISHED: 5,
-          PLAY_STATE_ERROR: 6
-        };
-
         function registerEventHandlers () {
           var DEVICE_UPDATE_PERIOD_MS = 500;
 
           mediaElement.onPlayStateChange = function () {
             switch (mediaElement.playState) {
-              case states.PLAY_STATE_STOPPED:
+              case STATE.STOPPED:
                 break;
-              case states.PLAY_STATE_PLAYING:
+              case STATE.PLAYING:
                 onFinishedBuffering();
                 break;
-              case states.PLAY_STATE_PAUSED:
+              case STATE.PAUSED:
                 break;
-              case states.PLAY_STATE_CONNECTING:
+              case STATE.CONNECTING:
                 break;
-              case states.PLAY_STATE_BUFFERING:
+              case STATE.BUFFERING:
                 onDeviceBuffering();
                 break;
-              case states.PLAY_STATE_FINISHED:
+              case STATE.FINISHED:
                 onEndOfMedia();
                 break;
-              case states.PLAY_STATE_ERROR:
+              case STATE.ERROR:
                 onDeviceError();
                 break;
               default:
