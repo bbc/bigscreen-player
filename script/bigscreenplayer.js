@@ -112,11 +112,11 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function getWindowStartTime () {
-        return mediaSources.time().windowStartTime;
+        return mediaSources && mediaSources.time().windowStartTime;
       }
 
       function getWindowEndTime () {
-        return mediaSources.time().windowEndTime;
+        return mediaSources && mediaSources.time().windowEndTime;
       }
 
       return {
