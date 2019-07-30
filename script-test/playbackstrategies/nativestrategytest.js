@@ -39,7 +39,7 @@ require(
 
           injector.mock({
             'bigscreenplayer/playbackstrategy/legacyplayeradapter': mockLegacyAdapter,
-            'bigscreenplayer/playbackstrategy/modifiers/html5': html5player,
+            'bigscreenplayer/playbackstrategy/modifiers/mediaplayer': html5player,
             'bigscreenplayer/playbackstrategy/modifiers/live/playable': livePlayer
           });
 

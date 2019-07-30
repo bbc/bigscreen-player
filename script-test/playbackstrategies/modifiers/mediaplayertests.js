@@ -1,10 +1,10 @@
 require(
   [
-    'bigscreenplayer/playbackstrategy/modifiers/html5',
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayer',
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-    function (Html5MediaPlayer, MediaPlayerBase) {
-      describe('HTML5 Base', function () {
+    function (MediaPlayer, MediaPlayerBase) {
+      describe('MediaPlayer', function () {
         var sourceContainer;
         var player;
         var mockSourceElement;
@@ -50,7 +50,7 @@ require(
         }
 
         function createPlayer (config) {
-          player = Html5MediaPlayer(config);
+          player = MediaPlayer(config);
           spyOn(player, 'toPaused').and.callThrough();
 
           player.addEventCallback(this, eventCallbackReporter);
