@@ -111,7 +111,6 @@ define(
 
           stop: function () {
             mediaPlayer.stop();
-            removeEventCallback(this, updateFakeTimer);
           },
 
           reset: function () {
