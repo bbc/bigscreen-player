@@ -4,8 +4,8 @@ define(
   function () {
     'use strict';
 
-    function generateMediaPlayer (idSuffix) {
-      var mediaElement = document.createElement(idSuffix.toLowerCase(), 'mediaPlayer' + idSuffix);
+    function generateMediaPlayer (tagName) {
+      var mediaElement = document.createElement(tagName.toLowerCase(), 'mediaPlayer' + tagName);
       mediaElement.autoplay = false;
       mediaElement.style.position = 'absolute';
       mediaElement.style.top = '0px';
@@ -41,12 +41,14 @@ define(
       }
     }
 
-    return function (idSuffix, sourceContainer, url, mimeType) {
-      var mediaElement = generateMediaPlayer(idSuffix);
+    return function (url, mimeType, tagName, sourceContainer) {
+      var mediaElement = generateMediaPlayer(tagName);
       prependChildElement(sourceContainer, mediaElement);
       var sourceElement = generateSourceElement(url, mimeType);
       mediaElement.preload = 'auto';
       appendChildElement(mediaElement, sourceElement);
+
+      var callbacks;
 
       function tearDown () {
         if (mediaElement) {
@@ -86,24 +88,37 @@ define(
         getErrorCode: function () {
           return mediaElement.error.code;
         },
-        addEventListener: function (type, listener, useCapture) {
-          mediaElement.addEventListener(type, listener, useCapture);
+        addCallbacks: function (newCallbacks) {
+          callbacks = newCallbacks;
+          mediaElement.addEventListener('canplay', callbacks.finishedBuffering, false);
+          mediaElement.addEventListener('seeked', callbacks.finishedBuffering, false);
+          mediaElement.addEventListener('playing', callbacks.finishedBuffering, false);
+          mediaElement.addEventListener('error', callbacks.error, false);
+          mediaElement.addEventListener('ended', callbacks.ended, false);
+          mediaElement.addEventListener('waiting', callbacks.waiting, false);
+          mediaElement.addEventListener('timeupdate', callbacks.timeUpdate, false);
+          mediaElement.addEventListener('loadedmetadata', callbacks.loadedMetadata, false);
+          mediaElement.addEventListener('pause', callbacks.pause, false);
+          sourceElement.addEventListener('error', callbacks.sourceError, false);
         },
-        removeEventListener: function (type, listener, useCapture) {
-          if (mediaElement) {
-            mediaElement.removeEventListener(type, listener, useCapture);
+        removeCallbacks: function () {
+          if (callbacks) {
+            mediaElement.removeEventListener('canplay', callbacks.finishedBuffering, false);
+            mediaElement.removeEventListener('seeked', callbacks.finishedBuffering, false);
+            mediaElement.removeEventListener('playing', callbacks.finishedBuffering, false);
+            mediaElement.removeEventListener('error', callbacks.error, false);
+            mediaElement.removeEventListener('ended', callbacks.ended, false);
+            mediaElement.removeEventListener('waiting', callbacks.waiting, false);
+            mediaElement.removeEventListener('timeupdate', callbacks.timeUpdate, false);
+            mediaElement.removeEventListener('loadedmetadata', callbacks.loadedMetadata, false);
+            mediaElement.removeEventListener('pause', callbacks.pause, false);
+            sourceElement.removeEventListener('error', callbacks.sourceError, false);
           }
+
+          callbacks = undefined;
         },
         load: function () {
           mediaElement.load();
-        },
-        onSourceError: function (callback) {
-          sourceElement.addEventListener('error', callback, false);
-        },
-        removeSourceError: function (callback) {
-          if (sourceElement) {
-            sourceElement.removeEventListener('error', callback, false);
-          }
         },
         getPlayerElement: function () {
           return mediaElement;

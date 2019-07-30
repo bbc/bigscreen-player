@@ -548,17 +548,7 @@ define(
 
       function destroyMediaElement () {
         if (mediaElement) {
-          mediaElement.removeEventListener('canplay', onFinishedBuffering, false);
-          mediaElement.removeEventListener('seeked', onFinishedBuffering, false);
-          mediaElement.removeEventListener('playing', onFinishedBuffering, false);
-          mediaElement.removeEventListener('error', onError, false);
-          mediaElement.removeEventListener('ended', onEndOfMedia, false);
-          mediaElement.removeEventListener('waiting', onDeviceBuffering, false);
-          mediaElement.removeEventListener('timeupdate', onStatus, false);
-          mediaElement.removeEventListener('loadedmetadata', onMetadata, false);
-          mediaElement.removeEventListener('pause', onPause, false);
-          mediaElement.removeSourceError(onSourceError);
-
+          mediaElement.removeCallbacks();
           mediaElement.tearDown();
         }
       }
@@ -612,18 +602,18 @@ define(
 
             setSeekSentinelTolerance();
 
-            mediaElement = MediaElement(idSuffix, sourceContainer, url, mimeType);
+            mediaElement = MediaElement(url, mimeType, idSuffix, sourceContainer);
 
-            mediaElement.addEventListener('canplay', onFinishedBuffering, false);
-            mediaElement.addEventListener('seeked', onFinishedBuffering, false);
-            mediaElement.addEventListener('playing', onFinishedBuffering, false);
-            mediaElement.addEventListener('error', onError, false);
-            mediaElement.addEventListener('ended', onEndOfMedia, false);
-            mediaElement.addEventListener('waiting', onDeviceBuffering, false);
-            mediaElement.addEventListener('timeupdate', onStatus, false);
-            mediaElement.addEventListener('loadedmetadata', onMetadata, false);
-            mediaElement.addEventListener('pause', onPause, false);
-            mediaElement.onSourceError(onSourceError);
+            mediaElement.addCallbacks({
+              finishedBuffering: onFinishedBuffering,
+              error: onError,
+              ended: onEndOfMedia,
+              waiting: onDeviceBuffering,
+              timeUpdate: onStatus,
+              loadedMetadata: onMetadata,
+              pause: onPause,
+              sourceError: onSourceError
+            });
 
             mediaElement.load();
 
