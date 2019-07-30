@@ -155,16 +155,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           isBufferingTimeoutError: false
         };
 
-        function onSuccess () {
-          DebugTool.info('BaseUrl failover to: ' + event.baseUrl.url);
-        }
-
-        function onFailure () {
-          DebugTool.info('BaseUrl failover to : ' + event.baseUrl.url + ' failed');
+        function log () {
+          DebugTool.info('BaseUrl selected: ' + event.baseUrl.url);
         }
 
         failoverInfo.serviceLocation = event.baseUrl.serviceLocation;
-        mediaSources.failover(onSuccess, onFailure, failoverInfo);
+        mediaSources.failover(log, log, failoverInfo);
       }
 
       function onMetricAdded (event) {
