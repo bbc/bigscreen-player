@@ -1,5 +1,5 @@
 define(
-  'bigscreenplayer/playbackstrategy/modifiers/html5',
+  'bigscreenplayer/playbackstrategy/modifiers/cehtml',
   [],
   function () {
     'use strict';
