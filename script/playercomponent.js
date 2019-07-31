@@ -252,7 +252,7 @@ define(
           fatalErrorTimeout = setTimeout(function () {
             fatalErrorTimeout = null;
             fatalError = true;
-            // errorProperties.error_mssg = 'Fatal error';
+            errorProperties.error_mssg = 'Fatal error';
             DebugTool.info('Fatal error - attempting CDN failover');
             attemptCdnFailover(errorProperties, false);
           }, 5000);

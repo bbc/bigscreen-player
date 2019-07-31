@@ -901,7 +901,7 @@ require(
             seekable_range: '0 to 100',
             current_time: 50,
             duration: 100,
-            error_mssg: 'testError'
+            error_mssg: 'Fatal error'
           };
 
           fatalErrorPluginData = {
