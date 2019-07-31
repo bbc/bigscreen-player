@@ -235,6 +235,7 @@ define(
           bufferingClearedProperties.dismissed_by = 'timeout';
           bubbleBufferingCleared(bufferingClearedProperties);
           properties.error_mssg = 'Buffering timed out';
+          DebugTool.info('Buffering timeout error - attempting CDN failover');
           attemptCdnFailover(properties, true);
         }, bufferingTimeout);
       }
@@ -251,6 +252,8 @@ define(
           fatalErrorTimeout = setTimeout(function () {
             fatalErrorTimeout = null;
             fatalError = true;
+            // errorProperties.error_mssg = 'Fatal error';
+            DebugTool.info('Fatal error - attempting CDN failover');
             attemptCdnFailover(errorProperties, false);
           }, 5000);
         }
@@ -263,6 +266,7 @@ define(
           currentTime: getCurrentTime(),
           duration: getDuration()
         };
+        DebugTool.info('Failover Params: ' + JSON.stringify(failoverParams));
 
         var doLoadMedia = function () {
           var thenPause = isPaused();
@@ -356,6 +360,7 @@ define(
       }
 
       function createPlaybackErrorProperties (event) {
+        DebugTool.info('Create Playback Error Properties: ' + JSON.stringify(event.errorProperties));
         return PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
       }
 
