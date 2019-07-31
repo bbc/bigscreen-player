@@ -65,6 +65,9 @@ define(
         getDuration: function () {
           return mediaElement ? mediaElement.playTime / 1000 : undefined;
         },
+        getSeekable: function () {
+          return {};
+        },
         pause: function () {
           isPaused = true;
           mediaElement.play(0);
@@ -115,6 +118,9 @@ define(
         load: function () {},
         getPlayerElement: function () {
           return mediaElement;
+        },
+        isReadyToPlayFrom: function () {
+          return true;
         }
       };
     };

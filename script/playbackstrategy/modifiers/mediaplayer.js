@@ -17,7 +17,6 @@ define(
       var trustZeroes = false;
       var ignoreNextPauseEvent = false;
       var nearEndOfMedia;
-      var readyToPlayFrom;
 
       var mediaType;
       var source;
@@ -168,7 +167,7 @@ define(
           return true;
         }
 
-        if (readyToPlayFrom && mediaElement.isPaused()) {
+        if (isReadyToPlayFrom() && mediaElement.isPaused()) {
           return fireExitBufferingSentinel();
         }
 
@@ -301,10 +300,7 @@ define(
       }
 
       function isReadyToPlayFrom () {
-        if (readyToPlayFrom !== undefined) {
-          return readyToPlayFrom;
-        }
-        return false;
+        return mediaElement.isReadyToPlayFrom();
       }
 
       function getMediaDuration () {
@@ -429,7 +425,6 @@ define(
       }
 
       function metadataLoaded () {
-        readyToPlayFrom = true;
         if (waitingToPlayFrom()) {
           deferredPlayFrom();
         }
@@ -543,7 +538,6 @@ define(
         sentinelSeekTime = undefined;
         clearSentinels();
         destroyMediaElement();
-        readyToPlayFrom = false;
       }
 
       function destroyMediaElement () {
@@ -680,7 +674,7 @@ define(
           targetSeekTime = seconds;
           sentinelLimits.seek.currentAttemptCount = 0;
 
-          switch (this.getState()) {
+          switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
               trustZeroes = true;
               toBuffering();
