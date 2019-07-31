@@ -8,9 +8,10 @@ define('bigscreenplayer/mediasources',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/models/playbackstrategy',
-    'bigscreenplayer/models/transferformats'
+    'bigscreenplayer/models/transferformats',
+    'bigscreenplayer/models/livesupport'
   ],
-function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy, TransferFormats) {
+function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy, TransferFormats, LiveSupport) {
   'use strict';
   return function () {
     var mediaSources;
@@ -65,9 +66,10 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
         return false;
       }
 
+      var talRestartable = window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.TAL && liveSupport === LiveSupport.RESTARTABLE;
       var aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5;
       var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
-      var shouldLiveFailover = windowType !== WindowTypes.STATIC && window.bigscreenPlayer.playbackStrategy !== PlaybackStrategy.TAL;
+      var shouldLiveFailover = windowType !== WindowTypes.STATIC && !talRestartable;
       return isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
     }
 

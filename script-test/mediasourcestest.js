@@ -332,8 +332,23 @@ require(
             expect(mediaSourceCallbacks.onSuccess).toHaveBeenCalledTimes(1);
           });
 
-          // This should be TAL restartable...
-          it('should not failover for live playback where strategy is TAL', function () {
+          it('should not failover for live playback where strategy is TAL and Restartable', function () {
+            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+
+            var failoverParams = {
+              errorMessage: 'test error',
+              isBufferingTimeoutError: false
+            };
+
+            window.bigscreenPlayer.playbackStrategy = PlaybackStrategy.TAL;
+
+            mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.RESTARTABLE, testCallbacks);
+            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
+
+            expect(mediaSourceCallbacks.onError).toHaveBeenCalledTimes(1);
+          });
+
+          it('should failover for live playback where strategy is TAL and Seekable', function () {
             var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
 
             var failoverParams = {
@@ -346,7 +361,23 @@ require(
             mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
             mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
 
-            expect(mediaSourceCallbacks.onError).toHaveBeenCalledTimes(1);
+            expect(mediaSourceCallbacks.onSuccess).toHaveBeenCalledTimes(1);
+          });
+
+          it('should failover for live playback where strategy is TAL and Playable', function () {
+            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
+
+            var failoverParams = {
+              errorMessage: 'test error',
+              isBufferingTimeoutError: false
+            };
+
+            window.bigscreenPlayer.playbackStrategy = PlaybackStrategy.TAL;
+
+            mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.PLAYABLE, testCallbacks);
+            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
+
+            expect(mediaSourceCallbacks.onSuccess).toHaveBeenCalledTimes(1);
           });
         });
 
