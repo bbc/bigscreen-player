@@ -260,6 +260,10 @@ define(
       }
 
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
+       // TODO: Not getting the currentTime up front might cause double failover to not work!
+        var time = getCurrentTime();
+        var oldWindowStartTime = getWindowStartTime();
+
         var failoverParams = {
           errorMessage: errorProperties.error_mssg,
           isBufferingTimeoutError: bufferingTimeoutError,
@@ -271,7 +275,7 @@ define(
         var doLoadMedia = function () {
           var thenPause = isPaused();
           var windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000;
-          var failoverTime = getCurrentTime() - windowOffset;
+          var failoverTime = time - (windowOffset || 0);
           tearDownMediaElement();
           loadMedia(mediaMetaData.type, failoverTime, thenPause);
         };
@@ -280,7 +284,6 @@ define(
           bubbleFatalError(errorProperties, bufferingTimeoutError);
         };
 
-        var oldWindowStartTime = getWindowStartTime();
         mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams);
       }
 

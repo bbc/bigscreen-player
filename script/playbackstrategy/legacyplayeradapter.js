@@ -89,7 +89,14 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
 
       function onTimeUpdate (event) {
         isPaused = false;
-        currentTime = event.currentTime - timeCorrection;
+
+        // Note: Multiple consecutive CDN failover logic
+        // A newly loaded video element will always report a 0 time update
+        // This is slightly unhelpful if we want to continue from a later point but consult currentTime as the source of truth.
+        if (parseInt(event.currentTime) !== 0) {
+          currentTime = event.currentTime - timeCorrection;
+        }
+
         // Must publish this time update before checkSeekSucceded - which could cause a pause event
         // This is a device specific event ordering issue.
         publishTimeUpdate();
