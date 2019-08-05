@@ -50,7 +50,9 @@ define('bigscreenplayer/manifest/manifestparser',
 
       if (windowStartTime && duration) {
         var windowEndTime = windowStartTime + duration * 1000;
+        DebugTool.info('WindowEndTime: ' + new Date(windowEndTime));
       } else {
+        DebugTool.error('Error parsing HLS manifest');
         return { error: 'Error parsing HLS manifest' };
       }
       return {
