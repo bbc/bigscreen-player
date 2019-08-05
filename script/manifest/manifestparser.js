@@ -1,8 +1,9 @@
 define('bigscreenplayer/manifest/manifestparser',
   [
-    'bigscreenplayer/utils/timeutils'
+    'bigscreenplayer/utils/timeutils',
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (TimeUtils) {
+  function (TimeUtils, DebugTool) {
     'use strict';
 
     function parseMPD (manifest, dateWithOffset) {
@@ -26,6 +27,8 @@ define('bigscreenplayer/manifest/manifestparser',
           var windowEndTime = dateWithOffset - (timeShiftBufferDepth ? availabilityStartTime : 0) - oneSegment;
           var windowStartTime = timeShiftBufferDepth ? windowEndTime - (timeShiftBufferDepth * 1000) : availabilityStartTime;
           var timeCorrection = timeShiftBufferDepth ? windowStartTime / 1000 : 0;
+          DebugTool.info('ServerDate: ' + dateWithOffset);
+          DebugTool.info('WindowEndTime: ' + new Date(windowEndTime));
         } else {
           return { error: 'Error parsing DASH manifest attributes' };
         }
