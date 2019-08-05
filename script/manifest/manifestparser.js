@@ -30,6 +30,7 @@ define('bigscreenplayer/manifest/manifestparser',
           DebugTool.info('ServerDate: ' + dateWithOffset);
           DebugTool.info('WindowEndTime: ' + new Date(windowEndTime));
         } else {
+          DebugTool.error('Error parsing DASH manifest attributes');
           return { error: 'Error parsing DASH manifest attributes' };
         }
 
