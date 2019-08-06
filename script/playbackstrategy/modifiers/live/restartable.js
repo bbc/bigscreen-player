@@ -8,7 +8,7 @@ define(
     function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
       'use strict';
 
-      function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, timeData, mediaSources) {
+      function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, mediaSources) {
         var callbacksMap = [];
         var startTime;
         var fakeTimer = {};

@@ -36,6 +36,7 @@ require(
       var videoContainer;
       var eventCallbacks;
       var mockGlitchCurtainInstance;
+      var testTimeCorrection = 0;
 
       var cdnArray = [];
 
@@ -74,22 +75,26 @@ require(
         mockGlitchCurtainInstance.showCurtain.calls.reset();
         mockGlitchCurtainInstance.hideCurtain.calls.reset();
         mockGlitchCurtainInstance.tearDown.calls.reset();
+        testTimeCorrection = 0;
       });
 
       // Options = windowType, playableDevice, timeCorrection, deviceReplacement, isUHD
       function setUpLegacyAdaptor (opts) {
+        var mockMediaSources = {
+          time: function () {
+            return {correction: testTimeCorrection};
+          },
+          currentSource: function () {
+            return cdnArray[0].url;
+          }
+        };
+
         var options = opts || {};
 
         cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
 
-        var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-
-        var mediaSources = new MediaSources();
-        mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
-
         var config = options.config || device.getConfig();
 
-        var timeData = {correction: options.timeCorrection || 0};
         var windowType = options.windowType || WindowTypes.STATIC;
 
         mediaPlayer.addEventCallback.and.callFake(function (component, callback) {
@@ -101,8 +106,7 @@ require(
         videoContainer = document.createElement('div');
         videoContainer.id = 'app';
         document.body.appendChild(videoContainer);
-
-        legacyAdaptor = squiredLegacyAdaptor(mediaSources, windowType, undefined, timeData, videoContainer, options.isUHD, config, mediaPlayer);
+        legacyAdaptor = squiredLegacyAdaptor(mockMediaSources, windowType, videoContainer, options.isUHD, config, mediaPlayer);
       }
       describe('transitions', function () {
         it('should pass back possible transitions', function () {
@@ -127,7 +131,8 @@ require(
         });
 
         it('should begin playback from the passed in start time + time correction if we are watching live on a restartable device', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, timeCorrection: 10});
+          testTimeCorrection = 10;
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
           legacyAdaptor.load('video/mp4', 50);
 
@@ -221,7 +226,8 @@ require(
         });
 
         it('should play from the current time on live if we are not ended, paused or buffering', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, timeCorrection: 10});
+          testTimeCorrection = 10;
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
           eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10});
 
@@ -399,7 +405,8 @@ require(
         });
 
         it('should return the start/end from the player - time correction', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, playableDevice: false, timeCorrection: 10});
+          testTimeCorrection = 10;
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, playableDevice: false});
 
           mediaPlayer.getSeekableRange.and.returnValue({start: 110, end: 1010});
 
@@ -407,7 +414,8 @@ require(
         });
 
         it('should return the start/end from the player when the time correction is 0', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, playableDevice: false, timeCorrection: 0});
+          testTimeCorrection = 0;
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, playableDevice: false});
 
           mediaPlayer.getSeekableRange.and.returnValue({start: 100, end: 1000});
 
@@ -425,7 +433,8 @@ require(
         });
 
         it('should be set with time correction when we get a playing event', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.STATIC, timeCorrection: 5});
+          testTimeCorrection = 5;
+          setUpLegacyAdaptor({windowType: WindowTypes.STATIC});
 
           eventCallbacks({type: MediaPlayerEvent.PLAYING, currentTime: 10});
 
@@ -441,7 +450,8 @@ require(
         });
 
         it('should be set with time correction when we get a time update event', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.STATIC, timeCorrection: 5});
+          testTimeCorrection = 5;
+          setUpLegacyAdaptor({windowType: WindowTypes.STATIC});
 
           eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10});
 
@@ -475,7 +485,8 @@ require(
         });
 
         it('should seek to the time value passed in + time correction', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, timeCorrection: 10});
+          testTimeCorrection = 10;
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
           legacyAdaptor.setCurrentTime(10);
 
@@ -688,7 +699,8 @@ require(
         });
 
         it('should begin playback from the currentTime + time correction', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, timeCorrection: 10});
+          testTimeCorrection = 10;
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
           legacyAdaptor.load('application/dash+xml', undefined);
 

@@ -7,7 +7,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
     'bigscreenplayer/playbackstrategy/liveglitchcurtain'
   ],
   function (AllowedMediaTransitions, MediaState, WindowTypes, DebugTool, LiveGlitchCurtain) {
-    return function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, deviceConfig, player) {
+    return function (mediaSources, windowType, playbackElement, isUHD, deviceConfig, player) {
       var EVENT_HISTORY_LENGTH = 2;
 
       var mediaPlayer = player;
@@ -17,7 +17,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var errorCallback;
       var timeUpdateCallback;
       var currentTime;
-      var timeCorrection = timeData && timeData.correction || 0;
+      var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
       var duration = 0;
       var isPaused;
       var isEnded = false;

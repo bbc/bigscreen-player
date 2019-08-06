@@ -36,21 +36,21 @@ require(
       });
 
       it('calls LegacyAdapter with a static media player when called for STATIC window', function () {
-        TalStrategy(mediaSources, WindowTypes.STATIC, null, null, null, null, mockDevice);
+        TalStrategy(mediaSources, WindowTypes.STATIC, null, null, null, mockDevice);
 
         // getMediaPlayer is called to get a non-live player
         expect(mockDevice.getMediaPlayer).toHaveBeenCalledWith();
       });
 
       it('calls LegacyAdapter with a live media player when called for a GROWING window', function () {
-        TalStrategy(mediaSources, WindowTypes.GROWING, null, null, null, null, mockDevice);
+        TalStrategy(mediaSources, WindowTypes.GROWING, null, null, null, mockDevice);
 
         // getMediaPlayer is called to get a non-live player
         expect(mockDevice.getLivePlayer).toHaveBeenCalledWith();
       });
 
       it('calls LegacyAdapter with a live media player when called for a SLIDING window', function () {
-        TalStrategy(mediaSources, WindowTypes.SLIDING, null, null, null, null, mockDevice);
+        TalStrategy(mediaSources, WindowTypes.SLIDING, null, null, null, mockDevice);
 
         // getMediaPlayer is called to get a non-live player
         expect(mockDevice.getLivePlayer).toHaveBeenCalledWith();

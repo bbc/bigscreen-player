@@ -12,7 +12,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'dashjs'
   ],
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport) {
-    var MSEStrategy = function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
       var mediaPlayer;
       var mediaElement;
 
@@ -20,7 +20,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var errorCallback;
       var timeUpdateCallback;
 
-      var timeCorrection = timeData && timeData.correction || 0;
+      var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
       var failoverTime;
       var isEnded = false;
 
@@ -282,7 +282,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
 
         if (windowType === WindowTypes.GROWING) {
-          var windowStartTimeSeconds = (timeData.windowStartTime / 1000);
+          var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
           var srcWithTimeAnchor = source + '#t=';
 
           startTime = parseInt(startTime);

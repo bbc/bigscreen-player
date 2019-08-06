@@ -25,7 +25,7 @@ require(
 
         function initialiseRestartableMediaPlayer (config, windowType) {
           windowType = windowType || WindowTypes.SLIDING;
-          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, {}, mockMediaSources);
+          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, mockMediaSources);
         }
 
         describe('restartable HMTL5 Live Player', function () {

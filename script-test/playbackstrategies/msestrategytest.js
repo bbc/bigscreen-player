@@ -37,6 +37,8 @@ require(
       METRIC_CHANGED: 'metricChanged'
     };
 
+    var mockTimeModel;
+
     describe('Media Source Extensions Playback Strategy', function () {
       beforeAll(function () {
         mockDashjs = jasmine.createSpyObj('mockDashjs', ['MediaPlayer']);
@@ -108,6 +110,7 @@ require(
 
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
         mediaSources = new MediaSources();
+        spyOn(mediaSources, 'time').and.returnValue(mockTimeModel);
         mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         testManifestObject = {
@@ -138,24 +141,25 @@ require(
         });
       });
 
+      afterEach(function () {
+        mockVideoElement.currentTime = 0;
+        document.body.removeChild(playbackElement);
+        mockPluginsInterface.onErrorHandled.calls.reset();
+        mockDashInstance.attachSource.calls.reset();
+      });
+
       function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
         var defaultWindowType = windowType || WindowTypes.STATIC;
         var defaultMediaKind = mediaKind || MediaKinds.VIDEO;
 
-        var timeModel = {
+        mockTimeModel = {
           correction: timeCorrection || 0,
           windowStartTime: windowStartTimeMS || 0,
           windowEndTime: windowEndTimeMS || 0
         };
 
-        mseStrategy = MSEStrategy(mediaSources, defaultWindowType, defaultMediaKind, timeModel, playbackElement, {}, false);
+        mseStrategy = MSEStrategy(mediaSources, defaultWindowType, defaultMediaKind, playbackElement, {}, false);
       }
-
-      afterEach(function () {
-        mockVideoElement.currentTime = 0;
-        document.body.removeChild(playbackElement);
-        mockPluginsInterface.onErrorHandled.calls.reset();
-      });
 
       describe('Transitions', function () {
         it('canBePaused() Transition is true', function () {
