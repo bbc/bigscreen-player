@@ -28,6 +28,7 @@ require(
       var forceMediaSourcesError;
       var mockMediaSources;
       var testTime;
+      var updateTestTime = false;
 
       // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
       function setUpPlayerComponent (opts) {
@@ -54,6 +55,13 @@ require(
             if (forceMediaSourcesError) {
               errorCallback();
             } else {
+              if (updateTestTime) {
+                testTime = {
+                  windowStartTime: 744000,
+                  windowEndTime: 4344000,
+                  correction: 0
+                };
+              }
               successCallback();
             }
           },
@@ -61,6 +69,13 @@ require(
             return testTime;
           },
           refresh: function (successCallback, errorCallback) {
+            if (updateTestTime) {
+              testTime = {
+                windowStartTime: 744000,
+                windowEndTime: 4344000,
+                correction: 0
+              };
+            }
             successCallback();
           }
         };
@@ -120,6 +135,7 @@ require(
           windowEndTime: 4324000,
           correction: 0
         };
+        updateTestTime = false;
       });
 
       describe('init', function () {
@@ -320,12 +336,7 @@ require(
           liveSupport = LiveSupport.RESTARTABLE;
           setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormats.HLS, type: 'applesomething' });
 
-          testTime = {
-            windowStartTime: 744000,
-            windowEndTime: 4344000,
-            correction: 0
-          };
-
+          updateTestTime = true;
           playerComponent.setCurrentTime(50);
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
@@ -1003,12 +1014,8 @@ require(
         });
 
         it('should failover for with updated failover time when window time data has changed', function () {
-          setUpPlayerComponent();
-
-          testTime = {
-            windowStartTime: 744000,
-            windowEndTime: 1000000
-          };
+          setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormats.HLS });
+          updateTestTime = true;
 
           // Set playback cause to normal
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);

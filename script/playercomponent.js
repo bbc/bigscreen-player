@@ -74,11 +74,11 @@ define(
       }
 
       function getWindowStartTime () {
-        return bigscreenPlayerData.time && bigscreenPlayerData.time.windowStartTime;
+        return mediaSources && mediaSources.time().windowStartTime;
       }
 
       function getWindowEndTime () {
-        return bigscreenPlayerData.time && bigscreenPlayerData.time.windowEndTime;
+        return mediaSources && mediaSources.time().windowEndTime;
       }
 
       function getPlayerElement () {
