@@ -17,7 +17,6 @@ require(
         var mockConfig = 'config';
 
         var mediaKind = 'mediaKind';
-        var timeData = 'timeData';
         var playbackElement = 'playbackElement';
         var isUHD = 'isUHD';
         var mediaSources;

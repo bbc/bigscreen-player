@@ -110,7 +110,7 @@ require(
 
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
         mediaSources = new MediaSources();
-        spyOn(mediaSources, 'time').and.returnValue(mockTimeModel);
+        spyOn(mediaSources, 'time');
         mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         testManifestObject = {
@@ -287,11 +287,13 @@ require(
         });
 
         describe('for GROWING window', function () {
-          it('should initialise MediaPlayer with the expected parameters when startTime is zero', function () {
+          beforeEach(function () {
             setUpMSE(0, WindowTypes.GROWING, MediaKinds.VIDEO, 100000, 200000);
-
+            mediaSources.time.and.returnValue(mockTimeModel);
             mockDashInstance.getSource.and.returnValue('src');
+          });
 
+          it('should initialise MediaPlayer with the expected parameters when startTime is zero', function () {
             mseStrategy.load(null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
@@ -299,10 +301,6 @@ require(
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set to 0.1', function () {
-            setUpMSE(0, WindowTypes.GROWING, MediaKinds.VIDEO, 100000, 200000);
-
-            mockDashInstance.getSource.and.returnValue('src');
-
             mseStrategy.load(null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
@@ -310,10 +308,6 @@ require(
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
-            setUpMSE(0, WindowTypes.GROWING, MediaKinds.VIDEO, 100000, 200000);
-
-            mockDashInstance.getSource.and.returnValue('src');
-
             mseStrategy.load(null, 60);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
