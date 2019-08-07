@@ -45,7 +45,6 @@ require(
           jasmine.clock().uninstall();
         });
 
-        // TODO: implement these tests, ported from html5tests
         describe('Seek attempted and finished events', function () {
           it('Seek Attempted Event Emitted On Initialise Media If The State Is Empty', function () {
             expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
