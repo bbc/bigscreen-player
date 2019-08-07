@@ -9,6 +9,15 @@ require(
         var mockMediaElement;
         var sourceContainer;
 
+        var config = {
+          streaming: {
+            overrides: {
+              forceBeginPlaybackToEndOfWindow: true
+            }
+          },
+          restartTimeout: 10000
+        };
+
         beforeEach(function () {
           jasmine.clock().install();
           jasmine.clock().mockDate();
@@ -20,12 +29,27 @@ require(
 
           sourceContainer = document.createElement('div');
 
-          player = CehtmlMediaPlayer();
+          player = CehtmlMediaPlayer(config);
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
         });
 
         afterEach(function () {
           jasmine.clock().uninstall();
+        });
+
+        // TODO: implement these tests, ported from html5tests
+        describe('Seek attempted and finished events', function () {
+          // it(' Seek Attempted Event Emitted On Initialise Media If The State Is Empty', function () {
+          // });
+
+          // it('Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing', function () {
+          // });
+
+          // it('Seek Finished Event Is Emitted Only Once', function () {
+          // });
+
+          // it(' Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
+          // });
         });
 
         describe('addEventCallback', function () {
