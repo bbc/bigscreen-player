@@ -35,7 +35,6 @@ define(
         mediaSources,
         windowType,
         mediaKind,
-        bigscreenPlayerData.time,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
         device
