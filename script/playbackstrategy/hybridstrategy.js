@@ -7,14 +7,14 @@ define('bigscreenplayer/playbackstrategy/hybridstrategy',
     'bigscreenplayer/models/playbackstrategy'
   ],
   function (Native, MSE, StrategyPicker, LiveSupport, PlaybackStrategy) {
-    var HybridStrategy = function (windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput) {
+    var HybridStrategy = function (mediaSources, windowType, mediaKind, videoElement, isUHD, device) {
       var strategy = StrategyPicker(windowType, isUHD);
 
       if (strategy === PlaybackStrategy.MSE) {
-        return MSE(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput);
+        return MSE(mediaSources, windowType, mediaKind, videoElement, isUHD, device);
       }
 
-      return Native(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput);
+      return Native(mediaSources, windowType, mediaKind, videoElement, isUHD, device);
     };
 
     HybridStrategy.getLiveSupport = function () {

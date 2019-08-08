@@ -320,8 +320,8 @@ require(
 
       describe('generateBaseUrls()', function () {
         var sources = [
-          { cdn: 'cdn-a', url: 'https://cdn-a.com/' },
-          { cdn: 'cdn-b', url: 'https://cdn-b.com/' }
+          'https://cdn-a.com/',
+          'https://cdn-b.com/'
         ];
 
         it('should convert the sources into base urls', function () {
@@ -333,8 +333,8 @@ require(
 
           var expectedManifest = {
             BaseURL_asArray: [
-              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'cdn-a' },
-              { __text: 'https://cdn-b.com/dash/', 'dvb:priority': 1, serviceLocation: 'cdn-b' }
+              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' },
+              { __text: 'https://cdn-b.com/dash/', 'dvb:priority': 1, serviceLocation: 'https://cdn-b.com/' }
             ],
             Period: {}
           };

@@ -8,11 +8,11 @@ define(
     function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
       'use strict';
 
-      function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, timeData) {
+      function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, mediaSources) {
         var callbacksMap = [];
         var startTime;
         var fakeTimer = {};
-        var timeCorrection = timeData.correction || 0;
+        var timeCorrection = mediaSources.time().correction || 0;
         addEventCallback(this, updateFakeTimer);
 
         function updateFakeTimer (event) {
@@ -67,7 +67,7 @@ define(
         }
 
         function getSeekableRange () {
-          var windowLength = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+          var windowLength = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000;
           var delta = (Date.now() - startTime) / 1000;
           return {
             start: (windowType === WindowTypes.SLIDING ? delta : 0) + timeCorrection,
@@ -80,7 +80,7 @@ define(
             var config = deviceConfig;
 
             startTime = Date.now();
-            fakeTimer.currentTime = (timeData.windowEndTime - timeData.windowStartTime) / 1000;
+            fakeTimer.currentTime = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000;
 
             if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
               mediaPlayer.beginPlaybackFrom(Infinity);

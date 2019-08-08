@@ -8,10 +8,24 @@ require(
         var sourceContainer = document.createElement('div');
         var player;
         var restartableMediaPlayer;
+        var testTime = {
+          windowStartTime: 0,
+          windowEndTime: 100000,
+          correction: 0
+        };
+
+        var mockMediaSources = {
+          time: function () {
+            return testTime;
+          },
+          refresh: function (successCallback, errorCallback) {
+            successCallback();
+          }
+        };
 
         function initialiseRestartableMediaPlayer (config, windowType) {
           windowType = windowType || WindowTypes.SLIDING;
-          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, {windowStartTime: 0, windowEndTime: 100000});
+          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, mockMediaSources);
         }
 
         describe('restartable HMTL5 Live Player', function () {

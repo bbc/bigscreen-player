@@ -26,6 +26,7 @@ require(
             dynamic: [
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -42,6 +43,7 @@ require(
             dynamic: [
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -54,6 +56,7 @@ require(
               '2018-02-07T15:49:18.259Z - Info: A string info message'
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -70,6 +73,7 @@ require(
               '2018-02-07T15:49:18.259Z - Info: Another info message'
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -89,6 +93,7 @@ require(
               '2018-02-07T15:49:18.259Z - Error: 1 | An error has occurred'
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -103,6 +108,7 @@ require(
               '2018-02-07T15:49:18.259Z - Event: PLAYING'
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -117,6 +123,7 @@ require(
               '2018-02-07T15:49:18.259Z - Video time: 12.34'
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -131,20 +138,7 @@ require(
               '2018-02-07T15:49:18.259Z - Video time: 789.00'
             ]
           };
-          expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
-        });
 
-        it('parses long time to formatted string representation', function () {
-          presenter.update([
-            {type: 'time', currentTime: 788.9999, timestamp: 1518018558259}
-          ]);
-          var expectedObject = {
-            static: [
-            ],
-            dynamic: [
-              '2018-02-07T15:49:18.259Z - Video time: 789.00'
-            ]
-          };
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -159,6 +153,7 @@ require(
               '2018-02-07T15:49:18.259Z - Api call: Play'
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -173,6 +168,7 @@ require(
               '2018-02-07T15:49:18.259Z - Unknown log format'
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -191,6 +187,7 @@ require(
             dynamic: [
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
 
@@ -225,6 +222,7 @@ require(
             dynamic: [
             ]
           };
+
           expect(viewMock.render).toHaveBeenCalledWith(expectedObject);
         });
       });
