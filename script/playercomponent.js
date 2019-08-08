@@ -10,10 +10,9 @@ define(
     'bigscreenplayer/plugins',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/playbackstrategy'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, DebugTool, PlaybackStrategyModel) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
@@ -152,7 +151,6 @@ define(
         };
 
         var onError = function (errorMessage) {
-          DebugTool.info(errorMessage);
           tearDownMediaElement();
           bubbleFatalError(createPlaybackErrorProperties(event), false);
         };
@@ -234,7 +232,6 @@ define(
           bufferingClearedProperties.dismissed_by = 'timeout';
           bubbleBufferingCleared(bufferingClearedProperties);
           properties.error_mssg = 'Buffering timed out';
-          DebugTool.info('Buffering timeout error - attempting CDN failover');
           attemptCdnFailover(properties, true);
         }, bufferingTimeout);
       }
@@ -252,14 +249,12 @@ define(
             fatalErrorTimeout = null;
             fatalError = true;
             errorProperties.error_mssg = 'Fatal error';
-            DebugTool.info('Fatal error - attempting CDN failover');
             attemptCdnFailover(errorProperties, false);
           }, 5000);
         }
       }
 
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
-       // TODO: Not getting the currentTime up front might cause double failover to not work!
         var time = getCurrentTime();
         var oldWindowStartTime = getWindowStartTime();
 
@@ -269,7 +264,6 @@ define(
           currentTime: getCurrentTime(),
           duration: getDuration()
         };
-        DebugTool.info('Failover Params: ' + JSON.stringify(failoverParams));
 
         var doLoadMedia = function () {
           var thenPause = isPaused();
@@ -362,7 +356,6 @@ define(
       }
 
       function createPlaybackErrorProperties (event) {
-        DebugTool.info('Create Playback Error Properties: ' + JSON.stringify(event.errorProperties));
         return PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
       }
 

@@ -79,6 +79,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           failoverTime = Math.max(0, parseInt(dvrInfo.time - dvrInfo.range.start) - IN_STREAM_BUFFERING_SECONDS);
         } else {
           var time = mediaElement.currentTime;
+
+        // Note: Multiple consecutive CDN failover logic
+        // A newly loaded video element will always report a 0 time update
+        // This is slightly unhelpful if we want to continue from a later point but consult failoverTime as the source of truth.
           if (parseInt(time) !== 0) {
             failoverTime = time;
           }

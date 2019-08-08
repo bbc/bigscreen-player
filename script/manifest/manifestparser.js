@@ -1,9 +1,8 @@
 define('bigscreenplayer/manifest/manifestparser',
   [
-    'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/utils/timeutils'
   ],
-  function (TimeUtils, DebugTool) {
+  function (TimeUtils) {
     'use strict';
 
     function parseMPD (manifest, dateWithOffset) {
@@ -27,10 +26,7 @@ define('bigscreenplayer/manifest/manifestparser',
           var windowEndTime = dateWithOffset - (timeShiftBufferDepth ? availabilityStartTime : 0) - oneSegment;
           var windowStartTime = timeShiftBufferDepth ? windowEndTime - (timeShiftBufferDepth * 1000) : availabilityStartTime;
           var timeCorrection = timeShiftBufferDepth ? windowStartTime / 1000 : 0;
-          DebugTool.info('ServerDate: ' + dateWithOffset);
-          DebugTool.info('WindowEndTime: ' + new Date(windowEndTime));
         } else {
-          DebugTool.error('Error parsing DASH manifest attributes');
           return { error: 'Error parsing DASH manifest attributes' };
         }
 
@@ -50,9 +46,7 @@ define('bigscreenplayer/manifest/manifestparser',
 
       if (windowStartTime && duration) {
         var windowEndTime = windowStartTime + duration * 1000;
-        DebugTool.info('WindowEndTime: ' + new Date(windowEndTime));
       } else {
-        DebugTool.error('Error parsing HLS manifest');
         return { error: 'Error parsing HLS manifest' };
       }
       return {

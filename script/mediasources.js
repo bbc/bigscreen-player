@@ -79,7 +79,7 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
                     typeof failoverParams.isBufferingTimeoutError === 'boolean';
 
       if (!infoValid) {
-        DebugTool.info('failoverInfo is not valid');
+        DebugTool.error('failoverInfo is not valid');
       }
 
       return infoValid;
