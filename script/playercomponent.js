@@ -21,7 +21,6 @@ define(
       var errorTimeoutID = null;
       var mediaKind = bigscreenPlayerData.media.kind;
       var subtitlesEnabled;
-      var userInteracted = false;
       var stateUpdateCallback = callback;
       var playbackStrategy;
       var captionsContainer;
@@ -43,14 +42,13 @@ define(
       playbackStrategy.addErrorCallback(this, onError);
       playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate);
 
-      bubbleErrorCleared(createPlaybackProperties());
+      bubbleErrorCleared();
 
       setSubtitlesEnabled(enableSubtitles || false);
 
       initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime);
 
       function play () {
-        userInteracted = true;
         playbackStrategy.play();
       }
 
@@ -60,7 +58,6 @@ define(
 
       function pause (opts) {
         opts = opts || {};
-        userInteracted = true;
         if (transitions().canBePaused()) {
           var disableAutoResume = windowType === WindowTypes.GROWING ? true : opts.disableAutoResume;
           playbackStrategy.pause({ disableAutoResume: disableAutoResume });
@@ -119,7 +116,6 @@ define(
       }
 
       function setCurrentTime (time) {
-        userInteracted = true;
         if (transitions().canBeginSeek()) {
           isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy.setCurrentTime(time);
         }
@@ -150,9 +146,9 @@ define(
           loadMedia(mediaMetaData.type, seekToTime, thenPause);
         };
 
-        var onError = function (errorMessage) {
+        var onError = function () {
           tearDownMediaElement();
-          bubbleFatalError(createPlaybackErrorProperties(event), false);
+          bubbleFatalError(false);
         };
 
         mediaSources.refresh(doSeek, onError);
@@ -163,9 +159,7 @@ define(
       }
 
       function tearDownMediaElement () {
-        var playbackProperties = createPlaybackProperties();
-        playbackProperties.dismissed_by = 'teardown';
-        playout(playbackProperties);
+        clearTimeouts();
         playbackStrategy.reset();
       }
 
@@ -187,27 +181,24 @@ define(
       }
 
       function onPlaying () {
-        playout(createPlaybackProperties());
+        clearTimeouts();
         publishMediaStateUpdate(MediaState.PLAYING, {});
         isInitialPlay = false;
       }
 
       function onPaused () {
         publishMediaStateUpdate(MediaState.PAUSED);
-        playout(createPlaybackProperties());
+        clearTimeouts();
       }
 
       function onBuffering () {
         publishMediaStateUpdate(MediaState.WAITING);
-        var playbackProperties = createPlaybackProperties();
-        startBufferingErrorTimeout(playbackProperties);
-        bubbleErrorCleared(playbackProperties);
-        bubbleBufferingRaised(playbackProperties);
-        userInteracted = false;
+        startBufferingErrorTimeout();
+        bubbleErrorCleared();
+        bubbleBufferingRaised();
       }
 
       function onEnded () {
-        playout(createPlaybackProperties());
         publishMediaStateUpdate(MediaState.ENDED);
       }
 
@@ -216,50 +207,42 @@ define(
       }
 
       function onError (event) {
-        var playbackProperties = createPlaybackProperties();
-        playbackProperties.dismissed_by = 'error';
-        bubbleBufferingCleared(playbackProperties);
-
-        var playbackErrorProperties = createPlaybackErrorProperties(event);
-        raiseError(playbackErrorProperties);
+        bubbleBufferingCleared();
+        raiseError();
       }
 
-      function startBufferingErrorTimeout (properties) {
+      function startBufferingErrorTimeout () {
         var bufferingTimeout = isInitialPlay ? 30000 : 20000;
-        var bufferingClearedProperties = PlaybackUtils.clone(properties);
         clearBufferingErrorTimeout();
         errorTimeoutID = setTimeout(function () {
-          bufferingClearedProperties.dismissed_by = 'timeout';
-          bubbleBufferingCleared(bufferingClearedProperties);
-          properties.error_mssg = 'Buffering timed out';
-          attemptCdnFailover(properties, true);
+          bubbleBufferingCleared();
+          attemptCdnFailover(true);
         }, bufferingTimeout);
       }
 
-      function raiseError (properties) {
+      function raiseError () {
         clearBufferingErrorTimeout();
         publishMediaStateUpdate(MediaState.WAITING);
-        bubbleErrorRaised(properties);
-        startFatalErrorTimeout(properties);
+        bubbleErrorRaised();
+        startFatalErrorTimeout();
       }
 
-      function startFatalErrorTimeout (errorProperties) {
+      function startFatalErrorTimeout () {
         if (!fatalErrorTimeout && !fatalError) {
           fatalErrorTimeout = setTimeout(function () {
             fatalErrorTimeout = null;
             fatalError = true;
-            errorProperties.error_mssg = 'Fatal error';
-            attemptCdnFailover(errorProperties, false);
+            attemptCdnFailover(false);
           }, 5000);
         }
       }
 
-      function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
+      function attemptCdnFailover (bufferingTimeoutError) {
         var time = getCurrentTime();
         var oldWindowStartTime = getWindowStartTime();
 
         var failoverParams = {
-          errorMessage: errorProperties.error_mssg,
+          errorMessage: bufferingTimeoutError ? 'bufferingTimeoutError' : 'fatalError',
           isBufferingTimeoutError: bufferingTimeoutError,
           currentTime: getCurrentTime(),
           duration: getDuration()
@@ -274,7 +257,7 @@ define(
         };
 
         var doErrorCallback = function () {
-          bubbleFatalError(errorProperties, bufferingTimeoutError);
+          bubbleFatalError(bufferingTimeoutError);
         };
 
         mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams);
@@ -294,69 +277,41 @@ define(
         }
       }
 
-      function playout (playbackProperties) {
+      function clearTimeouts () {
         clearBufferingErrorTimeout();
         clearFatalErrorTimeout();
         fatalError = false;
-        bubbleBufferingCleared(playbackProperties);
-        bubbleErrorCleared(playbackProperties);
-        userInteracted = false;
+        bubbleBufferingCleared();
+        bubbleErrorCleared();
       }
 
-      function bubbleErrorCleared (playbackProperties) {
-        var errorProperties = PlaybackUtils.clone(playbackProperties);
-        if (!errorProperties.dismissed_by) {
-          if (userInteracted) {
-            errorProperties.dismissed_by = 'other';
-          } else {
-            errorProperties.dismissed_by = 'device';
-          }
-        }
-        var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties });
+      function bubbleErrorCleared () {
+        var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR });
         Plugins.interface.onErrorCleared(evt);
       }
 
-      function bubbleErrorRaised (errorProperties) {
-        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: false });
+      function bubbleErrorRaised () {
+        // TODO: does a client ever check bufferingTimeOut on the onError plugin?
+        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false });
         Plugins.interface.onError(evt);
       }
 
-      function bubbleBufferingRaised (playbackProperties) {
-        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING, properties: playbackProperties });
+      function bubbleBufferingRaised () {
+        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING });
         Plugins.interface.onBuffering(evt);
       }
 
-      function bubbleBufferingCleared (playbackProperties) {
-        var bufferingProperties = PlaybackUtils.clone(playbackProperties);
-        if (!bufferingProperties.dismissed_by) {
-          if (userInteracted) {
-            bufferingProperties.dismissed_by = 'other';
-          } else {
-            bufferingProperties.dismissed_by = 'device';
-          }
-        }
-        var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: bufferingProperties, isInitialPlay: isInitialPlay });
+      function bubbleBufferingCleared () {
+        var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: isInitialPlay });
         Plugins.interface.onBufferingCleared(evt);
       }
 
-      function bubbleFatalError (errorProperties, bufferingTimeoutError) {
-        var evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError });
+      function bubbleFatalError (bufferingTimeoutError) {
+        // could determine this error message where needed in the client based on bufferingTimeoutError which is passed as part of the plugin event anyway
+        var properties = { error_mssg: bufferingTimeoutError ? 'bufferingTimeoutError' : 'fatalError' };
+        var evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: properties, isBufferingTimeoutError: bufferingTimeoutError });
         Plugins.interface.onFatalError(evt);
         publishMediaStateUpdate(MediaState.FATAL_ERROR, { isBufferingTimeoutError: bufferingTimeoutError });
-      }
-
-      function createPlaybackProperties () {
-        var playbackProperties = {};
-
-        playbackProperties.seekable_range = getSeekableRange().start + ' to ' + getSeekableRange().end;
-        playbackProperties.current_time = getCurrentTime();
-        playbackProperties.duration = getDuration();
-
-        return playbackProperties;
-      }
-
-      function createPlaybackErrorProperties (event) {
-        return PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
       }
 
       function publishMediaStateUpdate (state, opts) {
@@ -390,7 +345,6 @@ define(
       }
 
       function tearDown () {
-        userInteracted = false;
         tearDownMediaElement();
 
         playbackStrategy.tearDown();
@@ -408,7 +362,6 @@ define(
         windowType = undefined;
         mediaKind = undefined;
         subtitlesEnabled = undefined;
-        userInteracted = undefined;
         stateUpdateCallback = undefined;
         mediaMetaData = undefined;
         fatalErrorTimeout = undefined;
