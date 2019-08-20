@@ -145,8 +145,8 @@ define(
 
       function toStopped () {
         state = MediaPlayerBase.STATE.STOPPED;
-        emitEvent(MediaPlayerBase.EVENT.STOPPED);
         setSentinels([]);
+        emitEvent(MediaPlayerBase.EVENT.STOPPED);
       }
 
       function enterBufferingSentinel () {
@@ -304,14 +304,14 @@ define(
 
       function toBuffering () {
         state = MediaPlayerBase.STATE.BUFFERING;
-        emitEvent(MediaPlayerBase.EVENT.BUFFERING);
         setSentinels([exitBufferingSentinel]);
+        emitEvent(MediaPlayerBase.EVENT.BUFFERING);
       }
 
       function toComplete () {
         state = MediaPlayerBase.STATE.COMPLETE;
-        emitEvent(MediaPlayerBase.EVENT.COMPLETE);
         setSentinels([]);
+        emitEvent(MediaPlayerBase.EVENT.COMPLETE);
       }
 
       function toEmpty () {
@@ -602,14 +602,14 @@ define(
 
       function toPaused () {
         state = MediaPlayerBase.STATE.PAUSED;
-        emitEvent(MediaPlayerBase.EVENT.PAUSED);
         setSentinels([shouldBeSeekedSentinel, shouldBePausedSentinel]);
+        emitEvent(MediaPlayerBase.EVENT.PAUSED);
       }
 
       function toPlaying () {
         state = MediaPlayerBase.STATE.PLAYING;
-        emitEvent(MediaPlayerBase.EVENT.PLAYING);
         setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel]);
+        emitEvent(MediaPlayerBase.EVENT.PLAYING);
       }
 
       return {
