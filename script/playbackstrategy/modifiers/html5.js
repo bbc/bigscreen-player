@@ -1,9 +1,10 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaPlayerBase) {
+  function (MediaPlayerBase, DebugTool) {
     'use strict';
 
     function Player (deviceConfig) {
@@ -279,6 +280,9 @@ define(
         sentinelInterval = setInterval(function () {
           sentinelIntervalNumber += 1;
           var newTime = getCurrentTime();
+
+          DebugTool.info('New Time: ' + newTime);
+          DebugTool.info('Last sentinel time: ' + lastSentinelTime);
 
           hasSentinelTimeChangedWithinTolerance = (Math.abs(newTime - lastSentinelTime) > 0.2);
           nearEndOfMedia = (getDuration() - (newTime || lastSentinelTime)) <= 1;
