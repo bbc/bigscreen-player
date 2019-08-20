@@ -274,6 +274,7 @@ define(
           return;
         }
 
+        DebugTool.info('Now: ' + Date.now());
         clearSentinels();
         sentinelIntervalNumber = 0;
         lastSentinelTime = getCurrentTime();
