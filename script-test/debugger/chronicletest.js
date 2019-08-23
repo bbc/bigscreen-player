@@ -24,6 +24,7 @@ require(
         };
         Chronicle.info(testInfoMessage);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.pop()).toEqual(expectedObject);
       });
 
@@ -38,6 +39,7 @@ require(
         Chronicle.info(firstMessage);
         Chronicle.info(secondMessage);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.pop()).toEqual(expectedObject);
       });
 
@@ -53,6 +55,7 @@ require(
         };
         Chronicle.error(testErrorObject);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.pop()).toEqual(expectedObject);
       });
 
@@ -68,6 +71,7 @@ require(
         };
         Chronicle.event(testEventObject);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.pop()).toEqual(expectedObject);
       });
 
@@ -80,6 +84,7 @@ require(
         };
         Chronicle.apicall(testApiCallType);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.pop()).toEqual(expectedObject);
       });
 
@@ -91,6 +96,7 @@ require(
         };
         Chronicle.time(1);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.pop()).toEqual(expectedObject);
       });
 
@@ -103,6 +109,7 @@ require(
         Chronicle.time(1);
         Chronicle.time(2);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.length).toEqual(2);
         expect(chronicle.pop()).toEqual(expectedObject);
       });
@@ -118,6 +125,7 @@ require(
         Chronicle.info('An info message');
         Chronicle.time(3);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.length).toEqual(4);
         expect(chronicle.pop()).toEqual(expectedObject);
       });
@@ -142,6 +150,7 @@ require(
         Chronicle.time(5);
         Chronicle.time(6);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.length).toEqual(7);
         expect(chronicle).toEqual(expectedArray);
       });
@@ -156,6 +165,7 @@ require(
         Chronicle.time(2);
         Chronicle.time(3);
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.length).toEqual(2);
         expect(chronicle).toEqual(expectedArray);
       });
@@ -170,6 +180,7 @@ require(
         Chronicle.keyValue({Duration: '1345'});
 
         var chronicle = Chronicle.retrieve();
+
         expect(chronicle.length).toEqual(2);
         expect(chronicle).toEqual(expectedArray);
       });

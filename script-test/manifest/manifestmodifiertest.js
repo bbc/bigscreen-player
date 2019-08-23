@@ -13,22 +13,31 @@ require(
               AdaptationSet: [
                 {
                   contentType: 'video',
+                  mimeType: 'video/mp4',
                   Representation_asArray: [
                     {
                       bandwidth: 438000,
-                      frameRate: 25
+                      frameRate: 25,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
                     },
                     {
                       bandwidth: 827000,
-                      frameRate: 30
+                      frameRate: 30,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
                     },
                     {
                       bandwidth: 1570000,
-                      frameRate: 50
+                      frameRate: 50,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
                     },
                     {
                       bandwidth: 2812000,
-                      frameRate: 50
+                      frameRate: 50,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
                     }
                   ]
                 },
@@ -57,14 +66,19 @@ require(
               AdaptationSet: [
                 {
                   contentType: 'video',
+                  mimeType: 'video/mp4',
                   Representation_asArray: [
                     {
                       bandwidth: 438000,
-                      frameRate: 25
+                      frameRate: 25,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
                     },
                     {
                       bandwidth: 827000,
-                      frameRate: 30
+                      frameRate: 30,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
                     }
                   ]
                 },
@@ -90,14 +104,19 @@ require(
               AdaptationSet: [
                 {
                   contentType: 'video',
+                  mimeType: 'video/mp4',
                   Representation_asArray: [
                     {
                       bandwidth: 1570000,
-                      frameRate: 50
+                      frameRate: 50,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
                     },
                     {
                       bandwidth: 2812000,
-                      frameRate: 50
+                      frameRate: 50,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
                     }
                   ]
                 },
@@ -123,10 +142,13 @@ require(
               AdaptationSet: [
                 {
                   contentType: 'video',
+                  mimeType: 'video/mp4',
                   Representation_asArray: [
                     {
                       bandwidth: 827000,
-                      frameRate: 30
+                      frameRate: 30,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
                     }
                   ]
                 },
@@ -152,6 +174,7 @@ require(
               AdaptationSet: [
                 {
                   contentType: 'video',
+                  mimeType: 'video/mp4',
                   Representation_asArray: []
                 },
                 {
@@ -166,6 +189,108 @@ require(
             }
           };
           var actualManifest = ManifestModifier.filter(manifest, { maxFps: 10, constantFps: true });
+
+          expect(actualManifest).toEqual(expectedManifest);
+        });
+
+        it('should convert all avc3 codec representations to avc1 when the flag is enabled', function () {
+          var expectedManifest = {
+            Period: {
+              AdaptationSet: [
+                {
+                  contentType: 'video',
+                  mimeType: 'video/mp4',
+                  Representation_asArray: [
+                    {
+                      bandwidth: 438000,
+                      frameRate: 25,
+                      codecs: 'avc1.4D401E',
+                      mimeType: 'video/mp4'
+                    },
+                    {
+                      bandwidth: 827000,
+                      frameRate: 30,
+                      codecs: 'avc1.4D401E',
+                      mimeType: 'video/mp4'
+                    },
+                    {
+                      bandwidth: 1570000,
+                      frameRate: 50,
+                      codecs: 'avc1.4D401E',
+                      mimeType: 'video/mp4'
+                    },
+                    {
+                      bandwidth: 2812000,
+                      frameRate: 50,
+                      codecs: 'avc1.4D401E',
+                      mimeType: 'video/mp4'
+                    }
+                  ]
+                },
+                {
+                  contentType: 'audio',
+                  Representation_asArray: [
+                    {
+                      bandwidth: 128000
+                    }
+                  ]
+                }
+              ]
+            }
+          };
+
+          var actualManifest = ManifestModifier.filter(manifest, {}, true);
+
+          expect(actualManifest).toEqual(expectedManifest);
+        });
+
+        it('should not affect avc3 codec representations the old codec flag is not present', function () {
+          var expectedManifest = {
+            Period: {
+              AdaptationSet: [
+                {
+                  contentType: 'video',
+                  mimeType: 'video/mp4',
+                  Representation_asArray: [
+                    {
+                      bandwidth: 438000,
+                      frameRate: 25,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
+                    },
+                    {
+                      bandwidth: 827000,
+                      frameRate: 30,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
+                    },
+                    {
+                      bandwidth: 1570000,
+                      frameRate: 50,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
+                    },
+                    {
+                      bandwidth: 2812000,
+                      frameRate: 50,
+                      codecs: 'avc3.4D401E',
+                      mimeType: 'video/mp4'
+                    }
+                  ]
+                },
+                {
+                  contentType: 'audio',
+                  Representation_asArray: [
+                    {
+                      bandwidth: 128000
+                    }
+                  ]
+                }
+              ]
+            }
+          };
+
+          var actualManifest = ManifestModifier.filter(manifest, {}, undefined);
 
           expect(actualManifest).toEqual(expectedManifest);
         });
@@ -195,8 +320,8 @@ require(
 
       describe('generateBaseUrls()', function () {
         var sources = [
-          { cdn: 'cdn-a', url: 'https://cdn-a.com/' },
-          { cdn: 'cdn-b', url: 'https://cdn-b.com/' }
+          'https://cdn-a.com/',
+          'https://cdn-b.com/'
         ];
 
         it('should convert the sources into base urls', function () {
@@ -208,8 +333,8 @@ require(
 
           var expectedManifest = {
             BaseURL_asArray: [
-              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'cdn-a' },
-              { __text: 'https://cdn-b.com/dash/', 'dvb:priority': 1, serviceLocation: 'cdn-b' }
+              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' },
+              { __text: 'https://cdn-b.com/dash/', 'dvb:priority': 1, serviceLocation: 'https://cdn-b.com/' }
             ],
             Period: {}
           };

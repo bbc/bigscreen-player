@@ -1,16 +1,14 @@
 define(
     'bigscreenplayer/playbackstrategy/modifiers/live/seekable',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/html5',
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/dynamicwindowutils'
   ],
-    function (Html5Player, MediaPlayerBase) {
+    function (MediaPlayerBase, DynamicWindowUtils) {
       'use strict';
 
-      function SeekableLivePlayer (deviceConfig, logger) {
+      function SeekableLivePlayer (mediaPlayer, deviceConfig) {
         var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
-
-        var mediaPlayer = Html5Player(logger);
 
         function addEventCallback (thisArg, callback) {
           mediaPlayer.addEventCallback(thisArg, callback);
@@ -22,23 +20,6 @@ define(
 
         function removeAllEventCallbacks () {
           mediaPlayer.removeAllEventCallbacks();
-        }
-
-        function autoResumeAtStartOfRange () {
-          var secondsUntilAutoResume = Math.max(0, mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
-          var self = this;
-          var autoResumeTimer = setTimeout(function () {
-            removeEventCallback(self, detectIfUnpaused);
-            resume();
-          }, secondsUntilAutoResume * 1000);
-
-          addEventCallback(self, detectIfUnpaused);
-          function detectIfUnpaused (event) {
-            if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-              removeEventCallback(self, detectIfUnpaused);
-              clearTimeout(autoResumeTimer);
-            }
-          }
         }
 
         function resume () {
@@ -84,7 +65,7 @@ define(
               mediaPlayer.toPlaying();
             } else {
               mediaPlayer.pause();
-              autoResumeAtStartOfRange();
+              DynamicWindowUtils.autoResumeAtStartOfRange(mediaPlayer.getCurrentTime(), mediaPlayer.getSeekableRange(), addEventCallback, removeEventCallback, resume);
             }
           },
           resume: resume,
@@ -129,9 +110,7 @@ define(
 
           getLiveSupport: function getLiveSupport () {
             return MediaPlayerBase.LIVE_SUPPORT.SEEKABLE;
-          },
-
-          autoResumeAtStartOfRange: autoResumeAtStartOfRange
+          }
 
         });
       }

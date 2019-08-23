@@ -1,16 +1,31 @@
 require(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'squire'
+    'bigscreenplayer/playbackstrategy/modifiers/live/restartable',
+    'bigscreenplayer/models/windowtypes'
   ],
-      function (MediaPlayerBase, Squire) {
+      function (MediaPlayerBase, RestartableMediaPlayer, WindowTypes) {
         var sourceContainer = document.createElement('div');
         var player;
-        var restartableMediaConstructor;
         var restartableMediaPlayer;
+        var testTime = {
+          windowStartTime: 0,
+          windowEndTime: 100000,
+          correction: 0
+        };
 
-        function initialiseRestartableMediaPlayer (config, logger) {
-          restartableMediaPlayer = restartableMediaConstructor(config, logger);
+        var mockMediaSources = {
+          time: function () {
+            return testTime;
+          },
+          refresh: function (successCallback, errorCallback) {
+            successCallback();
+          }
+        };
+
+        function initialiseRestartableMediaPlayer (config, windowType) {
+          windowType = windowType || WindowTypes.SLIDING;
+          restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, mockMediaSources);
         }
 
         describe('restartable HMTL5 Live Player', function () {
@@ -26,24 +41,11 @@ require(
             }
           }
 
-          beforeEach(function (done) {
-            var injector = new Squire();
-
+          beforeEach(function () {
             player = jasmine.createSpyObj('player',
               ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
                 'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement', 'pause',
-                'resume', 'beginPlaybackFrom', 'getCurrentTime']);
-
-            function mockMediaPlayer () {
-              return player;
-            }
-
-            injector.mock({'bigscreenplayer/playbackstrategy/modifiers/html5': mockMediaPlayer});
-
-            injector.require(['bigscreenplayer/playbackstrategy/modifiers/live/restartable'], function (mediaPlayer) {
-              restartableMediaConstructor = mediaPlayer;
-              done();
-            });
+                'resume', 'beginPlaybackFrom']);
           });
 
           describe('methods call the appropriate media player methods', function () {
@@ -84,15 +86,16 @@ require(
               var callback = function () { return; };
               restartableMediaPlayer.addEventCallback(thisArg, callback);
 
-              expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, callback);
+              expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, jasmine.any(Function));
             });
 
             it('calls removeEventCallback on the media player', function () {
               var thisArg = 'arg';
               var callback = function () { return; };
+              restartableMediaPlayer.addEventCallback(thisArg, callback);
               restartableMediaPlayer.removeEventCallback(thisArg, callback);
 
-              expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback);
+              expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, jasmine.any(Function));
             });
 
             it('calls removeAllEventCallbacks on the media player', function () {
@@ -120,13 +123,93 @@ require(
             it('playFrom', function () {
               isUndefined('playFrom');
             });
+          });
 
-            it('getCurrentTime', function () {
-              isUndefined('getCurrentTime');
+          describe('should use fake time for', function () {
+            var timeUpdates = [];
+            function timeUpdate (opts) {
+              timeUpdates.forEach(function (fn) { fn(opts); });
+            }
+
+            beforeEach(function () {
+              jasmine.clock().install();
+              jasmine.clock().mockDate();
+
+              player.addEventCallback.and.callFake(function (self, callback) {
+                timeUpdates.push(callback);
+              });
+
+              initialiseRestartableMediaPlayer();
             });
 
-            it('getSeekableRange', function () {
-              isUndefined('getSeekableRange');
+            afterEach(function () {
+              jasmine.clock().uninstall();
+            });
+
+            describe('getCurrentTime', function () {
+              it('should be set on to the window length on beginPlayback', function () {
+                restartableMediaPlayer.beginPlayback();
+
+                expect(restartableMediaPlayer.getCurrentTime()).toBe(100);
+              });
+
+              it('should start at supplied time', function () {
+                restartableMediaPlayer.beginPlaybackFrom(10);
+
+                expect(restartableMediaPlayer.getCurrentTime()).toBe(10);
+              });
+
+              it('should increase when playing', function () {
+                restartableMediaPlayer.beginPlaybackFrom(10);
+
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
+                jasmine.clock().tick(1000);
+
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
+                expect(restartableMediaPlayer.getCurrentTime()).toBe(11);
+              });
+
+              it('should not increase when paused', function () {
+                restartableMediaPlayer.beginPlaybackFrom(10);
+                timeUpdate({ state: MediaPlayerBase.STATE.PAUSED });
+
+                jasmine.clock().tick(1000);
+
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
+                expect(restartableMediaPlayer.getCurrentTime()).toBe(10);
+              });
+            });
+
+            describe('getSeekableRange', function () {
+              it('should start at the window time', function () {
+                restartableMediaPlayer.beginPlaybackFrom(0);
+
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
+                expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 0, end: 100 });
+              });
+
+              it('should increase start and end for a sliding window', function () {
+                restartableMediaPlayer.beginPlaybackFrom(0);
+
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+
+                jasmine.clock().tick(1000);
+
+                expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 1, end: 101 });
+              });
+
+              it('should only increase end for a growing window', function () {
+                initialiseRestartableMediaPlayer({}, WindowTypes.GROWING);
+                restartableMediaPlayer.beginPlaybackFrom(0);
+                timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
+                jasmine.clock().tick(1000);
+
+                expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 0, end: 101 });
+              });
             });
           });
 
@@ -185,7 +268,16 @@ require(
 
             function startPlaybackAndPause (startTime, disableAutoResume) {
               restartableMediaPlayer.beginPlaybackFrom(startTime);
+
+              for (var index = 0; index < mockCallback.length; index++) {
+                mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING});
+              }
+
               restartableMediaPlayer.pause({disableAutoResume: disableAutoResume});
+
+              for (index = 0; index < mockCallback.length; index++) {
+                mockCallback[index]({state: MediaPlayerBase.STATE.PAUSED});
+              }
             }
 
             beforeEach(function () {
@@ -197,6 +289,10 @@ require(
               });
 
               initialiseRestartableMediaPlayer();
+
+              for (var index = 0; index < mockCallback.length; index++) {
+                mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING});
+              }
             });
 
             afterEach(function () {

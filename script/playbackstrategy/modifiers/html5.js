@@ -6,7 +6,7 @@ define(
   function (MediaPlayerBase) {
     'use strict';
 
-    function Player (logger) {
+    function Player (deviceConfig) {
       var eventCallback;
       var eventCallbacks = [];
       var state = MediaPlayerBase.STATE.EMPTY;
@@ -25,8 +25,13 @@ define(
 
       var postBufferingState;
       var targetSeekTime;
+      var seekFinished;
+
+      var count;
+      var timeoutHappened;
 
       var disableSentinels;
+      var disableSeekSentinel;
       var hasSentinelTimeChangedWithinTolerance;
       var enterBufferingSentinelAttemptCount;
       var sentinelSeekTime;
@@ -199,7 +204,7 @@ define(
       }
 
       function shouldBeSeekedSentinel () {
-        if (sentinelSeekTime === undefined) {
+        if (sentinelSeekTime === undefined || disableSeekSentinel) {
           return false;
         }
 
@@ -294,7 +299,6 @@ define(
       }
 
       function reportError (errorMessage) {
-        logger.error(errorMessage);
         emitEvent(MediaPlayerBase.EVENT.ERROR);
       }
 
@@ -347,8 +351,6 @@ define(
               start: 0,
               end: mediaElement.duration
             };
-          } else {
-            logger.warn('No \'duration\' or \'seekable\' on media element');
           }
         }
         return undefined;
@@ -392,10 +394,48 @@ define(
         toComplete();
       }
 
+      function emitSeekAttempted () {
+        if (getState() === MediaPlayerBase.STATE.EMPTY) {
+          emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+          seekFinished = false;
+        }
+
+        count = 0;
+        timeoutHappened = false;
+        if (deviceConfig.restartTimeout) {
+          setTimeout(function () {
+            timeoutHappened = true;
+          }, deviceConfig.restartTimeout);
+        } else {
+          timeoutHappened = true;
+        }
+      }
+
+      function emitSeekFinishedAtCorrectStartingPoint () {
+        var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance;
+
+        if (sentinelSeekTime === undefined) {
+          isAtCorrectStartingPoint = true;
+        }
+
+        var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint;
+
+        if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
+          emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED);
+          seekFinished = true;
+        } else if (isPlayingAtCorrectTime) {
+          count++;
+        } else {
+          count = 0;
+        }
+      }
+
       function onStatus () {
         if (getState() === MediaPlayerBase.STATE.PLAYING) {
           emitEvent(MediaPlayerBase.EVENT.STATUS);
         }
+
+        emitSeekFinishedAtCorrectStartingPoint();
       }
 
       function onMetadata () {
@@ -451,15 +491,12 @@ define(
         switch (getState()) {
           case MediaPlayerBase.STATE.STOPPED:
           case MediaPlayerBase.STATE.ERROR:
-            break;
-
+            return;
           default:
             if (mediaElement) {
               return mediaElement.currentTime;
             }
-            break;
         }
-        return undefined;
       }
 
       /**
@@ -520,12 +557,7 @@ define(
       }
 
       function getClampedTimeForPlayFrom (seconds) {
-        var clampedTime = getClampedTime(seconds);
-        var range = getSeekableRange();
-        if (clampedTime !== seconds) {
-          logger.debug('play From ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
-        }
-        return clampedTime;
+        return getClampedTime(seconds);
       }
 
       function wipe () {
@@ -601,10 +633,13 @@ define(
 
         initialiseMedia: function (type, url, mediaMimeType, sourceContainer, opts) {
           disableSentinels = opts.disableSentinels;
+          disableSeekSentinel = opts.disableSeekSentinel;
           mediaType = type;
           source = url;
           mimeType = mediaMimeType;
           opts = opts || {};
+
+          emitSeekAttempted();
 
           if (getState() === MediaPlayerBase.STATE.EMPTY) {
             var idSuffix = 'Video';
@@ -686,6 +721,7 @@ define(
         beginPlayback: function () {
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           sentinelSeekTime = undefined;
+
           switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
               trustZeroes = true;
@@ -833,7 +869,6 @@ define(
         toPaused: toPaused,
 
         toPlaying: toPlaying
-
       };
     }
 

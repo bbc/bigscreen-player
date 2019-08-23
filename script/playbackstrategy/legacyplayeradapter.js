@@ -7,7 +7,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
     'bigscreenplayer/playbackstrategy/liveglitchcurtain'
   ],
   function (AllowedMediaTransitions, MediaState, WindowTypes, DebugTool, LiveGlitchCurtain) {
-    return function (windowType, mediaKind, timeData, playbackElement, isUHD, deviceConfig, player) {
+    return function (mediaSources, windowType, playbackElement, isUHD, deviceConfig, player) {
       var EVENT_HISTORY_LENGTH = 2;
 
       var mediaPlayer = player;
@@ -17,7 +17,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var errorCallback;
       var timeUpdateCallback;
       var currentTime;
-      var timeCorrection = timeData && timeData.correction || 0;
+      var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
       var duration = 0;
       var isPaused;
       var isEnded = false;
@@ -35,7 +35,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
       var config = deviceConfig;
       var setSourceOpts = {
-        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels
+        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels,
+        disableSeekSentinel: window.bigscreenPlayer.disableSeekSentinel
       };
 
       mediaPlayer.addEventCallback(this, eventHandler);
@@ -88,7 +89,14 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
 
       function onTimeUpdate (event) {
         isPaused = false;
-        currentTime = event.currentTime - timeCorrection;
+
+        // Note: Multiple consecutive CDN failover logic
+        // A newly loaded video element will always report a 0 time update
+        // This is slightly unhelpful if we want to continue from a later point but consult currentTime as the source of truth.
+        if (parseInt(event.currentTime) !== 0) {
+          currentTime = event.currentTime - timeCorrection;
+        }
+
         // Must publish this time update before checkSeekSucceded - which could cause a pause event
         // This is a device specific event ordering issue.
         publishTimeUpdate();
@@ -114,11 +122,32 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       }
 
       function onSeekAttempted (event) {
-        showCurtain();
+        if (requiresLiveCurtain()) {
+          var doNotForceBeginPlaybackToEndOfWindow = {
+            forceBeginPlaybackToEndOfWindow: false
+          };
+
+          var streaming = config.streaming || {
+            overrides: doNotForceBeginPlaybackToEndOfWindow
+          };
+
+          var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
+
+          var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
+
+          if (shouldShowCurtain) {
+            liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
+            liveGlitchCurtain.showCurtain();
+          }
+        }
       }
 
       function onSeekFinished (event) {
-        hideCurtain();
+        if (requiresLiveCurtain()) {
+          if (liveGlitchCurtain) {
+            liveGlitchCurtain.hideCurtain();
+          }
+        }
       }
 
       function publishMediaState (mediaState) {
@@ -192,29 +221,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
         mediaPlayer.beginPlaybackFrom(currentTime + timeCorrection || 0);
       }
 
-      function showCurtain () {
-        var doNotForceBeginPlaybackToEndOfWindow = {
-          forceBeginPlaybackToEndOfWindow: false
-        };
-
-        var streaming = config.streaming || {
-          overrides: doNotForceBeginPlaybackToEndOfWindow
-        };
-
-        var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
-
-        var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
-
-        if (shouldShowCurtain) {
-          liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
-          liveGlitchCurtain.showCurtain();
-        }
-      }
-
-      function hideCurtain () {
-        if (liveGlitchCurtain) {
-          liveGlitchCurtain.hideCurtain();
-        }
+      function requiresLiveCurtain () {
+        return !!window.bigscreenPlayer.showLiveCurtain;
       }
 
       function reset () {
@@ -241,15 +249,14 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (cdns, mimeType, startTime) {
-          var source = cdns[0].url;
+        load: function (mimeType, startTime) {
           setupExitSeekWorkarounds(mimeType);
           isPaused = false;
 
           hasStartTime = startTime || startTime === 0;
           var isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime;
 
-          mediaPlayer.initialiseMedia('video', source, mimeType, playbackElement, setSourceOpts);
+          mediaPlayer.initialiseMedia('video', mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts);
           if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
             currentTime = startTime;
             mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);

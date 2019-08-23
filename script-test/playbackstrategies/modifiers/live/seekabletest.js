@@ -1,12 +1,11 @@
 require(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'squire'
+    'bigscreenplayer/playbackstrategy/modifiers/live/seekable'
   ],
-    function (MediaPlayerBase, Squire) {
+    function (MediaPlayerBase, SeekableMediaPlayer) {
       var sourceContainer = document.createElement('div');
       var player;
-      var seekableMediaConstructor;
       var seekableMediaPlayer;
 
       function wrapperTests (action, expectedReturn) {
@@ -21,30 +20,17 @@ require(
         }
       }
 
-      function initialiseSeekableMediaPlayer (config, logger) {
-        seekableMediaPlayer = seekableMediaConstructor(config, logger);
+      function initialiseSeekableMediaPlayer (config) {
+        seekableMediaPlayer = SeekableMediaPlayer(player, config);
       }
 
       describe('Seekable HMTL5 Live Player', function () {
-        beforeEach(function (done) {
-          var injector = new Squire();
-
+        beforeEach(function () {
           player = jasmine.createSpyObj('player',
             ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
               'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement', 'pause',
               'resume', 'beginPlaybackFrom', 'playFrom', 'getCurrentTime', 'getSeekableRange', 'toPaused',
               'toPlaying']);
-
-          function mockMediaPlayer () {
-            return player;
-          }
-
-          injector.mock({'bigscreenplayer/playbackstrategy/modifiers/html5': mockMediaPlayer});
-
-          injector.require(['bigscreenplayer/playbackstrategy/modifiers/live/seekable'], function (seekableMediaPlayer) {
-            seekableMediaConstructor = seekableMediaPlayer;
-            done();
-          });
         });
 
         describe('methods call the appropriate media player methods', function () {

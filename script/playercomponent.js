@@ -8,17 +8,14 @@ define(
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/transferformats',
-    'bigscreenplayer/manifest/manifestloader',
-    'bigscreenplayer/utils/livesupportutils',
-    'bigscreenplayer/mediaresilience',
-    'bigscreenplayer/debugger/cdndebugoutput'
+    'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/models/playbackstrategy'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, LiveSupportUtils, MediaResilience, CdnDebugOutput) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
     'use strict';
 
-    var PlayerComponent = function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
+    var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
       var isInitialPlay = true;
       var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
@@ -31,17 +28,15 @@ define(
       var mediaMetaData;
       var fatalErrorTimeout;
       var fatalError;
-      var cdnDebugOutput = new CdnDebugOutput(bigscreenPlayerData.media.urls);
       var transferFormat = bigscreenPlayerData.media.transferFormat;
 
       playbackStrategy = PlaybackStrategy(
+        mediaSources,
         windowType,
         mediaKind,
-        bigscreenPlayerData.time,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        device,
-        cdnDebugOutput
+        device
       );
 
       playbackStrategy.addEventCallback(this, eventCallback);
@@ -77,11 +72,11 @@ define(
       }
 
       function getWindowStartTime () {
-        return bigscreenPlayerData.time && bigscreenPlayerData.time.windowStartTime;
+        return mediaSources && mediaSources.time().windowStartTime;
       }
 
       function getWindowEndTime () {
-        return bigscreenPlayerData.time && bigscreenPlayerData.time.windowEndTime;
+        return mediaSources && mediaSources.time().windowEndTime;
       }
 
       function getPlayerElement () {
@@ -126,8 +121,41 @@ define(
       function setCurrentTime (time) {
         userInteracted = true;
         if (transitions().canBeginSeek()) {
-          playbackStrategy.setCurrentTime(time);
+          isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy.setCurrentTime(time);
         }
+      }
+
+      function isNativeHLSRestartable () {
+        return window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
+               transferFormat === TransferFormats.HLS &&
+               windowType !== WindowTypes.STATIC &&
+               getLiveSupport(device) === LiveSupport.RESTARTABLE;
+      }
+
+      function reloadMediaElement (time) {
+        var originalWindowStartOffset = getWindowStartTime();
+
+        var doSeek = function () {
+          var windowOffset = mediaSources.time().windowStartTime - originalWindowStartOffset;
+          var seekToTime = time - windowOffset / 1000;
+
+          var thenPause = playbackStrategy.isPaused();
+          var seekableRange = playbackStrategy.getSeekableRange();
+          tearDownMediaElement();
+
+          if (seekToTime > seekableRange.end - seekableRange.start - 30) {
+            seekToTime = undefined;
+            thenPause = false;
+          }
+          loadMedia(mediaMetaData.type, seekToTime, thenPause);
+        };
+
+        var onError = function (errorMessage) {
+          tearDownMediaElement();
+          bubbleFatalError(createPlaybackErrorProperties(event), false);
+        };
+
+        mediaSources.refresh(doSeek, onError);
       }
 
       function transitions () {
@@ -172,7 +200,7 @@ define(
       function onBuffering () {
         publishMediaStateUpdate(MediaState.WAITING);
         var playbackProperties = createPlaybackProperties();
-        startErrorTimeout(playbackProperties);
+        startBufferingErrorTimeout(playbackProperties);
         bubbleErrorCleared(playbackProperties);
         bubbleBufferingRaised(playbackProperties);
         userInteracted = false;
@@ -193,13 +221,13 @@ define(
         bubbleBufferingCleared(playbackProperties);
 
         var playbackErrorProperties = createPlaybackErrorProperties(event);
-        raiseError(playbackErrorProperties, false);
+        raiseError(playbackErrorProperties);
       }
 
-      function startErrorTimeout (properties) {
+      function startBufferingErrorTimeout (properties) {
         var bufferingTimeout = isInitialPlay ? 30000 : 20000;
         var bufferingClearedProperties = PlaybackUtils.clone(properties);
-        clearErrorTimeout();
+        clearBufferingErrorTimeout();
         errorTimeoutID = setTimeout(function () {
           bufferingClearedProperties.dismissed_by = 'timeout';
           bubbleBufferingCleared(bufferingClearedProperties);
@@ -208,72 +236,48 @@ define(
         }, bufferingTimeout);
       }
 
-      function raiseError (properties, bufferingTimeoutError) {
-        clearErrorTimeout();
+      function raiseError (properties) {
+        clearBufferingErrorTimeout();
         publishMediaStateUpdate(MediaState.WAITING);
-        bubbleErrorRaised(properties, bufferingTimeoutError);
-        startFatalErrorTimeout(properties, bufferingTimeoutError);
+        bubbleErrorRaised(properties);
+        startFatalErrorTimeout(properties);
       }
 
-      function startFatalErrorTimeout (errorProperties, bufferingTimeoutError) {
+      function startFatalErrorTimeout (errorProperties) {
         if (!fatalErrorTimeout && !fatalError) {
           fatalErrorTimeout = setTimeout(function () {
             fatalErrorTimeout = null;
             fatalError = true;
-            attemptCdnFailover(errorProperties, bufferingTimeoutError);
+            errorProperties.error_mssg = 'Fatal error';
+            attemptCdnFailover(errorProperties, false);
           }, 5000);
         }
       }
 
       function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
-        var shouldFailover = MediaResilience.shouldFailover(mediaMetaData.urls.length, getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
+        var time = getCurrentTime();
+        var oldWindowStartTime = getWindowStartTime();
 
-        if (shouldFailover) {
-          var thenPause = playbackStrategy.isPaused();
-          tearDownMediaElement();
-
-          var failoverTime = getCurrentTime();
-          if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
-            manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-          } else {
-            cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-          }
-        } else {
-          bubbleFatalError(errorProperties, bufferingTimeoutError);
-        }
-      }
-
-      function manifestReloadFailover (failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-        ManifestLoader.load(
-          bigscreenPlayerData.media.urls,
-          bigscreenPlayerData.serverDate,
-          {
-            onSuccess: function (manifestData) {
-              var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
-              bigscreenPlayerData.time = manifestData.time;
-              failoverTime -= windowOffset / 1000;
-              cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-            },
-            onError: function () {
-              bubbleFatalError(errorProperties, bufferingTimeoutError);
-            }
-          }
-        );
-      }
-
-      function cdnFailover (failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-        var evt = new PluginData({
-          status: PluginEnums.STATUS.FAILOVER,
-          stateType: PluginEnums.TYPE.ERROR,
-          properties: errorProperties,
+        var failoverParams = {
+          errorMessage: errorProperties.error_mssg,
           isBufferingTimeoutError: bufferingTimeoutError,
-          cdn: mediaMetaData.urls[0].cdn,
-          newCdn: mediaMetaData.urls[1].cdn
-        });
-        Plugins.interface.onErrorHandled(evt);
-        mediaMetaData.urls.shift();
-        cdnDebugOutput.update();
-        loadMedia(mediaMetaData.urls, mediaMetaData.type, failoverTime, thenPause);
+          currentTime: getCurrentTime(),
+          duration: getDuration()
+        };
+
+        var doLoadMedia = function () {
+          var thenPause = isPaused();
+          var windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000;
+          var failoverTime = time - (windowOffset || 0);
+          tearDownMediaElement();
+          loadMedia(mediaMetaData.type, failoverTime, thenPause);
+        };
+
+        var doErrorCallback = function () {
+          bubbleFatalError(errorProperties, bufferingTimeoutError);
+        };
+
+        mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams);
       }
 
       function clearFatalErrorTimeout () {
@@ -283,7 +287,7 @@ define(
         }
       }
 
-      function clearErrorTimeout () {
+      function clearBufferingErrorTimeout () {
         if (errorTimeoutID !== null) {
           clearTimeout(errorTimeoutID);
           errorTimeoutID = null;
@@ -291,7 +295,7 @@ define(
       }
 
       function playout (playbackProperties) {
-        clearErrorTimeout();
+        clearBufferingErrorTimeout();
         clearFatalErrorTimeout();
         fatalError = false;
         bubbleBufferingCleared(playbackProperties);
@@ -312,8 +316,8 @@ define(
         Plugins.interface.onErrorCleared(evt);
       }
 
-      function bubbleErrorRaised (errorProperties, bufferingTimeoutError) {
-        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError });
+      function bubbleErrorRaised (errorProperties) {
+        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: false });
         Plugins.interface.onError(evt);
       }
 
@@ -371,15 +375,15 @@ define(
 
       function initialMediaPlay (media, startTime) {
         mediaMetaData = media;
-        loadMedia(media.urls, media.type, startTime);
+        loadMedia(media.type, startTime);
 
         if (!captionsContainer) {
           captionsContainer = new CaptionsContainer(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
         }
       }
 
-      function loadMedia (urls, type, startTime, thenPause) {
-        playbackStrategy.load(urls, type, startTime);
+      function loadMedia (type, startTime, thenPause) {
+        playbackStrategy.load(type, startTime);
         if (thenPause) {
           pause();
         }
@@ -396,11 +400,6 @@ define(
           captionsContainer.stop();
           captionsContainer.tearDown();
           captionsContainer = null;
-        }
-
-        if (cdnDebugOutput) {
-          cdnDebugOutput.tearDown();
-          cdnDebugOutput = undefined;
         }
 
         isInitialPlay = true;

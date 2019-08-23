@@ -7,9 +7,9 @@
 require(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'squire'
+    'bigscreenplayer/playbackstrategy/modifiers/live/playable'
   ],
-    function (MediaPlayerBase, Squire) {
+    function (MediaPlayerBase, PlayableMediaPlayer) {
       var sourceContainer = document.createElement('div');
       var player;
       var playableMediaPlayer;
@@ -31,23 +31,12 @@ require(
       }
 
       describe('Playable HMTL5 Live Player', function () {
-        beforeEach(function (done) {
-          var injector = new Squire();
-
+        beforeEach(function () {
           player = jasmine.createSpyObj('player',
             ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
               'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement']);
 
-          function mockMediaPlayer () {
-            return player;
-          }
-
-          injector.mock({'bigscreenplayer/playbackstrategy/modifiers/html5': mockMediaPlayer});
-
-          injector.require(['bigscreenplayer/playbackstrategy/modifiers/live/playable'], function (PlayableMediaPlayer) {
-            playableMediaPlayer = PlayableMediaPlayer();
-            done();
-          });
+          playableMediaPlayer = PlayableMediaPlayer(player);
         });
 
         it('calls beginPlayback on the media player', function () {
