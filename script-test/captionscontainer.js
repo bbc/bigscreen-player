@@ -44,26 +44,26 @@ require(
           captionsContainer = new CaptionsContainerWithMocks(null, 'potatoUrl', false, parentElement);
           captionsContainer.start();
 
-          expect(mockCaptionsSpy.start).toHaveBeenCalled();
+          expect(mockCaptionsSpy.start).toHaveBeenCalledWith();
         });
 
         it('Does not start captions if there is not a caption URL', function () {
           captionsContainer = new CaptionsContainerWithMocks(null, null, false, parentElement);
           captionsContainer.start();
 
-          expect(mockCaptionsSpy.start).not.toHaveBeenCalled();
+          expect(mockCaptionsSpy.start).not.toHaveBeenCalledWith();
         });
 
         it('Starts captions if auto start is set', function () {
           captionsContainer = new CaptionsContainerWithMocks(null, 'http://', true, parentElement);
 
-          expect(mockCaptionsSpy.start).toHaveBeenCalled();
+          expect(mockCaptionsSpy.start).toHaveBeenCalledWith();
         });
 
         it('Does not start captions if auto start is not set', function () {
           captionsContainer = new CaptionsContainerWithMocks(null, 'http://', false, parentElement);
 
-          expect(mockCaptionsSpy.start).not.toHaveBeenCalled();
+          expect(mockCaptionsSpy.start).not.toHaveBeenCalledWith();
         });
       });
 
@@ -72,14 +72,14 @@ require(
           captionsContainer = new CaptionsContainerWithMocks(null, 'http://', false, parentElement);
           captionsContainer.stop();
 
-          expect(mockCaptionsSpy.stop).toHaveBeenCalled();
+          expect(mockCaptionsSpy.stop).toHaveBeenCalledWith();
         });
 
         it('Does not stop the captions if there is not a URL', function () {
           captionsContainer = new CaptionsContainerWithMocks(null, null, false, parentElement);
           captionsContainer.stop();
 
-          expect(mockCaptionsSpy.stop).not.toHaveBeenCalled();
+          expect(mockCaptionsSpy.stop).not.toHaveBeenCalledWith();
         });
       });
 

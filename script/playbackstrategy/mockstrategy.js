@@ -75,7 +75,7 @@ define('bigscreenplayer/playbackstrategy/mockstrategy',
       }
     };
 
-    var MockStrategy = function (playbackFrame, playbackType, streamType, mediaType, timeData, videoContainer) {
+    var MockStrategy = function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, device) {
       return instance;
     };
 

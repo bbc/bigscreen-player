@@ -9,11 +9,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/plugins',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
-    'bigscreenplayer/manifest/manifestloader',
     'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/utils/livesupportutils'
+    'bigscreenplayer/mediasources'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, LiveSupportUtils) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -27,6 +26,7 @@ define('bigscreenplayer/bigscreenplayer',
       var endOfStream;
       var windowType;
       var device;
+      var mediaSources;
 
       var END_OF_STREAM_TOLERANCE = 10;
 
@@ -84,7 +84,8 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function bigscreenPlayerDataLoaded (playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback) {
-        if (bigscreenPlayerData.time) {
+        if (windowType !== WindowTypes.STATIC) {
+          bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
 
           initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime;
@@ -98,6 +99,7 @@ define('bigscreenplayer/bigscreenplayer',
         playerComponent = new PlayerComponent(
           playbackElement,
           bigscreenPlayerData,
+          mediaSources,
           windowType,
           enableSubtitles,
           mediaStateUpdateCallback,
@@ -107,22 +109,14 @@ define('bigscreenplayer/bigscreenplayer',
         if (successCallback) {
           successCallback();
         }
-
-        var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
-          return media.cdn;
-        });
-
-        DebugTool.keyValue({key: 'available cdns', value: availableCdns});
-        DebugTool.keyValue({key: 'current cdn', value: bigscreenPlayerData.media.urls[0].cdn});
-        DebugTool.keyValue({key: 'url', value: bigscreenPlayerData.media.urls[0].url});
       }
 
       function getWindowStartTime () {
-        return playerComponent && playerComponent.getWindowStartTime();
+        return mediaSources && mediaSources.time().windowStartTime;
       }
 
       function getWindowEndTime () {
-        return playerComponent && playerComponent.getWindowEndTime();
+        return mediaSources && mediaSources.time().windowEndTime;
       }
 
       return {
@@ -135,26 +129,19 @@ define('bigscreenplayer/bigscreenplayer',
             callbacks = {};
           }
 
-          if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
-            ManifestLoader.load(
-              bigscreenPlayerData.media.urls,
-              serverDate,
-              {
-                onSuccess: function (manifestData) {
-                  bigscreenPlayerData.media.transferFormat = manifestData.transferFormat;
-                  bigscreenPlayerData.time = manifestData.time;
-                  bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
-                },
-                onError: function () {
-                  if (callbacks.onError) {
-                    callbacks.onError({error: 'manifest'});
-                  }
-                }
+          var mediaSourceCallbacks = {
+            onSuccess: function () {
+              bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
+            },
+            onError: function (error) {
+              if (callbacks.onError) {
+                callbacks.onError(error);
               }
-            );
-          } else {
-            bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
-          }
+            }
+          };
+
+          mediaSources = new MediaSources();
+          mediaSources.init(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(device), mediaSourceCallbacks);
         },
 
         tearDown: function () {
@@ -168,6 +155,7 @@ define('bigscreenplayer/bigscreenplayer',
           mediaKind = undefined;
           pauseTrigger = undefined;
           windowType = undefined;
+          mediaSources = undefined;
           this.unregisterPlugin();
           DebugTool.tearDown();
           Chronicle.tearDown();
@@ -220,6 +208,7 @@ define('bigscreenplayer/bigscreenplayer',
           if (windowType === WindowTypes.STATIC) {
             return {};
           }
+
           return {
             windowStartTime: getWindowStartTime(),
             windowEndTime: getWindowEndTime(),
