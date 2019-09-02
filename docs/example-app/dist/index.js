@@ -290,7 +290,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/playercomponent */ "./node_modules/bigscreen-player/script/playercomponent.js"), __webpack_require__(/*! bigscreenplayer/models/pausetriggers */ "./node_modules/bigscreen-player/script/models/pausetriggers.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/mockbigscreenplayer */ "./node_modules/bigscreen-player/script/mockbigscreenplayer.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/debugger/chronicle */ "./node_modules/bigscreen-player/script/debugger/chronicle.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestloader */ "./node_modules/bigscreen-player/script/manifest/manifestloader.js"), __webpack_require__(/*! bigscreenplayer/utils/timeutils */ "./node_modules/bigscreen-player/script/utils/timeutils.js"), __webpack_require__(/*! bigscreenplayer/utils/livesupportutils */ "./node_modules/bigscreen-player/script/utils/livesupportutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, LiveSupportUtils) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/playercomponent */ "./node_modules/bigscreen-player/script/playercomponent.js"), __webpack_require__(/*! bigscreenplayer/models/pausetriggers */ "./node_modules/bigscreen-player/script/models/pausetriggers.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/mockbigscreenplayer */ "./node_modules/bigscreen-player/script/mockbigscreenplayer.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/debugger/chronicle */ "./node_modules/bigscreen-player/script/debugger/chronicle.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/utils/timeutils */ "./node_modules/bigscreen-player/script/utils/timeutils.js"), __webpack_require__(/*! bigscreenplayer/mediasources */ "./node_modules/bigscreen-player/script/mediasources.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources) {
   'use strict';
 
   function BigscreenPlayer() {
@@ -305,6 +305,9 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var endOfStream;
     var windowType;
     var device;
+    var mediaSources;
+
+    var END_OF_STREAM_TOLERANCE = 10;
 
     function mediaStateUpdateCallback(evt) {
       if (evt.timeUpdate) {
@@ -360,7 +363,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback) {
-      if (bigscreenPlayerData.time) {
+      if (windowType !== WindowTypes.STATIC) {
+        bigscreenPlayerData.time = mediaSources.time();
         serverDate = bigscreenPlayerData.serverDate;
 
         initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime;
@@ -371,27 +375,19 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       mediaKind = bigscreenPlayerData.media.kind;
       endOfStream = windowType !== WindowTypes.STATIC && !bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0;
 
-      playerComponent = new PlayerComponent(playbackElement, bigscreenPlayerData, windowType, enableSubtitles, mediaStateUpdateCallback, device);
+      playerComponent = new PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, mediaStateUpdateCallback, device);
 
       if (successCallback) {
         successCallback();
       }
-
-      var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
-        return media.cdn;
-      });
-
-      DebugTool.keyValue({ key: 'available cdns', value: availableCdns });
-      DebugTool.keyValue({ key: 'current cdn', value: bigscreenPlayerData.media.urls[0].cdn });
-      DebugTool.keyValue({ key: 'url', value: bigscreenPlayerData.media.urls[0].url });
     }
 
     function getWindowStartTime() {
-      return playerComponent && playerComponent.getWindowStartTime();
+      return mediaSources && mediaSources.time().windowStartTime;
     }
 
     function getWindowEndTime() {
-      return playerComponent && playerComponent.getWindowEndTime();
+      return mediaSources && mediaSources.time().windowEndTime;
     }
 
     return {
@@ -404,22 +400,19 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
           callbacks = {};
         }
 
-        if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
-          ManifestLoader.load(bigscreenPlayerData.media.urls, serverDate, {
-            onSuccess: function onSuccess(manifestData) {
-              bigscreenPlayerData.media.transferFormat = manifestData.transferFormat;
-              bigscreenPlayerData.time = manifestData.time;
-              bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
-            },
-            onError: function onError() {
-              if (callbacks.onError) {
-                callbacks.onError({ error: 'manifest' });
-              }
+        var mediaSourceCallbacks = {
+          onSuccess: function onSuccess() {
+            bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
+          },
+          onError: function onError(error) {
+            if (callbacks.onError) {
+              callbacks.onError(error);
             }
-          });
-        } else {
-          bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
-        }
+          }
+        };
+
+        mediaSources = new MediaSources();
+        mediaSources.init(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(device), mediaSourceCallbacks);
       },
 
       tearDown: function tearDown() {
@@ -433,6 +426,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         mediaKind = undefined;
         pauseTrigger = undefined;
         windowType = undefined;
+        mediaSources = undefined;
         this.unregisterPlugin();
         DebugTool.tearDown();
         Chronicle.tearDown();
@@ -462,10 +456,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       setCurrentTime: function setCurrentTime(time) {
         DebugTool.apicall('setCurrentTime');
         if (playerComponent) {
-          var END_OF_STREAM_TOLERANCE = 10;
-
           playerComponent.setCurrentTime(time);
-
           endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
         }
       },
@@ -481,10 +472,14 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       getSeekableRange: function getSeekableRange() {
         return playerComponent ? playerComponent.getSeekableRange() : {};
       },
+      isPlayingAtLiveEdge: function isPlayingAtLiveEdge() {
+        return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
+      },
       getLiveWindowData: function getLiveWindowData() {
         if (windowType === WindowTypes.STATIC) {
           return {};
         }
+
         return {
           windowStartTime: getWindowStartTime(),
           windowEndTime: getWindowEndTime(),
@@ -1002,60 +997,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 /***/ }),
 
-/***/ "./node_modules/bigscreen-player/script/debugger/cdndebugoutput.js":
-/*!*************************************************************************!*\
-  !*** ./node_modules/bigscreen-player/script/debugger/cdndebugoutput.js ***!
-  \*************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (DebugTool, Utils) {
-  'use strict';
-
-  function CdnDebugOutput(initialMedia) {
-    var media = Utils.cloneArray(initialMedia);
-    var currentCDN = media[0];
-
-    DebugTool.keyValue({ key: 'available cdns', value: availableCdns() });
-    DebugTool.keyValue({ key: 'current cdn', value: currentCDN.cdn });
-    DebugTool.keyValue({ key: 'url', value: currentCDN.url });
-
-    function availableCdns() {
-      return media.map(function (element) {
-        return element && element.cdn;
-      });
-    }
-
-    function updateMedia() {
-      media.shift();
-      currentCDN = media[0];
-    }
-
-    function update() {
-      updateMedia();
-      DebugTool.keyValue({ key: 'available cdns', value: availableCdns() });
-      DebugTool.keyValue({ key: 'current cdn', value: currentCDN.cdn });
-      DebugTool.keyValue({ key: 'url', value: currentCDN.url });
-    }
-
-    return {
-      update: update,
-      tearDown: function tearDown() {
-        media = undefined;
-        currentCDN = undefined;
-      }
-    };
-  }
-
-  return CdnDebugOutput;
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
 /***/ "./node_modules/bigscreen-player/script/debugger/chronicle.js":
 /*!********************************************************************!*\
   !*** ./node_modules/bigscreen-player/script/debugger/chronicle.js ***!
@@ -1550,9 +1491,10 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LiveSupport) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LiveSupport, MediaPlayerBase) {
   'use strict';
 
+  var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
   var FOUR_MINUTES = 4 * 60;
 
   function convertMilliSecondsToSeconds(timeInMilis) {
@@ -1586,10 +1528,28 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
   }
 
   function supportsSeeking(liveSupport) {
-    return liveSupport === LiveSupport.SEEKABLE;
+    return liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.RESTARTABLE && window.bigscreenPlayer.playbackStrategy === 'nativestrategy';
+  }
+
+  function autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, resume) {
+    var resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
+    var autoResumeTimer = setTimeout(function () {
+      removeEventCallback(undefined, detectIfUnpaused);
+      resume();
+    }, resumeTimeOut * 1000);
+
+    addEventCallback(undefined, detectIfUnpaused);
+
+    function detectIfUnpaused(event) {
+      if (event.state !== MediaPlayerBase.STATE.PAUSED) {
+        removeEventCallback(undefined, detectIfUnpaused);
+        clearTimeout(autoResumeTimer);
+      }
+    }
   }
 
   return {
+    autoResumeAtStartOfRange: autoResumeAtStartOfRange,
     canPause: canPause,
     canSeek: canSeek
   };
@@ -1610,28 +1570,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/manifest/manifestparser */ "./node_modules/bigscreen-player/script/manifest/manifestparser.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js"), __webpack_require__(/*! bigscreenplayer/utils/loadurl */ "./node_modules/bigscreen-player/script/utils/loadurl.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (ManifestParser, TransferFormats, LoadUrl) {
   'use strict';
-
-  function filterHLS(urls) {
-    var filtered = [];
-    for (var i = 0; i < urls.length; i++) {
-      var isHLS = /\.m3u8($|\?.*$)/.test(urls[i].url);
-      if (isHLS) {
-        filtered.push(urls[i].url);
-      }
-    }
-    return filtered;
-  }
-
-  function filterDash(urls) {
-    var filtered = [];
-    for (var i = 0; i < urls.length; i++) {
-      var isDash = /\.mpd($|\?.*$)/.test(urls[i].url);
-      if (isDash) {
-        filtered.push(urls[i].url);
-      }
-    }
-    return filtered;
-  }
 
   function retrieveDashManifest(url, dateWithOffset, callbacks) {
     var xhr = LoadUrl(url, {
@@ -1715,14 +1653,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
   }
 
   return {
-    load: function load(mediaUrls, serverDate, callbacks) {
-      var hlsUrl = filterHLS(mediaUrls)[0];
-      var dashUrl = filterDash(mediaUrls)[0];
-
-      if (hlsUrl) {
-        retrieveHLSManifest(hlsUrl, serverDate, callbacks);
-      } else if (dashUrl) {
-        retrieveDashManifest(dashUrl, serverDate, callbacks);
+    load: function load(mediaUrl, serverDate, callbacks) {
+      if (/\.m3u8($|\?.*$)/.test(mediaUrl)) {
+        retrieveHLSManifest(mediaUrl, serverDate, callbacks);
+      } else if (/\.mpd($|\?.*$)/.test(mediaUrl)) {
+        retrieveDashManifest(mediaUrl, serverDate, callbacks);
       } else {
         callbacks.onError('Invalid media url');
       }
@@ -1741,12 +1676,12 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (DebugTool) {
   'use strict';
 
-  function filter(manifest, representationOptions) {
+  function filter(manifest, representationOptions, oldDashCodecRequired) {
     var constantFps = representationOptions.constantFps;
     var maxFps = representationOptions.maxFps;
 
@@ -1767,6 +1702,14 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
         return adaptationSet;
       });
     }
+
+    if (oldDashCodecRequired) {
+      DebugTool.keyValue({ key: 'Video Container', value: 'avc1' });
+      manifest = rewriteDashCodec(manifest);
+    } else {
+      DebugTool.keyValue({ key: 'Video Container', value: 'avc3' });
+    }
+
     return manifest;
   }
 
@@ -1779,11 +1722,11 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
     if (!baseUrl || baseUrl.match(/^https?:\/\//)) return;
 
     var baseUrls = sources.map(function (source, priority) {
-      var sourceUrl = new URL(baseUrl, source.url);
+      var sourceUrl = new URL(baseUrl, source);
       return {
         __text: sourceUrl.href,
         'dvb:priority': priority,
-        serviceLocation: source.cdn
+        serviceLocation: source
       };
     });
 
@@ -1792,12 +1735,35 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
     if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
   }
 
+  function rewriteDashCodec(manifest) {
+    var periods = manifest.Period_asArray || [manifest.Period];
+    if (periods) {
+      for (var i = 0; i < periods.length; i++) {
+        var sets = periods[i].AdaptationSet_asArray || periods[i].AdaptationSet;
+        if (sets) {
+          for (var j = 0; j < sets.length; j++) {
+            var representations = sets[j].Representation_asArray || [sets[j].Representation];
+            if (representations) {
+              for (var k = 0; k < representations.length; k++) {
+                var rep = representations[k];
+                if (rep.mimeType === 'video/mp4') {
+                  rep.codecs = rep.codecs.replace('avc3', 'avc1');
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return manifest;
+  }
+
   return {
     filter: filter,
     extractBaseUrl: extractBaseUrl,
     generateBaseUrls: generateBaseUrls
   };
-}).call(exports, __webpack_require__, exports, module),
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
@@ -1904,28 +1870,198 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 /***/ }),
 
-/***/ "./node_modules/bigscreen-player/script/mediaresilience.js":
-/*!*****************************************************************!*\
-  !*** ./node_modules/bigscreen-player/script/mediaresilience.js ***!
-  \*****************************************************************/
+/***/ "./node_modules/bigscreen-player/script/mediasources.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/mediasources.js ***!
+  \**************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (WindowTypes, LiveSupport, TransferFormats) {
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestloader */ "./node_modules/bigscreen-player/script/manifest/manifestloader.js"), __webpack_require__(/*! bigscreenplayer/models/playbackstrategy */ "./node_modules/bigscreen-player/script/models/playbackstrategy.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy, TransferFormats, LiveSupport) {
   'use strict';
 
-  function shouldFailover(remainingUrls, duration, currentTime, liveSupport, windowType, transferFormat) {
-    var aboutToEnd = duration && currentTime > duration - 5;
-    var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
-    var shouldLiveFailover = windowType !== WindowTypes.STATIC && (transferFormat === TransferFormats.DASH || liveSupport !== LiveSupport.RESTARTABLE);
-    return remainingUrls > 1 && (shouldStaticFailover || shouldLiveFailover);
-  }
+  return function () {
+    var mediaSources;
+    var windowType;
+    var liveSupport;
+    var serverDate;
+    var time = {};
+    var transferFormat;
 
-  return {
-    shouldFailover: shouldFailover
+    function init(urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
+      if (urls === undefined || urls.length === 0) {
+        throw new Error('Media Sources urls are undefined');
+      }
+
+      if (callbacks === undefined || callbacks.onSuccess === undefined || callbacks.onError === undefined) {
+        throw new Error('Media Sources callbacks are undefined');
+      }
+
+      windowType = newWindowType;
+      liveSupport = newLiveSupport;
+      serverDate = newServerDate;
+      mediaSources = PlaybackUtils.cloneArray(urls);
+      updateDebugOutput();
+
+      if (needToGetManifest(windowType, liveSupport)) {
+        loadManifest(serverDate, callbacks);
+      } else {
+        callbacks.onSuccess();
+      }
+    }
+
+    function failover(postFailoverAction, failoverErrorAction, failoverParams) {
+      if (shouldFailover(failoverParams)) {
+        emitCdnFailover(failoverParams);
+        updateCdns();
+        updateDebugOutput();
+
+        if (needToGetManifest(windowType, liveSupport)) {
+          loadManifest(serverDate, { onSuccess: postFailoverAction, onError: failoverErrorAction });
+        } else {
+          postFailoverAction();
+        }
+      } else {
+        failoverErrorAction();
+      }
+    }
+
+    function shouldFailover(failoverParams) {
+      if (failoverParams.serviceLocation === getCurrentUrl()) {
+        return false;
+      }
+
+      var talRestartable = window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.TAL && liveSupport === LiveSupport.RESTARTABLE;
+      var aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5;
+      var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
+      var shouldLiveFailover = windowType !== WindowTypes.STATIC && !talRestartable;
+      return isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
+    }
+
+    function isFailoverInfoValid(failoverParams) {
+      var infoValid = (typeof failoverParams === 'undefined' ? 'undefined' : _typeof(failoverParams)) === 'object' && typeof failoverParams.errorMessage === 'string' && typeof failoverParams.isBufferingTimeoutError === 'boolean';
+
+      if (!infoValid) {
+        DebugTool.error('failoverInfo is not valid');
+      }
+
+      return infoValid;
+    }
+
+    function needToGetManifest(windowType, liveSupport) {
+      var requiresManifestLoad = {
+        restartable: true,
+        seekable: true,
+        playable: false,
+        none: false
+      };
+
+      var requiredTransferFormat = transferFormat === TransferFormats.HLS || transferFormat === undefined;
+      return requiredTransferFormat && windowType !== WindowTypes.STATIC && requiresManifestLoad[liveSupport];
+    }
+
+    function refresh(onSuccess, onError) {
+      loadManifest(serverDate, { onSuccess: onSuccess, onError: onError });
+    }
+
+    function loadManifest(serverDate, callbacks) {
+      var onManifestLoadSuccess = function onManifestLoadSuccess(manifestData) {
+        time = manifestData.time;
+        transferFormat = manifestData.transferFormat;
+        callbacks.onSuccess();
+      };
+
+      var failoverError = function failoverError() {
+        callbacks.onError({ error: 'manifest' });
+      };
+
+      var onManifestLoadError = function onManifestLoadError() {
+        failover(load, failoverError, { errorMessage: 'manifest-load', isBufferingTimeoutError: false });
+      };
+
+      function load() {
+        ManifestLoader.load(getCurrentUrl(), serverDate, {
+          onSuccess: onManifestLoadSuccess,
+          onError: onManifestLoadError
+        });
+      }
+
+      load();
+    }
+
+    function getCurrentUrl() {
+      if (mediaSources.length > 0) {
+        return mediaSources[0].url.toString();
+      }
+
+      return '';
+    }
+
+    function availableUrls() {
+      return mediaSources.map(function (mediaSource) {
+        return mediaSource.url;
+      });
+    }
+
+    function generateTime() {
+      return time;
+    }
+
+    function updateCdns() {
+      if (hasSourcesToFailoverTo()) {
+        mediaSources.shift();
+      }
+    }
+
+    function hasSourcesToFailoverTo() {
+      return mediaSources.length > 1;
+    }
+
+    function emitCdnFailover(failoverInfo) {
+      var evt = new PluginData({
+        status: PluginEnums.STATUS.FAILOVER,
+        stateType: PluginEnums.TYPE.ERROR,
+        properties: { error_mssg: failoverInfo.errorMessage },
+        isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
+        cdn: mediaSources[0].cdn,
+        newCdn: mediaSources[1].cdn
+      });
+      Plugins.interface.onErrorHandled(evt);
+    }
+
+    function getCurrentCdn() {
+      if (mediaSources.length > 0) {
+        return mediaSources[0].cdn.toString();
+      }
+
+      return '';
+    }
+
+    function availableCdns() {
+      return mediaSources.map(function (mediaSource) {
+        return mediaSource.cdn;
+      });
+    }
+
+    function updateDebugOutput() {
+      DebugTool.keyValue({ key: 'available cdns', value: availableCdns() });
+      DebugTool.keyValue({ key: 'current cdn', value: getCurrentCdn() });
+      DebugTool.keyValue({ key: 'url', value: getCurrentUrl() });
+    }
+
+    return {
+      init: init,
+      failover: failover,
+      refresh: refresh,
+      currentSource: getCurrentUrl,
+      availableSources: availableUrls,
+      time: generateTime
+    };
   };
 }).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -2473,6 +2609,30 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 
 /***/ }),
 
+/***/ "./node_modules/bigscreen-player/script/models/playbackstrategy.js":
+/*!*************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/models/playbackstrategy.js ***!
+  \*************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  return {
+    MSE: 'msestrategy',
+    HYBRID: 'hybridstrategy',
+    NATIVE: 'nativestrategy',
+    TAL: 'talstrategy'
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
 /***/ "./node_modules/bigscreen-player/script/models/transferformats.js":
 /*!************************************************************************!*\
   !*** ./node_modules/bigscreen-player/script/models/transferformats.js ***!
@@ -2600,8 +2760,12 @@ var map = {
 	"./liveglitchcurtain.js": "./node_modules/bigscreen-player/script/playbackstrategy/liveglitchcurtain.js",
 	"./mockstrategy": "./node_modules/bigscreen-player/script/playbackstrategy/mockstrategy.js",
 	"./mockstrategy.js": "./node_modules/bigscreen-player/script/playbackstrategy/mockstrategy.js",
+	"./modifiers/cehtml": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js",
+	"./modifiers/cehtml.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js",
 	"./modifiers/html5": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
 	"./modifiers/html5.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
+	"./modifiers/live/none": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
+	"./modifiers/live/none.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
 	"./modifiers/live/playable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
 	"./modifiers/live/playable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
 	"./modifiers/live/restartable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
@@ -2653,15 +2817,15 @@ webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy syn
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/nativestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/nativestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/msestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/msestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/strategypicker */ "./node_modules/bigscreen-player/script/playbackstrategy/strategypicker.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Native, MSE, StrategyPicker, LiveSupport) {
-  var HybridStrategy = function HybridStrategy(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/nativestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/nativestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/msestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/msestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/strategypicker */ "./node_modules/bigscreen-player/script/playbackstrategy/strategypicker.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/models/playbackstrategy */ "./node_modules/bigscreen-player/script/models/playbackstrategy.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Native, MSE, StrategyPicker, LiveSupport, PlaybackStrategy) {
+  var HybridStrategy = function HybridStrategy(mediaSources, windowType, mediaKind, videoElement, isUHD, device) {
     var strategy = StrategyPicker(windowType, isUHD);
 
-    if (strategy === 'mseStrategy') {
-      return MSE(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput);
+    if (strategy === PlaybackStrategy.MSE) {
+      return MSE(mediaSources, windowType, mediaKind, videoElement, isUHD, device);
     }
 
-    return Native(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput);
+    return Native(mediaSources, windowType, mediaKind, videoElement, isUHD, device);
   };
 
   HybridStrategy.getLiveSupport = function () {
@@ -2685,7 +2849,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/allowedmediatransitions */ "./node_modules/bigscreen-player/script/allowedmediatransitions.js"), __webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/liveglitchcurtain */ "./node_modules/bigscreen-player/script/playbackstrategy/liveglitchcurtain.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (AllowedMediaTransitions, MediaState, WindowTypes, DebugTool, LiveGlitchCurtain) {
-  return function (windowType, mediaKind, timeData, playbackElement, isUHD, deviceConfig, player) {
+  return function (mediaSources, windowType, playbackElement, isUHD, deviceConfig, player) {
     var EVENT_HISTORY_LENGTH = 2;
 
     var mediaPlayer = player;
@@ -2695,7 +2859,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var errorCallback;
     var timeUpdateCallback;
     var currentTime;
-    var timeCorrection = timeData && timeData.correction || 0;
+    var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
     var duration = 0;
     var _isPaused;
     var _isEnded = false;
@@ -2713,7 +2877,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
     var config = deviceConfig;
     var setSourceOpts = {
-      disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels
+      disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels,
+      disableSeekSentinel: window.bigscreenPlayer.disableSeekSentinel
     };
 
     mediaPlayer.addEventCallback(this, eventHandler);
@@ -2766,7 +2931,14 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
     function onTimeUpdate(event) {
       _isPaused = false;
-      currentTime = event.currentTime - timeCorrection;
+
+      // Note: Multiple consecutive CDN failover logic
+      // A newly loaded video element will always report a 0 time update
+      // This is slightly unhelpful if we want to continue from a later point but consult currentTime as the source of truth.
+      if (parseInt(event.currentTime) !== 0) {
+        currentTime = event.currentTime - timeCorrection;
+      }
+
       // Must publish this time update before checkSeekSucceded - which could cause a pause event
       // This is a device specific event ordering issue.
       publishTimeUpdate();
@@ -2792,11 +2964,32 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function onSeekAttempted(event) {
-      showCurtain();
+      if (requiresLiveCurtain()) {
+        var doNotForceBeginPlaybackToEndOfWindow = {
+          forceBeginPlaybackToEndOfWindow: false
+        };
+
+        var streaming = config.streaming || {
+          overrides: doNotForceBeginPlaybackToEndOfWindow
+        };
+
+        var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
+
+        var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
+
+        if (shouldShowCurtain) {
+          liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
+          liveGlitchCurtain.showCurtain();
+        }
+      }
     }
 
     function onSeekFinished(event) {
-      hideCurtain();
+      if (requiresLiveCurtain()) {
+        if (liveGlitchCurtain) {
+          liveGlitchCurtain.hideCurtain();
+        }
+      }
     }
 
     function publishMediaState(mediaState) {
@@ -2870,29 +3063,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       mediaPlayer.beginPlaybackFrom(currentTime + timeCorrection || 0);
     }
 
-    function showCurtain() {
-      var doNotForceBeginPlaybackToEndOfWindow = {
-        forceBeginPlaybackToEndOfWindow: false
-      };
-
-      var streaming = config.streaming || {
-        overrides: doNotForceBeginPlaybackToEndOfWindow
-      };
-
-      var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
-
-      var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
-
-      if (shouldShowCurtain) {
-        liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
-        liveGlitchCurtain.showCurtain();
-      }
-    }
-
-    function hideCurtain() {
-      if (liveGlitchCurtain) {
-        liveGlitchCurtain.hideCurtain();
-      }
+    function requiresLiveCurtain() {
+      return !!window.bigscreenPlayer.showLiveCurtain;
     }
 
     function reset() {
@@ -2919,15 +3091,14 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
           newTimeUpdateCallback.call(thisArg);
         };
       },
-      load: function load(cdns, mimeType, startTime) {
-        var source = cdns[0].url;
+      load: function load(mimeType, startTime) {
         setupExitSeekWorkarounds(mimeType);
         _isPaused = false;
 
         hasStartTime = startTime || startTime === 0;
         var isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime;
 
-        mediaPlayer.initialiseMedia('video', source, mimeType, playbackElement, setSourceOpts);
+        mediaPlayer.initialiseMedia('video', mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts);
         if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
           currentTime = startTime;
           mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);
@@ -3176,7 +3347,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
     }
   };
 
-  var MockStrategy = function MockStrategy(playbackFrame, playbackType, streamType, mediaType, timeData, videoContainer) {
+  var MockStrategy = function MockStrategy(mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, device) {
     return instance;
   };
 
@@ -3186,6 +3357,775 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 
   return MockStrategy;
 }).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers sync recursive ^\\.\\/.*$":
+/*!***************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers sync ^\.\/.*$ ***!
+  \***************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var map = {
+	"./cehtml": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js",
+	"./cehtml.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js",
+	"./html5": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
+	"./html5.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
+	"./live/none": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
+	"./live/none.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
+	"./live/playable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
+	"./live/playable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
+	"./live/restartable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
+	"./live/restartable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
+	"./live/seekable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js",
+	"./live/seekable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js",
+	"./mediaplayerbase": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js",
+	"./mediaplayerbase.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js"
+};
+
+
+function webpackContext(req) {
+	var id = webpackContextResolve(req);
+	return __webpack_require__(id);
+}
+function webpackContextResolve(req) {
+	var id = map[req];
+	if(!(id + 1)) { // check for number or string
+		var e = new Error("Cannot find module '" + req + "'");
+		e.code = 'MODULE_NOT_FOUND';
+		throw e;
+	}
+	return id;
+}
+webpackContext.keys = function webpackContextKeys() {
+	return Object.keys(map);
+};
+webpackContext.resolve = webpackContextResolve;
+module.exports = webpackContext;
+webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy/modifiers sync recursive ^\\.\\/.*$";
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js":
+/*!***********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js ***!
+  \***********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase, DebugTool) {
+  'use strict';
+
+  var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
+
+  var STATE = {
+    STOPPED: 0,
+    PLAYING: 1,
+    PAUSED: 2,
+    CONNECTING: 3,
+    BUFFERING: 4,
+    FINISHED: 5,
+    ERROR: 6
+  };
+
+  return function () {
+    var eventCallbacks = [];
+    var state = MediaPlayerBase.STATE.EMPTY;
+
+    var mediaElement;
+    var updateInterval;
+
+    var mediaType;
+    var source;
+    var mimeType;
+
+    var deferSeekingTo;
+    var range;
+
+    var postBufferingState;
+
+    var disableSentinels;
+
+    var sentinelSeekTime;
+    var seekSentinelTolerance;
+    var sentinelInterval;
+    var sentinelIntervalNumber;
+    var timeAtLastSentinelInterval;
+
+    var sentinelTimeIsNearEnd;
+    var timeHasAdvanced;
+
+    var sentinelLimits = {
+      pause: {
+        maximumAttempts: 2,
+        successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
+        failureEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE,
+        currentAttemptCount: 0
+      },
+      seek: {
+        maximumAttempts: 2,
+        successEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK,
+        failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
+        currentAttemptCount: 0
+      }
+    };
+
+    function addEventCallback(thisArg, callback) {
+      var eventCallback = function eventCallback(event) {
+        callback.call(thisArg, event);
+      };
+
+      eventCallbacks.push({ from: callback, to: eventCallback });
+    }
+
+    function removeEventCallback(thisArg, callback) {
+      eventCallbacks = eventCallbacks.filter(function (cb) {
+        return cb.from !== callback;
+      });
+    }
+
+    function removeAllEventCallbacks() {
+      eventCallbacks = [];
+    }
+
+    function emitEvent(eventType, eventLabels) {
+      var event = {
+        type: eventType,
+        currentTime: getCurrentTime(),
+        seekableRange: getSeekableRange(),
+        duration: getDuration(),
+        url: getSource(),
+        mimeType: getMimeType(),
+        state: getState()
+      };
+
+      if (eventLabels) {
+        for (var key in eventLabels) {
+          if (eventLabels.hasOwnProperty(key)) {
+            event[key] = eventLabels[key];
+          }
+        }
+      }
+
+      eventCallbacks.forEach(function (callback) {
+        callback.to(event);
+      });
+    }
+
+    function getClampedTime(seconds) {
+      var range = getSeekableRange();
+      var offsetFromEnd = getClampOffsetFromConfig();
+      var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
+      if (seconds < range.start) {
+        return range.start;
+      } else if (seconds > nearToEnd) {
+        return nearToEnd;
+      } else {
+        return seconds;
+      }
+    }
+
+    function getClampOffsetFromConfig() {
+      var clampOffsetFromEndOfRange;
+
+      // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
+      // if (config && config.streaming && config.streaming.overrides) {
+      //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
+      // }
+
+      if (clampOffsetFromEndOfRange !== undefined) {
+        return clampOffsetFromEndOfRange;
+      } else {
+        return CLAMP_OFFSET_FROM_END_OF_RANGE;
+      }
+    }
+
+    function isLiveMedia() {
+      return mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO;
+    }
+
+    function getSource() {
+      return source;
+    }
+
+    function getMimeType() {
+      return mimeType;
+    }
+
+    function getState() {
+      return state;
+    }
+
+    function setSeekSentinelTolerance() {
+      var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15;
+      var LIVE_SEEK_SENTINEL_TOLERANCE = 30;
+
+      seekSentinelTolerance = ON_DEMAND_SEEK_SENTINEL_TOLERANCE;
+      if (isLiveMedia()) {
+        seekSentinelTolerance = LIVE_SEEK_SENTINEL_TOLERANCE;
+      }
+    }
+
+    function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts) {
+      disableSentinels = opts.disableSentinels;
+      mediaType = type;
+      source = url;
+      mimeType = mediaMimeType;
+      opts = opts || {};
+
+      if (getState() === MediaPlayerBase.STATE.EMPTY) {
+        timeAtLastSentinelInterval = 0;
+        setSeekSentinelTolerance();
+        createElement();
+        addElementToDOM();
+        mediaElement.data = source;
+        registerEventHandlers();
+        toStopped();
+      } else {
+        toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state');
+      }
+    }
+
+    function resume() {
+      postBufferingState = MediaPlayerBase.STATE.PLAYING;
+      switch (getState()) {
+        case MediaPlayerBase.STATE.PLAYING:
+        case MediaPlayerBase.STATE.BUFFERING:
+          break;
+
+        case MediaPlayerBase.STATE.PAUSED:
+          mediaElement.play(1);
+          toPlaying();
+          break;
+
+        default:
+          toError('Cannot resume while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function playFrom(seconds) {
+      postBufferingState = MediaPlayerBase.STATE.PLAYING;
+      sentinelLimits.seek.currentAttemptCount = 0;
+      switch (getState()) {
+        case MediaPlayerBase.STATE.BUFFERING:
+          deferSeekingTo = seconds;
+          break;
+
+        case MediaPlayerBase.STATE.COMPLETE:
+          toBuffering();
+          mediaElement.stop();
+          playAndSetDeferredSeek(seconds);
+          break;
+
+        case MediaPlayerBase.STATE.PLAYING:
+          toBuffering();
+          var seekResult = seekTo(seconds);
+          if (seekResult === false) {
+            toPlaying();
+          }
+          break;
+
+        case MediaPlayerBase.STATE.PAUSED:
+          toBuffering();
+          seekTo(seconds);
+          mediaElement.play(1);
+          break;
+
+        default:
+          toError('Cannot playFrom while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function getDuration() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          return undefined;
+        default:
+          if (isLiveMedia()) {
+            return Infinity;
+          }
+          return getMediaDuration();
+      }
+    }
+
+    function beginPlayback() {
+      postBufferingState = MediaPlayerBase.STATE.PLAYING;
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+          toBuffering();
+          mediaElement.play(1);
+          break;
+
+        default:
+          toError('Cannot beginPlayback while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function beginPlaybackFrom(seconds) {
+      postBufferingState = MediaPlayerBase.STATE.PLAYING;
+      sentinelLimits.seek.currentAttemptCount = 0;
+
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+          // Seeking past 0 requires calling play first when media has not been loaded
+          toBuffering();
+          playAndSetDeferredSeek(seconds);
+          break;
+
+        default:
+          toError('Cannot beginPlayback while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function pause() {
+      postBufferingState = MediaPlayerBase.STATE.PAUSED;
+      switch (getState()) {
+        case MediaPlayerBase.STATE.BUFFERING:
+        case MediaPlayerBase.STATE.PAUSED:
+          break;
+
+        case MediaPlayerBase.STATE.PLAYING:
+          mediaElement.play(0);
+          toPaused();
+          break;
+
+        default:
+          toError('Cannot pause while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function stop() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+          break;
+
+        case MediaPlayerBase.STATE.BUFFERING:
+        case MediaPlayerBase.STATE.PLAYING:
+        case MediaPlayerBase.STATE.PAUSED:
+        case MediaPlayerBase.STATE.COMPLETE:
+          sentinelSeekTime = undefined;
+          if (mediaElement.stop) {
+            mediaElement.stop();
+            toStopped();
+          } else {
+            toError('mediaElement.stop is not a function : failed to stop the media player');
+          }
+          break;
+
+        default:
+          toError('Cannot stop while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function reset() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.EMPTY:
+          break;
+
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          toEmpty();
+          break;
+
+        default:
+          toError('Cannot reset while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function getCurrentTime() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          break;
+
+        case MediaPlayerBase.STATE.COMPLETE:
+          if (range) {
+            return range.end;
+          }
+          break;
+
+        default:
+          if (mediaElement) {
+            return mediaElement.playPosition / 1000;
+          }
+          break;
+      }
+      return undefined;
+    }
+
+    function getSeekableRange() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          break;
+
+        default:
+          return range;
+      }
+      return undefined;
+    }
+
+    function getMediaDuration() {
+      if (range) {
+        return range.end;
+      }
+      return undefined;
+    }
+
+    function getPlayerElement() {
+      return mediaElement;
+    }
+
+    function onFinishedBuffering() {
+      cacheRange();
+
+      if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
+        return;
+      }
+
+      if (waitingToSeek()) {
+        toBuffering();
+        performDeferredSeek();
+      } else if (waitingToPause()) {
+        toPaused();
+        mediaElement.play(0);
+      } else {
+        toPlaying();
+      }
+    }
+
+    function onDeviceError() {
+      reportError('Media element error code: ' + mediaElement.error);
+    }
+
+    function onDeviceBuffering() {
+      if (getState() === MediaPlayerBase.STATE.PLAYING) {
+        toBuffering();
+      }
+    }
+
+    function onEndOfMedia() {
+      if (getState() !== MediaPlayerBase.STATE.COMPLETE) {
+        toComplete();
+      }
+    }
+
+    function onStatus() {
+      if (getState() === MediaPlayerBase.STATE.PLAYING) {
+        emitEvent(MediaPlayerBase.EVENT.STATUS);
+      }
+    }
+
+    function createElement() {
+      mediaElement = document.createElement('object', 'mediaPlayer');
+      mediaElement.type = mimeType;
+      mediaElement.style.position = 'absolute';
+      mediaElement.style.top = '0px';
+      mediaElement.style.left = '0px';
+      mediaElement.style.width = '100%';
+      mediaElement.style.height = '100%';
+    }
+
+    function registerEventHandlers() {
+      var DEVICE_UPDATE_PERIOD_MS = 500;
+
+      mediaElement.onPlayStateChange = function () {
+        switch (mediaElement.playState) {
+          case STATE.STOPPED:
+            break;
+          case STATE.PLAYING:
+            onFinishedBuffering();
+            break;
+          case STATE.PAUSED:
+            break;
+          case STATE.CONNECTING:
+            break;
+          case STATE.BUFFERING:
+            onDeviceBuffering();
+            break;
+          case STATE.FINISHED:
+            onEndOfMedia();
+            break;
+          case STATE.ERROR:
+            onDeviceError();
+            break;
+          default:
+            // do nothing
+            break;
+        }
+      };
+
+      updateInterval = setInterval(function () {
+        onStatus();
+      }, DEVICE_UPDATE_PERIOD_MS);
+    }
+
+    function addElementToDOM() {
+      var body = document.getElementsByTagName('body')[0];
+      body.insertBefore(mediaElement, body.firstChild);
+    }
+
+    function cacheRange() {
+      if (mediaElement) {
+        range = {
+          start: 0,
+          end: mediaElement.playTime / 1000
+        };
+      }
+    }
+
+    function playAndSetDeferredSeek(seconds) {
+      mediaElement.play(1);
+      if (seconds > 0) {
+        deferSeekingTo = seconds;
+      }
+    }
+
+    function waitingToSeek() {
+      return deferSeekingTo !== undefined;
+    }
+
+    function performDeferredSeek() {
+      seekTo(deferSeekingTo);
+      deferSeekingTo = undefined;
+    }
+
+    function seekTo(seconds) {
+      var clampedTime = getClampedTime(seconds);
+      if (clampedTime !== seconds) {
+        DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+      }
+      sentinelSeekTime = clampedTime;
+      return mediaElement.seek(clampedTime * 1000);
+    }
+
+    function waitingToPause() {
+      return postBufferingState === MediaPlayerBase.STATE.PAUSED;
+    }
+
+    function wipe() {
+      mediaType = undefined;
+      source = undefined;
+      mimeType = undefined;
+      sentinelSeekTime = undefined;
+      range = undefined;
+      if (mediaElement) {
+        clearInterval(updateInterval);
+        clearSentinels();
+        destroyMediaElement();
+      } else {}
+    }
+
+    function destroyMediaElement() {
+      delete mediaElement.onPlayStateChange;
+      if (mediaElement.parentElement) {
+        mediaElement.parentElement.removeChild(mediaElement);
+      } else {}
+      mediaElement = undefined;
+    }
+
+    function reportError(errorMessage) {
+      DebugTool.info(errorMessage);
+      emitEvent(MediaPlayerBase.EVENT.ERROR, { 'errorMessage': errorMessage });
+    }
+
+    function toStopped() {
+      state = MediaPlayerBase.STATE.STOPPED;
+      emitEvent(MediaPlayerBase.EVENT.STOPPED);
+      if (sentinelInterval) {
+        clearSentinels();
+      }
+    }
+
+    function toBuffering() {
+      state = MediaPlayerBase.STATE.BUFFERING;
+      emitEvent(MediaPlayerBase.EVENT.BUFFERING);
+      setSentinels([exitBufferingSentinel]);
+    }
+
+    function toPlaying() {
+      state = MediaPlayerBase.STATE.PLAYING;
+      emitEvent(MediaPlayerBase.EVENT.PLAYING);
+      setSentinels([shouldBeSeekedSentinel, enterCompleteSentinel, enterBufferingSentinel]);
+    }
+
+    function toPaused() {
+      state = MediaPlayerBase.STATE.PAUSED;
+      emitEvent(MediaPlayerBase.EVENT.PAUSED);
+      setSentinels([shouldBePausedSentinel, shouldBeSeekedSentinel]);
+    }
+
+    function toComplete() {
+      state = MediaPlayerBase.STATE.COMPLETE;
+      emitEvent(MediaPlayerBase.EVENT.COMPLETE);
+      clearSentinels();
+    }
+
+    function toEmpty() {
+      wipe();
+      state = MediaPlayerBase.STATE.EMPTY;
+    }
+
+    function toError(errorMessage) {
+      wipe();
+      state = MediaPlayerBase.STATE.ERROR;
+      reportError(errorMessage);
+    }
+
+    function isNearToEnd(seconds) {
+      return getDuration() - seconds <= 1;
+    }
+
+    function setSentinels(sentinels) {
+      if (disableSentinels) {
+        return;
+      }
+
+      sentinelLimits.pause.currentAttemptCount = 0;
+      timeAtLastSentinelInterval = getCurrentTime();
+      clearSentinels();
+      sentinelIntervalNumber = 0;
+      sentinelInterval = setInterval(function () {
+        var newTime = getCurrentTime();
+        sentinelIntervalNumber++;
+
+        timeHasAdvanced = newTime ? newTime > timeAtLastSentinelInterval + 0.2 : false;
+        sentinelTimeIsNearEnd = isNearToEnd(newTime || timeAtLastSentinelInterval);
+
+        for (var i = 0; i < sentinels.length; i++) {
+          var sentinelActionPerformed = sentinels[i].call(this);
+          if (sentinelActionPerformed) {
+            break;
+          }
+        }
+
+        timeAtLastSentinelInterval = newTime;
+      }, 1100);
+    }
+
+    function clearSentinels() {
+      clearInterval(sentinelInterval);
+    }
+
+    function enterBufferingSentinel() {
+      var sentinelBufferingRequired = !timeHasAdvanced && !sentinelTimeIsNearEnd && sentinelIntervalNumber > 1;
+      if (sentinelBufferingRequired) {
+        emitEvent(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING);
+        toBuffering();
+      }
+      return sentinelBufferingRequired;
+    }
+
+    function exitBufferingSentinel() {
+      var sentinelExitBufferingRequired = timeHasAdvanced;
+      if (sentinelExitBufferingRequired) {
+        emitEvent(MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING);
+        onFinishedBuffering();
+      }
+      return sentinelExitBufferingRequired;
+    }
+
+    function shouldBeSeekedSentinel() {
+      if (sentinelSeekTime === undefined) {
+        return false;
+      }
+
+      var currentTime = getCurrentTime();
+
+      var clampedSentinelSeekTime = getClampedTime(sentinelSeekTime);
+
+      var sentinelSeekRequired = Math.abs(clampedSentinelSeekTime - currentTime) > seekSentinelTolerance;
+      var sentinelActionTaken = false;
+
+      if (sentinelSeekRequired) {
+        var mediaElement = mediaElement;
+        sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
+          mediaElement.seek(clampedSentinelSeekTime * 1000);
+        });
+      } else if (sentinelIntervalNumber < 3) {
+        sentinelSeekTime = currentTime;
+      } else {
+        sentinelSeekTime = undefined;
+      }
+      return sentinelActionTaken;
+    }
+
+    function shouldBePausedSentinel() {
+      var sentinelPauseRequired = timeHasAdvanced;
+      var sentinelActionTaken = false;
+      if (sentinelPauseRequired) {
+        var mediaElement = mediaElement;
+        sentinelActionTaken = nextSentinelAttempt(sentinelLimits.pause, function () {
+          mediaElement.play(0);
+        });
+      }
+      return sentinelActionTaken;
+    }
+
+    function enterCompleteSentinel() {
+      var sentinelCompleteRequired = !timeHasAdvanced && sentinelTimeIsNearEnd;
+      if (sentinelCompleteRequired) {
+        emitEvent(MediaPlayerBase.EVENT.SENTINEL_COMPLETE);
+        onEndOfMedia();
+      }
+      return sentinelCompleteRequired;
+    }
+
+    function nextSentinelAttempt(sentinelInfo, attemptFn) {
+      var currentAttemptCount, maxAttemptCount;
+
+      sentinelInfo.currentAttemptCount += 1;
+      currentAttemptCount = sentinelInfo.currentAttemptCount;
+      maxAttemptCount = sentinelInfo.maximumAttempts;
+
+      if (currentAttemptCount === maxAttemptCount + 1) {
+        emitEvent(sentinelInfo.failureEvent);
+      }
+
+      if (currentAttemptCount <= maxAttemptCount) {
+        attemptFn();
+        emitEvent(sentinelInfo.successEvent);
+        return true;
+      }
+
+      return false;
+    }
+
+    return {
+      addEventCallback: addEventCallback,
+      removeEventCallback: removeEventCallback,
+      removeAllEventCallbacks: removeAllEventCallbacks,
+      initialiseMedia: initialiseMedia,
+      resume: resume,
+      playFrom: playFrom,
+      beginPlayback: beginPlayback,
+      beginPlaybackFrom: beginPlaybackFrom,
+      pause: pause,
+      stop: stop,
+      reset: reset,
+      getSource: getSource,
+      getMimeType: getMimeType,
+      getSeekableRange: getSeekableRange,
+      getMediaDuration: getMediaDuration,
+      getState: getState,
+      getPlayerElement: getPlayerElement,
+      getDuration: getDuration
+    };
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
@@ -3203,7 +4143,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase) {
   'use strict';
 
-  function Player(logger) {
+  function Player(deviceConfig) {
     var eventCallback;
     var eventCallbacks = [];
     var state = MediaPlayerBase.STATE.EMPTY;
@@ -3222,8 +4162,13 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
     var postBufferingState;
     var targetSeekTime;
+    var seekFinished;
+
+    var count;
+    var timeoutHappened;
 
     var disableSentinels;
+    var disableSeekSentinel;
     var hasSentinelTimeChangedWithinTolerance;
     var enterBufferingSentinelAttemptCount;
     var sentinelSeekTime;
@@ -3396,7 +4341,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function shouldBeSeekedSentinel() {
-      if (sentinelSeekTime === undefined) {
+      if (sentinelSeekTime === undefined || disableSeekSentinel) {
         return false;
       }
 
@@ -3491,7 +4436,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function reportError(errorMessage) {
-      logger.error(errorMessage);
       emitEvent(MediaPlayerBase.EVENT.ERROR);
     }
 
@@ -3544,8 +4488,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
             start: 0,
             end: mediaElement.duration
           };
-        } else {
-          logger.warn('No \'duration\' or \'seekable\' on media element');
         }
       }
       return undefined;
@@ -3589,10 +4531,48 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       toComplete();
     }
 
+    function emitSeekAttempted() {
+      if (getState() === MediaPlayerBase.STATE.EMPTY) {
+        emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+        seekFinished = false;
+      }
+
+      count = 0;
+      timeoutHappened = false;
+      if (deviceConfig.restartTimeout) {
+        setTimeout(function () {
+          timeoutHappened = true;
+        }, deviceConfig.restartTimeout);
+      } else {
+        timeoutHappened = true;
+      }
+    }
+
+    function emitSeekFinishedAtCorrectStartingPoint() {
+      var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance;
+
+      if (sentinelSeekTime === undefined) {
+        isAtCorrectStartingPoint = true;
+      }
+
+      var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint;
+
+      if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
+        emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED);
+        seekFinished = true;
+      } else if (isPlayingAtCorrectTime) {
+        count++;
+      } else {
+        count = 0;
+      }
+    }
+
     function onStatus() {
       if (getState() === MediaPlayerBase.STATE.PLAYING) {
         emitEvent(MediaPlayerBase.EVENT.STATUS);
       }
+
+      emitSeekFinishedAtCorrectStartingPoint();
     }
 
     function onMetadata() {
@@ -3648,15 +4628,12 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       switch (getState()) {
         case MediaPlayerBase.STATE.STOPPED:
         case MediaPlayerBase.STATE.ERROR:
-          break;
-
+          return;
         default:
           if (mediaElement) {
             return mediaElement.currentTime;
           }
-          break;
       }
-      return undefined;
     }
 
     /**
@@ -3717,12 +4694,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function getClampedTimeForPlayFrom(seconds) {
-      var clampedTime = getClampedTime(seconds);
-      var range = _getSeekableRange();
-      if (clampedTime !== seconds) {
-        logger.debug('play From ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
-      }
-      return clampedTime;
+      return getClampedTime(seconds);
     }
 
     function wipe() {
@@ -3798,10 +4770,13 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
       initialiseMedia: function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts) {
         disableSentinels = opts.disableSentinels;
+        disableSeekSentinel = opts.disableSeekSentinel;
         mediaType = type;
         source = url;
         mimeType = mediaMimeType;
         opts = opts || {};
+
+        emitSeekAttempted();
 
         if (getState() === MediaPlayerBase.STATE.EMPTY) {
           var idSuffix = 'Video';
@@ -3883,6 +4858,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       beginPlayback: function beginPlayback() {
         postBufferingState = MediaPlayerBase.STATE.PLAYING;
         sentinelSeekTime = undefined;
+
         switch (getState()) {
           case MediaPlayerBase.STATE.STOPPED:
             trustZeroes = true;
@@ -4030,7 +5006,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       toPaused: toPaused,
 
       toPlaying: toPlaying
-
     };
   }
 
@@ -4048,6 +5023,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 /***/ (function(module, exports, __webpack_require__) {
 
 var map = {
+	"./none": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
+	"./none.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
 	"./playable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
 	"./playable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
 	"./restartable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
@@ -4079,6 +5056,25 @@ webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy/mod
 
 /***/ }),
 
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js":
+/*!**************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js ***!
+  \**************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  return function () {
+    throw new Error('Cannot create a none live support player');
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
 /***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js":
 /*!******************************************************************************************!*\
   !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js ***!
@@ -4089,11 +5085,10 @@ webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy/mod
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase) {
   'use strict';
 
-  function PlayableLivePlayer(deviceConfig, logger) {
-    var mediaPlayer = Html5Player(logger);
+  function PlayableLivePlayer(mediaPlayer) {
     return {
       beginPlayback: function beginPlayback() {
         mediaPlayer.beginPlayback();
@@ -4163,85 +5158,49 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
   'use strict';
 
-  var AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS = 8000;
+  function RestartableLivePlayer(mediaPlayer, deviceConfig, windowType, mediaSources) {
+    var callbacksMap = [];
+    var startTime;
+    var fakeTimer = {};
+    var timeCorrection = mediaSources.time().correction || 0;
+    addEventCallback(this, updateFakeTimer);
 
-  function RestartableLivePlayer(deviceConfig, logger) {
-    var mediaPlayer = Html5Player(logger);
-    var millisecondsUntilStartOfWindow;
-    var bufferingStarted;
-    var self = this;
-
-    function determineTimeUntilStartOfWindow() {
-      mediaPlayer.addEventCallback(self, detectCurrentTimeCallback);
-    }
-
-    function stopDeterminingTimeUntilStartOfWindow() {
-      mediaPlayer.removeEventCallback(self, detectCurrentTimeCallback);
-    }
-
-    function detectCurrentTimeCallback(event) {
-      if (event.state === MediaPlayerBase.STATE.PLAYING && event.currentTime > 0) {
-        removeEventCallback(self, detectCurrentTimeCallback);
-        millisecondsUntilStartOfWindow = event.currentTime * 1000;
-        determineTimeSpentBuffering();
-      }
-    }
-
-    function autoResumeAtStartOfRange() {
-      if (millisecondsUntilStartOfWindow !== null) {
-        var resumeTimeOut = Math.max(0, millisecondsUntilStartOfWindow - AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS);
-        var pauseStarted = new Date().getTime();
-        var autoResumeTimer = setTimeout(function () {
-          removeEventCallback(self, detectIfUnpaused);
-          millisecondsUntilStartOfWindow = 0;
-          resume();
-        }, resumeTimeOut);
-
-        addEventCallback(self, detectIfUnpaused);
+    function updateFakeTimer(event) {
+      if (fakeTimer.wasPlaying && fakeTimer.runningTime) {
+        fakeTimer.currentTime += (Date.now() - fakeTimer.runningTime) / 1000;
       }
 
-      function detectIfUnpaused(event) {
-        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-          removeEventCallback(self, detectIfUnpaused);
-          clearTimeout(autoResumeTimer);
-          var timePaused = new Date().getTime() - pauseStarted;
-          millisecondsUntilStartOfWindow -= timePaused;
-        }
-      }
+      fakeTimer.runningTime = Date.now();
+      fakeTimer.wasPlaying = event.state === MediaPlayerBase.STATE.PLAYING;
     }
 
     function addEventCallback(thisArg, callback) {
-      mediaPlayer.addEventCallback(thisArg, callback);
+      function newCallback(event) {
+        event.currentTime = getCurrentTime();
+        event.seekableRange = getSeekableRange();
+        callback(event);
+      }
+      callbacksMap.push({ from: callback, to: newCallback });
+      mediaPlayer.addEventCallback(thisArg, newCallback);
     }
 
     function removeEventCallback(thisArg, callback) {
-      mediaPlayer.removeEventCallback(thisArg, callback);
+      var filteredCallbacks = callbacksMap.filter(function (cb) {
+        return cb.from === callback;
+      });
+
+      if (filteredCallbacks.length > 0) {
+        callbacksMap = callbacksMap.splice(callbacksMap.indexOf(filteredCallbacks[0]));
+
+        mediaPlayer.removeEventCallback(thisArg, filteredCallbacks[0].to);
+      }
     }
 
     function removeAllEventCallbacks() {
       mediaPlayer.removeAllEventCallbacks();
-    }
-
-    function determineTimeSpentBuffering() {
-      bufferingStarted = null;
-      addEventCallback(self, determineBufferingCallback);
-    }
-
-    function stopDeterminingTimeSpentBuffering() {
-      removeEventCallback(self, determineBufferingCallback);
-    }
-
-    function determineBufferingCallback(event) {
-      if (event.state === MediaPlayerBase.STATE.BUFFERING && bufferingStarted === null) {
-        bufferingStarted = new Date().getTime();
-      } else if (event.state !== MediaPlayerBase.STATE.BUFFERING && bufferingStarted !== null) {
-        var timeBuffering = new Date().getTime() - bufferingStarted;
-        millisecondsUntilStartOfWindow = Math.max(0, millisecondsUntilStartOfWindow - timeBuffering);
-        bufferingStarted = null;
-      }
     }
 
     function resume() {
@@ -4252,27 +5211,41 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       mediaPlayer.pause();
       opts = opts || {};
       if (opts.disableAutoResume !== true) {
-        autoResumeAtStartOfRange();
+        DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), addEventCallback, removeEventCallback, resume);
       }
+    }
+
+    function getCurrentTime() {
+      return fakeTimer.currentTime + timeCorrection;
+    }
+
+    function getSeekableRange() {
+      var windowLength = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000;
+      var delta = (Date.now() - startTime) / 1000;
+      return {
+        start: (windowType === WindowTypes.SLIDING ? delta : 0) + timeCorrection,
+        end: windowLength + delta + timeCorrection
+      };
     }
 
     return {
       beginPlayback: function beginPlayback() {
         var config = deviceConfig;
 
+        startTime = Date.now();
+        fakeTimer.currentTime = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000;
+
         if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
           mediaPlayer.beginPlaybackFrom(Infinity);
         } else {
           mediaPlayer.beginPlayback();
         }
-
-        determineTimeUntilStartOfWindow();
       },
 
       beginPlaybackFrom: function beginPlaybackFrom(offset) {
-        millisecondsUntilStartOfWindow = offset * 1000;
+        startTime = Date.now();
+        fakeTimer.currentTime = offset;
         mediaPlayer.beginPlaybackFrom(offset);
-        determineTimeSpentBuffering();
       },
 
       initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
@@ -4291,8 +5264,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
       stop: function stop() {
         mediaPlayer.stop();
-        stopDeterminingTimeUntilStartOfWindow();
-        stopDeterminingTimeSpentBuffering();
       },
 
       reset: function reset() {
@@ -4319,7 +5290,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
       getPlayerElement: function getPlayerElement() {
         return mediaPlayer.getPlayerElement();
-      }
+      },
+
+      getCurrentTime: getCurrentTime,
+
+      getSeekableRange: getSeekableRange
 
     };
   }
@@ -4340,13 +5315,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase, DynamicWindowUtils) {
   'use strict';
 
-  function SeekableLivePlayer(deviceConfig, logger) {
+  function SeekableLivePlayer(mediaPlayer, deviceConfig) {
     var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
-
-    var mediaPlayer = Html5Player(logger);
 
     function addEventCallback(thisArg, callback) {
       mediaPlayer.addEventCallback(thisArg, callback);
@@ -4358,23 +5331,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
     function removeAllEventCallbacks() {
       mediaPlayer.removeAllEventCallbacks();
-    }
-
-    function autoResumeAtStartOfRange() {
-      var secondsUntilAutoResume = Math.max(0, mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
-      var self = this;
-      var autoResumeTimer = setTimeout(function () {
-        removeEventCallback(self, detectIfUnpaused);
-        resume();
-      }, secondsUntilAutoResume * 1000);
-
-      addEventCallback(self, detectIfUnpaused);
-      function detectIfUnpaused(event) {
-        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-          removeEventCallback(self, detectIfUnpaused);
-          clearTimeout(autoResumeTimer);
-        }
-      }
     }
 
     function resume() {
@@ -4420,7 +5376,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
           mediaPlayer.toPlaying();
         } else {
           mediaPlayer.pause();
-          autoResumeAtStartOfRange();
+          DynamicWindowUtils.autoResumeAtStartOfRange(mediaPlayer.getCurrentTime(), mediaPlayer.getSeekableRange(), addEventCallback, removeEventCallback, resume);
         }
       },
       resume: resume,
@@ -4465,9 +5421,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
       getLiveSupport: function getLiveSupport() {
         return MediaPlayerBase.LIVE_SUPPORT.SEEKABLE;
-      },
-
-      autoResumeAtStartOfRange: autoResumeAtStartOfRange
+      }
 
     };
   }
@@ -4543,11 +5497,11 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/mediakinds */ "./node_modules/bigscreen-player/script/models/mediakinds.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestmodifier */ "./node_modules/bigscreen-player/script/manifest/manifestmodifier.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"),
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/mediakinds */ "./node_modules/bigscreen-player/script/models/mediakinds.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestmodifier */ "./node_modules/bigscreen-player/script/manifest/manifestmodifier.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"),
 
 // static imports
-__webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestModifier, PlaybackUtils, LiveSupport) {
-  var MSEStrategy = function MSEStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, device, cdnDebugOutput) {
+__webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport) {
+  var MSEStrategy = function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
     var mediaPlayer;
     var mediaElement;
 
@@ -4555,15 +5509,13 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
     var errorCallback;
     var timeUpdateCallback;
 
-    var timeCorrection = timeData && timeData.correction || 0;
+    var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
     var failoverTime;
     var _isEnded = false;
 
     var bitrateInfoList;
     var mediaMetrics;
     var dashMetrics;
-
-    var mediaSources;
 
     var playerMetadata = {
       playbackBitrate: undefined,
@@ -4579,7 +5531,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       DOWNLOAD_ERROR_MESSAGE: 'download',
       MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
       QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-      CDN_FAILOVER: 'baseUrlSelected',
+      BASE_URL_SELECTED: 'baseUrlSelected',
       METRIC_ADDED: 'metricAdded',
       METRIC_CHANGED: 'metricChanged'
     };
@@ -4615,7 +5567,14 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       if (dvrInfo && windowType === WindowTypes.SLIDING) {
         failoverTime = Math.max(0, parseInt(dvrInfo.time - dvrInfo.range.start) - IN_STREAM_BUFFERING_SECONDS);
       } else {
-        failoverTime = mediaElement.currentTime;
+        var time = mediaElement.currentTime;
+
+        // Note: Multiple consecutive CDN failover logic
+        // A newly loaded video element will always report a 0 time update
+        // This is slightly unhelpful if we want to continue from a later point but consult failoverTime as the source of truth.
+        if (parseInt(time) !== 0) {
+          failoverTime = time;
+        }
       }
 
       publishTimeUpdate();
@@ -4652,8 +5611,8 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
 
       if (event.data) {
         var manifest = event.data;
-        ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-        ManifestModifier.generateBaseUrls(manifest, mediaSources);
+        ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {}, window.bigscreenPlayer.oldDashCodecRequired);
+        ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources());
       }
     }
 
@@ -4679,42 +5638,23 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       }
     }
 
-    function createPlaybackProperties() {
-      return {
-        seekable_range: getSeekableRange().start + ' to ' + getSeekableRange().end,
-        current_time: getCurrentTime(),
-        duration: getDuration()
-      };
-    }
-
-    function propagateCdnFailover(event, cdn) {
-      // Initial playback
-      if (mediaSources.length <= 1 || cdn !== mediaSources[1].cdn) return;
-
-      var errorProperties = PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
-      var evt = new PluginData({
-        status: PluginEnums.STATUS.FAILOVER,
-        stateType: PluginEnums.TYPE.ERROR,
-        properties: errorProperties,
-        isBufferingTimeoutError: false,
-        cdn: mediaSources[0].cdn,
-        newCdn: mediaSources[1].cdn
-      });
-      // urls -> sources -> mediaSources (shift the cdns for correct behaviour with buffering timeout failover)
-      // TODO: Remove this horrible mutation when failover is pushed down per strategy.
-      Plugins.interface.onErrorHandled(evt);
-      mediaSources.shift();
-      cdnDebugOutput.update();
-    }
-
-    function onCdnFailover(event) {
-      var pluginEvent = {
-        errorProperties: {
-          error_mssg: 'download'
-        }
+    /**
+     * Base url selected events are fired from dash.js whenever a priority weighted url is selected from a manifest
+     * Note: we ignore the initial selection as it isn't a failover.
+     * @param {*} event
+     */
+    function onBaseUrlSelected(event) {
+      var failoverInfo = {
+        errorMessage: 'download',
+        isBufferingTimeoutError: false
       };
 
-      propagateCdnFailover(pluginEvent, event.baseUrl.serviceLocation);
+      function log() {
+        DebugTool.info('BaseUrl selected: ' + event.baseUrl.url);
+      }
+
+      failoverInfo.serviceLocation = event.baseUrl.serviceLocation;
+      mediaSources.failover(log, log, failoverInfo);
     }
 
     function onMetricAdded(event) {
@@ -4774,7 +5714,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
     }
 
-    function setUpMediaPlayer(sources, playbackTime) {
+    function setUpMediaPlayer(playbackTime) {
       mediaPlayer = dashjs.MediaPlayer().create();
       mediaPlayer.getDebug().setLogToBrowserConsole(false);
 
@@ -4785,13 +5725,11 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
 
       mediaPlayer.initialize(mediaElement, null, true);
-      modifySource(sources, playbackTime);
+      modifySource(playbackTime);
     }
 
-    function modifySource(sources, playbackTime) {
-      mediaSources = sources;
-      var initialSource = calculateSourceAnchor(sources[0].url, playbackTime);
-      mediaPlayer.attachSource(initialSource);
+    function modifySource(playbackTime) {
+      mediaPlayer.attachSource(calculateSourceAnchor(mediaSources.currentSource(), playbackTime));
     }
 
     function setUpMediaListeners() {
@@ -4807,7 +5745,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
       mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
       mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
-      mediaPlayer.on(DashJSEvents.CDN_FAILOVER, onCdnFailover);
+      mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
       mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
     }
 
@@ -4835,7 +5773,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       }
 
       if (windowType === WindowTypes.GROWING) {
-        var windowStartTimeSeconds = timeData.windowStartTime / 1000;
+        var windowStartTimeSeconds = mediaSources.time().windowStartTime / 1000;
         var srcWithTimeAnchor = source + '#t=';
 
         startTime = parseInt(startTime);
@@ -4891,16 +5829,14 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
           newTimeUpdateCallback.call(thisArg);
         };
       },
-      load: function load(sources, mimeType, playbackTime) {
-        if (sources && sources.length === 0) return;
-
+      load: function load(mimeType, playbackTime) {
         if (!mediaPlayer) {
           failoverTime = playbackTime;
           setUpMediaElement(playbackElement);
-          setUpMediaPlayer(sources, playbackTime);
+          setUpMediaPlayer(playbackTime);
           setUpMediaListeners();
         } else {
-          modifySource(sources, failoverTime);
+          modifySource(failoverTime);
         }
       },
       getSeekableRange: getSeekableRange,
@@ -4922,7 +5858,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
         mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
         mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
-        mediaPlayer.off(DashJSEvents.CDN_FAILOVER, onCdnFailover);
+        mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
 
         mediaElement.parentElement.removeChild(mediaElement);
 
@@ -4937,7 +5873,6 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
         bitrateInfoList = undefined;
         mediaMetrics = undefined;
         dashMetrics = undefined;
-        mediaSources = undefined;
       },
       reset: function reset() {
         return;
@@ -4983,19 +5918,17 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/legacyplayeradapter */ "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live sync recursive ^\\.\\/.*$")("./" + (window.bigscreenPlayer.liveSupport || 'playable'))], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LegacyAdapter, WindowTypes, Html5Player, LivePlayer) {
-  var NativeStrategy = function NativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/legacyplayeradapter */ "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy/modifiers sync recursive ^\\.\\/.*$")("./" + (window.bigscreenPlayer.mediaPlayer || 'html5')), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live sync recursive ^\\.\\/.*$")("./" + (window.bigscreenPlayer.liveSupport || 'playable'))], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LegacyAdapter, WindowTypes, MediaPlayer, LivePlayer) {
+  var NativeStrategy = function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
     var mediaPlayer;
-    var logger = device.getLogger();
     var tempConfig = device.getConfig();
 
+    mediaPlayer = MediaPlayer(tempConfig);
     if (windowType !== WindowTypes.STATIC) {
-      mediaPlayer = LivePlayer(tempConfig, logger);
-    } else {
-      mediaPlayer = Html5Player(logger);
+      mediaPlayer = LivePlayer(mediaPlayer, tempConfig, windowType, mediaSources);
     }
 
-    return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
+    return LegacyAdapter(mediaSources, windowType, playbackElement, isUHD, device.getConfig(), mediaPlayer);
   };
 
   NativeStrategy.getLiveSupport = function () {
@@ -5016,25 +5949,23 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/playbackstrategy */ "./node_modules/bigscreen-player/script/models/playbackstrategy.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (PlaybackStrategy) {
   return function (windowType, isUHD) {
-    var strategy = 'mseStrategy';
-
     var mseExceptions = window.bigscreenPlayer.mseExceptions || [];
 
     if (mseExceptions.indexOf(windowType) !== -1) {
-      strategy = 'talStrategy';
+      return PlaybackStrategy.NATIVE;
     }
 
     if (isUHD && mseExceptions.indexOf('uhd') !== -1) {
-      strategy = 'talStrategy';
+      return PlaybackStrategy.NATIVE;
     }
 
-    return strategy;
+    return PlaybackStrategy.MSE;
   };
-}).call(exports, __webpack_require__, exports, module),
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
@@ -5050,7 +5981,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/legacyplayeradapter */ "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LegacyAdapter, WindowTypes) {
-  var TALStrategy = function TALStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+  var TALStrategy = function TALStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
     var mediaPlayer;
 
     if (windowType === WindowTypes.STATIC) {
@@ -5059,7 +5990,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       mediaPlayer = device.getLivePlayer();
     }
 
-    return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
+    return LegacyAdapter(mediaSources, windowType, playbackElement, isUHD, device.getConfig(), mediaPlayer);
   };
 
   TALStrategy.getLiveSupport = function (device) {
@@ -5082,10 +6013,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/captionscontainer */ "./node_modules/bigscreen-player/script/captionscontainer.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy sync recursive ^\\.\\/.*$")("./" + window.bigscreenPlayer.playbackStrategy), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestloader */ "./node_modules/bigscreen-player/script/manifest/manifestloader.js"), __webpack_require__(/*! bigscreenplayer/utils/livesupportutils */ "./node_modules/bigscreen-player/script/utils/livesupportutils.js"), __webpack_require__(/*! bigscreenplayer/mediaresilience */ "./node_modules/bigscreen-player/script/mediaresilience.js"), __webpack_require__(/*! bigscreenplayer/debugger/cdndebugoutput */ "./node_modules/bigscreen-player/script/debugger/cdndebugoutput.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, LiveSupportUtils, MediaResilience, CdnDebugOutput) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/captionscontainer */ "./node_modules/bigscreen-player/script/captionscontainer.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy sync recursive ^\\.\\/.*$")("./" + window.bigscreenPlayer.playbackStrategy), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/models/playbackstrategy */ "./node_modules/bigscreen-player/script/models/playbackstrategy.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
   'use strict';
 
-  var PlayerComponent = function PlayerComponent(playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
+  var PlayerComponent = function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
     var isInitialPlay = true;
     var captionsURL = bigscreenPlayerData.media.captionsUrl;
     var errorTimeoutID = null;
@@ -5098,10 +6029,9 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var mediaMetaData;
     var fatalErrorTimeout;
     var fatalError;
-    var cdnDebugOutput = new CdnDebugOutput(bigscreenPlayerData.media.urls);
     var transferFormat = bigscreenPlayerData.media.transferFormat;
 
-    playbackStrategy = PlaybackStrategy(windowType, mediaKind, bigscreenPlayerData.time, playbackElement, bigscreenPlayerData.media.isUHD, device, cdnDebugOutput);
+    playbackStrategy = PlaybackStrategy(mediaSources, windowType, mediaKind, playbackElement, bigscreenPlayerData.media.isUHD, device);
 
     playbackStrategy.addEventCallback(this, eventCallback);
     playbackStrategy.addErrorCallback(this, onError);
@@ -5136,11 +6066,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function getWindowStartTime() {
-      return bigscreenPlayerData.time && bigscreenPlayerData.time.windowStartTime;
+      return mediaSources && mediaSources.time().windowStartTime;
     }
 
     function getWindowEndTime() {
-      return bigscreenPlayerData.time && bigscreenPlayerData.time.windowEndTime;
+      return mediaSources && mediaSources.time().windowEndTime;
     }
 
     function getPlayerElement() {
@@ -5185,8 +6115,38 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     function setCurrentTime(time) {
       userInteracted = true;
       if (transitions().canBeginSeek()) {
-        playbackStrategy.setCurrentTime(time);
+        isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy.setCurrentTime(time);
       }
+    }
+
+    function isNativeHLSRestartable() {
+      return window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE && transferFormat === TransferFormats.HLS && windowType !== WindowTypes.STATIC && getLiveSupport(device) === LiveSupport.RESTARTABLE;
+    }
+
+    function reloadMediaElement(time) {
+      var originalWindowStartOffset = getWindowStartTime();
+
+      var doSeek = function doSeek() {
+        var windowOffset = mediaSources.time().windowStartTime - originalWindowStartOffset;
+        var seekToTime = time - windowOffset / 1000;
+
+        var thenPause = playbackStrategy.isPaused();
+        var seekableRange = playbackStrategy.getSeekableRange();
+        tearDownMediaElement();
+
+        if (seekToTime > seekableRange.end - seekableRange.start - 30) {
+          seekToTime = undefined;
+          thenPause = false;
+        }
+        loadMedia(mediaMetaData.type, seekToTime, thenPause);
+      };
+
+      var onError = function onError(errorMessage) {
+        tearDownMediaElement();
+        bubbleFatalError(createPlaybackErrorProperties(event), false);
+      };
+
+      mediaSources.refresh(doSeek, onError);
     }
 
     function transitions() {
@@ -5231,7 +6191,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     function onBuffering() {
       publishMediaStateUpdate(MediaState.WAITING);
       var playbackProperties = createPlaybackProperties();
-      startErrorTimeout(playbackProperties);
+      startBufferingErrorTimeout(playbackProperties);
       bubbleErrorCleared(playbackProperties);
       bubbleBufferingRaised(playbackProperties);
       userInteracted = false;
@@ -5252,13 +6212,13 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       bubbleBufferingCleared(playbackProperties);
 
       var playbackErrorProperties = createPlaybackErrorProperties(event);
-      raiseError(playbackErrorProperties, false);
+      raiseError(playbackErrorProperties);
     }
 
-    function startErrorTimeout(properties) {
+    function startBufferingErrorTimeout(properties) {
       var bufferingTimeout = isInitialPlay ? 30000 : 20000;
       var bufferingClearedProperties = PlaybackUtils.clone(properties);
-      clearErrorTimeout();
+      clearBufferingErrorTimeout();
       errorTimeoutID = setTimeout(function () {
         bufferingClearedProperties.dismissed_by = 'timeout';
         bubbleBufferingCleared(bufferingClearedProperties);
@@ -5267,68 +6227,48 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       }, bufferingTimeout);
     }
 
-    function raiseError(properties, bufferingTimeoutError) {
-      clearErrorTimeout();
+    function raiseError(properties) {
+      clearBufferingErrorTimeout();
       publishMediaStateUpdate(MediaState.WAITING);
-      bubbleErrorRaised(properties, bufferingTimeoutError);
-      startFatalErrorTimeout(properties, bufferingTimeoutError);
+      bubbleErrorRaised(properties);
+      startFatalErrorTimeout(properties);
     }
 
-    function startFatalErrorTimeout(errorProperties, bufferingTimeoutError) {
+    function startFatalErrorTimeout(errorProperties) {
       if (!fatalErrorTimeout && !fatalError) {
         fatalErrorTimeout = setTimeout(function () {
           fatalErrorTimeout = null;
           fatalError = true;
-          attemptCdnFailover(errorProperties, bufferingTimeoutError);
+          errorProperties.error_mssg = 'Fatal error';
+          attemptCdnFailover(errorProperties, false);
         }, 5000);
       }
     }
 
     function attemptCdnFailover(errorProperties, bufferingTimeoutError) {
-      var shouldFailover = MediaResilience.shouldFailover(mediaMetaData.urls.length, getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
+      var time = getCurrentTime();
+      var oldWindowStartTime = getWindowStartTime();
 
-      if (shouldFailover) {
-        var thenPause = playbackStrategy.isPaused();
-        tearDownMediaElement();
-
-        var failoverTime = getCurrentTime();
-        if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
-          manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-        } else {
-          cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-        }
-      } else {
-        bubbleFatalError(errorProperties, bufferingTimeoutError);
-      }
-    }
-
-    function manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-      ManifestLoader.load(bigscreenPlayerData.media.urls, bigscreenPlayerData.serverDate, {
-        onSuccess: function onSuccess(manifestData) {
-          var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
-          bigscreenPlayerData.time = manifestData.time;
-          failoverTime -= windowOffset / 1000;
-          cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-        },
-        onError: function onError() {
-          bubbleFatalError(errorProperties, bufferingTimeoutError);
-        }
-      });
-    }
-
-    function cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-      var evt = new PluginData({
-        status: PluginEnums.STATUS.FAILOVER,
-        stateType: PluginEnums.TYPE.ERROR,
-        properties: errorProperties,
+      var failoverParams = {
+        errorMessage: errorProperties.error_mssg,
         isBufferingTimeoutError: bufferingTimeoutError,
-        cdn: mediaMetaData.urls[0].cdn,
-        newCdn: mediaMetaData.urls[1].cdn
-      });
-      Plugins.interface.onErrorHandled(evt);
-      mediaMetaData.urls.shift();
-      cdnDebugOutput.update();
-      loadMedia(mediaMetaData.urls, mediaMetaData.type, failoverTime, thenPause);
+        currentTime: getCurrentTime(),
+        duration: getDuration()
+      };
+
+      var doLoadMedia = function doLoadMedia() {
+        var thenPause = isPaused();
+        var windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000;
+        var failoverTime = time - (windowOffset || 0);
+        tearDownMediaElement();
+        loadMedia(mediaMetaData.type, failoverTime, thenPause);
+      };
+
+      var doErrorCallback = function doErrorCallback() {
+        bubbleFatalError(errorProperties, bufferingTimeoutError);
+      };
+
+      mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams);
     }
 
     function clearFatalErrorTimeout() {
@@ -5338,7 +6278,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       }
     }
 
-    function clearErrorTimeout() {
+    function clearBufferingErrorTimeout() {
       if (errorTimeoutID !== null) {
         clearTimeout(errorTimeoutID);
         errorTimeoutID = null;
@@ -5346,7 +6286,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function playout(playbackProperties) {
-      clearErrorTimeout();
+      clearBufferingErrorTimeout();
       clearFatalErrorTimeout();
       fatalError = false;
       bubbleBufferingCleared(playbackProperties);
@@ -5367,8 +6307,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       Plugins.interface.onErrorCleared(evt);
     }
 
-    function bubbleErrorRaised(errorProperties, bufferingTimeoutError) {
-      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError });
+    function bubbleErrorRaised(errorProperties) {
+      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: false });
       Plugins.interface.onError(evt);
     }
 
@@ -5426,15 +6366,15 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
     function initialMediaPlay(media, startTime) {
       mediaMetaData = media;
-      loadMedia(media.urls, media.type, startTime);
+      loadMedia(media.type, startTime);
 
       if (!captionsContainer) {
         captionsContainer = new CaptionsContainer(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
       }
     }
 
-    function loadMedia(urls, type, startTime, thenPause) {
-      playbackStrategy.load(urls, type, startTime);
+    function loadMedia(type, startTime, thenPause) {
+      playbackStrategy.load(type, startTime);
       if (thenPause) {
         pause();
       }
@@ -5451,11 +6391,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         captionsContainer.stop();
         captionsContainer.tearDown();
         captionsContainer = null;
-      }
-
-      if (cdnDebugOutput) {
-        cdnDebugOutput.tearDown();
-        cdnDebugOutput = undefined;
       }
 
       isInitialPlay = true;
@@ -5627,38 +6562,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         callOnAllPlugins('onPlayerInfoUpdated', evt);
       }
     }
-  };
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "./node_modules/bigscreen-player/script/utils/livesupportutils.js":
-/*!************************************************************************!*\
-  !*** ./node_modules/bigscreen-player/script/utils/livesupportutils.js ***!
-  \************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (WindowTypes) {
-  'use strict';
-
-  function needToGetManifest(windowType, liveSupport) {
-    var requiresSeekingData = {
-      restartable: true,
-      seekable: true,
-      playable: false,
-      none: false
-    };
-
-    return windowType !== WindowTypes.STATIC && requiresSeekingData[liveSupport];
-  }
-
-  return {
-    needToGetManifest: needToGetManifest
   };
 }).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -39257,7 +40160,7 @@ function HTTPLoader(cfg) {
                 requests.splice(requests.indexOf(httpRequest), 1);
             }
 
-            if (httpRequest.response.status >= 200 && httpRequest.response.status <= 299 && httpRequest.response.response) {
+            if (httpRequest.response.status >= 200 && httpRequest.response.status <= 299) {
                 if (hasContentLengthMismatch(httpRequest.response)) {
                     handleLoaded(false);
                     if (remainingAttempts > 0) {
@@ -56376,6 +57279,8 @@ function unwrapListeners(arr) {
 "use strict";
 
 
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
 var isArray = Array.isArray;
 var keyList = Object.keys;
 var hasProp = Object.prototype.hasOwnProperty;
@@ -56383,41 +57288,41 @@ var hasProp = Object.prototype.hasOwnProperty;
 module.exports = function equal(a, b) {
   if (a === b) return true;
 
-  var arrA = isArray(a),
-      arrB = isArray(b),
-      i,
-      length,
-      key;
+  if (a && b && (typeof a === 'undefined' ? 'undefined' : _typeof(a)) == 'object' && (typeof b === 'undefined' ? 'undefined' : _typeof(b)) == 'object') {
+    var arrA = isArray(a),
+        arrB = isArray(b),
+        i,
+        length,
+        key;
 
-  if (arrA && arrB) {
-    length = a.length;
-    if (length != b.length) return false;
-    for (i = 0; i < length; i++) {
-      if (!equal(a[i], b[i])) return false;
-    }return true;
-  }
+    if (arrA && arrB) {
+      length = a.length;
+      if (length != b.length) return false;
+      for (i = length; i-- !== 0;) {
+        if (!equal(a[i], b[i])) return false;
+      }return true;
+    }
 
-  if (arrA != arrB) return false;
+    if (arrA != arrB) return false;
 
-  var dateA = a instanceof Date,
-      dateB = b instanceof Date;
-  if (dateA != dateB) return false;
-  if (dateA && dateB) return a.getTime() == b.getTime();
+    var dateA = a instanceof Date,
+        dateB = b instanceof Date;
+    if (dateA != dateB) return false;
+    if (dateA && dateB) return a.getTime() == b.getTime();
 
-  var regexpA = a instanceof RegExp,
-      regexpB = b instanceof RegExp;
-  if (regexpA != regexpB) return false;
-  if (regexpA && regexpB) return a.toString() == b.toString();
+    var regexpA = a instanceof RegExp,
+        regexpB = b instanceof RegExp;
+    if (regexpA != regexpB) return false;
+    if (regexpA && regexpB) return a.toString() == b.toString();
 
-  if (a instanceof Object && b instanceof Object) {
     var keys = keyList(a);
     length = keys.length;
 
     if (length !== keyList(b).length) return false;
 
-    for (i = 0; i < length; i++) {
+    for (i = length; i-- !== 0;) {
       if (!hasProp.call(b, keys[i])) return false;
-    }for (i = 0; i < length; i++) {
+    }for (i = length; i-- !== 0;) {
       key = keys[i];
       if (!equal(a[key], b[key])) return false;
     }
@@ -56425,7 +57330,7 @@ module.exports = function equal(a, b) {
     return true;
   }
 
-  return false;
+  return a !== a && b !== b;
 };
 
 /***/ }),
@@ -56698,6 +57603,18 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                         } else if (estack[0] instanceof Span || estack[0] instanceof P) {
 
+                                /* ignore children text nodes in ruby container spans */
+
+                                if (estack[0] instanceof Span) {
+
+                                        var ruby = estack[0].styleAttrs[imscStyles.byName.ruby.qname];
+
+                                        if (ruby === 'container' || ruby === 'textContainer' || ruby === 'baseContainer') {
+
+                                                return;
+                                        }
+                                }
+
                                 /* create an anonymous span */
 
                                 var s = new AnonymousSpan();
@@ -56773,24 +57690,12 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
                                                 reportFatal(errorHandler, "Parent of <head> element is not <tt> at (" + this.line + "," + this.column + ")");
                                         }
 
-                                        if (doc.head !== null) {
-                                                reportFatal("Second <head> element at (" + this.line + "," + this.column + ")");
-                                        }
-
-                                        doc.head = new Head();
-
                                         estack.unshift(doc.head);
                                 } else if (node.local === 'styling') {
 
                                         if (!(estack[0] instanceof Head)) {
                                                 reportFatal(errorHandler, "Parent of <styling> element is not <head> at (" + this.line + "," + this.column + ")");
                                         }
-
-                                        if (doc.head.styling !== null) {
-                                                reportFatal("Second <styling> element at (" + this.line + "," + this.column + ")");
-                                        }
-
-                                        doc.head.styling = new Styling();
 
                                         estack.unshift(doc.head.styling);
                                 } else if (node.local === 'style') {
@@ -56832,19 +57737,32 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                                                 reportFatal(errorHandler, "Parent of <style> element is not <styling> or <region> at (" + this.line + "," + this.column + ")");
                                         }
+                                } else if (node.local === 'initial') {
+
+                                        var ini;
+
+                                        if (estack[0] instanceof Styling) {
+
+                                                ini = new Initial();
+
+                                                ini.initFromNode(node, errorHandler);
+
+                                                for (var qn in ini.styleAttrs) {
+
+                                                        doc.head.styling.initials[qn] = ini.styleAttrs[qn];
+                                                }
+
+                                                estack.unshift(ini);
+                                        } else {
+
+                                                reportFatal(errorHandler, "Parent of <initial> element is not <styling> at (" + this.line + "," + this.column + ")");
+                                        }
                                 } else if (node.local === 'layout') {
 
                                         if (!(estack[0] instanceof Head)) {
 
                                                 reportFatal(errorHandler, "Parent of <layout> element is not <head> at " + this.line + "," + this.column + ")");
                                         }
-
-                                        if (doc.head.layout !== null) {
-
-                                                reportFatal(errorHandler, "Second <layout> element at " + this.line + "," + this.column + ")");
-                                        }
-
-                                        doc.head.layout = new Layout();
 
                                         estack.unshift(doc.head.layout);
                                 } else if (node.local === 'region') {
@@ -56896,9 +57814,32 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                                         d.initFromNode(doc, estack[0], node, errorHandler);
 
+                                        /* transform smpte:backgroundImage to TTML2 image element */
+
+                                        var bi = d.styleAttrs[imscStyles.byName.backgroundImage.qname];
+
+                                        if (bi) {
+                                                d.contents.push(new Image(bi));
+                                                delete d.styleAttrs[imscStyles.byName.backgroundImage.qname];
+                                        }
+
                                         estack[0].contents.push(d);
 
                                         estack.unshift(d);
+                                } else if (node.local === 'image') {
+
+                                        if (!(estack[0] instanceof Div)) {
+
+                                                reportFatal(errorHandler, "Parent of <image> element is not <div> at " + this.line + "," + this.column + ")");
+                                        }
+
+                                        var img = new Image();
+
+                                        img.initFromNode(doc, estack[0], node, errorHandler);
+
+                                        estack[0].contents.push(img);
+
+                                        estack.unshift(img);
                                 } else if (node.local === 'p') {
 
                                         if (!(estack[0] instanceof Div)) {
@@ -57000,21 +57941,11 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                 p.write(xmlstring).close();
 
-                // all referential styling has been flatten, so delete the styling elements if there is a head
-                // otherwise create an empty head
+                // all referential styling has been flatten, so delete styles
 
-                if (doc.head !== null) {
-                        delete doc.head.styling;
-                } else {
-                        doc.head = new Head();
-                }
+                delete doc.head.styling.styles;
 
                 // create default region if no regions specified
-
-                if (doc.head.layout === null) {
-
-                        doc.head.layout = new Layout();
-                }
 
                 var hasRegions = false;
 
@@ -57049,8 +57980,36 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
                         resolveTiming(doc, doc.body, null, null);
                 }
 
+                /* remove undefined spans in ruby containers */
+
+                if (doc.body) {
+                        cleanRubyContainers(doc.body);
+                }
+
                 return doc;
         };
+
+        function cleanRubyContainers(element) {
+
+                if (!('contents' in element)) return;
+
+                var rubyval = 'styleAttrs' in element ? element.styleAttrs[imscStyles.byName.ruby.qname] : null;
+
+                var isrubycontainer = element.kind === 'span' && (rubyval === "container" || rubyval === "textContainer" || rubyval === "textContainer");
+
+                for (var i = element.contents.length - 1; i >= 0; i--) {
+
+                        if (isrubycontainer && !('styleAttrs' in element.contents[i] && imscStyles.byName.ruby.qname in element.contents[i].styleAttrs)) {
+
+                                /* prune undefined <span> in ruby containers */
+
+                                delete element.contents[i];
+                        } else {
+
+                                cleanRubyContainers(element.contents[i]);
+                        }
+                }
+        }
 
         function resolveTiming(doc, element, prev_sibling, parent) {
 
@@ -57165,7 +58124,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
         function TT() {
                 this.events = [];
-                this.head = null;
+                this.head = new Head();
                 this.body = null;
         }
 
@@ -57173,7 +58132,12 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                 /* compute cell resolution */
 
-                this.cellResolution = extractCellResolution(node, errorHandler);
+                var cr = extractCellResolution(node, errorHandler);
+
+                this.cellLength = {
+                        'h': new imscUtils.ComputedLength(0, 1 / cr.h),
+                        'w': new imscUtils.ComputedLength(1 / cr.w, 0)
+                };
 
                 /* extract frame rate and tick rate */
 
@@ -57202,17 +58166,30 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                 if (e === null) {
 
-                        /* TODO: remove once unit tests are ready */
-
-                        this.pxDimensions = { 'h': 480, 'w': 640 };
+                        this.pxLength = {
+                                'h': null,
+                                'w': null
+                        };
                 } else {
 
                         if (e.h.unit !== "px" || e.w.unit !== "px") {
                                 reportFatal(errorHandler, "Extent on TT must be in px or absent");
                         }
 
-                        this.pxDimensions = { 'h': e.h.value, 'w': e.w.value };
+                        this.pxLength = {
+                                'h': new imscUtils.ComputedLength(0, 1 / e.h.value),
+                                'w': new imscUtils.ComputedLength(1 / e.w.value, 0)
+                        };
                 }
+
+                /** set root container dimensions to (1, 1) arbitrarily
+                  * the root container is mapped to actual dimensions at rendering
+                **/
+
+                this.dimensions = {
+                        'h': new imscUtils.ComputedLength(0, 1),
+                        'w': new imscUtils.ComputedLength(1, 0)
+                };
         };
 
         /* register a temporal events */
@@ -57268,8 +58245,8 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
          */
 
         function Head() {
-                this.styling = null;
-                this.layout = null;
+                this.styling = new Styling();
+                this.layout = new Layout();
         }
 
         /*
@@ -57278,6 +58255,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
         function Styling() {
                 this.styles = {};
+                this.initials = {};
         }
 
         /*
@@ -57297,6 +58275,29 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
         };
 
         /*
+         * Represents a TTML initial element
+         */
+
+        function Initial() {
+                this.styleAttrs = null;
+        }
+
+        Initial.prototype.initFromNode = function (node, errorHandler) {
+
+                this.styleAttrs = {};
+
+                for (var i in node.attributes) {
+
+                        if (node.attributes[i].uri === imscNames.ns_itts || node.attributes[i].uri === imscNames.ns_ebutts || node.attributes[i].uri === imscNames.ns_tts) {
+
+                                var qname = node.attributes[i].uri + " " + node.attributes[i].local;
+
+                                this.styleAttrs[qname] = node.attributes[i].value;
+                        }
+                }
+        };
+
+        /*
          * Represents a TTML Layout element
          * 
          */
@@ -57304,6 +58305,35 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
         function Layout() {
                 this.regions = {};
         }
+
+        /*
+         * Represents a TTML image element
+         */
+
+        function Image(src, type) {
+                ContentElement.call(this, 'image');
+                this.src = src;
+                this.type = type;
+        }
+
+        Image.prototype.initFromNode = function (doc, parent, node, errorHandler) {
+                this.src = 'src' in node.attributes ? node.attributes.src.value : null;
+
+                if (!this.src) {
+                        reportError(errorHandler, "Invalid image@src attribute");
+                }
+
+                this.type = 'type' in node.attributes ? node.attributes.type.value : null;
+
+                if (!this.type) {
+                        reportError(errorHandler, "Invalid image@type attribute");
+                }
+
+                StyledElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
+                TimedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
+                AnimatedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
+                LayoutElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
+        };
 
         /*
          * TTML element utility functions
@@ -57616,11 +58646,16 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                 var ar = findAttribute(node, imscNames.ns_ittp, "aspectRatio");
 
+                if (ar === null) {
+
+                        ar = findAttribute(node, imscNames.ns_ttp, "displayAspectRatio");
+                }
+
                 var rslt = null;
 
                 if (ar !== null) {
 
-                        var ASPECT_RATIO_RE = /(\d+) (\d+)/;
+                        var ASPECT_RATIO_RE = /(\d+)\s+(\d+)/;
 
                         var m = ASPECT_RATIO_RE.exec(ar);
 
@@ -58046,930 +59081,1253 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 ;
 (function (imscHTML, imscNames, imscStyles) {
 
-                /**
-                 * Function that maps <pre>smpte:background</pre> URIs to URLs resolving to image resource
-                 * @callback IMGResolver
-                 * @param {string} <pre>smpte:background</pre> URI
-                 * @return {string} PNG resource URL
-                 */
+        /**
+         * Function that maps <pre>smpte:background</pre> URIs to URLs resolving to image resource
+         * @callback IMGResolver
+         * @param {string} <pre>smpte:background</pre> URI
+         * @return {string} PNG resource URL
+         */
 
-                /**
-                 * Renders an ISD object (returned by <pre>generateISD()</pre>) into a 
-                 * parent element, that must be attached to the DOM. The ISD will be rendered
-                 * into a child <pre>div</pre>
-                 * with heigh and width equal to the clientHeight and clientWidth of the element,
-                 * unless explicitly specified otherwise by the caller. Images URIs specified 
-                 * by <pre>smpte:background</pre> attributes are mapped to image resource URLs
-                 * by an <pre>imgResolver</pre> function. The latter takes the value of <code>smpte:background</code>
-                 * attribute and an <code>img</code> DOM element as input, and is expected to
-                 * set the <code>src</code> attribute of the <code>img</code> to the absolute URI of the image.
-                 * <pre>displayForcedOnlyMode</pre> sets the (boolean)
-                 * value of the IMSC1 displayForcedOnlyMode parameter. The function returns
-                 * an opaque object that should passed in <code>previousISDState</code> when this function
-                 * is called for the next ISD, otherwise <code>previousISDState</code> should be set to 
-                 * <code>null</code>.
-                 * 
-                 * @param {Object} isd ISD to be rendered
-                 * @param {Object} element Element into which the ISD is rendered
-                 * @param {?IMGResolver} imgResolver Resolve <pre>smpte:background</pre> URIs into URLs.
-                 * @param {?number} eheight Height (in pixel) of the child <div>div</div> or null 
-                 *                  to use clientHeight of the parent element
-                 * @param {?number} ewidth Width (in pixel) of the child <div>div</div> or null
-                 *                  to use clientWidth of the parent element
-                 * @param {?boolean} displayForcedOnlyMode Value of the IMSC1 displayForcedOnlyMode parameter,
-                 *                   or false if null         
-                 * @param {?module:imscUtils.ErrorHandler} errorHandler Error callback
-                 * @param {Object} previousISDState State saved during processing of the previous ISD, or null if initial call
-                 * @param {?boolean} enableRollUp Enables roll-up animations (see CEA 708)
-                 * @return {Object} ISD state to be provided when this funtion is called for the next ISD
-                 */
+        /**
+         * Renders an ISD object (returned by <pre>generateISD()</pre>) into a 
+         * parent element, that must be attached to the DOM. The ISD will be rendered
+         * into a child <pre>div</pre>
+         * with heigh and width equal to the clientHeight and clientWidth of the element,
+         * unless explicitly specified otherwise by the caller. Images URIs specified 
+         * by <pre>smpte:background</pre> attributes are mapped to image resource URLs
+         * by an <pre>imgResolver</pre> function. The latter takes the value of <code>smpte:background</code>
+         * attribute and an <code>img</code> DOM element as input, and is expected to
+         * set the <code>src</code> attribute of the <code>img</code> to the absolute URI of the image.
+         * <pre>displayForcedOnlyMode</pre> sets the (boolean)
+         * value of the IMSC1 displayForcedOnlyMode parameter. The function returns
+         * an opaque object that should passed in <code>previousISDState</code> when this function
+         * is called for the next ISD, otherwise <code>previousISDState</code> should be set to 
+         * <code>null</code>.
+         * 
+         * @param {Object} isd ISD to be rendered
+         * @param {Object} element Element into which the ISD is rendered
+         * @param {?IMGResolver} imgResolver Resolve <pre>smpte:background</pre> URIs into URLs.
+         * @param {?number} eheight Height (in pixel) of the child <div>div</div> or null 
+         *                  to use clientHeight of the parent element
+         * @param {?number} ewidth Width (in pixel) of the child <div>div</div> or null
+         *                  to use clientWidth of the parent element
+         * @param {?boolean} displayForcedOnlyMode Value of the IMSC1 displayForcedOnlyMode parameter,
+         *                   or false if null         
+         * @param {?module:imscUtils.ErrorHandler} errorHandler Error callback
+         * @param {Object} previousISDState State saved during processing of the previous ISD, or null if initial call
+         * @param {?boolean} enableRollUp Enables roll-up animations (see CEA 708)
+         * @return {Object} ISD state to be provided when this funtion is called for the next ISD
+         */
 
-                imscHTML.render = function (isd, element, imgResolver, eheight, ewidth, displayForcedOnlyMode, errorHandler, previousISDState, enableRollUp) {
+        imscHTML.render = function (isd, element, imgResolver, eheight, ewidth, displayForcedOnlyMode, errorHandler, previousISDState, enableRollUp) {
 
-                                /* maintain aspect ratio if specified */
+                /* maintain aspect ratio if specified */
 
-                                var height = eheight || element.clientHeight;
-                                var width = ewidth || element.clientWidth;
+                var height = eheight || element.clientHeight;
+                var width = ewidth || element.clientWidth;
 
-                                if (isd.aspectRatio !== null) {
+                if (isd.aspectRatio !== null) {
 
-                                                var twidth = height * isd.aspectRatio;
+                        var twidth = height * isd.aspectRatio;
 
-                                                if (twidth > width) {
+                        if (twidth > width) {
 
-                                                                height = Math.round(width / isd.aspectRatio);
-                                                } else {
+                                height = Math.round(width / isd.aspectRatio);
+                        } else {
 
-                                                                width = twidth;
-                                                }
-                                }
+                                width = twidth;
+                        }
+                }
 
-                                var rootcontainer = document.createElement("div");
+                var rootcontainer = document.createElement("div");
 
-                                rootcontainer.style.position = "relative";
-                                rootcontainer.style.width = width + "px";
-                                rootcontainer.style.height = height + "px";
-                                rootcontainer.style.margin = "auto";
-                                rootcontainer.style.top = 0;
-                                rootcontainer.style.bottom = 0;
-                                rootcontainer.style.left = 0;
-                                rootcontainer.style.right = 0;
-                                rootcontainer.style.zIndex = 0;
+                rootcontainer.style.position = "relative";
+                rootcontainer.style.width = width + "px";
+                rootcontainer.style.height = height + "px";
+                rootcontainer.style.margin = "auto";
+                rootcontainer.style.top = 0;
+                rootcontainer.style.bottom = 0;
+                rootcontainer.style.left = 0;
+                rootcontainer.style.right = 0;
+                rootcontainer.style.zIndex = 0;
 
-                                var context = {
-                                                h: height,
-                                                w: width,
-                                                regionH: null,
-                                                regionW: null,
-                                                imgResolver: imgResolver,
-                                                displayForcedOnlyMode: displayForcedOnlyMode || false,
-                                                isd: isd,
-                                                errorHandler: errorHandler,
-                                                previousISDState: previousISDState,
-                                                enableRollUp: enableRollUp || false,
-                                                currentISDState: {},
-                                                flg: null, /* current fillLineGap value if active, null otherwise */
-                                                lp: null, /* current linePadding value if active, null otherwise */
-                                                mra: null, /* current multiRowAlign value if active, null otherwise */
-                                                ipd: null, /* inline progression direction (lr, rl, tb) */
-                                                bpd: null /* block progression direction (lr, rl, tb) */
-                                };
-
-                                element.appendChild(rootcontainer);
-
-                                for (var i in isd.contents) {
-
-                                                processElement(context, rootcontainer, isd.contents[i]);
-                                }
-
-                                return context.currentISDState;
+                var context = {
+                        h: height,
+                        w: width,
+                        regionH: null,
+                        regionW: null,
+                        imgResolver: imgResolver,
+                        displayForcedOnlyMode: displayForcedOnlyMode || false,
+                        isd: isd,
+                        errorHandler: errorHandler,
+                        previousISDState: previousISDState,
+                        enableRollUp: enableRollUp || false,
+                        currentISDState: {},
+                        flg: null, /* current fillLineGap value if active, null otherwise */
+                        lp: null, /* current linePadding value if active, null otherwise */
+                        mra: null, /* current multiRowAlign value if active, null otherwise */
+                        ipd: null, /* inline progression direction (lr, rl, tb) */
+                        bpd: null, /* block progression direction (lr, rl, tb) */
+                        ruby: null, /* is ruby present in a <p> */
+                        textEmphasis: null, /* is textEmphasis present in a <p> */
+                        rubyReserve: null /* is rubyReserve applicable to a <p> */
                 };
 
-                function processElement(context, dom_parent, isd_element) {
+                element.appendChild(rootcontainer);
 
-                                var e;
+                for (var i in isd.contents) {
 
-                                if (isd_element.kind === 'region') {
-
-                                                e = document.createElement("div");
-                                                e.style.position = "absolute";
-                                } else if (isd_element.kind === 'body') {
-
-                                                e = document.createElement("div");
-                                } else if (isd_element.kind === 'div') {
-
-                                                e = document.createElement("div");
-                                } else if (isd_element.kind === 'p') {
-
-                                                e = document.createElement("p");
-                                } else if (isd_element.kind === 'span') {
-
-                                                e = document.createElement("span");
-
-                                                //e.textContent = isd_element.text;
-                                } else if (isd_element.kind === 'br') {
-
-                                                e = document.createElement("br");
-                                }
-
-                                if (!e) {
-
-                                                reportError(context.errorHandler, "Error processing ISD element kind: " + isd_element.kind);
-
-                                                return;
-                                }
-
-                                /* override UA default margin */
-                                /* TODO: should apply to <p> only */
-
-                                e.style.margin = "0";
-
-                                /* tranform TTML styles to CSS styles */
-
-                                for (var i in STYLING_MAP_DEFS) {
-
-                                                var sm = STYLING_MAP_DEFS[i];
-
-                                                var attr = isd_element.styleAttrs[sm.qname];
-
-                                                if (attr !== undefined && sm.map !== null) {
-
-                                                                sm.map(context, e, isd_element, attr);
-                                                }
-                                }
-
-                                var proc_e = e;
-
-                                /* remember writing direction */
-
-                                if (isd_element.kind === "region") {
-
-                                                var wdir = isd_element.styleAttrs[imscStyles.byName.writingMode.qname];
-
-                                                if (wdir === "lrtb" || wdir === "lr") {
-
-                                                                context.ipd = "lr";
-                                                                context.bpd = "tb";
-                                                } else if (wdir === "rltb" || wdir === "rl") {
-
-                                                                context.ipd = "rl";
-                                                                context.bpd = "tb";
-                                                } else if (wdir === "tblr") {
-
-                                                                context.ipd = "tb";
-                                                                context.bpd = "lr";
-                                                } else if (wdir === "tbrl" || wdir === "tb") {
-
-                                                                context.ipd = "tb";
-                                                                context.bpd = "rl";
-                                                }
-                                }
-
-                                /* do we have linePadding ? */
-
-                                var lp = isd_element.styleAttrs[imscStyles.byName.linePadding.qname];
-
-                                if (lp && lp > 0) {
-
-                                                /* apply padding to the <p> so that line padding does not cause line wraps */
-
-                                                var padmeasure = Math.ceil(lp * context.h) + "px";
-
-                                                if (context.bpd === "tb") {
-
-                                                                proc_e.style.paddingLeft = padmeasure;
-                                                                proc_e.style.paddingRight = padmeasure;
-                                                } else {
-
-                                                                proc_e.style.paddingTop = padmeasure;
-                                                                proc_e.style.paddingBottom = padmeasure;
-                                                }
-
-                                                context.lp = lp;
-                                }
-
-                                // do we have multiRowAlign?
-
-                                var mra = isd_element.styleAttrs[imscStyles.byName.multiRowAlign.qname];
-
-                                if (mra && mra !== "auto") {
-
-                                                /* create inline block to handle multirowAlign */
-
-                                                var s = document.createElement("span");
-
-                                                s.style.display = "inline-block";
-
-                                                s.style.textAlign = mra;
-
-                                                e.appendChild(s);
-
-                                                proc_e = s;
-
-                                                context.mra = mra;
-                                }
-
-                                /* remember we are filling line gaps */
-
-                                if (isd_element.styleAttrs[imscStyles.byName.fillLineGap.qname]) {
-                                                context.flg = true;
-                                }
-
-                                if (isd_element.kind === "span" && isd_element.text) {
-
-                                                if (context.lp || context.mra || context.flg) {
-
-                                                                // wrap characters in spans to find the line wrap locations
-
-                                                                var cbuf = '';
-
-                                                                for (var j = 0; j < isd_element.text.length; j++) {
-
-                                                                                cbuf += isd_element.text.charAt(j);
-
-                                                                                var cc = isd_element.text.charCodeAt(j);
-
-                                                                                if (cc < 0xD800 || cc > 0xDBFF || j === isd_element.text.length) {
-
-                                                                                                /* wrap the character(s) in a span unless it is a high surrogate */
-
-                                                                                                var span = document.createElement("span");
-
-                                                                                                span.textContent = cbuf;
-
-                                                                                                e.appendChild(span);
-
-                                                                                                cbuf = '';
-                                                                                }
-                                                                }
-                                                } else {
-
-                                                                e.textContent = isd_element.text;
-                                                }
-                                }
-
-                                dom_parent.appendChild(e);
-
-                                /* process the children of the ISD element */
-
-                                for (var k in isd_element.contents) {
-
-                                                processElement(context, proc_e, isd_element.contents[k]);
-                                }
-
-                                /* list of lines */
-
-                                var linelist = [];
-
-                                /* paragraph processing */
-                                /* TODO: linePadding only supported for horizontal scripts */
-
-                                if ((context.lp || context.mra || context.flg) && isd_element.kind === "p") {
-
-                                                constructLineList(context, proc_e, linelist, null);
-
-                                                /* insert line breaks for multirowalign */
-
-                                                if (context.mra) {
-
-                                                                applyMultiRowAlign(linelist);
-
-                                                                context.mra = null;
-                                                }
-
-                                                /* add linepadding */
-
-                                                if (context.lp) {
-
-                                                                applyLinePadding(linelist, context.lp * context.h, context);
-
-                                                                context.lp = null;
-                                                }
-
-                                                /* fill line gaps linepadding */
-
-                                                if (context.flg) {
-
-                                                                var par_edges = rect2edges(proc_e.getBoundingClientRect(), context);
-
-                                                                applyFillLineGap(linelist, par_edges.before, par_edges.after, context);
-
-                                                                context.flg = null;
-                                                }
-                                }
-
-                                /* region processing */
-
-                                if (isd_element.kind === "region") {
-
-                                                /* build line list */
-
-                                                constructLineList(context, proc_e, linelist);
-
-                                                /* perform roll up if needed */
-
-                                                if (context.bpd === "tb" && context.enableRollUp && isd_element.contents.length > 0 && isd_element.styleAttrs[imscStyles.byName.displayAlign.qname] === 'after') {
-
-                                                                /* horrible hack, perhaps default region id should be underscore everywhere? */
-
-                                                                var rid = isd_element.id === '' ? '_' : isd_element.id;
-
-                                                                var rb = new RegionPBuffer(rid, linelist);
-
-                                                                context.currentISDState[rb.id] = rb;
-
-                                                                if (context.previousISDState && rb.id in context.previousISDState && context.previousISDState[rb.id].plist.length > 0 && rb.plist.length > 1 && rb.plist[rb.plist.length - 2].text === context.previousISDState[rb.id].plist[context.previousISDState[rb.id].plist.length - 1].text) {
-
-                                                                                var body_elem = e.firstElementChild;
-
-                                                                                var h = rb.plist[rb.plist.length - 1].after - rb.plist[rb.plist.length - 1].before;
-
-                                                                                body_elem.style.bottom = "-" + h + "px";
-                                                                                body_elem.style.transition = "transform 0.4s";
-                                                                                body_elem.style.position = "relative";
-                                                                                body_elem.style.transform = "translateY(-" + h + "px)";
-                                                                }
-                                                }
-
-                                                /* TODO: clean-up the spans ? */
-                                }
+                        processElement(context, rootcontainer, isd.contents[i]);
                 }
 
-                function applyLinePadding(lineList, lp, context) {
+                return context.currentISDState;
+        };
 
-                                for (var i in lineList) {
+        function processElement(context, dom_parent, isd_element) {
 
-                                                var l = lineList[i].elements.length;
+                var e;
 
-                                                var se = lineList[i].elements[lineList[i].start_elem];
+                if (isd_element.kind === 'region') {
 
-                                                var ee = lineList[i].elements[lineList[i].end_elem];
+                        e = document.createElement("div");
+                        e.style.position = "absolute";
+                } else if (isd_element.kind === 'body') {
 
-                                                var pospadpxlen = Math.ceil(lp) + "px";
+                        e = document.createElement("div");
+                } else if (isd_element.kind === 'div') {
 
-                                                var negpadpxlen = "-" + Math.ceil(lp) + "px";
+                        e = document.createElement("div");
+                } else if (isd_element.kind === 'image') {
 
-                                                if (l !== 0) {
+                        e = document.createElement("img");
 
-                                                                if (context.ipd === "lr") {
+                        if (context.imgResolver !== null && isd_element.src !== null) {
 
-                                                                                se.node.style.borderLeftColor = se.bgcolor || "#00000000";
-                                                                                se.node.style.borderLeftStyle = "solid";
-                                                                                se.node.style.borderLeftWidth = pospadpxlen;
-                                                                                se.node.style.marginLeft = negpadpxlen;
-                                                                } else if (context.ipd === "rl") {
+                                var uri = context.imgResolver(isd_element.src, e);
 
-                                                                                se.node.style.borderRightColor = se.bgcolor || "#00000000";
-                                                                                se.node.style.borderRightStyle = "solid";
-                                                                                se.node.style.borderRightWidth = pospadpxlen;
-                                                                                se.node.style.marginRight = negpadpxlen;
-                                                                } else if (context.ipd === "tb") {
+                                if (uri) e.src = uri;
 
-                                                                                se.node.style.borderTopColor = se.bgcolor || "#00000000";
-                                                                                se.node.style.borderTopStyle = "solid";
-                                                                                se.node.style.borderTopWidth = pospadpxlen;
-                                                                                se.node.style.marginTop = negpadpxlen;
-                                                                }
+                                e.height = context.regionH;
+                                e.width = context.regionW;
+                        }
+                } else if (isd_element.kind === 'p') {
 
-                                                                if (context.ipd === "lr") {
+                        e = document.createElement("p");
+                } else if (isd_element.kind === 'span') {
 
-                                                                                ee.node.style.borderRightColor = ee.bgcolor || "#00000000";
-                                                                                ee.node.style.borderRightStyle = "solid";
-                                                                                ee.node.style.borderRightWidth = pospadpxlen;
-                                                                                ee.node.style.marginRight = negpadpxlen;
-                                                                } else if (context.ipd === "rl") {
+                        if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "container") {
 
-                                                                                ee.node.style.borderLeftColor = ee.bgcolor || "#00000000";
-                                                                                ee.node.style.borderLeftStyle = "solid";
-                                                                                ee.node.style.borderLeftWidth = pospadpxlen;
-                                                                                ee.node.style.marginLeft = negpadpxlen;
-                                                                } else if (context.ipd === "tb") {
+                                e = document.createElement("ruby");
 
-                                                                                ee.node.style.borderBottomColor = ee.bgcolor || "#00000000";
-                                                                                ee.node.style.borderBottomStyle = "solid";
-                                                                                ee.node.style.borderBottomWidth = pospadpxlen;
-                                                                                ee.node.style.marginBottom = negpadpxlen;
-                                                                }
-                                                }
-                                }
+                                context.ruby = true;
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "base") {
+
+                                e = document.createElement("rb");
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "text") {
+
+                                e = document.createElement("rt");
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "baseContainer") {
+
+                                e = document.createElement("rbc");
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "textContainer") {
+
+                                e = document.createElement("rtc");
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "delimiter") {
+
+                                /* ignore rp */
+
+                                return;
+                        } else {
+
+                                e = document.createElement("span");
+                        }
+
+                        var te = isd_element.styleAttrs[imscStyles.byName.textEmphasis.qname];
+
+                        if (te && te.style !== "none") {
+
+                                context.textEmphasis = true;
+                        }
+
+                        //e.textContent = isd_element.text;
+                } else if (isd_element.kind === 'br') {
+
+                        e = document.createElement("br");
                 }
 
-                function applyMultiRowAlign(lineList) {
+                if (!e) {
 
-                                /* apply an explicit br to all but the last line */
+                        reportError(context.errorHandler, "Error processing ISD element kind: " + isd_element.kind);
 
-                                for (var i = 0; i < lineList.length - 1; i++) {
-
-                                                var l = lineList[i].elements.length;
-
-                                                if (l !== 0 && lineList[i].br === false) {
-                                                                var br = document.createElement("br");
-
-                                                                var lastnode = lineList[i].elements[l - 1].node;
-
-                                                                lastnode.parentElement.insertBefore(br, lastnode.nextSibling);
-                                                }
-                                }
+                        return;
                 }
 
-                function applyFillLineGap(lineList, par_before, par_after, context) {
+                /* add to parent */
 
-                                /* positive for BPD = lr and tb, negative for BPD = rl */
-                                var s = Math.sign(par_after - par_before);
+                dom_parent.appendChild(e);
 
-                                for (var i = 0; i <= lineList.length; i++) {
+                /* override UA default margin */
+                /* TODO: should apply to <p> only */
 
-                                                /* compute frontier between lines */
+                e.style.margin = "0";
 
-                                                var frontier;
-
-                                                if (i === 0) {
-
-                                                                frontier = par_before;
-                                                } else if (i === lineList.length) {
-
-                                                                frontier = par_after;
-                                                } else {
-
-                                                                frontier = (lineList[i].before + lineList[i - 1].after) / 2;
-                                                }
-
-                                                /* padding amount */
-
-                                                var pad;
-
-                                                /* current element */
-
-                                                var e;
-
-                                                /* before line */
-
-                                                if (i > 0) {
-
-                                                                for (var j = 0; j < lineList[i - 1].elements.length; j++) {
-
-                                                                                if (lineList[i - 1].elements[j].bgcolor === null) continue;
-
-                                                                                e = lineList[i - 1].elements[j];
-
-                                                                                if (s * (e.after - frontier) < 0) {
-
-                                                                                                pad = Math.ceil(Math.abs(frontier - e.after)) + "px";
-
-                                                                                                e.node.style.backgroundColor = e.bgcolor;
-
-                                                                                                if (context.bpd === "lr") {
-
-                                                                                                                e.node.style.paddingRight = pad;
-                                                                                                } else if (context.bpd === "rl") {
-
-                                                                                                                e.node.style.paddingLeft = pad;
-                                                                                                } else if (context.bpd === "tb") {
-
-                                                                                                                e.node.style.paddingBottom = pad;
-                                                                                                }
-                                                                                }
-                                                                }
-                                                }
-
-                                                /* after line */
-
-                                                if (i < lineList.length) {
-
-                                                                for (var k = 0; k < lineList[i].elements.length; k++) {
-
-                                                                                e = lineList[i].elements[k];
-
-                                                                                if (e.bgcolor === null) continue;
-
-                                                                                if (s * (e.before - frontier) > 0) {
-
-                                                                                                pad = Math.ceil(Math.abs(e.before - frontier)) + "px";
-
-                                                                                                e.node.style.backgroundColor = e.bgcolor;
-
-                                                                                                if (context.bpd === "lr") {
-
-                                                                                                                e.node.style.paddingLeft = pad;
-                                                                                                } else if (context.bpd === "rl") {
-
-                                                                                                                e.node.style.paddingRight = pad;
-                                                                                                } else if (context.bpd === "tb") {
-
-                                                                                                                e.node.style.paddingTop = pad;
-                                                                                                }
-                                                                                }
-                                                                }
-                                                }
-                                }
-                }
-
-                function RegionPBuffer(id, lineList) {
-
-                                this.id = id;
-
-                                this.plist = lineList;
-                }
-
-                function pruneEmptySpans(element) {
-
-                                var child = element.firstChild;
-
-                                while (child) {
-
-                                                var nchild = child.nextSibling;
-
-                                                if (child.nodeType === Node.ELEMENT_NODE && child.localName === 'span') {
-
-                                                                pruneEmptySpans(child);
-
-                                                                if (child.childElementCount === 0 && child.textContent.length === 0) {
-
-                                                                                element.removeChild(child);
-                                                                }
-                                                }
-
-                                                child = nchild;
-                                }
-                }
-
-                function rect2edges(rect, context) {
-
-                                var edges = { before: null, after: null, start: null, end: null };
-
-                                if (context.bpd === "tb") {
-
-                                                edges.before = rect.top;
-                                                edges.after = rect.bottom;
-
-                                                if (context.ipd === "lr") {
-
-                                                                edges.start = rect.left;
-                                                                edges.end = rect.right;
-                                                } else {
-
-                                                                edges.start = rect.right;
-                                                                edges.end = rect.left;
-                                                }
-                                } else if (context.bpd === "lr") {
-
-                                                edges.before = rect.left;
-                                                edges.after = rect.right;
-                                                edges.start = rect.top;
-                                                edges.end = rect.bottom;
-                                } else if (context.bpd === "rl") {
-
-                                                edges.before = rect.right;
-                                                edges.after = rect.left;
-                                                edges.start = rect.top;
-                                                edges.end = rect.bottom;
-                                }
-
-                                return edges;
-                }
-
-                function constructLineList(context, element, llist, bgcolor) {
-
-                                var curbgcolor = element.style.backgroundColor || bgcolor;
-
-                                if (element.childElementCount === 0) {
-
-                                                if (element.localName === 'span') {
-
-                                                                var r = element.getBoundingClientRect();
-
-                                                                /* skip if span is not displayed */
-
-                                                                if (r.height === 0 || r.width === 0) return;
-
-                                                                var edges = rect2edges(r, context);
-
-                                                                if (llist.length === 0 || !isSameLine(edges.before, edges.after, llist[llist.length - 1].before, llist[llist.length - 1].after)) {
-
-                                                                                llist.push({
-                                                                                                before: edges.before,
-                                                                                                after: edges.after,
-                                                                                                start: edges.start,
-                                                                                                end: edges.end,
-                                                                                                start_elem: 0,
-                                                                                                end_elem: 0,
-                                                                                                elements: [],
-                                                                                                text: "",
-                                                                                                br: false
-                                                                                });
-                                                                } else {
-
-                                                                                /* positive for BPD = lr and tb, negative for BPD = rl */
-                                                                                var bpd_dir = Math.sign(edges.after - edges.before);
-
-                                                                                /* positive for IPD = lr and tb, negative for IPD = rl */
-                                                                                var ipd_dir = Math.sign(edges.end - edges.start);
-
-                                                                                /* check if the line height has increased */
-
-                                                                                if (bpd_dir * (edges.before - llist[llist.length - 1].before) < 0) {
-                                                                                                llist[llist.length - 1].before = edges.before;
-                                                                                }
-
-                                                                                if (bpd_dir * (edges.after - llist[llist.length - 1].after) > 0) {
-                                                                                                llist[llist.length - 1].after = edges.after;
-                                                                                }
-
-                                                                                if (ipd_dir * (edges.start - llist[llist.length - 1].start) < 0) {
-                                                                                                llist[llist.length - 1].start = edges.start;
-                                                                                                llist[llist.length - 1].start_elem = llist[llist.length - 1].elements.length;
-                                                                                }
-
-                                                                                if (ipd_dir * (edges.end - llist[llist.length - 1].end) > 0) {
-                                                                                                llist[llist.length - 1].end = edges.end;
-                                                                                                llist[llist.length - 1].end_elem = llist[llist.length - 1].elements.length;
-                                                                                }
-                                                                }
-
-                                                                llist[llist.length - 1].text += element.textContent;
-
-                                                                llist[llist.length - 1].elements.push({
-                                                                                node: element,
-                                                                                bgcolor: curbgcolor,
-                                                                                before: edges.before,
-                                                                                after: edges.after
-                                                                });
-                                                } else if (element.localName === 'br' && llist.length !== 0) {
-
-                                                                llist[llist.length - 1].br = true;
-                                                }
-                                } else {
-
-                                                var child = element.firstChild;
-
-                                                while (child) {
-
-                                                                if (child.nodeType === Node.ELEMENT_NODE) {
-
-                                                                                constructLineList(context, child, llist, curbgcolor);
-                                                                }
-
-                                                                child = child.nextSibling;
-                                                }
-                                }
-                }
-
-                function isSameLine(before1, after1, before2, after2) {
-
-                                return after1 < after2 && before1 > before2 || after2 <= after1 && before2 >= before1;
-                }
-
-                function HTMLStylingMapDefintion(qName, mapFunc) {
-                                this.qname = qName;
-                                this.map = mapFunc;
-                }
-
-                var STYLING_MAP_DEFS = [new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling backgroundColor", function (context, dom_element, isd_element, attr) {
-
-                                /* skip if transparent */
-                                if (attr[3] === 0) return;
-
-                                dom_element.style.backgroundColor = "rgba(" + attr[0].toString() + "," + attr[1].toString() + "," + attr[2].toString() + "," + (attr[3] / 255).toString() + ")";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling color", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.color = "rgba(" + attr[0].toString() + "," + attr[1].toString() + "," + attr[2].toString() + "," + (attr[3] / 255).toString() + ")";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling direction", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.direction = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling display", function (context, dom_element, isd_element, attr) {}), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling displayAlign", function (context, dom_element, isd_element, attr) {
-
-                                /* see https://css-tricks.com/snippets/css/a-guide-to-flexbox/ */
-
-                                /* TODO: is this affected by writing direction? */
-
-                                dom_element.style.display = "flex";
-                                dom_element.style.flexDirection = "column";
-
-                                if (attr === "before") {
-
-                                                dom_element.style.justifyContent = "flex-start";
-                                } else if (attr === "center") {
-
-                                                dom_element.style.justifyContent = "center";
-                                } else if (attr === "after") {
-
-                                                dom_element.style.justifyContent = "flex-end";
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling extent", function (context, dom_element, isd_element, attr) {
-                                /* TODO: this is super ugly */
-
-                                context.regionH = attr.h * context.h;
-                                context.regionW = attr.w * context.w;
-
-                                /* 
-                                 * CSS height/width are measured against the content rectangle,
-                                 * whereas TTML height/width include padding
-                                 */
-
-                                var hdelta = 0;
-                                var wdelta = 0;
-
-                                var p = isd_element.styleAttrs["http://www.w3.org/ns/ttml#styling padding"];
-
-                                if (!p) {
-
-                                                /* error */
-
-                                } else {
-
-                                                hdelta = (p[0] + p[2]) * context.h;
-                                                wdelta = (p[1] + p[3]) * context.w;
-                                }
-
-                                dom_element.style.height = context.regionH - hdelta + "px";
-                                dom_element.style.width = context.regionW - wdelta + "px";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontFamily", function (context, dom_element, isd_element, attr) {
-
-                                var rslt = [];
-
-                                /* per IMSC1 */
-
-                                for (var i in attr) {
-
-                                                if (attr[i] === "monospaceSerif") {
-
-                                                                rslt.push("Courier New");
-                                                                rslt.push('"Liberation Mono"');
-                                                                rslt.push("Courier");
-                                                                rslt.push("monospace");
-                                                } else if (attr[i] === "proportionalSansSerif") {
-
-                                                                rslt.push("Arial");
-                                                                rslt.push("Helvetica");
-                                                                rslt.push('"Liberation Sans"');
-                                                                rslt.push("sans-serif");
-                                                } else if (attr[i] === "monospace") {
-
-                                                                rslt.push("monospace");
-                                                } else if (attr[i] === "sansSerif") {
-
-                                                                rslt.push("sans-serif");
-                                                } else if (attr[i] === "serif") {
-
-                                                                rslt.push("serif");
-                                                } else if (attr[i] === "monospaceSansSerif") {
-
-                                                                rslt.push("Consolas");
-                                                                rslt.push("monospace");
-                                                } else if (attr[i] === "proportionalSerif") {
-
-                                                                rslt.push("serif");
-                                                } else {
-
-                                                                rslt.push(attr[i]);
-                                                }
-                                }
-
-                                dom_element.style.fontFamily = rslt.join(",");
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontSize", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.fontSize = attr * context.h + "px";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontStyle", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.fontStyle = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontWeight", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.fontWeight = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling lineHeight", function (context, dom_element, isd_element, attr) {
-                                if (attr === "normal") {
-
-                                                dom_element.style.lineHeight = "normal";
-                                } else {
-
-                                                dom_element.style.lineHeight = attr * context.h + "px";
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling opacity", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.opacity = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling origin", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.top = attr.h * context.h + "px";
-                                dom_element.style.left = attr.w * context.w + "px";
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling overflow", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.overflow = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling padding", function (context, dom_element, isd_element, attr) {
-
-                                /* attr: top,left,bottom,right*/
-
-                                /* style: top right bottom left*/
-
-                                var rslt = [];
-
-                                rslt[0] = attr[0] * context.h + "px";
-                                rslt[1] = attr[3] * context.w + "px";
-                                rslt[2] = attr[2] * context.h + "px";
-                                rslt[3] = attr[1] * context.w + "px";
-
-                                dom_element.style.padding = rslt.join(" ");
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling showBackground", null), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textAlign", function (context, dom_element, isd_element, attr) {
-
-                                var ta;
-                                var dir = isd_element.styleAttrs[imscStyles.byName.direction.qname];
-
-                                /* handle UAs that do not understand start or end */
-
-                                if (attr === "start") {
-
-                                                ta = dir === "rtl" ? "right" : "left";
-                                } else if (attr === "end") {
-
-                                                ta = dir === "rtl" ? "left" : "right";
-                                } else {
-
-                                                ta = attr;
-                                }
-
-                                dom_element.style.textAlign = ta;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textDecoration", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.textDecoration = attr.join(" ").replace("lineThrough", "line-through");
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textOutline", function (context, dom_element, isd_element, attr) {
-
-                                if (attr === "none") {
-
-                                                dom_element.style.textShadow = "";
-                                } else {
-
-                                                dom_element.style.textShadow = "rgba(" + attr.color[0].toString() + "," + attr.color[1].toString() + "," + attr.color[2].toString() + "," + (attr.color[3] / 255).toString() + ")" + " 0px 0px " + attr.thickness * context.h + "px";
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling unicodeBidi", function (context, dom_element, isd_element, attr) {
-
-                                var ub;
-
-                                if (attr === 'bidiOverride') {
-                                                ub = "bidi-override";
-                                } else {
-                                                ub = attr;
-                                }
-
-                                dom_element.style.unicodeBidi = ub;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling visibility", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.visibility = attr;
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling wrapOption", function (context, dom_element, isd_element, attr) {
-
-                                if (attr === "wrap") {
-
-                                                if (isd_element.space === "preserve") {
-                                                                dom_element.style.whiteSpace = "pre-wrap";
-                                                } else {
-                                                                dom_element.style.whiteSpace = "normal";
-                                                }
-                                } else {
-
-                                                if (isd_element.space === "preserve") {
-
-                                                                dom_element.style.whiteSpace = "pre";
-                                                } else {
-                                                                dom_element.style.whiteSpace = "noWrap";
-                                                }
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling writingMode", function (context, dom_element, isd_element, attr) {
-                                if (attr === "lrtb" || attr === "lr") {
-
-                                                dom_element.style.writingMode = "horizontal-tb";
-                                } else if (attr === "rltb" || attr === "rl") {
-
-                                                dom_element.style.writingMode = "horizontal-tb";
-                                } else if (attr === "tblr") {
-
-                                                dom_element.style.writingMode = "vertical-lr";
-                                } else if (attr === "tbrl" || attr === "tb") {
-
-                                                dom_element.style.writingMode = "vertical-rl";
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling zIndex", function (context, dom_element, isd_element, attr) {
-                                dom_element.style.zIndex = attr;
-                }), new HTMLStylingMapDefintion("http://www.smpte-ra.org/schemas/2052-1/2010/smpte-tt backgroundImage", function (context, dom_element, isd_element, attr) {
-
-                                if (context.imgResolver !== null && attr !== null) {
-
-                                                var img = document.createElement("img");
-
-                                                var uri = context.imgResolver(attr, img);
-
-                                                if (uri) img.src = uri;
-
-                                                img.height = context.regionH;
-                                                img.width = context.regionW;
-
-                                                dom_element.appendChild(img);
-                                }
-                }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml/profile/imsc1#styling forcedDisplay", function (context, dom_element, isd_element, attr) {
-
-                                if (context.displayForcedOnlyMode && attr === false) {
-                                                dom_element.style.visibility = "hidden";
-                                }
-                })];
-
-                var STYLMAP_BY_QNAME = {};
+                /* tranform TTML styles to CSS styles */
 
                 for (var i in STYLING_MAP_DEFS) {
 
-                                STYLMAP_BY_QNAME[STYLING_MAP_DEFS[i].qname] = STYLING_MAP_DEFS[i];
+                        var sm = STYLING_MAP_DEFS[i];
+
+                        var attr = isd_element.styleAttrs[sm.qname];
+
+                        if (attr !== undefined && sm.map !== null) {
+
+                                sm.map(context, e, isd_element, attr);
+                        }
                 }
 
-                function reportError(errorHandler, msg) {
+                var proc_e = e;
 
-                                if (errorHandler && errorHandler.error && errorHandler.error(msg)) throw msg;
+                /* remember writing direction */
+
+                if (isd_element.kind === "region") {
+
+                        var wdir = isd_element.styleAttrs[imscStyles.byName.writingMode.qname];
+
+                        if (wdir === "lrtb" || wdir === "lr") {
+
+                                context.ipd = "lr";
+                                context.bpd = "tb";
+                        } else if (wdir === "rltb" || wdir === "rl") {
+
+                                context.ipd = "rl";
+                                context.bpd = "tb";
+                        } else if (wdir === "tblr") {
+
+                                context.ipd = "tb";
+                                context.bpd = "lr";
+                        } else if (wdir === "tbrl" || wdir === "tb") {
+
+                                context.ipd = "tb";
+                                context.bpd = "rl";
+                        }
                 }
-})( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "./node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscStyles === 'undefined' ? __webpack_require__(/*! ./styles */ "./node_modules/imsc/src/main/js/styles.js") : imscStyles);
+
+                /* do we have linePadding ? */
+
+                var lp = isd_element.styleAttrs[imscStyles.byName.linePadding.qname];
+
+                if (lp && !lp.isZero()) {
+
+                        var plength = lp.toUsedLength(context.w, context.h);
+
+                        if (plength > 0) {
+
+                                /* apply padding to the <p> so that line padding does not cause line wraps */
+
+                                var padmeasure = Math.ceil(plength) + "px";
+
+                                if (context.bpd === "tb") {
+
+                                        proc_e.style.paddingLeft = padmeasure;
+                                        proc_e.style.paddingRight = padmeasure;
+                                } else {
+
+                                        proc_e.style.paddingTop = padmeasure;
+                                        proc_e.style.paddingBottom = padmeasure;
+                                }
+
+                                context.lp = lp;
+                        }
+                }
+
+                // do we have multiRowAlign?
+
+                var mra = isd_element.styleAttrs[imscStyles.byName.multiRowAlign.qname];
+
+                if (mra && mra !== "auto") {
+
+                        /* create inline block to handle multirowAlign */
+
+                        var s = document.createElement("span");
+
+                        s.style.display = "inline-block";
+
+                        s.style.textAlign = mra;
+
+                        e.appendChild(s);
+
+                        proc_e = s;
+
+                        context.mra = mra;
+                }
+
+                /* do we have rubyReserve? */
+
+                var rr = isd_element.styleAttrs[imscStyles.byName.rubyReserve.qname];
+
+                if (rr && rr[0] !== "none") {
+                        context.rubyReserve = rr;
+                }
+
+                /* remember we are filling line gaps */
+
+                if (isd_element.styleAttrs[imscStyles.byName.fillLineGap.qname]) {
+                        context.flg = true;
+                }
+
+                if (isd_element.kind === "span" && isd_element.text) {
+
+                        if (imscStyles.byName.textCombine.qname in isd_element.styleAttrs && isd_element.styleAttrs[imscStyles.byName.textCombine.qname][0] === "all") {
+
+                                /* ignore tate-chu-yoku since line break cannot happen within */
+                                e.textContent = isd_element.text;
+                        } else {
+
+                                // wrap characters in spans to find the line wrap locations
+
+                                var cbuf = '';
+
+                                for (var j = 0; j < isd_element.text.length; j++) {
+
+                                        cbuf += isd_element.text.charAt(j);
+
+                                        var cc = isd_element.text.charCodeAt(j);
+
+                                        if (cc < 0xD800 || cc > 0xDBFF || j === isd_element.text.length) {
+
+                                                /* wrap the character(s) in a span unless it is a high surrogate */
+
+                                                var span = document.createElement("span");
+
+                                                span.textContent = cbuf;
+
+                                                e.appendChild(span);
+
+                                                cbuf = '';
+                                        }
+                                }
+                        }
+                }
+
+                /* process the children of the ISD element */
+
+                for (var k in isd_element.contents) {
+
+                        processElement(context, proc_e, isd_element.contents[k]);
+                }
+
+                /* list of lines */
+
+                var linelist = [];
+
+                /* paragraph processing */
+                /* TODO: linePadding only supported for horizontal scripts */
+
+                if ((context.lp || context.mra || context.flg || context.ruby || context.textEmphasis || context.rubyReserve) && isd_element.kind === "p") {
+
+                        constructLineList(context, proc_e, linelist, null);
+
+                        /* apply rubyReserve */
+
+                        if (context.rubyReserve) {
+
+                                applyRubyReserve(linelist, context);
+
+                                context.rubyReserve = null;
+                        }
+
+                        /* apply tts:rubyPosition="outside" */
+
+                        if (context.ruby || context.rubyReserve) {
+
+                                applyRubyPosition(linelist, context);
+
+                                context.ruby = null;
+                        }
+
+                        /* apply text emphasis "outside" position */
+
+                        if (context.textEmphasis) {
+
+                                applyTextEmphasis(linelist, context);
+
+                                context.textEmphasis = null;
+                        }
+
+                        /* insert line breaks for multirowalign */
+
+                        if (context.mra) {
+
+                                applyMultiRowAlign(linelist);
+
+                                context.mra = null;
+                        }
+
+                        /* add linepadding */
+
+                        if (context.lp) {
+
+                                applyLinePadding(linelist, context.lp.toUsedLength(context.w, context.h), context);
+
+                                context.lp = null;
+                        }
+
+                        /* fill line gaps linepadding */
+
+                        if (context.flg) {
+
+                                var par_edges = rect2edges(proc_e.getBoundingClientRect(), context);
+
+                                applyFillLineGap(linelist, par_edges.before, par_edges.after, context);
+
+                                context.flg = null;
+                        }
+                }
+
+                /* region processing */
+
+                if (isd_element.kind === "region") {
+
+                        /* build line list */
+
+                        constructLineList(context, proc_e, linelist);
+
+                        /* perform roll up if needed */
+
+                        if (context.bpd === "tb" && context.enableRollUp && isd_element.contents.length > 0 && isd_element.styleAttrs[imscStyles.byName.displayAlign.qname] === 'after') {
+
+                                /* horrible hack, perhaps default region id should be underscore everywhere? */
+
+                                var rid = isd_element.id === '' ? '_' : isd_element.id;
+
+                                var rb = new RegionPBuffer(rid, linelist);
+
+                                context.currentISDState[rb.id] = rb;
+
+                                if (context.previousISDState && rb.id in context.previousISDState && context.previousISDState[rb.id].plist.length > 0 && rb.plist.length > 1 && rb.plist[rb.plist.length - 2].text === context.previousISDState[rb.id].plist[context.previousISDState[rb.id].plist.length - 1].text) {
+
+                                        var body_elem = e.firstElementChild;
+
+                                        var h = rb.plist[rb.plist.length - 1].after - rb.plist[rb.plist.length - 1].before;
+
+                                        body_elem.style.bottom = "-" + h + "px";
+                                        body_elem.style.transition = "transform 0.4s";
+                                        body_elem.style.position = "relative";
+                                        body_elem.style.transform = "translateY(-" + h + "px)";
+                                }
+                        }
+
+                        /* TODO: clean-up the spans ? */
+                }
+        }
+
+        function applyLinePadding(lineList, lp, context) {
+
+                for (var i in lineList) {
+
+                        var l = lineList[i].elements.length;
+
+                        var se = lineList[i].elements[lineList[i].start_elem];
+
+                        var ee = lineList[i].elements[lineList[i].end_elem];
+
+                        var pospadpxlen = Math.ceil(lp) + "px";
+
+                        var negpadpxlen = "-" + Math.ceil(lp) + "px";
+
+                        if (l !== 0) {
+
+                                if (context.ipd === "lr") {
+
+                                        se.node.style.borderLeftColor = se.bgcolor || "#00000000";
+                                        se.node.style.borderLeftStyle = "solid";
+                                        se.node.style.borderLeftWidth = pospadpxlen;
+                                        se.node.style.marginLeft = negpadpxlen;
+                                } else if (context.ipd === "rl") {
+
+                                        se.node.style.borderRightColor = se.bgcolor || "#00000000";
+                                        se.node.style.borderRightStyle = "solid";
+                                        se.node.style.borderRightWidth = pospadpxlen;
+                                        se.node.style.marginRight = negpadpxlen;
+                                } else if (context.ipd === "tb") {
+
+                                        se.node.style.borderTopColor = se.bgcolor || "#00000000";
+                                        se.node.style.borderTopStyle = "solid";
+                                        se.node.style.borderTopWidth = pospadpxlen;
+                                        se.node.style.marginTop = negpadpxlen;
+                                }
+
+                                if (context.ipd === "lr") {
+
+                                        ee.node.style.borderRightColor = ee.bgcolor || "#00000000";
+                                        ee.node.style.borderRightStyle = "solid";
+                                        ee.node.style.borderRightWidth = pospadpxlen;
+                                        ee.node.style.marginRight = negpadpxlen;
+                                } else if (context.ipd === "rl") {
+
+                                        ee.node.style.borderLeftColor = ee.bgcolor || "#00000000";
+                                        ee.node.style.borderLeftStyle = "solid";
+                                        ee.node.style.borderLeftWidth = pospadpxlen;
+                                        ee.node.style.marginLeft = negpadpxlen;
+                                } else if (context.ipd === "tb") {
+
+                                        ee.node.style.borderBottomColor = ee.bgcolor || "#00000000";
+                                        ee.node.style.borderBottomStyle = "solid";
+                                        ee.node.style.borderBottomWidth = pospadpxlen;
+                                        ee.node.style.marginBottom = negpadpxlen;
+                                }
+                        }
+                }
+        }
+
+        function applyMultiRowAlign(lineList) {
+
+                /* apply an explicit br to all but the last line */
+
+                for (var i = 0; i < lineList.length - 1; i++) {
+
+                        var l = lineList[i].elements.length;
+
+                        if (l !== 0 && lineList[i].br === false) {
+                                var br = document.createElement("br");
+
+                                var lastnode = lineList[i].elements[l - 1].node;
+
+                                lastnode.parentElement.insertBefore(br, lastnode.nextSibling);
+                        }
+                }
+        }
+
+        function applyTextEmphasis(lineList, context) {
+
+                /* supports "outside" only */
+
+                for (var i = 0; i < lineList.length; i++) {
+
+                        for (var j = 0; j < lineList[i].te.length; j++) {
+
+                                /* skip if position already set */
+
+                                if (lineList[i].te[j].style.textEmphasisPosition !== "") continue;
+
+                                var pos;
+
+                                if (context.bpd === "tb") {
+
+                                        pos = i === 0 ? "left over" : "left under";
+                                } else {
+
+                                        if (context.bpd === "rl") {
+
+                                                pos = i === 0 ? "right under" : "left under";
+                                        } else {
+
+                                                pos = i === 0 ? "left under" : "right under";
+                                        }
+                                }
+
+                                lineList[i].te[j].style.textEmphasisPosition = pos;
+                        }
+                }
+        }
+
+        function applyRubyPosition(lineList, context) {
+
+                for (var i = 0; i < lineList.length; i++) {
+
+                        for (var j = 0; j < lineList[i].rbc.length; j++) {
+
+                                /* skip if ruby-position already set */
+
+                                if (lineList[i].rbc[j].style.rubyPosition !== "") continue;
+
+                                var pos;
+
+                                if (context.bpd === "tb") {
+
+                                        pos = i === 0 ? "over" : "under";
+                                } else {
+
+                                        if (context.bpd === "rl") {
+
+                                                pos = i === 0 ? "over" : "under";
+                                        } else {
+
+                                                pos = i === 0 ? "under" : "over";
+                                        }
+                                }
+
+                                lineList[i].rbc[j].style.rubyPosition = pos;
+                        }
+                }
+        }
+
+        function applyRubyReserve(lineList, context) {
+
+                for (var i = 0; i < lineList.length; i++) {
+
+                        var ruby = document.createElement("ruby");
+
+                        var rb = document.createElement("rb");
+                        rb.textContent = "\u200B";
+
+                        ruby.appendChild(rb);
+
+                        var rt1;
+                        var rt2;
+
+                        var fs = context.rubyReserve[1].toUsedLength(context.w, context.h) + "px";
+
+                        if (context.rubyReserve[0] === "both") {
+
+                                rt1 = document.createElement("rtc");
+                                rt1.style.rubyPosition = "under";
+                                rt1.textContent = "\u200B";
+                                rt1.style.fontSize = fs;
+
+                                rt2 = document.createElement("rtc");
+                                rt2.style.rubyPosition = "over";
+                                rt2.textContent = "\u200B";
+                                rt2.style.fontSize = fs;
+
+                                ruby.appendChild(rt1);
+                                ruby.appendChild(rt2);
+                        } else {
+
+                                rt1 = document.createElement("rtc");
+                                rt1.textContent = "\u200B";
+                                rt1.style.fontSize = fs;
+
+                                if (context.rubyReserve[0] === "after" || context.rubyReserve[0] === "outside" && i > 0) {
+
+                                        rt1.style.rubyPosition = context.bpd === "tb" || context.bpd === "rl" ? "under" : "over";
+                                } else {
+
+                                        rt1.style.rubyPosition = context.bpd === "tb" || context.bpd === "rl" ? "over" : "under";
+                                }
+
+                                ruby.appendChild(rt1);
+                        }
+
+                        var e = lineList[i].elements[0].node.parentElement.insertBefore(ruby, lineList[i].elements[0].node);
+                }
+        }
+
+        function applyFillLineGap(lineList, par_before, par_after, context) {
+
+                /* positive for BPD = lr and tb, negative for BPD = rl */
+                var s = Math.sign(par_after - par_before);
+
+                for (var i = 0; i <= lineList.length; i++) {
+
+                        /* compute frontier between lines */
+
+                        var frontier;
+
+                        if (i === 0) {
+
+                                frontier = par_before;
+                        } else if (i === lineList.length) {
+
+                                frontier = par_after;
+                        } else {
+
+                                frontier = (lineList[i].before + lineList[i - 1].after) / 2;
+                        }
+
+                        /* padding amount */
+
+                        var pad;
+
+                        /* current element */
+
+                        var e;
+
+                        /* before line */
+
+                        if (i > 0) {
+
+                                for (var j = 0; j < lineList[i - 1].elements.length; j++) {
+
+                                        if (lineList[i - 1].elements[j].bgcolor === null) continue;
+
+                                        e = lineList[i - 1].elements[j];
+
+                                        if (s * (e.after - frontier) < 0) {
+
+                                                pad = Math.ceil(Math.abs(frontier - e.after)) + "px";
+
+                                                e.node.style.backgroundColor = e.bgcolor;
+
+                                                if (context.bpd === "lr") {
+
+                                                        e.node.style.paddingRight = pad;
+                                                } else if (context.bpd === "rl") {
+
+                                                        e.node.style.paddingLeft = pad;
+                                                } else if (context.bpd === "tb") {
+
+                                                        e.node.style.paddingBottom = pad;
+                                                }
+                                        }
+                                }
+                        }
+
+                        /* after line */
+
+                        if (i < lineList.length) {
+
+                                for (var k = 0; k < lineList[i].elements.length; k++) {
+
+                                        e = lineList[i].elements[k];
+
+                                        if (e.bgcolor === null) continue;
+
+                                        if (s * (e.before - frontier) > 0) {
+
+                                                pad = Math.ceil(Math.abs(e.before - frontier)) + "px";
+
+                                                e.node.style.backgroundColor = e.bgcolor;
+
+                                                if (context.bpd === "lr") {
+
+                                                        e.node.style.paddingLeft = pad;
+                                                } else if (context.bpd === "rl") {
+
+                                                        e.node.style.paddingRight = pad;
+                                                } else if (context.bpd === "tb") {
+
+                                                        e.node.style.paddingTop = pad;
+                                                }
+                                        }
+                                }
+                        }
+                }
+        }
+
+        function RegionPBuffer(id, lineList) {
+
+                this.id = id;
+
+                this.plist = lineList;
+        }
+
+        function pruneEmptySpans(element) {
+
+                var child = element.firstChild;
+
+                while (child) {
+
+                        var nchild = child.nextSibling;
+
+                        if (child.nodeType === Node.ELEMENT_NODE && child.localName === 'span') {
+
+                                pruneEmptySpans(child);
+
+                                if (child.childElementCount === 0 && child.textContent.length === 0) {
+
+                                        element.removeChild(child);
+                                }
+                        }
+
+                        child = nchild;
+                }
+        }
+
+        function rect2edges(rect, context) {
+
+                var edges = { before: null, after: null, start: null, end: null };
+
+                if (context.bpd === "tb") {
+
+                        edges.before = rect.top;
+                        edges.after = rect.bottom;
+
+                        if (context.ipd === "lr") {
+
+                                edges.start = rect.left;
+                                edges.end = rect.right;
+                        } else {
+
+                                edges.start = rect.right;
+                                edges.end = rect.left;
+                        }
+                } else if (context.bpd === "lr") {
+
+                        edges.before = rect.left;
+                        edges.after = rect.right;
+                        edges.start = rect.top;
+                        edges.end = rect.bottom;
+                } else if (context.bpd === "rl") {
+
+                        edges.before = rect.right;
+                        edges.after = rect.left;
+                        edges.start = rect.top;
+                        edges.end = rect.bottom;
+                }
+
+                return edges;
+        }
+
+        function constructLineList(context, element, llist, bgcolor) {
+
+                if (element.localName === "rt" || element.localName === "rtc") {
+
+                        /* skip ruby annotations */
+
+                        return;
+                }
+
+                var curbgcolor = element.style.backgroundColor || bgcolor;
+
+                if (element.childElementCount === 0) {
+
+                        if (element.localName === 'span' || element.localName === 'rb') {
+
+                                var r = element.getBoundingClientRect();
+
+                                /* skip if span is not displayed */
+
+                                if (r.height === 0 || r.width === 0) return;
+
+                                var edges = rect2edges(r, context);
+
+                                if (llist.length === 0 || !isSameLine(edges.before, edges.after, llist[llist.length - 1].before, llist[llist.length - 1].after)) {
+
+                                        llist.push({
+                                                before: edges.before,
+                                                after: edges.after,
+                                                start: edges.start,
+                                                end: edges.end,
+                                                start_elem: 0,
+                                                end_elem: 0,
+                                                elements: [],
+                                                rbc: [],
+                                                te: [],
+                                                text: "",
+                                                br: false
+                                        });
+                                } else {
+
+                                        /* positive for BPD = lr and tb, negative for BPD = rl */
+                                        var bpd_dir = Math.sign(edges.after - edges.before);
+
+                                        /* positive for IPD = lr and tb, negative for IPD = rl */
+                                        var ipd_dir = Math.sign(edges.end - edges.start);
+
+                                        /* check if the line height has increased */
+
+                                        if (bpd_dir * (edges.before - llist[llist.length - 1].before) < 0) {
+                                                llist[llist.length - 1].before = edges.before;
+                                        }
+
+                                        if (bpd_dir * (edges.after - llist[llist.length - 1].after) > 0) {
+                                                llist[llist.length - 1].after = edges.after;
+                                        }
+
+                                        if (ipd_dir * (edges.start - llist[llist.length - 1].start) < 0) {
+                                                llist[llist.length - 1].start = edges.start;
+                                                llist[llist.length - 1].start_elem = llist[llist.length - 1].elements.length;
+                                        }
+
+                                        if (ipd_dir * (edges.end - llist[llist.length - 1].end) > 0) {
+                                                llist[llist.length - 1].end = edges.end;
+                                                llist[llist.length - 1].end_elem = llist[llist.length - 1].elements.length;
+                                        }
+                                }
+
+                                llist[llist.length - 1].text += element.textContent;
+
+                                llist[llist.length - 1].elements.push({
+                                        node: element,
+                                        bgcolor: curbgcolor,
+                                        before: edges.before,
+                                        after: edges.after
+                                });
+                        } else if (element.localName === 'br' && llist.length !== 0) {
+
+                                llist[llist.length - 1].br = true;
+                        }
+                } else {
+
+                        var child = element.firstChild;
+
+                        while (child) {
+
+                                if (child.nodeType === Node.ELEMENT_NODE) {
+
+                                        constructLineList(context, child, llist, curbgcolor);
+
+                                        if (child.localName === 'ruby' || child.localName === 'rtc') {
+
+                                                /* remember non-empty ruby and rtc elements so that tts:rubyPosition can be applied */
+
+                                                if (llist.length > 0) {
+
+                                                        llist[llist.length - 1].rbc.push(child);
+                                                }
+                                        } else if (child.localName === 'span' && child.style.textEmphasisStyle !== "") {
+
+                                                llist[llist.length - 1].te.push(child);
+                                        }
+                                }
+
+                                child = child.nextSibling;
+                        }
+                }
+        }
+
+        function isSameLine(before1, after1, before2, after2) {
+
+                return after1 < after2 && before1 > before2 || after2 <= after1 && before2 >= before1;
+        }
+
+        function HTMLStylingMapDefintion(qName, mapFunc) {
+                this.qname = qName;
+                this.map = mapFunc;
+        }
+
+        var STYLING_MAP_DEFS = [new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling backgroundColor", function (context, dom_element, isd_element, attr) {
+
+                /* skip if transparent */
+                if (attr[3] === 0) return;
+
+                dom_element.style.backgroundColor = "rgba(" + attr[0].toString() + "," + attr[1].toString() + "," + attr[2].toString() + "," + (attr[3] / 255).toString() + ")";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling color", function (context, dom_element, isd_element, attr) {
+                dom_element.style.color = "rgba(" + attr[0].toString() + "," + attr[1].toString() + "," + attr[2].toString() + "," + (attr[3] / 255).toString() + ")";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling direction", function (context, dom_element, isd_element, attr) {
+                dom_element.style.direction = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling display", function (context, dom_element, isd_element, attr) {}), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling displayAlign", function (context, dom_element, isd_element, attr) {
+
+                /* see https://css-tricks.com/snippets/css/a-guide-to-flexbox/ */
+
+                /* TODO: is this affected by writing direction? */
+
+                dom_element.style.display = "flex";
+                dom_element.style.flexDirection = "column";
+
+                if (attr === "before") {
+
+                        dom_element.style.justifyContent = "flex-start";
+                } else if (attr === "center") {
+
+                        dom_element.style.justifyContent = "center";
+                } else if (attr === "after") {
+
+                        dom_element.style.justifyContent = "flex-end";
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling extent", function (context, dom_element, isd_element, attr) {
+                /* TODO: this is super ugly */
+
+                context.regionH = attr.h.toUsedLength(context.w, context.h);
+                context.regionW = attr.w.toUsedLength(context.w, context.h);
+
+                /* 
+                 * CSS height/width are measured against the content rectangle,
+                 * whereas TTML height/width include padding
+                 */
+
+                var hdelta = 0;
+                var wdelta = 0;
+
+                var p = isd_element.styleAttrs["http://www.w3.org/ns/ttml#styling padding"];
+
+                if (!p) {
+
+                        /* error */
+
+                } else {
+
+                        hdelta = p[0].toUsedLength(context.w, context.h) + p[2].toUsedLength(context.w, context.h);
+                        wdelta = p[1].toUsedLength(context.w, context.h) + p[3].toUsedLength(context.w, context.h);
+                }
+
+                dom_element.style.height = context.regionH - hdelta + "px";
+                dom_element.style.width = context.regionW - wdelta + "px";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontFamily", function (context, dom_element, isd_element, attr) {
+
+                var rslt = [];
+
+                /* per IMSC1 */
+
+                for (var i in attr) {
+
+                        if (attr[i] === "monospaceSerif") {
+
+                                rslt.push("Courier New");
+                                rslt.push('"Liberation Mono"');
+                                rslt.push("Courier");
+                                rslt.push("monospace");
+                        } else if (attr[i] === "proportionalSansSerif") {
+
+                                rslt.push("Arial");
+                                rslt.push("Helvetica");
+                                rslt.push('"Liberation Sans"');
+                                rslt.push("sans-serif");
+                        } else if (attr[i] === "monospace") {
+
+                                rslt.push("monospace");
+                        } else if (attr[i] === "sansSerif") {
+
+                                rslt.push("sans-serif");
+                        } else if (attr[i] === "serif") {
+
+                                rslt.push("serif");
+                        } else if (attr[i] === "monospaceSansSerif") {
+
+                                rslt.push("Consolas");
+                                rslt.push("monospace");
+                        } else if (attr[i] === "proportionalSerif") {
+
+                                rslt.push("serif");
+                        } else {
+
+                                rslt.push(attr[i]);
+                        }
+                }
+
+                dom_element.style.fontFamily = rslt.join(",");
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling shear", function (context, dom_element, isd_element, attr) {
+
+                /* return immediately if tts:shear is 0% since CSS transforms are not inherited*/
+
+                if (attr === 0) return;
+
+                var angle = attr * -0.9;
+
+                /* context.writingMode is needed since writing mode is not inherited and sets the inline progression */
+
+                if (context.bpd === "tb") {
+
+                        dom_element.style.transform = "skewX(" + angle + "deg)";
+                } else {
+
+                        dom_element.style.transform = "skewY(" + angle + "deg)";
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontSize", function (context, dom_element, isd_element, attr) {
+                dom_element.style.fontSize = attr.toUsedLength(context.w, context.h) + "px";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontStyle", function (context, dom_element, isd_element, attr) {
+                dom_element.style.fontStyle = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontWeight", function (context, dom_element, isd_element, attr) {
+                dom_element.style.fontWeight = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling lineHeight", function (context, dom_element, isd_element, attr) {
+                if (attr === "normal") {
+
+                        dom_element.style.lineHeight = "normal";
+                } else {
+
+                        dom_element.style.lineHeight = attr.toUsedLength(context.w, context.h) + "px";
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling opacity", function (context, dom_element, isd_element, attr) {
+                dom_element.style.opacity = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling origin", function (context, dom_element, isd_element, attr) {
+                dom_element.style.top = attr.h.toUsedLength(context.w, context.h) + "px";
+                dom_element.style.left = attr.w.toUsedLength(context.w, context.h) + "px";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling overflow", function (context, dom_element, isd_element, attr) {
+                dom_element.style.overflow = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling padding", function (context, dom_element, isd_element, attr) {
+
+                /* attr: top,left,bottom,right*/
+
+                /* style: top right bottom left*/
+
+                var rslt = [];
+
+                rslt[0] = attr[0].toUsedLength(context.w, context.h) + "px";
+                rslt[1] = attr[3].toUsedLength(context.w, context.h) + "px";
+                rslt[2] = attr[2].toUsedLength(context.w, context.h) + "px";
+                rslt[3] = attr[1].toUsedLength(context.w, context.h) + "px";
+
+                dom_element.style.padding = rslt.join(" ");
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling position", function (context, dom_element, isd_element, attr) {
+                dom_element.style.top = attr.h.toUsedLength(context.w, context.h) + "px";
+                dom_element.style.left = attr.w.toUsedLength(context.w, context.h) + "px";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling rubyAlign", function (context, dom_element, isd_element, attr) {
+                dom_element.style.rubyAlign = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling rubyPosition", function (context, dom_element, isd_element, attr) {
+
+                /* skip if "outside", which is handled by applyRubyPosition() */
+
+                if (attr === "before" || attr === "after") {
+
+                        var pos;
+
+                        if (context.bpd === "tb") {
+
+                                pos = attr === "before" ? "over" : "under";
+                        } else {
+
+                                if (context.bpd === "rl") {
+
+                                        pos = attr === "before" ? "over" : "under";
+                                } else {
+
+                                        pos = attr === "before" ? "under" : "over";
+                                }
+                        }
+
+                        /* apply position to the parent dom_element, i.e. ruby or rtc */
+
+                        dom_element.parentElement.style.rubyPosition = pos;
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling showBackground", null), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textAlign", function (context, dom_element, isd_element, attr) {
+
+                var ta;
+                var dir = isd_element.styleAttrs[imscStyles.byName.direction.qname];
+
+                /* handle UAs that do not understand start or end */
+
+                if (attr === "start") {
+
+                        ta = dir === "rtl" ? "right" : "left";
+                } else if (attr === "end") {
+
+                        ta = dir === "rtl" ? "left" : "right";
+                } else {
+
+                        ta = attr;
+                }
+
+                dom_element.style.textAlign = ta;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textDecoration", function (context, dom_element, isd_element, attr) {
+                dom_element.style.textDecoration = attr.join(" ").replace("lineThrough", "line-through");
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textOutline", function (context, dom_element, isd_element, attr) {
+
+                /* defer to tts:textShadow */
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textShadow", function (context, dom_element, isd_element, attr) {
+
+                var txto = isd_element.styleAttrs[imscStyles.byName.textOutline.qname];
+
+                if (attr === "none" && txto === "none") {
+
+                        dom_element.style.textShadow = "";
+                } else {
+
+                        var s = [];
+
+                        if (txto !== "none") {
+
+                                /* emulate text outline */
+
+                                s.push("rgba(" + txto.color[0].toString() + "," + txto.color[1].toString() + "," + txto.color[2].toString() + "," + (txto.color[3] / 255).toString() + ")" + " 0px 0px " + txto.thickness.toUsedLength(context.w, context.h) + "px");
+                        }
+
+                        /* add text shadow */
+
+                        if (attr !== "none") {
+
+                                for (var i in attr) {
+
+                                        s.push(attr[i].x_off.toUsedLength(context.w, context.h) + "px " + attr[i].y_off.toUsedLength(context.w, context.h) + "px " + attr[i].b_radius.toUsedLength(context.w, context.h) + "px " + "rgba(" + attr[i].color[0].toString() + "," + attr[i].color[1].toString() + "," + attr[i].color[2].toString() + "," + (attr[i].color[3] / 255).toString() + ")");
+                                }
+                        }
+
+                        dom_element.style.textShadow = s.join(",");
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textCombine", function (context, dom_element, isd_element, attr) {
+
+                dom_element.style.textCombineUpright = attr.join(" ");
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textEmphasis", function (context, dom_element, isd_element, attr) {
+
+                /* ignore color (not used in IMSC 1.1) */
+
+                if (attr.style !== "none") {
+
+                        /* text-emphasis does not inherit in w */
+
+                        dom_element.style.textEmphasisStyle = attr.style + " " + attr.symbol;
+                }
+
+                /* ignore "outside" position (set in postprocessing) */
+
+                if (attr.position === "before" || attr.position === "after") {
+
+                        var pos;
+
+                        if (context.bpd === "tb") {
+
+                                pos = attr.position === "before" ? "left over" : "left under";
+                        } else {
+
+                                if (context.bpd === "rl") {
+
+                                        pos = attr.position === "before" ? "right under" : "left under";
+                                } else {
+
+                                        pos = attr.position === "before" ? "left under" : "right under";
+                                }
+                        }
+
+                        dom_element.style.textEmphasisPosition = pos;
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling unicodeBidi", function (context, dom_element, isd_element, attr) {
+
+                var ub;
+
+                if (attr === 'bidiOverride') {
+                        ub = "bidi-override";
+                } else {
+                        ub = attr;
+                }
+
+                dom_element.style.unicodeBidi = ub;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling visibility", function (context, dom_element, isd_element, attr) {
+                dom_element.style.visibility = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling wrapOption", function (context, dom_element, isd_element, attr) {
+
+                if (attr === "wrap") {
+
+                        if (isd_element.space === "preserve") {
+                                dom_element.style.whiteSpace = "pre-wrap";
+                        } else {
+                                dom_element.style.whiteSpace = "normal";
+                        }
+                } else {
+
+                        if (isd_element.space === "preserve") {
+
+                                dom_element.style.whiteSpace = "pre";
+                        } else {
+                                dom_element.style.whiteSpace = "noWrap";
+                        }
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling writingMode", function (context, dom_element, isd_element, attr) {
+                if (attr === "lrtb" || attr === "lr") {
+
+                        context.writingMode = "horizontal-tb";
+                } else if (attr === "rltb" || attr === "rl") {
+
+                        context.writingMode = "horizontal-tb";
+                } else if (attr === "tblr") {
+
+                        context.writingMode = "vertical-lr";
+                } else if (attr === "tbrl" || attr === "tb") {
+
+                        context.writingMode = "vertical-rl";
+                }
+
+                dom_element.style.writingMode = context.writingMode;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling zIndex", function (context, dom_element, isd_element, attr) {
+                dom_element.style.zIndex = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml/profile/imsc1#styling forcedDisplay", function (context, dom_element, isd_element, attr) {
+
+                if (context.displayForcedOnlyMode && attr === false) {
+                        dom_element.style.visibility = "hidden";
+                }
+        })];
+
+        var STYLMAP_BY_QNAME = {};
+
+        for (var i in STYLING_MAP_DEFS) {
+
+                STYLMAP_BY_QNAME[STYLING_MAP_DEFS[i].qname] = STYLING_MAP_DEFS[i];
+        }
+
+        function reportError(errorHandler, msg) {
+
+                if (errorHandler && errorHandler.error && errorHandler.error(msg)) throw msg;
+        }
+})( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "./node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscStyles === 'undefined' ? __webpack_require__(/*! ./styles */ "./node_modules/imsc/src/main/js/styles.js") : imscStyles, typeof imscUtils === 'undefined' ? __webpack_require__(/*! ./utils */ "./node_modules/imsc/src/main/js/utils.js") : imscUtils);
 
 /***/ }),
 
@@ -59014,7 +60372,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
  */
 
 ;
-(function (imscISD, imscNames, imscStyles) {
+(function (imscISD, imscNames, imscStyles, imscUtils) {
         // wrapper for non-node envs
 
         /** 
@@ -59040,7 +60398,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                 var context = {
 
-                        /* empty for now */
+                        /*rubyfs: []*/ /* font size of the nearest textContainer or container */
 
                 };
 
@@ -59062,6 +60420,10 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                 return isd;
         };
+
+        /* set of styles not applicable to ruby container spans */
+
+        var _rcs_na_styles = [imscStyles.byName.color.qname, imscStyles.byName.textCombine.qname, imscStyles.byName.textDecoration.qname, imscStyles.byName.textEmphasis.qname, imscStyles.byName.textOutline.qname, imscStyles.byName.textShadow.qname];
 
         function isdProcessContentElement(doc, offset, region, body, parent, inherited_region_id, elem, errorHandler, context) {
 
@@ -59175,6 +60537,26 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
                                         }
 
                                         isd_element.styleAttrs[sa.qname] = outs;
+                                } else if (sa.qname === imscStyles.byName.fontSize.qname && !(sa.qname in isd_element.styleAttrs) && isd_element.kind === 'span' && isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "textContainer") {
+
+                                        /* special inheritance rule for ruby text container font size */
+
+                                        var ruby_fs = parent.styleAttrs[imscStyles.byName.fontSize.qname];
+
+                                        isd_element.styleAttrs[sa.qname] = new imscUtils.ComputedLength(0.5 * ruby_fs.rw, 0.5 * ruby_fs.rh);
+                                } else if (sa.qname === imscStyles.byName.fontSize.qname && !(sa.qname in isd_element.styleAttrs) && isd_element.kind === 'span' && isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "text") {
+
+                                        /* special inheritance rule for ruby text font size */
+
+                                        var parent_fs = parent.styleAttrs[imscStyles.byName.fontSize.qname];
+
+                                        if (parent.styleAttrs[imscStyles.byName.ruby.qname] === "textContainer") {
+
+                                                isd_element.styleAttrs[sa.qname] = parent_fs;
+                                        } else {
+
+                                                isd_element.styleAttrs[sa.qname] = new imscUtils.ComputedLength(0.5 * parent_fs.rw, 0.5 * parent_fs.rh);
+                                        }
                                 } else if (sa.inherit && sa.qname in parent.styleAttrs && !(sa.qname in isd_element.styleAttrs)) {
 
                                         isd_element.styleAttrs[sa.qname] = parent.styleAttrs[sa.qname];
@@ -59192,11 +60574,23 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                         if (ivs.qname in isd_element.styleAttrs) continue;
 
+                        /* skip tts:position if tts:origin is specified */
+
+                        if (ivs.qname === imscStyles.byName.position.qname && imscStyles.byName.origin.qname in isd_element.styleAttrs) continue;
+
+                        /* skip tts:origin if tts:position is specified */
+
+                        if (ivs.qname === imscStyles.byName.origin.qname && imscStyles.byName.position.qname in isd_element.styleAttrs) continue;
+
+                        /* determine initial value */
+
+                        var iv = doc.head.styling.initials[ivs.qname] || ivs.initial;
+
                         /* apply initial value to elements other than region only if non-inherited */
 
-                        if (isd_element.kind === 'region' || ivs.inherit === false && ivs.initial !== null) {
+                        if (isd_element.kind === 'region' || ivs.inherit === false && iv !== null) {
 
-                                isd_element.styleAttrs[ivs.qname] = ivs.parse(ivs.initial);
+                                isd_element.styleAttrs[ivs.qname] = ivs.parse(iv);
 
                                 /* keep track of the style as specified */
 
@@ -59226,6 +60620,24 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
                                 }
                         }
                 }
+
+                /* tts:fontSize special ineritance for ruby */
+
+                /*        var isrubycontainer = false;
+                
+                        if (isd_element.kind === "span") {
+                
+                            var rtemp = isd_element.styleAttrs[imscStyles.byName.ruby.qname];
+                
+                            if (rtemp === "container" || rtemp === "textContainer") {
+                
+                                isrubycontainer = true;
+                
+                                context.rubyfs.unshift(isd_element.styleAttrs[imscStyles.byName.fontSize.qname]);
+                
+                            }
+                
+                        } */
 
                 /* prune if tts:display is none */
 
@@ -59280,12 +60692,49 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
                  }
                  */
 
+                /* tts:fontSize special ineritance for ruby */
+
+                /*if (isrubycontainer) {
+                      context.rubyfs.shift();
+                  }*/
+
                 /* remove styles that are not applicable */
 
                 for (var qnameb in isd_element.styleAttrs) {
-                        var da = imscStyles.byQName[qnameb];
 
-                        if (da.applies.indexOf(isd_element.kind) === -1) {
+                        /* true if not applicable */
+
+                        var na = false;
+
+                        /* special applicability of certain style properties to ruby container spans */
+                        /* TODO: in the future ruby elements should be translated to elements instead of kept as spans */
+
+                        if (isd_element.kind === 'span') {
+
+                                var rsp = isd_element.styleAttrs[imscStyles.byName.ruby.qname];
+
+                                na = (rsp === 'container' || rsp === 'textContainer' || rsp === 'baseContainer') && _rcs_na_styles.indexOf(qnameb) !== -1;
+
+                                if (!na) {
+
+                                        na = rsp !== 'container' && qnameb === imscStyles.byName.rubyAlign.qname;
+                                }
+
+                                if (!na) {
+
+                                        na = !(rsp === 'textContainer' || rsp === 'text') && qnameb === imscStyles.byName.rubyPosition.qname;
+                                }
+                        }
+
+                        /* normal applicability */
+
+                        if (!na) {
+
+                                var da = imscStyles.byQName[qnameb];
+                                na = da.applies.indexOf(isd_element.kind) === -1;
+                        }
+
+                        if (na) {
                                 delete isd_element.styleAttrs[qnameb];
                         }
                 }
@@ -59294,7 +60743,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                 if (isd_element.kind === 'span' && isd_element.text && isd_element.space === "default") {
 
-                        var trimmedspan = isd_element.text.replace(/\s+/g, ' ');
+                        var trimmedspan = isd_element.text.replace(/[\t\r\n ]+/g, ' ');
 
                         isd_element.text = trimmedspan;
                 }
@@ -59325,7 +60774,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                                                 if (elist[l].space !== "preserve") {
 
-                                                        elist[l].text = elist[l].text.replace(/^\s+/g, '');
+                                                        elist[l].text = elist[l].text.replace(/^[\t\r\n ]+/g, '');
                                                 }
 
                                                 if (elist[l].text.length > 0) {
@@ -59349,7 +60798,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                                                 if (elist[l].space !== "preserve") {
 
-                                                        elist[l].text = elist[l].text.replace(/\s+$/g, '');
+                                                        elist[l].text = elist[l].text.replace(/[\t\r\n ]+$/g, '');
                                                 }
 
                                                 if (elist[l].text.length > 0) {
@@ -59385,11 +60834,12 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
                  * * contains a background image
                  * * <br/>
                  * * if there are children
+                 * * if it is an image
                  * * if <span> and has text
                  * * if region and showBackground = always
                  */
 
-                if (isd_element.kind === 'div' && imscStyles.byName.backgroundImage.qname in isd_element.styleAttrs || isd_element.kind === 'br' || 'contents' in isd_element && isd_element.contents.length > 0 || isd_element.kind === 'span' && isd_element.text !== null || isd_element.kind === 'region' && isd_element.styleAttrs[imscStyles.byName.showBackground.qname] === 'always') {
+                if (isd_element.kind === 'div' && imscStyles.byName.backgroundImage.qname in isd_element.styleAttrs || isd_element.kind === 'br' || isd_element.kind === 'image' || 'contents' in isd_element && isd_element.contents.length > 0 || isd_element.kind === 'span' && isd_element.text !== null || isd_element.kind === 'region' && isd_element.styleAttrs[imscStyles.byName.showBackground.qname] === 'always') {
 
                         return {
                                 region_id: associated_region_id,
@@ -59407,7 +60857,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
                         for (var i in element.contents) {
                                 constructSpanList(element.contents[i], elist);
                         }
-                } else {
+                } else if (element.kind === 'span' || element.kind === 'br') {
 
                         elist.push(element);
                 }
@@ -59461,12 +60911,25 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
                         this.styleAttrs[sname] = ttelem.styleAttrs[sname];
                 }
 
-                /* TODO: clean this! */
+                /* copy src and type if image */
+
+                if ('src' in ttelem) {
+
+                        this.src = ttelem.src;
+                }
+
+                if ('type' in ttelem) {
+
+                        this.type = ttelem.type;
+                }
+
+                /* TODO: clean this! 
+                 * TODO: ISDElement and document element should be better tied together */
 
                 if ('text' in ttelem) {
 
                         this.text = ttelem.text;
-                } else if (ttelem.kind !== 'br') {
+                } else if (this.kind === 'region' || 'contents' in ttelem) {
 
                         this.contents = [];
                 }
@@ -59503,7 +60966,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
 
                 throw msg;
         }
-})( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "./node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscStyles === 'undefined' ? __webpack_require__(/*! ./styles */ "./node_modules/imsc/src/main/js/styles.js") : imscStyles);
+})( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "./node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscStyles === 'undefined' ? __webpack_require__(/*! ./styles */ "./node_modules/imsc/src/main/js/styles.js") : imscStyles, typeof imscUtils === 'undefined' ? __webpack_require__(/*! ./utils */ "./node_modules/imsc/src/main/js/utils.js") : imscUtils);
 
 /***/ }),
 
@@ -59647,482 +61110,584 @@ exports.renderHTML = __webpack_require__(/*! ./html */ "./node_modules/imsc/src/
 
 ;
 (function (imscStyles, imscNames, imscUtils) {
-                    // wrapper for non-node envs
+    // wrapper for non-node envs
 
-                    function StylingAttributeDefinition(ns, name, initialValue, appliesTo, isInherit, isAnimatable, parseFunc, computeFunc) {
-                                        this.name = name;
-                                        this.ns = ns;
-                                        this.qname = ns + " " + name;
-                                        this.inherit = isInherit;
-                                        this.animatable = isAnimatable;
-                                        this.initial = initialValue;
-                                        this.applies = appliesTo;
-                                        this.parse = parseFunc;
-                                        this.compute = computeFunc;
-                    }
+    function StylingAttributeDefinition(ns, name, initialValue, appliesTo, isInherit, isAnimatable, parseFunc, computeFunc) {
+        this.name = name;
+        this.ns = ns;
+        this.qname = ns + " " + name;
+        this.inherit = isInherit;
+        this.animatable = isAnimatable;
+        this.initial = initialValue;
+        this.applies = appliesTo;
+        this.parse = parseFunc;
+        this.compute = computeFunc;
+    }
 
-                    imscStyles.all = [new StylingAttributeDefinition(imscNames.ns_tts, "backgroundColor", "transparent", ['body', 'div', 'p', 'region', 'span'], false, true, imscUtils.parseColor, null), new StylingAttributeDefinition(imscNames.ns_tts, "color", "white", ['span'], true, true, imscUtils.parseColor, null), new StylingAttributeDefinition(imscNames.ns_tts, "direction", "ltr", ['p', 'span'], true, true, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "display", "auto", ['body', 'div', 'p', 'region', 'span'], false, true, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "displayAlign", "before", ['region'], false, true, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "extent", "auto", ['tt', 'region'], false, true, function (str) {
+    imscStyles.all = [new StylingAttributeDefinition(imscNames.ns_tts, "backgroundColor", "transparent", ['body', 'div', 'p', 'region', 'span'], false, true, imscUtils.parseColor, null), new StylingAttributeDefinition(imscNames.ns_tts, "color", "white", ['span'], true, true, imscUtils.parseColor, null), new StylingAttributeDefinition(imscNames.ns_tts, "direction", "ltr", ['p', 'span'], true, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "display", "auto", ['body', 'div', 'p', 'region', 'span'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "displayAlign", "before", ['region'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "extent", "auto", ['tt', 'region'], false, true, function (str) {
 
-                                        if (str === "auto") {
+        if (str === "auto") {
 
-                                                            return str;
-                                        } else {
+            return str;
+        } else {
 
-                                                            var s = str.split(" ");
-                                                            if (s.length !== 2) return null;
-                                                            var w = imscUtils.parseLength(s[0]);
-                                                            var h = imscUtils.parseLength(s[1]);
-                                                            if (!h || !w) return null;
-                                                            return { 'h': h, 'w': w };
-                                        }
-                    }, function (doc, parent, element, attr, context) {
+            var s = str.split(" ");
+            if (s.length !== 2) return null;
+            var w = imscUtils.parseLength(s[0]);
+            var h = imscUtils.parseLength(s[1]);
+            if (!h || !w) return null;
+            return { 'h': h, 'w': w };
+        }
+    }, function (doc, parent, element, attr, context) {
 
-                                        var h;
-                                        var w;
+        var h;
+        var w;
 
-                                        if (attr === "auto") {
+        if (attr === "auto") {
 
-                                                            h = 1;
-                                        } else if (attr.h.unit === "%") {
+            h = new imscUtils.ComputedLength(0, 1);
+        } else {
 
-                                                            h = attr.h.value / 100;
-                                        } else if (attr.h.unit === "px") {
+            h = imscUtils.toComputedLength(attr.h.value, attr.h.unit, null, doc.dimensions.h, null, doc.pxLength.h);
 
-                                                            h = attr.h.value / doc.pxDimensions.h;
-                                        } else {
+            if (h === null) {
 
-                                                            return null;
-                                        }
+                return null;
+            }
+        }
 
-                                        if (attr === "auto") {
+        if (attr === "auto") {
 
-                                                            w = 1;
-                                        } else if (attr.w.unit === "%") {
+            w = new imscUtils.ComputedLength(1, 0);
+        } else {
 
-                                                            w = attr.w.value / 100;
-                                        } else if (attr.w.unit === "px") {
+            w = imscUtils.toComputedLength(attr.w.value, attr.w.unit, null, doc.dimensions.w, null, doc.pxLength.w);
 
-                                                            w = attr.w.value / doc.pxDimensions.w;
-                                        } else {
+            if (w === null) {
 
-                                                            return null;
-                                        }
+                return null;
+            }
+        }
 
-                                        return { 'h': h, 'w': w };
-                    }), new StylingAttributeDefinition(imscNames.ns_tts, "fontFamily", "default", ['span'], true, true, function (str) {
-                                        var ffs = str.split(",");
-                                        var rslt = [];
+        return { 'h': h, 'w': w };
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "fontFamily", "default", ['span'], true, true, function (str) {
+        var ffs = str.split(",");
+        var rslt = [];
 
-                                        for (var i in ffs) {
+        for (var i in ffs) {
 
-                                                            if (ffs[i].charAt(0) !== "'" && ffs[i].charAt(0) !== '"') {
+            if (ffs[i].charAt(0) !== "'" && ffs[i].charAt(0) !== '"') {
 
-                                                                                if (ffs[i] === "default") {
+                if (ffs[i] === "default") {
 
-                                                                                                    /* per IMSC1 */
+                    /* per IMSC1 */
 
-                                                                                                    rslt.push("monospaceSerif");
-                                                                                } else {
+                    rslt.push("monospaceSerif");
+                } else {
 
-                                                                                                    rslt.push(ffs[i]);
-                                                                                }
-                                                            } else {
+                    rslt.push(ffs[i]);
+                }
+            } else {
 
-                                                                                rslt.push(ffs[i]);
-                                                            }
-                                        }
+                rslt.push(ffs[i]);
+            }
+        }
 
-                                        return rslt;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "fontSize", "1c", ['span'], true, true, imscUtils.parseLength, function (doc, parent, element, attr, context) {
+        return rslt;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "shear", "0%", ['p'], true, true, imscUtils.parseLength, function (doc, parent, element, attr) {
 
-                                        var fs;
+        var fs;
 
-                                        if (attr.unit === "%") {
+        if (attr.unit === "%") {
 
-                                                            if (parent !== null) {
+            fs = Math.abs(attr.value) > 100 ? Math.sign(attr.value) * 100 : attr.value;
+        } else {
 
-                                                                                fs = parent.styleAttrs[imscStyles.byName.fontSize.qname] * attr.value / 100;
-                                                            } else {
+            return null;
+        }
 
-                                                                                /* region, so percent of 1c */
+        return fs;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "fontSize", "1c", ['span'], true, true, imscUtils.parseLength, function (doc, parent, element, attr, context) {
 
-                                                                                fs = attr.value / 100 / doc.cellResolution.h;
-                                                            }
-                                        } else if (attr.unit === "em") {
+        var fs;
 
-                                                            if (parent !== null) {
+        fs = imscUtils.toComputedLength(attr.value, attr.unit, parent !== null ? parent.styleAttrs[imscStyles.byName.fontSize.qname] : doc.cellLength.h, parent !== null ? parent.styleAttrs[imscStyles.byName.fontSize.qname] : doc.cellLength.h, doc.cellLength.h, doc.pxLength.h);
 
-                                                                                fs = parent.styleAttrs[imscStyles.byName.fontSize.qname] * attr.value;
-                                                            } else {
+        return fs;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "fontStyle", "normal", ['span'], true, true, function (str) {
+        /* TODO: handle font style */
 
-                                                                                /* region, so percent of 1c */
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "fontWeight", "normal", ['span'], true, true, function (str) {
+        /* TODO: handle font weight */
 
-                                                                                fs = attr.value / doc.cellResolution.h;
-                                                            }
-                                        } else if (attr.unit === "c") {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "lineHeight", "normal", ['p'], true, true, function (str) {
+        if (str === "normal") {
+            return str;
+        } else {
+            return imscUtils.parseLength(str);
+        }
+    }, function (doc, parent, element, attr, context) {
 
-                                                            fs = attr.value / doc.cellResolution.h;
-                                        } else if (attr.unit === "px") {
+        var lh;
 
-                                                            fs = attr.value / doc.pxDimensions.h;
-                                        } else {
+        if (attr === "normal") {
 
-                                                            return null;
-                                        }
+            /* inherit normal per https://github.com/w3c/ttml1/issues/220 */
 
-                                        return fs;
-                    }), new StylingAttributeDefinition(imscNames.ns_tts, "fontStyle", "normal", ['span'], true, true, function (str) {
-                                        /* TODO: handle font style */
+            lh = attr;
+        } else {
 
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "fontWeight", "normal", ['span'], true, true, function (str) {
-                                        /* TODO: handle font weight */
+            lh = imscUtils.toComputedLength(attr.value, attr.unit, element.styleAttrs[imscStyles.byName.fontSize.qname], element.styleAttrs[imscStyles.byName.fontSize.qname], doc.cellLength.h, doc.pxLength.h);
 
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "lineHeight", "normal", ['p'], true, true, function (str) {
-                                        if (str === "normal") {
-                                                            return str;
-                                        } else {
-                                                            return imscUtils.parseLength(str);
-                                        }
-                    }, function (doc, parent, element, attr, context) {
+            if (lh === null) {
 
-                                        var lh;
+                return null;
+            }
+        }
 
-                                        if (attr === "normal") {
+        /* TODO: create a Length constructor */
 
-                                                            /* inherit normal per https://github.com/w3c/ttml1/issues/220 */
+        return lh;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "opacity", 1.0, ['region'], false, true, parseFloat, null), new StylingAttributeDefinition(imscNames.ns_tts, "origin", "auto", ['region'], false, true, function (str) {
 
-                                                            lh = attr;
-                                        } else if (attr.unit === "%") {
+        if (str === "auto") {
 
-                                                            lh = element.styleAttrs[imscStyles.byName.fontSize.qname] * attr.value / 100;
-                                        } else if (attr.unit === "em") {
+            return str;
+        } else {
 
-                                                            lh = element.styleAttrs[imscStyles.byName.fontSize.qname] * attr.value;
-                                        } else if (attr.unit === "c") {
+            var s = str.split(" ");
+            if (s.length !== 2) return null;
+            var w = imscUtils.parseLength(s[0]);
+            var h = imscUtils.parseLength(s[1]);
+            if (!h || !w) return null;
+            return { 'h': h, 'w': w };
+        }
+    }, function (doc, parent, element, attr, context) {
 
-                                                            lh = attr.value / doc.cellResolution.h;
-                                        } else if (attr.unit === "px") {
+        var h;
+        var w;
 
-                                                            /* TODO: handle error if no px dimensions are provided */
+        if (attr === "auto") {
 
-                                                            lh = attr.value / doc.pxDimensions.h;
-                                        } else {
+            h = new imscUtils.ComputedLength(0, 0);
+        } else {
 
-                                                            return null;
-                                        }
+            h = imscUtils.toComputedLength(attr.h.value, attr.h.unit, null, doc.dimensions.h, null, doc.pxLength.h);
 
-                                        /* TODO: create a Length constructor */
+            if (h === null) {
 
-                                        return lh;
-                    }), new StylingAttributeDefinition(imscNames.ns_tts, "opacity", 1.0, ['region'], false, true, parseFloat, null), new StylingAttributeDefinition(imscNames.ns_tts, "origin", "auto", ['region'], false, true, function (str) {
+                return null;
+            }
+        }
 
-                                        if (str === "auto") {
+        if (attr === "auto") {
 
-                                                            return str;
-                                        } else {
+            w = new imscUtils.ComputedLength(0, 0);
+        } else {
 
-                                                            var s = str.split(" ");
-                                                            if (s.length !== 2) return null;
-                                                            var w = imscUtils.parseLength(s[0]);
-                                                            var h = imscUtils.parseLength(s[1]);
-                                                            if (!h || !w) return null;
-                                                            return { 'h': h, 'w': w };
-                                        }
-                    }, function (doc, parent, element, attr, context) {
+            w = imscUtils.toComputedLength(attr.w.value, attr.w.unit, null, doc.dimensions.w, null, doc.pxLength.w);
 
-                                        var h;
-                                        var w;
+            if (w === null) {
 
-                                        if (attr === "auto") {
+                return null;
+            }
+        }
 
-                                                            h = 0;
-                                        } else if (attr.h.unit === "%") {
+        return { 'h': h, 'w': w };
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "overflow", "hidden", ['region'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "padding", "0px", ['region'], false, true, function (str) {
 
-                                                            h = attr.h.value / 100;
-                                        } else if (attr.h.unit === "px") {
+        var s = str.split(" ");
+        if (s.length > 4) return null;
+        var r = [];
+        for (var i in s) {
 
-                                                            h = attr.h.value / doc.pxDimensions.h;
-                                        } else {
+            var l = imscUtils.parseLength(s[i]);
+            if (!l) return null;
+            r.push(l);
+        }
 
-                                                            return null;
-                                        }
+        return r;
+    }, function (doc, parent, element, attr, context) {
 
-                                        if (attr === "auto") {
+        var padding;
 
-                                                            w = 0;
-                                        } else if (attr.w.unit === "%") {
+        /* TODO: make sure we are in region */
 
-                                                            w = attr.w.value / 100;
-                                        } else if (attr.w.unit === "px") {
+        /*
+         * expand padding shortcuts to 
+         * [before, end, after, start]
+         * 
+         */
 
-                                                            w = attr.w.value / doc.pxDimensions.w;
-                                        } else {
+        if (attr.length === 1) {
 
-                                                            return null;
-                                        }
+            padding = [attr[0], attr[0], attr[0], attr[0]];
+        } else if (attr.length === 2) {
 
-                                        return { 'h': h, 'w': w };
-                    }), new StylingAttributeDefinition(imscNames.ns_tts, "overflow", "hidden", ['region'], false, true, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "padding", "0px", ['region'], false, true, function (str) {
+            padding = [attr[0], attr[1], attr[0], attr[1]];
+        } else if (attr.length === 3) {
 
-                                        var s = str.split(" ");
-                                        if (s.length > 4) return null;
-                                        var r = [];
-                                        for (var i in s) {
+            padding = [attr[0], attr[1], attr[2], attr[1]];
+        } else if (attr.length === 4) {
 
-                                                            var l = imscUtils.parseLength(s[i]);
-                                                            if (!l) return null;
-                                                            r.push(l);
-                                        }
+            padding = [attr[0], attr[1], attr[2], attr[3]];
+        } else {
 
-                                        return r;
-                    }, function (doc, parent, element, attr, context) {
+            return null;
+        }
 
-                                        var padding;
+        /* TODO: take into account tts:direction */
 
-                                        /* TODO: make sure we are in region */
+        /* 
+         * transform [before, end, after, start] according to writingMode to 
+         * [top,left,bottom,right]
+         * 
+         */
 
-                                        /*
-                                         * expand padding shortcuts to 
-                                         * [before, end, after, start]
-                                         * 
-                                         */
+        var dir = element.styleAttrs[imscStyles.byName.writingMode.qname];
 
-                                        if (attr.length === 1) {
+        if (dir === "lrtb" || dir === "lr") {
 
-                                                            padding = [attr[0], attr[0], attr[0], attr[0]];
-                                        } else if (attr.length === 2) {
+            padding = [padding[0], padding[3], padding[2], padding[1]];
+        } else if (dir === "rltb" || dir === "rl") {
 
-                                                            padding = [attr[0], attr[1], attr[0], attr[1]];
-                                        } else if (attr.length === 3) {
+            padding = [padding[0], padding[1], padding[2], padding[3]];
+        } else if (dir === "tblr") {
 
-                                                            padding = [attr[0], attr[1], attr[2], attr[1]];
-                                        } else if (attr.length === 4) {
+            padding = [padding[3], padding[0], padding[1], padding[2]];
+        } else if (dir === "tbrl" || dir === "tb") {
 
-                                                            padding = [attr[0], attr[1], attr[2], attr[3]];
-                                        } else {
+            padding = [padding[3], padding[2], padding[1], padding[0]];
+        } else {
 
-                                                            return null;
-                                        }
+            return null;
+        }
 
-                                        /* TODO: take into account tts:direction */
+        var out = [];
 
-                                        /* 
-                                         * transform [before, end, after, start] according to writingMode to 
-                                         * [top,left,bottom,right]
-                                         * 
-                                         */
+        for (var i in padding) {
 
-                                        var dir = element.styleAttrs[imscStyles.byName.writingMode.qname];
+            if (padding[i].value === 0) {
 
-                                        if (dir === "lrtb" || dir === "lr") {
+                out[i] = new imscUtils.ComputedLength(0, 0);
+            } else {
 
-                                                            padding = [padding[0], padding[3], padding[2], padding[1]];
-                                        } else if (dir === "rltb" || dir === "rl") {
+                out[i] = imscUtils.toComputedLength(padding[i].value, padding[i].unit, element.styleAttrs[imscStyles.byName.fontSize.qname], i === "0" || i === "2" ? element.styleAttrs[imscStyles.byName.extent.qname].h : element.styleAttrs[imscStyles.byName.extent.qname].w, i === "0" || i === "2" ? doc.cellLength.h : doc.cellLength.w, i === "0" || i === "2" ? doc.pxLength.h : doc.pxLength.w);
 
-                                                            padding = [padding[0], padding[1], padding[2], padding[3]];
-                                        } else if (dir === "tblr") {
+                if (out[i] === null) return null;
+            }
+        }
 
-                                                            padding = [padding[3], padding[0], padding[1], padding[2]];
-                                        } else if (dir === "tbrl" || dir === "tb") {
+        return out;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "position", "top left", ['region'], false, true, function (str) {
 
-                                                            padding = [padding[3], padding[2], padding[1], padding[0]];
-                                        } else {
+        return imscUtils.parsePosition(str);
+    }, function (doc, parent, element, attr) {
+        var h;
+        var w;
 
-                                                            return null;
-                                        }
+        h = imscUtils.toComputedLength(attr.v.offset.value, attr.v.offset.unit, null, new imscUtils.ComputedLength(-element.styleAttrs[imscStyles.byName.extent.qname].h.rw, doc.dimensions.h.rh - element.styleAttrs[imscStyles.byName.extent.qname].h.rh), null, doc.pxLength.h);
 
-                                        var out = [];
+        if (h === null) return null;
 
-                                        for (var i in padding) {
+        if (attr.v.edge === "bottom") {
 
-                                                            if (padding[i].value === 0) {
+            h = new imscUtils.ComputedLength(-h.rw - element.styleAttrs[imscStyles.byName.extent.qname].h.rw, doc.dimensions.h.rh - h.rh - element.styleAttrs[imscStyles.byName.extent.qname].h.rh);
+        }
 
-                                                                                out[i] = 0;
-                                                            } else if (padding[i].unit === "%") {
+        w = imscUtils.toComputedLength(attr.h.offset.value, attr.h.offset.unit, null, new imscUtils.ComputedLength(doc.dimensions.w.rw - element.styleAttrs[imscStyles.byName.extent.qname].w.rw, -element.styleAttrs[imscStyles.byName.extent.qname].w.rh), null, doc.pxLength.w);
 
-                                                                                if (i === "0" || i === "2") {
+        if (h === null) return null;
 
-                                                                                                    out[i] = element.styleAttrs[imscStyles.byName.extent.qname].h * padding[i].value / 100;
-                                                                                } else {
+        if (attr.h.edge === "right") {
 
-                                                                                                    out[i] = element.styleAttrs[imscStyles.byName.extent.qname].w * padding[i].value / 100;
-                                                                                }
-                                                            } else if (padding[i].unit === "em") {
+            w = new imscUtils.ComputedLength(doc.dimensions.w.rw - w.rw - element.styleAttrs[imscStyles.byName.extent.qname].w.rw, -w.rh - element.styleAttrs[imscStyles.byName.extent.qname].w.rh);
+        }
 
-                                                                                out[i] = element.styleAttrs[imscStyles.byName.fontSize.qname] * padding[i].value;
-                                                            } else if (padding[i].unit === "c") {
+        return { 'h': h, 'w': w };
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "ruby", "none", ['span'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "rubyAlign", "center", ['span'], true, true, function (str) {
 
-                                                                                out[i] = padding[i].value / doc.cellResolution.h;
-                                                            } else if (padding[i].unit === "px") {
+        if (!(str === "center" || str === "spaceAround")) {
+            return null;
+        }
 
-                                                                                if (i === "0" || i === "2") {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "rubyPosition", "outside", ['span'], true, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "rubyReserve", "none", ['p'], true, true, function (str) {
+        var s = str.split(" ");
 
-                                                                                                    out[i] = padding[i].value / doc.pxDimensions.h;
-                                                                                } else {
+        var r = [null, null];
 
-                                                                                                    out[i] = padding[i].value / doc.pxDimensions.w;
-                                                                                }
-                                                            } else {
+        if (s.length === 0 || s.length > 2) return null;
 
-                                                                                return null;
-                                                            }
-                                        }
+        if (s[0] === "none" || s[0] === "both" || s[0] === "after" || s[0] === "before" || s[0] === "outside") {
 
-                                        return out;
-                    }), new StylingAttributeDefinition(imscNames.ns_tts, "showBackground", "always", ['region'], false, true, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textAlign", "start", ['p'], true, true, function (str) {
-                                        return str;
-                    }, function (doc, parent, element, attr, context) {
+            r[0] = s[0];
+        } else {
 
-                                        /* Section 7.16.9 of XSL */
+            return null;
+        }
 
-                                        if (attr === "left") {
+        if (s.length === 2 && s[0] !== "none") {
 
-                                                            return "start";
-                                        } else if (attr === "right") {
+            var l = imscUtils.parseLength(s[1]);
 
-                                                            return "end";
-                                        } else {
+            if (l) {
 
-                                                            return attr;
-                                        }
-                    }), new StylingAttributeDefinition(imscNames.ns_tts, "textDecoration", "none", ['span'], true, true, function (str) {
-                                        return str.split(" ");
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textOutline", "none", ['span'], true, true, function (str) {
+                r[1] = l;
+            } else {
 
-                                        /*
-                                         * returns {c: <color>?, thichness: <length>} | "none"
-                                         * 
-                                         */
+                return null;
+            }
+        }
 
-                                        if (str === "none") {
+        return r;
+    }, function (doc, parent, element, attr, context) {
 
-                                                            return str;
-                                        } else {
+        if (attr[0] === "none") {
 
-                                                            var r = {};
-                                                            var s = str.split(" ");
-                                                            if (s.length === 0 || s.length > 2) return null;
-                                                            var c = imscUtils.parseColor(s[0]);
+            return attr;
+        }
 
-                                                            r.color = c;
+        var fs = null;
 
-                                                            if (c !== null) s.shift();
+        if (attr[1] === null) {
 
-                                                            if (s.length !== 1) return null;
+            fs = new imscUtils.ComputedLength(element.styleAttrs[imscStyles.byName.fontSize.qname].rw * 0.5, element.styleAttrs[imscStyles.byName.fontSize.qname].rh * 0.5);
+        } else {
 
-                                                            var l = imscUtils.parseLength(s[0]);
+            fs = imscUtils.toComputedLength(attr[1].value, attr[1].unit, element.styleAttrs[imscStyles.byName.fontSize.qname], element.styleAttrs[imscStyles.byName.fontSize.qname], doc.cellLength.h, doc.pxLength.h);
+        }
 
-                                                            if (!l) return null;
+        if (fs === null) return null;
 
-                                                            r.thickness = l;
+        return [attr[0], fs];
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "showBackground", "always", ['region'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textAlign", "start", ['p'], true, true, function (str) {
+        return str;
+    }, function (doc, parent, element, attr, context) {
+        /* Section 7.16.9 of XSL */
 
-                                                            return r;
-                                        }
-                    }, function (doc, parent, element, attr, context) {
+        if (attr === "left") {
 
-                                        /*
-                                         * returns {color: <color>, thickness: <norm length>}
-                                         * 
-                                         */
+            return "start";
+        } else if (attr === "right") {
 
-                                        if (attr === "none") return attr;
+            return "end";
+        } else {
 
-                                        var rslt = {};
+            return attr;
+        }
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "textCombine", "none", ['span'], true, true, function (str) {
+        var s = str.split(" ");
 
-                                        if (attr.color === null) {
+        if (s.length === 1) {
 
-                                                            rslt.color = element.styleAttrs[imscStyles.byName.color.qname];
-                                        } else {
+            if (s[0] === "none" || s[0] === "all") {
 
-                                                            rslt.color = attr.color;
-                                        }
+                return [s[0]];
+            }
+        }
 
-                                        if (attr.thickness.unit === "%") {
+        return null;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textDecoration", "none", ['span'], true, true, function (str) {
+        return str.split(" ");
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textEmphasis", "none", ['span'], false, true, function (str) {
+        var e = str.split(" ");
 
-                                                            rslt.thickness = element.styleAttrs[imscStyles.byName.fontSize.qname] * attr.thickness.value / 100;
-                                        } else if (attr.thickness.unit === "em") {
+        var rslt = { style: "filled", symbol: "circle", color: null, position: null };
 
-                                                            rslt.thickness = element.styleAttrs[imscStyles.byName.fontSize.qname] * attr.thickness.value;
-                                        } else if (attr.thickness.unit === "c") {
+        for (var i in e) {
 
-                                                            rslt.thickness = attr.thickness.value / doc.cellResolution.h;
-                                        } else if (attr.thickness.unit === "px") {
+            if (e[i] === "none" || e[i] === "auto") {
 
-                                                            rslt.thickness = attr.thickness.value / doc.pxDimensions.h;
-                                        } else {
+                rslt.style = e[i];
+            } else if (e[i] === "filled" || e[i] === "open") {
 
-                                                            return null;
-                                        }
+                rslt.style = e[i];
+            } else if (e[i] === "circle" || e[i] === "dot" || e[i] === "sesame") {
 
-                                        return rslt;
-                    }), new StylingAttributeDefinition(imscNames.ns_tts, "unicodeBidi", "normal", ['span', 'p'], false, true, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "visibility", "visible", ['body', 'div', 'p', 'region', 'span'], true, true, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "wrapOption", "wrap", ['span'], true, true, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "writingMode", "lrtb", ['region'], false, true, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "zIndex", "auto", ['region'], false, true, function (str) {
+                rslt.symbol = e[i];
+            } else if (e[i] === "current") {
 
-                                        var rslt;
+                rslt.color = e[i];
+            } else if (e[i] === "outside" || e[i] === "before" || e[i] === "after") {
 
-                                        if (str === 'auto') {
+                rslt.position = e[i];
+            } else {
 
-                                                            rslt = str;
-                                        } else {
+                rslt.color = imscUtils.parseColor(e[i]);
 
-                                                            rslt = parseInt(str);
+                if (rslt.color === null) return null;
+            }
+        }
 
-                                                            if (isNaN(rslt)) {
-                                                                                rslt = null;
-                                                            }
-                                        }
+        return rslt;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textOutline", "none", ['span'], true, true, function (str) {
 
-                                        return rslt;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_ebutts, "linePadding", "0c", ['p'], true, false, imscUtils.parseLength, function (doc, parent, element, attr, context) {
-                                        if (attr.unit === "c") {
+        /*
+         * returns {c: <color>?, thichness: <length>} | "none"
+         * 
+         */
 
-                                                            return attr.value / doc.cellResolution.h;
-                                        } else {
+        if (str === "none") {
 
-                                                            return null;
-                                        }
-                    }), new StylingAttributeDefinition(imscNames.ns_ebutts, "multiRowAlign", "auto", ['p'], true, false, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_smpte, "backgroundImage", null, ['div'], false, false, function (str) {
-                                        return str;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_itts, "forcedDisplay", "false", ['body', 'div', 'p', 'region', 'span'], true, true, function (str) {
-                                        return str === 'true' ? true : false;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_itts, "fillLineGap", "false", ['p'], true, true, function (str) {
-                                        return str === 'true' ? true : false;
-                    }, null)];
+            return str;
+        } else {
 
-                    /* TODO: allow null parse function */
+            var r = {};
+            var s = str.split(" ");
+            if (s.length === 0 || s.length > 2) return null;
+            var c = imscUtils.parseColor(s[0]);
 
-                    imscStyles.byQName = {};
-                    for (var i in imscStyles.all) {
+            r.color = c;
 
-                                        imscStyles.byQName[imscStyles.all[i].qname] = imscStyles.all[i];
-                    }
+            if (c !== null) s.shift();
 
-                    imscStyles.byName = {};
-                    for (var j in imscStyles.all) {
+            if (s.length !== 1) return null;
 
-                                        imscStyles.byName[imscStyles.all[j].name] = imscStyles.all[j];
-                    }
+            var l = imscUtils.parseLength(s[0]);
+
+            if (!l) return null;
+
+            r.thickness = l;
+
+            return r;
+        }
+    }, function (doc, parent, element, attr, context) {
+
+        /*
+         * returns {color: <color>, thickness: <norm length>}
+         * 
+         */
+
+        if (attr === "none") return attr;
+
+        var rslt = {};
+
+        if (attr.color === null) {
+
+            rslt.color = element.styleAttrs[imscStyles.byName.color.qname];
+        } else {
+
+            rslt.color = attr.color;
+        }
+
+        rslt.thickness = imscUtils.toComputedLength(attr.thickness.value, attr.thickness.unit, element.styleAttrs[imscStyles.byName.fontSize.qname], element.styleAttrs[imscStyles.byName.fontSize.qname], doc.cellLength.h, doc.pxLength.h);
+
+        if (rslt.thickness === null) return null;
+
+        return rslt;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "textShadow", "none", ['span'], true, true, imscUtils.parseTextShadow, function (doc, parent, element, attr) {
+
+        /*
+         * returns [{x_off: <length>, y_off: <length>, b_radius: <length>, color: <color>}*] or "none"
+         * 
+         */
+
+        if (attr === "none") return attr;
+
+        var r = [];
+
+        for (var i in attr) {
+
+            var shadow = {};
+
+            shadow.x_off = imscUtils.toComputedLength(attr[i][0].value, attr[i][0].unit, null, element.styleAttrs[imscStyles.byName.fontSize.qname], null, doc.pxLength.w);
+
+            if (shadow.x_off === null) return null;
+
+            shadow.y_off = imscUtils.toComputedLength(attr[i][1].value, attr[i][1].unit, null, element.styleAttrs[imscStyles.byName.fontSize.qname], null, doc.pxLength.h);
+
+            if (shadow.y_off === null) return null;
+
+            if (attr[i][2] === null) {
+
+                shadow.b_radius = 0;
+            } else {
+
+                shadow.b_radius = imscUtils.toComputedLength(attr[i][2].value, attr[i][2].unit, null, element.styleAttrs[imscStyles.byName.fontSize.qname], null, doc.pxLength.h);
+
+                if (shadow.b_radius === null) return null;
+            }
+
+            if (attr[i][3] === null) {
+
+                shadow.color = element.styleAttrs[imscStyles.byName.color.qname];
+            } else {
+
+                shadow.color = attr[i][3];
+            }
+
+            r.push(shadow);
+        }
+
+        return r;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "unicodeBidi", "normal", ['span', 'p'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "visibility", "visible", ['body', 'div', 'p', 'region', 'span'], true, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "wrapOption", "wrap", ['span'], true, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "writingMode", "lrtb", ['region'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "zIndex", "auto", ['region'], false, true, function (str) {
+
+        var rslt;
+
+        if (str === 'auto') {
+
+            rslt = str;
+        } else {
+
+            rslt = parseInt(str);
+
+            if (isNaN(rslt)) {
+                rslt = null;
+            }
+        }
+
+        return rslt;
+    }, null), new StylingAttributeDefinition(imscNames.ns_ebutts, "linePadding", "0c", ['p'], true, false, imscUtils.parseLength, function (doc, parent, element, attr, context) {
+
+        return imscUtils.toComputedLength(attr.value, attr.unit, null, null, doc.cellLength.w, null);
+    }), new StylingAttributeDefinition(imscNames.ns_ebutts, "multiRowAlign", "auto", ['p'], true, false, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_smpte, "backgroundImage", null, ['div'], false, false, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_itts, "forcedDisplay", "false", ['body', 'div', 'p', 'region', 'span'], true, true, function (str) {
+        return str === 'true' ? true : false;
+    }, null), new StylingAttributeDefinition(imscNames.ns_itts, "fillLineGap", "false", ['p'], true, true, function (str) {
+        return str === 'true' ? true : false;
+    }, null)];
+
+    /* TODO: allow null parse function */
+
+    imscStyles.byQName = {};
+    for (var i in imscStyles.all) {
+
+        imscStyles.byQName[imscStyles.all[i].qname] = imscStyles.all[i];
+    }
+
+    imscStyles.byName = {};
+    for (var j in imscStyles.all) {
+
+        imscStyles.byName[imscStyles.all[j].name] = imscStyles.all[j];
+    }
 })( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "./node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscUtils === 'undefined' ? __webpack_require__(/*! ./utils */ "./node_modules/imsc/src/main/js/utils.js") : imscUtils);
 
 /***/ }),
@@ -60169,95 +61734,318 @@ exports.renderHTML = __webpack_require__(/*! ./html */ "./node_modules/imsc/src/
 
 ;
 (function (imscUtils) {
-    // wrapper for non-node envs
+        // wrapper for non-node envs
 
-    /* Documents the error handler interface */
+        /* Documents the error handler interface */
 
-    /**
-     * @classdesc Generic interface for handling events. The interface exposes four
-     * methods:
-     * * <pre>info</pre>: unusual event that does not result in an inconsistent state
-     * * <pre>warn</pre>: unexpected event that should not result in an inconsistent state
-     * * <pre>error</pre>: unexpected event that may result in an inconsistent state
-     * * <pre>fatal</pre>: unexpected event that results in an inconsistent state
-     *   and termination of processing
-     * Each method takes a single <pre>string</pre> describing the event as argument,
-     * and returns a single <pre>boolean</pre>, which terminates processing if <pre>true</pre>.
-     *
-     * @name ErrorHandler
-     * @class
-     */
+        /**
+         * @classdesc Generic interface for handling events. The interface exposes four
+         * methods:
+         * * <pre>info</pre>: unusual event that does not result in an inconsistent state
+         * * <pre>warn</pre>: unexpected event that should not result in an inconsistent state
+         * * <pre>error</pre>: unexpected event that may result in an inconsistent state
+         * * <pre>fatal</pre>: unexpected event that results in an inconsistent state
+         *   and termination of processing
+         * Each method takes a single <pre>string</pre> describing the event as argument,
+         * and returns a single <pre>boolean</pre>, which terminates processing if <pre>true</pre>.
+         *
+         * @name ErrorHandler
+         * @class
+         */
 
-    /*
-     * Parses a TTML color expression
-     * 
-     */
+        /*
+         * Parses a TTML color expression
+         * 
+         */
 
-    var HEX_COLOR_RE = /#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})?/;
-    var DEC_COLOR_RE = /rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/;
-    var DEC_COLORA_RE = /rgba\(\s*(\d+),\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/;
-    var NAMED_COLOR = {
-        transparent: [0, 0, 0, 0],
-        black: [0, 0, 0, 255],
-        silver: [192, 192, 192, 255],
-        gray: [128, 128, 128, 255],
-        white: [255, 255, 255, 255],
-        maroon: [128, 0, 0, 255],
-        red: [255, 0, 0, 255],
-        purple: [128, 0, 128, 255],
-        fuchsia: [255, 0, 255, 255],
-        magenta: [255, 0, 255, 255],
-        green: [0, 128, 0, 255],
-        lime: [0, 255, 0, 255],
-        olive: [128, 128, 0, 255],
-        yellow: [255, 255, 0, 255],
-        navy: [0, 0, 128, 255],
-        blue: [0, 0, 255, 255],
-        teal: [0, 128, 128, 255],
-        aqua: [0, 255, 255, 255],
-        cyan: [0, 255, 255, 255]
-    };
+        var HEX_COLOR_RE = /#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})?/;
+        var DEC_COLOR_RE = /rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/;
+        var DEC_COLORA_RE = /rgba\(\s*(\d+),\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/;
+        var NAMED_COLOR = {
+                transparent: [0, 0, 0, 0],
+                black: [0, 0, 0, 255],
+                silver: [192, 192, 192, 255],
+                gray: [128, 128, 128, 255],
+                white: [255, 255, 255, 255],
+                maroon: [128, 0, 0, 255],
+                red: [255, 0, 0, 255],
+                purple: [128, 0, 128, 255],
+                fuchsia: [255, 0, 255, 255],
+                magenta: [255, 0, 255, 255],
+                green: [0, 128, 0, 255],
+                lime: [0, 255, 0, 255],
+                olive: [128, 128, 0, 255],
+                yellow: [255, 255, 0, 255],
+                navy: [0, 0, 128, 255],
+                blue: [0, 0, 255, 255],
+                teal: [0, 128, 128, 255],
+                aqua: [0, 255, 255, 255],
+                cyan: [0, 255, 255, 255]
+        };
 
-    imscUtils.parseColor = function (str) {
+        imscUtils.parseColor = function (str) {
 
-        var m;
+                var m;
 
-        var r = null;
+                var r = null;
 
-        var nc = NAMED_COLOR[str.toLowerCase()];
+                var nc = NAMED_COLOR[str.toLowerCase()];
 
-        if (nc !== undefined) {
+                if (nc !== undefined) {
 
-            r = nc;
-        } else if ((m = HEX_COLOR_RE.exec(str)) !== null) {
+                        r = nc;
+                } else if ((m = HEX_COLOR_RE.exec(str)) !== null) {
 
-            r = [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), m[4] !== undefined ? parseInt(m[4], 16) : 255];
-        } else if ((m = DEC_COLOR_RE.exec(str)) !== null) {
+                        r = [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), m[4] !== undefined ? parseInt(m[4], 16) : 255];
+                } else if ((m = DEC_COLOR_RE.exec(str)) !== null) {
 
-            r = [parseInt(m[1]), parseInt(m[2]), parseInt(m[3]), 255];
-        } else if ((m = DEC_COLORA_RE.exec(str)) !== null) {
+                        r = [parseInt(m[1]), parseInt(m[2]), parseInt(m[3]), 255];
+                } else if ((m = DEC_COLORA_RE.exec(str)) !== null) {
 
-            r = [parseInt(m[1]), parseInt(m[2]), parseInt(m[3]), parseInt(m[4])];
-        }
+                        r = [parseInt(m[1]), parseInt(m[2]), parseInt(m[3]), parseInt(m[4])];
+                }
 
-        return r;
-    };
+                return r;
+        };
 
-    var LENGTH_RE = /^((?:\+|\-)?\d*(?:\.\d+)?)(px|em|c|%)$/;
+        var LENGTH_RE = /^((?:\+|\-)?\d*(?:\.\d+)?)(px|em|c|%|rh|rw)$/;
 
-    imscUtils.parseLength = function (str) {
+        imscUtils.parseLength = function (str) {
 
-        var m;
+                var m;
 
-        var r = null;
+                var r = null;
 
-        if ((m = LENGTH_RE.exec(str)) !== null) {
+                if ((m = LENGTH_RE.exec(str)) !== null) {
 
-            r = { value: parseFloat(m[1]), unit: m[2] };
-        }
+                        r = { value: parseFloat(m[1]), unit: m[2] };
+                }
 
-        return r;
-    };
+                return r;
+        };
+
+        imscUtils.parseTextShadow = function (str) {
+
+                var shadows = str.split(",");
+
+                var r = [];
+
+                for (var i in shadows) {
+
+                        var shadow = shadows[i].split(" ");
+
+                        if (shadow.length === 1 && shadow[0] === "none") {
+
+                                return "none";
+                        } else if (shadow.length > 1 && shadow.length < 5) {
+
+                                var out_shadow = [null, null, null, null];
+
+                                /* x offset */
+
+                                var l = imscUtils.parseLength(shadow.shift());
+
+                                if (l === null) return null;
+
+                                out_shadow[0] = l;
+
+                                /* y offset */
+
+                                l = imscUtils.parseLength(shadow.shift());
+
+                                if (l === null) return null;
+
+                                out_shadow[1] = l;
+
+                                /* is there a third component */
+
+                                if (shadow.length === 0) {
+                                        r.push(out_shadow);
+                                        continue;
+                                }
+
+                                l = imscUtils.parseLength(shadow[0]);
+
+                                if (l !== null) {
+
+                                        out_shadow[2] = l;
+
+                                        shadow.shift();
+                                }
+
+                                if (shadow.length === 0) {
+                                        r.push(out_shadow);
+                                        continue;
+                                }
+
+                                var c = imscUtils.parseColor(shadow[0]);
+
+                                if (c === null) return null;
+
+                                out_shadow[3] = c;
+
+                                r.push(out_shadow);
+                        }
+                }
+
+                return r;
+        };
+
+        imscUtils.parsePosition = function (str) {
+
+                /* see https://www.w3.org/TR/ttml2/#style-value-position */
+
+                var s = str.split(" ");
+
+                var isKeyword = function isKeyword(str) {
+
+                        return str === "center" || str === "left" || str === "top" || str === "bottom" || str === "right";
+                };
+
+                if (s.length > 4) {
+
+                        return null;
+                }
+
+                /* initial clean-up pass */
+
+                for (var j in s) {
+
+                        if (!isKeyword(s[j])) {
+
+                                var l = imscUtils.parseLength(s[j]);
+
+                                if (l === null) return null;
+
+                                s[j] = l;
+                        }
+                }
+
+                /* position default */
+
+                var pos = {
+                        h: { edge: "left", offset: { value: 50, unit: "%" } },
+                        v: { edge: "top", offset: { value: 50, unit: "%" } }
+                };
+
+                /* update position */
+
+                for (var i = 0; i < s.length;) {
+
+                        /* extract the current component */
+
+                        var comp = s[i++];
+
+                        if (isKeyword(comp)) {
+
+                                /* we have a keyword */
+
+                                var offset = { value: 0, unit: "%" };
+
+                                /* peek at the next component */
+
+                                if (s.length !== 2 && i < s.length && !isKeyword(s[i])) {
+
+                                        /* followed by an offset */
+
+                                        offset = s[i++];
+                                }
+
+                                /* skip if center */
+
+                                if (comp === "right") {
+
+                                        pos.h.edge = comp;
+
+                                        pos.h.offset = offset;
+                                } else if (comp === "bottom") {
+
+                                        pos.v.edge = comp;
+
+                                        pos.v.offset = offset;
+                                } else if (comp === "left") {
+
+                                        pos.h.offset = offset;
+                                } else if (comp === "top") {
+
+                                        pos.v.offset = offset;
+                                }
+                        } else if (s.length === 1 || s.length === 2) {
+
+                                /* we have a bare value */
+
+                                if (i === 1) {
+
+                                        /* assign it to left edge if first bare value */
+
+                                        pos.h.offset = comp;
+                                } else {
+
+                                        /* assign it to top edge if second bare value */
+
+                                        pos.v.offset = comp;
+                                }
+                        } else {
+
+                                /* error condition */
+
+                                return null;
+                        }
+                }
+
+                return pos;
+        };
+
+        imscUtils.ComputedLength = function (rw, rh) {
+                this.rw = rw;
+                this.rh = rh;
+        };
+
+        imscUtils.ComputedLength.prototype.toUsedLength = function (width, height) {
+                return width * this.rw + height * this.rh;
+        };
+
+        imscUtils.ComputedLength.prototype.isZero = function () {
+                return this.rw === 0 && this.rh === 0;
+        };
+
+        /**
+         * Computes a specified length to a root container relative length
+         * 
+         * @param {number} lengthVal Length value to be computed
+         * @param {string} lengthUnit Units of the length value
+         * @param {number} emScale length of 1em, or null if em is not allowed
+         * @param {number} percentScale length to which , or null if perecentage is not allowed
+         * @param {number} cellScale length of 1c, or null if c is not allowed
+         * @param {number} pxScale length of 1px, or null if px is not allowed
+         * @param {number} direction 0 if the length is computed in the horizontal direction, 1 if the length is computed in the vertical direction
+         * @return {number} Computed length
+         */
+        imscUtils.toComputedLength = function (lengthVal, lengthUnit, emLength, percentLength, cellLength, pxLength) {
+
+                if (lengthUnit === "%" && percentLength) {
+
+                        return new imscUtils.ComputedLength(percentLength.rw * lengthVal / 100, percentLength.rh * lengthVal / 100);
+                } else if (lengthUnit === "em" && emLength) {
+
+                        return new imscUtils.ComputedLength(emLength.rw * lengthVal, emLength.rh * lengthVal);
+                } else if (lengthUnit === "c" && cellLength) {
+
+                        return new imscUtils.ComputedLength(lengthVal * cellLength.rw, lengthVal * cellLength.rh);
+                } else if (lengthUnit === "px" && pxLength) {
+
+                        return new imscUtils.ComputedLength(lengthVal * pxLength.rw, lengthVal * pxLength.rh);
+                } else if (lengthUnit === "rh") {
+
+                        return new imscUtils.ComputedLength(0, lengthVal / 100);
+                } else if (lengthUnit === "rw") {
+
+                        return new imscUtils.ComputedLength(lengthVal / 100, 0);
+                } else {
+
+                        return null;
+                }
+        };
 })( false ? undefined : exports);
 
 /***/ }),
@@ -65589,7 +67377,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       urls: [{
         // Content from DASH IF testing assests (used in their reference player)
         // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
-        url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd'
+        url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd',
+        cdn: 'dash.akamaized.net'
       }]
     }
   };
