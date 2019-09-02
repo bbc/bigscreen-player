@@ -704,6 +704,17 @@ require(
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
           });
+
+          it('should not start autoresume timeout when paused and disableAutoResume is set', function () {
+            var opts = {
+              disableAutoResume: true
+            };
+
+            mseStrategy.setCurrentTime(100);
+            mseStrategy.pause(opts);
+
+            expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
+          });
         });
       });
 
