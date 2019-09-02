@@ -3,6 +3,10 @@
 [Enter a brief description of what this pull request does]
 
 
+(Internal) [Add the jira ticket and/or the ADR to this PR]
+> Tickets: IPLAYERTVV1-XXXX
+
+
 🛠 How
 
 [How does this PR perform the features described in What, keep technical detail brief and/or high level - more detail can be requested in comments]
@@ -19,3 +23,8 @@
 [Any accessibility features or considerations that this PR addresses should be listed here]
 
 
+ ✅ Acceptance criteria [Optional]
+
+(Internal) [MANDATORY for cross-team reviews]
+* [X] [Add the acceptance criteria or some from the linked ticket number]
+* [ ] [Mark correctly if it is covered in this PR or not]
