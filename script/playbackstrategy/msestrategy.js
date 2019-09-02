@@ -7,11 +7,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/plugins',
     'bigscreenplayer/manifest/manifestmodifier',
     'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/dynamicwindowutils',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
       var mediaPlayer;
       var mediaElement;
@@ -328,6 +329,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             newCallback.call(thisArg, event);
           };
         },
+        removeEventCallback: function (callback) {
+          eventCallback = function (event) {};
+        },
         addErrorCallback: function (thisArg, newErrorCallback) {
           errorCallback = function (event) {
             newErrorCallback.call(thisArg, event);
@@ -390,8 +394,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return isEnded;
         },
         isPaused: isPaused,
-        pause: function () {
+        pause: function (opts) {
           mediaPlayer.pause();
+          opts = opts || {};
+          if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
+            DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), this.addEventCallback, this.removeEventCallback, mediaPlayer.play);
+          }
         },
         play: function () {
           mediaPlayer.play();

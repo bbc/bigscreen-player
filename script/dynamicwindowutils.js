@@ -1,9 +1,10 @@
 define(
   'bigscreenplayer/dynamicwindowutils', [
     'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/models/mediastate',
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
   ],
-  function (LiveSupport, MediaPlayerBase) {
+  function (LiveSupport, MediaState, MediaPlayerBase) {
     'use strict';
 
     var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
@@ -59,7 +60,7 @@ define(
       addEventCallback(undefined, detectIfUnpaused);
 
       function detectIfUnpaused (event) {
-        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
+        if (event.state !== MediaPlayerBase.STATE.PAUSED && event !== MediaState.PAUSED) {
           removeEventCallback(undefined, detectIfUnpaused);
           clearTimeout(autoResumeTimer);
         }
