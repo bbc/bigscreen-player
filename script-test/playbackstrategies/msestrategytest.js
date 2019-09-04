@@ -678,6 +678,7 @@ require(
           beforeEach(function () {
             setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
             mseStrategy.load(null, 0);
+            mockDynamicWindowUtils.autoResumeAtStartOfRange.calls.reset();
           });
 
           it('should set current time on the video element', function () {
@@ -699,7 +700,7 @@ require(
           });
 
           it('should start autoresume timeout when paused', function () {
-            mseStrategy.setCurrentTime(100);
+            mseStrategy.setCurrentTime(101);
             mseStrategy.pause();
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
@@ -710,7 +711,7 @@ require(
               disableAutoResume: true
             };
 
-            mseStrategy.setCurrentTime(100);
+            mseStrategy.setCurrentTime(101);
             mseStrategy.pause(opts);
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
