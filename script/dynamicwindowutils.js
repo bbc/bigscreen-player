@@ -60,10 +60,18 @@ define(
       addEventCallback(undefined, detectIfUnpaused);
 
       function detectIfUnpaused (event) {
-        if (event.state !== MediaPlayerBase.STATE.PAUSED && event !== MediaState.PAUSED) {
+        if (!checkEventState(event, 'PAUSED')) {
           removeEventCallback(undefined, detectIfUnpaused);
           clearTimeout(autoResumeTimer);
         }
+      }
+    }
+
+    function checkEventState (event, state) {
+      if (state === 'PAUSED') {
+        return event.state ? event.state === MediaPlayerBase.STATE.PAUSED : event === MediaState.PAUSED;
+      } else if (state === 'PLAYING') {
+        return event.state ? event.state === MediaPlayerBase.STATE.PLAYING : event === MediaState.PLAYING;
       }
     }
 
