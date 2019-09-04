@@ -3,9 +3,10 @@ define(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/dynamicwindowutils'
+    'bigscreenplayer/dynamicwindowutils',
+    'bigscreenplayer/playbackstrategy/modifiers/live/unpausedeventcheck'
   ],
-    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
+    function (MediaPlayerBase, WindowTypes, DynamicWindowUtils, UnpausedEventCheck) {
       'use strict';
 
       function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, mediaSources) {
@@ -58,7 +59,7 @@ define(
           mediaPlayer.pause();
           opts = opts || {};
           if (opts.disableAutoResume !== true) {
-            DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), addEventCallback, removeEventCallback, resume);
+            DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), addEventCallback, removeEventCallback, resume, UnpausedEventCheck);
           }
         }
 

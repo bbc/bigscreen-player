@@ -2,9 +2,10 @@ define(
     'bigscreenplayer/playbackstrategy/modifiers/live/seekable',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/dynamicwindowutils'
+    'bigscreenplayer/dynamicwindowutils',
+    'bigscreenplayer/playbackstrategy/modifiers/live/unpausedeventcheck'
   ],
-    function (MediaPlayerBase, DynamicWindowUtils) {
+    function (MediaPlayerBase, DynamicWindowUtils, UnpausedEventCheck) {
       'use strict';
 
       function SeekableLivePlayer (mediaPlayer, deviceConfig) {
@@ -65,7 +66,7 @@ define(
               mediaPlayer.toPlaying();
             } else {
               mediaPlayer.pause();
-              DynamicWindowUtils.autoResumeAtStartOfRange(mediaPlayer.getCurrentTime(), mediaPlayer.getSeekableRange(), addEventCallback, removeEventCallback, resume);
+              DynamicWindowUtils.autoResumeAtStartOfRange(mediaPlayer.getCurrentTime(), mediaPlayer.getSeekableRange(), addEventCallback, removeEventCallback, resume, UnpausedEventCheck);
             }
           },
           resume: resume,
