@@ -199,6 +199,7 @@ define(
       }
 
       function onEnded () {
+        clearTimeouts();
         publishMediaStateUpdate(MediaState.ENDED);
       }
 
