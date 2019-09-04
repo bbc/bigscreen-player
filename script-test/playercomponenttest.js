@@ -353,7 +353,6 @@ require(
 
       describe('events', function () {
         describe('on playing', function () {
-          // playout logic
           it('should fire error cleared on the plugins', function () {
             var pluginData = {
               status: PluginEnums.STATUS.DISMISSED,
@@ -371,7 +370,6 @@ require(
             expect(mockPluginsInterface.onErrorCleared).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
           });
 
-          // playout logic
           it('should clear error timeout', function () {
             jasmine.clock().install();
             setUpPlayerComponent();
@@ -390,7 +388,6 @@ require(
             jasmine.clock().uninstall();
           });
 
-          // playout logic
           it('should clear fatal error timeout', function () {
             jasmine.clock().install();
 
@@ -410,7 +407,6 @@ require(
             jasmine.clock().uninstall();
           });
 
-          // playout logic
           it('should fire buffering cleared on the plugins', function () {
             var pluginData = {
               status: PluginEnums.STATUS.DISMISSED,
@@ -447,7 +443,6 @@ require(
             expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.PAUSED);
           });
 
-          // playout logic
           it('should clear error timeout', function () {
             jasmine.clock().install();
 
@@ -467,7 +462,6 @@ require(
             jasmine.clock().uninstall();
           });
 
-          // playout logic
           it('should clear fatal error timeout', function () {
             jasmine.clock().install();
 
@@ -487,7 +481,6 @@ require(
             jasmine.clock().uninstall();
           });
 
-          // playout logic
           it('should fire error cleared on the plugins', function () {
             var pluginData = {
               status: PluginEnums.STATUS.DISMISSED,
@@ -505,7 +498,6 @@ require(
             expect(mockPluginsInterface.onErrorCleared).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
           });
 
-          // playout logic
           it('should fire buffering cleared on the plugins', function () {
             var pluginData = {
               status: PluginEnums.STATUS.DISMISSED,
@@ -592,7 +584,6 @@ require(
         });
 
         describe('on ended', function () {
-          // playout logic
           it('should clear error timeout', function () {
             jasmine.clock().install();
 
@@ -612,7 +603,6 @@ require(
             jasmine.clock().uninstall();
           });
 
-          // playout logic
           it('should clear fatal error timeout', function () {
             jasmine.clock().install();
 
@@ -632,7 +622,6 @@ require(
             jasmine.clock().uninstall();
           });
 
-          // playout logic
           it('should fire error cleared on the plugins', function () {
             var pluginData = {
               status: PluginEnums.STATUS.DISMISSED,
@@ -650,7 +639,6 @@ require(
             expect(mockPluginsInterface.onErrorCleared).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
           });
 
-          // playout logic
           it('should fire buffering cleared on the plugins', function () {
             var pluginData = {
               status: PluginEnums.STATUS.DISMISSED,
@@ -881,7 +869,6 @@ require(
           expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime - 20);
         });
 
-        // playout logic
         it('should clear buffering timeout error timeout', function () {
           setUpPlayerComponent();
           forceMediaSourcesError = true;
@@ -897,7 +884,6 @@ require(
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].isBufferingTimeoutError).toBe(false);
         });
 
-        // playout logic
         it('should clear fatal error timeout', function () {
           setUpPlayerComponent();
 
@@ -911,7 +897,6 @@ require(
           expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).not.toEqual(MediaState.FATAL_ERROR);
         });
 
-        // playout logic
         it('should fire error cleared on the plugins', function () {
           var pluginData = {
             status: PluginEnums.STATUS.DISMISSED,
@@ -931,7 +916,6 @@ require(
           expect(mockPluginsInterface.onErrorCleared).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
         });
 
-        // playout logic
         it('should fire buffering cleared on the plugins', function () {
           var pluginData = {
             status: PluginEnums.STATUS.DISMISSED,
@@ -963,7 +947,6 @@ require(
           expect(mockStrategy.reset).toHaveBeenCalledWith();
         });
 
-        // playout logic
         it('should clear error timeout', function () {
           jasmine.clock().install();
 
@@ -983,7 +966,6 @@ require(
           jasmine.clock().uninstall();
         });
 
-        // playout logic
         it('should clear fatal error timeout', function () {
           jasmine.clock().install();
 
@@ -1003,7 +985,6 @@ require(
           jasmine.clock().uninstall();
         });
 
-        // playout logic
         it('should fire error cleared on the plugins', function () {
           var pluginData = {
             status: PluginEnums.STATUS.DISMISSED,
@@ -1021,7 +1002,6 @@ require(
           expect(mockPluginsInterface.onErrorCleared).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
         });
 
-        // playout logic
         it('should fire buffering cleared on the plugins', function () {
           var pluginData = {
             status: PluginEnums.STATUS.DISMISSED,
