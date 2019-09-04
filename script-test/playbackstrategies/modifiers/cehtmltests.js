@@ -9,6 +9,20 @@ require(
         var mockMediaElement;
         var sourceContainer;
 
+        var recentEvents;
+
+        function eventCallbackReporter (event) {
+          recentEvents.push(event.type);
+        }
+
+        var config = {
+          streaming: {
+            overrides: {
+              forceBeginPlaybackToEndOfWindow: true
+            }
+          }
+        };
+
         beforeEach(function () {
           jasmine.clock().install();
           jasmine.clock().mockDate();
@@ -20,12 +34,104 @@ require(
 
           sourceContainer = document.createElement('div');
 
-          player = CehtmlMediaPlayer();
+          recentEvents = [];
+
+          player = CehtmlMediaPlayer(config);
+          player.addEventCallback(this, eventCallbackReporter);
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
         });
 
         afterEach(function () {
           jasmine.clock().uninstall();
+        });
+
+        describe('Seek attempted and finished events', function () {
+          it('Seek Attempted Event Emitted On Initialise Media If The State Is Empty', function () {
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+          });
+
+          it('Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing', function () {
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+
+            player.beginPlaybackFrom(0);
+
+            mockMediaElement.playState = 4; // BUFFERING
+            mockMediaElement.onPlayStateChange();
+
+            mockMediaElement.playState = 1; // PLAYING
+            mockMediaElement.onPlayStateChange();
+
+            mockMediaElement.playPosition = 0;
+            for (var i = 0; i < 6; i++) {
+              mockMediaElement.playPosition += 500;
+              jasmine.clock().tick(500);
+            }
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+          });
+
+          it('Seek Finished Event Is Emitted Only Once', function () {
+            player.beginPlaybackFrom(0);
+
+            mockMediaElement.playState = 4; // BUFFERING
+            mockMediaElement.onPlayStateChange();
+
+            mockMediaElement.playState = 1; // PLAYING
+            mockMediaElement.onPlayStateChange();
+
+            mockMediaElement.playPosition = 0;
+            for (var i = 0; i < 6; i++) {
+              mockMediaElement.playPosition += 500;
+              jasmine.clock().tick(500);
+            }
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+
+            recentEvents = [];
+            mockMediaElement.playPosition += 500;
+            jasmine.clock().tick(500);
+
+            expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+          });
+
+          it('Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
+            var restartTimeoutConfig = {
+              streaming: {
+                overrides: {
+                  forceBeginPlaybackToEndOfWindow: true
+                }
+              },
+              restartTimeout: 10000
+            };
+
+            player = CehtmlMediaPlayer(restartTimeoutConfig);
+            player.addEventCallback(this, eventCallbackReporter);
+            player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+
+            player.beginPlaybackFrom(0);
+
+            mockMediaElement.playState = 4; // BUFFERING
+            mockMediaElement.onPlayStateChange();
+
+            mockMediaElement.playState = 1; // PLAYING
+            mockMediaElement.onPlayStateChange();
+
+            mockMediaElement.playPosition = 0;
+            var numberOfLoops = 10000 / 500;
+            for (var i = 0; i < numberOfLoops - 1; i++) {
+              mockMediaElement.playPosition += 500;
+              jasmine.clock().tick(500);
+
+              expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+            }
+
+            mockMediaElement.playPosition += 1000;
+            jasmine.clock().tick(1000);
+
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+          });
         });
 
         describe('addEventCallback', function () {
