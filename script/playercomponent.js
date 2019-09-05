@@ -308,9 +308,7 @@ define(
       }
 
       function bubbleFatalError (bufferingTimeoutError) {
-        // could determine this error message where needed in the client based on bufferingTimeoutError which is passed as part of the plugin event anyway
-        var properties = { error_mssg: bufferingTimeoutError ? 'bufferingTimeoutError' : 'fatalError' };
-        var evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: properties, isBufferingTimeoutError: bufferingTimeoutError });
+        var evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: bufferingTimeoutError });
         Plugins.interface.onFatalError(evt);
         publishMediaStateUpdate(MediaState.FATAL_ERROR, { isBufferingTimeoutError: bufferingTimeoutError });
       }
