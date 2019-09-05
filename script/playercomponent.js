@@ -292,7 +292,6 @@ define(
       }
 
       function bubbleErrorRaised () {
-        // TODO: does a client ever check bufferingTimeOut on the onError plugin?
         var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false });
         Plugins.interface.onError(evt);
       }
