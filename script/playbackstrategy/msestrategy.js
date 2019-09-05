@@ -398,7 +398,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.pause();
           opts = opts || {};
           if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
-            DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), this.addEventCallback, this.removeEventCallback, mediaPlayer.play);
+            DynamicWindowUtils.autoResumeAtStartOfRange(
+              getCurrentTime(),
+              getSeekableRange(),
+              this.addEventCallback,
+              this.removeEventCallback,
+              function (event) {
+                return event !== MediaState.PAUSED;
+              },
+              mediaPlayer.play);
           }
         },
         play: function () {

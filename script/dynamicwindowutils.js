@@ -1,10 +1,8 @@
 define(
   'bigscreenplayer/dynamicwindowutils', [
-    'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/models/mediastate',
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/models/livesupport'
   ],
-  function (LiveSupport, MediaState, MediaPlayerBase) {
+  function (LiveSupport) {
     'use strict';
 
     var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
@@ -50,7 +48,7 @@ define(
         window.bigscreenPlayer.playbackStrategy === 'nativestrategy');
     }
 
-    function autoResumeAtStartOfRange (currentTime, seekableRange, addEventCallback, removeEventCallback, resume) {
+    function autoResumeAtStartOfRange (currentTime, seekableRange, addEventCallback, removeEventCallback, checkNotPauseEvent, resume) {
       var resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
       var autoResumeTimer = setTimeout(function () {
         removeEventCallback(undefined, detectIfUnpaused);
@@ -60,18 +58,10 @@ define(
       addEventCallback(undefined, detectIfUnpaused);
 
       function detectIfUnpaused (event) {
-        if (!checkEventState(event, 'PAUSED')) {
+        if (checkNotPauseEvent(event)) {
           removeEventCallback(undefined, detectIfUnpaused);
           clearTimeout(autoResumeTimer);
         }
-      }
-    }
-
-    function checkEventState (event, state) {
-      if (state === 'PAUSED') {
-        return event.state ? event.state === MediaPlayerBase.STATE.PAUSED : event === MediaState.PAUSED;
-      } else if (state === 'PLAYING') {
-        return event.state ? event.state === MediaPlayerBase.STATE.PLAYING : event === MediaState.PLAYING;
       }
     }
 

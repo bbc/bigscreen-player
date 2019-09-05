@@ -65,7 +65,13 @@ define(
               mediaPlayer.toPlaying();
             } else {
               mediaPlayer.pause();
-              DynamicWindowUtils.autoResumeAtStartOfRange(mediaPlayer.getCurrentTime(), mediaPlayer.getSeekableRange(), addEventCallback, removeEventCallback, resume);
+              DynamicWindowUtils.autoResumeAtStartOfRange(
+                mediaPlayer.getCurrentTime(),
+                mediaPlayer.getSeekableRange(),
+                addEventCallback,
+                removeEventCallback,
+                MediaPlayerBase.unpausedEventCheck,
+                resume);
             }
           },
           resume: resume,
