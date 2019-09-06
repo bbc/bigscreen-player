@@ -36,6 +36,7 @@ define('bigscreenplayer/bigscreenplayer',
           timeUpdateCallbacks.forEach(function (callback) {
             callback({
               currentTime: evt.data.currentTime,
+              duration: evt.data.duration,
               endOfStream: endOfStream
             });
           });

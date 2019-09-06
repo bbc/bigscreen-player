@@ -159,7 +159,7 @@ require(
 
             mockEventHook({data: {currentTime: 30}, timeUpdate: true, isBufferingTimeoutError: false});
 
-            expect(callback).toHaveBeenCalledWith({currentTime: 30, endOfStream: true});
+            expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({currentTime: 30, endOfStream: true}));
           });
 
           it('should set endOfStream to false when playing live and initialPlaybackTime is 0', function () {
@@ -173,7 +173,7 @@ require(
 
             mockEventHook({data: {currentTime: 0}, timeUpdate: true, isBufferingTimeoutError: false});
 
-            expect(callback).toHaveBeenCalledWith({currentTime: 0, endOfStream: false});
+            expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({currentTime: 0, endOfStream: false}));
           });
 
           it('should call the suppiled success callback if playing VOD', function () {
@@ -321,9 +321,9 @@ require(
 
             expect(callback).not.toHaveBeenCalled();
 
-            mockEventHook({data: {currentTime: 60}, timeUpdate: true});
+            mockEventHook({data: {currentTime: 60, duration: 100}, timeUpdate: true});
 
-            expect(callback).toHaveBeenCalledWith({currentTime: 60, endOfStream: false});
+            expect(callback).toHaveBeenCalledWith({currentTime: 60, duration: 100, endOfStream: false});
           });
 
           it('returns a reference to the callback passed in', function () {
@@ -366,9 +366,9 @@ require(
             bigscreenPlayer.registerForTimeUpdates(listener1);
             bigscreenPlayer.unregisterForTimeUpdates(listener2);
 
-            mockEventHook({data: {currentTime: 60}, timeUpdate: true});
+            mockEventHook({data: {currentTime: 60, duration: 100}, timeUpdate: true});
 
-            expect(listener1).toHaveBeenCalledWith({currentTime: 60, endOfStream: false});
+            expect(listener1).toHaveBeenCalledWith({currentTime: 60, duration: 100, endOfStream: false});
           });
         });
 
@@ -410,7 +410,7 @@ require(
 
             mockEventHook({data: {currentTime: endOfStreamWindow}, timeUpdate: true});
 
-            expect(callback).toHaveBeenCalledWith({currentTime: endOfStreamWindow, endOfStream: true});
+            expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({currentTime: endOfStreamWindow, endOfStream: true}));
           });
 
           it('should set endOfStream to false when seeking into a simulcast', function () {
@@ -436,7 +436,7 @@ require(
 
             mockEventHook({data: {currentTime: middleOfStreamWindow}, timeUpdate: true});
 
-            expect(callback).toHaveBeenCalledWith({currentTime: middleOfStreamWindow, endOfStream: false});
+            expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({currentTime: middleOfStreamWindow, endOfStream: false}));
           });
         });
 
