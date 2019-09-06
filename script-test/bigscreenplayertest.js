@@ -176,14 +176,14 @@ require(
             expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({currentTime: 0, endOfStream: false}));
           });
 
-          it('should call the suppiled success callback if playing VOD', function () {
+          it('should call the supplied success callback if playing VOD', function () {
             initialiseBigscreenPlayer();
 
             expect(successCallback).toHaveBeenCalledWith();
             expect(errorCallback).not.toHaveBeenCalled();
           });
 
-          it('should call the suppiled success callback if playing LIVE and the manifest loads', function () {
+          it('should call the supplied success callback if playing LIVE and the manifest loads', function () {
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
 
             expect(mediaSourcesCallbackSuccessSpy).toHaveBeenCalledTimes(1);
