@@ -17,7 +17,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var mediaPlayer;
       var mediaElement;
 
-      var eventCallback;
+      var eventCallbacks = [];
       var errorCallback;
       var timeUpdateCallback;
 
@@ -190,8 +190,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function publishMediaState (mediaState) {
-        if (eventCallback) {
-          eventCallback(mediaState);
+        for (var index = 0; index < eventCallbacks.length; index++) {
+          eventCallbacks[index](mediaState);
         }
       }
 
@@ -325,12 +325,16 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           canBeginSeek: function () { return true; }
         },
         addEventCallback: function (thisArg, newCallback) {
-          eventCallback = function (event) {
+          var eventCallback = function (event) {
             newCallback.call(thisArg, event);
           };
+          eventCallbacks.push(eventCallback);
         },
         removeEventCallback: function (callback) {
-          eventCallback = function (event) {};
+          var index = eventCallbacks.indexOf(callback);
+          if (index !== -1) {
+            eventCallbacks.splice(index, 1);
+          }
         },
         addErrorCallback: function (thisArg, newErrorCallback) {
           errorCallback = function (event) {
@@ -377,7 +381,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
           mediaPlayer = undefined;
           mediaElement = undefined;
-          eventCallback = undefined;
+          eventCallbacks = undefined;
           errorCallback = undefined;
           timeUpdateCallback = undefined;
           timeCorrection = undefined;
