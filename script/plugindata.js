@@ -6,7 +6,6 @@ define(
       function PluginData (args) {
         this.status = args.status;
         this.stateType = args.stateType;
-        this.properties = args.properties || {};
         this.isBufferingTimeoutError = args.isBufferingTimeoutError || false;
         this.isInitialPlay = args.isInitialPlay;
         this.cdn = args.cdn;
