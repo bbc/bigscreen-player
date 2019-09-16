@@ -1,9 +1,9 @@
 define(
   'bigscreenplayer/dynamicwindowutils', [
     'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (LiveSupport, MediaPlayerBase) {
+  function (LiveSupport, DebugTool) {
     'use strict';
 
     var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
@@ -49,8 +49,9 @@ define(
         window.bigscreenPlayer.playbackStrategy === 'nativestrategy');
     }
 
-    function autoResumeAtStartOfRange (currentTime, seekableRange, addEventCallback, removeEventCallback, resume) {
+    function autoResumeAtStartOfRange (currentTime, seekableRange, addEventCallback, removeEventCallback, checkNotPauseEvent, resume) {
       var resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
+      DebugTool.keyValue({key: 'autoresume', value: resumeTimeOut});
       var autoResumeTimer = setTimeout(function () {
         removeEventCallback(undefined, detectIfUnpaused);
         resume();
@@ -59,7 +60,7 @@ define(
       addEventCallback(undefined, detectIfUnpaused);
 
       function detectIfUnpaused (event) {
-        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
+        if (checkNotPauseEvent(event)) {
           removeEventCallback(undefined, detectIfUnpaused);
           clearTimeout(autoResumeTimer);
         }

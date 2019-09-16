@@ -23,6 +23,7 @@ require(
     var mockDashDebug;
     var mockPlugins;
     var mockPluginsInterface;
+    var mockDynamicWindowUtils;
     var mockAudioElement = document.createElement('audio');
     var mockVideoElement = document.createElement('video');
     var testManifestObject;
@@ -52,6 +53,7 @@ require(
         mockPlugins = {
           interface: mockPluginsInterface
         };
+        mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange']);
 
         spyOn(mockVideoElement, 'addEventListener');
         spyOn(mockVideoElement, 'removeEventListener');
@@ -124,7 +126,8 @@ require(
 
         injector.mock({
           'dashjs': mockDashjs,
-          'bigscreenplayer/plugins': mockPlugins
+          'bigscreenplayer/plugins': mockPlugins,
+          'bigscreenplayer/dynamicwindowutils': mockDynamicWindowUtils
         });
 
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
@@ -673,8 +676,9 @@ require(
 
         describe('sliding window', function () {
           beforeEach(function () {
-            setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
+            setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
             mseStrategy.load(null, 0);
+            mockDynamicWindowUtils.autoResumeAtStartOfRange.calls.reset();
           });
 
           it('should set current time on the video element', function () {
@@ -693,6 +697,24 @@ require(
             mseStrategy.setCurrentTime(101);
 
             expect(mockVideoElement.currentTime).toBe(99.9);
+          });
+
+          it('should start autoresume timeout when paused', function () {
+            mseStrategy.setCurrentTime(101);
+            mseStrategy.pause();
+
+            expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
+          });
+
+          it('should not start autoresume timeout when paused and disableAutoResume is set', function () {
+            var opts = {
+              disableAutoResume: true
+            };
+
+            mseStrategy.setCurrentTime(101);
+            mseStrategy.pause(opts);
+
+            expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
           });
         });
       });
