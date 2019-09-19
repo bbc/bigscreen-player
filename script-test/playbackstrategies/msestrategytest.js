@@ -740,7 +740,8 @@ require(
 
           expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
             playbackBitrate: 2.048,
-            bufferLength: undefined
+            bufferLength: undefined,
+            fragmentRequestTime: undefined
           });
         });
 
@@ -774,7 +775,8 @@ require(
 
           expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
             playbackBitrate: undefined,
-            bufferLength: 'buffer'
+            bufferLength: 'buffer',
+            fragmentRequestTime: undefined
           });
         });
 

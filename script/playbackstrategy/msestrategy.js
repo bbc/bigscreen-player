@@ -31,7 +31,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       var playerMetadata = {
         playbackBitrate: undefined,
-        bufferLength: undefined
+        bufferLength: undefined,
+        fragmentRequestTime: undefined
       };
 
       var DashJSEvents = {
@@ -186,6 +187,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             DebugTool.keyValue({ key: 'Buffer Length', value: playerMetadata.bufferLength });
             Plugins.interface.onPlayerInfoUpdated(playerMetadata);
           }
+        }
+        if (event.mediaType === 'video' && event.metric === 'HttpList') {
+          playerMetadata.fragmentRequestTime = Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime()); // e.value.tresponse - e.value.trequest;
+          Plugins.interface.onPlayerInfoUpdated(playerMetadata);
         }
       }
 
