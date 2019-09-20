@@ -39,12 +39,11 @@ define(
         StreamingPlayer: 1
       };
 
-      var CURRENT_TIME_TOLERANCE = 4;
       var CLAMP_OFFSET_FROM_END_OF_LIVE_RANGE = 10;
       var CLAMP_OFFSET_FROM_START_OF_RANGE = 1.1;
       var RANGE_UPDATE_TOLERANCE = 8;
       var RANGE_END_TOLERANCE = 100;
-      var CLAMP_OFFSET_FROM_END_OF_RANGE; // What is this?
+      var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
 
       var mediaType;
       var source;
@@ -53,6 +52,9 @@ define(
         start: undefined,
         end: undefined
       };
+
+      var eventCallback;
+      var eventCallbacks = [];
 
       var currentTime;
 
@@ -78,7 +80,7 @@ define(
         originalSource = tvmwPlugin.GetSource();
         window.addEventListener('hide', function () {
           stop();
-          tvmwPlugin.SetSource(self.originalSource);
+          tvmwPlugin.SetSource(originalSource);
         }, false);
       }
 
@@ -87,6 +89,24 @@ define(
       } catch (ignoreErr) {}
 
       return function (deviceConfig) {
+        function addEventCallback (thisArg, newCallback) {
+          eventCallback = function (event) {
+            newCallback.call(thisArg, event);
+          };
+          eventCallbacks.push(eventCallback);
+        }
+
+        function removeEventCallback (callback) {
+          var index = eventCallbacks.indexOf(callback);
+          if (index !== -1) {
+            eventCallbacks.splice(index, 1);
+          }
+        }
+
+        function removeAllEventCallbacks () {
+          eventCallbacks = undefined;
+        }
+
         function initialiseMedia (type, url, mime) {
           if (getState() === MediaPlayerBase.STATE.EMPTY) {
             mediaType = type;
@@ -248,6 +268,11 @@ define(
               break;
           }
         }
+        function isNearToCurrentTime (seconds) {
+          var currentTime = getCurrentTime();
+          var targetTime = getClampedTime(seconds);
+          return Math.abs(currentTime - targetTime) <= this.CURRENT_TIME_TOLERANCE;
+        }
         function pause () {
           postBufferingState = MediaPlayerBase.STATE.PAUSED;
           switch (getState()) {
@@ -318,9 +343,9 @@ define(
             }
           }
 
-          eventCallbacks.forEach(function (callback) {
-            callback.to(event);
-          });
+          for (var index = 0; index < eventCallbacks.length; index++) {
+            eventCallbacks[index](event);
+          }
         }
 
         function getSource () {
@@ -337,6 +362,20 @@ define(
             return currentTime;
           }
         }
+
+        function getDuration () {
+          switch (this.getState()) {
+            case MediaPlayerBase.STATE.STOPPED:
+            case MediaPlayerBase.STATE.STATE.ERROR:
+              return undefined;
+            default :
+              if (isLiveMedia()) {
+                return Infinity;
+              }
+              return getMediaDuration();
+          }
+        }
+
         function getSeekableRange () {
           switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
@@ -436,16 +475,16 @@ define(
 
         function updateRange () {
           if (isHlsMimeType() && isLiveMedia()) {
-            var range = playerPlugin.Execute('GetPlayingRange').split('-');
+            var playingRange = playerPlugin.Execute('GetPlayingRange').split('-');
             range = {
-              start: Math.floor(range[0]),
-              end: Math.floor(range[1])
+              start: Math.floor(playingRange[0]),
+              end: Math.floor(playingRange[1])
             };
                       // don't call range for the next 8 seconds
             updatingTime = true;
             setTimeout(function () {
               updatingTime = false;
-            }, self.RANGE_UPDATE_TOLERANCE * 1000);
+            }, RANGE_UPDATE_TOLERANCE * 1000);
           } else {
             var duration = playerPlugin.Execute('GetDuration') / 1000;
             range = {
@@ -536,22 +575,22 @@ define(
         }
         function registerEventHandlers () {
           playerPlugin.OnEvent = function (eventType, param1/*, param2*/) {
-            if (eventType !== self.PlayerEventCodes.CURRENT_PLAYBACK_TIME) {
+            if (eventType !== PlayerEventCodes.CURRENT_PLAYBACK_TIME) {
                           // logger.info('Received event ' + eventType + ' ' + param1);
             }
 
             switch (eventType) {
 
-              case self.PlayerEventCodes.STREAM_INFO_READY:
+              case PlayerEventCodes.STREAM_INFO_READY:
                 updateRange();
                 break;
 
-              case self.PlayerEventCodes.CURRENT_PLAYBACK_TIME:
+              case PlayerEventCodes.CURRENT_PLAYBACK_TIME:
                 if (range && isLiveMedia()) {
                   var seconds = Math.floor(param1 / 1000);
                               // jump to previous current time if PTS out of range occurs
-                  if (seconds > range.end + self.RANGE_END_TOLERANCE) {
-                    self.playFrom(currentTime);
+                  if (seconds > range.end + RANGE_END_TOLERANCE) {
+                    playFrom(currentTime);
                     break;
                               // call GetPlayingRange() on SEF emp if current time is out of range
                   } else if (!isCurrentTimeInRangeTolerance(seconds)) {
@@ -561,126 +600,48 @@ define(
                 onCurrentTime(param1);
                 break;
 
-              case self.PlayerEventCodes.BUFFERING_START:
-              case self.PlayerEventCodes.BUFFERING_PROGRESS:
+              case PlayerEventCodes.BUFFERING_START:
+              case PlayerEventCodes.BUFFERING_PROGRESS:
                 onDeviceBuffering();
                 break;
 
-              case self.PlayerEventCodes.BUFFERING_COMPLETE:
+              case PlayerEventCodes.BUFFERING_COMPLETE:
                 // For live HLS, don't update the range more than once every 8 seconds
                 if (!updatingTime) {
                   updateRange();
                 }
                 // [optimisation] if Stop() is not called after RENDERING_COMPLETE then player sends periodically BUFFERING_COMPLETE and RENDERING_COMPLETE
                 // ignore BUFFERING_COMPLETE if player is already in COMPLETE state
-                if (self.getState() !== MediaPlayerBase.STATE.COMPLETE) {
+                if (getState() !== MediaPlayerBase.STATE.COMPLETE) {
                   onFinishedBuffering();
                 }
                 break;
 
-              case self.PlayerEventCodes.RENDERING_COMPLETE:
+              case PlayerEventCodes.RENDERING_COMPLETE:
                 // [optimisation] if Stop() is not called after RENDERING_COMPLETE then player sends periodically BUFFERING_COMPLETE and RENDERING_COMPLETE
                 // ignore RENDERING_COMPLETE if player is already in COMPLETE state
-                if (self.getState() !== MediaPlayerBase.STATE.COMPLETE) {
+                if (getState() !== MediaPlayerBase.STATE.COMPLETE) {
                   onEndOfMedia();
                 }
                 break;
 
-              case self.PlayerEventCodes.CONNECTION_FAILED:
+              case PlayerEventCodes.CONNECTION_FAILED:
                 onDeviceError('Media element emitted OnConnectionFailed');
                 break;
 
-              case self.PlayerEventCodes.NETWORK_DISCONNECTED:
+              case PlayerEventCodes.NETWORK_DISCONNECTED:
                 onDeviceError('Media element emitted OnNetworkDisconnected');
                 break;
 
-              case self.PlayerEventCodes.AUTHENTICATION_FAILED:
+              case PlayerEventCodes.AUTHENTICATION_FAILED:
                 onDeviceError('Media element emitted OnAuthenticationFailed');
                 break;
 
-              case self.PlayerEventCodes.RENDER_ERROR:
+              case PlayerEventCodes.RENDER_ERROR:
                 onDeviceError('Media element emitted OnRenderError');
                 break;
 
-              case self.PlayerEventCodes.STREAM_NOT_FOUND:
-                onDeviceError('Media element emitted OnStreamNotFound');
-                break;
-            }
-          };
-
-          window.addEventListener('hide', onWindowHide, false);
-          window.addEventListener('unload', onWindowHide, false);
-        }
-
-        function registerEventHandlers () {
-          playerPlugin.OnEvent = function (eventType, param1/*, param2*/) {
-            if (eventType !== self.PlayerEventCodes.CURRENT_PLAYBACK_TIME) {
-              DebugTool.info('Received event ' + eventType + ' ' + param1);
-            }
-
-            switch (eventType) {
-
-              case self.PlayerEventCodes.STREAM_INFO_READY:
-                updateRange();
-                break;
-
-              case self.PlayerEventCodes.CURRENT_PLAYBACK_TIME:
-                if (range && isLiveMedia()) {
-                  var seconds = Math.floor(param1 / 1000);
-                              // jump to previous current time if PTS out of range occurs
-                  if (seconds > range.end + self.RANGE_END_TOLERANCE) {
-                    self.playFrom(currentTime);
-                    break;
-                              // call GetPlayingRange() on SEF emp if current time is out of range
-                  } else if (!isCurrentTimeInRangeTolerance(seconds)) {
-                    updateRange();
-                  }
-                }
-                onCurrentTime(param1);
-                break;
-
-              case self.PlayerEventCodes.BUFFERING_START:
-              case self.PlayerEventCodes.BUFFERING_PROGRESS:
-                onDeviceBuffering();
-                break;
-
-              case self.PlayerEventCodes.BUFFERING_COMPLETE:
-                          // For live HLS, don't update the range more than once every 8 seconds
-                if (!updatingTime) {
-                  updateRange();
-                }
-                          // [optimisation] if Stop() is not called after RENDERING_COMPLETE then player sends periodically BUFFERING_COMPLETE and RENDERING_COMPLETE
-                          // ignore BUFFERING_COMPLETE if player is already in COMPLETE state
-                if (self.getState() !== MediaPlayerBase.STATE.COMPLETE) {
-                  onFinishedBuffering();
-                }
-                break;
-
-              case self.PlayerEventCodes.RENDERING_COMPLETE:
-                          // [optimisation] if Stop() is not called after RENDERING_COMPLETE then player sends periodically BUFFERING_COMPLETE and RENDERING_COMPLETE
-                          // ignore RENDERING_COMPLETE if player is already in COMPLETE state
-                if (self.getState() !== MediaPlayerBase.STATE.COMPLETE) {
-                  onEndOfMedia();
-                }
-                break;
-
-              case self.PlayerEventCodes.CONNECTION_FAILED:
-                onDeviceError('Media element emitted OnConnectionFailed');
-                break;
-
-              case self.PlayerEventCodes.NETWORK_DISCONNECTED:
-                onDeviceError('Media element emitted OnNetworkDisconnected');
-                break;
-
-              case self.PlayerEventCodes.AUTHENTICATION_FAILED:
-                onDeviceError('Media element emitted OnAuthenticationFailed');
-                break;
-
-              case self.PlayerEventCodes.RENDER_ERROR:
-                onDeviceError('Media element emitted OnRenderError');
-                break;
-
-              case self.PlayerEventCodes.STREAM_NOT_FOUND:
+              case PlayerEventCodes.STREAM_NOT_FOUND:
                 onDeviceError('Media element emitted OnStreamNotFound');
                 break;
             }
@@ -704,7 +665,7 @@ define(
           stopPlayer();
           closePlugin();
           unregisterEventHandlers();
-          type = undefined;
+          // type = undefined;
           source = undefined;
           mimeType = undefined;
           currentTime = undefined;
@@ -791,15 +752,6 @@ define(
           state = MediaPlayerBase.STATE.PLAYING;
           emitEvent(MediaPlayerBase.EVENT.PLAYING);
         }
-
-        function toPlaying () {
-          if (isHlsMimeType() && isLiveMedia() && !updatingTime) {
-            updateRange();
-          }
-          state = MediaPlayerBase.STATE.PLAYING;
-          emitEvent(MediaPlayerBase.EVENT.PLAYING);
-        }
-
         function toPaused () {
           state = MediaPlayerBase.STATE.PAUSED;
           emitEvent(MediaPlayerBase.EVENT.PAUSED);
@@ -822,6 +774,9 @@ define(
         }
 
         return {
+          addEventCallback: addEventCallback,
+          removeEventCallback: removeEventCallback,
+          removeAllEventCallbacks: removeAllEventCallbacks,
           initialiseMedia: initialiseMedia,
           resume: resume,
           playFrom: playFrom,
