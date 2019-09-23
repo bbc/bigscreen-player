@@ -3,7 +3,7 @@
  * @license See https://github.com/fmtvp/tal/blob/master/LICENSE for full licence
  */
 define(
-    'bigscreenplayer/playbackstrategy/modifiers/samsung_streaming',
+    'bigscreenplayer/playbackstrategy/modifiers/samsungstreaming',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
     'bigscreenplayer/debugger/debugtool'
