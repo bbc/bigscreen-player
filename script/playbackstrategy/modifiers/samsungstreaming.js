@@ -249,7 +249,7 @@ define(
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           var seekingTo = getSeekableRange() ? getClampedTimeForPlayFrom(seconds) : seconds;
 
-                  // StartPlayback from near start of range causes spoiler defect
+          // StartPlayback from near start of range causes spoiler defect
           if (seekingTo < CLAMP_OFFSET_FROM_START_OF_RANGE && isLiveMedia()) {
             seekingTo = CLAMP_OFFSET_FROM_START_OF_RANGE;
           } else {
@@ -480,7 +480,7 @@ define(
               start: Math.floor(playingRange[0]),
               end: Math.floor(playingRange[1])
             };
-                      // don't call range for the next 8 seconds
+            // don't call range for the next 8 seconds
             updatingTime = true;
             setTimeout(function () {
               updatingTime = false;
@@ -498,9 +498,9 @@ define(
           onStatus();
           currentTimeKnown = true;
 
-                  // [optimisation] do not call player API periodically in HLS live
-                  // - calculate range manually when possible
-                  // - do not calculate range if player API was called less than RANGE_UPDATE_TOLERANCE seconds ago
+          // [optimisation] do not call player API periodically in HLS live
+          // - calculate range manually when possible
+          // - do not calculate range if player API was called less than RANGE_UPDATE_TOLERANCE seconds ago
           if (isLiveMedia() && isLiveRangeOutdated()) {
             range.start += 8;
             range.end += 8;
@@ -576,7 +576,7 @@ define(
         function registerEventHandlers () {
           playerPlugin.OnEvent = function (eventType, param1/*, param2*/) {
             if (eventType !== PlayerEventCodes.CURRENT_PLAYBACK_TIME) {
-                          // logger.info('Received event ' + eventType + ' ' + param1);
+              DebugTool.info('Received event ' + eventType + ' ' + param1);
             }
 
             switch (eventType) {
@@ -588,11 +588,11 @@ define(
               case PlayerEventCodes.CURRENT_PLAYBACK_TIME:
                 if (range && isLiveMedia()) {
                   var seconds = Math.floor(param1 / 1000);
-                              // jump to previous current time if PTS out of range occurs
+                  // jump to previous current time if PTS out of range occurs
                   if (seconds > range.end + RANGE_END_TOLERANCE) {
                     playFrom(currentTime);
                     break;
-                              // call GetPlayingRange() on SEF emp if current time is out of range
+                  // call GetPlayingRange() on SEF emp if current time is out of range
                   } else if (!isCurrentTimeInRangeTolerance(seconds)) {
                     updateRange();
                   }
@@ -741,10 +741,12 @@ define(
           state = MediaPlayerBase.STATE.STOPPED;
           emitEvent(MediaPlayerBase.EVENT.STOPPED);
         }
+
         function toBuffering () {
           state = MediaPlayerBase.STATE.BUFFERING;
           emitEvent(MediaPlayerBase.EVENT.BUFFERING);
         }
+
         function toPlaying () {
           if (isHlsMimeType() && isLiveMedia() && !updatingTime) {
             updateRange();
@@ -752,10 +754,12 @@ define(
           state = MediaPlayerBase.STATE.PLAYING;
           emitEvent(MediaPlayerBase.EVENT.PLAYING);
         }
+
         function toPaused () {
           state = MediaPlayerBase.STATE.PAUSED;
           emitEvent(MediaPlayerBase.EVENT.PAUSED);
         }
+
         function toComplete () {
           state = MediaPlayerBase.STATE.COMPLETE;
           emitEvent(MediaPlayerBase.EVENT.COMPLETE);
