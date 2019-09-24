@@ -86,7 +86,9 @@ define(
 
       try {
         registerSamsungPlugins();
-      } catch (ignoreErr) {}
+      } catch (ignoreErr) {
+
+      }
 
       return function (deviceConfig) {
         function addEventCallback (thisArg, newCallback) {
@@ -731,7 +733,7 @@ define(
         }
 
         function reportError (errorMessage) {
-          DebugTool.error(errorMessage);
+          DebugTool.error('Error message from Samsung stream');
           emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
         }
 
@@ -773,6 +775,7 @@ define(
         function toError (errorMessage) {
           wipe();
           state = MediaPlayerBase.STATE.ERROR;
+          // DebugTool.info('*****HERE***** toError: errorMessage = ' + errorMessage);
           reportError(errorMessage);
           throw new Error('ApiError: ' + errorMessage);
         }
