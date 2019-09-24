@@ -733,7 +733,6 @@ define(
         }
 
         function reportError (errorMessage) {
-          DebugTool.error('Error message from Samsung stream');
           emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
         }
 
