@@ -780,7 +780,7 @@ define(
         function toError (errorMessage) {
           wipe();
           state = MediaPlayerBase.STATE.ERROR;
-          // DebugTool.info('*****HERE***** toError: errorMessage = ' + errorMessage);
+          DebugTool.info('*****HERE***** toError: errorMessage = ' + errorMessage);
           reportError(errorMessage);
           throw new Error('ApiError: ' + errorMessage);
         }
