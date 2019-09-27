@@ -10,9 +10,10 @@ define(
     'bigscreenplayer/plugins',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/models/playbackstrategy'
+    'bigscreenplayer/models/playbackstrategy',
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel, DebugTool) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
@@ -28,6 +29,8 @@ define(
       var fatalErrorTimeout;
       var fatalError;
       var transferFormat = bigscreenPlayerData.media.transferFormat;
+
+      DebugTool.info('initialising playback strategy');
 
       playbackStrategy = PlaybackStrategy(
         mediaSources,
@@ -336,6 +339,7 @@ define(
       }
 
       function loadMedia (type, startTime, thenPause) {
+        DebugTool.info('Calling load on playback strategy');
         playbackStrategy.load(type, startTime);
         if (thenPause) {
           pause();

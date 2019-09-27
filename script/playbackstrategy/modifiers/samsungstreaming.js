@@ -110,6 +110,7 @@ define(
         }
 
         function initialiseMedia (type, url, mime) {
+          DebugTool.info('initialise media called.');
           if (getState() === MediaPlayerBase.STATE.EMPTY) {
             mediaType = type;
             source = url;
