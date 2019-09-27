@@ -120,6 +120,7 @@ define(
             toStopped();
 
             if (isHlsMimeType()) {
+              DebugTool.info('using HLS live plugin.');
               openStreamingPlayerPlugin();
               if (isLiveMedia()) {
                 source += '|HLSSLIDING|COMPONENT=HLS';
@@ -127,6 +128,7 @@ define(
                 source += '|COMPONENT=HLS';
               }
             } else {
+              DebugTool.info('using player plugin.');
               openPlayerPlugin();
             }
 
@@ -142,6 +144,8 @@ define(
           }
           playerPlugin.Open('Player', '1.010', 'Player');
           currentPlayer = PlayerEmps.Player;
+
+          DebugTool.info('opened VOD player plugin.');
         }
 
         function openStreamingPlayerPlugin () {
@@ -236,6 +240,7 @@ define(
           }
         }
         function beginPlayback () {
+          DebugTool.info('Begin playback called with: ' + getState());
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           switch (getState()) {
             case MediaPlayerBase.STATE.STOPPED:
