@@ -188,7 +188,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             Plugins.interface.onPlayerInfoUpdated(playerMetadata);
           }
         }
-        if (event.mediaType === mediaKind && event.metric === 'HttpList') {
+        if (event.mediaType === mediaKind && event.metric === 'HttpList' && event.value._tfinish && event.value.trequest) {
           playerMetadata.fragmentRequestTime = Math.floor(Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime()));
           Plugins.interface.onPlayerInfoUpdated(playerMetadata);
         }
