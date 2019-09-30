@@ -32,7 +32,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var playerMetadata = {
         playbackBitrate: undefined,
         bufferLength: undefined,
-        fragmentRequestTime: undefined
+        fragmentRequestTime: undefined,
+        numFragment: undefined
       };
 
       var DashJSEvents = {
@@ -190,6 +191,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
         if (event.mediaType === mediaKind && event.metric === 'HttpList') {
           playerMetadata.fragmentRequestTime = Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime());
+          playerMetadata.numFragment = playerMetadata.numFragment ? playerMetadata.numFragment++ : 1;
           Plugins.interface.onPlayerInfoUpdated(playerMetadata);
         }
       }
