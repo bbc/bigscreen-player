@@ -32,8 +32,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var playerMetadata = {
         playbackBitrate: undefined,
         bufferLength: undefined,
-        fragmentRequestTime: undefined,
-        numFragment: undefined
+        fragmentInfo: {
+          requestTime: undefined,
+          numDownloaded: undefined
+        }
       };
 
       var DashJSEvents = {
@@ -190,8 +192,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           }
         }
         if (event.mediaType === mediaKind && event.metric === 'HttpList' && event.value._tfinish && event.value.trequest) {
-          playerMetadata.fragmentRequestTime = Math.floor(Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime()));
-          playerMetadata.numFragment = playerMetadata.numFragment ? playerMetadata.numFragment++ : 1;
+          playerMetadata.fragmentInfo.requestTime = Math.floor(Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime()));
+          playerMetadata.fragmentInfo.numDownloaded = playerMetadata.fragmentInfo.numDownloaded ? ++playerMetadata.fragmentInfo.numDownloaded : 1;
           Plugins.interface.onPlayerInfoUpdated(playerMetadata);
         }
       }
@@ -397,6 +399,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           bitrateInfoList = undefined;
           mediaMetrics = undefined;
           dashMetrics = undefined;
+          playerMetadata = {
+            playbackBitrate: undefined,
+            bufferLength: undefined,
+            fragmentInfo: {
+              requestTime: undefined,
+              numDownloaded: undefined
+            }
+          };
         },
         reset: function () {
           return;
