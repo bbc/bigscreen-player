@@ -780,6 +780,28 @@ require(
           });
         });
 
+        it('should call plugins with video playback fragment download time', function () {
+          var mockBufferEvent = {
+            mediaType: 'video',
+            metric: 'HttpList',
+            value: {
+              trequest: new Date(1569831695287),
+              _tfinish: new Date(1569831695587)
+            }
+          };
+
+          setUpMSE();
+          mseStrategy.load(null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent);
+
+          expect(mockPluginsInterface.onPlayerInfoUpdated).toHaveBeenCalledWith({
+            playbackBitrate: undefined,
+            bufferLength: undefined,
+            fragmentRequestTime: 300
+          });
+        });
+
         it('should not call plugins with audio playback buffer length when mediaKind is video', function () {
           var mockBufferEvent = {
             mediaType: 'audio',
