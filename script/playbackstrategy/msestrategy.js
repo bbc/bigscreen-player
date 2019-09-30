@@ -189,7 +189,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           }
         }
         if (event.mediaType === mediaKind && event.metric === 'HttpList') {
-          playerMetadata.fragmentRequestTime = Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime());
+          playerMetadata.fragmentRequestTime = Math.floor(Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime()));
           Plugins.interface.onPlayerInfoUpdated(playerMetadata);
         }
       }
