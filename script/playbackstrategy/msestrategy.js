@@ -31,7 +31,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       var playerMetadata = {
         playbackBitrate: undefined,
-        bufferLength: undefined
+        bufferLength: undefined,
+        fragmentInfo: {
+          requestTime: undefined,
+          numDownloaded: undefined
+        }
       };
 
       var DashJSEvents = {
@@ -148,7 +152,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
             DebugTool.info('ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
           }
-          Plugins.interface.onPlayerInfoUpdated(playerMetadata);
+          Plugins.interface.onPlayerInfoUpdated({
+            bufferLength: playerMetadata.bufferLength,
+            playbackBitrate: playerMetadata.playbackBitrate
+          });
         }
       }
 
@@ -184,8 +191,18 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           if (mediaMetrics && dashMetrics) {
             playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
             DebugTool.keyValue({ key: 'Buffer Length', value: playerMetadata.bufferLength });
-            Plugins.interface.onPlayerInfoUpdated(playerMetadata);
+            Plugins.interface.onPlayerInfoUpdated({
+              bufferLength: playerMetadata.bufferLength,
+              playbackBitrate: playerMetadata.playbackBitrate
+            });
           }
+        }
+        if (event.mediaType === mediaKind && event.metric === 'HttpList' && event.value._tfinish && event.value.trequest) {
+          playerMetadata.fragmentInfo.requestTime = Math.floor(Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime()));
+          playerMetadata.fragmentInfo.numDownloaded = playerMetadata.fragmentInfo.numDownloaded ? ++playerMetadata.fragmentInfo.numDownloaded : 1;
+          Plugins.interface.onPlayerInfoUpdated({
+            fragmentInfo: playerMetadata.fragmentInfo
+          });
         }
       }
 
@@ -390,6 +407,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           bitrateInfoList = undefined;
           mediaMetrics = undefined;
           dashMetrics = undefined;
+          playerMetadata = {
+            playbackBitrate: undefined,
+            bufferLength: undefined,
+            fragmentInfo: {
+              requestTime: undefined,
+              numDownloaded: undefined
+            }
+          };
         },
         reset: function () {
           return;
