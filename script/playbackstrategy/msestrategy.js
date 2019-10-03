@@ -8,11 +8,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/manifest/manifestmodifier',
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/dynamicwindowutils',
+    'bigscreenplayer/playbackstrategy/growingwindowrefresher',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, GrowingWindowRefresher) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
       var mediaPlayer;
       var mediaElement;
@@ -28,6 +29,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var bitrateInfoList;
       var mediaMetrics;
       var dashMetrics;
+
+      var refresher;
 
       var playerMetadata = {
         playbackBitrate: undefined,
@@ -256,6 +259,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
 
         mediaPlayer.initialize(mediaElement, null, true);
+        if (windowType === WindowTypes.GROWING) {
+          refresher = GrowingWindowRefresher(mediaPlayer);
+          refresher.start();
+        }
         modifySource(playbackTime);
       }
 
@@ -396,6 +403,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
           mediaElement.parentElement.removeChild(mediaElement);
 
+          if (refresher) {
+            refresher.stop();
+            refresher = undefined;
+          }
+
           mediaPlayer = undefined;
           mediaElement = undefined;
           eventCallbacks = undefined;
@@ -445,6 +457,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           var seekToTime = getClampedTime(time, getSeekableRange());
           if (windowType === WindowTypes.SLIDING) {
             mediaElement.currentTime = (seekToTime + timeCorrection);
+          } else if (windowType === WindowTypes.GROWING) {
+            refresher.seek({
+              onSuccess: function () {
+                mediaPlayer.seek(seekToTime);
+              },
+              onError: function () {
+
+              }
+            });
           } else {
             mediaPlayer.seek(seekToTime);
           }
