@@ -176,8 +176,16 @@ require(
         document.body.removeChild(playbackElement);
         mockPluginsInterface.onErrorHandled.calls.reset();
         mockDashInstance.attachSource.calls.reset();
+        mockDashInstance.seek.calls.reset();
         mockRefresherStartSpy.calls.reset();
         mockRefresherStopSpy.calls.reset();
+
+        if (refresherCallbackSuccessSpy) {
+          refresherCallbackSuccessSpy.calls.reset();
+        }
+        if (refresherCallbackErrorSpy) {
+          refresherCallbackErrorSpy.calls.reset();
+        }
       });
 
       function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
