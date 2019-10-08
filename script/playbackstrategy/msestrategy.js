@@ -121,9 +121,28 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && event.event.id === 'content') {
               return;
             }
+            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && event.event.id === 'manifest') {
+              manifestDownloadError(event);
+              return;
+            }
           }
         }
         publishError(event);
+      }
+
+      function manifestDownloadError (event) {
+        var error = function () {
+          publishError(event);
+        };
+
+        var failoverParams = {
+          errorMessage: 'manifest-refresh',
+          isBufferingTimeoutError: false,
+          currentTime: getCurrentTime(),
+          duration: getDuration()
+        };
+
+        mediaSources.failover(load, error, failoverParams);
       }
 
       function onManifestLoaded (event) {
@@ -232,6 +251,17 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function getClampedTime (time, range) {
         return Math.min(Math.max(time, range.start), range.end - 1.1);
+      }
+
+      function load (mimeType, playbackTime) {
+        if (!mediaPlayer) {
+          failoverTime = playbackTime;
+          setUpMediaElement(playbackElement);
+          setUpMediaPlayer(playbackTime);
+          setUpMediaListeners();
+        } else {
+          modifySource(refreshFailoverTime || failoverTime);
+        }
       }
 
       function setUpMediaElement (playbackElement) {
@@ -376,16 +406,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (mimeType, playbackTime) {
-          if (!mediaPlayer) {
-            failoverTime = playbackTime;
-            setUpMediaElement(playbackElement);
-            setUpMediaPlayer(playbackTime);
-            setUpMediaListeners();
-          } else {
-            modifySource(refreshFailoverTime || failoverTime);
-          }
-        },
+        load: load,
         getSeekableRange: getSeekableRange,
         getCurrentTime: getCurrentTime,
         getDuration: getDuration,

@@ -114,6 +114,7 @@ require(
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
         mediaSources = new MediaSources();
         spyOn(mediaSources, 'time').and.callThrough();
+        spyOn(mediaSources, 'failover').and.callThrough();
         mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         testManifestObject = {
@@ -840,7 +841,7 @@ require(
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalledWith();
         });
 
-        it('should not fire CDN failover event on content download error', function () {
+        it('should not publish error event on content download error', function () {
           var mockEvent = {
             error: 'download',
             event: {
@@ -853,7 +854,6 @@ require(
           var mockErrorCallback = jasmine.createSpy();
           mseStrategy.addErrorCallback(null, mockErrorCallback);
 
-          cdnArray.push({ url: 'http://testcdn2/test/', cdn: 'cdn2' });
           mseStrategy.load(null, 0);
 
           dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
@@ -861,7 +861,7 @@ require(
           expect(mockErrorCallback).not.toHaveBeenCalledWith();
         });
 
-        it('should fire CDN failover event on manifest download error', function () {
+        it('should not publish error event on manifest download error', function () {
           var mockEvent = {
             error: 'download',
             event: {
@@ -874,12 +874,61 @@ require(
           var mockErrorCallback = jasmine.createSpy();
           mseStrategy.addErrorCallback(null, mockErrorCallback);
 
-          cdnArray.push({ url: 'http://testcdn2/test/', cdn: 'cdn2' });
           mseStrategy.load(null, 0);
 
           dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
 
-          expect(mockErrorCallback).toHaveBeenCalledWith(jasmine.objectContaining(mockEvent));
+          expect(mockErrorCallback).not.toHaveBeenCalled();
+        });
+
+        it('should initiate a failover with correct parameters on manifest download error', function () {
+          var mockEvent = {
+            error: 'download',
+            event: {
+              id: 'manifest'
+            }
+          };
+
+          setUpMSE();
+
+          mseStrategy.load(null, 0);
+          mockVideoElement.currentTime = 10;
+
+          dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
+
+          var failoverParams = {
+            errorMessage: 'manifest-refresh',
+            isBufferingTimeoutError: false,
+            currentTime: mseStrategy.getCurrentTime(),
+            duration: mseStrategy.getDuration()
+          };
+
+          expect(mediaSources.failover).toHaveBeenCalledWith(mseStrategy.load, jasmine.any(Function), failoverParams);
+        });
+
+        it('should publish an error event on manifest download error but there are no more sources to CDN failover to', function () {
+          var mockEvent = {
+            error: 'download',
+            event: {
+              id: 'manifest'
+            }
+          };
+
+          var noop = function () {};
+          mediaSources.failover(noop, noop, { errorMessage: 'failover', isBufferingTimeoutError: false });
+          mediaSources.failover(noop, noop, { errorMessage: 'failover', isBufferingTimeoutError: false });
+
+          setUpMSE();
+
+          var mockErrorCallback = jasmine.createSpy();
+          mseStrategy.addErrorCallback(null, mockErrorCallback);
+
+          mseStrategy.load(null, 0);
+          mockVideoElement.currentTime = 10;
+
+          dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
+
+          expect(mockErrorCallback).toHaveBeenCalledWith(mockEvent);
         });
       });
     });
