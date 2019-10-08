@@ -30,8 +30,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var mediaMetrics;
       var dashMetrics;
 
-      var refresher;
-
       var playerMetadata = {
         playbackBitrate: undefined,
         bufferLength: undefined,
@@ -259,10 +257,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
 
         mediaPlayer.initialize(mediaElement, null, true);
-        if (windowType === WindowTypes.GROWING) {
-          refresher = GrowingWindowRefresher(mediaPlayer);
-          refresher.start();
-        }
         modifySource(playbackTime);
       }
 
@@ -343,6 +337,16 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
       }
 
+      function refreshManifestBeforeSeek (seekToTime) {
+        GrowingWindowRefresher(mediaPlayer, function (mediaPresentationDuration) {
+          if (!isNaN(mediaPresentationDuration)) {
+            mediaPlayer.seek(getClampedTime(seekToTime, {start: getSeekableRange().start, end: mediaPresentationDuration}));
+          } else {
+            mediaPlayer.seek(seekToTime);
+          }
+        });
+      }
+
       return {
         transitions: {
           canBePaused: function () { return true; },
@@ -403,11 +407,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
           mediaElement.parentElement.removeChild(mediaElement);
 
-          if (refresher) {
-            refresher.stop();
-            refresher = undefined;
-          }
-
           mediaPlayer = undefined;
           mediaElement = undefined;
           eventCallbacks = undefined;
@@ -458,14 +457,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           if (windowType === WindowTypes.SLIDING) {
             mediaElement.currentTime = (seekToTime + timeCorrection);
           } else if (windowType === WindowTypes.GROWING) {
-            refresher.seek({
-              onSuccess: function () {
-                mediaPlayer.seek(seekToTime);
-              },
-              onError: function () {
-
-              }
-            });
+            refreshManifestBeforeSeek(seekToTime);
           } else {
             mediaPlayer.seek(seekToTime);
           }

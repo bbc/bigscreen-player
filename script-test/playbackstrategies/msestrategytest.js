@@ -4,9 +4,10 @@ require(
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/mediasources',
-    'bigscreenplayer/models/livesupport'
+    'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/playbackstrategy/growingwindowrefresher'
   ],
-  function (Squire, MediaKinds, WindowTypes, MediaSources, LiveSupport) {
+  function (Squire, MediaKinds, WindowTypes, MediaSources, LiveSupport, GrowingWindowRefresher) {
     var injector = new Squire();
     var MSEStrategy;
     var mseStrategy;
@@ -24,14 +25,6 @@ require(
     var mockPlugins;
     var mockPluginsInterface;
     var mockDynamicWindowUtils;
-
-    var mockRefresher;
-    var mockRefresherStartSpy;
-    var mockRefresherStopSpy;
-    var refresherCallbackSuccessSpy;
-    var refresherCallbackErrorSpy;
-    var forceManifestRefresherToFail = false;
-
     var mockAudioElement = document.createElement('audio');
     var mockVideoElement = document.createElement('video');
     var testManifestObject;
@@ -62,24 +55,6 @@ require(
           interface: mockPluginsInterface
         };
         mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange']);
-
-        mockRefresherStartSpy = jasmine.createSpy('start');
-        mockRefresherStopSpy = jasmine.createSpy('stop');
-        mockRefresher = function () {
-          return {
-            seek: function (callbacks) {
-              refresherCallbackSuccessSpy = spyOn(callbacks, 'onSuccess').and.callThrough();
-              refresherCallbackErrorSpy = spyOn(callbacks, 'onError').and.callThrough();
-              if (forceManifestRefresherToFail) {
-                callbacks.onError();
-              } else {
-                callbacks.onSuccess();
-              }
-            },
-            start: mockRefresherStartSpy,
-            stop: mockRefresherStopSpy
-          };
-        };
 
         spyOn(mockVideoElement, 'addEventListener');
         spyOn(mockVideoElement, 'removeEventListener');
@@ -153,8 +128,7 @@ require(
         injector.mock({
           'dashjs': mockDashjs,
           'bigscreenplayer/plugins': mockPlugins,
-          'bigscreenplayer/dynamicwindowutils': mockDynamicWindowUtils,
-          'bigscreenplayer/playbackstrategy/growingwindowrefresher': mockRefresher
+          'bigscreenplayer/dynamicwindowutils': mockDynamicWindowUtils
         });
 
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
@@ -177,15 +151,6 @@ require(
         mockPluginsInterface.onErrorHandled.calls.reset();
         mockDashInstance.attachSource.calls.reset();
         mockDashInstance.seek.calls.reset();
-        mockRefresherStartSpy.calls.reset();
-        mockRefresherStopSpy.calls.reset();
-
-        if (refresherCallbackSuccessSpy) {
-          refresherCallbackSuccessSpy.calls.reset();
-        }
-        if (refresherCallbackErrorSpy) {
-          refresherCallbackErrorSpy.calls.reset();
-        }
       });
 
       function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
@@ -505,20 +470,6 @@ require(
 
           expect(mediaSources.availableSources().length).toBe(3);
         });
-
-        it('should start refresh interval for manifest loading if window is GROWING', function () {
-          setUpMSE(0, WindowTypes.GROWING);
-          mseStrategy.load(null, 0);
-
-          expect(mockRefresherStartSpy).toHaveBeenCalled();
-        });
-
-        it('should not start refresh interval for manifest loading if window is STATIC', function () {
-          setUpMSE();
-          mseStrategy.load(null, 0);
-
-          expect(mockRefresherStartSpy).not.toHaveBeenCalled();
-        });
       });
 
       describe('getSeekableRange()', function () {
@@ -603,15 +554,6 @@ require(
           mseStrategy.tearDown();
 
           expect(playbackElement.childElementCount).toBe(0);
-        });
-
-        it('should stop the manifest refresher', function () {
-          setUpMSE(0, WindowTypes.GROWING);
-          mseStrategy.load(null, 0);
-
-          mseStrategy.tearDown();
-
-          expect(mockRefresherStopSpy).toHaveBeenCalled();
         });
       });
 
@@ -784,15 +726,20 @@ require(
             mseStrategy.load(null, 0);
           });
 
-          it('should refresh the manifest and if successful, call seek on the mediaPlayer', function () {
-            mseStrategy.setCurrentTime(101);
+          it('should call seek on media player with the original user requested seek time when manifest refreshes but doesnt have a duration', function () {
+            mseStrategy.setCurrentTime(50);
 
-            expect(refresherCallbackSuccessSpy).toHaveBeenCalled();
-            expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9);
+            dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, {data: {}});
+
+            expect(mockDashInstance.seek).toHaveBeenCalledWith(50);
           });
 
-          it('should do THING if manifest refresh errors', function () {
+          it('should call seek on media player with the time clamped to new end when manifest refreshes and contains a duration', function () {
+            mseStrategy.setCurrentTime(90);
 
+            dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, {data: {mediaPresentationDuration: 80}});
+
+            expect(mockDashInstance.seek).toHaveBeenCalledWith(78.9);
           });
         });
       });
