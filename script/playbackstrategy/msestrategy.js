@@ -24,6 +24,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
       var failoverTime;
+      var refreshFailoverTime;
       var isEnded = false;
 
       var bitrateInfoList;
@@ -338,6 +339,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function refreshManifestBeforeSeek (seekToTime) {
+        refreshFailoverTime = seekToTime;
         GrowingWindowRefresher(mediaPlayer, function (mediaPresentationDuration) {
           if (!isNaN(mediaPresentationDuration)) {
             mediaPlayer.seek(getClampedTime(seekToTime, {start: getSeekableRange().start, end: mediaPresentationDuration}));
@@ -381,7 +383,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             setUpMediaPlayer(playbackTime);
             setUpMediaListeners();
           } else {
-            modifySource(failoverTime);
+            modifySource(refreshFailoverTime || failoverTime);
           }
         },
         getSeekableRange: getSeekableRange,
