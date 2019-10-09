@@ -26,28 +26,26 @@ require(
           };
 
           seekCallbacksSpy = jasmine.createSpy('seekCallbacksSpy');
-          GrowingWindowRefresher(mediaPlayerSpy, seekCallbacksSpy);
-          jasmine.clock().install();
         });
 
-        afterEach(function () {
-          jasmine.clock().uninstall();
+        it('should instruct the media player to refresh the manifest', function () {
+          GrowingWindowRefresher(mediaPlayerSpy, seekCallbacksSpy);
+
+          expect(mediaPlayerSpy.refreshManifest).toHaveBeenCalledTimes(1);
         });
 
         it('calls the given callback on media player MANIFEST_LOADED event', function () {
+          GrowingWindowRefresher(mediaPlayerSpy, seekCallbacksSpy);
           dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, {data: {mediaPresentationDuration: 100}});
 
           expect(seekCallbacksSpy).toHaveBeenCalled();
         });
 
         it('removes MANIFEST_LOADED listener following manifest load event', function () {
+          GrowingWindowRefresher(mediaPlayerSpy, seekCallbacksSpy);
           dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, {data: {mediaPresentationDuration: 100}});
 
           expect(mediaPlayerSpy.off).toHaveBeenCalledWith('manifestLoaded', eventHandlers.manifestLoaded);
-        });
-
-        it('should instruct the media player to refresh the manifest', function () {
-          expect(mediaPlayerSpy.refreshManifest).toHaveBeenCalledTimes(1);
         });
       });
     });
