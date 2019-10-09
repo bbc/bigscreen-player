@@ -27,6 +27,7 @@ require(
     var mockDynamicWindowUtils;
     var mockAudioElement = document.createElement('audio');
     var mockVideoElement = document.createElement('video');
+    var mockRefresher;
     var testManifestObject;
 
     var dashjsMediaPlayerEvents = {
@@ -58,6 +59,11 @@ require(
 
         spyOn(mockVideoElement, 'addEventListener');
         spyOn(mockVideoElement, 'removeEventListener');
+
+        mockRefresher = {
+          GrowingWindowRefresher: GrowingWindowRefresher
+        };
+        spyOn(mockRefresher, 'GrowingWindowRefresher').and.callThrough();
 
         mockVideoElement.addEventListener.and.callFake(function (eventType, handler) {
           eventHandlers[eventType] = handler;
@@ -725,14 +731,23 @@ require(
           beforeEach(function () {
             setUpMSE(0, WindowTypes.GROWING);
             mseStrategy.load(null, 0);
+            mockVideoElement.currentTime = 50;
+          });
+
+          it('should perform a seek without refreshing the manifest if seek time is less than current time', function () {
+            mseStrategy.setCurrentTime(40);
+
+            expect(mockRefresher.GrowingWindowRefresher).not.toHaveBeenCalled();
+
+            expect(mockDashInstance.seek).toHaveBeenCalledWith(40);
           });
 
           it('should call seek on media player with the original user requested seek time when manifest refreshes but doesnt have a duration', function () {
-            mseStrategy.setCurrentTime(50);
+            mseStrategy.setCurrentTime(60);
 
             dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, {data: {}});
 
-            expect(mockDashInstance.seek).toHaveBeenCalledWith(50);
+            expect(mockDashInstance.seek).toHaveBeenCalledWith(60);
           });
 
           it('should call seek on media player with the time clamped to new end when manifest refreshes and contains a duration', function () {
