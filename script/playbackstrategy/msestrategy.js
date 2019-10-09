@@ -372,6 +372,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         refreshFailoverTime = seekToTime;
         GrowingWindowRefresher(mediaPlayer, function (mediaPresentationDuration) {
           if (!isNaN(mediaPresentationDuration)) {
+            DebugTool.info('Stream ended. Clamping seek point to end of stream');
             mediaPlayer.seek(getClampedTime(seekToTime, {start: getSeekableRange().start, end: mediaPresentationDuration}));
           } else {
             mediaPlayer.seek(seekToTime);
