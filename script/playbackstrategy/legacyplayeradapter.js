@@ -111,17 +111,15 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
         publishMediaState(MediaState.ENDED);
       }
 
-      function onError (event) {
+      function onError () {
         if (handleErrorOnExitingSeek && exitingSeek) {
           restartMediaPlayer();
         } else {
-          event.errorProperties = createEventHistoryLabels();
-          event.errorProperties.error_mssg = event.errorMessage;
-          publishError(event);
+          publishError();
         }
       }
 
-      function onSeekAttempted (event) {
+      function onSeekAttempted () {
         if (requiresLiveCurtain()) {
           var doNotForceBeginPlaybackToEndOfWindow = {
             forceBeginPlaybackToEndOfWindow: false
@@ -156,9 +154,9 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
         }
       }
 
-      function publishError (errorEvent) {
+      function publishError () {
         if (errorCallback) {
-          errorCallback(errorEvent);
+          errorCallback();
         }
       }
 
@@ -170,16 +168,6 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
 
       function getStrategy () {
         return strategy.toUpperCase();
-      }
-
-      function createEventHistoryLabels () {
-        var properties = {};
-        var now = new Date().getTime();
-        for (var i = 0; i < eventHistory.length; i++) {
-          properties['event_history_' + (i + 1)] = eventHistory[i].type;
-          properties['event_history_time_' + (i + 1)] = now - eventHistory[i].time;
-        }
-        return properties;
       }
 
       function setupExitSeekWorkarounds (mimeType) {
