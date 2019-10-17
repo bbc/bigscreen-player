@@ -477,11 +477,19 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.play();
         },
         setCurrentTime: function (time) {
+          function dashjsToVideoTimeTransform (time) {
+            var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
+            if (dvrInfo && dvrInfo.range && dvrInfo.range.start) {
+              return dvrInfo.range.start - mediaSources.time().correction + time;
+            }
+            return time;
+          }
+
           var seekToTime = getClampedTime(time, getSeekableRange());
           if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
             refreshManifestBeforeSeek(seekToTime);
           } else {
-            mediaPlayer.seek(seekToTime);
+            mediaPlayer.seek(dashjsToVideoTimeTransform(seekToTime));
           }
         }
       };
