@@ -478,9 +478,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         },
         setCurrentTime: function (time) {
           var seekToTime = getClampedTime(time, getSeekableRange());
-          if (windowType === WindowTypes.SLIDING) {
-            mediaElement.currentTime = (seekToTime + timeCorrection);
-          } else if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
+          if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
             refreshManifestBeforeSeek(seekToTime);
           } else {
             mediaPlayer.seek(seekToTime);

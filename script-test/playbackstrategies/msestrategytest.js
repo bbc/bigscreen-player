@@ -693,7 +693,7 @@ require(
           it('should set current time on the video element', function () {
             mseStrategy.setCurrentTime(12);
 
-            expect(mockVideoElement.currentTime).toBe(12);
+            expect(mockDashInstance.seek).toHaveBeenCalledWith(12);
           });
 
           it('should always clamp the seek to the start of the seekable range', function () {
@@ -705,7 +705,7 @@ require(
           it('should always clamp the seek to 1.1s before the end of the seekable range', function () {
             mseStrategy.setCurrentTime(101);
 
-            expect(mockVideoElement.currentTime).toBe(99.9);
+            expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9);
           });
 
           it('should start autoresume timeout when paused', function () {
