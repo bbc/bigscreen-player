@@ -1491,7 +1491,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LiveSupport, MediaPlayerBase) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LiveSupport, DebugTool) {
   'use strict';
 
   var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
@@ -1531,8 +1531,9 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     return liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.RESTARTABLE && window.bigscreenPlayer.playbackStrategy === 'nativestrategy';
   }
 
-  function autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, resume) {
+  function autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, checkNotPauseEvent, resume) {
     var resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
+    DebugTool.keyValue({ key: 'autoresume', value: resumeTimeOut });
     var autoResumeTimer = setTimeout(function () {
       removeEventCallback(undefined, detectIfUnpaused);
       resume();
@@ -1541,7 +1542,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     addEventCallback(undefined, detectIfUnpaused);
 
     function detectIfUnpaused(event) {
-      if (event.state !== MediaPlayerBase.STATE.PAUSED) {
+      if (checkNotPauseEvent(event)) {
         removeEventCallback(undefined, detectIfUnpaused);
         clearTimeout(autoResumeTimer);
       }
@@ -2572,7 +2573,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
     PLAYING: 2,
     /** Media is waiting for data (buffering). */
     WAITING: 4,
-    /** Media is seeking backwards or forwards. */
+    /** Media has ended. */
     ENDED: 5,
     /** Media has thrown a fatal error. */
     FATAL_ERROR: 6
@@ -2752,6 +2753,8 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 /***/ (function(module, exports, __webpack_require__) {
 
 var map = {
+	"./growingwindowrefresher": "./node_modules/bigscreen-player/script/playbackstrategy/growingwindowrefresher.js",
+	"./growingwindowrefresher.js": "./node_modules/bigscreen-player/script/playbackstrategy/growingwindowrefresher.js",
 	"./hybridstrategy": "./node_modules/bigscreen-player/script/playbackstrategy/hybridstrategy.js",
 	"./hybridstrategy.js": "./node_modules/bigscreen-player/script/playbackstrategy/hybridstrategy.js",
 	"./legacyplayeradapter": "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js",
@@ -2804,6 +2807,32 @@ webpackContext.keys = function webpackContextKeys() {
 webpackContext.resolve = webpackContextResolve;
 module.exports = webpackContext;
 webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy sync recursive ^\\.\\/.*$";
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/growingwindowrefresher.js":
+/*!*****************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/growingwindowrefresher.js ***!
+  \*****************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  return function (mediaPlayer, callback) {
+    function onSuccess(event) {
+      mediaPlayer.off('manifestLoaded', onSuccess);
+      callback(event.data.mediaPresentationDuration);
+    }
+
+    mediaPlayer.on('manifestLoaded', onSuccess);
+
+    mediaPlayer.refreshManifest();
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
 
@@ -3433,7 +3462,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     ERROR: 6
   };
 
-  return function () {
+  return function (deviceConfig) {
     var eventCallbacks = [];
     var state = MediaPlayerBase.STATE.EMPTY;
 
@@ -3448,6 +3477,9 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var range;
 
     var postBufferingState;
+    var seekFinished;
+    var count;
+    var timeoutHappened;
 
     var disableSentinels;
 
@@ -3577,6 +3609,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       source = url;
       mimeType = mediaMimeType;
       opts = opts || {};
+
+      emitSeekAttempted();
 
       if (getState() === MediaPlayerBase.STATE.EMPTY) {
         timeAtLastSentinelInterval = 0;
@@ -3823,10 +3857,48 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       }
     }
 
+    function emitSeekAttempted() {
+      if (getState() === MediaPlayerBase.STATE.EMPTY) {
+        emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+        seekFinished = false;
+      }
+
+      count = 0;
+      timeoutHappened = false;
+      if (deviceConfig.restartTimeout) {
+        setTimeout(function () {
+          timeoutHappened = true;
+        }, deviceConfig.restartTimeout);
+      } else {
+        timeoutHappened = true;
+      }
+    }
+
+    function emitSeekFinishedAtCorrectStartingPoint() {
+      var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance;
+
+      if (sentinelSeekTime === undefined) {
+        isAtCorrectStartingPoint = true;
+      }
+
+      var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint;
+
+      if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
+        emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED);
+        seekFinished = true;
+      } else if (isPlayingAtCorrectTime) {
+        count++;
+      } else {
+        count = 0;
+      }
+    }
+
     function onStatus() {
       if (getState() === MediaPlayerBase.STATE.PLAYING) {
         emitEvent(MediaPlayerBase.EVENT.STATUS);
       }
+
+      emitSeekFinishedAtCorrectStartingPoint();
     }
 
     function createElement() {
@@ -5211,7 +5283,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       mediaPlayer.pause();
       opts = opts || {};
       if (opts.disableAutoResume !== true) {
-        DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), addEventCallback, removeEventCallback, resume);
+        DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), addEventCallback, removeEventCallback, MediaPlayerBase.unpausedEventCheck, resume);
       }
     }
 
@@ -5376,7 +5448,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
           mediaPlayer.toPlaying();
         } else {
           mediaPlayer.pause();
-          DynamicWindowUtils.autoResumeAtStartOfRange(mediaPlayer.getCurrentTime(), mediaPlayer.getSeekableRange(), addEventCallback, removeEventCallback, resume);
+          DynamicWindowUtils.autoResumeAtStartOfRange(mediaPlayer.getCurrentTime(), mediaPlayer.getSeekableRange(), addEventCallback, removeEventCallback, MediaPlayerBase.unpausedEventCheck, resume);
         }
       },
       resume: resume,
@@ -5443,44 +5515,56 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 var __WEBPACK_AMD_DEFINE_RESULT__;
 
 !(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  return {
+  var STATE = {
+    EMPTY: 'EMPTY', // No source set
+    STOPPED: 'STOPPED', // Source set but no playback
+    BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
+    PLAYING: 'PLAYING', // Media is playing
+    PAUSED: 'PAUSED', // Media is paused
+    COMPLETE: 'COMPLETE', // Media has reached its end point
+    ERROR: 'ERROR' // An error occurred
+  };
 
-    STATE: {
-      EMPTY: 'EMPTY', // No source set
-      STOPPED: 'STOPPED', // Source set but no playback
-      BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
-      PLAYING: 'PLAYING', // Media is playing
-      PAUSED: 'PAUSED', // Media is paused
-      COMPLETE: 'COMPLETE', // Media has reached its end point
-      ERROR: 'ERROR' // An error occurred
-    },
+  var EVENT = {
+    STOPPED: 'stopped', // Event fired when playback is stopped
+    BUFFERING: 'buffering', // Event fired when playback has to suspend due to buffering
+    PLAYING: 'playing', // Event fired when starting (or resuming) playing of the media
+    PAUSED: 'paused', // Event fired when media playback pauses
+    COMPLETE: 'complete', // Event fired when media playback has reached the end of the media
+    ERROR: 'error', // Event fired when an error condition occurs
+    STATUS: 'status', // Event fired regularly during play
+    SENTINEL_ENTER_BUFFERING: 'sentinel-enter-buffering', // Event fired when a sentinel has to act because the device has started buffering but not reported it
+    SENTINEL_EXIT_BUFFERING: 'sentinel-exit-buffering', // Event fired when a sentinel has to act because the device has finished buffering but not reported it
+    SENTINEL_PAUSE: 'sentinel-pause', // Event fired when a sentinel has to act because the device has failed to pause when expected
+    SENTINEL_PLAY: 'sentinel-play', // Event fired when a sentinel has to act because the device has failed to play when expected
+    SENTINEL_SEEK: 'sentinel-seek', // Event fired when a sentinel has to act because the device has failed to seek to the correct location
+    SENTINEL_COMPLETE: 'sentinel-complete', // Event fired when a sentinel has to act because the device has completed the media but not reported it
+    SENTINEL_PAUSE_FAILURE: 'sentinel-pause-failure', // Event fired when the pause sentinel has failed twice, so it is giving up
+    SENTINEL_SEEK_FAILURE: 'sentinel-seek-failure', // Event fired when the seek sentinel has failed twice, so it is giving up
+    SEEK_ATTEMPTED: 'seek-attempted', // Event fired when a device using a seekfinishedemitevent modifier sets the source
+    SEEK_FINISHED: 'seek-finished' // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
+  };
 
-    EVENT: {
-      STOPPED: 'stopped', // Event fired when playback is stopped
-      BUFFERING: 'buffering', // Event fired when playback has to suspend due to buffering
-      PLAYING: 'playing', // Event fired when starting (or resuming) playing of the media
-      PAUSED: 'paused', // Event fired when media playback pauses
-      COMPLETE: 'complete', // Event fired when media playback has reached the end of the media
-      ERROR: 'error', // Event fired when an error condition occurs
-      STATUS: 'status', // Event fired regularly during play
-      SENTINEL_ENTER_BUFFERING: 'sentinel-enter-buffering', // Event fired when a sentinel has to act because the device has started buffering but not reported it
-      SENTINEL_EXIT_BUFFERING: 'sentinel-exit-buffering', // Event fired when a sentinel has to act because the device has finished buffering but not reported it
-      SENTINEL_PAUSE: 'sentinel-pause', // Event fired when a sentinel has to act because the device has failed to pause when expected
-      SENTINEL_PLAY: 'sentinel-play', // Event fired when a sentinel has to act because the device has failed to play when expected
-      SENTINEL_SEEK: 'sentinel-seek', // Event fired when a sentinel has to act because the device has failed to seek to the correct location
-      SENTINEL_COMPLETE: 'sentinel-complete', // Event fired when a sentinel has to act because the device has completed the media but not reported it
-      SENTINEL_PAUSE_FAILURE: 'sentinel-pause-failure', // Event fired when the pause sentinel has failed twice, so it is giving up
-      SENTINEL_SEEK_FAILURE: 'sentinel-seek-failure', // Event fired when the seek sentinel has failed twice, so it is giving up
-      SEEK_ATTEMPTED: 'seek-attempted', // Event fired when a device using a seekfinishedemitevent modifier sets the source
-      SEEK_FINISHED: 'seek-finished' // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
-    },
+  var TYPE = {
+    VIDEO: 'video',
+    AUDIO: 'audio',
+    LIVE_VIDEO: 'live-video',
+    LIVE_AUDIO: 'live-audio'
+  };
 
-    TYPE: {
-      VIDEO: 'video',
-      AUDIO: 'audio',
-      LIVE_VIDEO: 'live-video',
-      LIVE_AUDIO: 'live-audio'
+  function unpausedEventCheck(event) {
+    if (event && event.state) {
+      return event.state !== STATE.PAUSED;
+    } else {
+      return undefined;
     }
+  }
+
+  return {
+    STATE: STATE,
+    EVENT: EVENT,
+    TYPE: TYPE,
+    unpausedEventCheck: unpausedEventCheck
   };
 }).call(exports, __webpack_require__, exports, module),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -5497,20 +5581,21 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/mediakinds */ "./node_modules/bigscreen-player/script/models/mediakinds.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestmodifier */ "./node_modules/bigscreen-player/script/manifest/manifestmodifier.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"),
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/mediakinds */ "./node_modules/bigscreen-player/script/models/mediakinds.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestmodifier */ "./node_modules/bigscreen-player/script/manifest/manifestmodifier.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/growingwindowrefresher */ "./node_modules/bigscreen-player/script/playbackstrategy/growingwindowrefresher.js"),
 
 // static imports
-__webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport) {
+__webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, GrowingWindowRefresher) {
   var MSEStrategy = function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
     var mediaPlayer;
     var mediaElement;
 
-    var eventCallback;
+    var eventCallbacks = [];
     var errorCallback;
     var timeUpdateCallback;
 
     var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
     var failoverTime;
+    var refreshFailoverTime;
     var _isEnded = false;
 
     var bitrateInfoList;
@@ -5519,7 +5604,11 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
 
     var playerMetadata = {
       playbackBitrate: undefined,
-      bufferLength: undefined
+      bufferLength: undefined,
+      fragmentInfo: {
+        requestTime: undefined,
+        numDownloaded: undefined
+      }
     };
 
     var DashJSEvents = {
@@ -5601,9 +5690,28 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
           if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && event.event.id === 'content') {
             return;
           }
+          if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && event.event.id === 'manifest') {
+            manifestDownloadError(event);
+            return;
+          }
         }
       }
       publishError(event);
+    }
+
+    function manifestDownloadError(event) {
+      var error = function error() {
+        publishError(event);
+      };
+
+      var failoverParams = {
+        errorMessage: 'manifest-refresh',
+        isBufferingTimeoutError: false,
+        currentTime: getCurrentTime(),
+        duration: getDuration()
+      };
+
+      mediaSources.failover(load, error, failoverParams);
     }
 
     function onManifestLoaded(event) {
@@ -5634,7 +5742,10 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
           DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
           DebugTool.info('ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
         }
-        Plugins.interface.onPlayerInfoUpdated(playerMetadata);
+        Plugins.interface.onPlayerInfoUpdated({
+          bufferLength: playerMetadata.bufferLength,
+          playbackBitrate: playerMetadata.playbackBitrate
+        });
       }
     }
 
@@ -5670,14 +5781,24 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
         if (mediaMetrics && dashMetrics) {
           playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
           DebugTool.keyValue({ key: 'Buffer Length', value: playerMetadata.bufferLength });
-          Plugins.interface.onPlayerInfoUpdated(playerMetadata);
+          Plugins.interface.onPlayerInfoUpdated({
+            bufferLength: playerMetadata.bufferLength,
+            playbackBitrate: playerMetadata.playbackBitrate
+          });
         }
+      }
+      if (event.mediaType === mediaKind && event.metric === 'HttpList' && event.value._tfinish && event.value.trequest) {
+        playerMetadata.fragmentInfo.requestTime = Math.floor(Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime()));
+        playerMetadata.fragmentInfo.numDownloaded = playerMetadata.fragmentInfo.numDownloaded ? ++playerMetadata.fragmentInfo.numDownloaded : 1;
+        Plugins.interface.onPlayerInfoUpdated({
+          fragmentInfo: playerMetadata.fragmentInfo
+        });
       }
     }
 
     function publishMediaState(mediaState) {
-      if (eventCallback) {
-        eventCallback(mediaState);
+      for (var index = 0; index < eventCallbacks.length; index++) {
+        eventCallbacks[index](mediaState);
       }
     }
 
@@ -5699,6 +5820,17 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
 
     function getClampedTime(time, range) {
       return Math.min(Math.max(time, range.start), range.end - 1.1);
+    }
+
+    function load(mimeType, playbackTime) {
+      if (!mediaPlayer) {
+        failoverTime = playbackTime;
+        setUpMediaElement(playbackElement);
+        setUpMediaPlayer(playbackTime);
+        setUpMediaListeners();
+      } else {
+        modifySource(refreshFailoverTime || failoverTime);
+      }
     }
 
     function setUpMediaElement(playbackElement) {
@@ -5805,6 +5937,18 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       return mediaElement ? mediaElement.currentTime - timeCorrection : 0;
     }
 
+    function refreshManifestBeforeSeek(seekToTime) {
+      refreshFailoverTime = seekToTime;
+      GrowingWindowRefresher(mediaPlayer, function (mediaPresentationDuration) {
+        if (!isNaN(mediaPresentationDuration)) {
+          DebugTool.info('Stream ended. Clamping seek point to end of stream');
+          mediaPlayer.seek(getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration }));
+        } else {
+          mediaPlayer.seek(seekToTime);
+        }
+      });
+    }
+
     return {
       transitions: {
         canBePaused: function canBePaused() {
@@ -5815,9 +5959,16 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
         }
       },
       addEventCallback: function addEventCallback(thisArg, newCallback) {
-        eventCallback = function eventCallback(event) {
+        var eventCallback = function eventCallback(event) {
           newCallback.call(thisArg, event);
         };
+        eventCallbacks.push(eventCallback);
+      },
+      removeEventCallback: function removeEventCallback(callback) {
+        var index = eventCallbacks.indexOf(callback);
+        if (index !== -1) {
+          eventCallbacks.splice(index, 1);
+        }
       },
       addErrorCallback: function addErrorCallback(thisArg, newErrorCallback) {
         errorCallback = function errorCallback(event) {
@@ -5829,16 +5980,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
           newTimeUpdateCallback.call(thisArg);
         };
       },
-      load: function load(mimeType, playbackTime) {
-        if (!mediaPlayer) {
-          failoverTime = playbackTime;
-          setUpMediaElement(playbackElement);
-          setUpMediaPlayer(playbackTime);
-          setUpMediaListeners();
-        } else {
-          modifySource(failoverTime);
-        }
-      },
+      load: load,
       getSeekableRange: getSeekableRange,
       getCurrentTime: getCurrentTime,
       getDuration: getDuration,
@@ -5864,7 +6006,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
 
         mediaPlayer = undefined;
         mediaElement = undefined;
-        eventCallback = undefined;
+        eventCallbacks = undefined;
         errorCallback = undefined;
         timeUpdateCallback = undefined;
         timeCorrection = undefined;
@@ -5873,6 +6015,14 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
         bitrateInfoList = undefined;
         mediaMetrics = undefined;
         dashMetrics = undefined;
+        playerMetadata = {
+          playbackBitrate: undefined,
+          bufferLength: undefined,
+          fragmentInfo: {
+            requestTime: undefined,
+            numDownloaded: undefined
+          }
+        };
       },
       reset: function reset() {
         return;
@@ -5881,8 +6031,14 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
         return _isEnded;
       },
       isPaused: isPaused,
-      pause: function pause() {
+      pause: function pause(opts) {
         mediaPlayer.pause();
+        opts = opts || {};
+        if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
+          DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), this.addEventCallback, this.removeEventCallback, function (event) {
+            return event !== MediaState.PAUSED;
+          }, mediaPlayer.play);
+        }
       },
       play: function play() {
         mediaPlayer.play();
@@ -5891,6 +6047,8 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
         var seekToTime = getClampedTime(time, getSeekableRange());
         if (windowType === WindowTypes.SLIDING) {
           mediaElement.currentTime = seekToTime + timeCorrection;
+        } else if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
+          refreshManifestBeforeSeek(seekToTime);
         } else {
           mediaPlayer.seek(seekToTime);
         }
@@ -6022,7 +6180,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var errorTimeoutID = null;
     var mediaKind = bigscreenPlayerData.media.kind;
     var subtitlesEnabled;
-    var userInteracted = false;
     var stateUpdateCallback = callback;
     var playbackStrategy;
     var captionsContainer;
@@ -6037,14 +6194,13 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     playbackStrategy.addErrorCallback(this, onError);
     playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate);
 
-    bubbleErrorCleared(createPlaybackProperties());
+    bubbleErrorCleared();
 
     setSubtitlesEnabled(enableSubtitles || false);
 
     initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime);
 
     function play() {
-      userInteracted = true;
       playbackStrategy.play();
     }
 
@@ -6054,7 +6210,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
     function pause(opts) {
       opts = opts || {};
-      userInteracted = true;
       if (transitions().canBePaused()) {
         var disableAutoResume = windowType === WindowTypes.GROWING ? true : opts.disableAutoResume;
         playbackStrategy.pause({ disableAutoResume: disableAutoResume });
@@ -6113,7 +6268,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function setCurrentTime(time) {
-      userInteracted = true;
       if (transitions().canBeginSeek()) {
         isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy.setCurrentTime(time);
       }
@@ -6141,9 +6295,9 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         loadMedia(mediaMetaData.type, seekToTime, thenPause);
       };
 
-      var onError = function onError(errorMessage) {
+      var onError = function onError() {
         tearDownMediaElement();
-        bubbleFatalError(createPlaybackErrorProperties(event), false);
+        bubbleFatalError(false);
       };
 
       mediaSources.refresh(doSeek, onError);
@@ -6154,9 +6308,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function tearDownMediaElement() {
-      var playbackProperties = createPlaybackProperties();
-      playbackProperties.dismissed_by = 'teardown';
-      playout(playbackProperties);
+      clearTimeouts();
       playbackStrategy.reset();
     }
 
@@ -6178,27 +6330,25 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function onPlaying() {
-      playout(createPlaybackProperties());
+      clearTimeouts();
       publishMediaStateUpdate(MediaState.PLAYING, {});
       isInitialPlay = false;
     }
 
     function onPaused() {
       publishMediaStateUpdate(MediaState.PAUSED);
-      playout(createPlaybackProperties());
+      clearTimeouts();
     }
 
     function onBuffering() {
       publishMediaStateUpdate(MediaState.WAITING);
-      var playbackProperties = createPlaybackProperties();
-      startBufferingErrorTimeout(playbackProperties);
-      bubbleErrorCleared(playbackProperties);
-      bubbleBufferingRaised(playbackProperties);
-      userInteracted = false;
+      startBufferingErrorTimeout();
+      bubbleErrorCleared();
+      bubbleBufferingRaised();
     }
 
     function onEnded() {
-      playout(createPlaybackProperties());
+      clearTimeouts();
       publishMediaStateUpdate(MediaState.ENDED);
     }
 
@@ -6207,50 +6357,42 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function onError(event) {
-      var playbackProperties = createPlaybackProperties();
-      playbackProperties.dismissed_by = 'error';
-      bubbleBufferingCleared(playbackProperties);
-
-      var playbackErrorProperties = createPlaybackErrorProperties(event);
-      raiseError(playbackErrorProperties);
+      bubbleBufferingCleared();
+      raiseError();
     }
 
-    function startBufferingErrorTimeout(properties) {
+    function startBufferingErrorTimeout() {
       var bufferingTimeout = isInitialPlay ? 30000 : 20000;
-      var bufferingClearedProperties = PlaybackUtils.clone(properties);
       clearBufferingErrorTimeout();
       errorTimeoutID = setTimeout(function () {
-        bufferingClearedProperties.dismissed_by = 'timeout';
-        bubbleBufferingCleared(bufferingClearedProperties);
-        properties.error_mssg = 'Buffering timed out';
-        attemptCdnFailover(properties, true);
+        bubbleBufferingCleared();
+        attemptCdnFailover(true);
       }, bufferingTimeout);
     }
 
-    function raiseError(properties) {
+    function raiseError() {
       clearBufferingErrorTimeout();
       publishMediaStateUpdate(MediaState.WAITING);
-      bubbleErrorRaised(properties);
-      startFatalErrorTimeout(properties);
+      bubbleErrorRaised();
+      startFatalErrorTimeout();
     }
 
-    function startFatalErrorTimeout(errorProperties) {
+    function startFatalErrorTimeout() {
       if (!fatalErrorTimeout && !fatalError) {
         fatalErrorTimeout = setTimeout(function () {
           fatalErrorTimeout = null;
           fatalError = true;
-          errorProperties.error_mssg = 'Fatal error';
-          attemptCdnFailover(errorProperties, false);
+          attemptCdnFailover(false);
         }, 5000);
       }
     }
 
-    function attemptCdnFailover(errorProperties, bufferingTimeoutError) {
+    function attemptCdnFailover(bufferingTimeoutError) {
       var time = getCurrentTime();
       var oldWindowStartTime = getWindowStartTime();
 
       var failoverParams = {
-        errorMessage: errorProperties.error_mssg,
+        errorMessage: bufferingTimeoutError ? 'bufferingTimeoutError' : 'fatalError',
         isBufferingTimeoutError: bufferingTimeoutError,
         currentTime: getCurrentTime(),
         duration: getDuration()
@@ -6265,7 +6407,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       };
 
       var doErrorCallback = function doErrorCallback() {
-        bubbleFatalError(errorProperties, bufferingTimeoutError);
+        bubbleFatalError(bufferingTimeoutError);
       };
 
       mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams);
@@ -6285,69 +6427,38 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       }
     }
 
-    function playout(playbackProperties) {
+    function clearTimeouts() {
       clearBufferingErrorTimeout();
       clearFatalErrorTimeout();
       fatalError = false;
-      bubbleBufferingCleared(playbackProperties);
-      bubbleErrorCleared(playbackProperties);
-      userInteracted = false;
+      bubbleBufferingCleared();
+      bubbleErrorCleared();
     }
 
-    function bubbleErrorCleared(playbackProperties) {
-      var errorProperties = PlaybackUtils.clone(playbackProperties);
-      if (!errorProperties.dismissed_by) {
-        if (userInteracted) {
-          errorProperties.dismissed_by = 'other';
-        } else {
-          errorProperties.dismissed_by = 'device';
-        }
-      }
-      var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties });
+    function bubbleErrorCleared() {
+      var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR });
       Plugins.interface.onErrorCleared(evt);
     }
 
-    function bubbleErrorRaised(errorProperties) {
-      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: false });
+    function bubbleErrorRaised() {
+      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false });
       Plugins.interface.onError(evt);
     }
 
-    function bubbleBufferingRaised(playbackProperties) {
-      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING, properties: playbackProperties });
+    function bubbleBufferingRaised() {
+      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING });
       Plugins.interface.onBuffering(evt);
     }
 
-    function bubbleBufferingCleared(playbackProperties) {
-      var bufferingProperties = PlaybackUtils.clone(playbackProperties);
-      if (!bufferingProperties.dismissed_by) {
-        if (userInteracted) {
-          bufferingProperties.dismissed_by = 'other';
-        } else {
-          bufferingProperties.dismissed_by = 'device';
-        }
-      }
-      var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: bufferingProperties, isInitialPlay: isInitialPlay });
+    function bubbleBufferingCleared() {
+      var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: isInitialPlay });
       Plugins.interface.onBufferingCleared(evt);
     }
 
-    function bubbleFatalError(errorProperties, bufferingTimeoutError) {
-      var evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError });
+    function bubbleFatalError(bufferingTimeoutError) {
+      var evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: bufferingTimeoutError });
       Plugins.interface.onFatalError(evt);
       publishMediaStateUpdate(MediaState.FATAL_ERROR, { isBufferingTimeoutError: bufferingTimeoutError });
-    }
-
-    function createPlaybackProperties() {
-      var playbackProperties = {};
-
-      playbackProperties.seekable_range = getSeekableRange().start + ' to ' + getSeekableRange().end;
-      playbackProperties.current_time = getCurrentTime();
-      playbackProperties.duration = getDuration();
-
-      return playbackProperties;
-    }
-
-    function createPlaybackErrorProperties(event) {
-      return PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
     }
 
     function publishMediaStateUpdate(state, opts) {
@@ -6381,7 +6492,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function tearDown() {
-      userInteracted = false;
       tearDownMediaElement();
 
       playbackStrategy.tearDown();
@@ -6399,7 +6509,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       windowType = undefined;
       mediaKind = undefined;
       subtitlesEnabled = undefined;
-      userInteracted = undefined;
       stateUpdateCallback = undefined;
       mediaMetaData = undefined;
       fatalErrorTimeout = undefined;
@@ -6455,7 +6564,6 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
   function PluginData(args) {
     this.status = args.status;
     this.stateType = args.stateType;
-    this.properties = args.properties || {};
     this.isBufferingTimeoutError = args.isBufferingTimeoutError || false;
     this.isInitialPlay = args.isInitialPlay;
     this.cdn = args.cdn;
@@ -24478,6 +24586,10 @@ function MediaPlayer() {
         }
     }
 
+    function setBlacklistExpiryTime(time) {
+        streamController.setBlacklistExpiryTime(time);
+    }
+
     instance = {
         initialize: initialize,
         setConfig: setConfig,
@@ -24641,6 +24753,7 @@ function MediaPlayer() {
         setPortalLimitMinimum: setPortalLimitMinimum,
         getThumbnail: getThumbnail,
         keepProtectionMediaKeys: keepProtectionMediaKeys,
+        setBlacklistExpiryTime: setBlacklistExpiryTime,
         reset: reset
     };
 
@@ -24651,6 +24764,7 @@ function MediaPlayer() {
 
 //Dash
 /**
+ * setBlacklistExpiryTime: setBlacklistExpiryTime,
  * The copyright in this software is being made available under the BSD License,
  * included below. This software may be subject to other third party and contributor
  * rights, including patent rights, and no such rights are granted under this license.
@@ -25062,6 +25176,11 @@ var MediaPlayerEvents = function (_EventsBase) {
      * @event MediaPlayerEvents#SERVICE_LOCATION_BLACKLIST_CHANGED
      */
     _this.SERVICE_LOCATION_BLACKLIST_CHANGED = 'serviceLocationBlacklistChanged';
+    /**
+     * A service location has been removed from the blacklist and is available for failover again.
+     * @event MediaPlayerEvents#SERVICE_LOCATION_UNBLACKLISTED
+     */
+    _this.SERVICE_LOCATION_UNBLACKLISTED = 'serviceLocationUnblacklisted';
     /**
      * URL resolution failed
      * @event MediaPlayerEvents#URL_RESOLUTION_FAILED
@@ -28627,6 +28746,10 @@ function BaseURLController() {
         }
     }
 
+    function setBlacklistExpiryTime(time) {
+        baseURLSelector.setBlacklistExpiryTime(time);
+    }
+
     function reset() {
         baseURLTreeModel.reset();
         baseURLSelector.reset();
@@ -28649,6 +28772,7 @@ function BaseURLController() {
         reset: reset,
         initialize: initialize,
         resolve: resolve,
+        setBlacklistExpiryTime: setBlacklistExpiryTime,
         setConfig: setConfig
     };
 
@@ -28750,10 +28874,13 @@ function BlackListController(config) {
 
     config = config || {};
     var blacklist = [];
+    var blacklistExpiryTime = 0;
+    var blacklistExpiryTimers = [];
 
     var eventBus = (0, _EventBus2.default)(this.context).getInstance();
     var updateEventName = config.updateEventName;
     var addBlacklistEventName = config.addBlacklistEventName;
+    var unblacklistEventName = config.unblacklistEventName;
 
     function contains(query) {
         if (!blacklist.length || !query || !query.length) {
@@ -28769,10 +28896,38 @@ function BlackListController(config) {
         }
 
         blacklist.push(entry);
+        setupBlacklistExpiry(entry);
 
         eventBus.trigger(updateEventName, {
             entry: entry
         });
+    }
+
+    function remove(entry) {
+        var index = blacklist.indexOf(entry);
+        if (index >= 0) {
+            blacklist.splice(index, 1);
+
+            eventBus.trigger(unblacklistEventName, {
+                entry: entry
+            });
+
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    function setupBlacklistExpiry(entry) {
+        if (blacklistExpiryTime > 0) {
+            blacklistExpiryTimers.push(setTimeout(function () {
+                remove(entry);
+            }, blacklistExpiryTime));
+        }
+    }
+
+    function setBlacklistExpiryTime(time) {
+        blacklistExpiryTime = time;
     }
 
     function onAddBlackList(e) {
@@ -28787,12 +28942,18 @@ function BlackListController(config) {
 
     function reset() {
         blacklist = [];
+        blacklistExpiryTime = 0;
+        for (var i = 0; i < blacklistExpiryTimers.length; i++) {
+            clearTimeout(blacklistExpiryTimers[i]);
+        }
+        blacklistExpiryTimers = [];
     }
 
     setup();
 
     return {
         add: add,
+        setBlacklistExpiryTime: setBlacklistExpiryTime,
         contains: contains,
         reset: reset
     };
@@ -31462,8 +31623,8 @@ function PlaybackController() {
             if (!isNaN(startTimeOffset) && streamInfo) {
                 presentationStartTime = startTimeOffset - streamInfo.manifestInfo.availableFrom.getTime() / 1000;
 
-                if (!isNaN(liveStartTime) && !isNaN(liveEdge)) {
-                    presentationStartTime = Math.min(Math.max(presentationStartTime, liveEdge - streamInfo.manifestInfo.DVRWindowSize + 60), liveStartTime);
+                if (presentationStartTime > liveStartTime || presentationStartTime < (!isNaN(liveEdge) ? liveEdge - streamInfo.manifestInfo.DVRWindowSize + 20 : NaN)) {
+                    presentationStartTime = Math.min(Math.max(presentationStartTime, liveEdge - streamInfo.manifestInfo.DVRWindowSize + 20), liveEdge);
                 }
             }
             presentationStartTime = presentationStartTime || liveStartTime;
@@ -31522,7 +31683,7 @@ function PlaybackController() {
 
     function updateCurrentTime() {
         if (isPaused() || !isDynamic || videoModel.getReadyState() === 0) return;
-        var currentTime = getNormalizedTime();
+        var currentTime = getTime(); //rb: was getNormalizedTime()?;
         var actualTime = getActualPresentationTime(currentTime);
 
         var timeChanged = !isNaN(actualTime) && actualTime !== currentTime;
@@ -33751,6 +33912,10 @@ function StreamController() {
         }
     }
 
+    function setBlacklistExpiryTime(time) {
+        baseURLController.setBlacklistExpiryTime(time);
+    }
+
     function refreshManifest() {
         manifestUpdater.refreshManifest();
     }
@@ -33771,6 +33936,7 @@ function StreamController() {
         setConfig: setConfig,
         refreshManifest: refreshManifest,
         setProtectionData: setProtectionData,
+        setBlacklistExpiryTime: setBlacklistExpiryTime,
         reset: reset
     };
 
@@ -40313,7 +40479,7 @@ function HTTPLoader(cfg) {
     }
 
     function hasContentLengthMismatch(response) {
-        if (response && response.responseType === 'arraybuffer' && response.getResponseHeader) {
+        if (response && response.response && response.responseType === 'arraybuffer' && response.getResponseHeader) {
             var headerLength = response.getResponseHeader('content-length');
             var dataLength = response.response.byteLength;
 
@@ -48255,7 +48421,8 @@ function NextFragmentRequestRule(config) {
             if ((range !== null || playingRange !== null) && !hasSeekTarget) {
                 if (!range || playingRange && playingRange.start != range.start && playingRange.end != range.end) {
                     if (hasDiscontinuities && mediaType !== _Constants2.default.FRAGMENTED_TEXT) {
-                        streamProcessor.getFragmentModel().removeExecutedRequestsAfterTime(playingRange.end);
+                        //rb: comment this for now; it's causing problems when buffer to the end and then becomes fragmented after seek.
+                        //streamProcessor.getFragmentModel().removeExecutedRequestsAfterTime(playingRange.end);
                         bufferIsDivided = true;
                     }
                     range = playingRange;
@@ -51444,7 +51611,8 @@ function BaseURLSelector() {
     function setup() {
         serviceLocationBlacklistController = (0, _BlacklistController2.default)(context).create({
             updateEventName: _Events2.default.SERVICE_LOCATION_BLACKLIST_CHANGED,
-            addBlacklistEventName: _Events2.default.SERVICE_LOCATION_BLACKLIST_ADD
+            addBlacklistEventName: _Events2.default.SERVICE_LOCATION_BLACKLIST_ADD,
+            unblacklistEventName: _Events2.default.SERVICE_LOCATION_UNBLACKLISTED
         });
 
         basicSelector = (0, _BasicSelector2.default)(context).create({
@@ -51515,6 +51683,10 @@ function BaseURLSelector() {
         return selectedBaseUrl;
     }
 
+    function setBlacklistExpiryTime(time) {
+        serviceLocationBlacklistController.setBlacklistExpiryTime(time);
+    }
+
     function reset() {
         serviceLocationBlacklistController.reset();
     }
@@ -51522,6 +51694,7 @@ function BaseURLSelector() {
     instance = {
         chooseSelectorFromManifest: chooseSelectorFromManifest,
         select: select,
+        setBlacklistExpiryTime: setBlacklistExpiryTime,
         reset: reset,
         setConfig: setConfig
     };
@@ -67265,9 +67438,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
   var playButton = document.getElementById('playButton');
   var pauseButton = document.getElementById('pauseButton');
   var seekForwardButton = document.getElementById('forwardButton');
+  var seekToStartButton = document.getElementById('seekStartButton');
   var seekBackButton = document.getElementById('backButton');
   var seekToEndButton = document.getElementById('seekEndButton');
   var debugToolButton = document.getElementById('toggleDebugToolButton');
+  var timeLabel = document.getElementById('time-label');
   var controlsTimeout;
 
   // Create playback spinner
@@ -67330,12 +67505,29 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       startControlsTimeOut();
     });
 
+    seekToStartButton.addEventListener('click', function () {
+      bigscreenPlayer.setCurrentTime(0);
+      startControlsTimeOut();
+    });
+
     debugToolButton.addEventListener('click', function () {
       DebugTool.toggleVisibility();
       startControlsTimeOut();
     });
 
-    bigscreenPlayer.registerForTimeUpdates(function (event) {});
+    bigscreenPlayer.registerForTimeUpdates(function (event) {
+      var currentTime = secondsToHMS(event.currentTime) + ' / ' + secondsToHMS(bigscreenPlayer.getDuration());
+      timeLabel.innerHTML = currentTime;
+    });
+
+    function secondsToHMS(d) {
+      d = Number(d);
+      var h = Math.floor(d / 3600);
+      var m = Math.floor(d % 3600 / 60);
+      var s = Math.floor(d % 3600 % 60);
+
+      return h + ':' + m + ':' + s;
+    }
 
     bigscreenPlayer.registerForStateChanges(function (event) {
       var state = 'EMPTY';

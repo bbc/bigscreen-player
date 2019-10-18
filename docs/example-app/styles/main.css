@@ -3,7 +3,7 @@
     position: absolute;
     z-index: 1;
     margin: 0 auto;
-    width: 301px; 
+    width: 461px; 
     left: 0;
     right: 0;
     bottom: 10px;
@@ -44,6 +44,18 @@
 .buttons:focus {
     border: 2px solid rgb(0, 136, 95);
     outline: none;
+}
+
+.label{
+    background-color: white;
+    border: none;
+    border-radius: 5%;
+    color: #228B22;
+    width: 120px;
+    height: 30px;
+    display: inline-block;
+    justify-content: center;
+    
 }
 
 /* Create loading spinner to be used */

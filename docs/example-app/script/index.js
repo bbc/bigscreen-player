@@ -11,9 +11,11 @@ define([
     var playButton = document.getElementById('playButton');
     var pauseButton = document.getElementById('pauseButton');
     var seekForwardButton = document.getElementById('forwardButton');
+    var seekToStartButton = document.getElementById('seekStartButton');
     var seekBackButton = document.getElementById('backButton');
     var seekToEndButton = document.getElementById('seekEndButton');
     var debugToolButton = document.getElementById('toggleDebugToolButton');
+    var timeLabel = document.getElementById('time-label');
     var controlsTimeout;
 
     // Create playback spinner
@@ -76,13 +78,30 @@ define([
         startControlsTimeOut();
       });
 
+      seekToStartButton.addEventListener('click', function(){
+        bigscreenPlayer.setCurrentTime(0);
+        startControlsTimeOut();
+      })
+
       debugToolButton.addEventListener('click', function () {
         DebugTool.toggleVisibility();
         startControlsTimeOut();
       });
 
       bigscreenPlayer.registerForTimeUpdates(function (event) {
-      });
+        var currentTime  = secondsToHMS(event.currentTime) + ' / ' + 
+        secondsToHMS( bigscreenPlayer.getDuration());
+        timeLabel.innerHTML = currentTime;
+    });
+  
+      function secondsToHMS(d) {
+        d = Number(d);
+        var h = Math.floor(d / 3600);
+        var m = Math.floor(d % 3600 / 60);
+        var s = Math.floor(d % 3600 % 60);
+  
+        return `${h}:${m}:${s}`;
+      }
 
       bigscreenPlayer.registerForStateChanges(function (event) {
         var state = 'EMPTY';
