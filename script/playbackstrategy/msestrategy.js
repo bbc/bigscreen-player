@@ -25,6 +25,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
       var failoverTime;
       var refreshFailoverTime;
+      var slidingWindowPausedTime = 0;
       var isEnded = false;
 
       var bitrateInfoList;
@@ -459,6 +460,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         },
         isPaused: isPaused,
         pause: function (opts) {
+          if (windowType === WindowTypes.SLIDING) {
+            slidingWindowPausedTime = Date.now();
+          }
+
           mediaPlayer.pause();
           opts = opts || {};
           if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
@@ -477,19 +482,25 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.play();
         },
         setCurrentTime: function (time) {
-          function dashjsToVideoTimeTransform (time) {
+          /**
+           * 1. UI Relative time is the current time with the timeCorrection so reverse this.
+           * 2. Using the output - seekable range.start to get the relative time within the actual 7200 DVR Window that we can seek to.
+           * 3. Then minus the time we've spent seeking.
+           */
+          function seekingOffset (time) {
             var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
-            if (dvrInfo && dvrInfo.range && dvrInfo.range.start) {
-              return dvrInfo.range.start - mediaSources.time().correction + time;
-            }
-            return time;
+            var timeWithoutCorrection = time + timeCorrection;
+            var dashRelativeTime = timeWithoutCorrection - dvrInfo.range.start;
+            var seekingOffset = ((Date.now() - slidingWindowPausedTime) / 1000) + dashRelativeTime;
+            slidingWindowPausedTime = 0;
+            return seekingOffset;
           }
 
           var seekToTime = getClampedTime(time, getSeekableRange());
           if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
             refreshManifestBeforeSeek(seekToTime);
           } else {
-            mediaPlayer.seek(dashjsToVideoTimeTransform(seekToTime));
+            mediaPlayer.seek(seekingOffset(seekToTime));
           }
         }
       };
