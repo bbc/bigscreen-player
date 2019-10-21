@@ -488,6 +488,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
            * 3. Then minus the time we've spent seeking.
            */
           function seekingOffset (time) {
+            if (slidingWindowPausedTime === 0) return time;
+
             var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
             var timeWithoutCorrection = time + timeCorrection;
             var dashRelativeTime = timeWithoutCorrection - dvrInfo.range.start;
@@ -499,8 +501,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           var seekToTime = getClampedTime(time, getSeekableRange());
           if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
             refreshManifestBeforeSeek(seekToTime);
-          } else {
+          } else if (windowType === WindowTypes.SLIDING) {
+            var seekingOffsetTime = seekingOffset(time);
+            seekToTime = getClampedTime(seekingOffsetTime, getSeekableRange());
             mediaPlayer.seek(seekingOffset(seekToTime));
+          } else {
+            mediaPlayer.seek(seekToTime);
           }
         }
       };
