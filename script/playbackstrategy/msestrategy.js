@@ -491,7 +491,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
             var timeWithoutCorrection = time + timeCorrection;
             var dashRelativeTime = timeWithoutCorrection - dvrInfo.range.start;
-            var seekingOffset = ((Date.now() - slidingWindowPausedTime) / 1000) + dashRelativeTime;
+            var seekingOffset = dashRelativeTime - ((Date.now() - slidingWindowPausedTime) / 1000);
             slidingWindowPausedTime = 0;
             return seekingOffset;
           }
