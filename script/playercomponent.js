@@ -207,7 +207,7 @@ define(
         publishMediaStateUpdate(undefined, { timeUpdate: true });
       }
 
-      function onError (event) {
+      function onError () {
         bubbleBufferingCleared();
         raiseError();
       }
