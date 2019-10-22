@@ -9,11 +9,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/dynamicwindowutils',
     'bigscreenplayer/playbackstrategy/growingwindowrefresher',
+    'bigscreenplayer/utils/timeutils',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, GrowingWindowRefresher) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, GrowingWindowRefresher, TimeUtils) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
       var mediaPlayer;
       var mediaElement;
@@ -488,23 +489,18 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
            * 3. Then minus the time we've spent seeking.
            */
           function seekingOffset (time) {
-            if (slidingWindowPausedTime === 0) return time;
-
-            var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
-            var timeWithoutCorrection = time + timeCorrection;
-            var dashRelativeTime = timeWithoutCorrection - dvrInfo.range.start;
-            var seekingOffset = dashRelativeTime - ((Date.now() - slidingWindowPausedTime) / 1000);
-            slidingWindowPausedTime = 0;
-            return seekingOffset;
+            if (windowType === WindowTypes.SLIDING) {
+              var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
+              var offset = TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfo.range.start, timeCorrection, slidingWindowPausedTime);
+              slidingWindowPausedTime = 0;
+              return offset;
+            }
+            return time;
           }
 
-          var seekToTime = getClampedTime(time, getSeekableRange());
+          var seekToTime = getClampedTime(seekingOffset(time), getSeekableRange());
           if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
             refreshManifestBeforeSeek(seekToTime);
-          } else if (windowType === WindowTypes.SLIDING) {
-            var seekingOffsetTime = seekingOffset(time);
-            seekToTime = getClampedTime(seekingOffsetTime, getSeekableRange());
-            mediaPlayer.seek(seekingOffset(seekToTime));
           } else {
             mediaPlayer.seek(seekToTime);
           }

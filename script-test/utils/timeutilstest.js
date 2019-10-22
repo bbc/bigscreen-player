@@ -25,6 +25,25 @@ require(
           testDurationToSeconds(duration);
         }
       });
+
+      describe('Calculate Sliding Window Seek Offset', function () {
+        beforeEach(function () {
+          jasmine.clock().mockDate(new Date(1571741724952));
+        });
+
+        afterEach(function () {
+          jasmine.clock().uninstall();
+        });
+
+        fit('should return the relative time in seconds including the time a user spent seeking', function () {
+          var time = 4895.142446990982;
+          var dvrInfoRangeStart = 1571734464.006;
+          var timeCorrection = 1571732960.247;
+          var slidingWindowPausedTime = 1571741724045;
+
+          expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, slidingWindowPausedTime)).toBe(3390.476446931839);
+        });
+      });
     });
   }
 );

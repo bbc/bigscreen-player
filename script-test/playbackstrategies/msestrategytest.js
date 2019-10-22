@@ -17,6 +17,7 @@ require(
     var playbackElement;
     var cdnArray = [];
     var mediaSources;
+    var mediaSourcesTimeSpy;
 
     var mockDashjs;
     var mockDashInstance;
@@ -119,7 +120,8 @@ require(
 
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
         mediaSources = new MediaSources();
-        spyOn(mediaSources, 'time').and.callThrough();
+        mediaSourcesTimeSpy = spyOn(mediaSources, 'time');
+        mediaSourcesTimeSpy.and.callThrough();
         spyOn(mediaSources, 'failover').and.callThrough();
         mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
@@ -724,6 +726,33 @@ require(
             mseStrategy.pause(opts);
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
+          });
+
+          it('It should set offset seek time when paused before seeking', function () {
+
+            // TODO: Rather than mock the world, test that TimeUtils (or somewhere else) is called when we need to call this function.
+            // jasmine.clock().install();
+            // var mockTimeData = { windowStartTime: 132123123, windowEndTime: 345234324, correction: 12345678 };
+            // var mockSeekableRange = {range: {start: 123456789, end: 123456789}};
+            // mediaSourcesTimeSpy.and.returnValue(mockTimeData);
+            // mockDashInstance.getDashMetrics.and.returnValue({
+            //   getCurrentDVRInfo: function () {
+            //     return mockSeekableRange;
+            //   }
+            // });
+
+            // var pauseStartTime = new Date('October 22, 2019 09:24:00');
+            // jasmine.clock().mockDate(pauseStartTime);
+
+            // mseStrategy.pause();
+
+            // jasmine.clock().tick(5000);
+
+            // mseStrategy.setCurrentTime(2150);
+
+            // expect(mockDashInstance.seek).toHaveBeenCalledWith(2145);
+
+            // jasmine.clock().uninstall();
           });
         });
 
