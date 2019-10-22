@@ -30,6 +30,7 @@ require(
     var mockVideoElement = document.createElement('video');
     var mockRefresher;
     var testManifestObject;
+    var timeUtilsMock;
 
     var dashjsMediaPlayerEvents = {
       ERROR: 'error',
@@ -134,10 +135,16 @@ require(
           }
         };
 
+        timeUtilsMock = jasmine.createSpyObj('timeUtilsMock', ['calculateSlidingWindowSeekOffset']);
+        timeUtilsMock.calculateSlidingWindowSeekOffset.and.callFake(function (time) {
+          return time;
+        });
+
         injector.mock({
           'dashjs': mockDashjs,
           'bigscreenplayer/plugins': mockPlugins,
-          'bigscreenplayer/dynamicwindowutils': mockDynamicWindowUtils
+          'bigscreenplayer/dynamicwindowutils': mockDynamicWindowUtils,
+          'bigscreenplayer/utils/timeutils': timeUtilsMock
         });
 
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
@@ -692,6 +699,10 @@ require(
             mockDynamicWindowUtils.autoResumeAtStartOfRange.calls.reset();
           });
 
+          afterEach(function () {
+            timeUtilsMock.calculateSlidingWindowSeekOffset.calls.reset();
+          });
+
           it('should set current time on the video element', function () {
             mseStrategy.setCurrentTime(12);
 
@@ -728,7 +739,12 @@ require(
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
           });
 
-          it('It should set offset seek time when paused before seeking', function () {
+          it('It should calculate seek offset time when paused before seeking', function () {
+            // timeUtilsMock.calculateSlidingWindowSeekOffset');
+            mseStrategy.pause();
+            mseStrategy.setCurrentTime(101);
+
+            expect(timeUtilsMock.calculateSlidingWindowSeekOffset).toHaveBeenCalled();
 
             // TODO: Rather than mock the world, test that TimeUtils (or somewhere else) is called when we need to call this function.
             // jasmine.clock().install();

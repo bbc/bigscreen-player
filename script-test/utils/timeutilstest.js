@@ -35,7 +35,7 @@ require(
           jasmine.clock().uninstall();
         });
 
-        fit('should return the relative time in seconds including the time a user spent seeking', function () {
+        it('should return the relative time in seconds including the time a user spent seeking', function () {
           var time = 4895.142446990982;
           var dvrInfoRangeStart = 1571734464.006;
           var timeCorrection = 1571732960.247;
