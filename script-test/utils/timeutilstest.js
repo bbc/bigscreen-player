@@ -28,7 +28,7 @@ require(
 
       describe('Calculate Sliding Window Seek Offset', function () {
         beforeEach(function () {
-          jasmine.clock().mockDate(new Date(1571741724952));
+          jasmine.clock().mockDate(new Date('2019-10-22T10:55:24.952Z'));
         });
 
         afterEach(function () {
@@ -37,11 +37,20 @@ require(
 
         it('should return the relative time in seconds including the time a user spent seeking', function () {
           var time = 4895.142446990982;
-          var dvrInfoRangeStart = 1571734464.006;
-          var timeCorrection = 1571732960.247;
-          var slidingWindowPausedTime = 1571741724045;
+          var dvrInfoRangeStart = new Date('2019-10-22T08:54:24.006Z') / 1000;
+          var timeCorrection = new Date('2019-10-22T08:29:20.247Z') / 1000;
+          var pausedTime = new Date('2019-10-22T10:55:24.045Z');
 
-          expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, slidingWindowPausedTime)).toBe(3390.476446931839);
+          expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(3390.476446931839);
+        });
+
+        it('should return the time passed in as an argument if paused time is 0', function () {
+          var time = 4895.142446990982;
+          var dvrInfoRangeStart = new Date('2019-10-22T08:54:24.006Z') / 1000;
+          var timeCorrection = new Date('2019-10-22T08:29:20.247Z') / 1000;
+          var pausedTime = 0;
+
+          expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(time);
         });
       });
     });

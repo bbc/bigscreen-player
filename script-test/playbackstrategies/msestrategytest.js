@@ -700,9 +700,6 @@ require(
             mockDynamicWindowUtils.autoResumeAtStartOfRange.calls.reset();
           });
 
-          afterEach(function () {
-          });
-
           it('should set current time on the video element', function () {
             mseStrategy.setCurrentTime(12);
 

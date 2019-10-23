@@ -483,12 +483,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.play();
         },
         setCurrentTime: function (time) {
-          /**
-           * 1. UI Relative time is the current time with the timeCorrection so reverse this.
-           * 2. Using the output - seekable range.start to get the relative time within the actual 7200 DVR Window that we can seek to.
-           * 3. Then minus the time we've spent seeking.
-           */
-          function seekingOffset (time) {
+          function calculateSeekOffset (time) {
             if (windowType === WindowTypes.SLIDING) {
               var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
               var offset = TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfo.range.start, timeCorrection, slidingWindowPausedTime);
@@ -498,7 +493,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             return time;
           }
 
-          var seekToTime = getClampedTime(seekingOffset(time), getSeekableRange());
+          var seekToTime = getClampedTime(calculateSeekOffset(time), getSeekableRange());
           if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
             refreshManifestBeforeSeek(seekToTime);
           } else {
