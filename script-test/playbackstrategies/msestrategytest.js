@@ -75,6 +75,11 @@ require(
           };
         });
 
+        timeUtilsMock = jasmine.createSpyObj('timeUtilsMock', ['calculateSlidingWindowSeekOffset']);
+        timeUtilsMock.calculateSlidingWindowSeekOffset.and.callFake(function (time) {
+          return time;
+        });
+
         mockDashjs.MediaPlayer.and.returnValue(mockDashMediaPlayer);
         mockDashMediaPlayer.create.and.returnValue(mockDashInstance);
 
@@ -135,11 +140,6 @@ require(
           }
         };
 
-        timeUtilsMock = jasmine.createSpyObj('timeUtilsMock', ['calculateSlidingWindowSeekOffset']);
-        timeUtilsMock.calculateSlidingWindowSeekOffset.and.callFake(function (time) {
-          return time;
-        });
-
         injector.mock({
           'dashjs': mockDashjs,
           'bigscreenplayer/plugins': mockPlugins,
@@ -167,6 +167,7 @@ require(
         mockPluginsInterface.onErrorHandled.calls.reset();
         mockDashInstance.attachSource.calls.reset();
         mockDashInstance.seek.calls.reset();
+        timeUtilsMock.calculateSlidingWindowSeekOffset.calls.reset();
       });
 
       function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
@@ -700,7 +701,6 @@ require(
           });
 
           afterEach(function () {
-            timeUtilsMock.calculateSlidingWindowSeekOffset.calls.reset();
           });
 
           it('should set current time on the video element', function () {
@@ -740,35 +740,10 @@ require(
           });
 
           it('It should calculate seek offset time when paused before seeking', function () {
-            // timeUtilsMock.calculateSlidingWindowSeekOffset');
             mseStrategy.pause();
             mseStrategy.setCurrentTime(101);
 
-            expect(timeUtilsMock.calculateSlidingWindowSeekOffset).toHaveBeenCalled();
-
-            // TODO: Rather than mock the world, test that TimeUtils (or somewhere else) is called when we need to call this function.
-            // jasmine.clock().install();
-            // var mockTimeData = { windowStartTime: 132123123, windowEndTime: 345234324, correction: 12345678 };
-            // var mockSeekableRange = {range: {start: 123456789, end: 123456789}};
-            // mediaSourcesTimeSpy.and.returnValue(mockTimeData);
-            // mockDashInstance.getDashMetrics.and.returnValue({
-            //   getCurrentDVRInfo: function () {
-            //     return mockSeekableRange;
-            //   }
-            // });
-
-            // var pauseStartTime = new Date('October 22, 2019 09:24:00');
-            // jasmine.clock().mockDate(pauseStartTime);
-
-            // mseStrategy.pause();
-
-            // jasmine.clock().tick(5000);
-
-            // mseStrategy.setCurrentTime(2150);
-
-            // expect(mockDashInstance.seek).toHaveBeenCalledWith(2145);
-
-            // jasmine.clock().uninstall();
+            expect(timeUtilsMock.calculateSlidingWindowSeekOffset).toHaveBeenCalledTimes(1);
           });
         });
 
