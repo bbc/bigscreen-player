@@ -396,7 +396,7 @@ require(
             // trigger a error event to start the fatal error timeout,
             // after 5 seconds it should fire a media state update of FATAL
             // it is exptected to be cleared
-            mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+            mockStrategy.mockingHooks.fireErrorEvent();
 
             mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
 
@@ -470,7 +470,7 @@ require(
             // trigger a error event to start the fatal error timeout,
             // after 5 seconds it should fire a media state update of FATAL
             // it is exptected to be cleared
-            mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+            mockStrategy.mockingHooks.fireErrorEvent();
 
             mockStrategy.mockingHooks.fireEvent(MediaState.PAUSED);
 
@@ -611,7 +611,7 @@ require(
             // trigger a error event to start the fatal error timeout,
             // after 5 seconds it should fire a media state update of FATAL
             // it is exptected to be cleared
-            mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+            mockStrategy.mockingHooks.fireErrorEvent();
 
             mockStrategy.mockingHooks.fireEvent(MediaState.ENDED);
 
@@ -688,7 +688,7 @@ require(
 
             setUpPlayerComponent();
 
-            mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {code: '2110'}});
+            mockStrategy.mockingHooks.fireErrorEvent();
 
             expect(mockPluginsInterface.onBufferingCleared).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
           });
@@ -706,7 +706,7 @@ require(
 
             jasmine.clock().tick(29999);
 
-            mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+            mockStrategy.mockingHooks.fireErrorEvent();
 
             jasmine.clock().tick(1);
 
@@ -719,7 +719,7 @@ require(
           it('should publish a media state update of waiting', function () {
             setUpPlayerComponent();
 
-            mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+            mockStrategy.mockingHooks.fireErrorEvent();
 
             expect(mockStateUpdateCallback.calls.mostRecent().args[0].data.state).toEqual(MediaState.WAITING);
           });
@@ -737,7 +737,7 @@ require(
 
             setUpPlayerComponent();
 
-            mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {code: '2110'}});
+            mockStrategy.mockingHooks.fireErrorEvent();
 
             expect(mockPluginsInterface.onError).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
           });
@@ -812,7 +812,7 @@ require(
 
         it('should failover after 5 seconds if we have not cleared an error from the device', function () {
           setUpPlayerComponent();
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+          mockStrategy.mockingHooks.fireErrorEvent();
 
           jasmine.clock().tick(4999);
 
@@ -829,7 +829,7 @@ require(
           setUpPlayerComponent();
           forceMediaSourcesError = true;
 
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+          mockStrategy.mockingHooks.fireErrorEvent();
 
           jasmine.clock().tick(5000);
 
@@ -842,7 +842,7 @@ require(
           setUpPlayerComponent();
           forceMediaSourcesError = true;
 
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+          mockStrategy.mockingHooks.fireErrorEvent();
 
           jasmine.clock().tick(5000);
 
@@ -877,7 +877,7 @@ require(
           // after 30 seconds it should fire a media state update of FATAL
           // it is exptected to be cleared
           mockStrategy.mockingHooks.fireEvent(MediaState.WAITING);
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+          mockStrategy.mockingHooks.fireErrorEvent();
 
           jasmine.clock().tick(30000);
 
@@ -890,7 +890,7 @@ require(
           // trigger a error event to start the fatal error timeout,
           // after 5 seconds it should fire a media state update of FATAL
           // it is exptected to be cleared
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+          mockStrategy.mockingHooks.fireErrorEvent();
 
           jasmine.clock().tick(5000);
 
@@ -909,7 +909,7 @@ require(
 
           setUpPlayerComponent({multiCdn: true});
 
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+          mockStrategy.mockingHooks.fireErrorEvent();
 
           jasmine.clock().tick(5000);
 
@@ -928,7 +928,7 @@ require(
 
           setUpPlayerComponent({multiCdn: true});
 
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+          mockStrategy.mockingHooks.fireErrorEvent();
 
           jasmine.clock().tick(5000);
 
@@ -974,7 +974,7 @@ require(
           // trigger a error event to start the fatal error timeout,
           // after 5 seconds it should fire a media state update of FATAL
           // it is exptected to be cleared
-          mockStrategy.mockingHooks.fireErrorEvent({errorProperties: {error_mssg: 'testError'}});
+          mockStrategy.mockingHooks.fireErrorEvent();
 
           playerComponent.tearDown();
 

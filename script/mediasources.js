@@ -162,7 +162,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
       var evt = new PluginData({
         status: PluginEnums.STATUS.FAILOVER,
         stateType: PluginEnums.TYPE.ERROR,
-        properties: {error_mssg: failoverInfo.errorMessage},
         isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
         cdn: mediaSources[0].cdn,
         newCdn: mediaSources[1].cdn

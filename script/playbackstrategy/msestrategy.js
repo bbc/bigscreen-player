@@ -105,8 +105,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           delete event.error.data;
         }
 
-        event.errorProperties = { error_mssg: event.error };
-
         if (event.error) {
           if (event.error.message) {
             DebugTool.info('MSE Error: ' + event.error.message);
@@ -129,12 +127,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             }
           }
         }
-        publishError(event);
+        publishError();
       }
 
       function manifestDownloadError (event) {
         var error = function () {
-          publishError(event);
+          publishError();
         };
 
         var failoverParams = {
@@ -241,9 +239,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
-      function publishError (errorEvent) {
+      function publishError () {
         if (errorCallback) {
-          errorCallback(errorEvent);
+          errorCallback();
         }
       }
 

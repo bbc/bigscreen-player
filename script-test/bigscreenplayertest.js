@@ -863,9 +863,9 @@ require(
             initialiseBigscreenPlayer();
             bigscreenPlayer.registerPlugin(mockPlugin);
 
-            Plugins.interface.onError({errorProperties: {}});
+            Plugins.interface.onError();
 
-            expect(mockPlugin.onError).toHaveBeenCalledWith({errorProperties: {}});
+            expect(mockPlugin.onError).toHaveBeenCalled();
           });
         });
 
@@ -890,16 +890,16 @@ require(
           it('should remove a specific plugin', function () {
             bigscreenPlayer.unregisterPlugin(mockPlugin);
 
-            Plugins.interface.onError({errorProperties: {}});
+            Plugins.interface.onError();
 
             expect(mockPlugin.onError).not.toHaveBeenCalled();
-            expect(mockPluginTwo.onError).toHaveBeenCalledWith({errorProperties: {}});
+            expect(mockPluginTwo.onError).toHaveBeenCalled();
           });
 
           it('should remove all plugins', function () {
             bigscreenPlayer.unregisterPlugin();
 
-            Plugins.interface.onError({errorProperties: {}});
+            Plugins.interface.onError();
 
             expect(mockPlugin.onError).not.toHaveBeenCalled();
             expect(mockPluginTwo.onError).not.toHaveBeenCalled();

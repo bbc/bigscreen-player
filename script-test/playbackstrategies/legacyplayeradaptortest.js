@@ -807,38 +807,6 @@ require(
 
           expect(timeUpdateCallbackSpy).toHaveBeenCalledWith();
         });
-
-        it('should publish an error event with history', function () {
-          jasmine.clock().install();
-          jasmine.clock().mockDate(new Date(Date.parse('2018-08-01T14:00:00.000Z')));
-
-          setUpLegacyAdaptor();
-
-          var errorCallbackSpy = jasmine.createSpy('errorSpy');
-          legacyAdaptor.addErrorCallback(this, errorCallbackSpy);
-
-          eventCallbacks({type: MediaPlayerEvent.PLAYING});
-          jasmine.clock().tick(1000);
-          eventCallbacks({type: MediaPlayerEvent.PAUSED});
-          jasmine.clock().tick(1000);
-          eventCallbacks({type: MediaPlayerEvent.BUFFERING});
-          jasmine.clock().tick(1000);
-          eventCallbacks({type: MediaPlayerEvent.ERROR, errorMessage: 'error'});
-
-          var args = errorCallbackSpy.calls.mostRecent().args[0];
-
-          expect(errorCallbackSpy).toHaveBeenCalledWith(jasmine.any(Object));
-          expect(args.type).toEqual('error');
-          expect(args.errorProperties.error_mssg).toEqual('error');
-          expect(args.errorProperties.event_history_1).toEqual('buffering');
-          expect(args.errorProperties.event_history_time_1).toEqual(1000);
-          expect(args.errorProperties.event_history_2).toEqual('paused');
-          expect(args.errorProperties.event_history_time_2).toEqual(2000);
-          expect(args.errorProperties.hasOwnProperty('event_history_3')).toEqual(false);
-          expect(args.errorProperties.hasOwnProperty('event_history_time_3')).toEqual(false);
-
-          jasmine.clock().uninstall();
-        });
       });
     });
   });
