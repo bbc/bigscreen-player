@@ -491,11 +491,13 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             return time;
           }
 
-          var seekToTime = getClampedTime(calculateSeekOffset(time), getSeekableRange());
+          var seekToTime = getClampedTime(time, getSeekableRange());
           if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
             refreshManifestBeforeSeek(seekToTime);
           } else {
-            mediaPlayer.seek(seekToTime);
+            var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
+            var seekTime = getClampedTime(calculateSeekOffset(time), dvrInfo.range);
+            mediaPlayer.seek(seekTime);
           }
         }
       };
