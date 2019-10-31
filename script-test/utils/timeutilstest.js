@@ -44,13 +44,14 @@ require(
           expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(3390.476446931839);
         });
 
-        it('should return the time passed in as an argument if paused time is 0', function () {
+        it('should return the relative time in seconds if paused time is 0', function () {
           var time = 4895.142446990982;
           var dvrInfoRangeStart = new Date('2019-10-22T08:54:24.006Z') / 1000;
           var timeCorrection = new Date('2019-10-22T08:29:20.247Z') / 1000;
+          var expectedTime = time + timeCorrection - dvrInfoRangeStart;
           var pausedTime = 0;
 
-          expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(time);
+          expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(expectedTime);
         });
       });
     });
