@@ -492,7 +492,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           }
 
           function getClampedTimeForLive (time) {
-            return Math.min(Math.max(time, 0), getSeekableRange().end - 1.1);
+            return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - 1.1);
           }
 
           var seekToTime = getClampedTime(time, getSeekableRange());
