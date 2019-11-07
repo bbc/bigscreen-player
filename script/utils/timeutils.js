@@ -27,8 +27,7 @@ define(
     }
 
     function calculateSlidingWindowSeekOffset (time, dvrInfoRangeStart, timeCorrection, slidingWindowPausedTime) {
-      var timeWithoutCorrection = time + timeCorrection;
-      var dashRelativeTime = timeWithoutCorrection - dvrInfoRangeStart;
+      var dashRelativeTime = time + timeCorrection - dvrInfoRangeStart;
 
       if (slidingWindowPausedTime === 0) {
         return dashRelativeTime;

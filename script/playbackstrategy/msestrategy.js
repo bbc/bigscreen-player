@@ -280,6 +280,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.getDebug().setLogToBrowserConsole(false);
+        mediaPlayer.setLiveDelay(1.1);
 
         mediaPlayer.setBufferToKeep(0);
         mediaPlayer.setBufferAheadToKeep(20);
@@ -378,6 +379,21 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             mediaPlayer.seek(seekToTime);
           }
         });
+      }
+
+      function calculateSeekOffset (time) {
+        function getClampedTimeForLive (time) {
+          return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - 1.1);
+        }
+
+        if (windowType === WindowTypes.SLIDING) {
+          var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
+          var offset = TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfo.range.start, timeCorrection, slidingWindowPausedTime);
+          slidingWindowPausedTime = 0;
+
+          return getClampedTimeForLive(offset);
+        }
+        return getClampedTime(time, getSeekableRange());
       }
 
       return {
@@ -481,25 +497,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.play();
         },
         setCurrentTime: function (time) {
-          function calculateSeekOffset (time) {
-            if (windowType === WindowTypes.SLIDING) {
-              var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
-              var offset = TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfo.range.start, timeCorrection, slidingWindowPausedTime);
-              slidingWindowPausedTime = 0;
-              return offset;
-            }
-            return time;
-          }
-
-          function getClampedTimeForLive (time) {
-            return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - 1.1);
-          }
-
           var seekToTime = getClampedTime(time, getSeekableRange());
           if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
             refreshManifestBeforeSeek(seekToTime);
           } else {
-            var seekTime = getClampedTimeForLive(calculateSeekOffset(time));
+            var seekTime = calculateSeekOffset(time);
             mediaPlayer.seek(seekTime);
           }
         }
