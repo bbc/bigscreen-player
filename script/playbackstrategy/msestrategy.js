@@ -16,6 +16,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
   ],
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, GrowingWindowRefresher, TimeUtils) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
+      var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
       var mediaElement;
 
@@ -250,7 +251,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function getClampedTime (time, range) {
-        return Math.min(Math.max(time, range.start), range.end - 1.1);
+        return Math.min(Math.max(time, range.start), range.end - LIVE_DELAY_SECONDS);
       }
 
       function load (mimeType, playbackTime) {
@@ -280,7 +281,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.getDebug().setLogToBrowserConsole(false);
-        mediaPlayer.setLiveDelay(1.1);
+        mediaPlayer.setLiveDelay(LIVE_DELAY_SECONDS);
 
         mediaPlayer.setBufferToKeep(0);
         mediaPlayer.setBufferAheadToKeep(20);
@@ -383,7 +384,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function calculateSeekOffset (time) {
         function getClampedTimeForLive (time) {
-          return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - 1.1);
+          return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - LIVE_DELAY_SECONDS);
         }
 
         if (windowType === WindowTypes.SLIDING) {
