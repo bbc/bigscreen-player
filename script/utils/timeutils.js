@@ -33,8 +33,7 @@ define(
         return dashRelativeTime;
       }
 
-      var seekingOffset = dashRelativeTime - ((Date.now() - slidingWindowPausedTime) / 1000);
-      return seekingOffset;
+      return dashRelativeTime - ((Date.now() - slidingWindowPausedTime) / 1000);
     }
 
     return {
