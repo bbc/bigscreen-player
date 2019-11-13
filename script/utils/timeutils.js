@@ -26,10 +26,21 @@ define(
       return Math.floor(timeInMilis / 1000);
     }
 
+    function calculateSlidingWindowSeekOffset (time, dvrInfoRangeStart, timeCorrection, slidingWindowPausedTime) {
+      var dashRelativeTime = time + timeCorrection - dvrInfoRangeStart;
+
+      if (slidingWindowPausedTime === 0) {
+        return dashRelativeTime;
+      }
+
+      return dashRelativeTime - ((Date.now() - slidingWindowPausedTime) / 1000);
+    }
+
     return {
       durationToSeconds: durationToSeconds,
       convertToSeekableVideoTime: convertToSeekableVideoTime,
-      convertToVideoTime: convertToVideoTime
+      convertToVideoTime: convertToVideoTime,
+      calculateSlidingWindowSeekOffset: calculateSlidingWindowSeekOffset
     };
   }
 );

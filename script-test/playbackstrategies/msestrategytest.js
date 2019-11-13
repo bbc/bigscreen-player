@@ -17,6 +17,7 @@ require(
     var playbackElement;
     var cdnArray = [];
     var mediaSources;
+    var mediaSourcesTimeSpy;
 
     var mockDashjs;
     var mockDashInstance;
@@ -29,6 +30,7 @@ require(
     var mockVideoElement = document.createElement('video');
     var mockRefresher;
     var testManifestObject;
+    var timeUtilsMock;
 
     var dashjsMediaPlayerEvents = {
       ERROR: 'error',
@@ -50,7 +52,7 @@ require(
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'retrieveManifest', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
             'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor', 'setBufferToKeep',
-            'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm', 'getBitrateInfoListFor', 'getAverageThroughput']);
+            'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm', 'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'setLiveDelay']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
         mockPlugins = {
           interface: mockPluginsInterface
@@ -73,6 +75,11 @@ require(
           };
         });
 
+        timeUtilsMock = jasmine.createSpyObj('timeUtilsMock', ['calculateSlidingWindowSeekOffset']);
+        timeUtilsMock.calculateSlidingWindowSeekOffset.and.callFake(function (time) {
+          return time;
+        });
+
         mockDashjs.MediaPlayer.and.returnValue(mockDashMediaPlayer);
         mockDashMediaPlayer.create.and.returnValue(mockDashInstance);
 
@@ -81,6 +88,7 @@ require(
         mockDashInstance.isReady.and.returnValue(true);
         mockDashInstance.getDebug.and.returnValue(mockDashDebug);
         mockDashInstance.getMetricsFor.and.returnValue(true);
+        mockDashInstance.getDVRWindowSize.and.returnValue(101);
 
         mockDashInstance.on.and.callFake(function (eventType, handler) {
           eventHandlers[eventType] = handler;
@@ -119,7 +127,8 @@ require(
 
         var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
         mediaSources = new MediaSources();
-        spyOn(mediaSources, 'time').and.callThrough();
+        mediaSourcesTimeSpy = spyOn(mediaSources, 'time');
+        mediaSourcesTimeSpy.and.callThrough();
         spyOn(mediaSources, 'failover').and.callThrough();
         mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
@@ -135,7 +144,8 @@ require(
         injector.mock({
           'dashjs': mockDashjs,
           'bigscreenplayer/plugins': mockPlugins,
-          'bigscreenplayer/dynamicwindowutils': mockDynamicWindowUtils
+          'bigscreenplayer/dynamicwindowutils': mockDynamicWindowUtils,
+          'bigscreenplayer/utils/timeutils': timeUtilsMock
         });
 
         injector.require(['bigscreenplayer/playbackstrategy/msestrategy'], function (SquiredMSEStrategy) {
@@ -158,6 +168,7 @@ require(
         mockPluginsInterface.onErrorHandled.calls.reset();
         mockDashInstance.attachSource.calls.reset();
         mockDashInstance.seek.calls.reset();
+        timeUtilsMock.calculateSlidingWindowSeekOffset.calls.reset();
       });
 
       function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
@@ -693,7 +704,7 @@ require(
           it('should set current time on the video element', function () {
             mseStrategy.setCurrentTime(12);
 
-            expect(mockVideoElement.currentTime).toBe(12);
+            expect(mockDashInstance.seek).toHaveBeenCalledWith(12);
           });
 
           it('should always clamp the seek to the start of the seekable range', function () {
@@ -705,7 +716,7 @@ require(
           it('should always clamp the seek to 1.1s before the end of the seekable range', function () {
             mseStrategy.setCurrentTime(101);
 
-            expect(mockVideoElement.currentTime).toBe(99.9);
+            expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9);
           });
 
           it('should start autoresume timeout when paused', function () {
@@ -724,6 +735,13 @@ require(
             mseStrategy.pause(opts);
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
+          });
+
+          it('It should calculate seek offset time when paused before seeking', function () {
+            mseStrategy.pause();
+            mseStrategy.setCurrentTime(101);
+
+            expect(timeUtilsMock.calculateSlidingWindowSeekOffset).toHaveBeenCalledTimes(1);
           });
         });
 
