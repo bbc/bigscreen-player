@@ -1,14 +1,19 @@
 define('bigscreenplayer/debugger/debugview',
  function () {
    'use strict';
-   var logBox, logContainer, staticContainer, staticBox;
-   var appElement = document.getElementById('app');
+   var appElement, logBox, logContainer, staticContainer, staticBox;
 
    function init () {
      logBox = document.createElement('div');
      logContainer = document.createElement('span');
      staticBox = document.createElement('div');
      staticContainer = document.createElement('span');
+
+     if (appElement === undefined) {
+       appElement = document.body;
+     }
+
+     // TAP link builder -> TAP window options -> CorePlayback.init -> if window.debugTools==true -> BigscreenPlayer.enableDebug()
 
      logBox.id = 'logBox';
      logBox.style.position = 'absolute';
@@ -52,6 +57,12 @@ define('bigscreenplayer/debugger/debugview',
      appElement.appendChild(staticBox);
    }
 
+   function setRootElement (root) {
+     if (root) {
+       appElement = root;
+     }
+   }
+
    function render (logData) {
      var dynamicLogs = logData.dynamic;
      var LINES_TO_DISPLAY = 29;
@@ -71,8 +82,11 @@ define('bigscreenplayer/debugger/debugview',
    }
 
    function tearDown () {
-     appElement.removeChild(document.getElementById('logBox'));
-     appElement.removeChild(document.getElementById('staticBox'));
+     if (appElement) {
+       appElement.removeChild(document.getElementById('logBox'));
+       appElement.removeChild(document.getElementById('staticBox'));
+       appElement = undefined;
+     }
      staticContainer = undefined;
      logContainer = undefined;
      logBox = undefined;
@@ -81,6 +95,7 @@ define('bigscreenplayer/debugger/debugview',
 
    return {
      init: init,
+     setRootElement: setRootElement,
      render: render,
      tearDown: tearDown
    };
