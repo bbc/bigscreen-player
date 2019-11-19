@@ -58,7 +58,9 @@ define('bigscreenplayer/debugger/debugtool',
 
      function tearDown () {
        staticFieldValues = {};
-       hide();
+       if (visible) {
+         hide();
+       }
      }
 
      return {

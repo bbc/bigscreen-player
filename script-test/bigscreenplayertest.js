@@ -109,6 +109,7 @@ require(
             };
           };
 
+          var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'tearDown', 'setRootElement']);
           mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
             'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
             'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
@@ -122,7 +123,8 @@ require(
           injector.mock({
             'bigscreenplayer/mediasources': mediaSourcesMock,
             'bigscreenplayer/playercomponent': mockPlayerComponent,
-            'bigscreenplayer/plugins': Plugins
+            'bigscreenplayer/plugins': Plugins,
+            'bigscreenplayer/debugger/debugtool': mockDebugTool
           });
 
           injector.require(['bigscreenplayer/bigscreenplayer'], function (bigscreenPlayerReference) {
