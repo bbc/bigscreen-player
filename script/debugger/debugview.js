@@ -13,8 +13,6 @@ define('bigscreenplayer/debugger/debugview',
        appElement = document.body;
      }
 
-     // TAP link builder -> TAP window options -> CorePlayback.init -> if window.debugTools==true -> BigscreenPlayer.enableDebug()
-
      logBox.id = 'logBox';
      logBox.style.position = 'absolute';
      logBox.style.width = '63%';
