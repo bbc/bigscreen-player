@@ -119,9 +119,16 @@ define('bigscreenplayer/bigscreenplayer',
         return mediaSources && mediaSources.time().windowEndTime;
       }
 
+      function toggleDebug () {
+        if (playerComponent) {
+          DebugTool.toggleVisibility();
+        }
+      }
+
       return {
         init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, callbacks) {
           Chronicle.init();
+          DebugTool.setRootElement(playbackElement);
           device = newDevice;
           windowType = newWindowType;
           serverDate = bigscreenPlayerData.serverDate;
@@ -276,7 +283,8 @@ define('bigscreenplayer/bigscreenplayer',
         convertEpochMsToVideoTimeSeconds: function (epochTime) {
           return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined;
         },
-        convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs
+        convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
+        toggleDebug: toggleDebug
       };
     }
 

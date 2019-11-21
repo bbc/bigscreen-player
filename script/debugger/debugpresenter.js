@@ -101,13 +101,8 @@ define('bigscreenplayer/debugger/debugpresenter',
      return type;
    }
 
-   function tearDown () {
-     view = undefined;
-   }
-
    return {
      init: init,
-     update: update,
-     tearDown: tearDown
+     update: update
    };
  });
