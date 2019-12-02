@@ -23,6 +23,7 @@ define('bigscreenplayer/bigscreenplayer',
       var serverDate;
       var playerComponent;
       var pauseTrigger;
+      var isSeeking = false;
       var endOfStream;
       var windowType;
       var device;
@@ -53,6 +54,12 @@ define('bigscreenplayer/bigscreenplayer',
               isBufferingTimeoutError: evt.isBufferingTimeoutError
             };
           }
+
+          if (evt.data.state === MediaState.WAITING) {
+            stateObject.isSeeking = isSeeking;
+            isSeeking = false;
+          }
+
           stateObject.endOfStream = endOfStream;
 
           stateChangeCallbacks.forEach(function (callback) {
@@ -194,6 +201,7 @@ define('bigscreenplayer/bigscreenplayer',
           if (playerComponent) {
             playerComponent.setCurrentTime(time);
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
+            isSeeking = true;
           }
         },
         getCurrentTime: function () {
