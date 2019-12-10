@@ -197,8 +197,8 @@ define('bigscreenplayer/mockbigscreenplayer',
         currentTime = time;
         isSeeking = true;
         if (autoProgress) {
+          mockingHooks.changeState(MediaState.WAITING, 'other');
           if (!pausedState) {
-            mockingHooks.changeState(MediaState.WAITING, 'other');
             startProgress();
           }
         } else {
