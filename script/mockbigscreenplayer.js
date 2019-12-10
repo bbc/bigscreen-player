@@ -17,6 +17,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     var stateChangeCallbacks = [];
 
     var currentTime;
+    var isSeeking;
     var seekableRange;
     var duration;
     var liveWindowStart;
@@ -194,6 +195,7 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       setCurrentTime: function (time) {
         currentTime = time;
+        isSeeking = true;
         if (autoProgress) {
           if (!pausedState) {
             mockingHooks.changeState(MediaState.WAITING, 'other');
@@ -328,6 +330,10 @@ define('bigscreenplayer/mockbigscreenplayer',
         if (state === MediaState.FATAL_ERROR) {
           stateObject.errorId = opts && opts.error;
           stateObject.isBufferingTimeoutError = opts && opts.isBufferingTimeoutError;
+        }
+        if (state === MediaState.WAITING) {
+          stateObject.isSeeking = isSeeking;
+          isSeeking = false;
         }
         stateObject.endOfStream = endOfStream;
 
