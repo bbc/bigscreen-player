@@ -199,9 +199,9 @@ define('bigscreenplayer/bigscreenplayer',
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
           if (playerComponent) {
+            isSeeking = true; // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event.
             playerComponent.setCurrentTime(time);
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
-            isSeeking = true;
           }
         },
         getCurrentTime: function () {
