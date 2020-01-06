@@ -10,9 +10,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/mediasources'
+    'bigscreenplayer/mediasources',
+    'bigscreenplayer/version'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -293,6 +294,8 @@ define('bigscreenplayer/bigscreenplayer',
     }
 
     BigscreenPlayer.getLiveSupport = getLiveSupport;
+
+    BigscreenPlayer.version = Version();
 
     return BigscreenPlayer;
   }
