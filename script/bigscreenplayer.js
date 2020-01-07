@@ -295,7 +295,7 @@ define('bigscreenplayer/bigscreenplayer',
 
     BigscreenPlayer.getLiveSupport = getLiveSupport;
 
-    BigscreenPlayer.version = Version();
+    BigscreenPlayer.version = Version;
 
     return BigscreenPlayer;
   }

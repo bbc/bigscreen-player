@@ -16,6 +16,6 @@
       fs.writeFileSync(versionFilePath, versionFile);
     }
   } catch (e) {
-    console.log('Error setting version');
+    console.error('Error setting version');
   }
 })();
