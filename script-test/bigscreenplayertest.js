@@ -245,9 +245,39 @@ require(
 
             expect(callback).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
 
+            callback.calls.reset();
+
             mockEventHook({data: {state: MediaState.WAITING}});
 
-            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, endOfStream: false});
+            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: false, endOfStream: false});
+          });
+
+          it('should set the isPaused flag to true when waiting after a setCurrentTime', function () {
+            mockEventHook({data: {state: MediaState.PLAYING}});
+
+            expect(callback).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
+
+            callback.calls.reset();
+
+            bigscreenPlayer.setCurrentTime(60);
+            mockEventHook({data: {state: MediaState.WAITING}});
+
+            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: true, endOfStream: false});
+          });
+
+          it('should set clear the isPaused flag after a waiting event is fired', function () {
+            mockEventHook({data: {state: MediaState.PLAYING}});
+
+            bigscreenPlayer.setCurrentTime(60);
+            mockEventHook({data: {state: MediaState.WAITING}});
+
+            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: true, endOfStream: false});
+
+            callback.calls.reset();
+
+            mockEventHook({data: {state: MediaState.WAITING}});
+
+            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: false, endOfStream: false});
           });
 
           it('should set the pause trigger to the one set when a pause event comes back from strategy', function () {

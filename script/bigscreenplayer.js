@@ -24,6 +24,7 @@ define('bigscreenplayer/bigscreenplayer',
       var serverDate;
       var playerComponent;
       var pauseTrigger;
+      var isSeeking = false;
       var endOfStream;
       var windowType;
       var device;
@@ -54,6 +55,12 @@ define('bigscreenplayer/bigscreenplayer',
               isBufferingTimeoutError: evt.isBufferingTimeoutError
             };
           }
+
+          if (evt.data.state === MediaState.WAITING) {
+            stateObject.isSeeking = isSeeking;
+            isSeeking = false;
+          }
+
           stateObject.endOfStream = endOfStream;
 
           stateChangeCallbacks.forEach(function (callback) {
@@ -193,6 +200,7 @@ define('bigscreenplayer/bigscreenplayer',
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
           if (playerComponent) {
+            isSeeking = true; // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
             playerComponent.setCurrentTime(time);
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
           }
