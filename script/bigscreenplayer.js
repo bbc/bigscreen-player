@@ -292,6 +292,9 @@ define('bigscreenplayer/bigscreenplayer',
         convertEpochMsToVideoTimeSeconds: function (epochTime) {
           return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined;
         },
+        getFrameworkVersion: function () {
+          return Version;
+        },
         convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
         toggleDebug: toggleDebug
       };
