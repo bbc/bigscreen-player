@@ -37,6 +37,18 @@ define(
         }
       }
 
+      function bigger () {
+        if (captions) {
+          captions.bigger();
+        }
+      }
+
+      function smaller () {
+        if (captions) {
+          captions.smaller();
+        }
+      }
+
       function updatePosition (transportControlPosition) {
         var classes = {
           controlsVisible: TransportControlPosition.CONTROLS_ONLY,
@@ -66,6 +78,8 @@ define(
       return {
         start: start,
         stop: stop,
+        bigger: bigger,
+        smaller: smaller,
         updatePosition: updatePosition,
         tearDown: tearDown
       };

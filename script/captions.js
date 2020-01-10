@@ -86,6 +86,18 @@ define('bigscreenplayer/captions',
         clearInterval(interval);
       }
 
+      function bigger () {
+        if (outputElement) {
+          outputElement.style.fontSize = '96px';
+        }
+      }
+
+      function smaller () {
+        if (outputElement) {
+          outputElement.style.fontSize = '40px';
+        }
+      }
+
       function update () {
         if (!media) {
           stop();
@@ -254,6 +266,8 @@ define('bigscreenplayer/captions',
         render: render,
         start: start,
         stop: stop,
+        bigger: bigger,
+        smaller: smaller,
         update: update,
         loadData: loadData,
         transformXML: transformXML,

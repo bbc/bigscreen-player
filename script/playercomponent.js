@@ -21,6 +21,7 @@ define(
       var errorTimeoutID = null;
       var mediaKind = bigscreenPlayerData.media.kind;
       var subtitlesEnabled;
+      var subtitlesBigger;
       var stateUpdateCallback = callback;
       var playbackStrategy;
       var captionsContainer;
@@ -101,6 +102,17 @@ define(
 
       function isSubtitlesEnabled () {
         return subtitlesEnabled;
+      }
+
+      function setSubtitlesBigger (bool) {
+        subtitlesBigger = bool || false;
+        if (isSubtitlesAvailable() && captionsContainer) {
+          bool ? captionsContainer.bigger() : captionsContainer.smaller();
+        }
+      }
+
+      function isSubtitlesBigger () {
+        return subtitlesBigger;
       }
 
       function isSubtitlesAvailable () {
@@ -360,6 +372,7 @@ define(
         windowType = undefined;
         mediaKind = undefined;
         subtitlesEnabled = undefined;
+        subtitlesBigger = undefined;
         stateUpdateCallback = undefined;
         mediaMetaData = undefined;
         fatalErrorTimeout = undefined;
@@ -381,6 +394,8 @@ define(
         isSubtitlesAvailable: isSubtitlesAvailable,
         isSubtitlesEnabled: isSubtitlesEnabled,
         setSubtitlesEnabled: setSubtitlesEnabled,
+        isSubtitlesBigger: isSubtitlesBigger,
+        setSubtitlesBigger: setSubtitlesBigger,
         isPaused: isPaused,
         setTransportControlPosition: setTransportControlPosition,
         tearDown: tearDown

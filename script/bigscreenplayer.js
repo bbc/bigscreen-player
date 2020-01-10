@@ -255,6 +255,12 @@ define('bigscreenplayer/bigscreenplayer',
         isSubtitlesEnabled: function () {
           return playerComponent ? playerComponent.isSubtitlesEnabled() : false;
         },
+        setSubtitlesBigger: function (bool) {
+          playerComponent.setSubtitlesBigger(bool);
+        },
+        isSubtitlesBigger: function () {
+          return playerComponent.isSubtitlesBigger();
+        },
         isSubtitlesAvailable: function () {
           return playerComponent ? playerComponent.isSubtitlesAvailable() : false;
         },
