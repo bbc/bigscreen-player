@@ -137,6 +137,7 @@ define('bigscreenplayer/bigscreenplayer',
         init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, callbacks) {
           Chronicle.init();
           DebugTool.setRootElement(playbackElement);
+          DebugTool.keyValue({key: 'framework-version', value: Version});
           device = newDevice;
           windowType = newWindowType;
           serverDate = bigscreenPlayerData.serverDate;
