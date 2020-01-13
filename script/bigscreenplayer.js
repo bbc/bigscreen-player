@@ -10,9 +10,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/mediasources'
+    'bigscreenplayer/mediasources',
+    'bigscreenplayer/version'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -136,6 +137,7 @@ define('bigscreenplayer/bigscreenplayer',
         init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, callbacks) {
           Chronicle.init();
           DebugTool.setRootElement(playbackElement);
+          DebugTool.keyValue({key: 'framework-version', value: Version});
           device = newDevice;
           windowType = newWindowType;
           serverDate = bigscreenPlayerData.serverDate;
@@ -291,6 +293,9 @@ define('bigscreenplayer/bigscreenplayer',
         convertEpochMsToVideoTimeSeconds: function (epochTime) {
           return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined;
         },
+        getFrameworkVersion: function () {
+          return Version;
+        },
         convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
         toggleDebug: toggleDebug
       };
@@ -301,6 +306,8 @@ define('bigscreenplayer/bigscreenplayer',
     }
 
     BigscreenPlayer.getLiveSupport = getLiveSupport;
+
+    BigscreenPlayer.version = Version;
 
     return BigscreenPlayer;
   }
