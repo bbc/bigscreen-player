@@ -4,7 +4,6 @@ define(
     'bigscreenplayer/captionscontainer',
     'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
@@ -12,7 +11,7 @@ define(
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/models/playbackstrategy'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
+  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
