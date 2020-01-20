@@ -13,20 +13,14 @@
       app: './development/index.js'
     },
     plugins: [
-      // new CleanWebpackPlugin(['dist/*']) for < v2 versions of CleanWebpackPlugin
       new CleanWebpackPlugin(),
       new HtmlWebpackPlugin({
-        // Required
         inject: false,
         template: require('html-webpack-template'),
         title: 'bigscreen-player',
         window: { bigscreenPlayer: { playbackStrategy: 'msestrategy'} }
       }),
     ],
-    output: {
-      filename: '[name].bundle.js',
-      path: path.resolve(__dirname, 'dist'),
-    },
     resolve: {
       alias: {
         bigscreenplayer: path.resolve(__dirname, 'script')
@@ -35,7 +29,7 @@
     module: {
       rules: [
         {
-          test: /\.m?js$/,
+          test: /\.js$/,
           use: {
             loader: 'babel-loader',
             options: {

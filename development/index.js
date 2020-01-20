@@ -1,4 +1,4 @@
-require ('', ['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
+require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
   window.bigscreenPlayer = { playbackStrategy: 'msestrategy'};
   
   let playbackElement = document.createElement('div')
@@ -20,5 +20,7 @@ require ('', ['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
     };
   
   document.body.appendChild(playbackElement)
-  BigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles);
+  let bigscreenPlayer = BigscreenPlayer();
+  bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles);
+  bigscreenPlayer.toggleDebug();
 })
