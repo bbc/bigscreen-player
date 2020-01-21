@@ -6,9 +6,10 @@ define('bigscreenplayer/mockbigscreenplayer',
     'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/plugins',
     'bigscreenplayer/plugindata',
-    'bigscreenplayer/pluginenums'
+    'bigscreenplayer/pluginenums',
+    'bigscreenplayer/version'
   ],
-  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums) {
+  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums, Version) {
     var sourceList;
     var source;
     var cdn;
@@ -263,6 +264,9 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       getPlayerElement: function () {
         return;
+      },
+      getFrameworkVersion: function () {
+        return Version;
       },
       tearDown: function () {
         manifestError = false;
