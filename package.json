@@ -6,7 +6,7 @@
   "scripts": {
     "jasmine": "grunt spec",
     "test": "npm run lint && npm run jasmine",
-    "dev": "webpack-dev-server --open",
+    "start": "webpack-dev-server --open",
     "spec": "grunt --force spec-web",
     "lint": "npx eslint .",
     "lint:code:changed": "git diff-index --name-only HEAD | egrep '.js$' | xargs eslint",
