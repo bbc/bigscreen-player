@@ -149,7 +149,6 @@ define('bigscreenplayer/mockbigscreenplayer',
         sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls;
         source = sourceList && sourceList[0].url;
         cdn = sourceList && sourceList[0].cdn;
-        version = '0.0.0';
 
         duration = windowType === WindowTypes.STATIC ? 4808 : Infinity;
         seekableRange = {start: 0, end: 4808};
