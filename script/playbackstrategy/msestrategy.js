@@ -165,7 +165,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       //TODO: work out if this is the best way to set the initial bitrate stuff for representations!
       function onStreamInitialised() {
-
         function getBitrate(mediaKind) {
           // get a representation
           var videoRepresentation = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaPlayer.getMetricsFor(mediaKind)).to;
