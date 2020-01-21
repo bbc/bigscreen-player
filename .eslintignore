@@ -1,3 +1,5 @@
 /spec/lib/
 /docs/
 buildVersion.js
+webpack.config.js
+/development/index.js
