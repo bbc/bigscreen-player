@@ -36,6 +36,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       var playerMetadata = {
         playbackBitrate: undefined,
+        videoPlaybackBitrate: undefined,
+        audioPlaybackBitrate: undefined,
         bufferLength: undefined,
         fragmentInfo: {
           requestTime: undefined,
@@ -54,34 +56,35 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
         BASE_URL_SELECTED: 'baseUrlSelected',
         METRIC_ADDED: 'metricAdded',
-        METRIC_CHANGED: 'metricChanged'
+        METRIC_CHANGED: 'metricChanged',
+        STREAM_INITIALIZED: 'streamInitialized'
       };
 
-      function onPlaying () {
+      function onPlaying() {
         isEnded = false;
         publishMediaState(MediaState.PLAYING);
       }
 
-      function onPaused () {
+      function onPaused() {
         publishMediaState(MediaState.PAUSED);
       }
 
-      function onBuffering () {
+      function onBuffering() {
         isEnded = false;
         publishMediaState(MediaState.WAITING);
       }
 
-      function onSeeked () {
+      function onSeeked() {
         DebugTool.info('Seeked Event');
         publishMediaState(isPaused() ? MediaState.PAUSED : MediaState.PLAYING);
       }
 
-      function onEnded () {
+      function onEnded() {
         isEnded = true;
         publishMediaState(MediaState.ENDED);
       }
 
-      function onTimeUpdate () {
+      function onTimeUpdate() {
         var IN_STREAM_BUFFERING_SECONDS = 20;
         var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor('video'));
 
@@ -101,7 +104,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         publishTimeUpdate();
       }
 
-      function onError (event) {
+      function onError(event) {
         if (event.error && event.error.data) {
           delete event.error.data;
         }
@@ -112,8 +115,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
             // Don't raise an error on fragment download error
             if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE ||
-               event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
-               event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
+              event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
+              event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
               return;
             }
           } else {
@@ -131,7 +134,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         publishError();
       }
 
-      function manifestDownloadError (event) {
+      function manifestDownloadError(event) {
         var error = function () {
           publishError();
         };
@@ -146,7 +149,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaSources.failover(load, error, failoverParams);
       }
 
-      function onManifestLoaded (event) {
+      function onManifestLoaded(event) {
         DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
 
         if (event.data) {
@@ -156,29 +159,71 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
-      function onManifestValidityChange (event) {
+      function onManifestValidityChange(event) {
         DebugTool.info('Manifest validity changed. Duration is: ' + event.newDuration);
       }
 
-      function onQualityChangeRendered (event) {
-        if (event.mediaType === mediaKind) {
-          if (!bitrateInfoList) {
-            bitrateInfoList = mediaPlayer.getBitrateInfoListFor(event.mediaType);
-          }
-          if (bitrateInfoList && (event.newQuality !== undefined)) {
-            playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
+      //TODO: work out if this is the best way to set the initial bitrate stuff for representations!
+      function onStreamInitialised() {
 
-            var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
-            var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
-            var newRepresentation = event.newQuality + ' (' + playerMetadata.playbackBitrate + ' kbps)';
-            DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
-            DebugTool.info('ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
-          }
-          Plugins.interface.onPlayerInfoUpdated({
-            bufferLength: playerMetadata.bufferLength,
-            playbackBitrate: playerMetadata.playbackBitrate
-          });
+        function getBitrate(mediaKind) {
+          // get a representation
+          var videoRepresentation = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaPlayer.getMetricsFor(mediaKind)).to;
+          // get its index
+          var repvidIdx = mediaPlayer.getDashMetrics().getIndexForRepresentation(videoRepresentation, 0);
+          var videoBitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind);
+          return parseInt(videoBitrateInfoList[repvidIdx].bitrate / 1000);
         }
+
+        // // get a representation
+        // var audioRepresentation = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaPlayer.getMetricsFor('audio')).to;
+        // // get its index
+        // var repaudIdx = mediaPlayer.getDashMetrics().getIndexForRepresentation(audioRepresentation, 0);
+        // var audioBitrateInfoList = mediaPlayer.getBitrateInfoListFor(MediaKinds.AUDIO);
+        // var audioBitrate = parseInt(audioBitrateInfoList[repaudIdx].bitrate / 1000)
+
+        DebugTool.info('initial video bitrate: ' + getBitrate(MediaKinds.VIDEO));
+        DebugTool.info('initial audio bitrate: ' + getBitrate(MediaKinds.AUDIO));
+        DebugTool.info('initial playback bitrate: ' + (getBitrate(MediaKinds.AUDIO) + getBitrate(MediaKinds.VIDEO)));
+      }
+
+      function onQualityChangeRendered(event) {
+        function logBitrate(mediaKind, event, bitrateInfoList) {
+          var oldBitrate = isNaN(event.oldQuality) ? '--' : parseInt(bitrateInfoList[event.oldQuality].bitrate / 1000);
+          var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
+          var newRepresentation = event.newQuality + ' (' + parseInt(bitrateInfoList[event.newQuality].bitrate / 1000) + ' kbps)';
+          DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
+          DebugTool.info(mediaKind + ' ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
+        }
+
+        if (event.mediaType === MediaKinds.AUDIO) {
+          var audioBitrateInfoList = mediaPlayer.getBitrateInfoListFor(MediaKinds.AUDIO);
+          if (audioBitrateInfoList && (event.newQuality !== undefined)) {
+            playerMetadata.audioPlaybackBitrate = parseInt(audioBitrateInfoList[event.newQuality].bitrate / 1000);
+            logBitrate(MediaKinds.AUDIO, event, audioBitrateInfoList);
+          }
+        }
+
+        if (event.mediaType === MediaKinds.VIDEO) {
+          var videoBitrateInfoList = mediaPlayer.getBitrateInfoListFor(MediaKinds.VIDEO);
+          if (videoBitrateInfoList && (event.newQuality !== undefined)) {
+            playerMetadata.videoPlaybackBitrate = parseInt(videoBitrateInfoList[event.newQuality].bitrate / 1000);
+            logBitrate(MediaKinds.VIDEO, event, videoBitrateInfoList);
+          }
+        }
+
+        if (mediaKind === MediaKinds.VIDEO) {
+          playerMetadata.playbackBitrate = playerMetadata.videoPlaybackBitrate + playerMetadata.audioPlaybackBitrate;
+        } else {
+          playerMetadata.playbackBitrate = playerMetadata.audioPlaybackBitrate;
+        }
+
+        DebugTool.keyValue({ key: 'playback bitrate', value: playerMetadata.playbackBitrate + ' kbps' });
+
+        Plugins.interface.onPlayerInfoUpdated({
+          bufferLength: playerMetadata.bufferLength,
+          playbackBitrate: playerMetadata.playbackBitrate
+        });
       }
 
       /**
@@ -186,13 +231,13 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
        * Note: we ignore the initial selection as it isn't a failover.
        * @param {*} event
        */
-      function onBaseUrlSelected (event) {
+      function onBaseUrlSelected(event) {
         var failoverInfo = {
           errorMessage: 'download',
           isBufferingTimeoutError: false
         };
 
-        function log () {
+        function log() {
           DebugTool.info('BaseUrl selected: ' + event.baseUrl.url);
         }
 
@@ -200,7 +245,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaSources.failover(log, log, failoverInfo);
       }
 
-      function onMetricAdded (event) {
+      function onMetricAdded(event) {
         if (event.mediaType === 'video') {
           if (event.metric === 'DroppedFrames') {
             DebugTool.keyValue({ key: 'Dropped Frames', value: event.value.droppedFrames });
@@ -228,33 +273,33 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
-      function publishMediaState (mediaState) {
+      function publishMediaState(mediaState) {
         for (var index = 0; index < eventCallbacks.length; index++) {
           eventCallbacks[index](mediaState);
         }
       }
 
-      function publishTimeUpdate () {
+      function publishTimeUpdate() {
         if (timeUpdateCallback) {
           timeUpdateCallback();
         }
       }
 
-      function publishError () {
+      function publishError() {
         if (errorCallback) {
           errorCallback();
         }
       }
 
-      function isPaused () {
+      function isPaused() {
         return (mediaPlayer && mediaPlayer.isReady()) ? mediaPlayer.isPaused() : undefined;
       }
 
-      function getClampedTime (time, range) {
+      function getClampedTime(time, range) {
         return Math.min(Math.max(time, range.start), range.end - LIVE_DELAY_SECONDS);
       }
 
-      function load (mimeType, playbackTime) {
+      function load(mimeType, playbackTime) {
         if (!mediaPlayer) {
           failoverTime = playbackTime;
           setUpMediaElement(playbackElement);
@@ -265,7 +310,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
-      function setUpMediaElement (playbackElement) {
+      function setUpMediaElement(playbackElement) {
         if (mediaKind === MediaKinds.AUDIO) {
           mediaElement = document.createElement('audio');
         } else {
@@ -278,7 +323,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
       }
 
-      function setUpMediaPlayer (playbackTime) {
+      function setUpMediaPlayer(playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.getDebug().setLogToBrowserConsole(false);
         mediaPlayer.setLiveDelay(LIVE_DELAY_SECONDS);
@@ -293,11 +338,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         modifySource(playbackTime);
       }
 
-      function modifySource (playbackTime) {
+      function modifySource(playbackTime) {
         mediaPlayer.attachSource(calculateSourceAnchor(mediaSources.currentSource(), playbackTime));
       }
 
-      function setUpMediaListeners () {
+      function setUpMediaListeners() {
         mediaElement.addEventListener('timeupdate', onTimeUpdate);
         mediaElement.addEventListener('playing', onPlaying);
         mediaElement.addEventListener('pause', onPaused);
@@ -308,6 +353,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaElement.addEventListener('error', onError);
         mediaPlayer.on(DashJSEvents.ERROR, onError);
         mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
+        mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised);
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
         mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
@@ -324,7 +370,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
        * @param {String} source
        * @param {Number} startTime
        */
-      function calculateSourceAnchor (source, startTime) {
+      function calculateSourceAnchor(source, startTime) {
         if (startTime === undefined || isNaN(startTime)) {
           return source;
         }
@@ -346,7 +392,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
-      function getSeekableRange () {
+      function getSeekableRange() {
         if (mediaPlayer && mediaPlayer.isReady() && windowType !== WindowTypes.STATIC) {
           var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
           if (dvrInfo) {
@@ -362,28 +408,28 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         };
       }
 
-      function getDuration () {
+      function getDuration() {
         return (mediaPlayer && mediaPlayer.isReady()) ? mediaPlayer.duration() : 0;
       }
 
-      function getCurrentTime () {
+      function getCurrentTime() {
         return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
       }
 
-      function refreshManifestBeforeSeek (seekToTime) {
+      function refreshManifestBeforeSeek(seekToTime) {
         refreshFailoverTime = seekToTime;
         GrowingWindowRefresher(mediaPlayer, function (mediaPresentationDuration) {
           if (!isNaN(mediaPresentationDuration)) {
             DebugTool.info('Stream ended. Clamping seek point to end of stream');
-            mediaPlayer.seek(getClampedTime(seekToTime, {start: getSeekableRange().start, end: mediaPresentationDuration}));
+            mediaPlayer.seek(getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration }));
           } else {
             mediaPlayer.seek(seekToTime);
           }
         });
       }
 
-      function calculateSeekOffset (time) {
-        function getClampedTimeForLive (time) {
+      function calculateSeekOffset(time) {
+        function getClampedTimeForLive(time) {
           return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - LIVE_DELAY_SECONDS);
         }
 
