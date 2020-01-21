@@ -1,13 +1,13 @@
-require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
-  window.bigscreenPlayer = { playbackStrategy: 'msestrategy'};
-  
+require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){  
   let playbackElement = document.createElement('div')
   let windowType = 'staticWindow';
   let enableSubtitles = false;
   
   let minimalData = {
       media: {
+        type: 'application/dash+xml',
         mimeType: 'video/mp4',
+        kind: 'video',
         urls: [
           {
             // Content from DASH IF testing assests (used in their reference player)
