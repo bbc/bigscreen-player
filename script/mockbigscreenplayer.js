@@ -47,6 +47,8 @@ define('bigscreenplayer/mockbigscreenplayer',
     var liveWindowData;
     var manifestError;
 
+    var version;
+
     function startProgress (progressCause) {
       setTimeout(function () {
         if (!autoProgressInterval) {
@@ -148,6 +150,7 @@ define('bigscreenplayer/mockbigscreenplayer',
         sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls;
         source = sourceList && sourceList[0].url;
         cdn = sourceList && sourceList[0].cdn;
+        version = '0.0.0';
 
         duration = windowType === WindowTypes.STATIC ? 4808 : Infinity;
         seekableRange = {start: 0, end: 4808};
@@ -263,6 +266,9 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       getPlayerElement: function () {
         return;
+      },
+      getFrameworkVersion: function () {
+        return version;
       },
       tearDown: function () {
         manifestError = false;
