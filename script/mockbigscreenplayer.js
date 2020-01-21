@@ -6,9 +6,10 @@ define('bigscreenplayer/mockbigscreenplayer',
     'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/plugins',
     'bigscreenplayer/plugindata',
-    'bigscreenplayer/pluginenums'
+    'bigscreenplayer/pluginenums',
+    'bigscreenplayer/version'
   ],
-  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums) {
+  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums, Version) {
     var sourceList;
     var source;
     var cdn;
@@ -46,8 +47,6 @@ define('bigscreenplayer/mockbigscreenplayer',
 
     var liveWindowData;
     var manifestError;
-
-    var version;
 
     function startProgress (progressCause) {
       setTimeout(function () {
@@ -268,7 +267,7 @@ define('bigscreenplayer/mockbigscreenplayer',
         return;
       },
       getFrameworkVersion: function () {
-        return version;
+        return Version;
       },
       tearDown: function () {
         manifestError = false;
