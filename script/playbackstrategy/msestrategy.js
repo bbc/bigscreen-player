@@ -186,16 +186,19 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function playbackBitrateForRepresentation (representation, mediaKind) {
         var repIdx = mediaPlayer.getDashMetrics().getIndexForRepresentation(representation, 0);
+        return playbackBitrateForRepresentationIndex(repIdx, mediaKind);
+      }
+
+      function playbackBitrateForRepresentationIndex (index, mediaKind) {
         var bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind);
-        return parseInt(bitrateInfoList[repIdx].bitrate / 1000);
+        return parseInt(bitrateInfoList[index].bitrate / 1000);
       }
 
       function onQualityChangeRendered (event) {
         function logBitrate (mediaKind, event) {
-          var representation = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaPlayer.getMetricsFor(mediaKind)).to;
-          var oldBitrate = isNaN(event.oldQuality) ? '--' : playbackBitrateForRepresentation(representation, mediaKind);
+          var oldBitrate = isNaN(event.oldQuality) ? '--' : playbackBitrateForRepresentationIndex(event.oldQuality, mediaKind);
           var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
-          var newRepresentation = event.newQuality + ' (' + playbackBitrateForRepresentation(representation, mediaKind) + ' kbps)';
+          var newRepresentation = event.newQuality + ' (' + playbackBitrateForRepresentationIndex(event.newQuality, mediaKind) + ' kbps)';
           DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
           DebugTool.info(mediaKind + ' ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
         }
