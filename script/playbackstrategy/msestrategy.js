@@ -35,8 +35,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       var playerMetadata = {
         playbackBitrate: undefined,
-        videoPlaybackBitrate: undefined,
-        audioPlaybackBitrate: undefined,
         bufferLength: undefined,
         fragmentInfo: {
           requestTime: undefined,
@@ -471,6 +469,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.ERROR, onError);
           mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
+          mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised);
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
           mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
