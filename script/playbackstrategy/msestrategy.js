@@ -166,9 +166,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function emitPlayerInfo () {
         if (mediaKind === MediaKinds.VIDEO) {
-          playerMetadata.playbackBitrate = currentPlaybackBitrate('video') + currentPlaybackBitrate('audio');
+          playerMetadata.playbackBitrate = currentPlaybackBitrate(MediaKinds.VIDEO) + currentPlaybackBitrate(MediaKinds.AUDIO);
         } else {
-          playerMetadata.playbackBitrate = currentPlaybackBitrate('audio');
+          playerMetadata.playbackBitrate = currentPlaybackBitrate(MediaKinds.AUDIO);
         }
 
         DebugTool.keyValue({ key: 'playback bitrate', value: playerMetadata.playbackBitrate + ' kbps' });

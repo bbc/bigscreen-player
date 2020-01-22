@@ -799,7 +799,7 @@ require(
           mockPluginsInterface.onPlayerInfoUpdated.calls.reset();
         });
 
-        it('should call plugins with video playback bitrate', function () {
+        it('should call plugins with the combined playback bitrate', function () {
           setUpMSE();
           mockDashInstance.getBitrateInfoListFor.and.returnValue([{ bitrate: 1024000 }, { bitrate: 200000 }, { bitrate: 3000000 }]);
           mseStrategy.load(null, 0);
@@ -810,23 +810,6 @@ require(
             playbackBitrate: 2048,
             bufferLength: undefined
           });
-        });
-
-        it('should not call plugins with audio playback bitrate when mediaKind is video', function () {
-          var mockEvent = {
-            mediaType: 'audio',
-            oldQuality: 0,
-            newQuality: 1,
-            type: 'qualityChangeRendered'
-          };
-
-          setUpMSE();
-          mockDashInstance.getBitrateInfoListFor.and.returnValue([{ bitrate: 1024000 }, { bitrate: 2000000 }, { bitrate: 3000000 }]);
-          mseStrategy.load(null, 0);
-
-          dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent);
-
-          expect(mockPluginsInterface.onPlayerInfoUpdated).not.toHaveBeenCalledWith();
         });
 
         it('should call plugins with video playback buffer length', function () {
