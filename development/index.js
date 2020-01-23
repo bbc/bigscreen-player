@@ -18,9 +18,25 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
         ]
       }
     };
-  
+
+    let fakeDevice = {
+      getConfig: function () {
+        return {};
+      }
+    }
+
   document.body.appendChild(playbackElement)
   let bigscreenPlayer = BigscreenPlayer();
-  bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles);
-  bigscreenPlayer.toggleDebug();
+  window._bigscreenPlayer = bigscreenPlayer;
+
+  bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles, fakeDevice,
+    {
+      onSuccess: function () {
+        bigscreenPlayer.toggleDebug();
+      },
+      onError: function () {
+        bigscreenPlayer.toggleDebug();
+        DebugTool.info('Initialisation failed.')
+      }
+  });
 })
