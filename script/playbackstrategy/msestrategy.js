@@ -180,7 +180,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function currentPlaybackBitrate (mediaKind) {
-        var representation = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaPlayer.getMetricsFor(mediaKind)).to;
+        var representationSwitch = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaPlayer.getMetricsFor(mediaKind));
+        var representation = representationSwitch ? representationSwitch.to : '';
         return playbackBitrateForRepresentation(representation, mediaKind);
       }
 
@@ -190,6 +191,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function playbackBitrateForRepresentationIndex (index, mediaKind) {
+        if (index === -1) return '';
         var bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind);
         return parseInt(bitrateInfoList[index].bitrate / 1000);
       }
