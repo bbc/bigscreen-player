@@ -192,7 +192,18 @@ define('bigscreenplayer/captions',
             value = map.conversion(value);
           }
           if (map.attribute === 'tts:backgroundColor') {
+            // rgba -> rgb
+            if (value.length > 7) {
+              value = 'black';
+            }
             value += ' 2px 2px 1px';
+          }
+
+          if (map.attribute === 'tts:color') {
+            // rgba -> rgb
+            if (value.length > 7) {
+              value = value.slice(0, 7);
+            }
           }
 
           stringStyle += map.property + ': ' + value + '; ';
