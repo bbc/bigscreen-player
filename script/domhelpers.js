@@ -17,7 +17,7 @@ define(
       }
     };
 
-    var hasClass = function (el, className) {
+    var hasClass = function hasClass (el, className) {
       if (el.classList) {
         return el.classList.contains(className);
       } else {
@@ -25,10 +25,27 @@ define(
       }
     };
 
+    function isRGBATuple (rgbaString) {
+      return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString);
+    }
+
+    /**
+     *  Checks that the string is an RGBA tuple and returns a RGB Tripple.
+     *  A string that isn't an RGBA tuple will be returned to the caller.
+     * @param {String} rgbaString
+     */
+    function rgbaToRGB (rgbaString) {
+      if (isRGBATuple(rgbaString)) {
+        rgbaString = rgbaString.slice(0, 7);
+      }
+      return rgbaString;
+    }
+
     return {
       addClass: addClass,
       removeClass: removeClass,
-      hasClass: hasClass
+      hasClass: hasClass,
+      rgbaToRGB: rgbaToRGB
     };
   }
 );
