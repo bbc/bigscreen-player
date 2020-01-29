@@ -45,7 +45,8 @@ define(
       addClass: addClass,
       removeClass: removeClass,
       hasClass: hasClass,
-      rgbaToRGB: rgbaToRGB
+      rgbaToRGB: rgbaToRGB,
+      isRGBA: isRGBATuple
     };
   }
 );
