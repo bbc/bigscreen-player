@@ -172,6 +172,18 @@ define('bigscreenplayer/captions',
         return items;
       }
 
+      function rgbWithOpacity (value) {
+        if (DOMHelpers.isRGBA(value)) {
+          var opacity = parseInt(value.slice(7, 9), 16) / 255;
+          if (isNaN(opacity)) {
+            opacity = 1.0;
+          }
+          value = DOMHelpers.rgbaToRGB(value);
+          value += '; opacity: ' + opacity + ';';
+        }
+        return value;
+      }
+
       function elementToStyle (el) {
         var stringStyle = '';
         var styles = _styles;
@@ -192,13 +204,14 @@ define('bigscreenplayer/captions',
           if (map.conversion) {
             value = map.conversion(value);
           }
+
           if (map.attribute === 'tts:backgroundColor') {
-            value = DOMHelpers.rgbaToRGB(value);
+            value = rgbWithOpacity(value);
             value += ' 2px 2px 1px';
           }
 
           if (map.attribute === 'tts:color') {
-            value = DOMHelpers.rgbaToRGB(value);
+            value = rgbWithOpacity(value);
           }
 
           stringStyle += map.property + ': ' + value + '; ';
