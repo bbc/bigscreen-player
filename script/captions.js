@@ -178,7 +178,6 @@ define('bigscreenplayer/captions',
           if (isNaN(opacity)) {
             opacity = 1.0;
           }
-          opacity = 0.5;
           value = DOMHelpers.rgbaToRGB(value);
           value += '; opacity: ' + opacity + ';';
         }
