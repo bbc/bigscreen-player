@@ -17,7 +17,7 @@ define(
       }
     };
 
-    var hasClass = function hasClass (el, className) {
+    var hasClass = function (el, className) {
       if (el.classList) {
         return el.classList.contains(className);
       } else {
