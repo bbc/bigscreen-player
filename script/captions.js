@@ -1,8 +1,9 @@
 define('bigscreenplayer/captions',
   [
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/domhelpers'
   ],
-  function (DebugTool) {
+  function (DebugTool, DOMHelpers) {
     'use strict';
 
     var elementToStyleMap = [
@@ -95,10 +96,16 @@ define('bigscreenplayer/captions',
         updateCaptions(time);
       }
 
+      function isEBUDistribution (metadata) {
+        return metadata === 'urn:ebu:tt:distribution:2014-01' || metadata === 'urn:ebu:tt:distribution:2018-04';
+      }
+
       function transformXML (xml) {
         // Use .getElementsByTagNameNS() when parsing XML as some implementations of .getElementsByTagName() will lowercase its argument before proceding
-        var conformsToStandardElements = xml.getElementsByTagNameNS('urn:ebu:tt:metadata', 'conformsToStandard')[0];
-        var isEBUTTD = conformsToStandardElements && conformsToStandardElements.textContent === 'urn:ebu:tt:distribution:2014-01';
+        var conformsToStandardElements = Array.prototype.slice.call(xml.getElementsByTagNameNS('urn:ebu:tt:metadata', 'conformsToStandard'));
+        var isEBUTTD = conformsToStandardElements && conformsToStandardElements.some(function (node) {
+          return isEBUDistribution(node.textContent);
+        });
 
         var captionValues = {
           ttml: {
@@ -165,6 +172,18 @@ define('bigscreenplayer/captions',
         return items;
       }
 
+      function rgbWithOpacity (value) {
+        if (DOMHelpers.isRGBA(value)) {
+          var opacity = parseInt(value.slice(7, 9), 16) / 255;
+          if (isNaN(opacity)) {
+            opacity = 1.0;
+          }
+          value = DOMHelpers.rgbaToRGB(value);
+          value += '; opacity: ' + opacity + ';';
+        }
+        return value;
+      }
+
       function elementToStyle (el) {
         var stringStyle = '';
         var styles = _styles;
@@ -185,8 +204,14 @@ define('bigscreenplayer/captions',
           if (map.conversion) {
             value = map.conversion(value);
           }
+
           if (map.attribute === 'tts:backgroundColor') {
+            value = rgbWithOpacity(value);
             value += ' 2px 2px 1px';
+          }
+
+          if (map.attribute === 'tts:color') {
+            value = rgbWithOpacity(value);
           }
 
           stringStyle += map.property + ': ' + value + '; ';
