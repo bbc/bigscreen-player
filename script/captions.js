@@ -337,6 +337,10 @@ define('bigscreenplayer/captions',
           html.style.cssText = style;
         }
 
+        if (localName === 'p') {
+          html.style.margin = '0px';
+        }
+
         for (var i = 0, j = source.childNodes.length; i < j; i++) {
           var n = source.childNodes[i];
           if (n.nodeType === 3) {
