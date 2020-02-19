@@ -344,23 +344,65 @@ require(
           expect(manifest).toEqual(expectedManifest);
         });
 
-        it('should leave the manifest unchanged for absolute base urls', function () {
-          var manifest = {
-            Period: {
-              BaseURL: 'http://cdn-a.com/dash/'
-            }
-          };
-
+        describe('should return a single base url object for absolute base urls', function () {
           var expectedManifest = {
-            Period: {
-              BaseURL: 'http://cdn-a.com/dash/'
-            }
+            Period: {},
+            BaseURL: { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' },
+            BaseURL_asArray: [
+              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' }
+            ]
           };
 
-          ManifestModifier.generateBaseUrls(manifest, sources);
+          it('the url is on the manifest as a string', function () {
+            var manifest = {
+              Period: {},
+              BaseURL: 'https://cdn-a.com/dash/'
+            };
 
-          expect(manifest).toEqual(expectedManifest);
-        });
+            ManifestModifier.generateBaseUrls(manifest, sources);
+
+            expect(manifest).toEqual(expectedManifest);
+          });
+
+          it('the url is on the manifest as an object', function () {
+            var manifest = {
+              Period: {},
+              BaseURL: {
+                __text: 'https://cdn-a.com/dash/'
+              }
+            };
+
+            ManifestModifier.generateBaseUrls(manifest, sources);
+
+            expect(manifest).toEqual(expectedManifest);
+          });
+
+          it('the url is on the manifest in the period as a string', function () {
+            var manifest = {
+              Period: {
+                BaseURL: 'https://cdn-a.com/dash/'
+              }
+            };
+
+            ManifestModifier.generateBaseUrls(manifest, sources);
+
+            expect(manifest).toEqual(expectedManifest);
+          });
+
+          it('the url is on the manifest in the period as an object', function () {
+            var manifest = {
+              Period: {
+                BaseURL: {
+                  __text: 'https://cdn-a.com/dash/'
+                }
+              }
+            };
+
+            ManifestModifier.generateBaseUrls(manifest, sources);
+
+            expect(manifest).toEqual(expectedManifest);
+          });
+        },
 
         it('should leave the manifest unchanged if there is no base url', function () {
           var manifest = {
@@ -374,7 +416,7 @@ require(
           ManifestModifier.generateBaseUrls(manifest, sources);
 
           expect(manifest).toEqual(expectedManifest);
-        });
+        }));
       });
     });
   });
