@@ -33,6 +33,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       var mediaMetrics;
       var dashMetrics;
 
+      var publishedSeekEvent = false;
+      var isSeeking = false;
+
       var playerMetadata = {
         playbackBitrate: undefined,
         bufferLength: undefined,
@@ -68,10 +71,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function onBuffering () {
         isEnded = false;
-        publishMediaState(MediaState.WAITING);
+        if (!isSeeking || !publishedSeekEvent) {
+          publishMediaState(MediaState.WAITING);
+          publishedSeekEvent = true;
+        }
       }
 
       function onSeeked () {
+        isSeeking = false;
         DebugTool.info('Seeked Event');
         publishMediaState(isPaused() ? MediaState.PAUSED : MediaState.PLAYING);
       }
@@ -327,22 +334,13 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function modifySource (playbackTime) {
         mediaPlayer.attachSource(calculateSourceAnchor(mediaSources.currentSource(), playbackTime));
       }
-      function onSeeking () {
-        DebugTool.info('Seek event!******* ');
-        onBuffering();
-      }
-
-      function onWaiting () {
-        DebugTool.info('Wait event!*******');
-        onBuffering();
-      }
 
       function setUpMediaListeners () {
         mediaElement.addEventListener('timeupdate', onTimeUpdate);
         mediaElement.addEventListener('playing', onPlaying);
         mediaElement.addEventListener('pause', onPaused);
-        mediaElement.addEventListener('waiting', onWaiting);
-        mediaElement.addEventListener('seeking', onSeeking);
+        mediaElement.addEventListener('waiting', onBuffering);
+        mediaElement.addEventListener('seeking', onBuffering);
         mediaElement.addEventListener('seeked', onSeeked);
         mediaElement.addEventListener('ended', onEnded);
         mediaElement.addEventListener('error', onError);
@@ -539,6 +537,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.play();
         },
         setCurrentTime: function (time) {
+          publishedSeekEvent = false;
+          isSeeking = true;
           var seekToTime = getClampedTime(time, getSeekableRange());
           if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
             refreshManifestBeforeSeek(seekToTime);

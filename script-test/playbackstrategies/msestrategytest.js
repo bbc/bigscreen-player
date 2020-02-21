@@ -956,5 +956,35 @@ require(
           expect(mockErrorCallback).toHaveBeenCalled();
         });
       });
+
+      describe('seeking and waiting events', function () {
+        var eventCallbackSpy;
+
+        beforeEach(function () {
+          setUpMSE();
+          eventCallbackSpy = jasmine.createSpy();
+          mseStrategy.addEventCallback(this, eventCallbackSpy);
+          mseStrategy.load(null, 0);
+          mseStrategy.play();
+        });
+
+        it('should call the event callback once when seeking', function () {
+          mseStrategy.pause();
+
+          mseStrategy.setCurrentTime(60);
+
+          eventCallbacks('seeking');
+          eventCallbacks('waiting');
+
+          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should call the event callback more than once when not seeking', function () {
+          eventCallbacks('waiting');
+          eventCallbacks('waiting');
+
+          expect(eventCallbackSpy).toHaveBeenCalledTimes(2);
+        });
+      });
     });
   });
