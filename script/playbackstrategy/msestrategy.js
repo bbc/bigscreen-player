@@ -77,6 +77,16 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
+      function onWaiting () {
+        DebugTool.info('Waiting *****************');
+        onBuffering();
+      }
+
+      function onSeeking () {
+        DebugTool.info('Seeking *****************');
+        onBuffering();
+      }
+
       function onSeeked () {
         isSeeking = false;
         DebugTool.info('Seeked Event');
@@ -339,8 +349,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaElement.addEventListener('timeupdate', onTimeUpdate);
         mediaElement.addEventListener('playing', onPlaying);
         mediaElement.addEventListener('pause', onPaused);
-        mediaElement.addEventListener('waiting', onBuffering);
-        mediaElement.addEventListener('seeking', onBuffering);
+        mediaElement.addEventListener('waiting', onWaiting);
+        mediaElement.addEventListener('seeking', onSeeking);
         mediaElement.addEventListener('seeked', onSeeked);
         mediaElement.addEventListener('ended', onEnded);
         mediaElement.addEventListener('error', onError);
