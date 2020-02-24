@@ -38,21 +38,49 @@ define('bigscreenplayer/manifest/manifestmodifier',
     }
 
     function extractBaseUrl (manifest) {
-      return manifest.Period && manifest.Period.BaseURL || manifest.BaseURL && manifest.BaseURL.__text;
+      if (manifest.Period && typeof manifest.Period.BaseURL === 'string') {
+        return manifest.Period.BaseURL;
+      }
+
+      if (manifest.Period && manifest.Period.BaseURL && typeof manifest.Period.BaseURL.__text === 'string') {
+        return manifest.Period.BaseURL.__text;
+      }
+
+      if (typeof manifest.BaseURL === 'string') {
+        return manifest.BaseURL;
+      }
+
+      if (manifest.BaseURL && typeof manifest.BaseURL.__text === 'string') {
+        return manifest.BaseURL.__text;
+      }
     }
 
     function generateBaseUrls (manifest, sources) {
       var baseUrl = extractBaseUrl(manifest);
-      if (!baseUrl || baseUrl.match(/^https?:\/\//)) return;
+      var baseUrls = [];
+      if (!baseUrl) return;
 
-      var baseUrls = sources.map(function (source, priority) {
-        var sourceUrl = new URL(baseUrl, source);
+      function generateBaseUrl (source, priority, serviceLocation) {
         return {
-          __text: sourceUrl.href,
+          __text: source,
           'dvb:priority': priority,
-          serviceLocation: source
+          serviceLocation: serviceLocation
         };
-      });
+      }
+
+      if (baseUrl.match(/^https?:\/\//)) {
+        var newBaseUrl = generateBaseUrl(baseUrl, 0, sources[0]);
+        baseUrls = [newBaseUrl];
+
+        if (manifest && (manifest.BaseURL || manifest.Period && manifest.Period.BaseURL)) {
+          manifest.BaseURL = newBaseUrl;
+        }
+      } else {
+        baseUrls = sources.map(function (source, priority) {
+          var sourceUrl = new URL(baseUrl, source);
+          return generateBaseUrl(sourceUrl.href, priority, source);
+        });
+      }
 
       manifest.BaseURL_asArray = baseUrls;
       if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
