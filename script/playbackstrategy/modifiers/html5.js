@@ -74,8 +74,10 @@ define(
           }
         }
 
-        for (var index = 0; index < eventCallbacks.length; index++) {
-          eventCallbacks[index](event);
+        if (eventCallbacks) {
+          for (var index = 0; index < eventCallbacks.length; index++) {
+            eventCallbacks[index](event);
+          }
         }
       }
 
