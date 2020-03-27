@@ -74,10 +74,8 @@ define(
           }
         }
 
-        if (eventCallbacks) {
-          for (var index = 0; index < eventCallbacks.length; index++) {
-            eventCallbacks[index](event);
-          }
+        for (var index = 0; index < eventCallbacks.length; index++) {
+          eventCallbacks[index](event);
         }
       }
 
@@ -630,7 +628,7 @@ define(
         },
 
         removeAllEventCallbacks: function () {
-          eventCallbacks = undefined;
+          eventCallbacks = [];
         },
 
         initialiseMedia: function (type, url, mediaMimeType, sourceContainer, opts) {
