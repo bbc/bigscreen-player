@@ -490,7 +490,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
           mediaPlayer = undefined;
           mediaElement = undefined;
-          eventCallbacks = undefined;
+          eventCallbacks = [];
           errorCallback = undefined;
           timeUpdateCallback = undefined;
           timeCorrection = undefined;
