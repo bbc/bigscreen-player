@@ -582,6 +582,17 @@ require(
 
           expect(playbackElement.childElementCount).toBe(0);
         });
+
+        it('should empty the eventCallbacks array and stop emitting events', function () {
+          setUpMSE();
+          function tearDownAndError () {
+            mseStrategy.load(null, 0);
+            mseStrategy.tearDown();
+            dashEventCallback('pause');
+          }
+
+          expect(tearDownAndError).not.toThrowError();
+        });
       });
 
       describe('isEnded()', function () {
