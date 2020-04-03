@@ -343,7 +343,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaElement.addEventListener('seeking', onBuffering);
         mediaElement.addEventListener('seeked', onSeeked);
         mediaElement.addEventListener('ended', onEnded);
-        mediaElement.addEventListener('error', onError);
         mediaPlayer.on(DashJSEvents.ERROR, onError);
         mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
         mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised);
@@ -477,7 +476,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaElement.removeEventListener('seeking', onBuffering);
           mediaElement.removeEventListener('seeked', onSeeked);
           mediaElement.removeEventListener('ended', onEnded);
-          mediaElement.removeEventListener('error', onError);
           mediaPlayer.off(DashJSEvents.ERROR, onError);
           mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);

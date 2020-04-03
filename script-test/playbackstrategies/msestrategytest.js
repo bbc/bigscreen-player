@@ -35,11 +35,16 @@ require(
     var dashjsMediaPlayerEvents = {
       ERROR: 'error',
       MANIFEST_LOADED: 'manifestLoaded',
+      DOWNLOAD_MANIFEST_ERROR_CODE: 25,
+      DOWNLOAD_SIDX_ERROR_CODE: 26,
+      DOWNLOAD_CONTENT_ERROR_CODE: 27,
+      DOWNLOAD_ERROR_MESSAGE: 'download',
       MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
       QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
       BASE_URL_SELECTED: 'baseUrlSelected',
       METRIC_ADDED: 'metricAdded',
-      METRIC_CHANGED: 'metricChanged'
+      METRIC_CHANGED: 'metricChanged',
+      STREAM_INITIALIZED: 'streamInitialized'
     };
 
     var mockTimeModel;
@@ -358,12 +363,13 @@ require(
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('seeking', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('seeked', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('ended', jasmine.any(Function));
-          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('error', jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.ERROR, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_LOADED, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, jasmine.any(Function));
+          expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.STREAM_INITIALIZED, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.METRIC_ADDED, jasmine.any(Function));
+          expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.BASE_URL_SELECTED, jasmine.any(Function));
         });
       });
 
@@ -564,12 +570,13 @@ require(
           expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('seeking', jasmine.any(Function));
           expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('seeked', jasmine.any(Function));
           expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('ended', jasmine.any(Function));
-          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('error', jasmine.any(Function));
           expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.ERROR, jasmine.any(Function));
+          expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.STREAM_INITIALIZED, jasmine.any(Function));
           expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, jasmine.any(Function));
           expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.METRIC_ADDED, jasmine.any(Function));
           expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_LOADED, jasmine.any(Function));
           expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, jasmine.any(Function));
+          expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.BASE_URL_SELECTED, jasmine.any(Function));
         });
 
         it('should remove the video element', function () {
