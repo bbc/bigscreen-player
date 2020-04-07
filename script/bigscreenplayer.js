@@ -1,6 +1,7 @@
 define('bigscreenplayer/bigscreenplayer',
   [
     'bigscreenplayer/models/mediastate',
+    'bigscreenplayer/models/seekstate',
     'bigscreenplayer/playercomponent',
     'bigscreenplayer/models/pausetriggers',
     'bigscreenplayer/dynamicwindowutils',
@@ -13,7 +14,7 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/mediasources',
     'bigscreenplayer/version'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version) {
+  function (MediaState, SeekState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -24,7 +25,8 @@ define('bigscreenplayer/bigscreenplayer',
       var serverDate;
       var playerComponent;
       var pauseTrigger;
-      var isSeeking = false;
+      var seekState = SeekState.NONE;
+      var seekTime;
       var endOfStream;
       var windowType;
       var device;
@@ -57,8 +59,11 @@ define('bigscreenplayer/bigscreenplayer',
           }
 
           if (evt.data.state === MediaState.WAITING) {
-            stateObject.isSeeking = isSeeking;
-            isSeeking = false;
+            stateObject.isSeeking = seekState !== SeekState.NONE;
+            seekState = SeekState.IN_FLIGHT;
+          } else if (seekState === SeekState.IN_FLIGHT) {
+            seekState = SeekState.NONE;
+            seekTime = undefined;
           }
 
           stateObject.endOfStream = endOfStream;
@@ -145,6 +150,11 @@ define('bigscreenplayer/bigscreenplayer',
             callbacks = {};
           }
 
+          // always pretend there is a seek in progress so that we return a stable
+          // time from `getCurrentTime` before the strategy is ready
+          seekState = SeekState.IN_FLIGHT;
+          seekTime = bigscreenPlayerData.initialPlaybackTime;
+
           var mediaSourceCallbacks = {
             onSuccess: function () {
               bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
@@ -201,13 +211,18 @@ define('bigscreenplayer/bigscreenplayer',
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
           if (playerComponent) {
-            isSeeking = true; // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
+            seekState = SeekState.QUEUEUD; // this must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
+            seekTime = time;
             playerComponent.setCurrentTime(time);
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
           }
         },
         getCurrentTime: function () {
-          return playerComponent && playerComponent.getCurrentTime() || 0;
+          if (seekState !== SeekState.NONE) {
+            // always return the position we are seeking to whilst seek in flight
+            return seekTime;
+          }
+          return playerComponent && playerComponent.getCurrentTime() || undefined;
         },
         getMediaKind: function () {
           return mediaKind;
