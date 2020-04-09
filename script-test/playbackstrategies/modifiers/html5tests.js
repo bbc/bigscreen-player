@@ -1831,6 +1831,17 @@ require(
 
             expect(mockVideoMediaElement.removeEventListener).toHaveBeenCalledTimes(listeners.length);
           });
+
+          it('Remove all event callbacks works correctly', function () {
+            function playAndEmitAfterRemoveAllCallbacks () {
+              player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
+              player.beginPlaybackFrom(0);
+              player.removeAllEventCallbacks();
+              endedCallback();
+            }
+
+            expect(playAndEmitAfterRemoveAllCallbacks).not.toThrowError();
+          });
         });
 
         describe('Events', function () {
