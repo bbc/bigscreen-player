@@ -62,11 +62,11 @@ define('bigscreenplayer/bigscreenplayer',
           }
 
           stateObject.endOfStream = endOfStream;
+          DebugTool.event(stateObject);
 
           stateChangeCallbacks.forEach(function (callback) {
             callback(stateObject);
           });
-          DebugTool.event(stateObject);
         }
 
         if (evt.data.seekableRange) {
