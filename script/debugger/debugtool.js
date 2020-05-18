@@ -7,6 +7,7 @@ define('bigscreenplayer/debugger/debugtool',
  function (Chronicle, DebugPresenter, DebugView) {
    'use strict';
    function DebugTool () {
+     var rootElement;
      var presenter = DebugPresenter;
      var view;
      var visible = false;
@@ -37,6 +38,7 @@ define('bigscreenplayer/debugger/debugtool',
 
      function show () {
        view = DebugView;
+       view.setRootElement(rootElement);
        view.init();
        presenter.init(view);
        presenter.update(Chronicle.retrieve());
@@ -45,7 +47,6 @@ define('bigscreenplayer/debugger/debugtool',
      }
 
      function hide () {
-       presenter.tearDown();
        view.tearDown();
        Chronicle.unregisterForUpdates(presenter.update);
        visible = false;
@@ -95,12 +96,20 @@ define('bigscreenplayer/debugger/debugtool',
        }
      }
 
+     function setRootElement (element) {
+       rootElement = element;
+     }
+
      function tearDown () {
        staticFieldValues = {};
+       if (visible) {
+         hide();
+       }
      }
 
      return {
        toggleVisibility: toggleVisibility,
+       setRootElement: setRootElement,
        setLogLevel: setLogLevel,
        logLevels: LOG_LEVELS,
        verbose: verbose,

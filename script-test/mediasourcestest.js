@@ -220,7 +220,6 @@ require(
           var pluginData = {
             status: PluginEnums.STATUS.FAILOVER,
             stateType: PluginEnums.TYPE.ERROR,
-            properties: {error_mssg: 'test error'},
             isBufferingTimeoutError: true,
             cdn: 'supplier1',
             newCdn: 'supplier2',

@@ -58,7 +58,13 @@ define(
           mediaPlayer.pause();
           opts = opts || {};
           if (opts.disableAutoResume !== true) {
-            DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), addEventCallback, removeEventCallback, resume);
+            DynamicWindowUtils.autoResumeAtStartOfRange(
+              getCurrentTime(),
+              getSeekableRange(),
+              addEventCallback,
+              removeEventCallback,
+              MediaPlayerBase.unpausedEventCheck,
+              resume);
           }
         }
 

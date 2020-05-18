@@ -109,6 +109,7 @@ require(
             };
           };
 
+          var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'keyValue', 'tearDown', 'setRootElement']);
           mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
             'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
             'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
@@ -122,7 +123,8 @@ require(
           injector.mock({
             'bigscreenplayer/mediasources': mediaSourcesMock,
             'bigscreenplayer/playercomponent': mockPlayerComponent,
-            'bigscreenplayer/plugins': Plugins
+            'bigscreenplayer/plugins': Plugins,
+            'bigscreenplayer/debugger/debugtool': mockDebugTool
           });
 
           injector.require(['bigscreenplayer/bigscreenplayer'], function (bigscreenPlayerReference) {
@@ -243,9 +245,39 @@ require(
 
             expect(callback).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
 
+            callback.calls.reset();
+
             mockEventHook({data: {state: MediaState.WAITING}});
 
-            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, endOfStream: false});
+            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: false, endOfStream: false});
+          });
+
+          it('should set the isPaused flag to true when waiting after a setCurrentTime', function () {
+            mockEventHook({data: {state: MediaState.PLAYING}});
+
+            expect(callback).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
+
+            callback.calls.reset();
+
+            bigscreenPlayer.setCurrentTime(60);
+            mockEventHook({data: {state: MediaState.WAITING}});
+
+            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: true, endOfStream: false});
+          });
+
+          it('should set clear the isPaused flag after a waiting event is fired', function () {
+            mockEventHook({data: {state: MediaState.PLAYING}});
+
+            bigscreenPlayer.setCurrentTime(60);
+            mockEventHook({data: {state: MediaState.WAITING}});
+
+            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: true, endOfStream: false});
+
+            callback.calls.reset();
+
+            mockEventHook({data: {state: MediaState.WAITING}});
+
+            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: false, endOfStream: false});
           });
 
           it('should set the pause trigger to the one set when a pause event comes back from strategy', function () {
@@ -863,9 +895,9 @@ require(
             initialiseBigscreenPlayer();
             bigscreenPlayer.registerPlugin(mockPlugin);
 
-            Plugins.interface.onError({errorProperties: {}});
+            Plugins.interface.onError();
 
-            expect(mockPlugin.onError).toHaveBeenCalledWith({errorProperties: {}});
+            expect(mockPlugin.onError).toHaveBeenCalled();
           });
         });
 
@@ -890,16 +922,16 @@ require(
           it('should remove a specific plugin', function () {
             bigscreenPlayer.unregisterPlugin(mockPlugin);
 
-            Plugins.interface.onError({errorProperties: {}});
+            Plugins.interface.onError();
 
             expect(mockPlugin.onError).not.toHaveBeenCalled();
-            expect(mockPluginTwo.onError).toHaveBeenCalledWith({errorProperties: {}});
+            expect(mockPluginTwo.onError).toHaveBeenCalled();
           });
 
           it('should remove all plugins', function () {
             bigscreenPlayer.unregisterPlugin();
 
-            Plugins.interface.onError({errorProperties: {}});
+            Plugins.interface.onError();
 
             expect(mockPlugin.onError).not.toHaveBeenCalled();
             expect(mockPluginTwo.onError).not.toHaveBeenCalled();

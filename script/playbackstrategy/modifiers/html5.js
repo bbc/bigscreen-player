@@ -628,7 +628,7 @@ define(
         },
 
         removeAllEventCallbacks: function () {
-          eventCallbacks = undefined;
+          eventCallbacks = [];
         },
 
         initialiseMedia: function (type, url, mediaMimeType, sourceContainer, opts) {

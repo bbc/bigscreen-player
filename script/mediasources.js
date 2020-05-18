@@ -62,7 +62,7 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
     }
 
     function shouldFailover (failoverParams) {
-      if (failoverParams.serviceLocation === getCurrentUrl()) {
+      if (isFirstManifest(failoverParams.serviceLocation)) {
         return false;
       }
 
@@ -71,6 +71,13 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
       var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
       var shouldLiveFailover = windowType !== WindowTypes.STATIC && !talRestartable;
       return isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
+    }
+
+    // we don't want to failover on the first playback
+    // the serviceLocation is set to our first cdn url
+    // see manifest modifier - generateBaseUrls
+    function isFirstManifest (serviceLocation) {
+      return serviceLocation === getCurrentUrl();
     }
 
     function isFailoverInfoValid (failoverParams) {
@@ -162,7 +169,6 @@ function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugToo
       var evt = new PluginData({
         status: PluginEnums.STATUS.FAILOVER,
         stateType: PluginEnums.TYPE.ERROR,
-        properties: {error_mssg: failoverInfo.errorMessage},
         isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
         cdn: mediaSources[0].cdn,
         newCdn: mediaSources[1].cdn

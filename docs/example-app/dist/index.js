@@ -357,7 +357,7 @@ var ISOBox = function ISOBox() {
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/playercomponent */ "./node_modules/bigscreen-player/script/playercomponent.js"), __webpack_require__(/*! bigscreenplayer/models/pausetriggers */ "./node_modules/bigscreen-player/script/models/pausetriggers.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/mockbigscreenplayer */ "./node_modules/bigscreen-player/script/mockbigscreenplayer.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/debugger/chronicle */ "./node_modules/bigscreen-player/script/debugger/chronicle.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestloader */ "./node_modules/bigscreen-player/script/manifest/manifestloader.js"), __webpack_require__(/*! bigscreenplayer/utils/timeutils */ "./node_modules/bigscreen-player/script/utils/timeutils.js"), __webpack_require__(/*! bigscreenplayer/utils/livesupportutils */ "./node_modules/bigscreen-player/script/utils/livesupportutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, ManifestLoader, SlidingWindowUtils, LiveSupportUtils) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/playercomponent */ "./node_modules/bigscreen-player/script/playercomponent.js"), __webpack_require__(/*! bigscreenplayer/models/pausetriggers */ "./node_modules/bigscreen-player/script/models/pausetriggers.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/mockbigscreenplayer */ "./node_modules/bigscreen-player/script/mockbigscreenplayer.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/debugger/chronicle */ "./node_modules/bigscreen-player/script/debugger/chronicle.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/utils/timeutils */ "./node_modules/bigscreen-player/script/utils/timeutils.js"), __webpack_require__(/*! bigscreenplayer/mediasources */ "./node_modules/bigscreen-player/script/mediasources.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources) {
   'use strict';
 
   function BigscreenPlayer() {
@@ -372,6 +372,9 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var endOfStream;
     var windowType;
     var device;
+    var mediaSources;
+
+    var END_OF_STREAM_TOLERANCE = 10;
 
     function mediaStateUpdateCallback(evt) {
       if (evt.timeUpdate) {
@@ -427,7 +430,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback) {
-      if (bigscreenPlayerData.time) {
+      if (windowType !== WindowTypes.STATIC) {
+        bigscreenPlayerData.time = mediaSources.time();
         serverDate = bigscreenPlayerData.serverDate;
 
         initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime;
@@ -438,27 +442,19 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       mediaKind = bigscreenPlayerData.media.kind;
       endOfStream = windowType !== WindowTypes.STATIC && !bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0;
 
-      playerComponent = new PlayerComponent(playbackElement, bigscreenPlayerData, windowType, enableSubtitles, mediaStateUpdateCallback, device);
+      playerComponent = new PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, mediaStateUpdateCallback, device);
 
       if (successCallback) {
         successCallback();
       }
-
-      var availableCdns = bigscreenPlayerData.media.urls.map(function (media) {
-        return media.cdn;
-      });
-
-      DebugTool.keyValue({ key: 'available cdns', value: availableCdns });
-      DebugTool.keyValue({ key: 'current cdn', value: bigscreenPlayerData.media.urls[0].cdn });
-      DebugTool.keyValue({ key: 'url', value: bigscreenPlayerData.media.urls[0].url });
     }
 
     function getWindowStartTime() {
-      return playerComponent && playerComponent.getWindowStartTime();
+      return mediaSources && mediaSources.time().windowStartTime;
     }
 
     function getWindowEndTime() {
-      return playerComponent && playerComponent.getWindowEndTime();
+      return mediaSources && mediaSources.time().windowEndTime;
     }
 
     return {
@@ -471,22 +467,19 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
           callbacks = {};
         }
 
-        if (LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device)) && !bigscreenPlayerData.time) {
-          ManifestLoader.load(bigscreenPlayerData.media.urls, serverDate, {
-            onSuccess: function onSuccess(manifestData) {
-              bigscreenPlayerData.media.transferFormat = manifestData.transferFormat;
-              bigscreenPlayerData.time = manifestData.time;
-              bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
-            },
-            onError: function onError() {
-              if (callbacks.onError) {
-                callbacks.onError({ error: 'manifest' });
-              }
+        var mediaSourceCallbacks = {
+          onSuccess: function onSuccess() {
+            bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
+          },
+          onError: function onError(error) {
+            if (callbacks.onError) {
+              callbacks.onError(error);
             }
-          });
-        } else {
-          bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
-        }
+          }
+        };
+
+        mediaSources = new MediaSources();
+        mediaSources.init(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(device), mediaSourceCallbacks);
       },
 
       tearDown: function tearDown() {
@@ -500,6 +493,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         mediaKind = undefined;
         pauseTrigger = undefined;
         windowType = undefined;
+        mediaSources = undefined;
         this.unregisterPlugin();
         DebugTool.tearDown();
         Chronicle.tearDown();
@@ -529,10 +523,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       setCurrentTime: function setCurrentTime(time) {
         DebugTool.apicall('setCurrentTime');
         if (playerComponent) {
-          var END_OF_STREAM_TOLERANCE = 10;
-
           playerComponent.setCurrentTime(time);
-
           endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
         }
       },
@@ -548,10 +539,14 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       getSeekableRange: function getSeekableRange() {
         return playerComponent ? playerComponent.getSeekableRange() : {};
       },
+      isPlayingAtLiveEdge: function isPlayingAtLiveEdge() {
+        return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
+      },
       getLiveWindowData: function getLiveWindowData() {
         if (windowType === WindowTypes.STATIC) {
           return {};
         }
+
         return {
           windowStartTime: getWindowStartTime(),
           windowEndTime: getWindowEndTime(),
@@ -1069,60 +1064,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 /***/ }),
 
-/***/ "./node_modules/bigscreen-player/script/debugger/cdndebugoutput.js":
-/*!*************************************************************************!*\
-  !*** ./node_modules/bigscreen-player/script/debugger/cdndebugoutput.js ***!
-  \*************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (DebugTool, Utils) {
-  'use strict';
-
-  function CdnDebugOutput(initialMedia) {
-    var media = Utils.cloneArray(initialMedia);
-    var currentCDN = media[0];
-
-    DebugTool.keyValue({ key: 'available cdns', value: availableCdns() });
-    DebugTool.keyValue({ key: 'current cdn', value: currentCDN.cdn });
-    DebugTool.keyValue({ key: 'url', value: currentCDN.url });
-
-    function availableCdns() {
-      return media.map(function (element) {
-        return element && element.cdn;
-      });
-    }
-
-    function updateMedia() {
-      media.shift();
-      currentCDN = media[0];
-    }
-
-    function update() {
-      updateMedia();
-      DebugTool.keyValue({ key: 'available cdns', value: availableCdns() });
-      DebugTool.keyValue({ key: 'current cdn', value: currentCDN.cdn });
-      DebugTool.keyValue({ key: 'url', value: currentCDN.url });
-    }
-
-    return {
-      update: update,
-      tearDown: function tearDown() {
-        media = undefined;
-        currentCDN = undefined;
-      }
-    };
-  }
-
-  return CdnDebugOutput;
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
 /***/ "./node_modules/bigscreen-player/script/debugger/chronicle.js":
 /*!********************************************************************!*\
   !*** ./node_modules/bigscreen-player/script/debugger/chronicle.js ***!
@@ -1617,9 +1558,10 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LiveSupport) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LiveSupport, MediaPlayerBase) {
   'use strict';
 
+  var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
   var FOUR_MINUTES = 4 * 60;
 
   function convertMilliSecondsToSeconds(timeInMilis) {
@@ -1653,10 +1595,28 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
   }
 
   function supportsSeeking(liveSupport) {
-    return liveSupport === LiveSupport.SEEKABLE;
+    return liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.RESTARTABLE && window.bigscreenPlayer.playbackStrategy === 'nativestrategy';
+  }
+
+  function autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, resume) {
+    var resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
+    var autoResumeTimer = setTimeout(function () {
+      removeEventCallback(undefined, detectIfUnpaused);
+      resume();
+    }, resumeTimeOut * 1000);
+
+    addEventCallback(undefined, detectIfUnpaused);
+
+    function detectIfUnpaused(event) {
+      if (event.state !== MediaPlayerBase.STATE.PAUSED) {
+        removeEventCallback(undefined, detectIfUnpaused);
+        clearTimeout(autoResumeTimer);
+      }
+    }
   }
 
   return {
+    autoResumeAtStartOfRange: autoResumeAtStartOfRange,
     canPause: canPause,
     canSeek: canSeek
   };
@@ -1677,28 +1637,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/manifest/manifestparser */ "./node_modules/bigscreen-player/script/manifest/manifestparser.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js"), __webpack_require__(/*! bigscreenplayer/utils/loadurl */ "./node_modules/bigscreen-player/script/utils/loadurl.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (ManifestParser, TransferFormats, LoadUrl) {
   'use strict';
-
-  function filterHLS(urls) {
-    var filtered = [];
-    for (var i = 0; i < urls.length; i++) {
-      var isHLS = /\.m3u8($|\?.*$)/.test(urls[i].url);
-      if (isHLS) {
-        filtered.push(urls[i].url);
-      }
-    }
-    return filtered;
-  }
-
-  function filterDash(urls) {
-    var filtered = [];
-    for (var i = 0; i < urls.length; i++) {
-      var isDash = /\.mpd($|\?.*$)/.test(urls[i].url);
-      if (isDash) {
-        filtered.push(urls[i].url);
-      }
-    }
-    return filtered;
-  }
 
   function retrieveDashManifest(url, dateWithOffset, callbacks) {
     var xhr = LoadUrl(url, {
@@ -1782,14 +1720,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
   }
 
   return {
-    load: function load(mediaUrls, serverDate, callbacks) {
-      var hlsUrl = filterHLS(mediaUrls)[0];
-      var dashUrl = filterDash(mediaUrls)[0];
-
-      if (hlsUrl) {
-        retrieveHLSManifest(hlsUrl, serverDate, callbacks);
-      } else if (dashUrl) {
-        retrieveDashManifest(dashUrl, serverDate, callbacks);
+    load: function load(mediaUrl, serverDate, callbacks) {
+      if (/\.m3u8($|\?.*$)/.test(mediaUrl)) {
+        retrieveHLSManifest(mediaUrl, serverDate, callbacks);
+      } else if (/\.mpd($|\?.*$)/.test(mediaUrl)) {
+        retrieveDashManifest(mediaUrl, serverDate, callbacks);
       } else {
         callbacks.onError('Invalid media url');
       }
@@ -1808,12 +1743,12 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (DebugTool) {
   'use strict';
 
-  function filter(manifest, representationOptions) {
+  function filter(manifest, representationOptions, oldDashCodecRequired) {
     var constantFps = representationOptions.constantFps;
     var maxFps = representationOptions.maxFps;
 
@@ -1834,6 +1769,14 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
         return adaptationSet;
       });
     }
+
+    if (oldDashCodecRequired) {
+      DebugTool.keyValue({ key: 'Video Container', value: 'avc1' });
+      manifest = rewriteDashCodec(manifest);
+    } else {
+      DebugTool.keyValue({ key: 'Video Container', value: 'avc3' });
+    }
+
     return manifest;
   }
 
@@ -1846,11 +1789,11 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
     if (!baseUrl || baseUrl.match(/^https?:\/\//)) return;
 
     var baseUrls = sources.map(function (source, priority) {
-      var sourceUrl = new URL(baseUrl, source.url);
+      var sourceUrl = new URL(baseUrl, source);
       return {
         __text: sourceUrl.href,
         'dvb:priority': priority,
-        serviceLocation: source.cdn
+        serviceLocation: source
       };
     });
 
@@ -1859,12 +1802,35 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
     if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
   }
 
+  function rewriteDashCodec(manifest) {
+    var periods = manifest.Period_asArray || [manifest.Period];
+    if (periods) {
+      for (var i = 0; i < periods.length; i++) {
+        var sets = periods[i].AdaptationSet_asArray || periods[i].AdaptationSet;
+        if (sets) {
+          for (var j = 0; j < sets.length; j++) {
+            var representations = sets[j].Representation_asArray || [sets[j].Representation];
+            if (representations) {
+              for (var k = 0; k < representations.length; k++) {
+                var rep = representations[k];
+                if (rep.mimeType === 'video/mp4') {
+                  rep.codecs = rep.codecs.replace('avc3', 'avc1');
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return manifest;
+  }
+
   return {
     filter: filter,
     extractBaseUrl: extractBaseUrl,
     generateBaseUrls: generateBaseUrls
   };
-}).call(exports, __webpack_require__, exports, module),
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 var _CoreEvents3 = _interopRequireDefault(_CoreEvents2);
@@ -1971,28 +1937,198 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 /***/ }),
 
-/***/ "./node_modules/bigscreen-player/script/mediaresilience.js":
-/*!*****************************************************************!*\
-  !*** ./node_modules/bigscreen-player/script/mediaresilience.js ***!
-  \*****************************************************************/
+/***/ "./node_modules/bigscreen-player/script/mediasources.js":
+/*!**************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/mediasources.js ***!
+  \**************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (WindowTypes, LiveSupport, TransferFormats) {
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestloader */ "./node_modules/bigscreen-player/script/manifest/manifestloader.js"), __webpack_require__(/*! bigscreenplayer/models/playbackstrategy */ "./node_modules/bigscreen-player/script/models/playbackstrategy.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy, TransferFormats, LiveSupport) {
   'use strict';
 
-  function shouldFailover(remainingUrls, duration, currentTime, liveSupport, windowType, transferFormat) {
-    var aboutToEnd = duration && currentTime > duration - 5;
-    var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
-    var shouldLiveFailover = windowType !== WindowTypes.STATIC && (transferFormat === TransferFormats.DASH || liveSupport !== LiveSupport.RESTARTABLE);
-    return remainingUrls > 1 && (shouldStaticFailover || shouldLiveFailover);
-  }
+  return function () {
+    var mediaSources;
+    var windowType;
+    var liveSupport;
+    var serverDate;
+    var time = {};
+    var transferFormat;
 
-  return {
-    shouldFailover: shouldFailover
+    function init(urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
+      if (urls === undefined || urls.length === 0) {
+        throw new Error('Media Sources urls are undefined');
+      }
+
+      if (callbacks === undefined || callbacks.onSuccess === undefined || callbacks.onError === undefined) {
+        throw new Error('Media Sources callbacks are undefined');
+      }
+
+      windowType = newWindowType;
+      liveSupport = newLiveSupport;
+      serverDate = newServerDate;
+      mediaSources = PlaybackUtils.cloneArray(urls);
+      updateDebugOutput();
+
+      if (needToGetManifest(windowType, liveSupport)) {
+        loadManifest(serverDate, callbacks);
+      } else {
+        callbacks.onSuccess();
+      }
+    }
+
+    function failover(postFailoverAction, failoverErrorAction, failoverParams) {
+      if (shouldFailover(failoverParams)) {
+        emitCdnFailover(failoverParams);
+        updateCdns();
+        updateDebugOutput();
+
+        if (needToGetManifest(windowType, liveSupport)) {
+          loadManifest(serverDate, { onSuccess: postFailoverAction, onError: failoverErrorAction });
+        } else {
+          postFailoverAction();
+        }
+      } else {
+        failoverErrorAction();
+      }
+    }
+
+    function shouldFailover(failoverParams) {
+      if (failoverParams.serviceLocation === getCurrentUrl()) {
+        return false;
+      }
+
+      var talRestartable = window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.TAL && liveSupport === LiveSupport.RESTARTABLE;
+      var aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5;
+      var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
+      var shouldLiveFailover = windowType !== WindowTypes.STATIC && !talRestartable;
+      return isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
+    }
+
+    function isFailoverInfoValid(failoverParams) {
+      var infoValid = (typeof failoverParams === 'undefined' ? 'undefined' : _typeof(failoverParams)) === 'object' && typeof failoverParams.errorMessage === 'string' && typeof failoverParams.isBufferingTimeoutError === 'boolean';
+
+      if (!infoValid) {
+        DebugTool.error('failoverInfo is not valid');
+      }
+
+      return infoValid;
+    }
+
+    function needToGetManifest(windowType, liveSupport) {
+      var requiresManifestLoad = {
+        restartable: true,
+        seekable: true,
+        playable: false,
+        none: false
+      };
+
+      var requiredTransferFormat = transferFormat === TransferFormats.HLS || transferFormat === undefined;
+      return requiredTransferFormat && windowType !== WindowTypes.STATIC && requiresManifestLoad[liveSupport];
+    }
+
+    function refresh(onSuccess, onError) {
+      loadManifest(serverDate, { onSuccess: onSuccess, onError: onError });
+    }
+
+    function loadManifest(serverDate, callbacks) {
+      var onManifestLoadSuccess = function onManifestLoadSuccess(manifestData) {
+        time = manifestData.time;
+        transferFormat = manifestData.transferFormat;
+        callbacks.onSuccess();
+      };
+
+      var failoverError = function failoverError() {
+        callbacks.onError({ error: 'manifest' });
+      };
+
+      var onManifestLoadError = function onManifestLoadError() {
+        failover(load, failoverError, { errorMessage: 'manifest-load', isBufferingTimeoutError: false });
+      };
+
+      function load() {
+        ManifestLoader.load(getCurrentUrl(), serverDate, {
+          onSuccess: onManifestLoadSuccess,
+          onError: onManifestLoadError
+        });
+      }
+
+      load();
+    }
+
+    function getCurrentUrl() {
+      if (mediaSources.length > 0) {
+        return mediaSources[0].url.toString();
+      }
+
+      return '';
+    }
+
+    function availableUrls() {
+      return mediaSources.map(function (mediaSource) {
+        return mediaSource.url;
+      });
+    }
+
+    function generateTime() {
+      return time;
+    }
+
+    function updateCdns() {
+      if (hasSourcesToFailoverTo()) {
+        mediaSources.shift();
+      }
+    }
+
+    function hasSourcesToFailoverTo() {
+      return mediaSources.length > 1;
+    }
+
+    function emitCdnFailover(failoverInfo) {
+      var evt = new PluginData({
+        status: PluginEnums.STATUS.FAILOVER,
+        stateType: PluginEnums.TYPE.ERROR,
+        properties: { error_mssg: failoverInfo.errorMessage },
+        isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
+        cdn: mediaSources[0].cdn,
+        newCdn: mediaSources[1].cdn
+      });
+      Plugins.interface.onErrorHandled(evt);
+    }
+
+    function getCurrentCdn() {
+      if (mediaSources.length > 0) {
+        return mediaSources[0].cdn.toString();
+      }
+
+      return '';
+    }
+
+    function availableCdns() {
+      return mediaSources.map(function (mediaSource) {
+        return mediaSource.cdn;
+      });
+    }
+
+    function updateDebugOutput() {
+      DebugTool.keyValue({ key: 'available cdns', value: availableCdns() });
+      DebugTool.keyValue({ key: 'current cdn', value: getCurrentCdn() });
+      DebugTool.keyValue({ key: 'url', value: getCurrentUrl() });
+    }
+
+    return {
+      init: init,
+      failover: failover,
+      refresh: refresh,
+      currentSource: getCurrentUrl,
+      availableSources: availableUrls,
+      time: generateTime
+    };
   };
 }).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -2540,6 +2676,30 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 
 /***/ }),
 
+/***/ "./node_modules/bigscreen-player/script/models/playbackstrategy.js":
+/*!*************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/models/playbackstrategy.js ***!
+  \*************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  'use strict';
+
+  return {
+    MSE: 'msestrategy',
+    HYBRID: 'hybridstrategy',
+    NATIVE: 'nativestrategy',
+    TAL: 'talstrategy'
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
 /***/ "./node_modules/bigscreen-player/script/models/transferformats.js":
 /*!************************************************************************!*\
   !*** ./node_modules/bigscreen-player/script/models/transferformats.js ***!
@@ -2667,8 +2827,12 @@ var map = {
 	"./liveglitchcurtain.js": "./node_modules/bigscreen-player/script/playbackstrategy/liveglitchcurtain.js",
 	"./mockstrategy": "./node_modules/bigscreen-player/script/playbackstrategy/mockstrategy.js",
 	"./mockstrategy.js": "./node_modules/bigscreen-player/script/playbackstrategy/mockstrategy.js",
+	"./modifiers/cehtml": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js",
+	"./modifiers/cehtml.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js",
 	"./modifiers/html5": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
 	"./modifiers/html5.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
+	"./modifiers/live/none": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
+	"./modifiers/live/none.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
 	"./modifiers/live/playable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
 	"./modifiers/live/playable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
 	"./modifiers/live/restartable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
@@ -2720,15 +2884,15 @@ webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy syn
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/nativestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/nativestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/msestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/msestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/strategypicker */ "./node_modules/bigscreen-player/script/playbackstrategy/strategypicker.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Native, MSE, StrategyPicker, LiveSupport) {
-  var HybridStrategy = function HybridStrategy(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/nativestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/nativestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/msestrategy */ "./node_modules/bigscreen-player/script/playbackstrategy/msestrategy.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/strategypicker */ "./node_modules/bigscreen-player/script/playbackstrategy/strategypicker.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/models/playbackstrategy */ "./node_modules/bigscreen-player/script/models/playbackstrategy.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Native, MSE, StrategyPicker, LiveSupport, PlaybackStrategy) {
+  var HybridStrategy = function HybridStrategy(mediaSources, windowType, mediaKind, videoElement, isUHD, device) {
     var strategy = StrategyPicker(windowType, isUHD);
 
-    if (strategy === 'mseStrategy') {
-      return MSE(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput);
+    if (strategy === PlaybackStrategy.MSE) {
+      return MSE(mediaSources, windowType, mediaKind, videoElement, isUHD, device);
     }
 
-    return Native(windowType, mediaKind, timeCorrection, videoElement, isUHD, device, cdnDebugOutput);
+    return Native(mediaSources, windowType, mediaKind, videoElement, isUHD, device);
   };
 
   HybridStrategy.getLiveSupport = function () {
@@ -2752,7 +2916,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/allowedmediatransitions */ "./node_modules/bigscreen-player/script/allowedmediatransitions.js"), __webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/liveglitchcurtain */ "./node_modules/bigscreen-player/script/playbackstrategy/liveglitchcurtain.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (AllowedMediaTransitions, MediaState, WindowTypes, DebugTool, LiveGlitchCurtain) {
-  return function (windowType, mediaKind, timeData, playbackElement, isUHD, deviceConfig, player) {
+  return function (mediaSources, windowType, playbackElement, isUHD, deviceConfig, player) {
     var EVENT_HISTORY_LENGTH = 2;
 
     var mediaPlayer = player;
@@ -2762,7 +2926,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var errorCallback;
     var timeUpdateCallback;
     var currentTime;
-    var timeCorrection = timeData && timeData.correction || 0;
+    var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
     var duration = 0;
     var _isPaused;
     var _isEnded = false;
@@ -2780,7 +2944,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
     var config = deviceConfig;
     var setSourceOpts = {
-      disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels
+      disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels,
+      disableSeekSentinel: window.bigscreenPlayer.disableSeekSentinel
     };
 
     mediaPlayer.addEventCallback(this, eventHandler);
@@ -2833,7 +2998,14 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
     function onTimeUpdate(event) {
       _isPaused = false;
-      currentTime = event.currentTime - timeCorrection;
+
+      // Note: Multiple consecutive CDN failover logic
+      // A newly loaded video element will always report a 0 time update
+      // This is slightly unhelpful if we want to continue from a later point but consult currentTime as the source of truth.
+      if (parseInt(event.currentTime) !== 0) {
+        currentTime = event.currentTime - timeCorrection;
+      }
+
       // Must publish this time update before checkSeekSucceded - which could cause a pause event
       // This is a device specific event ordering issue.
       publishTimeUpdate();
@@ -2859,11 +3031,32 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function onSeekAttempted(event) {
-      showCurtain();
+      if (requiresLiveCurtain()) {
+        var doNotForceBeginPlaybackToEndOfWindow = {
+          forceBeginPlaybackToEndOfWindow: false
+        };
+
+        var streaming = config.streaming || {
+          overrides: doNotForceBeginPlaybackToEndOfWindow
+        };
+
+        var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
+
+        var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
+
+        if (shouldShowCurtain) {
+          liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
+          liveGlitchCurtain.showCurtain();
+        }
+      }
     }
 
     function onSeekFinished(event) {
-      hideCurtain();
+      if (requiresLiveCurtain()) {
+        if (liveGlitchCurtain) {
+          liveGlitchCurtain.hideCurtain();
+        }
+      }
     }
 
     function publishMediaState(mediaState) {
@@ -2937,29 +3130,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       mediaPlayer.beginPlaybackFrom(currentTime + timeCorrection || 0);
     }
 
-    function showCurtain() {
-      var doNotForceBeginPlaybackToEndOfWindow = {
-        forceBeginPlaybackToEndOfWindow: false
-      };
-
-      var streaming = config.streaming || {
-        overrides: doNotForceBeginPlaybackToEndOfWindow
-      };
-
-      var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
-
-      var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
-
-      if (shouldShowCurtain) {
-        liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
-        liveGlitchCurtain.showCurtain();
-      }
-    }
-
-    function hideCurtain() {
-      if (liveGlitchCurtain) {
-        liveGlitchCurtain.hideCurtain();
-      }
+    function requiresLiveCurtain() {
+      return !!window.bigscreenPlayer.showLiveCurtain;
     }
 
     function reset() {
@@ -2986,15 +3158,14 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
           newTimeUpdateCallback.call(thisArg);
         };
       },
-      load: function load(cdns, mimeType, startTime) {
-        var source = cdns[0].url;
+      load: function load(mimeType, startTime) {
         setupExitSeekWorkarounds(mimeType);
         _isPaused = false;
 
         hasStartTime = startTime || startTime === 0;
         var isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime;
 
-        mediaPlayer.initialiseMedia('video', source, mimeType, playbackElement, setSourceOpts);
+        mediaPlayer.initialiseMedia('video', mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts);
         if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
           currentTime = startTime;
           mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);
@@ -3243,7 +3414,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
     }
   };
 
-  var MockStrategy = function MockStrategy(playbackFrame, playbackType, streamType, mediaType, timeData, videoContainer) {
+  var MockStrategy = function MockStrategy(mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, device) {
     return instance;
   };
 
@@ -3253,6 +3424,775 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 
   return MockStrategy;
 }).call(exports, __webpack_require__, exports, module),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers sync recursive ^\\.\\/.*$":
+/*!***************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers sync ^\.\/.*$ ***!
+  \***************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+var map = {
+	"./cehtml": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js",
+	"./cehtml.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js",
+	"./html5": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
+	"./html5.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js",
+	"./live/none": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
+	"./live/none.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
+	"./live/playable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
+	"./live/playable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
+	"./live/restartable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
+	"./live/restartable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
+	"./live/seekable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js",
+	"./live/seekable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js",
+	"./mediaplayerbase": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js",
+	"./mediaplayerbase.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js"
+};
+
+
+function webpackContext(req) {
+	var id = webpackContextResolve(req);
+	return __webpack_require__(id);
+}
+function webpackContextResolve(req) {
+	var id = map[req];
+	if(!(id + 1)) { // check for number or string
+		var e = new Error("Cannot find module '" + req + "'");
+		e.code = 'MODULE_NOT_FOUND';
+		throw e;
+	}
+	return id;
+}
+webpackContext.keys = function webpackContextKeys() {
+	return Object.keys(map);
+};
+webpackContext.resolve = webpackContextResolve;
+module.exports = webpackContext;
+webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy/modifiers sync recursive ^\\.\\/.*$";
+
+/***/ }),
+
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js":
+/*!***********************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/cehtml.js ***!
+  \***********************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase, DebugTool) {
+  'use strict';
+
+  var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
+
+  var STATE = {
+    STOPPED: 0,
+    PLAYING: 1,
+    PAUSED: 2,
+    CONNECTING: 3,
+    BUFFERING: 4,
+    FINISHED: 5,
+    ERROR: 6
+  };
+
+  return function () {
+    var eventCallbacks = [];
+    var state = MediaPlayerBase.STATE.EMPTY;
+
+    var mediaElement;
+    var updateInterval;
+
+    var mediaType;
+    var source;
+    var mimeType;
+
+    var deferSeekingTo;
+    var range;
+
+    var postBufferingState;
+
+    var disableSentinels;
+
+    var sentinelSeekTime;
+    var seekSentinelTolerance;
+    var sentinelInterval;
+    var sentinelIntervalNumber;
+    var timeAtLastSentinelInterval;
+
+    var sentinelTimeIsNearEnd;
+    var timeHasAdvanced;
+
+    var sentinelLimits = {
+      pause: {
+        maximumAttempts: 2,
+        successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
+        failureEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE,
+        currentAttemptCount: 0
+      },
+      seek: {
+        maximumAttempts: 2,
+        successEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK,
+        failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
+        currentAttemptCount: 0
+      }
+    };
+
+    function addEventCallback(thisArg, callback) {
+      var eventCallback = function eventCallback(event) {
+        callback.call(thisArg, event);
+      };
+
+      eventCallbacks.push({ from: callback, to: eventCallback });
+    }
+
+    function removeEventCallback(thisArg, callback) {
+      eventCallbacks = eventCallbacks.filter(function (cb) {
+        return cb.from !== callback;
+      });
+    }
+
+    function removeAllEventCallbacks() {
+      eventCallbacks = [];
+    }
+
+    function emitEvent(eventType, eventLabels) {
+      var event = {
+        type: eventType,
+        currentTime: getCurrentTime(),
+        seekableRange: getSeekableRange(),
+        duration: getDuration(),
+        url: getSource(),
+        mimeType: getMimeType(),
+        state: getState()
+      };
+
+      if (eventLabels) {
+        for (var key in eventLabels) {
+          if (eventLabels.hasOwnProperty(key)) {
+            event[key] = eventLabels[key];
+          }
+        }
+      }
+
+      eventCallbacks.forEach(function (callback) {
+        callback.to(event);
+      });
+    }
+
+    function getClampedTime(seconds) {
+      var range = getSeekableRange();
+      var offsetFromEnd = getClampOffsetFromConfig();
+      var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
+      if (seconds < range.start) {
+        return range.start;
+      } else if (seconds > nearToEnd) {
+        return nearToEnd;
+      } else {
+        return seconds;
+      }
+    }
+
+    function getClampOffsetFromConfig() {
+      var clampOffsetFromEndOfRange;
+
+      // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
+      // if (config && config.streaming && config.streaming.overrides) {
+      //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
+      // }
+
+      if (clampOffsetFromEndOfRange !== undefined) {
+        return clampOffsetFromEndOfRange;
+      } else {
+        return CLAMP_OFFSET_FROM_END_OF_RANGE;
+      }
+    }
+
+    function isLiveMedia() {
+      return mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO;
+    }
+
+    function getSource() {
+      return source;
+    }
+
+    function getMimeType() {
+      return mimeType;
+    }
+
+    function getState() {
+      return state;
+    }
+
+    function setSeekSentinelTolerance() {
+      var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15;
+      var LIVE_SEEK_SENTINEL_TOLERANCE = 30;
+
+      seekSentinelTolerance = ON_DEMAND_SEEK_SENTINEL_TOLERANCE;
+      if (isLiveMedia()) {
+        seekSentinelTolerance = LIVE_SEEK_SENTINEL_TOLERANCE;
+      }
+    }
+
+    function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts) {
+      disableSentinels = opts.disableSentinels;
+      mediaType = type;
+      source = url;
+      mimeType = mediaMimeType;
+      opts = opts || {};
+
+      if (getState() === MediaPlayerBase.STATE.EMPTY) {
+        timeAtLastSentinelInterval = 0;
+        setSeekSentinelTolerance();
+        createElement();
+        addElementToDOM();
+        mediaElement.data = source;
+        registerEventHandlers();
+        toStopped();
+      } else {
+        toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state');
+      }
+    }
+
+    function resume() {
+      postBufferingState = MediaPlayerBase.STATE.PLAYING;
+      switch (getState()) {
+        case MediaPlayerBase.STATE.PLAYING:
+        case MediaPlayerBase.STATE.BUFFERING:
+          break;
+
+        case MediaPlayerBase.STATE.PAUSED:
+          mediaElement.play(1);
+          toPlaying();
+          break;
+
+        default:
+          toError('Cannot resume while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function playFrom(seconds) {
+      postBufferingState = MediaPlayerBase.STATE.PLAYING;
+      sentinelLimits.seek.currentAttemptCount = 0;
+      switch (getState()) {
+        case MediaPlayerBase.STATE.BUFFERING:
+          deferSeekingTo = seconds;
+          break;
+
+        case MediaPlayerBase.STATE.COMPLETE:
+          toBuffering();
+          mediaElement.stop();
+          playAndSetDeferredSeek(seconds);
+          break;
+
+        case MediaPlayerBase.STATE.PLAYING:
+          toBuffering();
+          var seekResult = seekTo(seconds);
+          if (seekResult === false) {
+            toPlaying();
+          }
+          break;
+
+        case MediaPlayerBase.STATE.PAUSED:
+          toBuffering();
+          seekTo(seconds);
+          mediaElement.play(1);
+          break;
+
+        default:
+          toError('Cannot playFrom while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function getDuration() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          return undefined;
+        default:
+          if (isLiveMedia()) {
+            return Infinity;
+          }
+          return getMediaDuration();
+      }
+    }
+
+    function beginPlayback() {
+      postBufferingState = MediaPlayerBase.STATE.PLAYING;
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+          toBuffering();
+          mediaElement.play(1);
+          break;
+
+        default:
+          toError('Cannot beginPlayback while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function beginPlaybackFrom(seconds) {
+      postBufferingState = MediaPlayerBase.STATE.PLAYING;
+      sentinelLimits.seek.currentAttemptCount = 0;
+
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+          // Seeking past 0 requires calling play first when media has not been loaded
+          toBuffering();
+          playAndSetDeferredSeek(seconds);
+          break;
+
+        default:
+          toError('Cannot beginPlayback while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function pause() {
+      postBufferingState = MediaPlayerBase.STATE.PAUSED;
+      switch (getState()) {
+        case MediaPlayerBase.STATE.BUFFERING:
+        case MediaPlayerBase.STATE.PAUSED:
+          break;
+
+        case MediaPlayerBase.STATE.PLAYING:
+          mediaElement.play(0);
+          toPaused();
+          break;
+
+        default:
+          toError('Cannot pause while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function stop() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+          break;
+
+        case MediaPlayerBase.STATE.BUFFERING:
+        case MediaPlayerBase.STATE.PLAYING:
+        case MediaPlayerBase.STATE.PAUSED:
+        case MediaPlayerBase.STATE.COMPLETE:
+          sentinelSeekTime = undefined;
+          if (mediaElement.stop) {
+            mediaElement.stop();
+            toStopped();
+          } else {
+            toError('mediaElement.stop is not a function : failed to stop the media player');
+          }
+          break;
+
+        default:
+          toError('Cannot stop while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function reset() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.EMPTY:
+          break;
+
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          toEmpty();
+          break;
+
+        default:
+          toError('Cannot reset while in the \'' + getState() + '\' state');
+          break;
+      }
+    }
+
+    function getCurrentTime() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          break;
+
+        case MediaPlayerBase.STATE.COMPLETE:
+          if (range) {
+            return range.end;
+          }
+          break;
+
+        default:
+          if (mediaElement) {
+            return mediaElement.playPosition / 1000;
+          }
+          break;
+      }
+      return undefined;
+    }
+
+    function getSeekableRange() {
+      switch (getState()) {
+        case MediaPlayerBase.STATE.STOPPED:
+        case MediaPlayerBase.STATE.ERROR:
+          break;
+
+        default:
+          return range;
+      }
+      return undefined;
+    }
+
+    function getMediaDuration() {
+      if (range) {
+        return range.end;
+      }
+      return undefined;
+    }
+
+    function getPlayerElement() {
+      return mediaElement;
+    }
+
+    function onFinishedBuffering() {
+      cacheRange();
+
+      if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
+        return;
+      }
+
+      if (waitingToSeek()) {
+        toBuffering();
+        performDeferredSeek();
+      } else if (waitingToPause()) {
+        toPaused();
+        mediaElement.play(0);
+      } else {
+        toPlaying();
+      }
+    }
+
+    function onDeviceError() {
+      reportError('Media element error code: ' + mediaElement.error);
+    }
+
+    function onDeviceBuffering() {
+      if (getState() === MediaPlayerBase.STATE.PLAYING) {
+        toBuffering();
+      }
+    }
+
+    function onEndOfMedia() {
+      if (getState() !== MediaPlayerBase.STATE.COMPLETE) {
+        toComplete();
+      }
+    }
+
+    function onStatus() {
+      if (getState() === MediaPlayerBase.STATE.PLAYING) {
+        emitEvent(MediaPlayerBase.EVENT.STATUS);
+      }
+    }
+
+    function createElement() {
+      mediaElement = document.createElement('object', 'mediaPlayer');
+      mediaElement.type = mimeType;
+      mediaElement.style.position = 'absolute';
+      mediaElement.style.top = '0px';
+      mediaElement.style.left = '0px';
+      mediaElement.style.width = '100%';
+      mediaElement.style.height = '100%';
+    }
+
+    function registerEventHandlers() {
+      var DEVICE_UPDATE_PERIOD_MS = 500;
+
+      mediaElement.onPlayStateChange = function () {
+        switch (mediaElement.playState) {
+          case STATE.STOPPED:
+            break;
+          case STATE.PLAYING:
+            onFinishedBuffering();
+            break;
+          case STATE.PAUSED:
+            break;
+          case STATE.CONNECTING:
+            break;
+          case STATE.BUFFERING:
+            onDeviceBuffering();
+            break;
+          case STATE.FINISHED:
+            onEndOfMedia();
+            break;
+          case STATE.ERROR:
+            onDeviceError();
+            break;
+          default:
+            // do nothing
+            break;
+        }
+      };
+
+      updateInterval = setInterval(function () {
+        onStatus();
+      }, DEVICE_UPDATE_PERIOD_MS);
+    }
+
+    function addElementToDOM() {
+      var body = document.getElementsByTagName('body')[0];
+      body.insertBefore(mediaElement, body.firstChild);
+    }
+
+    function cacheRange() {
+      if (mediaElement) {
+        range = {
+          start: 0,
+          end: mediaElement.playTime / 1000
+        };
+      }
+    }
+
+    function playAndSetDeferredSeek(seconds) {
+      mediaElement.play(1);
+      if (seconds > 0) {
+        deferSeekingTo = seconds;
+      }
+    }
+
+    function waitingToSeek() {
+      return deferSeekingTo !== undefined;
+    }
+
+    function performDeferredSeek() {
+      seekTo(deferSeekingTo);
+      deferSeekingTo = undefined;
+    }
+
+    function seekTo(seconds) {
+      var clampedTime = getClampedTime(seconds);
+      if (clampedTime !== seconds) {
+        DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+      }
+      sentinelSeekTime = clampedTime;
+      return mediaElement.seek(clampedTime * 1000);
+    }
+
+    function waitingToPause() {
+      return postBufferingState === MediaPlayerBase.STATE.PAUSED;
+    }
+
+    function wipe() {
+      mediaType = undefined;
+      source = undefined;
+      mimeType = undefined;
+      sentinelSeekTime = undefined;
+      range = undefined;
+      if (mediaElement) {
+        clearInterval(updateInterval);
+        clearSentinels();
+        destroyMediaElement();
+      } else {}
+    }
+
+    function destroyMediaElement() {
+      delete mediaElement.onPlayStateChange;
+      if (mediaElement.parentElement) {
+        mediaElement.parentElement.removeChild(mediaElement);
+      } else {}
+      mediaElement = undefined;
+    }
+
+    function reportError(errorMessage) {
+      DebugTool.info(errorMessage);
+      emitEvent(MediaPlayerBase.EVENT.ERROR, { 'errorMessage': errorMessage });
+    }
+
+    function toStopped() {
+      state = MediaPlayerBase.STATE.STOPPED;
+      emitEvent(MediaPlayerBase.EVENT.STOPPED);
+      if (sentinelInterval) {
+        clearSentinels();
+      }
+    }
+
+    function toBuffering() {
+      state = MediaPlayerBase.STATE.BUFFERING;
+      emitEvent(MediaPlayerBase.EVENT.BUFFERING);
+      setSentinels([exitBufferingSentinel]);
+    }
+
+    function toPlaying() {
+      state = MediaPlayerBase.STATE.PLAYING;
+      emitEvent(MediaPlayerBase.EVENT.PLAYING);
+      setSentinels([shouldBeSeekedSentinel, enterCompleteSentinel, enterBufferingSentinel]);
+    }
+
+    function toPaused() {
+      state = MediaPlayerBase.STATE.PAUSED;
+      emitEvent(MediaPlayerBase.EVENT.PAUSED);
+      setSentinels([shouldBePausedSentinel, shouldBeSeekedSentinel]);
+    }
+
+    function toComplete() {
+      state = MediaPlayerBase.STATE.COMPLETE;
+      emitEvent(MediaPlayerBase.EVENT.COMPLETE);
+      clearSentinels();
+    }
+
+    function toEmpty() {
+      wipe();
+      state = MediaPlayerBase.STATE.EMPTY;
+    }
+
+    function toError(errorMessage) {
+      wipe();
+      state = MediaPlayerBase.STATE.ERROR;
+      reportError(errorMessage);
+    }
+
+    function isNearToEnd(seconds) {
+      return getDuration() - seconds <= 1;
+    }
+
+    function setSentinels(sentinels) {
+      if (disableSentinels) {
+        return;
+      }
+
+      sentinelLimits.pause.currentAttemptCount = 0;
+      timeAtLastSentinelInterval = getCurrentTime();
+      clearSentinels();
+      sentinelIntervalNumber = 0;
+      sentinelInterval = setInterval(function () {
+        var newTime = getCurrentTime();
+        sentinelIntervalNumber++;
+
+        timeHasAdvanced = newTime ? newTime > timeAtLastSentinelInterval + 0.2 : false;
+        sentinelTimeIsNearEnd = isNearToEnd(newTime || timeAtLastSentinelInterval);
+
+        for (var i = 0; i < sentinels.length; i++) {
+          var sentinelActionPerformed = sentinels[i].call(this);
+          if (sentinelActionPerformed) {
+            break;
+          }
+        }
+
+        timeAtLastSentinelInterval = newTime;
+      }, 1100);
+    }
+
+    function clearSentinels() {
+      clearInterval(sentinelInterval);
+    }
+
+    function enterBufferingSentinel() {
+      var sentinelBufferingRequired = !timeHasAdvanced && !sentinelTimeIsNearEnd && sentinelIntervalNumber > 1;
+      if (sentinelBufferingRequired) {
+        emitEvent(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING);
+        toBuffering();
+      }
+      return sentinelBufferingRequired;
+    }
+
+    function exitBufferingSentinel() {
+      var sentinelExitBufferingRequired = timeHasAdvanced;
+      if (sentinelExitBufferingRequired) {
+        emitEvent(MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING);
+        onFinishedBuffering();
+      }
+      return sentinelExitBufferingRequired;
+    }
+
+    function shouldBeSeekedSentinel() {
+      if (sentinelSeekTime === undefined) {
+        return false;
+      }
+
+      var currentTime = getCurrentTime();
+
+      var clampedSentinelSeekTime = getClampedTime(sentinelSeekTime);
+
+      var sentinelSeekRequired = Math.abs(clampedSentinelSeekTime - currentTime) > seekSentinelTolerance;
+      var sentinelActionTaken = false;
+
+      if (sentinelSeekRequired) {
+        var mediaElement = mediaElement;
+        sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
+          mediaElement.seek(clampedSentinelSeekTime * 1000);
+        });
+      } else if (sentinelIntervalNumber < 3) {
+        sentinelSeekTime = currentTime;
+      } else {
+        sentinelSeekTime = undefined;
+      }
+      return sentinelActionTaken;
+    }
+
+    function shouldBePausedSentinel() {
+      var sentinelPauseRequired = timeHasAdvanced;
+      var sentinelActionTaken = false;
+      if (sentinelPauseRequired) {
+        var mediaElement = mediaElement;
+        sentinelActionTaken = nextSentinelAttempt(sentinelLimits.pause, function () {
+          mediaElement.play(0);
+        });
+      }
+      return sentinelActionTaken;
+    }
+
+    function enterCompleteSentinel() {
+      var sentinelCompleteRequired = !timeHasAdvanced && sentinelTimeIsNearEnd;
+      if (sentinelCompleteRequired) {
+        emitEvent(MediaPlayerBase.EVENT.SENTINEL_COMPLETE);
+        onEndOfMedia();
+      }
+      return sentinelCompleteRequired;
+    }
+
+    function nextSentinelAttempt(sentinelInfo, attemptFn) {
+      var currentAttemptCount, maxAttemptCount;
+
+      sentinelInfo.currentAttemptCount += 1;
+      currentAttemptCount = sentinelInfo.currentAttemptCount;
+      maxAttemptCount = sentinelInfo.maximumAttempts;
+
+      if (currentAttemptCount === maxAttemptCount + 1) {
+        emitEvent(sentinelInfo.failureEvent);
+      }
+
+      if (currentAttemptCount <= maxAttemptCount) {
+        attemptFn();
+        emitEvent(sentinelInfo.successEvent);
+        return true;
+      }
+
+      return false;
+    }
+
+    return {
+      addEventCallback: addEventCallback,
+      removeEventCallback: removeEventCallback,
+      removeAllEventCallbacks: removeAllEventCallbacks,
+      initialiseMedia: initialiseMedia,
+      resume: resume,
+      playFrom: playFrom,
+      beginPlayback: beginPlayback,
+      beginPlaybackFrom: beginPlaybackFrom,
+      pause: pause,
+      stop: stop,
+      reset: reset,
+      getSource: getSource,
+      getMimeType: getMimeType,
+      getSeekableRange: getSeekableRange,
+      getMediaDuration: getMediaDuration,
+      getState: getState,
+      getPlayerElement: getPlayerElement,
+      getDuration: getDuration
+    };
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
@@ -3270,7 +4210,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase) {
   'use strict';
 
-  function Player(logger) {
+  function Player(deviceConfig) {
     var eventCallback;
     var eventCallbacks = [];
     var state = MediaPlayerBase.STATE.EMPTY;
@@ -3289,8 +4229,13 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
     var postBufferingState;
     var targetSeekTime;
+    var seekFinished;
+
+    var count;
+    var timeoutHappened;
 
     var disableSentinels;
+    var disableSeekSentinel;
     var hasSentinelTimeChangedWithinTolerance;
     var enterBufferingSentinelAttemptCount;
     var sentinelSeekTime;
@@ -3463,7 +4408,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function shouldBeSeekedSentinel() {
-      if (sentinelSeekTime === undefined) {
+      if (sentinelSeekTime === undefined || disableSeekSentinel) {
         return false;
       }
 
@@ -3558,7 +4503,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function reportError(errorMessage) {
-      logger.error(errorMessage);
       emitEvent(MediaPlayerBase.EVENT.ERROR);
     }
 
@@ -3611,8 +4555,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
             start: 0,
             end: mediaElement.duration
           };
-        } else {
-          logger.warn('No \'duration\' or \'seekable\' on media element');
         }
       }
       return undefined;
@@ -3656,10 +4598,48 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       toComplete();
     }
 
+    function emitSeekAttempted() {
+      if (getState() === MediaPlayerBase.STATE.EMPTY) {
+        emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+        seekFinished = false;
+      }
+
+      count = 0;
+      timeoutHappened = false;
+      if (deviceConfig.restartTimeout) {
+        setTimeout(function () {
+          timeoutHappened = true;
+        }, deviceConfig.restartTimeout);
+      } else {
+        timeoutHappened = true;
+      }
+    }
+
+    function emitSeekFinishedAtCorrectStartingPoint() {
+      var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance;
+
+      if (sentinelSeekTime === undefined) {
+        isAtCorrectStartingPoint = true;
+      }
+
+      var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint;
+
+      if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
+        emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED);
+        seekFinished = true;
+      } else if (isPlayingAtCorrectTime) {
+        count++;
+      } else {
+        count = 0;
+      }
+    }
+
     function onStatus() {
       if (getState() === MediaPlayerBase.STATE.PLAYING) {
         emitEvent(MediaPlayerBase.EVENT.STATUS);
       }
+
+      emitSeekFinishedAtCorrectStartingPoint();
     }
 
     function onMetadata() {
@@ -3715,15 +4695,12 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       switch (getState()) {
         case MediaPlayerBase.STATE.STOPPED:
         case MediaPlayerBase.STATE.ERROR:
-          break;
-
+          return;
         default:
           if (mediaElement) {
             return mediaElement.currentTime;
           }
-          break;
       }
-      return undefined;
     }
 
     /**
@@ -3784,12 +4761,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function getClampedTimeForPlayFrom(seconds) {
-      var clampedTime = getClampedTime(seconds);
-      var range = _getSeekableRange();
-      if (clampedTime !== seconds) {
-        logger.debug('play From ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
-      }
-      return clampedTime;
+      return getClampedTime(seconds);
     }
 
     function wipe() {
@@ -3865,10 +4837,13 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
       initialiseMedia: function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts) {
         disableSentinels = opts.disableSentinels;
+        disableSeekSentinel = opts.disableSeekSentinel;
         mediaType = type;
         source = url;
         mimeType = mediaMimeType;
         opts = opts || {};
+
+        emitSeekAttempted();
 
         if (getState() === MediaPlayerBase.STATE.EMPTY) {
           var idSuffix = 'Video';
@@ -3950,6 +4925,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       beginPlayback: function beginPlayback() {
         postBufferingState = MediaPlayerBase.STATE.PLAYING;
         sentinelSeekTime = undefined;
+
         switch (getState()) {
           case MediaPlayerBase.STATE.STOPPED:
             trustZeroes = true;
@@ -4097,7 +5073,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       toPaused: toPaused,
 
       toPlaying: toPlaying
-
     };
   }
 
@@ -4115,6 +5090,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 /***/ (function(module, exports, __webpack_require__) {
 
 var map = {
+	"./none": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
+	"./none.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js",
 	"./playable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
 	"./playable.js": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js",
 	"./restartable": "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js",
@@ -4146,6 +5123,25 @@ webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy/mod
 
 /***/ }),
 
+/***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js":
+/*!**************************************************************************************!*\
+  !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/none.js ***!
+  \**************************************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
+
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+  return function () {
+    throw new Error('Cannot create a none live support player');
+  };
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+/***/ }),
+
 /***/ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js":
 /*!******************************************************************************************!*\
   !*** ./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js ***!
@@ -4156,11 +5152,10 @@ webpackContext.id = "./node_modules/bigscreen-player/script/playbackstrategy/mod
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase) {
   'use strict';
 
-  function PlayableLivePlayer(deviceConfig, logger) {
-    var mediaPlayer = Html5Player(logger);
+  function PlayableLivePlayer(mediaPlayer) {
     return {
       beginPlayback: function beginPlayback() {
         mediaPlayer.beginPlayback();
@@ -4230,85 +5225,49 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
   'use strict';
 
-  var AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS = 8000;
+  function RestartableLivePlayer(mediaPlayer, deviceConfig, windowType, mediaSources) {
+    var callbacksMap = [];
+    var startTime;
+    var fakeTimer = {};
+    var timeCorrection = mediaSources.time().correction || 0;
+    addEventCallback(this, updateFakeTimer);
 
-  function RestartableLivePlayer(deviceConfig, logger) {
-    var mediaPlayer = Html5Player(logger);
-    var millisecondsUntilStartOfWindow;
-    var bufferingStarted;
-    var self = this;
-
-    function determineTimeUntilStartOfWindow() {
-      mediaPlayer.addEventCallback(self, detectCurrentTimeCallback);
-    }
-
-    function stopDeterminingTimeUntilStartOfWindow() {
-      mediaPlayer.removeEventCallback(self, detectCurrentTimeCallback);
-    }
-
-    function detectCurrentTimeCallback(event) {
-      if (event.state === MediaPlayerBase.STATE.PLAYING && event.currentTime > 0) {
-        removeEventCallback(self, detectCurrentTimeCallback);
-        millisecondsUntilStartOfWindow = event.currentTime * 1000;
-        determineTimeSpentBuffering();
-      }
-    }
-
-    function autoResumeAtStartOfRange() {
-      if (millisecondsUntilStartOfWindow !== null) {
-        var resumeTimeOut = Math.max(0, millisecondsUntilStartOfWindow - AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS);
-        var pauseStarted = new Date().getTime();
-        var autoResumeTimer = setTimeout(function () {
-          removeEventCallback(self, detectIfUnpaused);
-          millisecondsUntilStartOfWindow = 0;
-          resume();
-        }, resumeTimeOut);
-
-        addEventCallback(self, detectIfUnpaused);
+    function updateFakeTimer(event) {
+      if (fakeTimer.wasPlaying && fakeTimer.runningTime) {
+        fakeTimer.currentTime += (Date.now() - fakeTimer.runningTime) / 1000;
       }
 
-      function detectIfUnpaused(event) {
-        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-          removeEventCallback(self, detectIfUnpaused);
-          clearTimeout(autoResumeTimer);
-          var timePaused = new Date().getTime() - pauseStarted;
-          millisecondsUntilStartOfWindow -= timePaused;
-        }
-      }
+      fakeTimer.runningTime = Date.now();
+      fakeTimer.wasPlaying = event.state === MediaPlayerBase.STATE.PLAYING;
     }
 
     function addEventCallback(thisArg, callback) {
-      mediaPlayer.addEventCallback(thisArg, callback);
+      function newCallback(event) {
+        event.currentTime = getCurrentTime();
+        event.seekableRange = getSeekableRange();
+        callback(event);
+      }
+      callbacksMap.push({ from: callback, to: newCallback });
+      mediaPlayer.addEventCallback(thisArg, newCallback);
     }
 
     function removeEventCallback(thisArg, callback) {
-      mediaPlayer.removeEventCallback(thisArg, callback);
+      var filteredCallbacks = callbacksMap.filter(function (cb) {
+        return cb.from === callback;
+      });
+
+      if (filteredCallbacks.length > 0) {
+        callbacksMap = callbacksMap.splice(callbacksMap.indexOf(filteredCallbacks[0]));
+
+        mediaPlayer.removeEventCallback(thisArg, filteredCallbacks[0].to);
+      }
     }
 
     function removeAllEventCallbacks() {
       mediaPlayer.removeAllEventCallbacks();
-    }
-
-    function determineTimeSpentBuffering() {
-      bufferingStarted = null;
-      addEventCallback(self, determineBufferingCallback);
-    }
-
-    function stopDeterminingTimeSpentBuffering() {
-      removeEventCallback(self, determineBufferingCallback);
-    }
-
-    function determineBufferingCallback(event) {
-      if (event.state === MediaPlayerBase.STATE.BUFFERING && bufferingStarted === null) {
-        bufferingStarted = new Date().getTime();
-      } else if (event.state !== MediaPlayerBase.STATE.BUFFERING && bufferingStarted !== null) {
-        var timeBuffering = new Date().getTime() - bufferingStarted;
-        millisecondsUntilStartOfWindow = Math.max(0, millisecondsUntilStartOfWindow - timeBuffering);
-        bufferingStarted = null;
-      }
     }
 
     function resume() {
@@ -4319,27 +5278,41 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       mediaPlayer.pause();
       opts = opts || {};
       if (opts.disableAutoResume !== true) {
-        autoResumeAtStartOfRange();
+        DynamicWindowUtils.autoResumeAtStartOfRange(getCurrentTime(), getSeekableRange(), addEventCallback, removeEventCallback, resume);
       }
+    }
+
+    function getCurrentTime() {
+      return fakeTimer.currentTime + timeCorrection;
+    }
+
+    function getSeekableRange() {
+      var windowLength = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000;
+      var delta = (Date.now() - startTime) / 1000;
+      return {
+        start: (windowType === WindowTypes.SLIDING ? delta : 0) + timeCorrection,
+        end: windowLength + delta + timeCorrection
+      };
     }
 
     return {
       beginPlayback: function beginPlayback() {
         var config = deviceConfig;
 
+        startTime = Date.now();
+        fakeTimer.currentTime = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000;
+
         if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
           mediaPlayer.beginPlaybackFrom(Infinity);
         } else {
           mediaPlayer.beginPlayback();
         }
-
-        determineTimeUntilStartOfWindow();
       },
 
       beginPlaybackFrom: function beginPlaybackFrom(offset) {
-        millisecondsUntilStartOfWindow = offset * 1000;
+        startTime = Date.now();
+        fakeTimer.currentTime = offset;
         mediaPlayer.beginPlaybackFrom(offset);
-        determineTimeSpentBuffering();
       },
 
       initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
@@ -4358,8 +5331,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
       stop: function stop() {
         mediaPlayer.stop();
-        stopDeterminingTimeUntilStartOfWindow();
-        stopDeterminingTimeSpentBuffering();
       },
 
       reset: function reset() {
@@ -4386,7 +5357,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
       getPlayerElement: function getPlayerElement() {
         return mediaPlayer.getPlayerElement();
-      }
+      },
+
+      getCurrentTime: getCurrentTime,
+
+      getSeekableRange: getSeekableRange
 
     };
   }
@@ -4407,13 +5382,11 @@ var _Segment = __webpack_require__(/*! ./vo/Segment */ "../../node_modules/dashj
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js"), __webpack_require__(/*! bigscreenplayer/dynamicwindowutils */ "./node_modules/bigscreen-player/script/dynamicwindowutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaPlayerBase, DynamicWindowUtils) {
   'use strict';
 
-  function SeekableLivePlayer(deviceConfig, logger) {
+  function SeekableLivePlayer(mediaPlayer, deviceConfig) {
     var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
-
-    var mediaPlayer = Html5Player(logger);
 
     function addEventCallback(thisArg, callback) {
       mediaPlayer.addEventCallback(thisArg, callback);
@@ -4425,23 +5398,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
     function removeAllEventCallbacks() {
       mediaPlayer.removeAllEventCallbacks();
-    }
-
-    function autoResumeAtStartOfRange() {
-      var secondsUntilAutoResume = Math.max(0, mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
-      var self = this;
-      var autoResumeTimer = setTimeout(function () {
-        removeEventCallback(self, detectIfUnpaused);
-        resume();
-      }, secondsUntilAutoResume * 1000);
-
-      addEventCallback(self, detectIfUnpaused);
-      function detectIfUnpaused(event) {
-        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-          removeEventCallback(self, detectIfUnpaused);
-          clearTimeout(autoResumeTimer);
-        }
-      }
     }
 
     function resume() {
@@ -4487,7 +5443,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
           mediaPlayer.toPlaying();
         } else {
           mediaPlayer.pause();
-          autoResumeAtStartOfRange();
+          DynamicWindowUtils.autoResumeAtStartOfRange(mediaPlayer.getCurrentTime(), mediaPlayer.getSeekableRange(), addEventCallback, removeEventCallback, resume);
         }
       },
       resume: resume,
@@ -4532,9 +5488,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
       getLiveSupport: function getLiveSupport() {
         return MediaPlayerBase.LIVE_SUPPORT.SEEKABLE;
-      },
-
-      autoResumeAtStartOfRange: autoResumeAtStartOfRange
+      }
 
     };
   }
@@ -4610,11 +5564,11 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/mediakinds */ "./node_modules/bigscreen-player/script/models/mediakinds.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestmodifier */ "./node_modules/bigscreen-player/script/manifest/manifestmodifier.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"),
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/mediakinds */ "./node_modules/bigscreen-player/script/models/mediakinds.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestmodifier */ "./node_modules/bigscreen-player/script/manifest/manifestmodifier.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"),
 
 // static imports
-__webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, PluginData, PluginEnums, ManifestModifier, PlaybackUtils, LiveSupport) {
-  var MSEStrategy = function MSEStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, device, cdnDebugOutput) {
+__webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport) {
+  var MSEStrategy = function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
     var mediaPlayer;
     var mediaElement;
 
@@ -4622,15 +5576,13 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
     var errorCallback;
     var timeUpdateCallback;
 
-    var timeCorrection = timeData && timeData.correction || 0;
+    var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
     var failoverTime;
     var _isEnded = false;
 
     var bitrateInfoList;
     var mediaMetrics;
     var dashMetrics;
-
-    var mediaSources;
 
     var playerMetadata = {
       playbackBitrate: undefined,
@@ -4646,7 +5598,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       DOWNLOAD_ERROR_MESSAGE: 'download',
       MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
       QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-      CDN_FAILOVER: 'baseUrlSelected',
+      BASE_URL_SELECTED: 'baseUrlSelected',
       METRIC_ADDED: 'metricAdded',
       METRIC_CHANGED: 'metricChanged'
     };
@@ -4682,7 +5634,14 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       if (dvrInfo && windowType === WindowTypes.SLIDING) {
         failoverTime = Math.max(0, parseInt(dvrInfo.time - dvrInfo.range.start) - IN_STREAM_BUFFERING_SECONDS);
       } else {
-        failoverTime = mediaElement.currentTime;
+        var time = mediaElement.currentTime;
+
+        // Note: Multiple consecutive CDN failover logic
+        // A newly loaded video element will always report a 0 time update
+        // This is slightly unhelpful if we want to continue from a later point but consult failoverTime as the source of truth.
+        if (parseInt(time) !== 0) {
+          failoverTime = time;
+        }
       }
 
       publishTimeUpdate();
@@ -4719,8 +5678,8 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
 
       if (event.data) {
         var manifest = event.data;
-        ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {});
-        ManifestModifier.generateBaseUrls(manifest, mediaSources);
+        ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {}, window.bigscreenPlayer.oldDashCodecRequired);
+        ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources());
       }
     }
 
@@ -4746,42 +5705,23 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       }
     }
 
-    function createPlaybackProperties() {
-      return {
-        seekable_range: getSeekableRange().start + ' to ' + getSeekableRange().end,
-        current_time: getCurrentTime(),
-        duration: getDuration()
-      };
-    }
-
-    function propagateCdnFailover(event, cdn) {
-      // Initial playback
-      if (mediaSources.length <= 1 || cdn !== mediaSources[1].cdn) return;
-
-      var errorProperties = PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
-      var evt = new PluginData({
-        status: PluginEnums.STATUS.FAILOVER,
-        stateType: PluginEnums.TYPE.ERROR,
-        properties: errorProperties,
-        isBufferingTimeoutError: false,
-        cdn: mediaSources[0].cdn,
-        newCdn: mediaSources[1].cdn
-      });
-      // urls -> sources -> mediaSources (shift the cdns for correct behaviour with buffering timeout failover)
-      // TODO: Remove this horrible mutation when failover is pushed down per strategy.
-      Plugins.interface.onErrorHandled(evt);
-      mediaSources.shift();
-      cdnDebugOutput.update();
-    }
-
-    function onCdnFailover(event) {
-      var pluginEvent = {
-        errorProperties: {
-          error_mssg: 'download'
-        }
+    /**
+     * Base url selected events are fired from dash.js whenever a priority weighted url is selected from a manifest
+     * Note: we ignore the initial selection as it isn't a failover.
+     * @param {*} event
+     */
+    function onBaseUrlSelected(event) {
+      var failoverInfo = {
+        errorMessage: 'download',
+        isBufferingTimeoutError: false
       };
 
-      propagateCdnFailover(pluginEvent, event.baseUrl.serviceLocation);
+      function log() {
+        DebugTool.info('BaseUrl selected: ' + event.baseUrl.url);
+      }
+
+      failoverInfo.serviceLocation = event.baseUrl.serviceLocation;
+      mediaSources.failover(log, log, failoverInfo);
     }
 
     function onMetricAdded(event) {
@@ -4841,7 +5781,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
     }
 
-    function setUpMediaPlayer(sources, playbackTime) {
+    function setUpMediaPlayer(playbackTime) {
       mediaPlayer = dashjs.MediaPlayer().create();
       mediaPlayer.getDebug().setLogToBrowserConsole(false);
 
@@ -4852,13 +5792,11 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
 
       mediaPlayer.initialize(mediaElement, null, true);
-      modifySource(sources, playbackTime);
+      modifySource(playbackTime);
     }
 
-    function modifySource(sources, playbackTime) {
-      mediaSources = sources;
-      var initialSource = calculateSourceAnchor(sources[0].url, playbackTime);
-      mediaPlayer.attachSource(initialSource);
+    function modifySource(playbackTime) {
+      mediaPlayer.attachSource(calculateSourceAnchor(mediaSources.currentSource(), playbackTime));
     }
 
     function setUpMediaListeners() {
@@ -4874,7 +5812,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
       mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
       mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
-      mediaPlayer.on(DashJSEvents.CDN_FAILOVER, onCdnFailover);
+      mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
       mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
     }
 
@@ -4902,7 +5840,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
       }
 
       if (windowType === WindowTypes.GROWING) {
-        var windowStartTimeSeconds = timeData.windowStartTime / 1000;
+        var windowStartTimeSeconds = mediaSources.time().windowStartTime / 1000;
         var srcWithTimeAnchor = source + '#t=';
 
         startTime = parseInt(startTime);
@@ -4958,16 +5896,14 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
           newTimeUpdateCallback.call(thisArg);
         };
       },
-      load: function load(sources, mimeType, playbackTime) {
-        if (sources && sources.length === 0) return;
-
+      load: function load(mimeType, playbackTime) {
         if (!mediaPlayer) {
           failoverTime = playbackTime;
           setUpMediaElement(playbackElement);
-          setUpMediaPlayer(sources, playbackTime);
+          setUpMediaPlayer(playbackTime);
           setUpMediaListeners();
         } else {
-          modifySource(sources, failoverTime);
+          modifySource(failoverTime);
         }
       },
       getSeekableRange: getSeekableRange,
@@ -4989,7 +5925,7 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
         mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
         mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
-        mediaPlayer.off(DashJSEvents.CDN_FAILOVER, onCdnFailover);
+        mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
 
         mediaElement.parentElement.removeChild(mediaElement);
 
@@ -5004,7 +5940,6 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
         bitrateInfoList = undefined;
         mediaMetrics = undefined;
         dashMetrics = undefined;
-        mediaSources = undefined;
       },
       reset: function reset() {
         return;
@@ -5050,19 +5985,17 @@ __webpack_require__(/*! dashjs */ "./node_modules/dashjs/index.js")], __WEBPACK_
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/legacyplayeradapter */ "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "./node_modules/bigscreen-player/script/playbackstrategy/modifiers/html5.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live sync recursive ^\\.\\/.*$")("./" + (window.bigscreenPlayer.liveSupport || 'playable'))], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LegacyAdapter, WindowTypes, Html5Player, LivePlayer) {
-  var NativeStrategy = function NativeStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/legacyplayeradapter */ "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy/modifiers sync recursive ^\\.\\/.*$")("./" + (window.bigscreenPlayer.mediaPlayer || 'html5')), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy/modifiers/live sync recursive ^\\.\\/.*$")("./" + (window.bigscreenPlayer.liveSupport || 'playable'))], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LegacyAdapter, WindowTypes, MediaPlayer, LivePlayer) {
+  var NativeStrategy = function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
     var mediaPlayer;
-    var logger = device.getLogger();
     var tempConfig = device.getConfig();
 
+    mediaPlayer = MediaPlayer(tempConfig);
     if (windowType !== WindowTypes.STATIC) {
-      mediaPlayer = LivePlayer(tempConfig, logger);
-    } else {
-      mediaPlayer = Html5Player(logger);
+      mediaPlayer = LivePlayer(mediaPlayer, tempConfig, windowType, mediaSources);
     }
 
-    return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
+    return LegacyAdapter(mediaSources, windowType, playbackElement, isUHD, device.getConfig(), mediaPlayer);
   };
 
   NativeStrategy.getLiveSupport = function () {
@@ -5083,25 +6016,23 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/playbackstrategy */ "./node_modules/bigscreen-player/script/models/playbackstrategy.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (PlaybackStrategy) {
   return function (windowType, isUHD) {
-    var strategy = 'mseStrategy';
-
     var mseExceptions = window.bigscreenPlayer.mseExceptions || [];
 
     if (mseExceptions.indexOf(windowType) !== -1) {
-      strategy = 'talStrategy';
+      return PlaybackStrategy.NATIVE;
     }
 
     if (isUHD && mseExceptions.indexOf('uhd') !== -1) {
-      strategy = 'talStrategy';
+      return PlaybackStrategy.NATIVE;
     }
 
-    return strategy;
+    return PlaybackStrategy.MSE;
   };
-}).call(exports, __webpack_require__, exports, module),
+}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
 
 /***/ }),
@@ -5117,7 +6048,7 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/legacyplayeradapter */ "./node_modules/bigscreen-player/script/playbackstrategy/legacyplayeradapter.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (LegacyAdapter, WindowTypes) {
-  var TALStrategy = function TALStrategy(windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+  var TALStrategy = function TALStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
     var mediaPlayer;
 
     if (windowType === WindowTypes.STATIC) {
@@ -5126,7 +6057,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       mediaPlayer = device.getLivePlayer();
     }
 
-    return LegacyAdapter(windowType, mediaKind, timeData, playbackElement, isUHD, device.getConfig(), mediaPlayer);
+    return LegacyAdapter(mediaSources, windowType, playbackElement, isUHD, device.getConfig(), mediaPlayer);
   };
 
   TALStrategy.getLiveSupport = function (device) {
@@ -5151,10 +6082,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/captionscontainer */ "./node_modules/bigscreen-player/script/captionscontainer.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy sync recursive ^\\.\\/.*$")("./" + window.bigscreenPlayer.playbackStrategy), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "./node_modules/bigscreen-player/script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js"), __webpack_require__(/*! bigscreenplayer/manifest/manifestloader */ "./node_modules/bigscreen-player/script/manifest/manifestloader.js"), __webpack_require__(/*! bigscreenplayer/utils/livesupportutils */ "./node_modules/bigscreen-player/script/utils/livesupportutils.js"), __webpack_require__(/*! bigscreenplayer/mediaresilience */ "./node_modules/bigscreen-player/script/mediaresilience.js"), __webpack_require__(/*! bigscreenplayer/debugger/cdndebugoutput */ "./node_modules/bigscreen-player/script/debugger/cdndebugoutput.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool, TransferFormats, ManifestLoader, LiveSupportUtils, MediaResilience, CdnDebugOutput) {
+!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "./node_modules/bigscreen-player/script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/captionscontainer */ "./node_modules/bigscreen-player/script/captionscontainer.js"), __webpack_require__("./node_modules/bigscreen-player/script/playbackstrategy sync recursive ^\\.\\/.*$")("./" + window.bigscreenPlayer.playbackStrategy), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "./node_modules/bigscreen-player/script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "./node_modules/bigscreen-player/script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "./node_modules/bigscreen-player/script/pluginenums.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "./node_modules/bigscreen-player/script/plugins.js"), __webpack_require__(/*! bigscreenplayer/models/transferformats */ "./node_modules/bigscreen-player/script/models/transferformats.js"), __webpack_require__(/*! bigscreenplayer/models/livesupport */ "./node_modules/bigscreen-player/script/models/livesupport.js"), __webpack_require__(/*! bigscreenplayer/models/playbackstrategy */ "./node_modules/bigscreen-player/script/models/playbackstrategy.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
   'use strict';
 
-  var PlayerComponent = function PlayerComponent(playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
+  var PlayerComponent = function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
     var isInitialPlay = true;
     var captionsURL = bigscreenPlayerData.media.captionsUrl;
     var errorTimeoutID = null;
@@ -5167,10 +6098,9 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     var mediaMetaData;
     var fatalErrorTimeout;
     var fatalError;
-    var cdnDebugOutput = new CdnDebugOutput(bigscreenPlayerData.media.urls);
     var transferFormat = bigscreenPlayerData.media.transferFormat;
 
-    playbackStrategy = PlaybackStrategy(windowType, mediaKind, bigscreenPlayerData.time, playbackElement, bigscreenPlayerData.media.isUHD, device, cdnDebugOutput);
+    playbackStrategy = PlaybackStrategy(mediaSources, windowType, mediaKind, playbackElement, bigscreenPlayerData.media.isUHD, device);
 
     playbackStrategy.addEventCallback(this, eventCallback);
     playbackStrategy.addErrorCallback(this, onError);
@@ -5205,11 +6135,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function getWindowStartTime() {
-      return bigscreenPlayerData.time && bigscreenPlayerData.time.windowStartTime;
+      return mediaSources && mediaSources.time().windowStartTime;
     }
 
     function getWindowEndTime() {
-      return bigscreenPlayerData.time && bigscreenPlayerData.time.windowEndTime;
+      return mediaSources && mediaSources.time().windowEndTime;
     }
 
     function getPlayerElement() {
@@ -5254,8 +6184,38 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     function setCurrentTime(time) {
       userInteracted = true;
       if (transitions().canBeginSeek()) {
-        playbackStrategy.setCurrentTime(time);
+        isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy.setCurrentTime(time);
       }
+    }
+
+    function isNativeHLSRestartable() {
+      return window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE && transferFormat === TransferFormats.HLS && windowType !== WindowTypes.STATIC && getLiveSupport(device) === LiveSupport.RESTARTABLE;
+    }
+
+    function reloadMediaElement(time) {
+      var originalWindowStartOffset = getWindowStartTime();
+
+      var doSeek = function doSeek() {
+        var windowOffset = mediaSources.time().windowStartTime - originalWindowStartOffset;
+        var seekToTime = time - windowOffset / 1000;
+
+        var thenPause = playbackStrategy.isPaused();
+        var seekableRange = playbackStrategy.getSeekableRange();
+        tearDownMediaElement();
+
+        if (seekToTime > seekableRange.end - seekableRange.start - 30) {
+          seekToTime = undefined;
+          thenPause = false;
+        }
+        loadMedia(mediaMetaData.type, seekToTime, thenPause);
+      };
+
+      var onError = function onError(errorMessage) {
+        tearDownMediaElement();
+        bubbleFatalError(createPlaybackErrorProperties(event), false);
+      };
+
+      mediaSources.refresh(doSeek, onError);
     }
 
     function transitions() {
@@ -5300,7 +6260,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     function onBuffering() {
       publishMediaStateUpdate(MediaState.WAITING);
       var playbackProperties = createPlaybackProperties();
-      startErrorTimeout(playbackProperties);
+      startBufferingErrorTimeout(playbackProperties);
       bubbleErrorCleared(playbackProperties);
       bubbleBufferingRaised(playbackProperties);
       userInteracted = false;
@@ -5321,13 +6281,13 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       bubbleBufferingCleared(playbackProperties);
 
       var playbackErrorProperties = createPlaybackErrorProperties(event);
-      raiseError(playbackErrorProperties, false);
+      raiseError(playbackErrorProperties);
     }
 
-    function startErrorTimeout(properties) {
+    function startBufferingErrorTimeout(properties) {
       var bufferingTimeout = isInitialPlay ? 30000 : 20000;
       var bufferingClearedProperties = PlaybackUtils.clone(properties);
-      clearErrorTimeout();
+      clearBufferingErrorTimeout();
       errorTimeoutID = setTimeout(function () {
         bufferingClearedProperties.dismissed_by = 'timeout';
         bubbleBufferingCleared(bufferingClearedProperties);
@@ -5336,68 +6296,48 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       }, bufferingTimeout);
     }
 
-    function raiseError(properties, bufferingTimeoutError) {
-      clearErrorTimeout();
+    function raiseError(properties) {
+      clearBufferingErrorTimeout();
       publishMediaStateUpdate(MediaState.WAITING);
-      bubbleErrorRaised(properties, bufferingTimeoutError);
-      startFatalErrorTimeout(properties, bufferingTimeoutError);
+      bubbleErrorRaised(properties);
+      startFatalErrorTimeout(properties);
     }
 
-    function startFatalErrorTimeout(errorProperties, bufferingTimeoutError) {
+    function startFatalErrorTimeout(errorProperties) {
       if (!fatalErrorTimeout && !fatalError) {
         fatalErrorTimeout = setTimeout(function () {
           fatalErrorTimeout = null;
           fatalError = true;
-          attemptCdnFailover(errorProperties, bufferingTimeoutError);
+          errorProperties.error_mssg = 'Fatal error';
+          attemptCdnFailover(errorProperties, false);
         }, 5000);
       }
     }
 
     function attemptCdnFailover(errorProperties, bufferingTimeoutError) {
-      var shouldFailover = MediaResilience.shouldFailover(mediaMetaData.urls.length, getDuration(), getCurrentTime(), getLiveSupport(device), windowType, transferFormat);
+      var time = getCurrentTime();
+      var oldWindowStartTime = getWindowStartTime();
 
-      if (shouldFailover) {
-        var thenPause = playbackStrategy.isPaused();
-        tearDownMediaElement();
-
-        var failoverTime = getCurrentTime();
-        if (transferFormat === TransferFormats.HLS && LiveSupportUtils.needToGetManifest(windowType, getLiveSupport(device))) {
-          manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-        } else {
-          cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-        }
-      } else {
-        bubbleFatalError(errorProperties, bufferingTimeoutError);
-      }
-    }
-
-    function manifestReloadFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-      ManifestLoader.load(bigscreenPlayerData.media.urls, bigscreenPlayerData.serverDate, {
-        onSuccess: function onSuccess(manifestData) {
-          var windowOffset = manifestData.time.windowStartTime - getWindowStartTime();
-          bigscreenPlayerData.time = manifestData.time;
-          failoverTime -= windowOffset / 1000;
-          cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError);
-        },
-        onError: function onError() {
-          bubbleFatalError(errorProperties, bufferingTimeoutError);
-        }
-      });
-    }
-
-    function cdnFailover(failoverTime, thenPause, errorProperties, bufferingTimeoutError) {
-      var evt = new PluginData({
-        status: PluginEnums.STATUS.FAILOVER,
-        stateType: PluginEnums.TYPE.ERROR,
-        properties: errorProperties,
+      var failoverParams = {
+        errorMessage: errorProperties.error_mssg,
         isBufferingTimeoutError: bufferingTimeoutError,
-        cdn: mediaMetaData.urls[0].cdn,
-        newCdn: mediaMetaData.urls[1].cdn
-      });
-      Plugins.interface.onErrorHandled(evt);
-      mediaMetaData.urls.shift();
-      cdnDebugOutput.update();
-      loadMedia(mediaMetaData.urls, mediaMetaData.type, failoverTime, thenPause);
+        currentTime: getCurrentTime(),
+        duration: getDuration()
+      };
+
+      var doLoadMedia = function doLoadMedia() {
+        var thenPause = isPaused();
+        var windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000;
+        var failoverTime = time - (windowOffset || 0);
+        tearDownMediaElement();
+        loadMedia(mediaMetaData.type, failoverTime, thenPause);
+      };
+
+      var doErrorCallback = function doErrorCallback() {
+        bubbleFatalError(errorProperties, bufferingTimeoutError);
+      };
+
+      mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams);
     }
 
     function clearFatalErrorTimeout() {
@@ -5407,7 +6347,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       }
     }
 
-    function clearErrorTimeout() {
+    function clearBufferingErrorTimeout() {
       if (errorTimeoutID !== null) {
         clearTimeout(errorTimeoutID);
         errorTimeoutID = null;
@@ -5415,7 +6355,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     }
 
     function playout(playbackProperties) {
-      clearErrorTimeout();
+      clearBufferingErrorTimeout();
       clearFatalErrorTimeout();
       fatalError = false;
       bubbleBufferingCleared(playbackProperties);
@@ -5436,8 +6376,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       Plugins.interface.onErrorCleared(evt);
     }
 
-    function bubbleErrorRaised(errorProperties, bufferingTimeoutError) {
-      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError });
+    function bubbleErrorRaised(errorProperties) {
+      var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: false });
       Plugins.interface.onError(evt);
     }
 
@@ -5495,15 +6435,15 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
     function initialMediaPlay(media, startTime) {
       mediaMetaData = media;
-      loadMedia(media.urls, media.type, startTime);
+      loadMedia(media.type, startTime);
 
       if (!captionsContainer) {
         captionsContainer = new CaptionsContainer(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
       }
     }
 
-    function loadMedia(urls, type, startTime, thenPause) {
-      playbackStrategy.load(urls, type, startTime);
+    function loadMedia(type, startTime, thenPause) {
+      playbackStrategy.load(type, startTime);
       if (thenPause) {
         pause();
       }
@@ -5520,11 +6460,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         captionsContainer.stop();
         captionsContainer.tearDown();
         captionsContainer = null;
-      }
-
-      if (cdnDebugOutput) {
-        cdnDebugOutput.tearDown();
-        cdnDebugOutput = undefined;
       }
 
       isInitialPlay = true;
@@ -5696,38 +6631,6 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         callOnAllPlugins('onPlayerInfoUpdated', evt);
       }
     }
-  };
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "./node_modules/bigscreen-player/script/utils/livesupportutils.js":
-/*!************************************************************************!*\
-  !*** ./node_modules/bigscreen-player/script/utils/livesupportutils.js ***!
-  \************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/windowtypes */ "./node_modules/bigscreen-player/script/models/windowtypes.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (WindowTypes) {
-  'use strict';
-
-  function needToGetManifest(windowType, liveSupport) {
-    var requiresSeekingData = {
-      restartable: true,
-      seekable: true,
-      playable: false,
-      none: false
-    };
-
-    return windowType !== WindowTypes.STATIC && requiresSeekingData[liveSupport];
-  }
-
-  return {
-    needToGetManifest: needToGetManifest
   };
 }).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
 				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
@@ -39474,7 +40377,7 @@ function HTTPLoader(cfg) {
                 requests.splice(requests.indexOf(httpRequest), 1);
             }
 
-            if (httpRequest.response.status >= 200 && httpRequest.response.status <= 299 && httpRequest.response.response) {
+            if (httpRequest.response.status >= 200 && httpRequest.response.status <= 299) {
                 if (hasContentLengthMismatch(httpRequest.response)) {
                     handleLoaded(false);
                     if (remainingAttempts > 0) {
@@ -56583,23 +57486,72 @@ function unwrapListeners(arr) {
   return ret;
 }
 
-                                        var lh;
+/***/ }),
 
-                                        if (attr === "normal") {
+/***/ "./node_modules/fast-deep-equal/index.js":
+/*!***********************************************!*\
+  !*** ./node_modules/fast-deep-equal/index.js ***!
+  \***********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
 
-                                                            /* inherit normal per https://github.com/w3c/ttml1/issues/220 */
+"use strict";
+
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+
+var isArray = Array.isArray;
+var keyList = Object.keys;
+var hasProp = Object.prototype.hasOwnProperty;
+
+module.exports = function equal(a, b) {
+  if (a === b) return true;
+
+  if (a && b && (typeof a === 'undefined' ? 'undefined' : _typeof(a)) == 'object' && (typeof b === 'undefined' ? 'undefined' : _typeof(b)) == 'object') {
+    var arrA = isArray(a),
+        arrB = isArray(b),
+        i,
+        length,
+        key;
+
+    if (arrA && arrB) {
+      length = a.length;
+      if (length != b.length) return false;
+      for (i = length; i-- !== 0;) {
+        if (!equal(a[i], b[i])) return false;
+      }return true;
+    }
+
+    if (arrA != arrB) return false;
+
+    var dateA = a instanceof Date,
+        dateB = b instanceof Date;
+    if (dateA != dateB) return false;
+    if (dateA && dateB) return a.getTime() == b.getTime();
+
+    var regexpA = a instanceof RegExp,
+        regexpB = b instanceof RegExp;
+    if (regexpA != regexpB) return false;
+    if (regexpA && regexpB) return a.toString() == b.toString();
+
+    var keys = keyList(a);
+    length = keys.length;
 
                                                             lh = attr;
                                         } else if (attr.unit === "%") {
 
-                                                            lh = element.styleAttrs[imscStyles.byName.fontSize.qname] * attr.value / 100;
-                                        } else if (attr.unit === "em") {
+    for (i = length; i-- !== 0;) {
+      if (!hasProp.call(b, keys[i])) return false;
+    }for (i = length; i-- !== 0;) {
+      key = keys[i];
+      if (!equal(a[key], b[key])) return false;
+    }
 
                                                             lh = element.styleAttrs[imscStyles.byName.fontSize.qname] * attr.value;
                                         } else if (attr.unit === "c") {
 
-                                                            lh = attr.value / doc.cellResolution.h;
-                                        } else if (attr.unit === "px") {
+  return a !== a && b !== b;
+};
 
                                                             /* TODO: handle error if no px dimensions are provided */
 
@@ -56779,8 +57731,19 @@ function unwrapListeners(arr) {
 
                                         if (attr === "left") {
 
-                                                            return "start";
-                                        } else if (attr === "right") {
+                                /* ignore children text nodes in ruby container spans */
+
+                                if (estack[0] instanceof Span) {
+
+                                        var ruby = estack[0].styleAttrs[imscStyles.byName.ruby.qname];
+
+                                        if (ruby === 'container' || ruby === 'textContainer' || ruby === 'baseContainer') {
+
+                                                return;
+                                        }
+                                }
+
+                                /* create an anonymous span */
 
                                                             return "end";
                                         } else {
@@ -56867,23 +57830,13 @@ function unwrapListeners(arr) {
                                         return str;
                     }, null), new StylingAttributeDefinition(imscNames.ns_tts, "zIndex", "auto", ['region'], false, true, function (str) {
 
-                                        var rslt;
-
-                                        if (str === 'auto') {
-
-                                                            rslt = str;
-                                        } else {
+                                        estack.unshift(doc.head);
+                                } else if (node.local === 'styling') {
 
                                                             rslt = parseInt(str);
 
-                                                            if (isNaN(rslt)) {
-                                                                                rslt = null;
-                                                            }
-                                        }
-
-                                        return rslt;
-                    }, null), new StylingAttributeDefinition(imscNames.ns_ebutts, "linePadding", "0c", ['p'], true, false, imscUtils.parseLength, function (doc, parent, element, attr, context) {
-                                        if (attr.unit === "c") {
+                                        estack.unshift(doc.head.styling);
+                                } else if (node.local === 'style') {
 
                                                             return attr.value / doc.cellResolution.h;
                                         } else {
@@ -56961,56 +57914,34 @@ function unwrapListeners(arr) {
 (function (imscUtils) {
     // wrapper for non-node envs
 
-    /* Documents the error handler interface */
+                                                reportFatal(errorHandler, "Parent of <style> element is not <styling> or <region> at (" + this.line + "," + this.column + ")");
+                                        }
+                                } else if (node.local === 'initial') {
 
-    /**
-     * @classdesc Generic interface for handling events. The interface exposes four
-     * methods:
-     * * <pre>info</pre>: unusual event that does not result in an inconsistent state
-     * * <pre>warn</pre>: unexpected event that should not result in an inconsistent state
-     * * <pre>error</pre>: unexpected event that may result in an inconsistent state
-     * * <pre>fatal</pre>: unexpected event that results in an inconsistent state
-     *   and termination of processing
-     * Each method takes a single <pre>string</pre> describing the event as argument,
-     * and returns a single <pre>boolean</pre>, which terminates processing if <pre>true</pre>.
-     *
-     * @name ErrorHandler
-     * @class
-     */
+                                        var ini;
 
-    /*
-     * Parses a TTML color expression
-     * 
-     */
+                                        if (estack[0] instanceof Styling) {
 
-    var HEX_COLOR_RE = /#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})?/;
-    var DEC_COLOR_RE = /rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/;
-    var DEC_COLORA_RE = /rgba\(\s*(\d+),\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/;
-    var NAMED_COLOR = {
-        transparent: [0, 0, 0, 0],
-        black: [0, 0, 0, 255],
-        silver: [192, 192, 192, 255],
-        gray: [128, 128, 128, 255],
-        white: [255, 255, 255, 255],
-        maroon: [128, 0, 0, 255],
-        red: [255, 0, 0, 255],
-        purple: [128, 0, 128, 255],
-        fuchsia: [255, 0, 255, 255],
-        magenta: [255, 0, 255, 255],
-        green: [0, 128, 0, 255],
-        lime: [0, 255, 0, 255],
-        olive: [128, 128, 0, 255],
-        yellow: [255, 255, 0, 255],
-        navy: [0, 0, 128, 255],
-        blue: [0, 0, 255, 255],
-        teal: [0, 128, 128, 255],
-        aqua: [0, 255, 255, 255],
-        cyan: [0, 255, 255, 255]
-    };
+                                                ini = new Initial();
 
-    imscUtils.parseColor = function (str) {
+                                                ini.initFromNode(node, errorHandler);
 
-        var m;
+                                                for (var qn in ini.styleAttrs) {
+
+                                                        doc.head.styling.initials[qn] = ini.styleAttrs[qn];
+                                                }
+
+                                                estack.unshift(ini);
+                                        } else {
+
+                                                reportFatal(errorHandler, "Parent of <initial> element is not <styling> at (" + this.line + "," + this.column + ")");
+                                        }
+                                } else if (node.local === 'layout') {
+
+                                        if (!(estack[0] instanceof Head)) {
+
+                                                reportFatal(errorHandler, "Parent of <layout> element is not <head> at " + this.line + "," + this.column + ")");
+                                        }
 
         var r = null;
 
@@ -57073,16 +58004,278 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
   sax.SAXStream = SAXStream;
   sax.createStream = createStream;
 
-  // When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
-  // When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
-  // since that's the earliest that a buffer overrun could occur.  This way, checks are
-  // as rare as required, but as often as necessary to ensure never crossing this bound.
-  // Furthermore, buffers are only tested at most once per write(), so passing a very
-  // large string into write() might have undesirable effects, but this is manageable by
-  // the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
-  // edge case, result in creating at most one complete copy of the string passed in.
-  // Set to Infinity to have unlimited buffers.
-  sax.MAX_BUFFER_LENGTH = 64 * 1024;
+                                        /* transform smpte:backgroundImage to TTML2 image element */
+
+                                        var bi = d.styleAttrs[imscStyles.byName.backgroundImage.qname];
+
+                                        if (bi) {
+                                                d.contents.push(new Image(bi));
+                                                delete d.styleAttrs[imscStyles.byName.backgroundImage.qname];
+                                        }
+
+                                        estack[0].contents.push(d);
+
+                                        estack.unshift(d);
+                                } else if (node.local === 'image') {
+
+                                        if (!(estack[0] instanceof Div)) {
+
+                                                reportFatal(errorHandler, "Parent of <image> element is not <div> at " + this.line + "," + this.column + ")");
+                                        }
+
+                                        var img = new Image();
+
+                                        img.initFromNode(doc, estack[0], node, errorHandler);
+
+                                        estack[0].contents.push(img);
+
+                                        estack.unshift(img);
+                                } else if (node.local === 'p') {
+
+                                        if (!(estack[0] instanceof Div)) {
+
+                                                reportFatal(errorHandler, "Parent of <p> element is not <div> at " + this.line + "," + this.column + ")");
+                                        }
+
+                                        var p = new P();
+
+                                        p.initFromNode(doc, estack[0], node, errorHandler);
+
+                                        estack[0].contents.push(p);
+
+                                        estack.unshift(p);
+                                } else if (node.local === 'span') {
+
+                                        if (!(estack[0] instanceof Span || estack[0] instanceof P)) {
+
+                                                reportFatal(errorHandler, "Parent of <span> element is not <span> or <p> at " + this.line + "," + this.column + ")");
+                                        }
+
+                                        var ns = new Span();
+
+                                        ns.initFromNode(doc, estack[0], node, xmlspacestack[0], errorHandler);
+
+                                        estack[0].contents.push(ns);
+
+                                        estack.unshift(ns);
+                                } else if (node.local === 'br') {
+
+                                        if (!(estack[0] instanceof Span || estack[0] instanceof P)) {
+
+                                                reportFatal(errorHandler, "Parent of <br> element is not <span> or <p> at " + this.line + "," + this.column + ")");
+                                        }
+
+                                        var nb = new Br();
+
+                                        nb.initFromNode(doc, estack[0], node, errorHandler);
+
+                                        estack[0].contents.push(nb);
+
+                                        estack.unshift(nb);
+                                } else if (node.local === 'set') {
+
+                                        if (!(estack[0] instanceof Span || estack[0] instanceof P || estack[0] instanceof Div || estack[0] instanceof Body || estack[0] instanceof Region || estack[0] instanceof Br)) {
+
+                                                reportFatal(errorHandler, "Parent of <set> element is not a content element or a region at " + this.line + "," + this.column + ")");
+                                        }
+
+                                        var st = new Set();
+
+                                        st.initFromNode(doc, estack[0], node, errorHandler);
+
+                                        estack[0].sets.push(st);
+
+                                        estack.unshift(st);
+                                } else {
+
+                                        /* element in the TT namespace, but not a content element */
+
+                                        estack.unshift(new ForeignElement(node));
+                                }
+                        } else {
+
+                                /* ignore elements not in the TTML namespace unless in metadata element */
+
+                                estack.unshift(new ForeignElement(node));
+                        }
+
+                        /* handle metadata callbacks */
+
+                        if (estack[0] instanceof ForeignElement) {
+
+                                if (node.uri === imscNames.ns_tt && node.local === 'metadata') {
+
+                                        /* enter the metadata element */
+
+                                        metadata_depth++;
+                                } else if (metadata_depth > 0 && metadataHandler && 'onOpenTag' in metadataHandler) {
+
+                                        /* start of child of metadata element */
+
+                                        var attrs = [];
+
+                                        for (var a in node.attributes) {
+                                                attrs[node.attributes[a].uri + " " + node.attributes[a].local] = {
+                                                        uri: node.attributes[a].uri,
+                                                        local: node.attributes[a].local,
+                                                        value: node.attributes[a].value
+                                                };
+                                        }
+
+                                        metadataHandler.onOpenTag(node.uri, node.local, attrs);
+                                }
+                        }
+                };
+
+                // parse the document
+
+                p.write(xmlstring).close();
+
+                // all referential styling has been flatten, so delete styles
+
+                delete doc.head.styling.styles;
+
+                // create default region if no regions specified
+
+                var hasRegions = false;
+
+                /* AFAIK the only way to determine whether an object has members */
+
+                for (var i in doc.head.layout.regions) {
+
+                        hasRegions = true;
+
+                        break;
+                }
+
+                if (!hasRegions) {
+
+                        /* create default region */
+
+                        var dr = Region.prototype.createDefaultRegion();
+
+                        doc.head.layout.regions[dr.id] = dr;
+                }
+
+                /* resolve desired timing for regions */
+
+                for (var region_i in doc.head.layout.regions) {
+
+                        resolveTiming(doc, doc.head.layout.regions[region_i], null, null);
+                }
+
+                /* resolve desired timing for content elements */
+
+                if (doc.body) {
+                        resolveTiming(doc, doc.body, null, null);
+                }
+
+                /* remove undefined spans in ruby containers */
+
+                if (doc.body) {
+                        cleanRubyContainers(doc.body);
+                }
+
+                return doc;
+        };
+
+        function cleanRubyContainers(element) {
+
+                if (!('contents' in element)) return;
+
+                var rubyval = 'styleAttrs' in element ? element.styleAttrs[imscStyles.byName.ruby.qname] : null;
+
+                var isrubycontainer = element.kind === 'span' && (rubyval === "container" || rubyval === "textContainer" || rubyval === "textContainer");
+
+                for (var i = element.contents.length - 1; i >= 0; i--) {
+
+                        if (isrubycontainer && !('styleAttrs' in element.contents[i] && imscStyles.byName.ruby.qname in element.contents[i].styleAttrs)) {
+
+                                /* prune undefined <span> in ruby containers */
+
+                                delete element.contents[i];
+                        } else {
+
+                                cleanRubyContainers(element.contents[i]);
+                        }
+                }
+        }
+
+        function resolveTiming(doc, element, prev_sibling, parent) {
+
+                /* are we in a seq container? */
+
+                var isinseq = parent && parent.timeContainer === "seq";
+
+                /* determine implicit begin */
+
+                var implicit_begin = 0; /* default */
+
+                if (parent) {
+
+                        if (isinseq && prev_sibling) {
+
+                                /*
+                                 * if seq time container, offset from the previous sibling end
+                                 */
+
+                                implicit_begin = prev_sibling.end;
+                        } else {
+
+                                implicit_begin = parent.begin;
+                        }
+                }
+
+                /* compute desired begin */
+
+                element.begin = element.explicit_begin ? element.explicit_begin + implicit_begin : implicit_begin;
+
+                /* determine implicit end */
+
+                var implicit_end = element.begin;
+
+                var s = null;
+
+                for (var set_i in element.sets) {
+
+                        resolveTiming(doc, element.sets[set_i], s, element);
+
+                        if (element.timeContainer === "seq") {
+
+                                implicit_end = element.sets[set_i].end;
+                        } else {
+
+                                implicit_end = Math.max(implicit_end, element.sets[set_i].end);
+                        }
+
+                        s = element.sets[set_i];
+                }
+
+                if (!('contents' in element)) {
+
+                        /* anonymous spans and regions and <set> and <br>s and spans with only children text nodes */
+
+                        if (isinseq) {
+
+                                /* in seq container, implicit duration is zero */
+
+                                implicit_end = element.begin;
+                        } else {
+
+                                /* in par container, implicit duration is indefinite */
+
+                                implicit_end = Number.POSITIVE_INFINITY;
+                        }
+                } else {
+
+                        for (var content_i in element.contents) {
+
+                                resolveTiming(doc, element.contents[content_i], s, element);
+
+                                if (element.timeContainer === "seq") {
+
+                                        implicit_end = element.contents[content_i].end;
+                                } else {
 
   var buffers = ['comment', 'sgmlDecl', 'textNode', 'tagName', 'doctype', 'procInstName', 'procInstBody', 'entity', 'attribName', 'attribValue', 'cdata', 'script'];
 
@@ -57168,8 +58361,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
             parser.script = '';
             break;
 
-          default:
-            error(parser, 'Max buffer length exceeded: ' + buffers[i]);
+        function TT() {
+                this.events = [];
+                this.head = new Head();
+                this.body = null;
         }
       }
       maxActual = Math.max(maxActual, len);
@@ -57179,11 +58374,126 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     parser.bufferCheckPosition = m + parser.position;
   }
 
-  function clearBuffers(parser) {
-    for (var i = 0, l = buffers.length; i < l; i++) {
-      parser[buffers[i]] = '';
-    }
-  }
+        TT.prototype.initFromNode = function (node, errorHandler) {
+
+                /* compute cell resolution */
+
+                var cr = extractCellResolution(node, errorHandler);
+
+                this.cellLength = {
+                        'h': new imscUtils.ComputedLength(0, 1 / cr.h),
+                        'w': new imscUtils.ComputedLength(1 / cr.w, 0)
+                };
+
+                /* extract frame rate and tick rate */
+
+                var frtr = extractFrameAndTickRate(node, errorHandler);
+
+                this.effectiveFrameRate = frtr.effectiveFrameRate;
+
+                this.tickRate = frtr.tickRate;
+
+                /* extract aspect ratio */
+
+                this.aspectRatio = extractAspectRatio(node, errorHandler);
+
+                /* check timebase */
+
+                var attr = findAttribute(node, imscNames.ns_ttp, "timeBase");
+
+                if (attr !== null && attr !== "media") {
+
+                        reportFatal(errorHandler, "Unsupported time base");
+                }
+
+                /* retrieve extent */
+
+                var e = extractExtent(node, errorHandler);
+
+                if (e === null) {
+
+                        this.pxLength = {
+                                'h': null,
+                                'w': null
+                        };
+                } else {
+
+                        if (e.h.unit !== "px" || e.w.unit !== "px") {
+                                reportFatal(errorHandler, "Extent on TT must be in px or absent");
+                        }
+
+                        this.pxLength = {
+                                'h': new imscUtils.ComputedLength(0, 1 / e.h.value),
+                                'w': new imscUtils.ComputedLength(1 / e.w.value, 0)
+                        };
+                }
+
+                /** set root container dimensions to (1, 1) arbitrarily
+                  * the root container is mapped to actual dimensions at rendering
+                **/
+
+                this.dimensions = {
+                        'h': new imscUtils.ComputedLength(0, 1),
+                        'w': new imscUtils.ComputedLength(1, 0)
+                };
+        };
+
+        /* register a temporal events */
+        TT.prototype._registerEvent = function (elem) {
+
+                /* skip if begin is not < then end */
+
+                if (elem.end <= elem.begin) return;
+
+                /* index the begin time of the event */
+
+                var b_i = indexOf(this.events, elem.begin);
+
+                if (!b_i.found) {
+                        this.events.splice(b_i.index, 0, elem.begin);
+                }
+
+                /* index the end time of the event */
+
+                if (elem.end !== Number.POSITIVE_INFINITY) {
+
+                        var e_i = indexOf(this.events, elem.end);
+
+                        if (!e_i.found) {
+                                this.events.splice(e_i.index, 0, elem.end);
+                        }
+                }
+        };
+
+        /*
+         * Retrieves the range of ISD times covered by the document
+         * 
+         * @returns {Array} Array of two elements: min_begin_time and max_begin_time
+         * 
+         */
+        TT.prototype.getMediaTimeRange = function () {
+
+                return [this.events[0], this.events[this.events.length - 1]];
+        };
+
+        /*
+         * Returns list of ISD begin times  
+         * 
+         * @returns {Array}
+         */
+        TT.prototype.getMediaTimeEvents = function () {
+
+                return this.events;
+        };
+
+        /*
+         * Represents a TTML Head element
+         */
+
+        function Head() {
+                this.styling = new Styling();
+                this.layout = new Layout();
+        }
 
   function flushBuffers(parser) {
     closeText(parser);
@@ -57197,21 +58507,10 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     }
   }
 
-  SAXParser.prototype = {
-    end: function end() {
-      _end(this);
-    },
-    write: write,
-    resume: function resume() {
-      this.error = null;return this;
-    },
-    close: function close() {
-      return this.write(null);
-    },
-    flush: function flush() {
-      flushBuffers(this);
-    }
-  };
+        function Styling() {
+                this.styles = {};
+                this.initials = {};
+        }
 
   var Stream;
   try {
@@ -57228,16 +58527,69 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
     return new SAXStream(strict, opt);
   }
 
-  function SAXStream(strict, opt) {
-    if (!(this instanceof SAXStream)) {
-      return new SAXStream(strict, opt);
-    }
+        /*
+         * Represents a TTML initial element
+         */
+
+        function Initial() {
+                this.styleAttrs = null;
+        }
+
+        Initial.prototype.initFromNode = function (node, errorHandler) {
+
+                this.styleAttrs = {};
+
+                for (var i in node.attributes) {
+
+                        if (node.attributes[i].uri === imscNames.ns_itts || node.attributes[i].uri === imscNames.ns_ebutts || node.attributes[i].uri === imscNames.ns_tts) {
+
+                                var qname = node.attributes[i].uri + " " + node.attributes[i].local;
+
+                                this.styleAttrs[qname] = node.attributes[i].value;
+                        }
+                }
+        };
+
+        /*
+         * Represents a TTML Layout element
+         * 
+         */
 
     Stream.apply(this);
 
-    this._parser = new SAXParser(strict, opt);
-    this.writable = true;
-    this.readable = true;
+        /*
+         * Represents a TTML image element
+         */
+
+        function Image(src, type) {
+                ContentElement.call(this, 'image');
+                this.src = src;
+                this.type = type;
+        }
+
+        Image.prototype.initFromNode = function (doc, parent, node, errorHandler) {
+                this.src = 'src' in node.attributes ? node.attributes.src.value : null;
+
+                if (!this.src) {
+                        reportError(errorHandler, "Invalid image@src attribute");
+                }
+
+                this.type = 'type' in node.attributes ? node.attributes.type.value : null;
+
+                if (!this.type) {
+                        reportError(errorHandler, "Invalid image@type attribute");
+                }
+
+                StyledElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
+                TimedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
+                AnimatedElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
+                LayoutElement.prototype.initFromNode.call(this, doc, parent, node, errorHandler);
+        };
+
+        /*
+         * TTML element utility functions
+         * 
+         */
 
     var me = this;
 
@@ -58059,9 +59411,37 @@ var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol
           beginWhiteSpace(parser, c);
           continue;
 
-        case S.BEGIN_WHITESPACE:
-          beginWhiteSpace(parser, c);
-          continue;
+        function extractAspectRatio(node, errorHandler) {
+
+                var ar = findAttribute(node, imscNames.ns_ittp, "aspectRatio");
+
+                if (ar === null) {
+
+                        ar = findAttribute(node, imscNames.ns_ttp, "displayAspectRatio");
+                }
+
+                var rslt = null;
+
+                if (ar !== null) {
+
+                        var ASPECT_RATIO_RE = /(\d+)\s+(\d+)/;
+
+                        var m = ASPECT_RATIO_RE.exec(ar);
+
+                        if (m !== null) {
+
+                                var w = parseInt(m[1]);
+
+                                var h = parseInt(m[2]);
+
+                                if (w !== 0 && h !== 0) {
+
+                                        rslt = w / h;
+                                } else {
+
+                                        reportError(errorHandler, "Illegal aspectRatio values (ignoring)");
+                                }
+                        } else {
 
         case S.TEXT:
           if (parser.sawRoot && !parser.closedRoot) {
@@ -58972,1678 +60352,1256 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     property: 'text-align'
   }];
 
-  var Captions = function Captions(id, uri, media) {
-    var timedItems = [];
-    var liveItems = [];
-    var iterator = 0;
-    var _styles = {};
-    var lastTimeSeen = 0;
-    var interval = 0;
-    var outputElement;
+;
+(function (imscHTML, imscNames, imscStyles) {
+
+        /**
+         * Function that maps <pre>smpte:background</pre> URIs to URLs resolving to image resource
+         * @callback IMGResolver
+         * @param {string} <pre>smpte:background</pre> URI
+         * @return {string} PNG resource URL
+         */
+
+        /**
+         * Renders an ISD object (returned by <pre>generateISD()</pre>) into a 
+         * parent element, that must be attached to the DOM. The ISD will be rendered
+         * into a child <pre>div</pre>
+         * with heigh and width equal to the clientHeight and clientWidth of the element,
+         * unless explicitly specified otherwise by the caller. Images URIs specified 
+         * by <pre>smpte:background</pre> attributes are mapped to image resource URLs
+         * by an <pre>imgResolver</pre> function. The latter takes the value of <code>smpte:background</code>
+         * attribute and an <code>img</code> DOM element as input, and is expected to
+         * set the <code>src</code> attribute of the <code>img</code> to the absolute URI of the image.
+         * <pre>displayForcedOnlyMode</pre> sets the (boolean)
+         * value of the IMSC1 displayForcedOnlyMode parameter. The function returns
+         * an opaque object that should passed in <code>previousISDState</code> when this function
+         * is called for the next ISD, otherwise <code>previousISDState</code> should be set to 
+         * <code>null</code>.
+         * 
+         * @param {Object} isd ISD to be rendered
+         * @param {Object} element Element into which the ISD is rendered
+         * @param {?IMGResolver} imgResolver Resolve <pre>smpte:background</pre> URIs into URLs.
+         * @param {?number} eheight Height (in pixel) of the child <div>div</div> or null 
+         *                  to use clientHeight of the parent element
+         * @param {?number} ewidth Width (in pixel) of the child <div>div</div> or null
+         *                  to use clientWidth of the parent element
+         * @param {?boolean} displayForcedOnlyMode Value of the IMSC1 displayForcedOnlyMode parameter,
+         *                   or false if null         
+         * @param {?module:imscUtils.ErrorHandler} errorHandler Error callback
+         * @param {Object} previousISDState State saved during processing of the previous ISD, or null if initial call
+         * @param {?boolean} enableRollUp Enables roll-up animations (see CEA 708)
+         * @return {Object} ISD state to be provided when this funtion is called for the next ISD
+         */
+
+        imscHTML.render = function (isd, element, imgResolver, eheight, ewidth, displayForcedOnlyMode, errorHandler, previousISDState, enableRollUp) {
+
+                /* maintain aspect ratio if specified */
+
+                var height = eheight || element.clientHeight;
+                var width = ewidth || element.clientWidth;
+
+                if (isd.aspectRatio !== null) {
+
+                        var twidth = height * isd.aspectRatio;
+
+                        if (twidth > width) {
+
+                                height = Math.round(width / isd.aspectRatio);
+                        } else {
+
+                                width = twidth;
+                        }
+                }
+
+                var rootcontainer = document.createElement("div");
+
+                rootcontainer.style.position = "relative";
+                rootcontainer.style.width = width + "px";
+                rootcontainer.style.height = height + "px";
+                rootcontainer.style.margin = "auto";
+                rootcontainer.style.top = 0;
+                rootcontainer.style.bottom = 0;
+                rootcontainer.style.left = 0;
+                rootcontainer.style.right = 0;
+                rootcontainer.style.zIndex = 0;
+
+                var context = {
+                        h: height,
+                        w: width,
+                        regionH: null,
+                        regionW: null,
+                        imgResolver: imgResolver,
+                        displayForcedOnlyMode: displayForcedOnlyMode || false,
+                        isd: isd,
+                        errorHandler: errorHandler,
+                        previousISDState: previousISDState,
+                        enableRollUp: enableRollUp || false,
+                        currentISDState: {},
+                        flg: null, /* current fillLineGap value if active, null otherwise */
+                        lp: null, /* current linePadding value if active, null otherwise */
+                        mra: null, /* current multiRowAlign value if active, null otherwise */
+                        ipd: null, /* inline progression direction (lr, rl, tb) */
+                        bpd: null, /* block progression direction (lr, rl, tb) */
+                        ruby: null, /* is ruby present in a <p> */
+                        textEmphasis: null, /* is textEmphasis present in a <p> */
+                        rubyReserve: null /* is rubyReserve applicable to a <p> */
+                };
+
+                element.appendChild(rootcontainer);
+
+                for (var i in isd.contents) {
+
+                        processElement(context, rootcontainer, isd.contents[i]);
+                }
 
-    loadData(uri);
-
-    function loadData(dataFeedUrl) {
-      var req = new XMLHttpRequest();
-
-      req.onreadystatechange = function () {
-        if (req.readyState === 4) {
-          req.onreadystatechange = null;
-          if (req.status >= 200 && req.status < 300) {
-            if (req.responseXML) {
-              try {
-                transformXML(req.responseXML);
-              } catch (e) {
-                DebugTool.info('Error transforming captions response: ' + e);
-              }
-            }
-          } else {
-            DebugTool.info('Response Code ' + req.status + '; Error loading captions data: ' + req.responseText);
-          }
-        }
-      };
-
-      try {
-        req.open('GET', dataFeedUrl, true);
-        req.send(null);
-      } catch (e) {
-        DebugTool.info('Error transforming captions response: ' + e);
-      }
-    }
-
-    function render() {
-      if (!outputElement) {
-        outputElement = document.createElement('div');
-        outputElement.id = id;
-      }
-
-      return outputElement;
-    }
-
-    function start() {
-      interval = setInterval(function () {
-        update();
-      }, 750);
-
-      if (outputElement) {
-        outputElement.style.display = 'block';
-      }
-    }
-
-    function stop() {
-      if (outputElement) {
-        outputElement.style.display = 'none';
-      }
-
-      cleanOldCaptions(media.getDuration());
-      clearInterval(interval);
-    }
-
-    function update() {
-      if (!media) {
-        stop();
-      }
-
-      var time = media.getCurrentTime();
-      updateCaptions(time);
-    }
-
-    function transformXML(xml) {
-      // Use .getElementsByTagNameNS() when parsing XML as some implementations of .getElementsByTagName() will lowercase its argument before proceding
-      var conformsToStandardElements = xml.getElementsByTagNameNS('urn:ebu:tt:metadata', 'conformsToStandard')[0];
-      var isEBUTTD = conformsToStandardElements && conformsToStandardElements.textContent === 'urn:ebu:tt:distribution:2014-01';
-
-      var captionValues = {
-        ttml: {
-          namespace: 'http://www.w3.org/2006/10/ttaf1',
-          idAttribute: 'id'
-        },
-        ebuttd: {
-          namespace: 'http://www.w3.org/ns/ttml',
-          idAttribute: 'xml:id'
-        }
-      };
-
-      var captionStandard = isEBUTTD ? captionValues.ebuttd : captionValues.ttml;
-      var styles = _styles;
-      var styleElements = xml.getElementsByTagNameNS(captionStandard.namespace, 'style');
-
-      var max = styleElements.length;
-      // We should get at least one each time. If we don't, then the data
-      // is broken or structured in a way this can't cope with.
-      // This prevents an infinite loop.
-      var seenNonOk = false;
-      do {
-        for (var i = 0, j = styleElements.length; i < j; i++) {
-          var se = styleElements[i];
-          if (se.ok) {
-            continue;
-          }
-
-          var id = se.getAttribute(captionStandard.idAttribute);
-          var myStyles = elementToStyle(se);
-
-          if (myStyles) {
-            styles[id] = myStyles;
-            se.ok = true;
-          } else {
-            seenNonOk = true;
-          }
-        }
-      } while (seenNonOk && max--);
-
-      var body = xml.getElementsByTagNameNS(captionStandard.namespace, 'body')[0];
-      var s = elementToStyle(body);
-      var d = document.createElement('div');
-      d.setAttribute('style', s);
-      d.style.cssText = s;
-
-      if (!outputElement) {
-        outputElement = document.createElement('div');
-        outputElement.id = id;
-      }
-
-      outputElement.appendChild(d);
-      outputElement = d;
-
-      var ps = xml.getElementsByTagNameNS(captionStandard.namespace, 'p');
-      var items = [];
-
-      for (var k = 0, m = ps.length; k < m; k++) {
-        items.push(TimedPiece(ps[k], elementToStyle));
-      }
-
-      timedItems = items;
-      liveItems = [];
-      return items;
-    }
-
-    function elementToStyle(el) {
-      var stringStyle = '';
-      var styles = _styles;
-      var inherit = el.getAttribute('style');
-      if (inherit) {
-        if (styles[inherit]) {
-          stringStyle = styles[inherit];
-        } else {
-          return false;
-        }
-      }
-      for (var i = 0, j = elementToStyleMap.length; i < j; i++) {
-        var map = elementToStyleMap[i];
-        var value = el.getAttribute(map.attribute);
-        if (value === null || value === undefined) {
-          continue;
-        }
-        if (map.conversion) {
-          value = map.conversion(value);
-        }
-        if (map.attribute === 'tts:backgroundColor') {
-          value += ' 2px 2px 1px';
-        }
-
-        stringStyle += map.property + ': ' + value + '; ';
-      }
-
-      return stringStyle;
-    }
-
-    function groupUnseenFor(time) {
-      // Basic approach first.
-      // TODO - seek backwards and do fast seeking if long timestamp
-      // differences. Also add a cache for last timestamp seen. If next time is older, reset.
-      var it;
-      if (time < lastTimeSeen) {
-        it = 0;
-      } else {
-        it = iterator || 0;
-      }
-      lastTimeSeen = time;
-      var itms = timedItems;
-      var max = itms.length;
-
-      // The current iterated item was not returned last time.
-      // If its time has not come, we return nothing.
-      var ready = [];
-      var itm = itms[it];
-      while (it !== max && itm.start < time) {
-        if (itm.end > time) {
-          ready.push(itm);
-        }
-        it++;
-        itm = itms[it];
-      }
-      iterator = it;
-
-      return ready;
-    }
-
-    function updateCaptions(time) {
-      // Clear out old captions
-      cleanOldCaptions(time);
-      // Add new captions
-      addNewCaptions(time);
-    }
-
-    function cleanOldCaptions(time) {
-      var live = liveItems;
-      for (var i = live.length - 1; i >= 0; i--) {
-        if (live[i].removeFromDomIfExpired(time)) {
-          live.splice(i, 1);
-        }
-      }
-    }
-
-    function addNewCaptions(time) {
-      var live = liveItems;
-      var fresh = groupUnseenFor(time);
-      liveItems = live.concat(fresh);
-      for (var i = 0, j = fresh.length; i < j; i++) {
-        fresh[i].addToDom(outputElement);
-      }
-    }
-
-    return {
-      render: render,
-      start: start,
-      stop: stop,
-      update: update,
-      loadData: loadData,
-      transformXML: transformXML,
-      elementToStyle: elementToStyle,
-      groupUnseenFor: groupUnseenFor,
-      updateCaptions: updateCaptions,
-      cleanOldCaptions: cleanOldCaptions,
-      addNewCaptions: addNewCaptions
-    };
-  };
-
-  var TimedPiece = function TimedPiece(timedPieceNode, toStyleFunc) {
-    var start = timeStampToSeconds(timedPieceNode.getAttribute('begin'));
-    var end = timeStampToSeconds(timedPieceNode.getAttribute('end'));
-    var _node = timedPieceNode;
-    var htmlElementNode;
-
-    function timeStampToSeconds(timeStamp) {
-      var timePieces = timeStamp.split(':');
-      var timeSeconds = parseFloat(timePieces.pop(), 10);
-      if (timePieces.length) {
-        timeSeconds += 60 * parseInt(timePieces.pop(), 10);
-      }
-      if (timePieces.length) {
-        timeSeconds += 60 * 60 * parseInt(timePieces.pop(), 10);
-      }
-      return timeSeconds;
-    }
-
-    function removeFromDomIfExpired(time) {
-      if (time > end || time < start) {
-        if (htmlElementNode) {
-          var e = htmlElementNode;
-          if (e.parentNode) {
-            e.parentNode.removeChild(e);
-          }
-        }
-        return true;
-      }
-      return false;
-    }
-
-    function addToDom(parentNode) {
-      var node = htmlElementNode || generateHtmlElementNode();
-      parentNode.appendChild(node);
-    }
-
-    function generateHtmlElementNode(node) {
-      var source = node || _node;
-
-      var localName = source.localName || source.tagName;
-      var html = document.createElement(localName);
-      var style = toStyleFunc(source);
-      if (style) {
-        html.setAttribute('style', style);
-        html.style.cssText = style;
-      }
-
-      for (var i = 0, j = source.childNodes.length; i < j; i++) {
-        var n = source.childNodes[i];
-        if (n.nodeType === 3) {
-          html.appendChild(document.createTextNode(n.data));
-        } else if (n.nodeType === 1) {
-          html.appendChild(generateHtmlElementNode(n));
-        }
-      }
-      if (!node) {
-        htmlElementNode = html;
-      }
-
-      return html;
-    }
-
-    return {
-      node: timedPieceNode,
-      start: start,
-      end: end,
-
-      timeStampToSeconds: timeStampToSeconds,
-      removeFromDomIfExpired: removeFromDomIfExpired,
-      addToDom: addToDom,
-      generateHtmlElementNode: generateHtmlElementNode
-    };
-  };
-
-  return Captions;
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/captionscontainer.js":
-/*!******************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/captionscontainer.js ***!
-  \******************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/captions */ "../../script/captions.js"), __webpack_require__(/*! bigscreenplayer/models/transportcontrolposition */ "../../script/models/transportcontrolposition.js"), __webpack_require__(/*! bigscreenplayer/domhelpers */ "../../script/domhelpers.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Captions, TransportControlPosition, DOMHelpers) {
-  'use strict';
-
-  return function (mediaPlayer, captionsURL, autoStart, parentElement) {
-    var container = document.createElement('div');
-    var captions;
-
-    container.id = 'playerCaptionsContainer';
-    DOMHelpers.addClass(container, 'playerCaptions');
-
-    if (captionsURL) {
-      captions = new Captions('playerCaptions', captionsURL, mediaPlayer, container);
-      container.appendChild(captions.render());
-    }
-
-    parentElement.appendChild(container);
-
-    if (autoStart) {
-      start();
-    }
-
-    function start() {
-      if (captions) {
-        captions.start();
-      }
-    }
-
-    function stop() {
-      if (captions) {
-        captions.stop();
-      }
-    }
-
-    function updatePosition(transportControlPosition) {
-      var classes = {
-        controlsVisible: TransportControlPosition.CONTROLS_ONLY,
-        controlsWithInfoVisible: TransportControlPosition.CONTROLS_WITH_INFO,
-        leftCarouselVisible: TransportControlPosition.LEFT_CAROUSEL,
-        bottomCarouselVisible: TransportControlPosition.BOTTOM_CAROUSEL
-      };
-
-      for (var cssClassName in classes) {
-        if (classes.hasOwnProperty(cssClassName)) {
-          // Allow multiple flags to be set at once
-          if ((classes[cssClassName] & transportControlPosition) === classes[cssClassName]) {
-            DOMHelpers.addClass(container, cssClassName);
-          } else {
-            DOMHelpers.removeClass(container, cssClassName);
-          }
-        }
-      }
-    }
-
-    function tearDown() {
-      if (container) {
-        parentElement.removeChild(container);
-      }
-    }
-
-    return {
-      start: start,
-      stop: stop,
-      updatePosition: updatePosition,
-      tearDown: tearDown
-    };
-  };
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/debugger/chronicle.js":
-/*!*******************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/debugger/chronicle.js ***!
-  \*******************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  'use strict';
-
-  var chronicle = [];
-  var firstTimeElement;
-  var compressTime;
-  var updateCallbacks = [];
-
-  var TYPES = {
-    INFO: 'info',
-    ERROR: 'error',
-    EVENT: 'event',
-    APICALL: 'apicall',
-    TIME: 'time',
-    KEYVALUE: 'keyvalue'
-  };
-
-  function init() {
-    clear();
-  }
-
-  function clear() {
-    firstTimeElement = true;
-    compressTime = false;
-    chronicle = [];
-  }
-
-  function registerForUpdates(callback) {
-    updateCallbacks.push(callback);
-  }
-
-  function unregisterForUpdates(callback) {
-    var indexOf = updateCallbacks.indexOf(callback);
-    if (indexOf !== -1) {
-      updateCallbacks.splice(indexOf, 1);
-    }
-  }
-
-  function info(message) {
-    pushToChronicle({ type: TYPES.INFO, message: message });
-  }
-
-  function verbose(message) {
-    pushToChronicle({ type: TYPES.INFO, message: message });
-  }
-
-  function error(err) {
-    pushToChronicle({ type: TYPES.ERROR, error: err });
-  }
-
-  function event(event) {
-    pushToChronicle({ type: TYPES.EVENT, event: event });
-  }
-
-  function apicall(callType) {
-    pushToChronicle({ type: TYPES.APICALL, calltype: callType });
-  }
-
-  function time(time) {
-    if (firstTimeElement) {
-      pushToChronicle({ type: TYPES.TIME, currentTime: time });
-      firstTimeElement = false;
-    } else if (!compressTime) {
-      pushToChronicle({ type: TYPES.TIME, currentTime: time });
-      compressTime = true;
-    } else {
-      var lastElement = chronicle.pop();
-      lastElement.currentTime = time;
-      pushToChronicle(lastElement);
-    }
-  }
-
-  function keyValue(obj) {
-    pushToChronicle({ type: TYPES.KEYVALUE, keyvalue: obj });
-  }
-
-  function retrieve() {
-    return chronicle.slice();
-  }
-
-  function timestamp(obj) {
-    obj.timestamp = new Date().getTime();
-  }
-
-  function pushToChronicle(obj) {
-    if (obj.type !== TYPES.TIME) {
-      firstTimeElement = true;
-      compressTime = false;
-    }
-    timestamp(obj);
-    chronicle.push(obj);
-    updates();
-  }
-
-  function updates() {
-    updateCallbacks.forEach(function (callback) {
-      callback(retrieve());
-    });
-  }
-
-  function tearDown() {
-    clear();
-  }
-
-  return {
-    init: init,
-    TYPES: TYPES,
-    clear: clear,
-    info: info,
-    verbose: verbose,
-    error: error,
-    event: event,
-    apicall: apicall,
-    time: time,
-    keyValue: keyValue,
-    retrieve: retrieve,
-    tearDown: tearDown,
-    registerForUpdates: registerForUpdates,
-    unregisterForUpdates: unregisterForUpdates
-  };
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/debugger/debugpresenter.js":
-/*!************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/debugger/debugpresenter.js ***!
-  \************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "../../script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/debugger/chronicle */ "../../script/debugger/chronicle.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, Chronicle) {
-  'use strict';
-
-  var view;
-
-  function init(newView) {
-    view = newView;
-  }
-
-  function update(logs) {
-    view.render({ static: parseStaticFields(logs), dynamic: parseDynamicFields(logs) });
-  }
-
-  function parseStaticFields(logs) {
-    var latestStaticFields = [];
-    var staticFields = logs.filter(function (log) {
-      return isStaticLog(log);
-    });
-
-    var uniqueKeys = findUniqueKeys(staticFields);
-    uniqueKeys.forEach(function (key) {
-      var matchingStaticLogs = staticFields.filter(function (log) {
-        return log.keyvalue.key === key;
-      });
-      latestStaticFields.push(matchingStaticLogs.pop());
-    });
-
-    return latestStaticFields.map(function (field) {
-      return { key: sanitiseKeyString(field.keyvalue.key), value: sanitiseValueString(field.keyvalue.value) };
-    });
-  }
-
-  function parseDynamicFields(logs) {
-    var dynamicLogs;
-
-    dynamicLogs = logs.filter(function (log) {
-      return !isStaticLog(log);
-    }).map(function (log) {
-      var dateString = new Date(log.timestamp).toISOString();
-      switch (log.type) {
-        case Chronicle.TYPES.INFO:
-          return dateString + ' - Info: ' + log.message;
-        case Chronicle.TYPES.TIME:
-          return dateString + ' - Video time: ' + parseFloat(log.currentTime).toFixed(2);
-        case Chronicle.TYPES.EVENT:
-          return dateString + ' - Event: ' + convertToReadableEvent(log.event.state);
-        case Chronicle.TYPES.ERROR:
-          return dateString + ' - Error: ' + log.error.errorId + ' | ' + log.error.message;
-        case Chronicle.TYPES.APICALL:
-          return dateString + ' - Api call: ' + log.calltype;
-        default:
-          return dateString + ' - Unknown log format';
-      }
-    });
-
-    return dynamicLogs;
-  }
-
-  function isStaticLog(log) {
-    return log.type === Chronicle.TYPES.KEYVALUE;
-  }
-
-  function findUniqueKeys(logs) {
-    var uniqueKeys = [];
-    logs.forEach(function (log) {
-      if (uniqueKeys.indexOf(log.keyvalue.key) === -1) {
-        uniqueKeys.push(log.keyvalue.key);
-      }
-    });
-    return uniqueKeys;
-  }
-
-  function sanitiseKeyString(key) {
-    return key.replace(/([A-Z])/g, ' $1').toLowerCase();
-  }
-
-  function sanitiseValueString(value) {
-    if (value instanceof Date) {
-      var hours = zeroPadTimeUnits(value.getHours()) + value.getHours();
-      var mins = zeroPadTimeUnits(value.getMinutes()) + value.getMinutes();
-      var secs = zeroPadTimeUnits(value.getSeconds()) + value.getSeconds();
-      return hours + ':' + mins + ':' + secs;
-    }
-    return value;
-  }
-
-  function zeroPadTimeUnits(unit) {
-    return unit < 10 ? '0' : '';
-  }
-
-  function convertToReadableEvent(type) {
-    for (var key in MediaState) {
-      if (MediaState[key] === type) {
-        return key;
-      }
-    }
-    return type;
-  }
-
-  function tearDown() {
-    view = undefined;
-  }
-
-  return {
-    init: init,
-    update: update,
-    tearDown: tearDown
-  };
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/debugger/debugtool.js":
-/*!*******************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/debugger/debugtool.js ***!
-  \*******************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/debugger/chronicle */ "../../script/debugger/chronicle.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugpresenter */ "../../script/debugger/debugpresenter.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugview */ "../../script/debugger/debugview.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Chronicle, DebugPresenter, DebugView) {
-  'use strict';
-
-  function DebugTool() {
-    var presenter = DebugPresenter;
-    var view;
-    var visible = false;
-
-    var LOG_LEVELS = {
-      ERROR: 0,
-      DEBUG: 1,
-      INFO: 2,
-      VERBOSE: 3
-    };
-
-    var logLevel = LOG_LEVELS.VERBOSE;
-
-    var staticFieldValues = {};
-
-    function toggleVisibility() {
-      if (visible) {
-        hide();
-      } else {
-        show();
-      }
-    }
-
-    function setLogLevel(newLogLevel) {
-      var level = LOG_LEVELS[logLevel];
-      if (level) {
-        logLevel = newLogLevel;
-      }
-    }
-
-    function show() {
-      view = DebugView;
-      view.init();
-      presenter.init(view);
-      presenter.update(Chronicle.retrieve());
-      Chronicle.registerForUpdates(presenter.update);
-      visible = true;
-    }
-
-    function hide() {
-      presenter.tearDown();
-      view.tearDown();
-      Chronicle.unregisterForUpdates(presenter.update);
-      visible = false;
-    }
-
-    function info(log) {
-      if (logLevel >= LOG_LEVELS.INFO) {
-        Chronicle.info(log);
-      }
-    }
-
-    function event(log) {
-      if (logLevel >= LOG_LEVELS.ERROR) {
-        Chronicle.event(log);
-      }
-    }
-
-    function time(log) {
-      if (logLevel >= LOG_LEVELS.ERROR) {
-        Chronicle.time(log);
-      }
-    }
-
-    function error(log) {
-      if (logLevel >= LOG_LEVELS.ERROR) {
-        Chronicle.error(log);
-      }
-    }
-
-    function verbose(log) {
-      if (logLevel >= LOG_LEVELS.VERBOSE) {
-        Chronicle.verbose(log);
-      }
-    }
-
-    function updateKeyValue(message) {
-      var staticFieldValue = staticFieldValues[message.key];
-
-      if (staticFieldValue) {
-        var entry = Chronicle.retrieve()[staticFieldValue.index];
-        if (entry) {
-          entry.keyvalue = message;
-        }
-      } else {
-        staticFieldValues[message.key] = { value: message.value, index: Chronicle.retrieve().length };
-        Chronicle.keyValue(message);
-      }
-    }
-
-    function tearDown() {
-      staticFieldValues = {};
-    }
-
-    return {
-      toggleVisibility: toggleVisibility,
-      setLogLevel: setLogLevel,
-      getLogLevels: LOG_LEVELS,
-      verbose: verbose,
-      info: info,
-      error: error,
-      event: event,
-      time: time,
-      apicall: Chronicle.apicall,
-      keyValue: updateKeyValue,
-      tearDown: tearDown
-    };
-  }
-
-  var instance;
-
-  if (instance === undefined) {
-    instance = new DebugTool();
-  }
-
-  return instance;
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/debugger/debugview.js":
-/*!*******************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/debugger/debugview.js ***!
-  \*******************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  'use strict';
-
-  var logBox, logContainer, staticContainer, staticBox;
-  var appElement = document.getElementById('app');
-
-  function init() {
-    logBox = document.createElement('div');
-    logContainer = document.createElement('span');
-    staticBox = document.createElement('div');
-    staticContainer = document.createElement('span');
-
-    logBox.id = 'logBox';
-    logBox.style.position = 'absolute';
-    logBox.style.width = '63%';
-    logBox.style.left = '5%';
-    logBox.style.top = '15%';
-    logBox.style.bottom = '25%';
-    logBox.style.backgroundColor = '#1D1D1D';
-    logBox.style.opacity = 0.9;
-    logBox.style.overflow = 'hidden';
-
-    staticBox.id = 'staticBox';
-    staticBox.style.position = 'absolute';
-    staticBox.style.width = '26%';
-    staticBox.style.right = '5%';
-    staticBox.style.top = '15%';
-    staticBox.style.bottom = '25%';
-    staticBox.style.backgroundColor = '#1D1D1D';
-    staticBox.style.opacity = 0.9;
-    staticBox.style.overflow = 'hidden';
-
-    logContainer.id = 'logContainer';
-    logContainer.style.color = '#ffffff';
-    logContainer.style.fontSize = '11pt';
-    logContainer.style.position = 'absolute';
-    logContainer.style.bottom = '1%';
-    logContainer.style.left = '1%';
-    logContainer.style.wordWrap = 'break-word';
-    logContainer.style.whiteSpace = 'pre-line';
-
-    staticContainer.id = 'staticContainer';
-    staticContainer.style.color = '#ffffff';
-    staticContainer.style.fontSize = '11pt';
-    staticContainer.style.wordWrap = 'break-word';
-    staticContainer.style.left = '1%';
-    staticContainer.style.whiteSpace = 'pre-line';
-
-    logBox.appendChild(logContainer);
-    staticBox.appendChild(staticContainer);
-    appElement.appendChild(logBox);
-    appElement.appendChild(staticBox);
-  }
-
-  function render(logData) {
-    var dynamicLogs = logData.dynamic;
-    var LINES_TO_DISPLAY = 29;
-    if (dynamicLogs.length === 0) {
-      logContainer.innerHTML = '';
-    }
-
-    dynamicLogs = dynamicLogs.slice(-LINES_TO_DISPLAY);
-    logContainer.innerHTML = dynamicLogs.join('\n');
-
-    var staticLogString = '';
-    logData.static.forEach(function (log) {
-      staticLogString = staticLogString + log.key + ': ' + log.value + '\n\n';
-    });
-
-    staticContainer.innerHTML = staticLogString;
-  }
-
-  function tearDown() {
-    appElement.removeChild(document.getElementById('logBox'));
-    appElement.removeChild(document.getElementById('staticBox'));
-    staticContainer = undefined;
-    logContainer = undefined;
-    logBox = undefined;
-    staticBox = undefined;
-  }
-
-  return {
-    init: init,
-    render: render,
-    tearDown: tearDown
-  };
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/domhelpers.js":
-/*!***********************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/domhelpers.js ***!
-  \***********************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  var addClass = function addClass(el, className) {
-    if (el.classList) {
-      el.classList.add(className);
-    } else {
-      el.className += ' ' + className;
-    }
-  };
-
-  var removeClass = function removeClass(el, className) {
-    if (el.classList) {
-      el.classList.remove(className);
-    } else {
-      el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
-    }
-  };
-
-  var hasClass = function hasClass(el, className) {
-    if (el.classList) {
-      return el.classList.contains(className);
-    } else {
-      return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className);
-    }
-  };
-
-  return {
-    addClass: addClass,
-    removeClass: removeClass,
-    hasClass: hasClass
-  };
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/dynamicwindowutils.js":
-/*!*******************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/dynamicwindowutils.js ***!
-  \*******************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  'use strict';
-
-  var LiveSupport = {
-    NONE: 'none',
-    PLAYABLE: 'playable',
-    RESTARTABLE: 'restartable',
-    SEEKABLE: 'seekable'
-  };
-
-  var FOUR_MINUTES = 4 * 60;
-
-  function convertMilliSecondsToSeconds(timeInMilis) {
-    return Math.floor(timeInMilis / 1000);
-  }
-
-  function hasFiniteSeekableRange(seekableRange) {
-    var hasRange = true;
-    try {
-      hasRange = seekableRange.end !== Infinity;
-    } catch (e) {}
-    return hasRange;
-  }
-
-  function canSeek(windowStart, windowEnd, liveSupport, seekableRange) {
-    return supportsSeeking(liveSupport) && initialWindowIsBigEnoughForSeeking(windowStart, windowEnd) && hasFiniteSeekableRange(seekableRange);
-  }
-
-  function canPause(windowStart, windowEnd, liveSupport) {
-    return supportsPause(liveSupport) && initialWindowIsBigEnoughForSeeking(windowStart, windowEnd);
-  }
-
-  function initialWindowIsBigEnoughForSeeking(windowStart, windowEnd) {
-    var start = convertMilliSecondsToSeconds(windowStart);
-    var end = convertMilliSecondsToSeconds(windowEnd);
-    return end - start > FOUR_MINUTES;
-  }
-
-  function supportsPause(liveSupport) {
-    return liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.RESTARTABLE;
-  }
-
-  function supportsSeeking(liveSupport) {
-    return liveSupport === LiveSupport.SEEKABLE;
-  }
-
-  return {
-    canPause: canPause,
-    canSeek: canSeek
-  };
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/mockbigscreenplayer.js":
-/*!********************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/mockbigscreenplayer.js ***!
-  \********************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "../../script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/pausetriggers */ "../../script/models/pausetriggers.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "../../script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/utils/playbackutils */ "../../script/utils/playbackutils.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "../../script/plugins.js"), __webpack_require__(/*! bigscreenplayer/plugindata */ "../../script/plugindata.js"), __webpack_require__(/*! bigscreenplayer/pluginenums */ "../../script/pluginenums.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums) {
-  var sourceList;
-  var source;
-  var cdn;
-
-  var timeUpdateCallbacks = [];
-  var stateChangeCallbacks = [];
-
-  var currentTime;
-  var seekableRange;
-  var duration;
-  var liveWindowStart;
-  var pausedState = true;
-  var endedState;
-  var mediaKind;
-  var windowType;
-  var subtitlesAvailable;
-  var subtitlesEnabled;
-  var endOfStream;
-  var canSeekState;
-  var canPauseState;
-  var shallowClone;
-  var mockModes = {
-    NONE: 0,
-    PLAIN: 1,
-    JASMINE: 2
-  };
-  var mockStatus = { currentlyMocked: false, mode: mockModes.NONE };
-  var initialised;
-  var fatalErrorBufferingTimeout;
-
-  var autoProgress;
-  var autoProgressInterval;
-  var initialBuffering = false;
-
-  var liveWindowData;
-
-  function startProgress(progressCause) {
-    setTimeout(function () {
-      if (!autoProgressInterval) {
-        mockingHooks.changeState(MediaState.PLAYING, progressCause);
-        autoProgressInterval = setInterval(function () {
-          if (windowType !== WindowTypes.STATIC && seekableRange.start && seekableRange.end) {
-            seekableRange.start += 0.5;
-            seekableRange.end += 0.5;
-          }
-          mockingHooks.progressTime(currentTime + 0.5);
-          if (currentTime >= duration) {
-            clearInterval(autoProgressInterval);
-            mockingHooks.changeState(MediaState.ENDED);
-          }
-        }, 500);
-      }
-    }, 100);
-  }
-
-  function stopProgress() {
-    if (autoProgressInterval) {
-      clearInterval(autoProgressInterval);
-      autoProgressInterval = null;
-    }
-  }
-
-  function mock(BigscreenPlayer, opts) {
-    autoProgress = opts && opts.autoProgress;
-
-    if (mockStatus.currentlyMocked) {
-      throw new Error('mock() was called while BigscreenPlayer was already mocked');
-    }
-    shallowClone = PlaybackUtils.clone(BigscreenPlayer);
-
-    // Divert existing functions
-    for (var mock in mockFunctions) {
-      BigscreenPlayer[mock] = mockFunctions[mock];
-    }
-    // Add extra functions
-    for (var hook in mockingHooks) {
-      BigscreenPlayer[hook] = mockingHooks[hook];
-    }
-    mockStatus = { currentlyMocked: true, mode: mockModes.PLAIN };
-  }
-
-  function mockJasmine(BigscreenPlayer, opts) {
-    autoProgress = opts && opts.autoProgress;
-
-    if (mockStatus.currentlyMocked) {
-      throw new Error('mockJasmine() was called while BigscreenPlayer was already mocked');
-    }
-
-    for (var mock in mockFunctions) {
-      if (BigscreenPlayer[mock]) {
-        spyOn(BigscreenPlayer, mock).and.callFake(mockFunctions[mock]);
-      }
-    }
-
-    for (var hook in mockingHooks) {
-      BigscreenPlayer[hook] = mockingHooks[hook];
-    }
-    mockStatus = { currentlyMocked: true, mode: mockModes.JASMINE };
-  }
-
-  function unmock(BigscreenPlayer) {
-    if (!mockStatus.currentlyMocked) {
-      throw new Error('unmock() was called before BigscreenPlayer was mocked');
-    }
-
-    // Remove extra functions
-    for (var hook in mockingHooks) {
-      delete BigscreenPlayer[hook];
-    }
-    // Undo divert existing functions (plain mock only)
-    if (mockStatus.mode === mockModes.PLAIN) {
-      for (var func in shallowClone) {
-        BigscreenPlayer[func] = shallowClone[func];
-      }
-    }
-
-    timeUpdateCallbacks = [];
-    stateChangeCallbacks = [];
-
-    mockStatus = { currentlyMocked: false, mode: mockModes.NONE };
-  }
-
-  var mockFunctions = {
-    init: function init(playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport) {
-      currentTime = bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime || 0;
-      liveWindowStart = undefined;
-      pausedState = true;
-      endedState = false;
-      mediaKind = 'video';
-      windowType = newWindowType || WindowTypes.STATIC;
-      subtitlesAvailable = true;
-      subtitlesEnabled = false;
-      canSeekState = true;
-      canPauseState = true;
-      sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls;
-      source = sourceList && sourceList[0].url;
-      cdn = sourceList && sourceList[0].cdn;
-
-      duration = windowType === WindowTypes.STATIC ? 4808 : Infinity;
-      seekableRange = { start: 0, end: 4808 };
-
-      mockingHooks.changeState(MediaState.WAITING);
-
-      if (autoProgress && !initialBuffering) {
-        startProgress();
-      }
-
-      initialised = true;
-    },
-    registerForTimeUpdates: function registerForTimeUpdates(callback) {
-      timeUpdateCallbacks.push(callback);
-      return callback;
-    },
-    unregisterForTimeUpdates: function unregisterForTimeUpdates(callback) {
-      var indexOf = timeUpdateCallbacks.indexOf(callback);
-
-      if (indexOf !== -1) {
-        timeUpdateCallbacks.splice(indexOf, 1);
-      }
-    },
-    registerForStateChanges: function registerForStateChanges(callback) {
-      stateChangeCallbacks.push(callback);
-      return callback;
-    },
-    unregisterForStateChanges: function unregisterForStateChanges(callback) {
-      var indexOf = stateChangeCallbacks.indexOf(callback);
-
-      if (indexOf !== -1) {
-        stateChangeCallbacks.splice(indexOf, 1);
-      }
-    },
-    setCurrentTime: function setCurrentTime(time) {
-      currentTime = time;
-      if (autoProgress) {
-        if (!pausedState) {
-          mockingHooks.changeState(MediaState.WAITING, 'other');
-          startProgress();
-        }
-      } else {
-        mockingHooks.progressTime(currentTime);
-      }
-    },
-    getCurrentTime: function getCurrentTime() {
-      return currentTime;
-    },
-    getMediaKind: function getMediaKind() {
-      return mediaKind;
-    },
-    getWindowType: function getWindowType() {
-      return windowType;
-    },
-    getSeekableRange: function getSeekableRange() {
-      return seekableRange;
-    },
-    getDuration: function getDuration() {
-      return duration;
-    },
-    isPaused: function isPaused() {
-      return pausedState;
-    },
-    isEnded: function isEnded() {
-      return endedState;
-    },
-    play: function play() {
-      if (autoProgress) {
-        startProgress('other');
-      } else {
-        mockingHooks.changeState(MediaState.PLAYING, 'other');
-      }
-    },
-    pause: function pause(opts) {
-      mockingHooks.changeState(MediaState.PAUSED, 'other', opts);
-    },
-    setSubtitlesEnabled: function setSubtitlesEnabled(value) {
-      subtitlesEnabled = value;
-    },
-    isSubtitlesEnabled: function isSubtitlesEnabled() {
-      return subtitlesEnabled;
-    },
-    isSubtitlesAvailable: function isSubtitlesAvailable() {
-      return subtitlesAvailable;
-    },
-    setTransportControlsPosition: function setTransportControlsPosition(position) {},
-    canSeek: function canSeek() {
-      return canSeekState;
-    },
-    canPause: function canPause() {
-      return canPauseState;
-    },
-    convertVideoTimeSecondsToEpochMs: function convertVideoTimeSecondsToEpochMs(seconds) {
-      return liveWindowStart ? liveWindowStart + seconds * 1000 : undefined;
-    },
-    transitions: function transitions() {
-      return {
-        canBePaused: function canBePaused() {
-          return true;
-        },
-        canBeginSeek: function canBeginSeek() {
-          return true;
-        }
-      };
-    },
-    getPlayerElement: function getPlayerElement() {
-      return;
-    },
-    tearDown: function tearDown() {
-      if (!initialised) {
-        return;
-      }
-
-      Plugins.interface.onBufferingCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: { dismissed_by: 'teardown' }, isInitialPlay: initialBuffering }));
-      Plugins.interface.onErrorCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: { dismissed_by: 'teardown' } }));
-      Plugins.unregisterPlugin();
-
-      timeUpdateCallbacks = [];
-      stateChangeCallbacks = [];
-
-      if (autoProgress) {
-        stopProgress();
-      }
-
-      initialised = false;
-    },
-    registerPlugin: function registerPlugin(plugin) {
-      Plugins.registerPlugin(plugin);
-    },
-    unregisterPlugin: function unregisterPlugin(plugin) {
-      Plugins.unregisterPlugin(plugin);
-    },
-    getLiveWindowData: function getLiveWindowData() {
-      if (windowType === WindowTypes.STATIC) {
-        return {};
-      }
-      return {
-        windowStartTime: liveWindowData.windowStartTime,
-        windowEndTime: liveWindowData.windowEndTime,
-        initialPlaybackTime: liveWindowData.initialPlaybackTime,
-        serverDate: liveWindowData.serverDate
-      };
-    }
-  };
-
-  var mockingHooks = {
-    changeState: function changeState(state, eventTrigger, opts) {
-      eventTrigger = eventTrigger || 'device';
-      var pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
-
-      pausedState = state === MediaState.PAUSED || state === MediaState.STOPPED || state === MediaState.ENDED;
-      endedState = state === MediaState.ENDED;
-
-      if (state === MediaState.WAITING) {
-        fatalErrorBufferingTimeout = true;
-        Plugins.interface.onBuffering(new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING }));
-      } else {
-        Plugins.interface.onBufferingCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: { dismissed_by: eventTrigger }, isInitialPlay: initialBuffering }));
-      }
-      Plugins.interface.onErrorCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: { dismissed_by: eventTrigger } }));
-
-      if (state === MediaState.FATAL_ERROR) {
-        Plugins.interface.onFatalError(new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout }));
-      }
-
-      var stateObject = { state: state };
-      if (state === MediaState.PAUSED) {
-        stateObject.trigger = pauseTrigger;
-        endOfStream = false;
-      }
-      if (state === MediaState.FATAL_ERROR) {
-        stateObject.errorId = opts && opts.error;
-        stateObject.isBufferingTimeoutError = opts && opts.isBufferingTimeoutError;
-      }
-      stateObject.endOfStream = endOfStream;
-
-      stateChangeCallbacks.forEach(function (callback) {
-        callback(stateObject);
-      });
-
-      if (autoProgress) {
-        if (state !== MediaState.PLAYING) {
-          stopProgress();
-        } else {
-          startProgress();
-        }
-      }
-    },
-    progressTime: function progressTime(time) {
-      currentTime = time;
-      timeUpdateCallbacks.forEach(function (callback) {
-        callback({
-          currentTime: time,
-          endOfStream: endOfStream
-        });
-      });
-    },
-    setEndOfStream: function setEndOfStream(isEndOfStream) {
-      endOfStream = isEndOfStream;
-    },
-    setDuration: function setDuration(mediaDuration) {
-      duration = mediaDuration;
-    },
-    setSeekableRange: function setSeekableRange(newSeekableRange) {
-      seekableRange = newSeekableRange;
-    },
-    setMediaKind: function setMediaKind(kind) {
-      mediaKind = kind;
-    },
-    setWindowType: function setWindowType(type) {
-      windowType = type;
-    },
-    setCanSeek: function setCanSeek(value) {
-      canSeekState = value;
-    },
-    setCanPause: function setCanPause(value) {
-      canPauseState = value;
-    },
-    setLiveWindowStart: function setLiveWindowStart(value) {
-      liveWindowStart = value;
-    },
-    setSubtitlesAvailable: function setSubtitlesAvailable(value) {
-      subtitlesAvailable = value;
-    },
-    getSource: function getSource() {
-      return source;
-    },
-    triggerError: function triggerError() {
-      fatalErrorBufferingTimeout = false;
-      Plugins.interface.onError(new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false }));
-      this.changeState(MediaState.WAITING);
-      stopProgress();
-    },
-    triggerErrorHandled: function triggerErrorHandled() {
-      if (sourceList && sourceList.length > 1) {
-        sourceList.shift();
-        source = sourceList[0].url;
-        cdn = sourceList[0].cdn;
-      }
-      Plugins.interface.onBufferingCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: { dismissed_by: 'timeout' }, isInitialPlay: initialBuffering }));
-      Plugins.interface.onErrorCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: { dismissed_by: 'timeout' } }));
-      Plugins.interface.onErrorHandled(new PluginData({ status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout, cdn: cdn }));
-
-      if (autoProgress) {
-        stopProgress();
-        startProgress();
-      }
-    },
-    setInitialBuffering: function setInitialBuffering(value) {
-      initialBuffering = value;
-    },
-    setLiveWindowData: function setLiveWindowData(newLiveWindowData) {
-      liveWindowData = newLiveWindowData;
-    }
-  };
-
-  return {
-    mock: mock,
-    unmock: unmock,
-    mockJasmine: mockJasmine
-  };
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/models/mediakinds.js":
-/*!******************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/models/mediakinds.js ***!
-  \******************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  'use strict';
-
-  return {
-    AUDIO: 'audio',
-    VIDEO: 'video'
-  };
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/models/mediastate.js":
-/*!******************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/models/mediastate.js ***!
-  \******************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  'use strict';
-
-  /**
-   * Enumeration of possible media states.
-   */
-
-  var MediaState = {
-    /** Media is stopped and is not attempting to start. */
-    STOPPED: 0,
-    /** Media is paused. */
-    PAUSED: 1,
-    /** Media is playing successfully. */
-    PLAYING: 2,
-    /** Media is waiting for data (buffering). */
-    WAITING: 4,
-    /** Media is seeking backwards or forwards. */
-    ENDED: 5,
-    /** Media has thrown a fatal error. */
-    FATAL_ERROR: 6
-  };
-
-  return MediaState;
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/models/pausetriggers.js":
-/*!*********************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/models/pausetriggers.js ***!
-  \*********************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  'use strict';
-
-  var PauseTriggers = {
-    USER: 1,
-    APP: 2,
-    DEVICE: 3
-  };
-
-  return PauseTriggers;
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/models/transportcontrolposition.js":
-/*!********************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/models/transportcontrolposition.js ***!
-  \********************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  'use strict';
-
-  /**
-   * Enumeration of on-screen transport control positions, which can be combined as bit flags.
-   */
-
-  var TransportControlPosition = {
-    /** No transport controls are visible. */
-    NONE: 0,
-    /** The basic transport controls are visible. */
-    CONTROLS_ONLY: 1,
-    /** The transport controls are visible with an expanded info area. */
-    CONTROLS_WITH_INFO: 2,
-    /** The left-hand onwards navigation carousel is visible. */
-    LEFT_CAROUSEL: 4,
-    /** The bottom-right onwards navigation carousel is visible. */
-    BOTTOM_CAROUSEL: 8,
-    /** The whole screen is obscured by a navigation menu. */
-    FULLSCREEN: 16
-  };
-
-  return TransportControlPosition;
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/models/windowtypes.js":
-/*!*******************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/models/windowtypes.js ***!
-  \*******************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  'use strict';
-
-  return {
-    STATIC: 'staticWindow',
-    GROWING: 'growingWindow',
-    SLIDING: 'slidingWindow'
-  };
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/parsers/manifestparser.js":
-/*!***********************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/parsers/manifestparser.js ***!
-  \***********************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/utils/timeutils */ "../../script/utils/timeutils.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (TimeUtils) {
-  'use strict';
-
-  return function ManifestParser(manifest, type, dateWithOffset) {
-    function parseMPD() {
-      try {
-        var mpd = manifest.getElementsByTagName('MPD')[0];
-
-        var availabilityStartTime = Date.parse(mpd.getAttribute('availabilityStartTime'));
-
-        var tsbdAttr = mpd.getAttribute('timeShiftBufferDepth');
-        var timeShiftBufferDepth = tsbdAttr && TimeUtils.durationToSeconds(tsbdAttr);
-
-        // Getting zeroth SegmentTemplate may grab either audio or video
-        // data. This shouldn't matter as we only use the factor of
-        // duration/timescale, which is the same for both.
-        var segmentTemplate = manifest.getElementsByTagName('SegmentTemplate')[0];
-        var timescale = parseFloat(segmentTemplate.getAttribute('timescale'));
-        var duration = parseFloat(segmentTemplate.getAttribute('duration'));
-        var oneSegment = 1000 * duration / timescale;
-
-        if (availabilityStartTime && oneSegment) {
-          var windowEndTime = dateWithOffset - (timeShiftBufferDepth ? availabilityStartTime : 0) - oneSegment;
-          var windowStartTime = timeShiftBufferDepth ? windowEndTime - timeShiftBufferDepth * 1000 : availabilityStartTime;
-          var timeCorrection = timeShiftBufferDepth ? windowStartTime / 1000 : 0;
-        } else {
-          return { error: 'Error parsing DASH manifest attributes' };
-        }
-
-        return {
-          windowStartTime: windowStartTime,
-          windowEndTime: windowEndTime,
-          timeCorrection: timeCorrection
+                return context.currentISDState;
         };
-      } catch (e) {
-        return { error: 'Error parsing DASH manifest' };
-      }
-    }
 
-    function parseM3U8() {
-      var windowStartTime = getM3U8ProgramDateTime(manifest);
-      var duration = getM3U8WindowSizeInSeconds(manifest);
+        function processElement(context, dom_parent, isd_element) {
 
-      if (windowStartTime && duration) {
-        var windowEndTime = windowStartTime + duration * 1000;
-      } else {
-        return { error: 'Error parsing HLS manifest' };
-      }
-      return {
-        windowStartTime: windowStartTime,
-        windowEndTime: windowEndTime
-      };
-    }
+                var e;
 
-    function getM3U8ProgramDateTime(data) {
-      var programDateTime;
-      var match = /^#EXT-X-PROGRAM-DATE-TIME:(.*)$/m.exec(data);
-      if (match) {
-        var parsedDate = Date.parse(match[1]);
-        if (!isNaN(parsedDate)) {
-          programDateTime = parsedDate;
+                if (isd_element.kind === 'region') {
+
+                        e = document.createElement("div");
+                        e.style.position = "absolute";
+                } else if (isd_element.kind === 'body') {
+
+                        e = document.createElement("div");
+                } else if (isd_element.kind === 'div') {
+
+                        e = document.createElement("div");
+                } else if (isd_element.kind === 'image') {
+
+                        e = document.createElement("img");
+
+                        if (context.imgResolver !== null && isd_element.src !== null) {
+
+                                var uri = context.imgResolver(isd_element.src, e);
+
+                                if (uri) e.src = uri;
+
+                                e.height = context.regionH;
+                                e.width = context.regionW;
+                        }
+                } else if (isd_element.kind === 'p') {
+
+                        e = document.createElement("p");
+                } else if (isd_element.kind === 'span') {
+
+                        if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "container") {
+
+                                e = document.createElement("ruby");
+
+                                context.ruby = true;
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "base") {
+
+                                e = document.createElement("rb");
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "text") {
+
+                                e = document.createElement("rt");
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "baseContainer") {
+
+                                e = document.createElement("rbc");
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "textContainer") {
+
+                                e = document.createElement("rtc");
+                        } else if (isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "delimiter") {
+
+                                /* ignore rp */
+
+                                return;
+                        } else {
+
+                                e = document.createElement("span");
+                        }
+
+                        var te = isd_element.styleAttrs[imscStyles.byName.textEmphasis.qname];
+
+                        if (te && te.style !== "none") {
+
+                                context.textEmphasis = true;
+                        }
+
+                        //e.textContent = isd_element.text;
+                } else if (isd_element.kind === 'br') {
+
+                        e = document.createElement("br");
+                }
+
+                if (!e) {
+
+                        reportError(context.errorHandler, "Error processing ISD element kind: " + isd_element.kind);
+
+                        return;
+                }
+
+                /* add to parent */
+
+                dom_parent.appendChild(e);
+
+                /* override UA default margin */
+                /* TODO: should apply to <p> only */
+
+                e.style.margin = "0";
+
+                /* tranform TTML styles to CSS styles */
+
+                for (var i in STYLING_MAP_DEFS) {
+
+                        var sm = STYLING_MAP_DEFS[i];
+
+                        var attr = isd_element.styleAttrs[sm.qname];
+
+                        if (attr !== undefined && sm.map !== null) {
+
+                                sm.map(context, e, isd_element, attr);
+                        }
+                }
+
+                var proc_e = e;
+
+                /* remember writing direction */
+
+                if (isd_element.kind === "region") {
+
+                        var wdir = isd_element.styleAttrs[imscStyles.byName.writingMode.qname];
+
+                        if (wdir === "lrtb" || wdir === "lr") {
+
+                                context.ipd = "lr";
+                                context.bpd = "tb";
+                        } else if (wdir === "rltb" || wdir === "rl") {
+
+                                context.ipd = "rl";
+                                context.bpd = "tb";
+                        } else if (wdir === "tblr") {
+
+                                context.ipd = "tb";
+                                context.bpd = "lr";
+                        } else if (wdir === "tbrl" || wdir === "tb") {
+
+                                context.ipd = "tb";
+                                context.bpd = "rl";
+                        }
+                }
+
+                /* do we have linePadding ? */
+
+                var lp = isd_element.styleAttrs[imscStyles.byName.linePadding.qname];
+
+                if (lp && !lp.isZero()) {
+
+                        var plength = lp.toUsedLength(context.w, context.h);
+
+                        if (plength > 0) {
+
+                                /* apply padding to the <p> so that line padding does not cause line wraps */
+
+                                var padmeasure = Math.ceil(plength) + "px";
+
+                                if (context.bpd === "tb") {
+
+                                        proc_e.style.paddingLeft = padmeasure;
+                                        proc_e.style.paddingRight = padmeasure;
+                                } else {
+
+                                        proc_e.style.paddingTop = padmeasure;
+                                        proc_e.style.paddingBottom = padmeasure;
+                                }
+
+                                context.lp = lp;
+                        }
+                }
+
+                // do we have multiRowAlign?
+
+                var mra = isd_element.styleAttrs[imscStyles.byName.multiRowAlign.qname];
+
+                if (mra && mra !== "auto") {
+
+                        /* create inline block to handle multirowAlign */
+
+                        var s = document.createElement("span");
+
+                        s.style.display = "inline-block";
+
+                        s.style.textAlign = mra;
+
+                        e.appendChild(s);
+
+                        proc_e = s;
+
+                        context.mra = mra;
+                }
+
+                /* do we have rubyReserve? */
+
+                var rr = isd_element.styleAttrs[imscStyles.byName.rubyReserve.qname];
+
+                if (rr && rr[0] !== "none") {
+                        context.rubyReserve = rr;
+                }
+
+                /* remember we are filling line gaps */
+
+                if (isd_element.styleAttrs[imscStyles.byName.fillLineGap.qname]) {
+                        context.flg = true;
+                }
+
+                if (isd_element.kind === "span" && isd_element.text) {
+
+                        if (imscStyles.byName.textCombine.qname in isd_element.styleAttrs && isd_element.styleAttrs[imscStyles.byName.textCombine.qname][0] === "all") {
+
+                                /* ignore tate-chu-yoku since line break cannot happen within */
+                                e.textContent = isd_element.text;
+                        } else {
+
+                                // wrap characters in spans to find the line wrap locations
+
+                                var cbuf = '';
+
+                                for (var j = 0; j < isd_element.text.length; j++) {
+
+                                        cbuf += isd_element.text.charAt(j);
+
+                                        var cc = isd_element.text.charCodeAt(j);
+
+                                        if (cc < 0xD800 || cc > 0xDBFF || j === isd_element.text.length) {
+
+                                                /* wrap the character(s) in a span unless it is a high surrogate */
+
+                                                var span = document.createElement("span");
+
+                                                span.textContent = cbuf;
+
+                                                e.appendChild(span);
+
+                                                cbuf = '';
+                                        }
+                                }
+                        }
+                }
+
+                /* process the children of the ISD element */
+
+                for (var k in isd_element.contents) {
+
+                        processElement(context, proc_e, isd_element.contents[k]);
+                }
+
+                /* list of lines */
+
+                var linelist = [];
+
+                /* paragraph processing */
+                /* TODO: linePadding only supported for horizontal scripts */
+
+                if ((context.lp || context.mra || context.flg || context.ruby || context.textEmphasis || context.rubyReserve) && isd_element.kind === "p") {
+
+                        constructLineList(context, proc_e, linelist, null);
+
+                        /* apply rubyReserve */
+
+                        if (context.rubyReserve) {
+
+                                applyRubyReserve(linelist, context);
+
+                                context.rubyReserve = null;
+                        }
+
+                        /* apply tts:rubyPosition="outside" */
+
+                        if (context.ruby || context.rubyReserve) {
+
+                                applyRubyPosition(linelist, context);
+
+                                context.ruby = null;
+                        }
+
+                        /* apply text emphasis "outside" position */
+
+                        if (context.textEmphasis) {
+
+                                applyTextEmphasis(linelist, context);
+
+                                context.textEmphasis = null;
+                        }
+
+                        /* insert line breaks for multirowalign */
+
+                        if (context.mra) {
+
+                                applyMultiRowAlign(linelist);
+
+                                context.mra = null;
+                        }
+
+                        /* add linepadding */
+
+                        if (context.lp) {
+
+                                applyLinePadding(linelist, context.lp.toUsedLength(context.w, context.h), context);
+
+                                context.lp = null;
+                        }
+
+                        /* fill line gaps linepadding */
+
+                        if (context.flg) {
+
+                                var par_edges = rect2edges(proc_e.getBoundingClientRect(), context);
+
+                                applyFillLineGap(linelist, par_edges.before, par_edges.after, context);
+
+                                context.flg = null;
+                        }
+                }
+
+                /* region processing */
+
+                if (isd_element.kind === "region") {
+
+                        /* build line list */
+
+                        constructLineList(context, proc_e, linelist);
+
+                        /* perform roll up if needed */
+
+                        if (context.bpd === "tb" && context.enableRollUp && isd_element.contents.length > 0 && isd_element.styleAttrs[imscStyles.byName.displayAlign.qname] === 'after') {
+
+                                /* horrible hack, perhaps default region id should be underscore everywhere? */
+
+                                var rid = isd_element.id === '' ? '_' : isd_element.id;
+
+                                var rb = new RegionPBuffer(rid, linelist);
+
+                                context.currentISDState[rb.id] = rb;
+
+                                if (context.previousISDState && rb.id in context.previousISDState && context.previousISDState[rb.id].plist.length > 0 && rb.plist.length > 1 && rb.plist[rb.plist.length - 2].text === context.previousISDState[rb.id].plist[context.previousISDState[rb.id].plist.length - 1].text) {
+
+                                        var body_elem = e.firstElementChild;
+
+                                        var h = rb.plist[rb.plist.length - 1].after - rb.plist[rb.plist.length - 1].before;
+
+                                        body_elem.style.bottom = "-" + h + "px";
+                                        body_elem.style.transition = "transform 0.4s";
+                                        body_elem.style.position = "relative";
+                                        body_elem.style.transform = "translateY(-" + h + "px)";
+                                }
+                        }
+
+                        /* TODO: clean-up the spans ? */
+                }
         }
-      }
-      return programDateTime;
-    }
 
-    function getM3U8WindowSizeInSeconds(data) {
-      var regex = /#EXTINF:(\d+(?:\.\d+)?)/g;
-      var matches = regex.exec(data);
-      var result = 0;
-      while (matches) {
-        result += +matches[1];
-        matches = regex.exec(data);
-      }
-      return Math.floor(result);
-    }
+        function applyLinePadding(lineList, lp, context) {
 
-    function parse() {
-      if (type === 'mpd') {
-        return parseMPD();
-      } else if (type === 'm3u8') {
-        return parseM3U8();
-      }
-    }
+                for (var i in lineList) {
 
-    return {
-      parse: parse
-    };
-  };
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+                        var l = lineList[i].elements.length;
+
+                        var se = lineList[i].elements[lineList[i].start_elem];
+
+                        var ee = lineList[i].elements[lineList[i].end_elem];
+
+                        var pospadpxlen = Math.ceil(lp) + "px";
+
+                        var negpadpxlen = "-" + Math.ceil(lp) + "px";
+
+                        if (l !== 0) {
+
+                                if (context.ipd === "lr") {
+
+                                        se.node.style.borderLeftColor = se.bgcolor || "#00000000";
+                                        se.node.style.borderLeftStyle = "solid";
+                                        se.node.style.borderLeftWidth = pospadpxlen;
+                                        se.node.style.marginLeft = negpadpxlen;
+                                } else if (context.ipd === "rl") {
+
+                                        se.node.style.borderRightColor = se.bgcolor || "#00000000";
+                                        se.node.style.borderRightStyle = "solid";
+                                        se.node.style.borderRightWidth = pospadpxlen;
+                                        se.node.style.marginRight = negpadpxlen;
+                                } else if (context.ipd === "tb") {
+
+                                        se.node.style.borderTopColor = se.bgcolor || "#00000000";
+                                        se.node.style.borderTopStyle = "solid";
+                                        se.node.style.borderTopWidth = pospadpxlen;
+                                        se.node.style.marginTop = negpadpxlen;
+                                }
+
+                                if (context.ipd === "lr") {
+
+                                        ee.node.style.borderRightColor = ee.bgcolor || "#00000000";
+                                        ee.node.style.borderRightStyle = "solid";
+                                        ee.node.style.borderRightWidth = pospadpxlen;
+                                        ee.node.style.marginRight = negpadpxlen;
+                                } else if (context.ipd === "rl") {
+
+                                        ee.node.style.borderLeftColor = ee.bgcolor || "#00000000";
+                                        ee.node.style.borderLeftStyle = "solid";
+                                        ee.node.style.borderLeftWidth = pospadpxlen;
+                                        ee.node.style.marginLeft = negpadpxlen;
+                                } else if (context.ipd === "tb") {
+
+                                        ee.node.style.borderBottomColor = ee.bgcolor || "#00000000";
+                                        ee.node.style.borderBottomStyle = "solid";
+                                        ee.node.style.borderBottomWidth = pospadpxlen;
+                                        ee.node.style.marginBottom = negpadpxlen;
+                                }
+                        }
+                }
+        }
+
+        function applyMultiRowAlign(lineList) {
+
+                /* apply an explicit br to all but the last line */
+
+                for (var i = 0; i < lineList.length - 1; i++) {
+
+                        var l = lineList[i].elements.length;
+
+                        if (l !== 0 && lineList[i].br === false) {
+                                var br = document.createElement("br");
+
+                                var lastnode = lineList[i].elements[l - 1].node;
+
+                                lastnode.parentElement.insertBefore(br, lastnode.nextSibling);
+                        }
+                }
+        }
+
+        function applyTextEmphasis(lineList, context) {
+
+                /* supports "outside" only */
+
+                for (var i = 0; i < lineList.length; i++) {
+
+                        for (var j = 0; j < lineList[i].te.length; j++) {
+
+                                /* skip if position already set */
+
+                                if (lineList[i].te[j].style.textEmphasisPosition !== "") continue;
+
+                                var pos;
+
+                                if (context.bpd === "tb") {
+
+                                        pos = i === 0 ? "left over" : "left under";
+                                } else {
+
+                                        if (context.bpd === "rl") {
+
+                                                pos = i === 0 ? "right under" : "left under";
+                                        } else {
+
+                                                pos = i === 0 ? "left under" : "right under";
+                                        }
+                                }
+
+                                lineList[i].te[j].style.textEmphasisPosition = pos;
+                        }
+                }
+        }
+
+        function applyRubyPosition(lineList, context) {
+
+                for (var i = 0; i < lineList.length; i++) {
+
+                        for (var j = 0; j < lineList[i].rbc.length; j++) {
+
+                                /* skip if ruby-position already set */
+
+                                if (lineList[i].rbc[j].style.rubyPosition !== "") continue;
+
+                                var pos;
+
+                                if (context.bpd === "tb") {
+
+                                        pos = i === 0 ? "over" : "under";
+                                } else {
+
+                                        if (context.bpd === "rl") {
+
+                                                pos = i === 0 ? "over" : "under";
+                                        } else {
+
+                                                pos = i === 0 ? "under" : "over";
+                                        }
+                                }
+
+                                lineList[i].rbc[j].style.rubyPosition = pos;
+                        }
+                }
+        }
+
+        function applyRubyReserve(lineList, context) {
+
+                for (var i = 0; i < lineList.length; i++) {
+
+                        var ruby = document.createElement("ruby");
+
+                        var rb = document.createElement("rb");
+                        rb.textContent = "\u200B";
+
+                        ruby.appendChild(rb);
+
+                        var rt1;
+                        var rt2;
+
+                        var fs = context.rubyReserve[1].toUsedLength(context.w, context.h) + "px";
+
+                        if (context.rubyReserve[0] === "both") {
+
+                                rt1 = document.createElement("rtc");
+                                rt1.style.rubyPosition = "under";
+                                rt1.textContent = "\u200B";
+                                rt1.style.fontSize = fs;
+
+                                rt2 = document.createElement("rtc");
+                                rt2.style.rubyPosition = "over";
+                                rt2.textContent = "\u200B";
+                                rt2.style.fontSize = fs;
+
+                                ruby.appendChild(rt1);
+                                ruby.appendChild(rt2);
+                        } else {
+
+                                rt1 = document.createElement("rtc");
+                                rt1.textContent = "\u200B";
+                                rt1.style.fontSize = fs;
+
+                                if (context.rubyReserve[0] === "after" || context.rubyReserve[0] === "outside" && i > 0) {
+
+                                        rt1.style.rubyPosition = context.bpd === "tb" || context.bpd === "rl" ? "under" : "over";
+                                } else {
+
+                                        rt1.style.rubyPosition = context.bpd === "tb" || context.bpd === "rl" ? "over" : "under";
+                                }
+
+                                ruby.appendChild(rt1);
+                        }
+
+                        var e = lineList[i].elements[0].node.parentElement.insertBefore(ruby, lineList[i].elements[0].node);
+                }
+        }
+
+        function applyFillLineGap(lineList, par_before, par_after, context) {
+
+                /* positive for BPD = lr and tb, negative for BPD = rl */
+                var s = Math.sign(par_after - par_before);
+
+                for (var i = 0; i <= lineList.length; i++) {
+
+                        /* compute frontier between lines */
+
+                        var frontier;
+
+                        if (i === 0) {
+
+                                frontier = par_before;
+                        } else if (i === lineList.length) {
+
+                                frontier = par_after;
+                        } else {
+
+                                frontier = (lineList[i].before + lineList[i - 1].after) / 2;
+                        }
+
+                        /* padding amount */
+
+                        var pad;
+
+                        /* current element */
+
+                        var e;
+
+                        /* before line */
+
+                        if (i > 0) {
+
+                                for (var j = 0; j < lineList[i - 1].elements.length; j++) {
+
+                                        if (lineList[i - 1].elements[j].bgcolor === null) continue;
+
+                                        e = lineList[i - 1].elements[j];
+
+                                        if (s * (e.after - frontier) < 0) {
+
+                                                pad = Math.ceil(Math.abs(frontier - e.after)) + "px";
+
+                                                e.node.style.backgroundColor = e.bgcolor;
+
+                                                if (context.bpd === "lr") {
+
+                                                        e.node.style.paddingRight = pad;
+                                                } else if (context.bpd === "rl") {
+
+                                                        e.node.style.paddingLeft = pad;
+                                                } else if (context.bpd === "tb") {
+
+                                                        e.node.style.paddingBottom = pad;
+                                                }
+                                        }
+                                }
+                        }
+
+                        /* after line */
+
+                        if (i < lineList.length) {
+
+                                for (var k = 0; k < lineList[i].elements.length; k++) {
+
+                                        e = lineList[i].elements[k];
+
+                                        if (e.bgcolor === null) continue;
+
+                                        if (s * (e.before - frontier) > 0) {
+
+                                                pad = Math.ceil(Math.abs(e.before - frontier)) + "px";
+
+                                                e.node.style.backgroundColor = e.bgcolor;
+
+                                                if (context.bpd === "lr") {
+
+                                                        e.node.style.paddingLeft = pad;
+                                                } else if (context.bpd === "rl") {
+
+                                                        e.node.style.paddingRight = pad;
+                                                } else if (context.bpd === "tb") {
+
+                                                        e.node.style.paddingTop = pad;
+                                                }
+                                        }
+                                }
+                        }
+                }
+        }
+
+        function RegionPBuffer(id, lineList) {
+
+                this.id = id;
+
+                this.plist = lineList;
+        }
+
+        function pruneEmptySpans(element) {
+
+                var child = element.firstChild;
+
+                while (child) {
+
+                        var nchild = child.nextSibling;
+
+                        if (child.nodeType === Node.ELEMENT_NODE && child.localName === 'span') {
+
+                                pruneEmptySpans(child);
+
+                                if (child.childElementCount === 0 && child.textContent.length === 0) {
+
+                                        element.removeChild(child);
+                                }
+                        }
+
+                        child = nchild;
+                }
+        }
+
+        function rect2edges(rect, context) {
+
+                var edges = { before: null, after: null, start: null, end: null };
+
+                if (context.bpd === "tb") {
+
+                        edges.before = rect.top;
+                        edges.after = rect.bottom;
+
+                        if (context.ipd === "lr") {
+
+                                edges.start = rect.left;
+                                edges.end = rect.right;
+                        } else {
+
+                                edges.start = rect.right;
+                                edges.end = rect.left;
+                        }
+                } else if (context.bpd === "lr") {
+
+                        edges.before = rect.left;
+                        edges.after = rect.right;
+                        edges.start = rect.top;
+                        edges.end = rect.bottom;
+                } else if (context.bpd === "rl") {
+
+                        edges.before = rect.right;
+                        edges.after = rect.left;
+                        edges.start = rect.top;
+                        edges.end = rect.bottom;
+                }
+
+                return edges;
+        }
+
+        function constructLineList(context, element, llist, bgcolor) {
+
+                if (element.localName === "rt" || element.localName === "rtc") {
+
+                        /* skip ruby annotations */
+
+                        return;
+                }
+
+                var curbgcolor = element.style.backgroundColor || bgcolor;
+
+                if (element.childElementCount === 0) {
+
+                        if (element.localName === 'span' || element.localName === 'rb') {
+
+                                var r = element.getBoundingClientRect();
+
+                                /* skip if span is not displayed */
+
+                                if (r.height === 0 || r.width === 0) return;
+
+                                var edges = rect2edges(r, context);
+
+                                if (llist.length === 0 || !isSameLine(edges.before, edges.after, llist[llist.length - 1].before, llist[llist.length - 1].after)) {
+
+                                        llist.push({
+                                                before: edges.before,
+                                                after: edges.after,
+                                                start: edges.start,
+                                                end: edges.end,
+                                                start_elem: 0,
+                                                end_elem: 0,
+                                                elements: [],
+                                                rbc: [],
+                                                te: [],
+                                                text: "",
+                                                br: false
+                                        });
+                                } else {
+
+                                        /* positive for BPD = lr and tb, negative for BPD = rl */
+                                        var bpd_dir = Math.sign(edges.after - edges.before);
+
+                                        /* positive for IPD = lr and tb, negative for IPD = rl */
+                                        var ipd_dir = Math.sign(edges.end - edges.start);
+
+                                        /* check if the line height has increased */
+
+                                        if (bpd_dir * (edges.before - llist[llist.length - 1].before) < 0) {
+                                                llist[llist.length - 1].before = edges.before;
+                                        }
+
+                                        if (bpd_dir * (edges.after - llist[llist.length - 1].after) > 0) {
+                                                llist[llist.length - 1].after = edges.after;
+                                        }
+
+                                        if (ipd_dir * (edges.start - llist[llist.length - 1].start) < 0) {
+                                                llist[llist.length - 1].start = edges.start;
+                                                llist[llist.length - 1].start_elem = llist[llist.length - 1].elements.length;
+                                        }
+
+                                        if (ipd_dir * (edges.end - llist[llist.length - 1].end) > 0) {
+                                                llist[llist.length - 1].end = edges.end;
+                                                llist[llist.length - 1].end_elem = llist[llist.length - 1].elements.length;
+                                        }
+                                }
+
+                                llist[llist.length - 1].text += element.textContent;
+
+                                llist[llist.length - 1].elements.push({
+                                        node: element,
+                                        bgcolor: curbgcolor,
+                                        before: edges.before,
+                                        after: edges.after
+                                });
+                        } else if (element.localName === 'br' && llist.length !== 0) {
+
+                                llist[llist.length - 1].br = true;
+                        }
+                } else {
+
+                        var child = element.firstChild;
+
+                        while (child) {
+
+                                if (child.nodeType === Node.ELEMENT_NODE) {
+
+                                        constructLineList(context, child, llist, curbgcolor);
+
+                                        if (child.localName === 'ruby' || child.localName === 'rtc') {
+
+                                                /* remember non-empty ruby and rtc elements so that tts:rubyPosition can be applied */
+
+                                                if (llist.length > 0) {
+
+                                                        llist[llist.length - 1].rbc.push(child);
+                                                }
+                                        } else if (child.localName === 'span' && child.style.textEmphasisStyle !== "") {
+
+                                                llist[llist.length - 1].te.push(child);
+                                        }
+                                }
+
+                                child = child.nextSibling;
+                        }
+                }
+        }
+
+        function isSameLine(before1, after1, before2, after2) {
+
+                return after1 < after2 && before1 > before2 || after2 <= after1 && before2 >= before1;
+        }
+
+        function HTMLStylingMapDefintion(qName, mapFunc) {
+                this.qname = qName;
+                this.map = mapFunc;
+        }
+
+        var STYLING_MAP_DEFS = [new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling backgroundColor", function (context, dom_element, isd_element, attr) {
+
+                /* skip if transparent */
+                if (attr[3] === 0) return;
+
+                dom_element.style.backgroundColor = "rgba(" + attr[0].toString() + "," + attr[1].toString() + "," + attr[2].toString() + "," + (attr[3] / 255).toString() + ")";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling color", function (context, dom_element, isd_element, attr) {
+                dom_element.style.color = "rgba(" + attr[0].toString() + "," + attr[1].toString() + "," + attr[2].toString() + "," + (attr[3] / 255).toString() + ")";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling direction", function (context, dom_element, isd_element, attr) {
+                dom_element.style.direction = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling display", function (context, dom_element, isd_element, attr) {}), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling displayAlign", function (context, dom_element, isd_element, attr) {
+
+                /* see https://css-tricks.com/snippets/css/a-guide-to-flexbox/ */
+
+                /* TODO: is this affected by writing direction? */
+
+                dom_element.style.display = "flex";
+                dom_element.style.flexDirection = "column";
+
+                if (attr === "before") {
+
+                        dom_element.style.justifyContent = "flex-start";
+                } else if (attr === "center") {
+
+                        dom_element.style.justifyContent = "center";
+                } else if (attr === "after") {
+
+                        dom_element.style.justifyContent = "flex-end";
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling extent", function (context, dom_element, isd_element, attr) {
+                /* TODO: this is super ugly */
+
+                context.regionH = attr.h.toUsedLength(context.w, context.h);
+                context.regionW = attr.w.toUsedLength(context.w, context.h);
+
+                /* 
+                 * CSS height/width are measured against the content rectangle,
+                 * whereas TTML height/width include padding
+                 */
+
+                var hdelta = 0;
+                var wdelta = 0;
+
+                var p = isd_element.styleAttrs["http://www.w3.org/ns/ttml#styling padding"];
+
+                if (!p) {
+
+                        /* error */
+
+                } else {
+
+                        hdelta = p[0].toUsedLength(context.w, context.h) + p[2].toUsedLength(context.w, context.h);
+                        wdelta = p[1].toUsedLength(context.w, context.h) + p[3].toUsedLength(context.w, context.h);
+                }
+
+                dom_element.style.height = context.regionH - hdelta + "px";
+                dom_element.style.width = context.regionW - wdelta + "px";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontFamily", function (context, dom_element, isd_element, attr) {
+
+                var rslt = [];
+
+                /* per IMSC1 */
+
+                for (var i in attr) {
+
+                        if (attr[i] === "monospaceSerif") {
+
+                                rslt.push("Courier New");
+                                rslt.push('"Liberation Mono"');
+                                rslt.push("Courier");
+                                rslt.push("monospace");
+                        } else if (attr[i] === "proportionalSansSerif") {
+
+                                rslt.push("Arial");
+                                rslt.push("Helvetica");
+                                rslt.push('"Liberation Sans"');
+                                rslt.push("sans-serif");
+                        } else if (attr[i] === "monospace") {
+
+                                rslt.push("monospace");
+                        } else if (attr[i] === "sansSerif") {
+
+                                rslt.push("sans-serif");
+                        } else if (attr[i] === "serif") {
+
+                                rslt.push("serif");
+                        } else if (attr[i] === "monospaceSansSerif") {
+
+                                rslt.push("Consolas");
+                                rslt.push("monospace");
+                        } else if (attr[i] === "proportionalSerif") {
+
+                                rslt.push("serif");
+                        } else {
+
+                                rslt.push(attr[i]);
+                        }
+                }
+
+                dom_element.style.fontFamily = rslt.join(",");
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling shear", function (context, dom_element, isd_element, attr) {
+
+                /* return immediately if tts:shear is 0% since CSS transforms are not inherited*/
+
+                if (attr === 0) return;
+
+                var angle = attr * -0.9;
+
+                /* context.writingMode is needed since writing mode is not inherited and sets the inline progression */
+
+                if (context.bpd === "tb") {
+
+                        dom_element.style.transform = "skewX(" + angle + "deg)";
+                } else {
+
+                        dom_element.style.transform = "skewY(" + angle + "deg)";
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontSize", function (context, dom_element, isd_element, attr) {
+                dom_element.style.fontSize = attr.toUsedLength(context.w, context.h) + "px";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontStyle", function (context, dom_element, isd_element, attr) {
+                dom_element.style.fontStyle = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling fontWeight", function (context, dom_element, isd_element, attr) {
+                dom_element.style.fontWeight = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling lineHeight", function (context, dom_element, isd_element, attr) {
+                if (attr === "normal") {
+
+                        dom_element.style.lineHeight = "normal";
+                } else {
+
+                        dom_element.style.lineHeight = attr.toUsedLength(context.w, context.h) + "px";
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling opacity", function (context, dom_element, isd_element, attr) {
+                dom_element.style.opacity = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling origin", function (context, dom_element, isd_element, attr) {
+                dom_element.style.top = attr.h.toUsedLength(context.w, context.h) + "px";
+                dom_element.style.left = attr.w.toUsedLength(context.w, context.h) + "px";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling overflow", function (context, dom_element, isd_element, attr) {
+                dom_element.style.overflow = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling padding", function (context, dom_element, isd_element, attr) {
+
+                /* attr: top,left,bottom,right*/
+
+                /* style: top right bottom left*/
+
+                var rslt = [];
+
+                rslt[0] = attr[0].toUsedLength(context.w, context.h) + "px";
+                rslt[1] = attr[3].toUsedLength(context.w, context.h) + "px";
+                rslt[2] = attr[2].toUsedLength(context.w, context.h) + "px";
+                rslt[3] = attr[1].toUsedLength(context.w, context.h) + "px";
+
+                dom_element.style.padding = rslt.join(" ");
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling position", function (context, dom_element, isd_element, attr) {
+                dom_element.style.top = attr.h.toUsedLength(context.w, context.h) + "px";
+                dom_element.style.left = attr.w.toUsedLength(context.w, context.h) + "px";
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling rubyAlign", function (context, dom_element, isd_element, attr) {
+                dom_element.style.rubyAlign = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling rubyPosition", function (context, dom_element, isd_element, attr) {
+
+                /* skip if "outside", which is handled by applyRubyPosition() */
+
+                if (attr === "before" || attr === "after") {
+
+                        var pos;
+
+                        if (context.bpd === "tb") {
+
+                                pos = attr === "before" ? "over" : "under";
+                        } else {
+
+                                if (context.bpd === "rl") {
+
+                                        pos = attr === "before" ? "over" : "under";
+                                } else {
+
+                                        pos = attr === "before" ? "under" : "over";
+                                }
+                        }
+
+                        /* apply position to the parent dom_element, i.e. ruby or rtc */
+
+                        dom_element.parentElement.style.rubyPosition = pos;
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling showBackground", null), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textAlign", function (context, dom_element, isd_element, attr) {
+
+                var ta;
+                var dir = isd_element.styleAttrs[imscStyles.byName.direction.qname];
+
+                /* handle UAs that do not understand start or end */
+
+                if (attr === "start") {
+
+                        ta = dir === "rtl" ? "right" : "left";
+                } else if (attr === "end") {
+
+                        ta = dir === "rtl" ? "left" : "right";
+                } else {
+
+                        ta = attr;
+                }
+
+                dom_element.style.textAlign = ta;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textDecoration", function (context, dom_element, isd_element, attr) {
+                dom_element.style.textDecoration = attr.join(" ").replace("lineThrough", "line-through");
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textOutline", function (context, dom_element, isd_element, attr) {
+
+                /* defer to tts:textShadow */
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textShadow", function (context, dom_element, isd_element, attr) {
+
+                var txto = isd_element.styleAttrs[imscStyles.byName.textOutline.qname];
+
+                if (attr === "none" && txto === "none") {
+
+                        dom_element.style.textShadow = "";
+                } else {
+
+                        var s = [];
+
+                        if (txto !== "none") {
+
+                                /* emulate text outline */
+
+                                s.push("rgba(" + txto.color[0].toString() + "," + txto.color[1].toString() + "," + txto.color[2].toString() + "," + (txto.color[3] / 255).toString() + ")" + " 0px 0px " + txto.thickness.toUsedLength(context.w, context.h) + "px");
+                        }
+
+                        /* add text shadow */
+
+                        if (attr !== "none") {
+
+                                for (var i in attr) {
+
+                                        s.push(attr[i].x_off.toUsedLength(context.w, context.h) + "px " + attr[i].y_off.toUsedLength(context.w, context.h) + "px " + attr[i].b_radius.toUsedLength(context.w, context.h) + "px " + "rgba(" + attr[i].color[0].toString() + "," + attr[i].color[1].toString() + "," + attr[i].color[2].toString() + "," + (attr[i].color[3] / 255).toString() + ")");
+                                }
+                        }
+
+                        dom_element.style.textShadow = s.join(",");
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textCombine", function (context, dom_element, isd_element, attr) {
+
+                dom_element.style.textCombineUpright = attr.join(" ");
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling textEmphasis", function (context, dom_element, isd_element, attr) {
+
+                /* ignore color (not used in IMSC 1.1) */
+
+                if (attr.style !== "none") {
+
+                        /* text-emphasis does not inherit in w */
+
+                        dom_element.style.textEmphasisStyle = attr.style + " " + attr.symbol;
+                }
+
+                /* ignore "outside" position (set in postprocessing) */
+
+                if (attr.position === "before" || attr.position === "after") {
+
+                        var pos;
+
+                        if (context.bpd === "tb") {
+
+                                pos = attr.position === "before" ? "left over" : "left under";
+                        } else {
+
+                                if (context.bpd === "rl") {
+
+                                        pos = attr.position === "before" ? "right under" : "left under";
+                                } else {
+
+                                        pos = attr.position === "before" ? "left under" : "right under";
+                                }
+                        }
+
+                        dom_element.style.textEmphasisPosition = pos;
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling unicodeBidi", function (context, dom_element, isd_element, attr) {
+
+                var ub;
+
+                if (attr === 'bidiOverride') {
+                        ub = "bidi-override";
+                } else {
+                        ub = attr;
+                }
+
+                dom_element.style.unicodeBidi = ub;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling visibility", function (context, dom_element, isd_element, attr) {
+                dom_element.style.visibility = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling wrapOption", function (context, dom_element, isd_element, attr) {
+
+                if (attr === "wrap") {
+
+                        if (isd_element.space === "preserve") {
+                                dom_element.style.whiteSpace = "pre-wrap";
+                        } else {
+                                dom_element.style.whiteSpace = "normal";
+                        }
+                } else {
+
+                        if (isd_element.space === "preserve") {
+
+                                dom_element.style.whiteSpace = "pre";
+                        } else {
+                                dom_element.style.whiteSpace = "noWrap";
+                        }
+                }
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling writingMode", function (context, dom_element, isd_element, attr) {
+                if (attr === "lrtb" || attr === "lr") {
+
+                        context.writingMode = "horizontal-tb";
+                } else if (attr === "rltb" || attr === "rl") {
+
+                        context.writingMode = "horizontal-tb";
+                } else if (attr === "tblr") {
+
+                        context.writingMode = "vertical-lr";
+                } else if (attr === "tbrl" || attr === "tb") {
+
+                        context.writingMode = "vertical-rl";
+                }
+
+                dom_element.style.writingMode = context.writingMode;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml#styling zIndex", function (context, dom_element, isd_element, attr) {
+                dom_element.style.zIndex = attr;
+        }), new HTMLStylingMapDefintion("http://www.w3.org/ns/ttml/profile/imsc1#styling forcedDisplay", function (context, dom_element, isd_element, attr) {
+
+                if (context.displayForcedOnlyMode && attr === false) {
+                        dom_element.style.visibility = "hidden";
+                }
+        })];
+
+        var STYLMAP_BY_QNAME = {};
+
+        for (var i in STYLING_MAP_DEFS) {
+
+                STYLMAP_BY_QNAME[STYLING_MAP_DEFS[i].qname] = STYLING_MAP_DEFS[i];
+        }
+
+        function reportError(errorHandler, msg) {
+
+                if (errorHandler && errorHandler.error && errorHandler.error(msg)) throw msg;
+        }
+})( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "./node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscStyles === 'undefined' ? __webpack_require__(/*! ./styles */ "./node_modules/imsc/src/main/js/styles.js") : imscStyles, typeof imscUtils === 'undefined' ? __webpack_require__(/*! ./utils */ "./node_modules/imsc/src/main/js/utils.js") : imscUtils);
 
 /***/ }),
 
@@ -60666,7 +61624,20 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
     var spinner = document.createElement('div');
     spinner.className = 'loadingSpinner__spinner';
 
-    spinnerContainer.appendChild(spinner);
+;
+(function (imscISD, imscNames, imscStyles, imscUtils) {
+        // wrapper for non-node envs
+
+        /** 
+         * Creates a canonical representation of an IMSC1 document returned by <pre>imscDoc.fromXML()</pre>
+         * at a given absolute offset in seconds. This offset does not have to be one of the values returned
+         * by <pre>getMediaTimeEvents()</pre>.
+         * 
+         * @param {Object} tt IMSC1 document
+         * @param {number} offset Absolute offset (in seconds)
+         * @param {?module:imscUtils.ErrorHandler} errorHandler Error callback
+         * @returns {Object} Opaque in-memory representation of an ISD
+         */
 
     return spinnerContainer;
   };
@@ -60693,10 +61664,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       return MSE(windowType, mediaKind, timeCorrection, videoElement, isUHD);
     }
 
-    return Native(windowType, mediaKind, timeCorrection, videoElement, isUHD, device);
-  };
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+                        /*rubyfs: []*/ /* font size of the nearest textContainer or container */
 
 /***/ }),
 
@@ -60742,7 +61710,11 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels
     };
 
-    mediaPlayer.addEventCallback(this, eventHandler);
+        /* set of styles not applicable to ruby container spans */
+
+        var _rcs_na_styles = [imscStyles.byName.color.qname, imscStyles.byName.textCombine.qname, imscStyles.byName.textDecoration.qname, imscStyles.byName.textEmphasis.qname, imscStyles.byName.textOutline.qname, imscStyles.byName.textShadow.qname];
+
+        function isdProcessContentElement(doc, offset, region, body, parent, inherited_region_id, elem, errorHandler, context) {
 
     strategy = strategy.match(/.+(?=strategy)/g)[0];
 
@@ -60949,8 +61921,28 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         setupExitSeekWorkarounds(mimeType);
         _isPaused = false;
 
-        hasStartTime = startTime || startTime === 0;
-        var isLiveNonRestart = windowType !== WindowTypes.STATIC && !hasStartTime;
+                                        isd_element.styleAttrs[sa.qname] = outs;
+                                } else if (sa.qname === imscStyles.byName.fontSize.qname && !(sa.qname in isd_element.styleAttrs) && isd_element.kind === 'span' && isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "textContainer") {
+
+                                        /* special inheritance rule for ruby text container font size */
+
+                                        var ruby_fs = parent.styleAttrs[imscStyles.byName.fontSize.qname];
+
+                                        isd_element.styleAttrs[sa.qname] = new imscUtils.ComputedLength(0.5 * ruby_fs.rw, 0.5 * ruby_fs.rh);
+                                } else if (sa.qname === imscStyles.byName.fontSize.qname && !(sa.qname in isd_element.styleAttrs) && isd_element.kind === 'span' && isd_element.styleAttrs[imscStyles.byName.ruby.qname] === "text") {
+
+                                        /* special inheritance rule for ruby text font size */
+
+                                        var parent_fs = parent.styleAttrs[imscStyles.byName.fontSize.qname];
+
+                                        if (parent.styleAttrs[imscStyles.byName.ruby.qname] === "textContainer") {
+
+                                                isd_element.styleAttrs[sa.qname] = parent_fs;
+                                        } else {
+
+                                                isd_element.styleAttrs[sa.qname] = new imscUtils.ComputedLength(0.5 * parent_fs.rw, 0.5 * parent_fs.rh);
+                                        }
+                                } else if (sa.inherit && sa.qname in parent.styleAttrs && !(sa.qname in isd_element.styleAttrs)) {
 
         mediaPlayer.initialiseMedia('video', src, mimeType, playbackElement, setSourceOpts);
         if (mediaPlayer.beginPlaybackFrom && !isLiveNonRestart) {
@@ -61065,21 +62057,23 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 "use strict";
 var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackspinner */ "../../script/playbackspinner.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (PlaybackSpinner) {
-  return function (parentElement) {
-    var curtain;
-    var spinner = new PlaybackSpinner();
+                        /* skip tts:position if tts:origin is specified */
 
-    curtain = document.createElement('div');
+                        if (ivs.qname === imscStyles.byName.position.qname && imscStyles.byName.origin.qname in isd_element.styleAttrs) continue;
 
-    curtain.id = 'liveGlitchCurtain';
-    curtain.style.display = 'none';
-    curtain.style.position = 'absolute';
-    curtain.style.top = 0;
-    curtain.style.left = 0;
-    curtain.style.right = 0;
-    curtain.style.bottom = 0;
-    curtain.style.backgroundColor = '#3c3c3c';
+                        /* skip tts:origin if tts:position is specified */
+
+                        if (ivs.qname === imscStyles.byName.origin.qname && imscStyles.byName.position.qname in isd_element.styleAttrs) continue;
+
+                        /* determine initial value */
+
+                        var iv = doc.head.styling.initials[ivs.qname] || ivs.initial;
+
+                        /* apply initial value to elements other than region only if non-inherited */
+
+                        if (isd_element.kind === 'region' || ivs.inherit === false && iv !== null) {
+
+                                isd_element.styleAttrs[ivs.qname] = ivs.parse(iv);
 
     curtain.appendChild(spinner);
 
@@ -61200,11 +62194,25 @@ var __WEBPACK_AMD_DEFINE_RESULT__;
     }
   };
 
-  return function MockStrategy(playbackFrame, playbackType, streamType, mediaType, timeData, videoContainer) {
-    return instance;
-  };
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+                /* tts:fontSize special ineritance for ruby */
+
+                /*        var isrubycontainer = false;
+                
+                        if (isd_element.kind === "span") {
+                
+                            var rtemp = isd_element.styleAttrs[imscStyles.byName.ruby.qname];
+                
+                            if (rtemp === "container" || rtemp === "textContainer") {
+                
+                                isrubycontainer = true;
+                
+                                context.rubyfs.unshift(isd_element.styleAttrs[imscStyles.byName.fontSize.qname]);
+                
+                            }
+                
+                        } */
+
+                /* prune if tts:display is none */
 
 /***/ }),
 
@@ -61314,19 +62322,52 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       return state;
     }
 
-    function isLiveMedia() {
-      return mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO;
-    }
+                /* tts:fontSize special ineritance for ruby */
 
-    function setSeekSentinelTolerance() {
-      var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15;
-      var LIVE_SEEK_SENTINEL_TOLERANCE = 30;
+                /*if (isrubycontainer) {
+                      context.rubyfs.shift();
+                  }*/
 
-      seekSentinelTolerance = ON_DEMAND_SEEK_SENTINEL_TOLERANCE;
-      if (isLiveMedia()) {
-        seekSentinelTolerance = LIVE_SEEK_SENTINEL_TOLERANCE;
-      }
-    }
+                /* remove styles that are not applicable */
+
+                for (var qnameb in isd_element.styleAttrs) {
+
+                        /* true if not applicable */
+
+                        var na = false;
+
+                        /* special applicability of certain style properties to ruby container spans */
+                        /* TODO: in the future ruby elements should be translated to elements instead of kept as spans */
+
+                        if (isd_element.kind === 'span') {
+
+                                var rsp = isd_element.styleAttrs[imscStyles.byName.ruby.qname];
+
+                                na = (rsp === 'container' || rsp === 'textContainer' || rsp === 'baseContainer') && _rcs_na_styles.indexOf(qnameb) !== -1;
+
+                                if (!na) {
+
+                                        na = rsp !== 'container' && qnameb === imscStyles.byName.rubyAlign.qname;
+                                }
+
+                                if (!na) {
+
+                                        na = !(rsp === 'textContainer' || rsp === 'text') && qnameb === imscStyles.byName.rubyPosition.qname;
+                                }
+                        }
+
+                        /* normal applicability */
+
+                        if (!na) {
+
+                                var da = imscStyles.byQName[qnameb];
+                                na = da.applies.indexOf(isd_element.kind) === -1;
+                        }
+
+                        if (na) {
+                                delete isd_element.styleAttrs[qnameb];
+                        }
+                }
 
     function generateSourceElement(url, mimeType) {
       var sourceElement = document.createElement('source');
@@ -61339,13 +62380,7 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       to.appendChild(el);
     }
 
-    function prependChildElement(to, el) {
-      if (to.childNodes.length > 0) {
-        to.insertBefore(el, to.childNodes[0]);
-      } else {
-        to.appendChild(el);
-      }
-    }
+                        var trimmedspan = isd_element.text.replace(/[\t\r\n ]+/g, ' ');
 
     function removeElement(el) {
       if (el.parentNode) {
@@ -61380,18 +62415,23 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         sentinelShouldFire = false;
       }
 
-      if (sentinelShouldFire) {
-        emitEvent(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING);
-        toBuffering();
-        /* Resetting the sentinel attempt count to zero means that the sentinel will only fire once
-         even if multiple iterations result in the same conditions.
-         This should not be needed as the second iteration, when the enter buffering sentinel is fired
-         will cause the media player to go into the buffering state. The enter buffering sentinel is not fired
-         when in buffering state
-         */
-        enterBufferingSentinelAttemptCount = 0;
-        return true;
-      }
+                        while (true) {
+
+                                if (state === "after_br") {
+
+                                        if (l >= elist.length || elist[l].kind === "br") {
+
+                                                state = "before_br";
+                                                br_pos = l;
+                                                l--;
+                                        } else {
+
+                                                if (elist[l].space !== "preserve") {
+
+                                                        elist[l].text = elist[l].text.replace(/^[\t\r\n ]+/g, '');
+                                                }
+
+                                                if (elist[l].text.length > 0) {
 
       return false;
     }
@@ -61421,15 +62461,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       var currentTime = getCurrentTime();
       var sentinelActionTaken = false;
 
-      if (Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
-        sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
-          mediaElement.currentTime = sentinelSeekTime;
-        });
-      } else if (sentinelIntervalNumber < 3) {
-        sentinelSeekTime = currentTime;
-      } else {
-        sentinelSeekTime = undefined;
-      }
+                                                        elist[l].text = elist[l].text.replace(/[\t\r\n ]+$/g, '');
+                                                }
 
       return sentinelActionTaken;
     }
@@ -61465,18 +62498,16 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       return false;
     }
 
-    function endOfMediaSentinel() {
-      if (!hasSentinelTimeChangedWithinTolerance && nearEndOfMedia) {
-        emitEvent(MediaPlayerBase.EVENT.SENTINEL_COMPLETE);
-        onEndOfMedia();
-        return true;
-      }
-      return false;
-    }
+                /* keep element if:
+                 * * contains a background image
+                 * * <br/>
+                 * * if there are children
+                 * * if it is an image
+                 * * if <span> and has text
+                 * * if region and showBackground = always
+                 */
 
-    function clearSentinels() {
-      clearInterval(sentinelInterval);
-    }
+                if (isd_element.kind === 'div' && imscStyles.byName.backgroundImage.qname in isd_element.styleAttrs || isd_element.kind === 'br' || isd_element.kind === 'image' || 'contents' in isd_element && isd_element.contents.length > 0 || isd_element.kind === 'span' && isd_element.text !== null || isd_element.kind === 'region' && isd_element.styleAttrs[imscStyles.byName.showBackground.qname] === 'always') {
 
     function setSentinels(sentinels) {
       if (disableSentinels) {
@@ -61497,9 +62528,10 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
         for (var i = 0; i < sentinels.length; i++) {
           var sentinelActivated = sentinels[i].call();
 
-          if (getCurrentTime() > 0) {
-            trustZeroes = false;
-          }
+                        for (var i in element.contents) {
+                                constructSpanList(element.contents[i], elist);
+                        }
+                } else if (element.kind === 'span' || element.kind === 'br') {
 
           if (sentinelActivated) {
             break;
@@ -61588,19 +62620,27 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       }
     }
 
-    function onError() {
-      reportError('Media element error code: ' + mediaElement.error.code);
-    }
+                /* copy src and type if image */
+
+                if ('src' in ttelem) {
+
+                        this.src = ttelem.src;
+                }
+
+                if ('type' in ttelem) {
+
+                        this.type = ttelem.type;
+                }
+
+                /* TODO: clean this! 
+                 * TODO: ISDElement and document element should be better tied together */
 
     function onSourceError() {
       reportError('Media source element error');
     }
 
-    function onDeviceBuffering() {
-      if (getState() === MediaPlayerBase.STATE.PLAYING) {
-        toBuffering();
-      }
-    }
+                        this.text = ttelem.text;
+                } else if (this.kind === 'region' || 'contents' in ttelem) {
 
     function onEndOfMedia() {
       toComplete();
@@ -61682,16 +62722,9 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
     */
     var CURRENT_TIME_TOLERANCE = 1;
 
-    /**
-      * Check whether a time value is near to the current media play time.
-      * @param {Number} seconds The time value to test, in seconds from the start of the media
-      * @protected
-    */
-    function isNearToCurrentTime(seconds) {
-      var currentTime = getCurrentTime();
-      var targetTime = getClampedTime(seconds);
-      return Math.abs(currentTime - targetTime) <= CURRENT_TIME_TOLERANCE;
-    }
+                throw msg;
+        }
+})( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "./node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscStyles === 'undefined' ? __webpack_require__(/*! ./styles */ "./node_modules/imsc/src/main/js/styles.js") : imscStyles, typeof imscUtils === 'undefined' ? __webpack_require__(/*! ./utils */ "./node_modules/imsc/src/main/js/utils.js") : imscUtils);
 
     /**
       * Clamp a time value so it does not exceed the current range.
@@ -61836,678 +62869,587 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
           mediaElement.style.width = '100%';
           mediaElement.style.height = '100%';
 
-          mediaElement.addEventListener('canplay', onFinishedBuffering, false);
-          mediaElement.addEventListener('seeked', onFinishedBuffering, false);
-          mediaElement.addEventListener('playing', onFinishedBuffering, false);
-          mediaElement.addEventListener('error', onError, false);
-          mediaElement.addEventListener('ended', onEndOfMedia, false);
-          mediaElement.addEventListener('waiting', onDeviceBuffering, false);
-          mediaElement.addEventListener('timeupdate', onStatus, false);
-          mediaElement.addEventListener('loadedmetadata', onMetadata, false);
-          mediaElement.addEventListener('pause', onPause, false);
+;
+(function (imscStyles, imscNames, imscUtils) {
+    // wrapper for non-node envs
 
-          prependChildElement(sourceContainer, mediaElement);
+    function StylingAttributeDefinition(ns, name, initialValue, appliesTo, isInherit, isAnimatable, parseFunc, computeFunc) {
+        this.name = name;
+        this.ns = ns;
+        this.qname = ns + " " + name;
+        this.inherit = isInherit;
+        this.animatable = isAnimatable;
+        this.initial = initialValue;
+        this.applies = appliesTo;
+        this.parse = parseFunc;
+        this.compute = computeFunc;
+    }
 
-          sourceElement = generateSourceElement(url, mimeType);
-          sourceElement.addEventListener('error', onSourceError, false);
+    imscStyles.all = [new StylingAttributeDefinition(imscNames.ns_tts, "backgroundColor", "transparent", ['body', 'div', 'p', 'region', 'span'], false, true, imscUtils.parseColor, null), new StylingAttributeDefinition(imscNames.ns_tts, "color", "white", ['span'], true, true, imscUtils.parseColor, null), new StylingAttributeDefinition(imscNames.ns_tts, "direction", "ltr", ['p', 'span'], true, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "display", "auto", ['body', 'div', 'p', 'region', 'span'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "displayAlign", "before", ['region'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "extent", "auto", ['tt', 'region'], false, true, function (str) {
 
-          mediaElement.preload = 'auto';
-          appendChildElement(mediaElement, sourceElement);
+        if (str === "auto") {
 
-          mediaElement.load();
-
-          toStopped();
+            return str;
         } else {
-          toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state');
+
+            var s = str.split(" ");
+            if (s.length !== 2) return null;
+            var w = imscUtils.parseLength(s[0]);
+            var h = imscUtils.parseLength(s[1]);
+            if (!h || !w) return null;
+            return { 'h': h, 'w': w };
         }
-      },
+    }, function (doc, parent, element, attr, context) {
 
-      playFrom: function playFrom(seconds) {
-        postBufferingState = MediaPlayerBase.STATE.PLAYING;
-        targetSeekTime = seconds;
-        sentinelLimits.seek.currentAttemptCount = 0;
+        var h;
+        var w;
 
-        switch (getState()) {
-          case MediaPlayerBase.STATE.PAUSED:
-          case MediaPlayerBase.STATE.COMPLETE:
-            trustZeroes = true;
-            toBuffering();
-            playFromIfReady();
-            break;
+        if (attr === "auto") {
 
-          case MediaPlayerBase.STATE.BUFFERING:
-            playFromIfReady();
-            break;
+            h = new imscUtils.ComputedLength(0, 1);
+        } else {
 
-          case MediaPlayerBase.STATE.PLAYING:
-            trustZeroes = true;
-            toBuffering();
-            targetSeekTime = getClampedTimeForPlayFrom(seconds);
-            if (isNearToCurrentTime(targetSeekTime)) {
-              targetSeekTime = undefined;
-              toPlaying();
+            h = imscUtils.toComputedLength(attr.h.value, attr.h.unit, null, doc.dimensions.h, null, doc.pxLength.h);
+
+            if (h === null) {
+
+                return null;
+            }
+        }
+
+        if (attr === "auto") {
+
+            w = new imscUtils.ComputedLength(1, 0);
+        } else {
+
+            w = imscUtils.toComputedLength(attr.w.value, attr.w.unit, null, doc.dimensions.w, null, doc.pxLength.w);
+
+            if (w === null) {
+
+                return null;
+            }
+        }
+
+        return { 'h': h, 'w': w };
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "fontFamily", "default", ['span'], true, true, function (str) {
+        var ffs = str.split(",");
+        var rslt = [];
+
+        for (var i in ffs) {
+
+            if (ffs[i].charAt(0) !== "'" && ffs[i].charAt(0) !== '"') {
+
+                if (ffs[i] === "default") {
+
+                    /* per IMSC1 */
+
+                    rslt.push("monospaceSerif");
+                } else {
+
+                    rslt.push(ffs[i]);
+                }
             } else {
-              playFromIfReady();
+
+                rslt.push(ffs[i]);
             }
-            break;
-
-          default:
-            toError('Cannot playFrom while in the \'' + getState() + '\' state');
-            break;
         }
-      },
 
-      beginPlayback: function beginPlayback() {
-        postBufferingState = MediaPlayerBase.STATE.PLAYING;
-        sentinelSeekTime = undefined;
-        switch (getState()) {
-          case MediaPlayerBase.STATE.STOPPED:
-            trustZeroes = true;
-            toBuffering();
-            mediaElement.play();
-            break;
+        return rslt;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "shear", "0%", ['p'], true, true, imscUtils.parseLength, function (doc, parent, element, attr) {
 
-          default:
-            toError('Cannot beginPlayback while in the \'' + getState() + '\' state');
-            break;
+        var fs;
+
+        if (attr.unit === "%") {
+
+            fs = Math.abs(attr.value) > 100 ? Math.sign(attr.value) * 100 : attr.value;
+        } else {
+
+            return null;
         }
-      },
 
-      beginPlaybackFrom: function beginPlaybackFrom(seconds) {
-        postBufferingState = MediaPlayerBase.STATE.PLAYING;
-        targetSeekTime = seconds;
-        sentinelLimits.seek.currentAttemptCount = 0;
+        return fs;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "fontSize", "1c", ['span'], true, true, imscUtils.parseLength, function (doc, parent, element, attr, context) {
 
-        switch (this.getState()) {
-          case MediaPlayerBase.STATE.STOPPED:
-            trustZeroes = true;
-            toBuffering();
-            playFromIfReady();
-            break;
+        var fs;
 
-          default:
-            toError('Cannot beginPlaybackFrom while in the \'' + getState() + '\' state');
-            break;
+        fs = imscUtils.toComputedLength(attr.value, attr.unit, parent !== null ? parent.styleAttrs[imscStyles.byName.fontSize.qname] : doc.cellLength.h, parent !== null ? parent.styleAttrs[imscStyles.byName.fontSize.qname] : doc.cellLength.h, doc.cellLength.h, doc.pxLength.h);
+
+        return fs;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "fontStyle", "normal", ['span'], true, true, function (str) {
+        /* TODO: handle font style */
+
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "fontWeight", "normal", ['span'], true, true, function (str) {
+        /* TODO: handle font weight */
+
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "lineHeight", "normal", ['p'], true, true, function (str) {
+        if (str === "normal") {
+            return str;
+        } else {
+            return imscUtils.parseLength(str);
         }
-      },
+    }, function (doc, parent, element, attr, context) {
 
-      pause: function pause() {
-        postBufferingState = MediaPlayerBase.STATE.PAUSED;
-        switch (getState()) {
-          case MediaPlayerBase.STATE.PAUSED:
-            break;
+        var lh;
 
-          case MediaPlayerBase.STATE.BUFFERING:
-            sentinelLimits.pause.currentAttemptCount = 0;
-            if (isReadyToPlayFrom()) {
-              // If we are not ready to playFrom, then calling pause would seek to the start of media, which we might not want.
-              pauseMediaElement();
+        if (attr === "normal") {
+
+            /* inherit normal per https://github.com/w3c/ttml1/issues/220 */
+
+            lh = attr;
+        } else {
+
+            lh = imscUtils.toComputedLength(attr.value, attr.unit, element.styleAttrs[imscStyles.byName.fontSize.qname], element.styleAttrs[imscStyles.byName.fontSize.qname], doc.cellLength.h, doc.pxLength.h);
+
+            if (lh === null) {
+
+                return null;
             }
-            break;
-
-          case MediaPlayerBase.STATE.PLAYING:
-            sentinelLimits.pause.currentAttemptCount = 0;
-            pauseMediaElement();
-            toPaused();
-            break;
-
-          default:
-            toError('Cannot pause while in the \'' + getState() + '\' state');
-            break;
         }
-      },
 
-      resume: function resume() {
-        postBufferingState = MediaPlayerBase.STATE.PLAYING;
-        switch (getState()) {
-          case MediaPlayerBase.STATE.PLAYING:
-            break;
+        /* TODO: create a Length constructor */
 
-          case MediaPlayerBase.STATE.BUFFERING:
-            if (isReadyToPlayFrom()) {
-              // If we are not ready to playFrom, then calling play would seek to the start of media, which we might not want.
-              mediaElement.play();
+        return lh;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "opacity", 1.0, ['region'], false, true, parseFloat, null), new StylingAttributeDefinition(imscNames.ns_tts, "origin", "auto", ['region'], false, true, function (str) {
+
+        if (str === "auto") {
+
+            return str;
+        } else {
+
+            var s = str.split(" ");
+            if (s.length !== 2) return null;
+            var w = imscUtils.parseLength(s[0]);
+            var h = imscUtils.parseLength(s[1]);
+            if (!h || !w) return null;
+            return { 'h': h, 'w': w };
+        }
+    }, function (doc, parent, element, attr, context) {
+
+        var h;
+        var w;
+
+        if (attr === "auto") {
+
+            h = new imscUtils.ComputedLength(0, 0);
+        } else {
+
+            h = imscUtils.toComputedLength(attr.h.value, attr.h.unit, null, doc.dimensions.h, null, doc.pxLength.h);
+
+            if (h === null) {
+
+                return null;
             }
-            break;
-
-          case MediaPlayerBase.STATE.PAUSED:
-            mediaElement.play();
-            toPlaying();
-            break;
-
-          default:
-            toError('Cannot resume while in the \'' + getState() + '\' state');
-            break;
         }
-      },
 
-      stop: function stop() {
-        switch (getState()) {
-          case MediaPlayerBase.STATE.STOPPED:
-            break;
+        if (attr === "auto") {
 
-          case MediaPlayerBase.STATE.BUFFERING:
-          case MediaPlayerBase.STATE.PLAYING:
-          case MediaPlayerBase.STATE.PAUSED:
-          case MediaPlayerBase.STATE.COMPLETE:
-            pauseMediaElement();
-            toStopped();
-            break;
-
-          default:
-            toError('Cannot stop while in the \'' + getState() + '\' state');
-            break;
-        }
-      },
-
-      reset: function reset() {
-        switch (getState()) {
-          case MediaPlayerBase.STATE.EMPTY:
-            break;
-
-          case MediaPlayerBase.STATE.STOPPED:
-          case MediaPlayerBase.STATE.ERROR:
-            toEmpty();
-            break;
-
-          default:
-            toError('Cannot reset while in the \'' + getState() + '\' state');
-            break;
-        }
-      },
-
-      getSeekableRange: function getSeekableRange() {
-        switch (getState()) {
-          case MediaPlayerBase.STATE.STOPPED:
-          case MediaPlayerBase.STATE.ERROR:
-            break;
-
-          default:
-            return _getSeekableRange();
-        }
-        return undefined;
-      },
-
-      getState: function getState() {
-        return state;
-      },
-
-      getPlayerElement: function getPlayerElement() {
-        return mediaElement;
-      },
-
-      getSource: getSource,
-
-      getMimeType: getMimeType,
-
-      getCurrentTime: getCurrentTime,
-
-      getDuration: getDuration,
-
-      toPaused: toPaused,
-
-      toPlaying: toPlaying
-
-    };
-  }
-
-  return Player;
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/playbackstrategy/modifiers/live/playable.js":
-/*!*****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/playbackstrategy/modifiers/live/playable.js ***!
-  \*****************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "../../script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "../../script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
-  'use strict';
-
-  function PlayableLivePlayer(deviceConfig, logger) {
-    var mediaPlayer = Html5Player(logger);
-    return {
-      beginPlayback: function beginPlayback() {
-        mediaPlayer.beginPlayback();
-      },
-
-      initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
-        if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
-          mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
+            w = new imscUtils.ComputedLength(0, 0);
         } else {
-          mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO;
+
+            w = imscUtils.toComputedLength(attr.w.value, attr.w.unit, null, doc.dimensions.w, null, doc.pxLength.w);
+
+            if (w === null) {
+
+                return null;
+            }
         }
 
-        mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts);
-      },
+        return { 'h': h, 'w': w };
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "overflow", "hidden", ['region'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "padding", "0px", ['region'], false, true, function (str) {
 
-      stop: function stop() {
-        mediaPlayer.stop();
-      },
+        var s = str.split(" ");
+        if (s.length > 4) return null;
+        var r = [];
+        for (var i in s) {
 
-      reset: function reset() {
-        mediaPlayer.reset();
-      },
-
-      getState: function getState() {
-        return mediaPlayer.getState();
-      },
-
-      getSource: function getSource() {
-        return mediaPlayer.getSource();
-      },
-
-      getMimeType: function getMimeType() {
-        return mediaPlayer.getMimeType();
-      },
-
-      addEventCallback: function addEventCallback(thisArg, callback) {
-        mediaPlayer.addEventCallback(thisArg, callback);
-      },
-
-      removeEventCallback: function removeEventCallback(thisArg, callback) {
-        mediaPlayer.removeEventCallback(thisArg, callback);
-      },
-
-      removeAllEventCallbacks: function removeAllEventCallbacks() {
-        mediaPlayer.removeAllEventCallbacks();
-      },
-
-      getPlayerElement: function getPlayerElement() {
-        return mediaPlayer.getPlayerElement();
-      }
-    };
-  }
-
-  return PlayableLivePlayer;
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/playbackstrategy/modifiers/live/restartable.js":
-/*!********************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/playbackstrategy/modifiers/live/restartable.js ***!
-  \********************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "../../script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "../../script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
-  'use strict';
-
-  var AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS = 8000;
-
-  function RestartableLivePlayer(deviceConfig, logger) {
-    var mediaPlayer = Html5Player(logger);
-    var millisecondsUntilStartOfWindow;
-    var bufferingStarted;
-    var self = this;
-
-    function determineTimeUntilStartOfWindow() {
-      mediaPlayer.addEventCallback(self, detectCurrentTimeCallback);
-    }
-
-    function stopDeterminingTimeUntilStartOfWindow() {
-      mediaPlayer.removeEventCallback(self, detectCurrentTimeCallback);
-    }
-
-    function detectCurrentTimeCallback(event) {
-      if (event.state === MediaPlayerBase.STATE.PLAYING && event.currentTime > 0) {
-        removeEventCallback(self, detectCurrentTimeCallback);
-        millisecondsUntilStartOfWindow = event.currentTime * 1000;
-        determineTimeSpentBuffering();
-      }
-    }
-
-    function autoResumeAtStartOfRange() {
-      if (millisecondsUntilStartOfWindow !== null) {
-        var resumeTimeOut = Math.max(0, millisecondsUntilStartOfWindow - AUTO_RESUME_WINDOW_START_CUSHION_MILLISECONDS);
-        var pauseStarted = new Date().getTime();
-        var autoResumeTimer = setTimeout(function () {
-          removeEventCallback(self, detectIfUnpaused);
-          millisecondsUntilStartOfWindow = 0;
-          resume();
-        }, resumeTimeOut);
-
-        addEventCallback(self, detectIfUnpaused);
-      }
-
-      function detectIfUnpaused(event) {
-        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-          removeEventCallback(self, detectIfUnpaused);
-          clearTimeout(autoResumeTimer);
-          var timePaused = new Date().getTime() - pauseStarted;
-          millisecondsUntilStartOfWindow -= timePaused;
+            var l = imscUtils.parseLength(s[i]);
+            if (!l) return null;
+            r.push(l);
         }
-      }
-    }
 
-    function addEventCallback(thisArg, callback) {
-      mediaPlayer.addEventCallback(thisArg, callback);
-    }
+        return r;
+    }, function (doc, parent, element, attr, context) {
 
-    function removeEventCallback(thisArg, callback) {
-      mediaPlayer.removeEventCallback(thisArg, callback);
-    }
+        var padding;
 
-    function removeAllEventCallbacks() {
-      mediaPlayer.removeAllEventCallbacks();
-    }
+        /* TODO: make sure we are in region */
 
-    function determineTimeSpentBuffering() {
-      bufferingStarted = null;
-      addEventCallback(self, determineBufferingCallback);
-    }
+        /*
+         * expand padding shortcuts to 
+         * [before, end, after, start]
+         * 
+         */
 
-    function stopDeterminingTimeSpentBuffering() {
-      removeEventCallback(self, determineBufferingCallback);
-    }
+        if (attr.length === 1) {
 
-    function determineBufferingCallback(event) {
-      if (event.state === MediaPlayerBase.STATE.BUFFERING && bufferingStarted === null) {
-        bufferingStarted = new Date().getTime();
-      } else if (event.state !== MediaPlayerBase.STATE.BUFFERING && bufferingStarted !== null) {
-        var timeBuffering = new Date().getTime() - bufferingStarted;
-        millisecondsUntilStartOfWindow = Math.max(0, millisecondsUntilStartOfWindow - timeBuffering);
-        bufferingStarted = null;
-      }
-    }
+            padding = [attr[0], attr[0], attr[0], attr[0]];
+        } else if (attr.length === 2) {
 
-    function resume() {
-      mediaPlayer.resume();
-    }
+            padding = [attr[0], attr[1], attr[0], attr[1]];
+        } else if (attr.length === 3) {
 
-    function pause(opts) {
-      mediaPlayer.pause();
-      opts = opts || {};
-      if (opts.disableAutoResume !== true) {
-        autoResumeAtStartOfRange();
-      }
-    }
+            padding = [attr[0], attr[1], attr[2], attr[1]];
+        } else if (attr.length === 4) {
 
-    return {
-      beginPlayback: function beginPlayback() {
-        var config = deviceConfig;
-
-        if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
-          mediaPlayer.beginPlaybackFrom(Infinity);
+            padding = [attr[0], attr[1], attr[2], attr[3]];
         } else {
-          mediaPlayer.beginPlayback();
+
+            return null;
         }
 
-        determineTimeUntilStartOfWindow();
-      },
+        /* TODO: take into account tts:direction */
 
-      beginPlaybackFrom: function beginPlaybackFrom(offset) {
-        millisecondsUntilStartOfWindow = offset * 1000;
-        mediaPlayer.beginPlaybackFrom(offset);
-        determineTimeSpentBuffering();
-      },
+        /* 
+         * transform [before, end, after, start] according to writingMode to 
+         * [top,left,bottom,right]
+         * 
+         */
 
-      initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
-        if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
-          mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
+        var dir = element.styleAttrs[imscStyles.byName.writingMode.qname];
+
+        if (dir === "lrtb" || dir === "lr") {
+
+            padding = [padding[0], padding[3], padding[2], padding[1]];
+        } else if (dir === "rltb" || dir === "rl") {
+
+            padding = [padding[0], padding[1], padding[2], padding[3]];
+        } else if (dir === "tblr") {
+
+            padding = [padding[3], padding[0], padding[1], padding[2]];
+        } else if (dir === "tbrl" || dir === "tb") {
+
+            padding = [padding[3], padding[2], padding[1], padding[0]];
         } else {
-          mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO;
+
+            return null;
         }
 
-        mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts);
-      },
+        var out = [];
 
-      pause: pause,
+        for (var i in padding) {
 
-      resume: resume,
+            if (padding[i].value === 0) {
 
-      stop: function stop() {
-        mediaPlayer.stop();
-        stopDeterminingTimeUntilStartOfWindow();
-        stopDeterminingTimeSpentBuffering();
-      },
+                out[i] = new imscUtils.ComputedLength(0, 0);
+            } else {
 
-      reset: function reset() {
-        mediaPlayer.reset();
-      },
+                out[i] = imscUtils.toComputedLength(padding[i].value, padding[i].unit, element.styleAttrs[imscStyles.byName.fontSize.qname], i === "0" || i === "2" ? element.styleAttrs[imscStyles.byName.extent.qname].h : element.styleAttrs[imscStyles.byName.extent.qname].w, i === "0" || i === "2" ? doc.cellLength.h : doc.cellLength.w, i === "0" || i === "2" ? doc.pxLength.h : doc.pxLength.w);
 
-      getState: function getState() {
-        return mediaPlayer.getState();
-      },
-
-      getSource: function getSource() {
-        return mediaPlayer.getSource();
-      },
-
-      getMimeType: function getMimeType() {
-        return mediaPlayer.getMimeType();
-      },
-
-      addEventCallback: addEventCallback,
-
-      removeEventCallback: removeEventCallback,
-
-      removeAllEventCallbacks: removeAllEventCallbacks,
-
-      getPlayerElement: function getPlayerElement() {
-        return mediaPlayer.getPlayerElement();
-      }
-
-    };
-  }
-
-  return RestartableLivePlayer;
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-
-/***/ }),
-
-/***/ "../../script/playbackstrategy/modifiers/live/seekable.js":
-/*!*****************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/playbackstrategy/modifiers/live/seekable.js ***!
-  \*****************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
-
-!(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/html5 */ "../../script/playbackstrategy/modifiers/html5.js"), __webpack_require__(/*! bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase */ "../../script/playbackstrategy/modifiers/mediaplayerbase.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (Html5Player, MediaPlayerBase) {
-  'use strict';
-
-  function SeekableLivePlayer(deviceConfig, logger) {
-    var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
-
-    var mediaPlayer = Html5Player(logger);
-
-    function addEventCallback(thisArg, callback) {
-      mediaPlayer.addEventCallback(thisArg, callback);
-    }
-
-    function removeEventCallback(thisArg, callback) {
-      mediaPlayer.removeEventCallback(thisArg, callback);
-    }
-
-    function removeAllEventCallbacks() {
-      mediaPlayer.removeAllEventCallbacks();
-    }
-
-    function autoResumeAtStartOfRange() {
-      var secondsUntilAutoResume = Math.max(0, mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
-      var self = this;
-      var autoResumeTimer = setTimeout(function () {
-        removeEventCallback(self, detectIfUnpaused);
-        resume();
-      }, secondsUntilAutoResume * 1000);
-
-      addEventCallback(self, detectIfUnpaused);
-      function detectIfUnpaused(event) {
-        if (event.state !== MediaPlayerBase.STATE.PAUSED) {
-          removeEventCallback(self, detectIfUnpaused);
-          clearTimeout(autoResumeTimer);
+                if (out[i] === null) return null;
+            }
         }
-      }
-    }
 
-    function resume() {
-      mediaPlayer.resume();
-    }
+        return out;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "position", "top left", ['region'], false, true, function (str) {
 
-    return {
-      initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
-        if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
-          mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
+        return imscUtils.parsePosition(str);
+    }, function (doc, parent, element, attr) {
+        var h;
+        var w;
+
+        h = imscUtils.toComputedLength(attr.v.offset.value, attr.v.offset.unit, null, new imscUtils.ComputedLength(-element.styleAttrs[imscStyles.byName.extent.qname].h.rw, doc.dimensions.h.rh - element.styleAttrs[imscStyles.byName.extent.qname].h.rh), null, doc.pxLength.h);
+
+        if (h === null) return null;
+
+        if (attr.v.edge === "bottom") {
+
+            h = new imscUtils.ComputedLength(-h.rw - element.styleAttrs[imscStyles.byName.extent.qname].h.rw, doc.dimensions.h.rh - h.rh - element.styleAttrs[imscStyles.byName.extent.qname].h.rh);
+        }
+
+        w = imscUtils.toComputedLength(attr.h.offset.value, attr.h.offset.unit, null, new imscUtils.ComputedLength(doc.dimensions.w.rw - element.styleAttrs[imscStyles.byName.extent.qname].w.rw, -element.styleAttrs[imscStyles.byName.extent.qname].w.rh), null, doc.pxLength.w);
+
+        if (h === null) return null;
+
+        if (attr.h.edge === "right") {
+
+            w = new imscUtils.ComputedLength(doc.dimensions.w.rw - w.rw - element.styleAttrs[imscStyles.byName.extent.qname].w.rw, -w.rh - element.styleAttrs[imscStyles.byName.extent.qname].w.rh);
+        }
+
+        return { 'h': h, 'w': w };
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "ruby", "none", ['span'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "rubyAlign", "center", ['span'], true, true, function (str) {
+
+        if (!(str === "center" || str === "spaceAround")) {
+            return null;
+        }
+
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "rubyPosition", "outside", ['span'], true, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "rubyReserve", "none", ['p'], true, true, function (str) {
+        var s = str.split(" ");
+
+        var r = [null, null];
+
+        if (s.length === 0 || s.length > 2) return null;
+
+        if (s[0] === "none" || s[0] === "both" || s[0] === "after" || s[0] === "before" || s[0] === "outside") {
+
+            r[0] = s[0];
         } else {
-          mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO;
+
+            return null;
         }
 
-        mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts);
-      },
+        if (s.length === 2 && s[0] !== "none") {
 
-      beginPlayback: function beginPlayback() {
-        var config = deviceConfig;
-        if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
-          mediaPlayer.beginPlaybackFrom(Infinity);
+            var l = imscUtils.parseLength(s[1]);
+
+            if (l) {
+
+                r[1] = l;
+            } else {
+
+                return null;
+            }
+        }
+
+        return r;
+    }, function (doc, parent, element, attr, context) {
+
+        if (attr[0] === "none") {
+
+            return attr;
+        }
+
+        var fs = null;
+
+        if (attr[1] === null) {
+
+            fs = new imscUtils.ComputedLength(element.styleAttrs[imscStyles.byName.fontSize.qname].rw * 0.5, element.styleAttrs[imscStyles.byName.fontSize.qname].rh * 0.5);
         } else {
-          mediaPlayer.beginPlayback();
+
+            fs = imscUtils.toComputedLength(attr[1].value, attr[1].unit, element.styleAttrs[imscStyles.byName.fontSize.qname], element.styleAttrs[imscStyles.byName.fontSize.qname], doc.cellLength.h, doc.pxLength.h);
         }
-      },
 
-      beginPlaybackFrom: function beginPlaybackFrom(offset) {
-        mediaPlayer.beginPlaybackFrom(offset);
-      },
+        if (fs === null) return null;
 
-      playFrom: function playFrom(offset) {
-        mediaPlayer.playFrom(offset);
-      },
+        return [attr[0], fs];
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "showBackground", "always", ['region'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textAlign", "start", ['p'], true, true, function (str) {
+        return str;
+    }, function (doc, parent, element, attr, context) {
+        /* Section 7.16.9 of XSL */
 
-      pause: function pause(opts) {
-        opts = opts || {};
-        var secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start;
+        if (attr === "left") {
 
-        if (opts.disableAutoResume) {
-          mediaPlayer.pause();
-        } else if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
-          mediaPlayer.toPaused();
-          mediaPlayer.toPlaying();
+            return "start";
+        } else if (attr === "right") {
+
+            return "end";
         } else {
-          mediaPlayer.pause();
-          autoResumeAtStartOfRange();
+
+            return attr;
         }
-      },
-      resume: resume,
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "textCombine", "none", ['span'], true, true, function (str) {
+        var s = str.split(" ");
 
-      stop: function stop() {
-        mediaPlayer.stop();
-      },
+        if (s.length === 1) {
 
-      reset: function reset() {
-        mediaPlayer.reset();
-      },
+            if (s[0] === "none" || s[0] === "all") {
 
-      getState: function getState() {
-        return mediaPlayer.getState();
-      },
+                return [s[0]];
+            }
+        }
 
-      getSource: function getSource() {
-        return mediaPlayer.getSource();
-      },
+        return null;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textDecoration", "none", ['span'], true, true, function (str) {
+        return str.split(" ");
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textEmphasis", "none", ['span'], false, true, function (str) {
+        var e = str.split(" ");
 
-      getCurrentTime: function getCurrentTime() {
-        return mediaPlayer.getCurrentTime();
-      },
+        var rslt = { style: "filled", symbol: "circle", color: null, position: null };
 
-      getSeekableRange: function getSeekableRange() {
-        return mediaPlayer.getSeekableRange();
-      },
+        for (var i in e) {
 
-      getMimeType: function getMimeType() {
-        return mediaPlayer.getMimeType();
-      },
+            if (e[i] === "none" || e[i] === "auto") {
 
-      addEventCallback: addEventCallback,
+                rslt.style = e[i];
+            } else if (e[i] === "filled" || e[i] === "open") {
 
-      removeEventCallback: removeEventCallback,
+                rslt.style = e[i];
+            } else if (e[i] === "circle" || e[i] === "dot" || e[i] === "sesame") {
 
-      removeAllEventCallbacks: removeAllEventCallbacks,
+                rslt.symbol = e[i];
+            } else if (e[i] === "current") {
 
-      getPlayerElement: function getPlayerElement() {
-        return mediaPlayer.getPlayerElement();
-      },
+                rslt.color = e[i];
+            } else if (e[i] === "outside" || e[i] === "before" || e[i] === "after") {
 
-      getLiveSupport: function getLiveSupport() {
-        return MediaPlayerBase.LIVE_SUPPORT.SEEKABLE;
-      },
+                rslt.position = e[i];
+            } else {
 
-      autoResumeAtStartOfRange: autoResumeAtStartOfRange
+                rslt.color = imscUtils.parseColor(e[i]);
 
-    };
-  }
+                if (rslt.color === null) return null;
+            }
+        }
 
-  return SeekableLivePlayer;
-}).apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+        return rslt;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "textOutline", "none", ['span'], true, true, function (str) {
 
-/***/ }),
+        /*
+         * returns {c: <color>?, thichness: <length>} | "none"
+         * 
+         */
 
-/***/ "../../script/playbackstrategy/modifiers/mediaplayerbase.js":
-/*!*******************************************************************************************************!*\
-  !*** /Users/keersj01/Developer/bigscreen-player/script/playbackstrategy/modifiers/mediaplayerbase.js ***!
-  \*******************************************************************************************************/
-/*! no static exports found */
-/***/ (function(module, exports, __webpack_require__) {
+        if (str === "none") {
 
-"use strict";
-var __WEBPACK_AMD_DEFINE_RESULT__;
+            return str;
+        } else {
 
-!(__WEBPACK_AMD_DEFINE_RESULT__ = (function () {
-  return {
+            var r = {};
+            var s = str.split(" ");
+            if (s.length === 0 || s.length > 2) return null;
+            var c = imscUtils.parseColor(s[0]);
 
-    STATE: {
-      EMPTY: 'EMPTY', // No source set
-      STOPPED: 'STOPPED', // Source set but no playback
-      BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
-      PLAYING: 'PLAYING', // Media is playing
-      PAUSED: 'PAUSED', // Media is paused
-      COMPLETE: 'COMPLETE', // Media has reached its end point
-      ERROR: 'ERROR' // An error occurred
-    },
+            r.color = c;
 
-    EVENT: {
-      STOPPED: 'stopped', // Event fired when playback is stopped
-      BUFFERING: 'buffering', // Event fired when playback has to suspend due to buffering
-      PLAYING: 'playing', // Event fired when starting (or resuming) playing of the media
-      PAUSED: 'paused', // Event fired when media playback pauses
-      COMPLETE: 'complete', // Event fired when media playback has reached the end of the media
-      ERROR: 'error', // Event fired when an error condition occurs
-      STATUS: 'status', // Event fired regularly during play
-      SENTINEL_ENTER_BUFFERING: 'sentinel-enter-buffering', // Event fired when a sentinel has to act because the device has started buffering but not reported it
-      SENTINEL_EXIT_BUFFERING: 'sentinel-exit-buffering', // Event fired when a sentinel has to act because the device has finished buffering but not reported it
-      SENTINEL_PAUSE: 'sentinel-pause', // Event fired when a sentinel has to act because the device has failed to pause when expected
-      SENTINEL_PLAY: 'sentinel-play', // Event fired when a sentinel has to act because the device has failed to play when expected
-      SENTINEL_SEEK: 'sentinel-seek', // Event fired when a sentinel has to act because the device has failed to seek to the correct location
-      SENTINEL_COMPLETE: 'sentinel-complete', // Event fired when a sentinel has to act because the device has completed the media but not reported it
-      SENTINEL_PAUSE_FAILURE: 'sentinel-pause-failure', // Event fired when the pause sentinel has failed twice, so it is giving up
-      SENTINEL_SEEK_FAILURE: 'sentinel-seek-failure', // Event fired when the seek sentinel has failed twice, so it is giving up
-      SEEK_ATTEMPTED: 'seek-attempted', // Event fired when a device using a seekfinishedemitevent modifier sets the source
-      SEEK_FINISHED: 'seek-finished' // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
-    },
+            if (c !== null) s.shift();
 
-    TYPE: {
-      VIDEO: 'video',
-      AUDIO: 'audio',
-      LIVE_VIDEO: 'live-video',
-      LIVE_AUDIO: 'live-audio'
+            if (s.length !== 1) return null;
+
+            var l = imscUtils.parseLength(s[0]);
+
+            if (!l) return null;
+
+            r.thickness = l;
+
+            return r;
+        }
+    }, function (doc, parent, element, attr, context) {
+
+        /*
+         * returns {color: <color>, thickness: <norm length>}
+         * 
+         */
+
+        if (attr === "none") return attr;
+
+        var rslt = {};
+
+        if (attr.color === null) {
+
+            rslt.color = element.styleAttrs[imscStyles.byName.color.qname];
+        } else {
+
+            rslt.color = attr.color;
+        }
+
+        rslt.thickness = imscUtils.toComputedLength(attr.thickness.value, attr.thickness.unit, element.styleAttrs[imscStyles.byName.fontSize.qname], element.styleAttrs[imscStyles.byName.fontSize.qname], doc.cellLength.h, doc.pxLength.h);
+
+        if (rslt.thickness === null) return null;
+
+        return rslt;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "textShadow", "none", ['span'], true, true, imscUtils.parseTextShadow, function (doc, parent, element, attr) {
+
+        /*
+         * returns [{x_off: <length>, y_off: <length>, b_radius: <length>, color: <color>}*] or "none"
+         * 
+         */
+
+        if (attr === "none") return attr;
+
+        var r = [];
+
+        for (var i in attr) {
+
+            var shadow = {};
+
+            shadow.x_off = imscUtils.toComputedLength(attr[i][0].value, attr[i][0].unit, null, element.styleAttrs[imscStyles.byName.fontSize.qname], null, doc.pxLength.w);
+
+            if (shadow.x_off === null) return null;
+
+            shadow.y_off = imscUtils.toComputedLength(attr[i][1].value, attr[i][1].unit, null, element.styleAttrs[imscStyles.byName.fontSize.qname], null, doc.pxLength.h);
+
+            if (shadow.y_off === null) return null;
+
+            if (attr[i][2] === null) {
+
+                shadow.b_radius = 0;
+            } else {
+
+                shadow.b_radius = imscUtils.toComputedLength(attr[i][2].value, attr[i][2].unit, null, element.styleAttrs[imscStyles.byName.fontSize.qname], null, doc.pxLength.h);
+
+                if (shadow.b_radius === null) return null;
+            }
+
+            if (attr[i][3] === null) {
+
+                shadow.color = element.styleAttrs[imscStyles.byName.color.qname];
+            } else {
+
+                shadow.color = attr[i][3];
+            }
+
+            r.push(shadow);
+        }
+
+        return r;
+    }), new StylingAttributeDefinition(imscNames.ns_tts, "unicodeBidi", "normal", ['span', 'p'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "visibility", "visible", ['body', 'div', 'p', 'region', 'span'], true, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "wrapOption", "wrap", ['span'], true, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "writingMode", "lrtb", ['region'], false, true, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_tts, "zIndex", "auto", ['region'], false, true, function (str) {
+
+        var rslt;
+
+        if (str === 'auto') {
+
+            rslt = str;
+        } else {
+
+            rslt = parseInt(str);
+
+            if (isNaN(rslt)) {
+                rslt = null;
+            }
+        }
+
+        return rslt;
+    }, null), new StylingAttributeDefinition(imscNames.ns_ebutts, "linePadding", "0c", ['p'], true, false, imscUtils.parseLength, function (doc, parent, element, attr, context) {
+
+        return imscUtils.toComputedLength(attr.value, attr.unit, null, null, doc.cellLength.w, null);
+    }), new StylingAttributeDefinition(imscNames.ns_ebutts, "multiRowAlign", "auto", ['p'], true, false, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_smpte, "backgroundImage", null, ['div'], false, false, function (str) {
+        return str;
+    }, null), new StylingAttributeDefinition(imscNames.ns_itts, "forcedDisplay", "false", ['body', 'div', 'p', 'region', 'span'], true, true, function (str) {
+        return str === 'true' ? true : false;
+    }, null), new StylingAttributeDefinition(imscNames.ns_itts, "fillLineGap", "false", ['p'], true, true, function (str) {
+        return str === 'true' ? true : false;
+    }, null)];
+
+    /* TODO: allow null parse function */
+
+    imscStyles.byQName = {};
+    for (var i in imscStyles.all) {
+
+        imscStyles.byQName[imscStyles.all[i].qname] = imscStyles.all[i];
     }
-  };
-}).call(exports, __webpack_require__, exports, module),
-				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+
+    imscStyles.byName = {};
+    for (var j in imscStyles.all) {
+
+        imscStyles.byName[imscStyles.all[j].name] = imscStyles.all[j];
+    }
+})( false ? undefined : exports, typeof imscNames === 'undefined' ? __webpack_require__(/*! ./names */ "./node_modules/imsc/src/main/js/names.js") : imscNames, typeof imscUtils === 'undefined' ? __webpack_require__(/*! ./utils */ "./node_modules/imsc/src/main/js/utils.js") : imscUtils);
 
 /***/ }),
 
@@ -62523,114 +63465,351 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
 
 !(__WEBPACK_AMD_DEFINE_ARRAY__ = [__webpack_require__(/*! bigscreenplayer/models/mediastate */ "../../script/models/mediastate.js"), __webpack_require__(/*! bigscreenplayer/models/windowtypes */ "../../script/models/windowtypes.js"), __webpack_require__(/*! bigscreenplayer/debugger/debugtool */ "../../script/debugger/debugtool.js"), __webpack_require__(/*! bigscreenplayer/models/mediakinds */ "../../script/models/mediakinds.js"), __webpack_require__(/*! bigscreenplayer/plugins */ "../../script/plugins.js"),
 
-// static imports
-__webpack_require__(/*! dashjs */ "../../node_modules/dashjs/index.js")], __WEBPACK_AMD_DEFINE_RESULT__ = (function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins) {
-  return function (windowType, mediaKind, timeData, playbackElement) {
-    var mediaPlayer;
-    var eventCallback;
-    var errorCallback;
-    var timeUpdateCallback;
-    var timeCorrection = timeData && timeData.correction || 0;
+/* 
+ * Copyright (c) 2016, Pierre-Anthony Lemieux <pal@sandflow.com>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ */
 
-    var initialStartTime;
-    var _isEnded = false;
-    var mediaElement;
+/**
+ * @module imscUtils
+ */
 
-    var bitrateInfoList;
-    var mediaMetrics;
-    var dashMetrics;
+;
+(function (imscUtils) {
+        // wrapper for non-node envs
 
-    var playerMetadata = {
-      playbackBitrate: undefined,
-      bufferLength: undefined
-    };
+        /* Documents the error handler interface */
 
-    var DashJSEvents = {
-      ERROR: 'error',
-      MANIFEST_LOADED: 'manifestLoaded',
-      MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
-      QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-      METRIC_ADDED: 'metricAdded',
-      METRIC_CHANGED: 'metricChanged',
-      PLAYBACK_STALLED: 'playbackStalled',
-      BUFFER_STALLED: 'bufferStalled',
-      LOG: 'log'
-    };
+        /**
+         * @classdesc Generic interface for handling events. The interface exposes four
+         * methods:
+         * * <pre>info</pre>: unusual event that does not result in an inconsistent state
+         * * <pre>warn</pre>: unexpected event that should not result in an inconsistent state
+         * * <pre>error</pre>: unexpected event that may result in an inconsistent state
+         * * <pre>fatal</pre>: unexpected event that results in an inconsistent state
+         *   and termination of processing
+         * Each method takes a single <pre>string</pre> describing the event as argument,
+         * and returns a single <pre>boolean</pre>, which terminates processing if <pre>true</pre>.
+         *
+         * @name ErrorHandler
+         * @class
+         */
 
-    function onPlaying() {
-      _isEnded = false;
-      publishMediaState(MediaState.PLAYING);
-    }
+        /*
+         * Parses a TTML color expression
+         * 
+         */
 
-    function onPaused() {
-      publishMediaState(MediaState.PAUSED);
-    }
+        var HEX_COLOR_RE = /#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})?/;
+        var DEC_COLOR_RE = /rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/;
+        var DEC_COLORA_RE = /rgba\(\s*(\d+),\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/;
+        var NAMED_COLOR = {
+                transparent: [0, 0, 0, 0],
+                black: [0, 0, 0, 255],
+                silver: [192, 192, 192, 255],
+                gray: [128, 128, 128, 255],
+                white: [255, 255, 255, 255],
+                maroon: [128, 0, 0, 255],
+                red: [255, 0, 0, 255],
+                purple: [128, 0, 128, 255],
+                fuchsia: [255, 0, 255, 255],
+                magenta: [255, 0, 255, 255],
+                green: [0, 128, 0, 255],
+                lime: [0, 255, 0, 255],
+                olive: [128, 128, 0, 255],
+                yellow: [255, 255, 0, 255],
+                navy: [0, 0, 128, 255],
+                blue: [0, 0, 255, 255],
+                teal: [0, 128, 128, 255],
+                aqua: [0, 255, 255, 255],
+                cyan: [0, 255, 255, 255]
+        };
 
-    function onBuffering() {
-      _isEnded = false;
-      publishMediaState(MediaState.WAITING);
-    }
+        imscUtils.parseColor = function (str) {
 
-    function onSeeked() {
-      DebugTool.info('Seeked Event');
-      publishMediaState(isPaused() ? MediaState.PAUSED : MediaState.PLAYING);
-    }
+                var m;
 
-    function onEnded() {
-      _isEnded = true;
-      publishMediaState(MediaState.ENDED);
-    }
+                var r = null;
 
-    function onTimeUpdate() {
-      publishTimeUpdate();
-    }
+                var nc = NAMED_COLOR[str.toLowerCase()];
 
-    function onError(event) {
-      event.errorProperties = { error_mssg: event.error };
+                if (nc !== undefined) {
 
-      if (event.error) {
-        if (event.error.message) {
-          DebugTool.info('MSE Error: ' + event.error.message);
-        } else {
-          DebugTool.info('MSE Error: ' + event.error);
-        }
-      }
-      publishError(event);
-    }
+                        r = nc;
+                } else if ((m = HEX_COLOR_RE.exec(str)) !== null) {
 
-    function onBufferStalled(event) {
-      DebugTool.info('MSE Buffer Stalled');
-    }
+                        r = [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16), m[4] !== undefined ? parseInt(m[4], 16) : 255];
+                } else if ((m = DEC_COLOR_RE.exec(str)) !== null) {
 
-    function onPlaybackStalled(event) {
-      DebugTool.info('Playback Element Stalled');
-    }
+                        r = [parseInt(m[1]), parseInt(m[2]), parseInt(m[3]), 255];
+                } else if ((m = DEC_COLORA_RE.exec(str)) !== null) {
 
-    function onManifestLoaded(event) {
-      DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
-    }
+                        r = [parseInt(m[1]), parseInt(m[2]), parseInt(m[3]), parseInt(m[4])];
+                }
 
-    function onManifestValidityChange(event) {
-      DebugTool.info('Manifest validity changed. Duration is: ' + event.newDuration);
-    }
+                return r;
+        };
 
-    function onQualityChangeRendered(event) {
-      if (event.mediaType === mediaKind) {
-        if (!bitrateInfoList) {
-          bitrateInfoList = mediaPlayer.getBitrateInfoListFor(event.mediaType);
-        }
-        if (bitrateInfoList && event.newQuality !== undefined) {
-          playerMetadata.playbackBitrate = bitrateInfoList[event.newQuality].bitrate / 1000;
+        var LENGTH_RE = /^((?:\+|\-)?\d*(?:\.\d+)?)(px|em|c|%|rh|rw)$/;
 
-          var oldBitrate = isNaN(event.oldQuality) ? '--' : bitrateInfoList[event.oldQuality].bitrate / 1000;
-          var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
-          var newRepresentation = event.newQuality + ' (' + playerMetadata.playbackBitrate + ' kbps)';
-          DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
-          DebugTool.info('ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
-        }
-        Plugins.interface.onPlayerInfoUpdated(playerMetadata);
-      }
-    }
+        imscUtils.parseLength = function (str) {
+
+                var m;
+
+                var r = null;
+
+                if ((m = LENGTH_RE.exec(str)) !== null) {
+
+                        r = { value: parseFloat(m[1]), unit: m[2] };
+                }
+
+                return r;
+        };
+
+        imscUtils.parseTextShadow = function (str) {
+
+                var shadows = str.split(",");
+
+                var r = [];
+
+                for (var i in shadows) {
+
+                        var shadow = shadows[i].split(" ");
+
+                        if (shadow.length === 1 && shadow[0] === "none") {
+
+                                return "none";
+                        } else if (shadow.length > 1 && shadow.length < 5) {
+
+                                var out_shadow = [null, null, null, null];
+
+                                /* x offset */
+
+                                var l = imscUtils.parseLength(shadow.shift());
+
+                                if (l === null) return null;
+
+                                out_shadow[0] = l;
+
+                                /* y offset */
+
+                                l = imscUtils.parseLength(shadow.shift());
+
+                                if (l === null) return null;
+
+                                out_shadow[1] = l;
+
+                                /* is there a third component */
+
+                                if (shadow.length === 0) {
+                                        r.push(out_shadow);
+                                        continue;
+                                }
+
+                                l = imscUtils.parseLength(shadow[0]);
+
+                                if (l !== null) {
+
+                                        out_shadow[2] = l;
+
+                                        shadow.shift();
+                                }
+
+                                if (shadow.length === 0) {
+                                        r.push(out_shadow);
+                                        continue;
+                                }
+
+                                var c = imscUtils.parseColor(shadow[0]);
+
+                                if (c === null) return null;
+
+                                out_shadow[3] = c;
+
+                                r.push(out_shadow);
+                        }
+                }
+
+                return r;
+        };
+
+        imscUtils.parsePosition = function (str) {
+
+                /* see https://www.w3.org/TR/ttml2/#style-value-position */
+
+                var s = str.split(" ");
+
+                var isKeyword = function isKeyword(str) {
+
+                        return str === "center" || str === "left" || str === "top" || str === "bottom" || str === "right";
+                };
+
+                if (s.length > 4) {
+
+                        return null;
+                }
+
+                /* initial clean-up pass */
+
+                for (var j in s) {
+
+                        if (!isKeyword(s[j])) {
+
+                                var l = imscUtils.parseLength(s[j]);
+
+                                if (l === null) return null;
+
+                                s[j] = l;
+                        }
+                }
+
+                /* position default */
+
+                var pos = {
+                        h: { edge: "left", offset: { value: 50, unit: "%" } },
+                        v: { edge: "top", offset: { value: 50, unit: "%" } }
+                };
+
+                /* update position */
+
+                for (var i = 0; i < s.length;) {
+
+                        /* extract the current component */
+
+                        var comp = s[i++];
+
+                        if (isKeyword(comp)) {
+
+                                /* we have a keyword */
+
+                                var offset = { value: 0, unit: "%" };
+
+                                /* peek at the next component */
+
+                                if (s.length !== 2 && i < s.length && !isKeyword(s[i])) {
+
+                                        /* followed by an offset */
+
+                                        offset = s[i++];
+                                }
+
+                                /* skip if center */
+
+                                if (comp === "right") {
+
+                                        pos.h.edge = comp;
+
+                                        pos.h.offset = offset;
+                                } else if (comp === "bottom") {
+
+                                        pos.v.edge = comp;
+
+                                        pos.v.offset = offset;
+                                } else if (comp === "left") {
+
+                                        pos.h.offset = offset;
+                                } else if (comp === "top") {
+
+                                        pos.v.offset = offset;
+                                }
+                        } else if (s.length === 1 || s.length === 2) {
+
+                                /* we have a bare value */
+
+                                if (i === 1) {
+
+                                        /* assign it to left edge if first bare value */
+
+                                        pos.h.offset = comp;
+                                } else {
+
+                                        /* assign it to top edge if second bare value */
+
+                                        pos.v.offset = comp;
+                                }
+                        } else {
+
+                                /* error condition */
+
+                                return null;
+                        }
+                }
+
+                return pos;
+        };
+
+        imscUtils.ComputedLength = function (rw, rh) {
+                this.rw = rw;
+                this.rh = rh;
+        };
+
+        imscUtils.ComputedLength.prototype.toUsedLength = function (width, height) {
+                return width * this.rw + height * this.rh;
+        };
+
+        imscUtils.ComputedLength.prototype.isZero = function () {
+                return this.rw === 0 && this.rh === 0;
+        };
+
+        /**
+         * Computes a specified length to a root container relative length
+         * 
+         * @param {number} lengthVal Length value to be computed
+         * @param {string} lengthUnit Units of the length value
+         * @param {number} emScale length of 1em, or null if em is not allowed
+         * @param {number} percentScale length to which , or null if perecentage is not allowed
+         * @param {number} cellScale length of 1c, or null if c is not allowed
+         * @param {number} pxScale length of 1px, or null if px is not allowed
+         * @param {number} direction 0 if the length is computed in the horizontal direction, 1 if the length is computed in the vertical direction
+         * @return {number} Computed length
+         */
+        imscUtils.toComputedLength = function (lengthVal, lengthUnit, emLength, percentLength, cellLength, pxLength) {
+
+                if (lengthUnit === "%" && percentLength) {
+
+                        return new imscUtils.ComputedLength(percentLength.rw * lengthVal / 100, percentLength.rh * lengthVal / 100);
+                } else if (lengthUnit === "em" && emLength) {
+
+                        return new imscUtils.ComputedLength(emLength.rw * lengthVal, emLength.rh * lengthVal);
+                } else if (lengthUnit === "c" && cellLength) {
+
+                        return new imscUtils.ComputedLength(lengthVal * cellLength.rw, lengthVal * cellLength.rh);
+                } else if (lengthUnit === "px" && pxLength) {
+
+                        return new imscUtils.ComputedLength(lengthVal * pxLength.rw, lengthVal * pxLength.rh);
+                } else if (lengthUnit === "rh") {
+
+                        return new imscUtils.ComputedLength(0, lengthVal / 100);
+                } else if (lengthUnit === "rw") {
+
+                        return new imscUtils.ComputedLength(lengthVal / 100, 0);
+                } else {
+
+                        return null;
+                }
+        };
+})( false ? undefined : exports);
 
     function onMetricAdded(event) {
       if (event.mediaType === 'video') {
@@ -69944,7 +71123,8 @@ var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;
       urls: [{
         // Content from DASH IF testing assests (used in their reference player)
         // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
-        url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd'
+        url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd',
+        cdn: 'dash.akamaized.net'
       }]
     }
   };

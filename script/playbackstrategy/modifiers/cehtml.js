@@ -18,7 +18,7 @@ define(
         ERROR: 6
       };
 
-      return function () {
+      return function (deviceConfig) {
         var eventCallbacks = [];
         var state = MediaPlayerBase.STATE.EMPTY;
 
@@ -33,6 +33,9 @@ define(
         var range;
 
         var postBufferingState;
+        var seekFinished;
+        var count;
+        var timeoutHappened;
 
         var disableSentinels;
 
@@ -162,6 +165,8 @@ define(
           source = url;
           mimeType = mediaMimeType;
           opts = opts || {};
+
+          emitSeekAttempted();
 
           if (getState() === MediaPlayerBase.STATE.EMPTY) {
             timeAtLastSentinelInterval = 0;
@@ -408,10 +413,48 @@ define(
           }
         }
 
+        function emitSeekAttempted () {
+          if (getState() === MediaPlayerBase.STATE.EMPTY) {
+            emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+            seekFinished = false;
+          }
+
+          count = 0;
+          timeoutHappened = false;
+          if (deviceConfig.restartTimeout) {
+            setTimeout(function () {
+              timeoutHappened = true;
+            }, deviceConfig.restartTimeout);
+          } else {
+            timeoutHappened = true;
+          }
+        }
+
+        function emitSeekFinishedAtCorrectStartingPoint () {
+          var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance;
+
+          if (sentinelSeekTime === undefined) {
+            isAtCorrectStartingPoint = true;
+          }
+
+          var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint;
+
+          if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
+            emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED);
+            seekFinished = true;
+          } else if (isPlayingAtCorrectTime) {
+            count++;
+          } else {
+            count = 0;
+          }
+        }
+
         function onStatus () {
           if (getState() === MediaPlayerBase.STATE.PLAYING) {
             emitEvent(MediaPlayerBase.EVENT.STATUS);
           }
+
+          emitSeekFinishedAtCorrectStartingPoint();
         }
 
         function createElement () {

@@ -10,9 +10,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/utils/timeutils',
-    'bigscreenplayer/mediasources'
+    'bigscreenplayer/mediasources',
+    'bigscreenplayer/version'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -23,6 +24,7 @@ define('bigscreenplayer/bigscreenplayer',
       var serverDate;
       var playerComponent;
       var pauseTrigger;
+      var isSeeking = false;
       var endOfStream;
       var windowType;
       var device;
@@ -53,12 +55,18 @@ define('bigscreenplayer/bigscreenplayer',
               isBufferingTimeoutError: evt.isBufferingTimeoutError
             };
           }
+
+          if (evt.data.state === MediaState.WAITING) {
+            stateObject.isSeeking = isSeeking;
+            isSeeking = false;
+          }
+
           stateObject.endOfStream = endOfStream;
+          DebugTool.event(stateObject);
 
           stateChangeCallbacks.forEach(function (callback) {
             callback(stateObject);
           });
-          DebugTool.event(stateObject);
         }
 
         if (evt.data.seekableRange) {
@@ -119,9 +127,17 @@ define('bigscreenplayer/bigscreenplayer',
         return mediaSources && mediaSources.time().windowEndTime;
       }
 
+      function toggleDebug () {
+        if (playerComponent) {
+          DebugTool.toggleVisibility();
+        }
+      }
+
       return {
         init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, callbacks) {
           Chronicle.init();
+          DebugTool.setRootElement(playbackElement);
+          DebugTool.keyValue({key: 'framework-version', value: Version});
           device = newDevice;
           windowType = newWindowType;
           serverDate = bigscreenPlayerData.serverDate;
@@ -185,6 +201,7 @@ define('bigscreenplayer/bigscreenplayer',
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
           if (playerComponent) {
+            isSeeking = true; // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
             playerComponent.setCurrentTime(time);
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
           }
@@ -276,7 +293,11 @@ define('bigscreenplayer/bigscreenplayer',
         convertEpochMsToVideoTimeSeconds: function (epochTime) {
           return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined;
         },
-        convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs
+        getFrameworkVersion: function () {
+          return Version;
+        },
+        convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
+        toggleDebug: toggleDebug
       };
     }
 
@@ -285,6 +306,8 @@ define('bigscreenplayer/bigscreenplayer',
     }
 
     BigscreenPlayer.getLiveSupport = getLiveSupport;
+
+    BigscreenPlayer.version = Version;
 
     return BigscreenPlayer;
   }
