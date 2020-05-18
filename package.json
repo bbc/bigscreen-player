@@ -37,7 +37,6 @@
     "grunt": "^1.0.4",
     "grunt-contrib-jasmine": "^2.2.0",
     "html-webpack-plugin": "^4.3.0",
-    "html-webpack-template": "^6.2.0",
     "jasmine": "3.2.0",
     "pre-commit": "^1.2.2",
     "pre-push": "^0.1.1",

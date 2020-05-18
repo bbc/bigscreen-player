@@ -15,8 +15,7 @@
     plugins: [
       new CleanWebpackPlugin(),
       new HtmlWebpackPlugin({
-        title: 'bigscreen-player',
-        // window: { bigscreenPlayer: { playbackStrategy: 'msestrategy'} }
+        title: 'bigscreen-player'
       }),
     ],
     resolve: {
