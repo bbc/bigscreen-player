@@ -15,10 +15,8 @@
     plugins: [
       new CleanWebpackPlugin(),
       new HtmlWebpackPlugin({
-        inject: false,
-        template: require('html-webpack-template'),
         title: 'bigscreen-player',
-        window: { bigscreenPlayer: { playbackStrategy: 'msestrategy'} }
+        // window: { bigscreenPlayer: { playbackStrategy: 'msestrategy'} }
       }),
     ],
     resolve: {

@@ -1,3 +1,5 @@
+window.bigscreenPlayer = { playbackStrategy: 'msestrategy'};
+
 require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){  
   let playbackElement = document.createElement('div')
   let windowType = 'staticWindow';
