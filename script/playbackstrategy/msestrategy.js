@@ -436,6 +436,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         return getClampedTime(time, getSeekableRange());
       }
 
+      function resumeIfRequired (seekTime) {
+        if (windowType !== WindowTypes.SLIDING) { return; }
+        var seekableRange = getSeekableRange();
+        var isAtStart = DynamicWindowUtils.isAtStartOfRange(seekTime, seekableRange.start);
+        if (isPaused() && isAtStart) {
+          mediaPlayer.play();
+        }
+      }
+
       return {
         transitions: {
           canBePaused: function () { return true; },
@@ -545,6 +554,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           } else {
             var seekTime = calculateSeekOffset(time);
             mediaPlayer.seek(seekTime);
+            resumeIfRequired();
           }
         }
       };

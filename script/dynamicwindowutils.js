@@ -51,7 +51,7 @@ define(
 
     function autoResumeAtStartOfRange (currentTime, seekableRange, addEventCallback, removeEventCallback, checkNotPauseEvent, resume) {
       var resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
-      DebugTool.keyValue({key: 'autoresume', value: resumeTimeOut});
+      // DebugTool.keyValue({key: 'autoresume', value: resumeTimeOut});
       var autoResumeTimer = setTimeout(function () {
         removeEventCallback(undefined, detectIfUnpaused);
         resume();
@@ -67,8 +67,13 @@ define(
       }
     }
 
+    function isAtStartOfRange (seekTime, seekableRangeStart) {
+      return seekTime - seekableRangeStart <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS;
+    }
+
     return {
       autoResumeAtStartOfRange: autoResumeAtStartOfRange,
+      isAtStartOfRange: isAtStartOfRange,
       canPause: canPause,
       canSeek: canSeek
     };

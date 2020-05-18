@@ -57,7 +57,7 @@ require(
         mockPlugins = {
           interface: mockPluginsInterface
         };
-        mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange']);
+        mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange', 'isAtStartOfRange']);
 
         spyOn(mockVideoElement, 'addEventListener');
         spyOn(mockVideoElement, 'removeEventListener');
@@ -719,6 +719,7 @@ require(
             setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
             mseStrategy.load(null, 0);
             mockDynamicWindowUtils.autoResumeAtStartOfRange.calls.reset();
+            mockDashInstance.play.calls.reset();
           });
 
           it('should set current time on the video element', function () {
@@ -762,6 +763,25 @@ require(
             mseStrategy.setCurrentTime(101);
 
             expect(timeUtilsMock.calculateSlidingWindowSeekOffset).toHaveBeenCalledTimes(1);
+          });
+
+          it('should autoresume when paused and seeking to the start of the sliding window seekable range', function () {
+            mockDynamicWindowUtils.isAtStartOfRange.and.returnValue(true);
+            mockDashInstance.isPaused.and.returnValue(true);
+
+            mseStrategy.pause();
+            mseStrategy.setCurrentTime(0);
+
+            expect(mockDashInstance.play).toHaveBeenCalledTimes(1);
+          });
+
+          it('should not try to autoresume when playing and seeking to the start of the sliding window seekable range', function () {
+            mockDynamicWindowUtils.isAtStartOfRange.and.returnValue(true);
+            mockDashInstance.isPaused.and.returnValue(false);
+
+            mseStrategy.setCurrentTime(0);
+
+            expect(mockDashInstance.play).toHaveBeenCalledTimes(0);
           });
         });
 
