@@ -67,13 +67,13 @@ define(
       }
     }
 
-    function isAtStartOfRange (seekTime, seekableRangeStart) {
+    function shouldAutoResume (seekTime, seekableRangeStart) {
       return seekTime - seekableRangeStart <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS;
     }
 
     return {
       autoResumeAtStartOfRange: autoResumeAtStartOfRange,
-      isAtStartOfRange: isAtStartOfRange,
+      shouldAutoResume: shouldAutoResume,
       canPause: canPause,
       canSeek: canSeek
     };
