@@ -373,6 +373,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
 
         if (windowType === WindowTypes.SLIDING) {
+          DebugTool.keyValue({key: 'initial-playback-time', value: startTime});
           return startTime === 0 ? source : source + '#r=' + parseInt(startTime);
         }
 
