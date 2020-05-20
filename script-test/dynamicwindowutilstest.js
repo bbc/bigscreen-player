@@ -57,7 +57,9 @@ require(
           jasmine.clock().tick(20000);
 
           expect(addEventCallback).toHaveBeenCalledTimes(1);
+          expect(addEventCallback).toHaveBeenCalledWith(undefined, jasmine.any(Function));
           expect(removeEventCallback).toHaveBeenCalledTimes(1);
+          expect(removeEventCallback).toHaveBeenCalledWith(jasmine.any(Function));
           expect(resume).toHaveBeenCalledTimes(1);
         });
 
@@ -67,7 +69,9 @@ require(
           jasmine.clock().tick(15000);
 
           expect(addEventCallback).toHaveBeenCalledTimes(1);
+          expect(addEventCallback).toHaveBeenCalledWith(undefined, jasmine.any(Function));
           expect(removeEventCallback).toHaveBeenCalledTimes(1);
+          expect(removeEventCallback).toHaveBeenCalledWith(jasmine.any(Function));
           expect(resume).toHaveBeenCalledTimes(1);
         });
 
@@ -77,7 +81,9 @@ require(
           jasmine.clock().tick(12000);
 
           expect(addEventCallback).toHaveBeenCalledTimes(1);
+          expect(addEventCallback).toHaveBeenCalledWith(undefined, jasmine.any(Function));
           expect(removeEventCallback).toHaveBeenCalledTimes(1);
+          expect(removeEventCallback).toHaveBeenCalledWith(jasmine.any(Function));
           expect(resume).toHaveBeenCalledTimes(1);
         });
 
@@ -87,6 +93,7 @@ require(
           jasmine.clock().tick(10000);
 
           expect(addEventCallback).toHaveBeenCalledTimes(1);
+          expect(addEventCallback).toHaveBeenCalledWith(undefined, jasmine.any(Function));
           expect(removeEventCallback).toHaveBeenCalledTimes(0);
           expect(resume).toHaveBeenCalledTimes(0);
         });
@@ -101,6 +108,7 @@ require(
           jasmine.clock().tick(20000);
 
           expect(removeEventCallback).toHaveBeenCalledTimes(1);
+          expect(removeEventCallback).toHaveBeenCalledWith(jasmine.any(Function));
           expect(resume).toHaveBeenCalledTimes(0);
         });
 
@@ -114,6 +122,7 @@ require(
           jasmine.clock().tick(20000);
 
           expect(removeEventCallback).toHaveBeenCalledTimes(1);
+          expect(removeEventCallback).toHaveBeenCalledWith(jasmine.any(Function));
           expect(resume).toHaveBeenCalledTimes(1);
         });
       });

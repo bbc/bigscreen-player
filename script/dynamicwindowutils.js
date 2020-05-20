@@ -53,7 +53,7 @@ define(
       var resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS);
       DebugTool.keyValue({key: 'autoresume', value: resumeTimeOut});
       var autoResumeTimer = setTimeout(function () {
-        removeEventCallback(undefined, detectIfUnpaused);
+        removeEventCallback(detectIfUnpaused);
         resume();
       }, resumeTimeOut * 1000);
 
@@ -61,7 +61,7 @@ define(
 
       function detectIfUnpaused (event) {
         if (checkNotPauseEvent(event)) {
-          removeEventCallback(undefined, detectIfUnpaused);
+          removeEventCallback(detectIfUnpaused);
           clearTimeout(autoResumeTimer);
         }
       }

@@ -89,11 +89,10 @@ require(
           });
 
           it('calls removeEventCallback on the media player', function () {
-            var thisArg = 'arg';
             var callback = function () { return; };
-            seekableMediaPlayer.removeEventCallback(thisArg, callback);
+            seekableMediaPlayer.removeEventCallback(callback);
 
-            expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback);
+            expect(player.removeEventCallback).toHaveBeenCalledWith(callback);
           });
 
           it('calls removeAllEventCallbacks on the media player', function () {
