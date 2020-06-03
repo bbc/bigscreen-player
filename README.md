@@ -25,6 +25,12 @@ Bigscreen Player uses requirejs for managing dependencies. Once you have require
 The player will render itself into a supplied parent element, and playback will begin as soon as enough data has buffered.
 
 ```javascript
+// configure the media player that will be used before loading
+// see below for further details of ths config
+
+// options are: msestrategy, nativestrategy, hybridstrategy, talstrategy (deprecated)
+window.bigscreenPlayer.playbackStrategy = 'msestrategy';
+
 require(
   [
     'bigscreenplayer/bigscreenplayer',
@@ -33,12 +39,6 @@ require(
   ],
 
   function (BigscreenPlayer, WindowType, MediaKind) {
-
-    // configure the media player that will be used before loading
-    // see below for further details of ths config
-
-    // options are: msestrategy, talstrategy, hybridstrategy
-    window.bigscreenPlayer.playbackStrategy = 'msestrategy';
 
     var bigscreenPlayer = BigscreenPlayer();
 
@@ -94,7 +94,7 @@ require(
 The Bigscreen Player has some global configuration that is needed before initialisation. A *playback strategy* must be configured:
 
 ```javascript
-window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'talstrategy' OR 'hybridstrategy')
+window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'talstrategy' (deprecated)
 ```
 
 See the [configuration](https://github.com/bbc/bigscreen-player/wiki/Playback-Strategy) wiki page for further details on these strategies.
