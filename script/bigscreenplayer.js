@@ -18,6 +18,7 @@ define('bigscreenplayer/bigscreenplayer',
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
       var timeUpdateCallbacks = [];
+      var subtitleCallbacks = [];
 
       var mediaKind;
       var initialPlaybackTimeEpoch;
@@ -167,6 +168,7 @@ define('bigscreenplayer/bigscreenplayer',
           }
           stateChangeCallbacks = [];
           timeUpdateCallbacks = [];
+          subtitleCallbacks = [];
           endOfStream = undefined;
           mediaKind = undefined;
           pauseTrigger = undefined;
@@ -196,6 +198,16 @@ define('bigscreenplayer/bigscreenplayer',
 
           if (indexOf !== -1) {
             timeUpdateCallbacks.splice(indexOf, 1);
+          }
+        },
+        registerForSubtitleChanges: function (callback) {
+          subtitleCallbacks.push(callback);
+          return callback;
+        },
+        unregisterForSubtitleChanges: function (callback) {
+          var indexOf = subtitleCallbacks.indexOf(callback);
+          if (indexOf !== -1) {
+            subtitleCallbacks.splice(indexOf, 1);
           }
         },
         setCurrentTime: function (time) {
@@ -253,6 +265,9 @@ define('bigscreenplayer/bigscreenplayer',
         },
         setSubtitlesEnabled: function (value) {
           playerComponent.setSubtitlesEnabled(value);
+          subtitleCallbacks.forEach(function (callback) {
+            callback({ enabled: value });
+          });
         },
         isSubtitlesEnabled: function () {
           return playerComponent ? playerComponent.isSubtitlesEnabled() : false;
