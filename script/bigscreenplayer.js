@@ -115,6 +115,10 @@ define('bigscreenplayer/bigscreenplayer',
           device
         );
 
+        if (enableSubtitles) {
+          callSubtitlesCallbacks(true);
+        }
+
         if (successCallback) {
           successCallback();
         }
@@ -132,6 +136,12 @@ define('bigscreenplayer/bigscreenplayer',
         if (playerComponent) {
           DebugTool.toggleVisibility();
         }
+      }
+
+      function callSubtitlesCallbacks (enabled) {
+        subtitleCallbacks.forEach(function (callback) {
+          callback({ enabled: enabled });
+        });
       }
 
       return {
@@ -265,9 +275,7 @@ define('bigscreenplayer/bigscreenplayer',
         },
         setSubtitlesEnabled: function (value) {
           playerComponent.setSubtitlesEnabled(value);
-          subtitleCallbacks.forEach(function (callback) {
-            callback({ enabled: value });
-          });
+          callSubtitlesCallbacks(value);
         },
         isSubtitlesEnabled: function () {
           return playerComponent ? playerComponent.isSubtitlesEnabled() : false;

@@ -421,6 +421,24 @@ require(
             expect(callback).toHaveBeenCalledWith({enabled: false});
           });
 
+          it('should call the callback when init() is called with subtitles enabled', function () {
+            var callback = jasmine.createSpy('listener1');
+
+            bigscreenPlayer.registerForSubtitleChanges(callback);
+            initialiseBigscreenPlayer({ subtitlesEnabled: true });
+
+            expect(callback).toHaveBeenCalledWith({enabled: true});
+          });
+
+          it('should not call the callback when init() is called without subtitles enabled', function () {
+            var callback = jasmine.createSpy('listener1');
+
+            bigscreenPlayer.registerForSubtitleChanges(callback);
+            initialiseBigscreenPlayer();
+
+            expect(callback).not.toHaveBeenCalled();
+          });
+
           it('returns a reference to the callback passed in', function () {
             var callback = jasmine.createSpy();
             var reference = bigscreenPlayer.registerForSubtitleChanges(callback);
