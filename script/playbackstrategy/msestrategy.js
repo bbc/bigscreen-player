@@ -372,6 +372,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
 
         if (windowType === WindowTypes.SLIDING) {
+          DebugTool.keyValue({key: 'initial-playback-time', value: parseInt(startTime)});
           return startTime === 0 ? source : source + '#r=' + parseInt(startTime);
         }
 
@@ -435,6 +436,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         return getClampedTime(time, getSeekableRange());
       }
 
+      function resumeIfRequired (seekTime) {
+        if (windowType !== WindowTypes.SLIDING) { return; }
+        var seekableRange = getSeekableRange();
+        var shouldAutoResume = DynamicWindowUtils.shouldAutoResume(seekTime, seekableRange.start);
+        if (isPaused() && shouldAutoResume) {
+          mediaPlayer.play();
+        }
+      }
+
       return {
         transitions: {
           canBePaused: function () { return true; },
@@ -488,7 +498,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
           mediaPlayer = undefined;
           mediaElement = undefined;
-          eventCallbacks = undefined;
+          eventCallbacks = [];
           errorCallback = undefined;
           timeUpdateCallback = undefined;
           timeCorrection = undefined;
@@ -543,6 +553,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           } else {
             var seekTime = calculateSeekOffset(time);
             mediaPlayer.seek(seekTime);
+            resumeIfRequired(seekTime);
           }
         }
       };

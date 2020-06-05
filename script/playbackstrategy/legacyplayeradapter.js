@@ -247,6 +247,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           mediaPlayer.initialiseMedia('video', mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts);
           if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
             currentTime = startTime;
+            DebugTool.keyValue({key: 'initial-playback-time', value: startTime + timeCorrection});
             mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);
           } else {
             mediaPlayer.beginPlayback();
