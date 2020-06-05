@@ -1,9 +1,10 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaPlayerBase) {
+  function (MediaPlayerBase, DebugTool) {
     'use strict';
 
     function Player (deviceConfig) {
@@ -299,6 +300,11 @@ define(
       }
 
       function reportError (errorMessage) {
+        var errorCode = mediaElement && mediaElement.error && mediaElement.error.code;
+        var errorDetail = mediaElement && mediaElement.error && mediaElement.error.message;
+        DebugTool.error('element error code: ' + errorCode +
+                        ' element error detail: ' + errorDetail +
+                        ' application message: ' + errorMessage);
         emitEvent(MediaPlayerBase.EVENT.ERROR);
       }
 

@@ -115,7 +115,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         if (event.error) {
           if (event.error.message) {
-            DebugTool.info('MSE Error: ' + event.error.message);
+            DebugTool.error('MSE Error: ' + event.error.message + ' code: ' + event.error.code);
 
             // Don't raise an error on fragment download error
             if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE ||
@@ -124,7 +124,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
               return;
             }
           } else {
-            DebugTool.info('MSE Error: ' + event.error);
+            DebugTool.error('MSE Error: ' + event.error);
 
             if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && event.event.id === 'content') {
               return;
