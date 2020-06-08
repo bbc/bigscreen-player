@@ -404,6 +404,87 @@ require(
           });
         });
 
+        describe('registerForSubtitleChanges', function () {
+          it('should call the callback when we subtitles are turned on/off', function () {
+            var callback = jasmine.createSpy('listener1');
+            initialiseBigscreenPlayer();
+            bigscreenPlayer.registerForSubtitleChanges(callback);
+
+            expect(callback).not.toHaveBeenCalled();
+
+            bigscreenPlayer.setSubtitlesEnabled(true);
+
+            expect(callback).toHaveBeenCalledWith({enabled: true});
+
+            bigscreenPlayer.setSubtitlesEnabled(false);
+
+            expect(callback).toHaveBeenCalledWith({enabled: false});
+          });
+
+          it('should call the callback when init() is called with subtitles enabled', function () {
+            var callback = jasmine.createSpy('listener1');
+
+            bigscreenPlayer.registerForSubtitleChanges(callback);
+            initialiseBigscreenPlayer({ subtitlesEnabled: true });
+
+            expect(callback).toHaveBeenCalledWith({enabled: true});
+          });
+
+          it('should not call the callback when init() is called without subtitles enabled', function () {
+            var callback = jasmine.createSpy('listener1');
+
+            bigscreenPlayer.registerForSubtitleChanges(callback);
+            initialiseBigscreenPlayer();
+
+            expect(callback).not.toHaveBeenCalled();
+          });
+
+          it('returns a reference to the callback passed in', function () {
+            var callback = jasmine.createSpy();
+            var reference = bigscreenPlayer.registerForSubtitleChanges(callback);
+
+            expect(reference).toBe(callback);
+          });
+        });
+
+        describe('unregisterForSubtitleChanges', function () {
+          it('should remove callback from subtitleCallbacks', function () {
+            initialiseBigscreenPlayer();
+
+            var listener1 = jasmine.createSpy('listener1');
+            var listener2 = jasmine.createSpy('listener2');
+            var listener3 = jasmine.createSpy('listener3');
+
+            bigscreenPlayer.registerForSubtitleChanges(listener1);
+            bigscreenPlayer.registerForSubtitleChanges(listener2);
+            bigscreenPlayer.registerForSubtitleChanges(listener3);
+
+            bigscreenPlayer.setSubtitlesEnabled(true);
+
+            bigscreenPlayer.unregisterForSubtitleChanges(listener2);
+
+            bigscreenPlayer.setSubtitlesEnabled(false);
+
+            expect(listener1).toHaveBeenCalledTimes(2);
+            expect(listener2).toHaveBeenCalledTimes(1);
+            expect(listener3).toHaveBeenCalledTimes(2);
+          });
+
+          it('should only remove existing callbacks from subtitleCallbacks', function () {
+            initialiseBigscreenPlayer();
+
+            var listener1 = jasmine.createSpy('listener1');
+            var listener2 = jasmine.createSpy('listener2');
+
+            bigscreenPlayer.registerForSubtitleChanges(listener1);
+            bigscreenPlayer.unregisterForSubtitleChanges(listener2);
+
+            bigscreenPlayer.setSubtitlesEnabled(true);
+
+            expect(listener1).toHaveBeenCalledWith({enabled: true});
+          });
+        });
+
         describe('setCurrentTime', function () {
           it('should setCurrentTime on the strategy/playerComponent', function () {
             initialiseBigscreenPlayer();

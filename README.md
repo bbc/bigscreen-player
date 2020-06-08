@@ -142,6 +142,23 @@ var timeUpdateToken = bigscreenPlayer.registerForTimeUpdates(function (event) {
 bigscreenPlayer.unRegisterForTimeUpdates(timeUpdateToken);
 ```
 
+### Reacting to subtitles being turned on/off
+
+This is emitted on every `setSubtitlesEnabled` call. The emitted object contains an `enabled` property.
+
+This may be registered for before initialisation and will automatically be cleared upon `tearDown()` of the player.
+
+```javascript
+var bigscreenPlayer = BigscreenPlayer();
+
+// The token is only required in the case where the function is anonymous, a reference to the function can be stored and used to unregister otherwise.
+var subtitleChangeToken = bigscreenPlayer.registerForSubtitleChanges(function (event) {
+    console.log('Subttiles enabled: ' + event.enabled);
+});
+
+bigscreenPlayer.unregisterForSubtitleChanges(subtitleChangeToken);
+```
+
 ### Creating a plugin
 
 Plugins can be created to extend the functionality of the Bigscreen Player by adhering to an interface which propogates non state change events from the player. For example, when an error is raised or cleared.
