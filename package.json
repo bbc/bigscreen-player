@@ -38,8 +38,6 @@
     "grunt-contrib-jasmine": "^2.2.0",
     "html-webpack-plugin": "^4.3.0",
     "jasmine": "3.2.0",
-    "pre-commit": "^1.2.2",
-    "pre-push": "^0.1.1",
     "requirejs": "2.0.0",
     "sinon": "^7.3.2",
     "squirejs": "0.2.1",
