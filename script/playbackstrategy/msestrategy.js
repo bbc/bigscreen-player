@@ -413,7 +413,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         refreshFailoverTime = seekToTime;
 
         mediaPlayer.refreshManifest(function (manifest) {
-          var mediaPresentationDuration = manifest && manifest.data && manifest.data.mediaPresentationDuration;
+          var mediaPresentationDuration = manifest && manifest.mediaPresentationDuration;
           if (!isNaN(mediaPresentationDuration)) {
             DebugTool.info('Stream ended. Clamping seek point to end of stream');
             mediaPlayer.seek(getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration }));

@@ -798,7 +798,7 @@ require(
 
           it('should call seek on media player with the original user requested seek time when manifest refreshes but doesnt have a duration', function () {
             mockDashInstance.refreshManifest.and.callFake(function (callback) {
-              callback({ data: {} });
+              callback({});
             });
 
             mseStrategy.setCurrentTime(60);
@@ -808,7 +808,7 @@ require(
 
           it('should call seek on media player with the time clamped to new end when manifest refreshes and contains a duration', function () {
             mockDashInstance.refreshManifest.and.callFake(function (callback) {
-              callback({ data: {mediaPresentationDuration: 80} });
+              callback({mediaPresentationDuration: 80});
             });
 
             mseStrategy.setCurrentTime(90);
