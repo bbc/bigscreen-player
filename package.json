@@ -16,12 +16,12 @@
     "pre-release:minor": "npm version minor --no-git-tag --no-git-commit && npm run build:version",
     "pre-release:major": "npm version major --no-git-tag --no-git-commit && npm run build:version"
   },
-  "pre-commit": [
-    "test"
-  ],
-  "pre-push": [
-    "test"
-  ],
+  "husky" : {
+    "hooks" : {
+      "pre-commit": "npm test",
+      "pre-push": "npm test"
+    }
+  },
   "devDependencies": {
     "@babel/core": "^7.9.6",
     "@babel/preset-env": "^7.9.6",
