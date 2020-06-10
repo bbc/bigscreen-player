@@ -8,13 +8,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/manifest/manifestmodifier',
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/dynamicwindowutils',
-    'bigscreenplayer/playbackstrategy/growingwindowrefresher',
     'bigscreenplayer/utils/timeutils',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, GrowingWindowRefresher, TimeUtils) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
       var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
@@ -412,7 +411,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function refreshManifestBeforeSeek (seekToTime) {
         refreshFailoverTime = seekToTime;
-        GrowingWindowRefresher(mediaPlayer, function (mediaPresentationDuration) {
+
+        mediaPlayer.refreshManifest(function (manifest) {
+          var mediaPresentationDuration = manifest && manifest.data && manifest.data.mediaPresentationDuration;
           if (!isNaN(mediaPresentationDuration)) {
             DebugTool.info('Stream ended. Clamping seek point to end of stream');
             mediaPlayer.seek(getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration }));
