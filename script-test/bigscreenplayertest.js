@@ -252,7 +252,7 @@ require(
             expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: false, endOfStream: false});
           });
 
-          it('should set the isPaused flag to true when waiting after a setCurrentTime', function () {
+          it('should set the isSeeking flag to true when waiting after a setCurrentTime', function () {
             mockEventHook({data: {state: MediaState.PLAYING}});
 
             expect(callback).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
@@ -265,7 +265,15 @@ require(
             expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: true, endOfStream: false});
           });
 
-          it('should set clear the isPaused flag after a waiting event is fired', function () {
+          it('should set the isSeeking flag to false when it is a normal waiting state', function () {
+            mockEventHook({data: {state: MediaState.PLAYING}});
+
+            mockEventHook({data: {state: MediaState.WAITING}});
+
+            expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: false, endOfStream: false});
+          });
+
+          it('should set the isSeeking flag to false when it is a normal waiting state after a previous seek', function () {
             mockEventHook({data: {state: MediaState.PLAYING}});
 
             bigscreenPlayer.setCurrentTime(60);
@@ -273,8 +281,8 @@ require(
 
             expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: true, endOfStream: false});
 
+            mockEventHook({data: {state: MediaState.PLAYING}});
             callback.calls.reset();
-
             mockEventHook({data: {state: MediaState.WAITING}});
 
             expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: false, endOfStream: false});
@@ -554,16 +562,75 @@ require(
         });
 
         describe('getCurrentTime', function () {
-          it('should return the current time from the strategy', function () {
+          it('should return the initialPlaybackTime before player initialised', function () {
+            initialiseBigscreenPlayer({initialPlaybackTime: 123});
+
+            mockPlayerComponentInstance.getCurrentTime.and.returnValue(10);
+
+            expect(bigscreenPlayer.getCurrentTime()).toBe(123);
+
+            mockEventHook({data: {state: MediaState.WAITING}});
+
+            expect(bigscreenPlayer.getCurrentTime()).toBe(123);
+          });
+
+          it('should return the latest requested time before player initialised', function () {
+            initialiseBigscreenPlayer({initialPlaybackTime: 123});
+
+            mockPlayerComponentInstance.getCurrentTime.and.returnValue(10);
+
+            expect(bigscreenPlayer.getCurrentTime()).toBe(123);
+
+            bigscreenPlayer.setCurrentTime(11);
+
+            expect(bigscreenPlayer.getCurrentTime()).toBe(11);
+          });
+
+          it('should return undefined before player initialised if there is no initialPlaybackTime', function () {
             initialiseBigscreenPlayer();
 
             mockPlayerComponentInstance.getCurrentTime.and.returnValue(10);
 
+            expect(bigscreenPlayer.getCurrentTime()).toBe(undefined);
+          });
+
+          it('should return the current time from the strategy once player initialised', function () {
+            initialiseBigscreenPlayer({initialPlaybackTime: 123});
+
+            mockPlayerComponentInstance.getCurrentTime.and.returnValue(10);
+
+            mockEventHook({data: {state: MediaState.PAUSED}});
+
             expect(bigscreenPlayer.getCurrentTime()).toBe(10);
           });
 
-          it('should return 0 if bigscreenPlayer is not initialised', function () {
-            expect(bigscreenPlayer.getCurrentTime()).toBe(0);
+          it('should return undefined if bigscreenPlayer is not initialised', function () {
+            expect(bigscreenPlayer.getCurrentTime()).toBe(undefined);
+          });
+
+          it('should return the value provided to setCurrentTime whilst seek in flight', function () {
+            initialiseBigscreenPlayer();
+
+            mockPlayerComponentInstance.getCurrentTime.and.returnValue(10);
+            bigscreenPlayer.setCurrentTime(11);
+
+            expect(bigscreenPlayer.getCurrentTime()).toBe(11);
+
+            mockEventHook({data: {state: MediaState.PAUSED}});
+
+            expect(bigscreenPlayer.getCurrentTime()).toBe(11);
+
+            bigscreenPlayer.setCurrentTime(12);
+
+            expect(bigscreenPlayer.getCurrentTime()).toBe(12);
+
+            mockEventHook({data: {state: MediaState.WAITING}});
+
+            expect(bigscreenPlayer.getCurrentTime()).toBe(12);
+
+            mockEventHook({data: {state: MediaState.PLAYING}});
+
+            expect(bigscreenPlayer.getCurrentTime()).toBe(10);
           });
         });
 
@@ -611,6 +678,7 @@ require(
 
           it('should return true when playing live and current time is within tolerance of seekable range end', function () {
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+            mockEventHook({data: {state: MediaState.PLAYING}});
 
             mockPlayerComponentInstance.getCurrentTime.and.returnValue(100);
             mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 105});

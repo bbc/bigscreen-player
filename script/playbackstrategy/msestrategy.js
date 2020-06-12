@@ -407,7 +407,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function getCurrentTime () {
-        return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
+        if (!mediaPlayer || !mediaPlayer.isReady() || !mediaElement || mediaElement.readyState < 1 /* HAVE_METADATA */) {
+          return undefined;
+        }
+        return mediaElement.currentTime - timeCorrection;
       }
 
       function refreshManifestBeforeSeek (seekToTime) {

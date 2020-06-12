@@ -26,8 +26,8 @@ require(
     var mockPlugins;
     var mockPluginsInterface;
     var mockDynamicWindowUtils;
-    var mockAudioElement = document.createElement('audio');
-    var mockVideoElement = document.createElement('video');
+    var mockAudioElement = document.createElement('div');
+    var mockVideoElement = document.createElement('div');
     var mockRefresher;
     var testManifestObject;
     var timeUtilsMock;
@@ -512,16 +512,17 @@ require(
         it('returns the correct time from the DASH Mediaplayer', function () {
           setUpMSE();
           mockVideoElement.currentTime = 10;
+          mockVideoElement.readyState = 1;
 
           mseStrategy.load(null, 0);
 
           expect(mseStrategy.getCurrentTime()).toBe(10);
         });
 
-        it('returns 0 when MediaPlayer is undefined', function () {
+        it('returns undefined when MediaPlayer is undefined', function () {
           setUpMSE();
 
-          expect(mseStrategy.getCurrentTime()).toBe(0);
+          expect(mseStrategy.getCurrentTime()).toBe(undefined);
         });
       });
 
