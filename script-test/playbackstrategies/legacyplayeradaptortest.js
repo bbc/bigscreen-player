@@ -8,25 +8,25 @@ require(
   ],
   function (Squire, WindowTypes, MediaState, MediaSources, LiveSupport) {
     var MediaPlayerEvent = {
-      STOPPED: 'stopped',   // Event fired when playback is stopped
+      STOPPED: 'stopped', // Event fired when playback is stopped
       BUFFERING: 'buffering', // Event fired when playback has to suspend due to buffering
-      PLAYING: 'playing',   // Event fired when starting (or resuming) playing of the media
-      PAUSED: 'paused',    // Event fired when media playback pauses
-      COMPLETE: 'complete',  // Event fired when media playback has reached the end of the media
-      ERROR: 'error',     // Event fired when an error condition occurs
-      STATUS: 'status',    // Event fired regularly during play
+      PLAYING: 'playing', // Event fired when starting (or resuming) playing of the media
+      PAUSED: 'paused', // Event fired when media playback pauses
+      COMPLETE: 'complete', // Event fired when media playback has reached the end of the media
+      ERROR: 'error', // Event fired when an error condition occurs
+      STATUS: 'status', // Event fired regularly during play
       SEEK_ATTEMPTED: 'seek-attempted', // Event fired when a device using a seekfinishedemitevent modifier sets the source
-      SEEK_FINISHED: 'seek-finished'    // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
+      SEEK_FINISHED: 'seek-finished' // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
     };
 
     var MediaPlayerState = {
-      EMPTY: 'EMPTY',     // No source set
-      STOPPED: 'STOPPED',   // Source set but no playback
+      EMPTY: 'EMPTY', // No source set
+      STOPPED: 'STOPPED', // Source set but no playback
       BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
-      PLAYING: 'PLAYING',   // Media is playing
-      PAUSED: 'PAUSED',    // Media is paused
-      COMPLETE: 'COMPLETE',  // Media has reached its end point
-      ERROR: 'ERROR'      // An error occurred
+      PLAYING: 'PLAYING', // Media is playing
+      PAUSED: 'PAUSED', // Media is paused
+      COMPLETE: 'COMPLETE', // Media has reached its end point
+      ERROR: 'ERROR' // An error occurred
     };
 
     describe('Legacy Playback Adapter', function () {
