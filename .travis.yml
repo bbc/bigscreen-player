@@ -1,1 +1,13 @@
 language: node_js
+node_js:
+- lts/*
+deploy:
+  provider: npm
+  email: ConnectedTV-Development@lists.forge.bbc.co.uk
+  api_key:
+    secure: lA0pY3GqLp0hZEe6rUamAQOFyO221hXHEVJV7ANuEhK1/NELWQj4WBRYVUW6baLZwqvFdkmkl//T7+MNraVDO6qN6AHzsjtEGkSshLJ4jZ2Eq/rkDUbY2A68JRvXgp1MKZQAAwGzLeDJV3LYXLq7zcBeUyMRa6j5L1S7lsl8TtBBV9pFLTU/VBxXagxNKYoq914IhhvIXjSw/uo2lUbyzC+l9JutMqwAIVKX1B3OkBjGkI4fbYKCQGr6s2fDR5LOR7fVUA7Xw3L0+WzzErC3bEJh/023feewczIb4AHgimiwi3NCKSJPvD5CNZnHi1HF0lJscitOrP5GqAE9vn3QxBg5gOZ29DstEvfD1FKMPSJBfZW0TG3nIGMmSpGyE9MDGLbre1oHji5uiKTvrMobO7wjZDsUSpuw3eMPzX4R7pmbG7ect9tmz7Q5I24TYKFEyoOqAicc7iTJsXJXaGI2FkgZ1F4rpMV1QtO/z4f/0oySf4GQ19Rg8I+KK18RTRM+2+NPCmBthFNufEeIaBHGDqNhHR873ChCFqswzHGi2axaj9HmEJNxLHNDttqPKgki2gO5BEYMfv7qV7YveC2RpRqmoN/RkabJJWj9DmjW2iu5vBYnLCfSZnZjDgBuhPziqpgKEhxjr5RgEMLpznQSMve6vC27JXpNszyzFes2NHw=
+  skip_cleanup: true
+  on:
+    tags: true
+    repo: bbc/bigscreen-player
+    branch: master
