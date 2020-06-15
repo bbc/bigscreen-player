@@ -80,7 +80,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function onSeeked () {
         isSeeking = false;
         DebugTool.info('Seeked Event');
-        publishMediaState(isPaused() ? MediaState.PAUSED : MediaState.PLAYING);
+
+        if (isPaused()) {
+          if (windowType === WindowTypes.SLIDING) {
+            startAutoResumeTimeout();
+          }
+          publishMediaState(MediaState.PAUSED);
+        } else {
+          publishMediaState(MediaState.PLAYING);
+        }
       }
 
       function onEnded () {
@@ -437,13 +445,30 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         return getClampedTime(time, getSeekableRange());
       }
 
-      function resumeIfRequired (seekTime) {
-        if (windowType !== WindowTypes.SLIDING) { return; }
-        var seekableRange = getSeekableRange();
-        var shouldAutoResume = DynamicWindowUtils.shouldAutoResume(seekTime, seekableRange.start);
-        if (isPaused() && shouldAutoResume) {
-          mediaPlayer.play();
+      function addEventCallback (thisArg, newCallback) {
+        var eventCallback = function (event) {
+          newCallback.call(thisArg, event);
+        };
+        eventCallbacks.push(eventCallback);
+      }
+
+      function removeEventCallback (callback) {
+        var index = eventCallbacks.indexOf(callback);
+        if (index !== -1) {
+          eventCallbacks.splice(index, 1);
         }
+      }
+
+      function startAutoResumeTimeout () {
+        DynamicWindowUtils.autoResumeAtStartOfRange(
+          getCurrentTime(),
+          getSeekableRange(),
+          addEventCallback,
+          removeEventCallback,
+          function (event) {
+            return event !== MediaState.PAUSED;
+          },
+          mediaPlayer.play);
       }
 
       return {
@@ -451,18 +476,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           canBePaused: function () { return true; },
           canBeginSeek: function () { return true; }
         },
-        addEventCallback: function (thisArg, newCallback) {
-          var eventCallback = function (event) {
-            newCallback.call(thisArg, event);
-          };
-          eventCallbacks.push(eventCallback);
-        },
-        removeEventCallback: function (callback) {
-          var index = eventCallbacks.indexOf(callback);
-          if (index !== -1) {
-            eventCallbacks.splice(index, 1);
-          }
-        },
+        addEventCallback: addEventCallback,
+        removeEventCallback: removeEventCallback,
         addErrorCallback: function (thisArg, newErrorCallback) {
           errorCallback = function (event) {
             newErrorCallback.call(thisArg, event);
@@ -532,15 +547,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.pause();
           opts = opts || {};
           if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
-            DynamicWindowUtils.autoResumeAtStartOfRange(
-              getCurrentTime(),
-              getSeekableRange(),
-              this.addEventCallback,
-              this.removeEventCallback,
-              function (event) {
-                return event !== MediaState.PAUSED;
-              },
-              mediaPlayer.play);
+            startAutoResumeTimeout();
           }
         },
         play: function () {
@@ -555,7 +562,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           } else {
             var seekTime = calculateSeekOffset(time);
             mediaPlayer.seek(seekTime);
-            resumeIfRequired(seekTime);
           }
         }
       };

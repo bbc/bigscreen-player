@@ -741,7 +741,6 @@ require(
           });
 
           it('should start autoresume timeout when paused', function () {
-            mseStrategy.setCurrentTime(101);
             mseStrategy.pause();
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
@@ -752,7 +751,6 @@ require(
               disableAutoResume: true
             };
 
-            mseStrategy.setCurrentTime(101);
             mseStrategy.pause(opts);
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
@@ -765,25 +763,20 @@ require(
             expect(timeUtilsMock.calculateSlidingWindowSeekOffset).toHaveBeenCalledTimes(1);
           });
 
-          it('should autoresume when paused and seeking to the start of the sliding window seekable range', function () {
-            mockDynamicWindowUtils.shouldAutoResume.and.returnValue(true);
+          it('should start auto resume timeout when paused and seeking', function () {
             mockDashInstance.isPaused.and.returnValue(true);
 
-            mseStrategy.pause();
-            mseStrategy.setCurrentTime(0);
+            eventCallbacks('seeked');
 
-            expect(mockDynamicWindowUtils.shouldAutoResume).toHaveBeenCalledWith(jasmine.any(Number), jasmine.any(Number));
-            expect(mockDashInstance.play).toHaveBeenCalledTimes(1);
+            expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
           });
 
-          it('should not try to autoresume when playing and seeking to the start of the sliding window seekable range', function () {
-            mockDynamicWindowUtils.shouldAutoResume.and.returnValue(true);
+          it('should not try to autoresume when playing and seeking', function () {
             mockDashInstance.isPaused.and.returnValue(false);
 
-            mseStrategy.setCurrentTime(0);
+            eventCallbacks('seeked');
 
-            expect(mockDynamicWindowUtils.shouldAutoResume).toHaveBeenCalledWith(jasmine.any(Number), jasmine.any(Number));
-            expect(mockDashInstance.play).toHaveBeenCalledTimes(0);
+            expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
           });
         });
 
