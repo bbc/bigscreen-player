@@ -57,7 +57,7 @@ define(
         function pause (opts) {
           mediaPlayer.pause();
           opts = opts || {};
-          if (opts.disableAutoResume !== true) {
+          if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
             DynamicWindowUtils.autoResumeAtStartOfRange(
               getCurrentTime(),
               getSeekableRange(),

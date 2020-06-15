@@ -2,12 +2,13 @@ define(
     'bigscreenplayer/playbackstrategy/modifiers/live/seekable',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/dynamicwindowutils'
+    'bigscreenplayer/dynamicwindowutils',
+    'bigscreenplayer/models/windowtypes'
   ],
-    function (MediaPlayerBase, DynamicWindowUtils) {
+    function (MediaPlayerBase, DynamicWindowUtils, WindowTypes) {
       'use strict';
 
-      function SeekableLivePlayer (mediaPlayer, deviceConfig) {
+      function SeekableLivePlayer (mediaPlayer, deviceConfig, windowType) {
         var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
         function addEventCallback (thisArg, callback) {
@@ -51,7 +52,17 @@ define(
           },
 
           playFrom: function playFrom (offset) {
+            var postSeekState = mediaPlayer.getState();
             mediaPlayer.playFrom(offset);
+            if (postSeekState === MediaPlayerBase.STATE.PAUSED && windowType === WindowTypes.SLIDING) {
+              DynamicWindowUtils.autoResumeAtStartOfRange(
+                mediaPlayer.getCurrentTime(),
+                mediaPlayer.getSeekableRange(),
+                addEventCallback,
+                removeEventCallback,
+                MediaPlayerBase.unpausedEventCheck,
+                resume);
+            }
           },
 
           pause: function pause (opts) {
@@ -65,13 +76,15 @@ define(
               mediaPlayer.toPlaying();
             } else {
               mediaPlayer.pause();
-              DynamicWindowUtils.autoResumeAtStartOfRange(
-                mediaPlayer.getCurrentTime(),
-                mediaPlayer.getSeekableRange(),
-                addEventCallback,
-                removeEventCallback,
-                MediaPlayerBase.unpausedEventCheck,
-                resume);
+              if (windowType === WindowTypes.SLIDING) {
+                DynamicWindowUtils.autoResumeAtStartOfRange(
+                  mediaPlayer.getCurrentTime(),
+                  mediaPlayer.getSeekableRange(),
+                  addEventCallback,
+                  removeEventCallback,
+                  MediaPlayerBase.unpausedEventCheck,
+                  resume);
+              }
             }
           },
           resume: resume,
