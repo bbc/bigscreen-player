@@ -39,7 +39,7 @@ define(
       };
 
       function unpausedEventCheck (event) {
-        if (event && event.state) {
+        if (event && event.state && event.type !== 'status') {
           return event.state !== STATE.PAUSED;
         } else {
           return undefined;
