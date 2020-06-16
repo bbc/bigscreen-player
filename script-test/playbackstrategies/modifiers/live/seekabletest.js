@@ -240,8 +240,8 @@ require(
             }
 
             seekableMediaPlayer.pause();
-            // uses real time to determine pause intervals
-            // if debugging the time to the buffer will be decreased by the time spent.
+          // uses real time to determine pause intervals
+          // if debugging the time to the buffer will be decreased by the time spent.
             jasmine.clock().tick(22 * 1000);
 
             expect(player.resume).toHaveBeenCalledTimes(1);

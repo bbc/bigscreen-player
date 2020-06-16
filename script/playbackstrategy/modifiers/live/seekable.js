@@ -1,5 +1,5 @@
 define(
-    'bigscreenplayer/playbackstrategy/modifiers/live/seekable',
+  'bigscreenplayer/playbackstrategy/modifiers/live/seekable',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
     'bigscreenplayer/dynamicwindowutils',
@@ -7,7 +7,6 @@ define(
   ],
     function (MediaPlayerBase, DynamicWindowUtils, WindowTypes) {
       'use strict';
-
       function SeekableLivePlayer (mediaPlayer, deviceConfig, windowType) {
         var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
@@ -130,7 +129,6 @@ define(
           getLiveSupport: function getLiveSupport () {
             return MediaPlayerBase.LIVE_SUPPORT.SEEKABLE;
           }
-
         });
       }
 

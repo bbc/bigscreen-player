@@ -7,13 +7,13 @@ define(
       var player = mediaplayer;
 
       var MediaPlayerState = {
-        EMPTY: 'EMPTY',     // No source set
-        STOPPED: 'STOPPED',   // Source set but no playback
+        EMPTY: 'EMPTY', // No source set
+        STOPPED: 'STOPPED', // Source set but no playback
         BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
-        PLAYING: 'PLAYING',   // Media is playing
-        PAUSED: 'PAUSED',    // Media is paused
-        COMPLETE: 'COMPLETE',  // Media has reached its end point
-        ERROR: 'ERROR'      // An error occurred
+        PLAYING: 'PLAYING', // Media is playing
+        PAUSED: 'PAUSED', // Media is paused
+        COMPLETE: 'COMPLETE', // Media has reached its end point
+        ERROR: 'ERROR' // An error occurred
       };
 
       function canBePaused () {
