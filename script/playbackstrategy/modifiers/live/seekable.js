@@ -51,17 +51,7 @@ define(
         },
 
         playFrom: function playFrom (offset) {
-          var postSeekState = mediaPlayer.getState();
           mediaPlayer.playFrom(offset);
-          if (postSeekState === MediaPlayerBase.STATE.PAUSED && windowType === WindowTypes.SLIDING) {
-            DynamicWindowUtils.autoResumeAtStartOfRange(
-              mediaPlayer.getCurrentTime(),
-              mediaPlayer.getSeekableRange(),
-              addEventCallback,
-              removeEventCallback,
-              MediaPlayerBase.unpausedEventCheck,
-              resume);
-          }
         },
 
         pause: function pause (opts) {

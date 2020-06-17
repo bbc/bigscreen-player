@@ -351,6 +351,8 @@ require(
 
           seekableMediaPlayer.playFrom(50);
 
+          seekableMediaPlayer.pause();
+
           jasmine.clock().tick(42 * 1000);
 
           expect(player.resume).toHaveBeenCalledTimes(1);

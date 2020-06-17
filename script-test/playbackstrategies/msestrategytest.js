@@ -766,14 +766,18 @@ require(
           it('should start auto resume timeout when paused and seeking', function () {
             mockDashInstance.isPaused.and.returnValue(true);
 
+            mseStrategy.pause();
+            mseStrategy.setCurrentTime();
+
             eventCallbacks('seeked');
 
-            expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
+            expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(2);
           });
 
           it('should not try to autoresume when playing and seeking', function () {
             mockDashInstance.isPaused.and.returnValue(false);
 
+            mseStrategy.setCurrentTime();
             eventCallbacks('seeked');
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
