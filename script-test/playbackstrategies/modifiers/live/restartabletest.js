@@ -266,7 +266,9 @@ require(
       describe('Pausing and Auto-Resume', function () {
         var mockCallback = [];
 
-        function startPlaybackAndPause (startTime, disableAutoResume) {
+        function startPlaybackAndPause (startTime, disableAutoResume, windowType) {
+          initialiseRestartableMediaPlayer(undefined, windowType);
+
           restartableMediaPlayer.beginPlaybackFrom(startTime);
 
           for (var index = 0; index < mockCallback.length; index++) {
@@ -287,12 +289,6 @@ require(
           player.addEventCallback.and.callFake(function (self, callback) {
             mockCallback.push(callback);
           });
-
-          initialiseRestartableMediaPlayer();
-
-          for (var index = 0; index < mockCallback.length; index++) {
-            mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING});
-          }
         });
 
         afterEach(function () {
@@ -403,6 +399,8 @@ require(
         });
 
         it('time spend buffering is deducted when considering time to auto-resume', function () {
+          startPlaybackAndPause();
+
           restartableMediaPlayer.beginPlaybackFrom(20);
 
           for (var index = 0; index < mockCallback.length; index++) {
@@ -420,6 +418,14 @@ require(
           jasmine.clock().tick(3 * 1000);
 
           expect(player.resume).toHaveBeenCalledTimes(1);
+        });
+
+        it('Should not start auto resume timeout if window type is not SLIDING', function () {
+          startPlaybackAndPause(20, false, WindowTypes.GROWING);
+
+          jasmine.clock().tick(12 * 1000);
+
+          expect(player.resume).not.toHaveBeenCalled();
         });
       });
     });

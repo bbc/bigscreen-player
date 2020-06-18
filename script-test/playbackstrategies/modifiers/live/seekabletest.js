@@ -1,9 +1,10 @@
 require(
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/playbackstrategy/modifiers/live/seekable'
+    'bigscreenplayer/playbackstrategy/modifiers/live/seekable',
+    'bigscreenplayer/models/windowtypes'
   ],
-  function (MediaPlayerBase, SeekableMediaPlayer) {
+  function (MediaPlayerBase, SeekableMediaPlayer, WindowTypes) {
     var sourceContainer = document.createElement('div');
     var player;
     var seekableMediaPlayer;
@@ -20,8 +21,8 @@ require(
       }
     }
 
-    function initialiseSeekableMediaPlayer (config) {
-      seekableMediaPlayer = SeekableMediaPlayer(player, config);
+    function initialiseSeekableMediaPlayer (config, windowType) {
+      seekableMediaPlayer = SeekableMediaPlayer(player, config, windowType);
     }
 
     describe('Seekable HMTL5 Live Player', function () {
@@ -172,7 +173,7 @@ require(
           jasmine.clock().install();
           jasmine.clock().mockDate();
 
-          initialiseSeekableMediaPlayer();
+          initialiseSeekableMediaPlayer(undefined, WindowTypes.SLIDING);
 
           player.getSeekableRange.and.returnValue({start: 0});
           player.getCurrentTime.and.returnValue(20);
@@ -285,6 +286,18 @@ require(
           expect(player.resume).toHaveBeenCalledTimes(1);
         });
 
+        it('auto-resume is not cancelled by a status event', function () {
+          startPlaybackAndPause(20, false);
+
+          for (var index = 0; index < mockCallback.length; index++) {
+            mockCallback[index]({type: MediaPlayerBase.EVENT.STATUS});
+          }
+
+          jasmine.clock().tick(12 * 1000);
+
+          expect(player.resume).toHaveBeenCalledTimes(1);
+        });
+
         it('will fake pause if attempting to pause at the start of playback ', function () {
           player.getCurrentTime.and.returnValue(0);
           startPlaybackAndPause(0, false);
@@ -325,6 +338,24 @@ require(
           jasmine.clock().tick(1);
 
           expect(player.resume).not.toHaveBeenCalledTimes(1);
+        });
+
+        it('Should auto resume when paused after a seek', function () {
+          player.getSeekableRange.and.returnValue({start: 0});
+          player.getCurrentTime.and.returnValue(100);
+
+          startPlaybackAndPause(100, false);
+
+          player.getCurrentTime.and.returnValue(50);
+          player.getState.and.returnValue(MediaPlayerBase.STATE.PAUSED);
+
+          seekableMediaPlayer.playFrom(50);
+
+          seekableMediaPlayer.pause();
+
+          jasmine.clock().tick(42 * 1000);
+
+          expect(player.resume).toHaveBeenCalledTimes(1);
         });
       });
     });

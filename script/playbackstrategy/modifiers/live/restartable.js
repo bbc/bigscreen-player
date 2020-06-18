@@ -50,14 +50,10 @@ define(
         mediaPlayer.removeAllEventCallbacks();
       }
 
-      function resume () {
-        mediaPlayer.resume();
-      }
-
       function pause (opts) {
         mediaPlayer.pause();
         opts = opts || {};
-        if (opts.disableAutoResume !== true) {
+        if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
           DynamicWindowUtils.autoResumeAtStartOfRange(
             getCurrentTime(),
             getSeekableRange(),
@@ -66,6 +62,9 @@ define(
             MediaPlayerBase.unpausedEventCheck,
             resume);
         }
+      }
+      function resume () {
+        mediaPlayer.resume();
       }
 
       function getCurrentTime () {
