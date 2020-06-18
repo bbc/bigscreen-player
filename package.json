@@ -1,6 +1,6 @@
 {
   "name": "bigscreen-player",
-  "version": "3.14.2",
+  "version": "3.14.3",
   "description": "Simplified media playback for bigscreen devices.",
   "main": "script/bigscreenplayer.js",
   "scripts": {
