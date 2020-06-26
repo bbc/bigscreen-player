@@ -226,7 +226,7 @@ See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player
 
 ## Releasing
 
-1. `npm run pre-release:major|minor|patch` will bump the package.json and internal version. 
+1. `npm run pre-release:major|minor|patch` will bump the package.json and internal version.
 2. Create a Github release.
 3. Publishing to NPM is handled with our [Travis CI integration](https://github.com/bbc/bigscreen-player/blob/master/.travis.yml).
 
@@ -236,7 +236,7 @@ The full api is documented [here](https://github.com/bbc/bigscreen-player/wiki/A
 
 ## Contributing
 
-Whilst it is the intention of the BBC to fully Open Source this project, it is currently work in progress, and as such, there is no contribution model, support model or roadmap. Each of these will be made available in due course.
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
