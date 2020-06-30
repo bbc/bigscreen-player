@@ -1,6 +1,6 @@
 # Contributing
 
-We welcome and encourage contributions. We are open minded to suggestions, encourage debate, and aim to build a consensus; if there is no consensus, maintainers will have the final say.
+We welcome and encourage contributions. We are open minded to suggestions, encourage debate, and aim to build a consensus.
 
 Unless an Issue or Pull Request can be resolved within 2 working days, we will raise an internal ticket for it on our backlog and note this on GitHub.
 
