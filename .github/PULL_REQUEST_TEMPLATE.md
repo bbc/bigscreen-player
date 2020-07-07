@@ -14,6 +14,8 @@
 ✅ Testing [Semi-optional]
 [MANDATORY for contributions being tested and released by the contributing team]
 
+[Test Guidelines](https://github.com/bbc/bigscreen-player/wiki/Areas-Impacted)
+
 | Test engineer sign off | :x: |
 | ---- | ---- |
 
