@@ -2,9 +2,10 @@ define([
   'bigscreenplayer/bigscreenplayer',
   'bigscreenplayer/models/windowtypes',
   'bigscreenplayer/debugger/debugtool',
-  'bigscreenplayer/playbackspinner'
+  'bigscreenplayer/playbackspinner',
+  'bigscreenplayer/domhelpers'
 ],
-  function (BigscreenPlayer, WindowTypes, DebugTool, PlaybackSpinner) {
+  function (BigscreenPlayer, WindowTypes, DebugTool, PlaybackSpinner, DOMHelpers) {
 
     var playbackElement = document.getElementById('videoContainer');
     var controlsElement = document.getElementById('bsp_controls');
@@ -97,7 +98,7 @@ define([
         if (state === 'WAITING') {
           playbackElement.appendChild(playbackSpinner);
         } else {
-          if (playbackElement.contains(playbackSpinner)) playbackElement.removeChild(playbackSpinner);
+          DOMHelpers.safeRemoveElement(playbackSpinner);
         }
       });
     }
