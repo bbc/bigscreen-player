@@ -41,12 +41,24 @@ define(
       return rgbaString;
     }
 
+    /**
+     * Safely removes an element from the DOM, simply doing
+     * nothing if the node is detached (Has no parent).
+     * @param {Element} el The Element to remove
+     */
+    var safeRemoveElement = function (el) {
+      if (el.parentNode) {
+        el.parentNode.removeChild(el);
+      }
+    };
+
     return {
       addClass: addClass,
       removeClass: removeClass,
       hasClass: hasClass,
       rgbaToRGB: rgbaToRGB,
-      isRGBA: isRGBATuple
+      isRGBA: isRGBATuple,
+      safeRemoveElement: safeRemoveElement
     };
   }
 );
