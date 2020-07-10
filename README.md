@@ -14,10 +14,6 @@ This project should be considered **Work in Progress**. A full roadmap will be r
 
 `$ npm install`
 
-## Example Usage
-
-We have a working example app - see [docs/example-app](docs/example-app).
-
 ### Initialisation
 
 Bigscreen Player uses requirejs for managing dependencies. Once you have required the player, a playback session can be initalised by simply calling the `init()` function with some initial data.
