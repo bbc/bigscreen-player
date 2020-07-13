@@ -15,6 +15,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     var cdn;
 
     var timeUpdateCallbacks = [];
+    var subtitleCallbacks = [];
     var stateChangeCallbacks = [];
 
     var currentTime;
@@ -134,6 +135,12 @@ define('bigscreenplayer/mockbigscreenplayer',
       mockStatus = {currentlyMocked: false, mode: mockModes.NONE};
     }
 
+    function callSubtitlesCallbacks (enabled) {
+      subtitleCallbacks.forEach(function (callback) {
+        callback({ enabled: enabled });
+      });
+    }
+
     var mockFunctions = {
       init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, device, callbacks) {
         currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0;
@@ -143,7 +150,7 @@ define('bigscreenplayer/mockbigscreenplayer',
         mediaKind = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.kind || 'video';
         windowType = newWindowType || WindowTypes.STATIC;
         subtitlesAvailable = true;
-        subtitlesEnabled = false;
+        subtitlesEnabled = enableSubtitles;
         canSeekState = true;
         canPauseState = true;
         sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls;
@@ -168,6 +175,10 @@ define('bigscreenplayer/mockbigscreenplayer',
 
         initialised = true;
 
+        if (enableSubtitles) {
+          callSubtitlesCallbacks(true);
+        }
+
         if (callbacks && callbacks.onSuccess) {
           callbacks.onSuccess();
         }
@@ -181,6 +192,17 @@ define('bigscreenplayer/mockbigscreenplayer',
 
         if (indexOf !== -1) {
           timeUpdateCallbacks.splice(indexOf, 1);
+        }
+      },
+      registerForSubtitleChanges: function (callback) {
+        subtitleCallbacks.push(callback);
+        return callback;
+      },
+      unregisterForSubtitleChanges: function (callback) {
+        var indexOf = subtitleCallbacks.indexOf(callback);
+
+        if (indexOf !== -1) {
+          subtitleCallbacks.splice(indexOf, 1);
         }
       },
       registerForStateChanges: function (callback) {
@@ -239,6 +261,7 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       setSubtitlesEnabled: function (value) {
         subtitlesEnabled = value;
+        callSubtitlesCallbacks(value);
       },
       isSubtitlesEnabled: function () {
         return subtitlesEnabled;

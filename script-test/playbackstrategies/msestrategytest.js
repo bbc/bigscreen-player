@@ -4,10 +4,9 @@ require(
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/mediasources',
-    'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/playbackstrategy/growingwindowrefresher'
+    'bigscreenplayer/models/livesupport'
   ],
-  function (Squire, MediaKinds, WindowTypes, MediaSources, LiveSupport, GrowingWindowRefresher) {
+  function (Squire, MediaKinds, WindowTypes, MediaSources, LiveSupport) {
     var injector = new Squire();
     var MSEStrategy;
     var mseStrategy;
@@ -28,7 +27,6 @@ require(
     var mockDynamicWindowUtils;
     var mockAudioElement = document.createElement('audio');
     var mockVideoElement = document.createElement('video');
-    var mockRefresher;
     var testManifestObject;
     var timeUtilsMock;
 
@@ -57,15 +55,10 @@ require(
         mockPlugins = {
           interface: mockPluginsInterface
         };
-        mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange']);
+        mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange', 'shouldAutoResume']);
 
         spyOn(mockVideoElement, 'addEventListener');
         spyOn(mockVideoElement, 'removeEventListener');
-
-        mockRefresher = {
-          GrowingWindowRefresher: GrowingWindowRefresher
-        };
-        spyOn(mockRefresher, 'GrowingWindowRefresher').and.callThrough();
 
         mockVideoElement.addEventListener.and.callFake(function (eventType, handler) {
           eventHandlers[eventType] = handler;
@@ -718,6 +711,7 @@ require(
             setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
             mseStrategy.load(null, 0);
             mockDynamicWindowUtils.autoResumeAtStartOfRange.calls.reset();
+            mockDashInstance.play.calls.reset();
           });
 
           it('should set current time on the video element', function () {
@@ -739,7 +733,6 @@ require(
           });
 
           it('should start autoresume timeout when paused', function () {
-            mseStrategy.setCurrentTime(101);
             mseStrategy.pause();
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
@@ -750,7 +743,6 @@ require(
               disableAutoResume: true
             };
 
-            mseStrategy.setCurrentTime(101);
             mseStrategy.pause(opts);
 
             expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
@@ -762,6 +754,26 @@ require(
 
             expect(timeUtilsMock.calculateSlidingWindowSeekOffset).toHaveBeenCalledTimes(1);
           });
+
+          it('should start auto resume timeout when paused and seeking', function () {
+            mockDashInstance.isPaused.and.returnValue(true);
+
+            mseStrategy.pause();
+            mseStrategy.setCurrentTime();
+
+            eventCallbacks('seeked');
+
+            expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(2);
+          });
+
+          it('should not try to autoresume when playing and seeking', function () {
+            mockDashInstance.isPaused.and.returnValue(false);
+
+            mseStrategy.setCurrentTime();
+            eventCallbacks('seeked');
+
+            expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
+          });
         });
 
         describe('growing window', function () {
@@ -769,28 +781,33 @@ require(
             setUpMSE(0, WindowTypes.GROWING);
             mseStrategy.load(null, 0);
             mockVideoElement.currentTime = 50;
+            mockDashInstance.refreshManifest.calls.reset();
           });
 
           it('should perform a seek without refreshing the manifest if seek time is less than current time', function () {
             mseStrategy.setCurrentTime(40);
 
-            expect(mockRefresher.GrowingWindowRefresher).not.toHaveBeenCalled();
+            expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled();
 
             expect(mockDashInstance.seek).toHaveBeenCalledWith(40);
           });
 
           it('should call seek on media player with the original user requested seek time when manifest refreshes but doesnt have a duration', function () {
-            mseStrategy.setCurrentTime(60);
+            mockDashInstance.refreshManifest.and.callFake(function (callback) {
+              callback({});
+            });
 
-            dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, {data: {}});
+            mseStrategy.setCurrentTime(60);
 
             expect(mockDashInstance.seek).toHaveBeenCalledWith(60);
           });
 
           it('should call seek on media player with the time clamped to new end when manifest refreshes and contains a duration', function () {
-            mseStrategy.setCurrentTime(90);
+            mockDashInstance.refreshManifest.and.callFake(function (callback) {
+              callback({mediaPresentationDuration: 80});
+            });
 
-            dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, {data: {mediaPresentationDuration: 80}});
+            mseStrategy.setCurrentTime(90);
 
             expect(mockDashInstance.seek).toHaveBeenCalledWith(78.9);
           });

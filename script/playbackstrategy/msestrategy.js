@@ -8,13 +8,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/manifest/manifestmodifier',
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/dynamicwindowutils',
-    'bigscreenplayer/playbackstrategy/growingwindowrefresher',
     'bigscreenplayer/utils/timeutils',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, GrowingWindowRefresher, TimeUtils) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
       var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
@@ -79,7 +78,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function onSeeked () {
         isSeeking = false;
         DebugTool.info('Seeked Event');
-        publishMediaState(isPaused() ? MediaState.PAUSED : MediaState.PLAYING);
+
+        if (isPaused()) {
+          if (windowType === WindowTypes.SLIDING) {
+            startAutoResumeTimeout();
+          }
+          publishMediaState(MediaState.PAUSED);
+        } else {
+          publishMediaState(MediaState.PLAYING);
+        }
       }
 
       function onEnded () {
@@ -375,6 +382,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
 
         if (windowType === WindowTypes.SLIDING) {
+          DebugTool.keyValue({key: 'initial-playback-time', value: parseInt(startTime)});
           return startTime === 0 ? source : source + '#r=' + parseInt(startTime);
         }
 
@@ -413,7 +421,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function refreshManifestBeforeSeek (seekToTime) {
         refreshFailoverTime = seekToTime;
-        GrowingWindowRefresher(mediaPlayer, function (mediaPresentationDuration) {
+
+        mediaPlayer.refreshManifest(function (manifest) {
+          var mediaPresentationDuration = manifest && manifest.mediaPresentationDuration;
           if (!isNaN(mediaPresentationDuration)) {
             DebugTool.info('Stream ended. Clamping seek point to end of stream');
             mediaPlayer.seek(getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration }));
@@ -438,23 +448,39 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         return getClampedTime(time, getSeekableRange());
       }
 
+      function addEventCallback (thisArg, newCallback) {
+        var eventCallback = function (event) {
+          newCallback.call(thisArg, event);
+        };
+        eventCallbacks.push(eventCallback);
+      }
+
+      function removeEventCallback (callback) {
+        var index = eventCallbacks.indexOf(callback);
+        if (index !== -1) {
+          eventCallbacks.splice(index, 1);
+        }
+      }
+
+      function startAutoResumeTimeout () {
+        DynamicWindowUtils.autoResumeAtStartOfRange(
+          getCurrentTime(),
+          getSeekableRange(),
+          addEventCallback,
+          removeEventCallback,
+          function (event) {
+            return event !== MediaState.PAUSED;
+          },
+          mediaPlayer.play);
+      }
+
       return {
         transitions: {
           canBePaused: function () { return true; },
           canBeginSeek: function () { return true; }
         },
-        addEventCallback: function (thisArg, newCallback) {
-          var eventCallback = function (event) {
-            newCallback.call(thisArg, event);
-          };
-          eventCallbacks.push(eventCallback);
-        },
-        removeEventCallback: function (callback) {
-          var index = eventCallbacks.indexOf(callback);
-          if (index !== -1) {
-            eventCallbacks.splice(index, 1);
-          }
-        },
+        addEventCallback: addEventCallback,
+        removeEventCallback: removeEventCallback,
         addErrorCallback: function (thisArg, newErrorCallback) {
           errorCallback = function (event) {
             newErrorCallback.call(thisArg, event);
@@ -523,15 +549,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.pause();
           opts = opts || {};
           if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
-            DynamicWindowUtils.autoResumeAtStartOfRange(
-              getCurrentTime(),
-              getSeekableRange(),
-              this.addEventCallback,
-              this.removeEventCallback,
-              function (event) {
-                return event !== MediaState.PAUSED;
-              },
-              mediaPlayer.play);
+            startAutoResumeTimeout();
           }
         },
         play: function () {

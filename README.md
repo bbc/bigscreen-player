@@ -14,10 +14,6 @@ This project should be considered **Work in Progress**. A full roadmap will be r
 
 `$ npm install`
 
-## Example Usage
-
-We have a working example app - see [docs/example-app](docs/example-app).
-
 ### Initialisation
 
 Bigscreen Player uses requirejs for managing dependencies. Once you have required the player, a playback session can be initalised by simply calling the `init()` function with some initial data.
@@ -25,6 +21,12 @@ Bigscreen Player uses requirejs for managing dependencies. Once you have require
 The player will render itself into a supplied parent element, and playback will begin as soon as enough data has buffered.
 
 ```javascript
+// configure the media player that will be used before loading
+// see below for further details of ths config
+
+// options are: msestrategy, nativestrategy, hybridstrategy, talstrategy (deprecated)
+window.bigscreenPlayer.playbackStrategy = 'msestrategy';
+
 require(
   [
     'bigscreenplayer/bigscreenplayer',
@@ -33,12 +35,6 @@ require(
   ],
 
   function (BigscreenPlayer, WindowType, MediaKind) {
-
-    // configure the media player that will be used before loading
-    // see below for further details of ths config
-
-    // options are: msestrategy, talstrategy, hybridstrategy
-    window.bigscreenPlayer.playbackStrategy = 'msestrategy';
 
     var bigscreenPlayer = BigscreenPlayer();
 
@@ -94,7 +90,7 @@ require(
 The Bigscreen Player has some global configuration that is needed before initialisation. A *playback strategy* must be configured:
 
 ```javascript
-window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'talstrategy' OR 'hybridstrategy')
+window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'talstrategy' (deprecated)
 ```
 
 See the [configuration](https://github.com/bbc/bigscreen-player/wiki/Playback-Strategy) wiki page for further details on these strategies.
@@ -140,6 +136,23 @@ var timeUpdateToken = bigscreenPlayer.registerForTimeUpdates(function (event) {
 });
 
 bigscreenPlayer.unRegisterForTimeUpdates(timeUpdateToken);
+```
+
+### Reacting to subtitles being turned on/off
+
+This is emitted on every `setSubtitlesEnabled` call. The emitted object contains an `enabled` property.
+
+This may be registered for before initialisation and will automatically be cleared upon `tearDown()` of the player.
+
+```javascript
+var bigscreenPlayer = BigscreenPlayer();
+
+// The token is only required in the case where the function is anonymous, a reference to the function can be stored and used to unregister otherwise.
+var subtitleChangeToken = bigscreenPlayer.registerForSubtitleChanges(function (event) {
+    console.log('Subttiles enabled: ' + event.enabled);
+});
+
+bigscreenPlayer.unregisterForSubtitleChanges(subtitleChangeToken);
 ```
 
 ### Creating a plugin
@@ -207,9 +220,11 @@ When writing tests for your application it may be useful to use the mocking func
 
 See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player) for example usage.
 
-### Releasing
+## Releasing
 
-`npm run pre-release:major|minor|patch` will bump the package.json and internal version.
+1. `npm run pre-release:major|minor|patch` will bump the package.json and internal version.
+2. Create a Github release.
+3. Publishing to NPM is handled with our [Travis CI integration](https://github.com/bbc/bigscreen-player/blob/master/.travis.yml).
 
 ## API Reference
 
@@ -217,7 +232,7 @@ The full api is documented [here](https://github.com/bbc/bigscreen-player/wiki/A
 
 ## Contributing
 
-Whilst it is the intention of the BBC to fully Open Source this project, it is currently work in progress, and as such, there is no contribution model, support model or roadmap. Each of these will be made available in due course.
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 

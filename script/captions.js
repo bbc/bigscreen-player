@@ -33,6 +33,8 @@ define('bigscreenplayer/captions',
 
       loadData(uri);
 
+      DebugTool.info('Loading captions from: ' + uri);
+
       function loadData (dataFeedUrl) {
         var req = new XMLHttpRequest();
 
