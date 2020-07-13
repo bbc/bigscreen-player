@@ -10,7 +10,6 @@
     "spec": "grunt --force spec-web",
     "lint": "npx eslint .",
     "lint:code:changed": "git diff-index --name-only HEAD | egrep '.js$' | xargs eslint",
-    "build:example-app": "cd docs/example-app/ && npm install && npm run build && cd ../../",
     "build:version": "node ./buildVersion.js",
     "pre-release:patch": "npm version patch --no-git-tag --no-git-commit && npm run build:version",
     "pre-release:minor": "npm version minor --no-git-tag --no-git-commit && npm run build:version",
