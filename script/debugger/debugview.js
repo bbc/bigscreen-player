@@ -88,12 +88,11 @@ define('bigscreenplayer/debugger/debugview',
 
       DOMHelpers.safeRemoveElement(logBox);
       DOMHelpers.safeRemoveElement(staticBox);
-      DOMHelpers.safeRemoveElement(appElement);
 
+      appElement = undefined;
       staticContainer = undefined;
       logContainer = undefined;
       logBox = undefined;
-      staticBox = undefined;
     }
 
     return {
