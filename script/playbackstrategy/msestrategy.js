@@ -319,13 +319,16 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.getDebug().setLogToBrowserConsole(false);
-        mediaPlayer.setLiveDelay(LIVE_DELAY_SECONDS);
 
-        mediaPlayer.setBufferToKeep(0);
-        mediaPlayer.setBufferAheadToKeep(20);
-
-        mediaPlayer.setBufferTimeAtTopQuality(12);
-        mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
+        mediaPlayer.updateSettings({
+          'streaming': {
+            'liveDelay': LIVE_DELAY_SECONDS,
+            'bufferToKeep': 0,
+            'bufferAheadToKeep': 20,
+            'bufferTimeAtTopQuality': 12,
+            'bufferTimeAtTopQualityLongForm': 12
+          }
+        });
 
         mediaPlayer.initialize(mediaElement, null, true);
         modifySource(playbackTime);
