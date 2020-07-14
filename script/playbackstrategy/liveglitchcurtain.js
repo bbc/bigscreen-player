@@ -1,8 +1,9 @@
 define('bigscreenplayer/playbackstrategy/liveglitchcurtain',
   [
-    'bigscreenplayer/playbackspinner'
+    'bigscreenplayer/playbackspinner',
+    'bigscreenplayer/domhelpers'
   ],
-  function (PlaybackSpinner) {
+  function (PlaybackSpinner, DOMHelpers) {
     return function (parentElement) {
       var curtain;
       var spinner = new PlaybackSpinner();
@@ -28,13 +29,11 @@ define('bigscreenplayer/playbackstrategy/liveglitchcurtain',
 
         hideCurtain: function () {
           curtain.style.display = 'none';
-          curtain.removeChild(spinner);
+          DOMHelpers.safeRemoveElement(spinner);
         },
 
         tearDown: function () {
-          if (curtain) {
-            parentElement.removeChild(curtain);
-          }
+          DOMHelpers.safeRemoveElement(curtain);
 
           if (spinner) {
             spinner = undefined;

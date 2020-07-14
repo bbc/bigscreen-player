@@ -9,11 +9,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/dynamicwindowutils',
     'bigscreenplayer/utils/timeutils',
+    'bigscreenplayer/domhelpers',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
       var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
@@ -512,7 +513,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
           mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
 
-          mediaElement.parentElement.removeChild(mediaElement);
+          DOMHelpers.safeRemoveElement(mediaElement);
 
           mediaPlayer = undefined;
           mediaElement = undefined;

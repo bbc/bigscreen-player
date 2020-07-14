@@ -4,9 +4,10 @@ require(
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/mediasources',
-    'bigscreenplayer/models/livesupport'
+    'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/domhelpers'
   ],
-  function (Squire, MediaKinds, WindowTypes, MediaSources, LiveSupport) {
+  function (Squire, MediaKinds, WindowTypes, MediaSources, LiveSupport, DOMHelpers) {
     var injector = new Squire();
     var MSEStrategy;
     var mseStrategy;
@@ -166,7 +167,7 @@ require(
 
       afterEach(function () {
         mockVideoElement.currentTime = 0;
-        document.body.removeChild(playbackElement);
+        DOMHelpers.safeRemoveElement(playbackElement);
         mockPluginsInterface.onErrorHandled.calls.reset();
         mockDashInstance.attachSource.calls.reset();
         mockDashInstance.seek.calls.reset();
