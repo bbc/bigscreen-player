@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>playbackstrategy/msestrategy.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <input type="text" id="nav-search" placeholder="Search" />
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-bigscreenplayer_bigscreenplayer.html">bigscreenplayer/bigscreenplayer</a><ul class='methods'><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.canPause">canPause</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.canSeek">canSeek</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.convertEpochMsToVideoTimeSeconds">convertEpochMsToVideoTimeSeconds</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.convertVideoTimeSecondsToEpochMs">convertVideoTimeSecondsToEpochMs</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.getCurrentTime">getCurrentTime</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.getDuration">getDuration</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.getFrameworkVersion">getFrameworkVersion</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.getLiveWindowData">getLiveWindowData</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.getMediaKind">getMediaKind</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.getPlayerElement">getPlayerElement</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.getSeekableRange">getSeekableRange</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.getWindowType">getWindowType</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.isEnded">isEnded</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.isPaused">isPaused</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.isPlayingAtLiveEdge">isPlayingAtLiveEdge</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesAvailable">isSubtitlesAvailable</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesEnabled">isSubtitlesEnabled</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.mock">mock</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.mockJasmine">mockJasmine</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.pause">pause</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.play">play</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerForStateChanges">registerForStateChanges</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerForSubtitleChanges">registerForSubtitleChanges</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerForTimeUpdates">registerForTimeUpdates</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerPlugin">registerPlugin</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.setCurrentTime">setCurrentTime</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.setSubtitlesEnabled">setSubtitlesEnabled</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.setTransportControlsPosition">setTransportControlsPosition</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.toggleDebug">toggleDebug</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.transitions">transitions</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.unmock">unmock</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterForStateChanges">unregisterForStateChanges</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterForSubtitleChanges">unregisterForSubtitleChanges</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterForTimeUpdates">unregisterForTimeUpdates</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterPlugin">unregisterPlugin</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#~init">init</a></li><li data-type='method' style='display: none;'><a href="module-bigscreenplayer_bigscreenplayer.html#~tearDown">tearDown</a></li></ul></li><li><a href="module-bigscreenplayer_models_windowtypes.html">bigscreenplayer/models/windowtypes</a></li></ul>
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">playbackstrategy/msestrategy.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>define('bigscreenplayer/playbackstrategy/msestrategy',
+  [
+    'bigscreenplayer/models/mediastate',
+    'bigscreenplayer/models/windowtypes',
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/models/mediakinds',
+    'bigscreenplayer/plugins',
+    'bigscreenplayer/manifest/manifestmodifier',
+    'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/dynamicwindowutils',
+    'bigscreenplayer/utils/timeutils',
+    'bigscreenplayer/domhelpers',
+
+    // static imports
+    'dashjs'
+  ],
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
+    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
+      var LIVE_DELAY_SECONDS = 1.1;
+      var mediaPlayer;
+      var mediaElement;
+
+      var eventCallbacks = [];
+      var errorCallback;
+      var timeUpdateCallback;
+
+      var timeCorrection = mediaSources.time() &amp;&amp; mediaSources.time().correction || 0;
+      var failoverTime;
+      var refreshFailoverTime;
+      var slidingWindowPausedTime = 0;
+      var isEnded = false;
+
+      var mediaMetrics;
+      var dashMetrics;
+
+      var publishedSeekEvent = false;
+      var isSeeking = false;
+
+      var playerMetadata = {
+        playbackBitrate: undefined,
+        bufferLength: undefined,
+        fragmentInfo: {
+          requestTime: undefined,
+          numDownloaded: undefined
+        }
+      };
+
+      var DashJSEvents = {
+        ERROR: 'error',
+        MANIFEST_LOADED: 'manifestLoaded',
+        DOWNLOAD_MANIFEST_ERROR_CODE: 25,
+        DOWNLOAD_SIDX_ERROR_CODE: 26,
+        DOWNLOAD_CONTENT_ERROR_CODE: 27,
+        DOWNLOAD_ERROR_MESSAGE: 'download',
+        MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
+        QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
+        BASE_URL_SELECTED: 'baseUrlSelected',
+        METRIC_ADDED: 'metricAdded',
+        METRIC_CHANGED: 'metricChanged',
+        STREAM_INITIALIZED: 'streamInitialized'
+      };
+
+      function onPlaying () {
+        isEnded = false;
+        publishMediaState(MediaState.PLAYING);
+      }
+
+      function onPaused () {
+        publishMediaState(MediaState.PAUSED);
+      }
+
+      function onBuffering () {
+        isEnded = false;
+        if (!isSeeking || !publishedSeekEvent) {
+          publishMediaState(MediaState.WAITING);
+          publishedSeekEvent = true;
+        }
+      }
+
+      function onSeeked () {
+        isSeeking = false;
+        DebugTool.info('Seeked Event');
+
+        if (isPaused()) {
+          if (windowType === WindowTypes.SLIDING) {
+            startAutoResumeTimeout();
+          }
+          publishMediaState(MediaState.PAUSED);
+        } else {
+          publishMediaState(MediaState.PLAYING);
+        }
+      }
+
+      function onEnded () {
+        isEnded = true;
+        publishMediaState(MediaState.ENDED);
+      }
+
+      function onTimeUpdate () {
+        var IN_STREAM_BUFFERING_SECONDS = 20;
+        var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor('video'));
+
+        if (dvrInfo &amp;&amp; windowType === WindowTypes.SLIDING) {
+          failoverTime = Math.max(0, parseInt(dvrInfo.time - dvrInfo.range.start) - IN_STREAM_BUFFERING_SECONDS);
+        } else {
+          var time = mediaElement.currentTime;
+
+          // Note: Multiple consecutive CDN failover logic
+          // A newly loaded video element will always report a 0 time update
+          // This is slightly unhelpful if we want to continue from a later point but consult failoverTime as the source of truth.
+          if (parseInt(time) !== 0) {
+            failoverTime = time;
+          }
+        }
+
+        publishTimeUpdate();
+      }
+
+      function onError (event) {
+        if (event.error &amp;&amp; event.error.data) {
+          delete event.error.data;
+        }
+
+        if (event.error) {
+          if (event.error.message) {
+            DebugTool.info('MSE Error: ' + event.error.message);
+
+            // Don't raise an error on fragment download error
+            if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE ||
+              event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
+              event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
+              return;
+            }
+          } else {
+            DebugTool.info('MSE Error: ' + event.error);
+
+            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE &amp;&amp; event.event.id === 'content') {
+              return;
+            }
+            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE &amp;&amp; event.event.id === 'manifest') {
+              manifestDownloadError(event);
+              return;
+            }
+          }
+        }
+        publishError();
+      }
+
+      function manifestDownloadError (event) {
+        var error = function () {
+          publishError();
+        };
+
+        var failoverParams = {
+          errorMessage: 'manifest-refresh',
+          isBufferingTimeoutError: false,
+          currentTime: getCurrentTime(),
+          duration: getDuration()
+        };
+
+        mediaSources.failover(load, error, failoverParams);
+      }
+
+      function onManifestLoaded (event) {
+        DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
+
+        if (event.data) {
+          var manifest = event.data;
+          ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {}, window.bigscreenPlayer.oldDashCodecRequired);
+          ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources());
+        }
+      }
+
+      function onManifestValidityChange (event) {
+        DebugTool.info('Manifest validity changed. Duration is: ' + event.newDuration);
+      }
+
+      function onStreamInitialised () {
+        emitPlayerInfo();
+      }
+
+      function emitPlayerInfo () {
+        if (mediaKind === MediaKinds.VIDEO) {
+          playerMetadata.playbackBitrate = currentPlaybackBitrate(MediaKinds.VIDEO) + currentPlaybackBitrate(MediaKinds.AUDIO);
+        } else {
+          playerMetadata.playbackBitrate = currentPlaybackBitrate(MediaKinds.AUDIO);
+        }
+
+        DebugTool.keyValue({ key: 'playback bitrate', value: playerMetadata.playbackBitrate + ' kbps' });
+
+        Plugins.interface.onPlayerInfoUpdated({
+          bufferLength: playerMetadata.bufferLength,
+          playbackBitrate: playerMetadata.playbackBitrate
+        });
+      }
+
+      function currentPlaybackBitrate (mediaKind) {
+        var representationSwitch = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaPlayer.getMetricsFor(mediaKind));
+        var representation = representationSwitch ? representationSwitch.to : '';
+        return playbackBitrateForRepresentation(representation, mediaKind);
+      }
+
+      function playbackBitrateForRepresentation (representation, mediaKind) {
+        var repIdx = mediaPlayer.getDashMetrics().getIndexForRepresentation(representation, 0);
+        return playbackBitrateForRepresentationIndex(repIdx, mediaKind);
+      }
+
+      function playbackBitrateForRepresentationIndex (index, mediaKind) {
+        if (index === -1) return '';
+        var bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind);
+        return parseInt(bitrateInfoList[index].bitrate / 1000);
+      }
+
+      function onQualityChangeRendered (event) {
+        function logBitrate (mediaKind, event) {
+          var oldBitrate = isNaN(event.oldQuality) ? '--' : playbackBitrateForRepresentationIndex(event.oldQuality, mediaKind);
+          var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
+          var newRepresentation = event.newQuality + ' (' + playbackBitrateForRepresentationIndex(event.newQuality, mediaKind) + ' kbps)';
+          DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
+          DebugTool.info(mediaKind + ' ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
+        }
+
+        if (event.newQuality !== undefined) {
+          logBitrate(event.mediaType, event);
+        }
+
+        emitPlayerInfo();
+      }
+
+      /**
+       * Base url selected events are fired from dash.js whenever a priority weighted url is selected from a manifest
+       * Note: we ignore the initial selection as it isn't a failover.
+       * @param {*} event
+       */
+      function onBaseUrlSelected (event) {
+        var failoverInfo = {
+          errorMessage: 'download',
+          isBufferingTimeoutError: false
+        };
+
+        function log () {
+          DebugTool.info('BaseUrl selected: ' + event.baseUrl.url);
+        }
+
+        failoverInfo.serviceLocation = event.baseUrl.serviceLocation;
+        mediaSources.failover(log, log, failoverInfo);
+      }
+
+      function onMetricAdded (event) {
+        if (event.mediaType === 'video') {
+          if (event.metric === 'DroppedFrames') {
+            DebugTool.keyValue({ key: 'Dropped Frames', value: event.value.droppedFrames });
+          }
+        }
+        if (event.mediaType === mediaKind &amp;&amp; event.metric === 'BufferLevel') {
+          mediaMetrics = mediaPlayer.getMetricsFor(event.mediaType);
+          dashMetrics = mediaPlayer.getDashMetrics();
+
+          if (mediaMetrics &amp;&amp; dashMetrics) {
+            playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(mediaMetrics);
+            DebugTool.keyValue({ key: 'Buffer Length', value: playerMetadata.bufferLength });
+            Plugins.interface.onPlayerInfoUpdated({
+              bufferLength: playerMetadata.bufferLength,
+              playbackBitrate: playerMetadata.playbackBitrate
+            });
+          }
+        }
+        if (event.mediaType === mediaKind &amp;&amp; event.metric === 'HttpList' &amp;&amp; event.value._tfinish &amp;&amp; event.value.trequest) {
+          playerMetadata.fragmentInfo.requestTime = Math.floor(Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime()));
+          playerMetadata.fragmentInfo.numDownloaded = playerMetadata.fragmentInfo.numDownloaded ? ++playerMetadata.fragmentInfo.numDownloaded : 1;
+          Plugins.interface.onPlayerInfoUpdated({
+            fragmentInfo: playerMetadata.fragmentInfo
+          });
+        }
+      }
+
+      function publishMediaState (mediaState) {
+        for (var index = 0; index &lt; eventCallbacks.length; index++) {
+          eventCallbacks[index](mediaState);
+        }
+      }
+
+      function publishTimeUpdate () {
+        if (timeUpdateCallback) {
+          timeUpdateCallback();
+        }
+      }
+
+      function publishError () {
+        if (errorCallback) {
+          errorCallback();
+        }
+      }
+
+      function isPaused () {
+        return (mediaPlayer &amp;&amp; mediaPlayer.isReady()) ? mediaPlayer.isPaused() : undefined;
+      }
+
+      function getClampedTime (time, range) {
+        return Math.min(Math.max(time, range.start), range.end - LIVE_DELAY_SECONDS);
+      }
+
+      function load (mimeType, playbackTime) {
+        if (!mediaPlayer) {
+          failoverTime = playbackTime;
+          setUpMediaElement(playbackElement);
+          setUpMediaPlayer(playbackTime);
+          setUpMediaListeners();
+        } else {
+          modifySource(refreshFailoverTime || failoverTime);
+        }
+      }
+
+      function setUpMediaElement (playbackElement) {
+        if (mediaKind === MediaKinds.AUDIO) {
+          mediaElement = document.createElement('audio');
+        } else {
+          mediaElement = document.createElement('video');
+        }
+        mediaElement.style.position = 'absolute';
+        mediaElement.style.width = '100%';
+        mediaElement.style.height = '100%';
+
+        playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
+      }
+
+      function setUpMediaPlayer (playbackTime) {
+        mediaPlayer = dashjs.MediaPlayer().create();
+        mediaPlayer.getDebug().setLogToBrowserConsole(false);
+        mediaPlayer.setLiveDelay(LIVE_DELAY_SECONDS);
+
+        mediaPlayer.setBufferToKeep(0);
+        mediaPlayer.setBufferAheadToKeep(20);
+
+        mediaPlayer.setBufferTimeAtTopQuality(12);
+        mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
+
+        mediaPlayer.initialize(mediaElement, null, true);
+        modifySource(playbackTime);
+      }
+
+      function modifySource (playbackTime) {
+        mediaPlayer.attachSource(calculateSourceAnchor(mediaSources.currentSource(), playbackTime));
+      }
+
+      function setUpMediaListeners () {
+        mediaElement.addEventListener('timeupdate', onTimeUpdate);
+        mediaElement.addEventListener('playing', onPlaying);
+        mediaElement.addEventListener('pause', onPaused);
+        mediaElement.addEventListener('waiting', onBuffering);
+        mediaElement.addEventListener('seeking', onBuffering);
+        mediaElement.addEventListener('seeked', onSeeked);
+        mediaElement.addEventListener('ended', onEnded);
+        mediaElement.addEventListener('error', onError);
+        mediaPlayer.on(DashJSEvents.ERROR, onError);
+        mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
+        mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised);
+        mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
+        mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
+        mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
+        mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
+      }
+
+      /**
+       * Calculates a source url with anchor tags for playback within dashjs
+       *
+       * Anchor tags applied to the MPD source for playback:
+       *
+       * #r - relative to the start of the first period defined in the DASH manifest
+       * #t - time since the beginning of the first period defined in the DASH manifest
+       * @param {String} source
+       * @param {Number} startTime
+       */
+      function calculateSourceAnchor (source, startTime) {
+        if (startTime === undefined || isNaN(startTime)) {
+          return source;
+        }
+
+        if (windowType === WindowTypes.STATIC) {
+          return startTime === 0 ? source : source + '#t=' + parseInt(startTime);
+        }
+
+        if (windowType === WindowTypes.SLIDING) {
+          DebugTool.keyValue({key: 'initial-playback-time', value: parseInt(startTime)});
+          return startTime === 0 ? source : source + '#r=' + parseInt(startTime);
+        }
+
+        if (windowType === WindowTypes.GROWING) {
+          var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
+          var srcWithTimeAnchor = source + '#t=';
+
+          startTime = parseInt(startTime);
+          return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
+        }
+      }
+
+      function getSeekableRange () {
+        if (mediaPlayer &amp;&amp; mediaPlayer.isReady() &amp;&amp; windowType !== WindowTypes.STATIC) {
+          var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
+          if (dvrInfo) {
+            return {
+              start: dvrInfo.range.start - timeCorrection,
+              end: dvrInfo.range.end - timeCorrection
+            };
+          }
+        }
+        return {
+          start: 0,
+          end: getDuration()
+        };
+      }
+
+      function getDuration () {
+        return (mediaPlayer &amp;&amp; mediaPlayer.isReady()) ? mediaPlayer.duration() : 0;
+      }
+
+      function getCurrentTime () {
+        return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
+      }
+
+      function refreshManifestBeforeSeek (seekToTime) {
+        refreshFailoverTime = seekToTime;
+
+        mediaPlayer.refreshManifest(function (manifest) {
+          var mediaPresentationDuration = manifest &amp;&amp; manifest.mediaPresentationDuration;
+          if (!isNaN(mediaPresentationDuration)) {
+            DebugTool.info('Stream ended. Clamping seek point to end of stream');
+            mediaPlayer.seek(getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration }));
+          } else {
+            mediaPlayer.seek(seekToTime);
+          }
+        });
+      }
+
+      function calculateSeekOffset (time) {
+        function getClampedTimeForLive (time) {
+          return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - LIVE_DELAY_SECONDS);
+        }
+
+        if (windowType === WindowTypes.SLIDING) {
+          var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
+          var offset = TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfo.range.start, timeCorrection, slidingWindowPausedTime);
+          slidingWindowPausedTime = 0;
+
+          return getClampedTimeForLive(offset);
+        }
+        return getClampedTime(time, getSeekableRange());
+      }
+
+      function addEventCallback (thisArg, newCallback) {
+        var eventCallback = function (event) {
+          newCallback.call(thisArg, event);
+        };
+        eventCallbacks.push(eventCallback);
+      }
+
+      function removeEventCallback (callback) {
+        var index = eventCallbacks.indexOf(callback);
+        if (index !== -1) {
+          eventCallbacks.splice(index, 1);
+        }
+      }
+
+      function startAutoResumeTimeout () {
+        DynamicWindowUtils.autoResumeAtStartOfRange(
+          getCurrentTime(),
+          getSeekableRange(),
+          addEventCallback,
+          removeEventCallback,
+          function (event) {
+            return event !== MediaState.PAUSED;
+          },
+          mediaPlayer.play);
+      }
+
+      return {
+        transitions: {
+          canBePaused: function () { return true; },
+          canBeginSeek: function () { return true; }
+        },
+        addEventCallback: addEventCallback,
+        removeEventCallback: removeEventCallback,
+        addErrorCallback: function (thisArg, newErrorCallback) {
+          errorCallback = function (event) {
+            newErrorCallback.call(thisArg, event);
+          };
+        },
+        addTimeUpdateCallback: function (thisArg, newTimeUpdateCallback) {
+          timeUpdateCallback = function () {
+            newTimeUpdateCallback.call(thisArg);
+          };
+        },
+        load: load,
+        getSeekableRange: getSeekableRange,
+        getCurrentTime: getCurrentTime,
+        getDuration: getDuration,
+        tearDown: function () {
+          mediaPlayer.reset();
+
+          mediaElement.removeEventListener('timeupdate', onTimeUpdate);
+          mediaElement.removeEventListener('playing', onPlaying);
+          mediaElement.removeEventListener('pause', onPaused);
+          mediaElement.removeEventListener('waiting', onBuffering);
+          mediaElement.removeEventListener('seeking', onBuffering);
+          mediaElement.removeEventListener('seeked', onSeeked);
+          mediaElement.removeEventListener('ended', onEnded);
+          mediaElement.removeEventListener('error', onError);
+          mediaPlayer.off(DashJSEvents.ERROR, onError);
+          mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
+          mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
+          mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised);
+          mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
+          mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
+          mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
+
+          DOMHelpers.safeRemoveElement(mediaElement);
+
+          mediaPlayer = undefined;
+          mediaElement = undefined;
+          eventCallbacks = [];
+          errorCallback = undefined;
+          timeUpdateCallback = undefined;
+          timeCorrection = undefined;
+          failoverTime = undefined;
+          isEnded = undefined;
+          mediaMetrics = undefined;
+          dashMetrics = undefined;
+          playerMetadata = {
+            playbackBitrate: undefined,
+            bufferLength: undefined,
+            fragmentInfo: {
+              requestTime: undefined,
+              numDownloaded: undefined
+            }
+          };
+        },
+        reset: function () {
+          return;
+        },
+        isEnded: function () {
+          return isEnded;
+        },
+        isPaused: isPaused,
+        pause: function (opts) {
+          if (windowType === WindowTypes.SLIDING) {
+            slidingWindowPausedTime = Date.now();
+          }
+
+          mediaPlayer.pause();
+          opts = opts || {};
+          if (opts.disableAutoResume !== true &amp;&amp; windowType === WindowTypes.SLIDING) {
+            startAutoResumeTimeout();
+          }
+        },
+        play: function () {
+          mediaPlayer.play();
+        },
+        setCurrentTime: function (time) {
+          publishedSeekEvent = false;
+          isSeeking = true;
+          var seekToTime = getClampedTime(time, getSeekableRange());
+          if (windowType === WindowTypes.GROWING &amp;&amp; seekToTime > getCurrentTime()) {
+            refreshManifestBeforeSeek(seekToTime);
+          } else {
+            var seekTime = calculateSeekOffset(time);
+            mediaPlayer.seek(seekTime);
+          }
+        }
+      };
+    };
+
+    MSEStrategy.getLiveSupport = function () {
+      return LiveSupport.SEEKABLE;
+    };
+
+    return MSEStrategy;
+  }
+);
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.4</a> on Tue Jul 14 2020 22:40:08 GMT+0100 (British Summer Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+<script src="scripts/search.js" defer></script>
+
+
+<script src="scripts/collapse.js" defer></script>
+
+
+</body>
+</html>
