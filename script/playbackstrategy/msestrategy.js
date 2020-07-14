@@ -255,7 +255,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
           if (dashMetrics) {
             playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(event.mediaType);
-            dashMetrics = mediaPlayer.getDashMetrics();
             DebugTool.keyValue({ key: 'Buffer Length', value: playerMetadata.bufferLength });
             Plugins.interface.onPlayerInfoUpdated({
               bufferLength: playerMetadata.bufferLength,
