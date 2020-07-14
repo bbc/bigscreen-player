@@ -21,7 +21,6 @@ require(
     var mockDashjs;
     var mockDashInstance;
     var mockDashMediaPlayer;
-    var mockDashDebug;
     var mockPlugins;
     var mockPluginsInterface;
     var mockDynamicWindowUtils;
@@ -46,7 +45,6 @@ require(
       beforeAll(function () {
         mockDashjs = jasmine.createSpyObj('mockDashjs', ['MediaPlayer']);
         mockDashMediaPlayer = jasmine.createSpyObj('mockDashMediaPlayer', ['create']);
-        mockDashDebug = jasmine.createSpyObj('mockDashDebug', ['setLogToBrowserConsole']);
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'retrieveManifest', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
             'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics',
@@ -79,7 +77,6 @@ require(
         // For DVRInfo Based Seekable Range
         mockDashInstance.duration.and.returnValue(101);
         mockDashInstance.isReady.and.returnValue(true);
-        mockDashInstance.getDebug.and.returnValue(mockDashDebug);
         mockDashInstance.getDVRWindowSize.and.returnValue(101);
 
         mockDashInstance.on.and.callFake(function (eventType, handler) {

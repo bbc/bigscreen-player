@@ -323,7 +323,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
-        mediaPlayer.getDebug().setLogToBrowserConsole(false);
+        mediaPlayer.updateSettings({
+          'debug': {
+            'logToBrowserConsole': false
+          }
+        });
 
         mediaPlayer.updateSettings({
           'streaming': {
