@@ -47,7 +47,7 @@ require(
         mockDashMediaPlayer = jasmine.createSpyObj('mockDashMediaPlayer', ['create']);
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'retrieveManifest', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
-            'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics',
+            'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getDashAdapter',
             'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'updateSettings']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
         mockPlugins = {
@@ -104,7 +104,10 @@ require(
           },
           getCurrentIndexForRepresentation: function () {
             return 1;
-          },
+          }
+        });
+
+        mockDashInstance.getDashAdapter.and.returnValue({
           getIndexForRepresentation: function () {
             return 0;
           }

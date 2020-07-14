@@ -199,7 +199,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function playbackBitrateForRepresentation (representation, mediaKind) {
-        var repIdx = mediaPlayer.getDashMetrics().getIndexForRepresentation(representation, 0);
+        var repIdx = mediaPlayer.getDashAdapter().getIndexForRepresentation(representation, 0);
         return playbackBitrateForRepresentationIndex(repIdx, mediaKind);
       }
 
