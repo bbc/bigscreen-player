@@ -11,7 +11,7 @@ The *Bigscreen Player* is an open source project developed by the BBC to simplif
 This project should be considered **Work in Progress**. A full roadmap will be released soon.
 
 ## Getting Started
- 
+
 `$ npm install`
 
 ### Initialisation
