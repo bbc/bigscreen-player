@@ -895,9 +895,9 @@ require(
 
         it('should not publish error event on content download error', function () {
           var mockEvent = {
-            error: 'download',
-            event: {
-              id: 'content'
+            error: {
+              message: 'blah',
+              code: 27
             }
           };
 
@@ -910,14 +910,14 @@ require(
 
           dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
 
-          expect(mockErrorCallback).not.toHaveBeenCalledWith();
+          expect(mockErrorCallback).not.toHaveBeenCalled();
         });
 
         it('should not publish error event on manifest download error', function () {
           var mockEvent = {
-            error: 'download',
-            event: {
-              id: 'manifest'
+            error: {
+              message: 'blah',
+              code: 25
             }
           };
 
@@ -935,9 +935,9 @@ require(
 
         it('should initiate a failover with correct parameters on manifest download error', function () {
           var mockEvent = {
-            error: 'download',
-            event: {
-              id: 'manifest'
+            error: {
+              message: 'blah',
+              code: 25
             }
           };
 

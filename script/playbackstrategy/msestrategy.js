@@ -49,7 +49,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         DOWNLOAD_MANIFEST_ERROR_CODE: 25,
         DOWNLOAD_SIDX_ERROR_CODE: 26,
         DOWNLOAD_CONTENT_ERROR_CODE: 27,
-        DOWNLOAD_ERROR_MESSAGE: 'download',
+        DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
         BASE_URL_SELECTED: 'baseUrlSelected',
@@ -119,26 +119,19 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           delete event.error.data;
         }
 
-        if (event.error) {
-          if (event.error.message) {
-            DebugTool.info('MSE Error: ' + event.error.message);
+        if (event.error && event.error.message) {
+          DebugTool.info('MSE Error: ' + event.error.message);
 
-            // Don't raise an error on fragment download error
-            if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE ||
-              event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
-              event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
-              return;
-            }
-          } else {
-            DebugTool.info('MSE Error: ' + event.error);
+          // Don't raise an error on fragment download error
+          if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE ||
+            event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
+            event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE) {
+            return;
+          }
 
-            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && event.event.id === 'content') {
-              return;
-            }
-            if (event.error === DashJSEvents.DOWNLOAD_ERROR_MESSAGE && event.event.id === 'manifest') {
-              manifestDownloadError(event);
-              return;
-            }
+          if (event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
+            manifestDownloadError(event);
+            return;
           }
         }
         publishError();
@@ -325,7 +318,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.updateSettings({
           'debug': {
-            'logToBrowserConsole': false
+            'logLevel': 2
           }
         });
 
