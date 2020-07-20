@@ -893,10 +893,50 @@ require(
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalledWith();
         });
 
+        it('should not publish error event on initial segment download error', function () {
+          var mockEvent = {
+            error: {
+              message: 'initial segment download error',
+              code: 28
+            }
+          };
+
+          setUpMSE();
+
+          var mockErrorCallback = jasmine.createSpy();
+          mseStrategy.addErrorCallback(null, mockErrorCallback);
+
+          mseStrategy.load(null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
+
+          expect(mockErrorCallback).not.toHaveBeenCalled();
+        });
+
+        it('should not publish error event on segment index download error', function () {
+          var mockEvent = {
+            error: {
+              message: 'segment index download error',
+              code: 26
+            }
+          };
+
+          setUpMSE();
+
+          var mockErrorCallback = jasmine.createSpy();
+          mseStrategy.addErrorCallback(null, mockErrorCallback);
+
+          mseStrategy.load(null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
+
+          expect(mockErrorCallback).not.toHaveBeenCalled();
+        });
+
         it('should not publish error event on content download error', function () {
           var mockEvent = {
             error: {
-              message: 'blah',
+              message: 'content download error',
               code: 27
             }
           };
@@ -916,7 +956,7 @@ require(
         it('should not publish error event on manifest download error', function () {
           var mockEvent = {
             error: {
-              message: 'blah',
+              message: 'manifest download error',
               code: 25
             }
           };
@@ -936,7 +976,7 @@ require(
         it('should initiate a failover with correct parameters on manifest download error', function () {
           var mockEvent = {
             error: {
-              message: 'blah',
+              message: 'manifest download error',
               code: 25
             }
           };
@@ -960,9 +1000,9 @@ require(
 
         it('should publish an error event on manifest download error but there are no more sources to CDN failover to', function () {
           var mockEvent = {
-            error: 'download',
-            event: {
-              id: 'manifest'
+            error: {
+              message: 'manifest download error',
+              code: 25
             }
           };
 
