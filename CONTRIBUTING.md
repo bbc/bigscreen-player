@@ -1,4 +1,4 @@
-# Contributing 
+# Contributing
 
 We welcome and encourage contributions. We are open minded to suggestions, encourage debate, and aim to build a consensus.
 
