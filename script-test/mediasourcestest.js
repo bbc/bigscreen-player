@@ -172,7 +172,7 @@ require(
           onFailureAction = jasmine.createSpy('onFailureAction', function () {});
         });
 
-        it('should load the manifest from the next url if manifest load is required', function () {
+        fit('should load the manifest from the next url if manifest load is required', function () {
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           mockTransferFormat = TransferFormats.HLS;
