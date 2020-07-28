@@ -1,6 +1,6 @@
 {
   "name": "bigscreen-player",
-  "version": "3.15.1",
+  "version": "3.16.0",
   "description": "Simplified media playback for bigscreen devices.",
   "main": "script/bigscreenplayer.js",
   "scripts": {
@@ -51,7 +51,7 @@
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v2.9.3-4"
+    "dashjs": "github:bbc/dash.js#smp-v3.0.0-7"
   },
   "repository": {
     "type": "git",
