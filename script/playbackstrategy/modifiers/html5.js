@@ -1,9 +1,10 @@
 define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
+    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/domhelpers'
   ],
-  function (MediaPlayerBase) {
+  function (MediaPlayerBase, DOMHelpers) {
     'use strict';
 
     function Player (deviceConfig) {
@@ -134,12 +135,6 @@ define(
           to.insertBefore(el, to.childNodes[0]);
         } else {
           to.appendChild(el);
-        }
-      }
-
-      function removeElement (el) {
-        if (el.parentNode) {
-          el.parentNode.removeChild(el);
         }
       }
 
@@ -584,9 +579,9 @@ define(
           mediaElement.removeEventListener('pause', onPause, false);
           sourceElement.removeEventListener('error', onSourceError, false);
 
-          removeElement(sourceElement);
+          DOMHelpers.safeRemoveElement(sourceElement);
           unloadMediaSrc();
-          removeElement(mediaElement);
+          DOMHelpers.safeRemoveElement(mediaElement);
 
           mediaElement = null;
           sourceElement = null;

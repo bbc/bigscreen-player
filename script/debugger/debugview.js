@@ -1,5 +1,8 @@
 define('bigscreenplayer/debugger/debugview',
-  function () {
+  [
+    'bigscreenplayer/domhelpers'
+  ],
+  function (DOMHelpers) {
     'use strict';
     var appElement, logBox, logContainer, staticContainer, staticBox;
 
@@ -80,15 +83,16 @@ define('bigscreenplayer/debugger/debugview',
     }
 
     function tearDown () {
-      if (appElement) {
-        appElement.removeChild(document.getElementById('logBox'));
-        appElement.removeChild(document.getElementById('staticBox'));
-        appElement = undefined;
-      }
+      var logBox = document.getElementById('logBox');
+      var staticBox = document.getElementById('staticBox');
+
+      DOMHelpers.safeRemoveElement(logBox);
+      DOMHelpers.safeRemoveElement(staticBox);
+
+      appElement = undefined;
       staticContainer = undefined;
       logContainer = undefined;
       logBox = undefined;
-      staticBox = undefined;
     }
 
     return {

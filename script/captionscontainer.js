@@ -58,9 +58,7 @@ define(
       }
 
       function tearDown () {
-        if (container) {
-          parentElement.removeChild(container);
-        }
+        DOMHelpers.safeRemoveElement(container);
       }
 
       return {
