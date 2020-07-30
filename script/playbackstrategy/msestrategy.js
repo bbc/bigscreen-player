@@ -156,14 +156,15 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function hasLiveSeekableRangeApi () {
         var testMediaSource = new MediaSource();
-        if (testMediaSource && typeof testMediaSource.setLiveSeekableRange === 'function' &&
-                               typeof testMediaSource.clearLiveSeekableRange === 'function') {
+        if (testMediaSource && typeof testMediaSource.setLiveSeekableRange === 'function' && typeof testMediaSource.clearLiveSeekableRange === 'function') {
+          DebugTool.info('setLiveSeekableRange, clearLiveSeekableRange supported.');
           testMediaSource = undefined;
           return true;
+        } else {
+          DebugTool.info('setLiveSeekableRange, clearLiveSeekableRange is not supported. Dynamic streams may fail.');
+          testMediaSource = undefined;
+          return false;
         }
-        DebugTool.info('setLiveSeekableRange, clearLiveSeekableRange is not supported. Dynamic streams may fail.');
-        testMediaSource = undefined;
-        return false;
       }
 
       function onManifestLoaded (event) {
