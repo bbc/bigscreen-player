@@ -16,6 +16,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
   ],
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
+      var isOldSpecMSE = false;
       var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
       var mediaElement;
@@ -153,8 +154,25 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaSources.failover(load, error, failoverParams);
       }
 
+      function hasLiveSeekableRangeApi () {
+        var testMediaSource = new MediaSource();
+        if (testMediaSource && typeof testMediaSource.setLiveSeekableRange === 'function' &&
+                               typeof testMediaSource.clearLiveSeekableRange === 'function') {
+          testMediaSource = undefined;
+          return true;
+        }
+        DebugTool.info('setLiveSeekableRange, clearLiveSeekableRange is not supported. Dynamic streams may fail.');
+        testMediaSource = undefined;
+        return false;
+      }
+
       function onManifestLoaded (event) {
         DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
+
+        if (windowType === WindowTypes.SLIDING && isOldSpecMSE) {
+          // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
+          mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
+        }
 
         if (event.data) {
           var manifest = event.data;
@@ -294,6 +312,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function load (mimeType, playbackTime) {
         if (!mediaPlayer) {
           failoverTime = playbackTime;
+          isOldSpecMSE = hasLiveSeekableRangeApi();
           setUpMediaElement(playbackElement);
           setUpMediaPlayer(playbackTime);
           setUpMediaListeners();
