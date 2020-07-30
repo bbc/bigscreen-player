@@ -169,11 +169,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function onManifestLoaded (event) {
         DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
 
-        if (windowType === WindowTypes.SLIDING && isOldSpecMSE) {
-          // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
-          mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
-        }
-
         if (event.data) {
           var manifest = event.data;
           ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {}, window.bigscreenPlayer.oldDashCodecRequired);
@@ -186,6 +181,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onStreamInitialised () {
+        if (windowType === WindowTypes.SLIDING && isOldSpecMSE) {
+          // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
+          mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
+        }
         emitPlayerInfo();
       }
 
