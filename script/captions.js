@@ -33,6 +33,8 @@ define('bigscreenplayer/captions',
 
       loadData(uri);
 
+      DebugTool.info('Loading captions from: ' + uri);
+
       function loadData (dataFeedUrl) {
         var req = new XMLHttpRequest();
 
@@ -310,12 +312,7 @@ define('bigscreenplayer/captions',
 
       function removeFromDomIfExpired (time) {
         if (time > end || time < start) {
-          if (htmlElementNode) {
-            var e = htmlElementNode;
-            if (e.parentNode) {
-              e.parentNode.removeChild(e);
-            }
-          }
+          DOMHelpers.safeRemoveElement(htmlElementNode);
           return true;
         }
         return false;
