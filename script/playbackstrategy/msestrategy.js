@@ -45,6 +45,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       };
 
       var DashJSEvents = {
+        LOG: 'log',
         ERROR: 'error',
         MANIFEST_LOADED: 'manifestLoaded',
         DOWNLOAD_MANIFEST_ERROR_CODE: 25,
@@ -265,6 +266,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
+      function onDebugLog (e) {
+        DebugTool.verbose(e.message);
+      }
+
       function publishMediaState (mediaState) {
         for (var index = 0; index < eventCallbacks.length; index++) {
           eventCallbacks[index](mediaState);
@@ -357,6 +362,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
         mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
+        mediaPlayer.on(DashJSEvents.LOG, onDebugLog);
       }
 
       /**
@@ -510,6 +516,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
           mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
+          mediaPlayer.off(DashJSEvents.LOG, onDebugLog);
 
           DOMHelpers.safeRemoveElement(mediaElement);
 
