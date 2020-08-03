@@ -16,7 +16,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
   ],
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
     var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
-      var isOldSpecMSE = false;
       var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
       var mediaElement;
@@ -154,19 +153,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaSources.failover(load, error, failoverParams);
       }
 
-      function hasLiveSeekableRangeApi () {
-        var testMediaSource = new MediaSource();
-        if (testMediaSource && typeof testMediaSource.setLiveSeekableRange === 'function' && typeof testMediaSource.clearLiveSeekableRange === 'function') {
-          DebugTool.info('setLiveSeekableRange, clearLiveSeekableRange supported.');
-          testMediaSource = undefined;
-          return true;
-        } else {
-          DebugTool.info('setLiveSeekableRange, clearLiveSeekableRange is not supported. Dynamic streams may fail.');
-          testMediaSource = undefined;
-          return false;
-        }
-      }
-
       function onManifestLoaded (event) {
         DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
 
@@ -182,7 +168,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onStreamInitialised () {
-        if (windowType === WindowTypes.SLIDING && isOldSpecMSE) {
+        if (window.bigscreenPlayer.mseDurationOverride && (windowType === WindowTypes.SLIDING || windowType === WindowTypes.GROWING)) {
           // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
           mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
         }
@@ -312,8 +298,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function load (mimeType, playbackTime) {
         if (!mediaPlayer) {
           failoverTime = playbackTime;
-          // isOldSpecMSE = !hasLiveSeekableRangeApi();
-          isOldSpecMSE = true;
           setUpMediaElement(playbackElement);
           setUpMediaPlayer(playbackTime);
           setUpMediaListeners();
