@@ -312,7 +312,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       function load (mimeType, playbackTime) {
         if (!mediaPlayer) {
           failoverTime = playbackTime;
-          isOldSpecMSE = !hasLiveSeekableRangeApi();
+          // isOldSpecMSE = !hasLiveSeekableRangeApi();
+          isOldSpecMSE = true;
           setUpMediaElement(playbackElement);
           setUpMediaPlayer(playbackTime);
           setUpMediaListeners();
