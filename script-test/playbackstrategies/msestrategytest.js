@@ -49,7 +49,7 @@ require(
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'retrieveManifest', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
             'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getDashAdapter',
-            'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'updateSettings']);
+            'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'updateSettings', 'setDuration']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
         mockPlugins = {
           interface: mockPluginsInterface
@@ -811,6 +811,88 @@ require(
             mseStrategy.setCurrentTime(90);
 
             expect(mockDashInstance.seek).toHaveBeenCalledWith(78.9);
+          });
+        });
+      });
+
+      describe('mseDurationOverride', function () {
+        beforeEach(function () {
+          // due to interaction with emitPlayerInfo()
+          mockDashInstance.getBitrateInfoListFor.and.returnValue([{ bitrate: 1024000 }, { bitrate: 200000 }, { bitrate: 3000000 }]);
+          window.bigscreenPlayer.mseDurationOverride = undefined;
+        });
+
+        afterEach(function () {
+          mockDashInstance.setDuration.calls.reset();
+        });
+
+        describe('overrides dynamic stream duration', function () {
+          it('when mseDurationOverride configration property is true and window type is sliding', function () {
+            window.bigscreenPlayer.mseDurationOverride = true;
+
+            setUpMSE(0, WindowTypes.SLIDING);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+
+          it('when mseDurationOverride configration property is true and window type is growing', function () {
+            window.bigscreenPlayer.mseDurationOverride = true;
+
+            setUpMSE(0, WindowTypes.GROWING);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+        });
+
+        describe('does not override stream duration', function () {
+          it('when mseDurationOverride configration property is true and window type is static', function () {
+            window.bigscreenPlayer.mseDurationOverride = true;
+
+            setUpMSE(0, WindowTypes.STATIC);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+
+          it('when mseDurationOverride configration property is false and window type is static', function () {
+            window.bigscreenPlayer.mseDurationOverride = undefined;
+
+            setUpMSE(0, WindowTypes.STATIC);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+
+          it('when mseDurationOverride configration property is false and window type is sliding', function () {
+            window.bigscreenPlayer.mseDurationOverride = undefined;
+
+            setUpMSE(0, WindowTypes.SLIDING);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+
+          it('when mseDurationOverride configration property is false and window type is growing', function () {
+            window.bigscreenPlayer.mseDurationOverride = undefined;
+
+            setUpMSE(0, WindowTypes.GROWING);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
           });
         });
       });

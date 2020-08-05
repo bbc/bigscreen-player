@@ -169,6 +169,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onStreamInitialised () {
+        if (window.bigscreenPlayer.mseDurationOverride && (windowType === WindowTypes.SLIDING || windowType === WindowTypes.GROWING)) {
+          // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
+          mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
+        }
         emitPlayerInfo();
       }
 
