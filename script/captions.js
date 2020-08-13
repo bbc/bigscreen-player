@@ -293,10 +293,51 @@ define('bigscreenplayer/captions',
     };
 
     var TimedPiece = function (timedPieceNode, toStyleFunc) {
-      var start = timeStampToSeconds(timedPieceNode.getAttribute('begin'));
-      var end = timeStampToSeconds(timedPieceNode.getAttribute('end'));
+      var timings = parseTimings(timedPieceNode);
+      var start = timings.start;
+      var end = timings.end;
       var _node = timedPieceNode;
       var htmlElementNode;
+
+      function parseTimings (timedPieceNode) {
+        if (hasNestedTime(timedPieceNode)) {
+          return parseNestedTime(timedPieceNode);
+        } else {
+          return {
+            start: timeStampToSeconds(timedPieceNode.getAttribute('begin')),
+            end: timeStampToSeconds(timedPieceNode.getAttribute('end'))
+          };
+        }
+
+        function hasNestedTime (timedPieceNode) {
+          if (!timedPieceNode.getAttribute('begin') || !timedPieceNode.getAttribute('end')) return true;
+        }
+
+        function parseNestedTime (timedPieceNode) {
+          var earliestStart;
+          var latestEnd;
+          for (var i = 0; i < timedPieceNode.childNodes.length; i++) {
+            var childNodeTime = {};
+            childNodeTime.start = timedPieceNode.childNodes[i].getAttribute('begin') ? timeStampToSeconds(timedPieceNode.childNodes[i].getAttribute('begin')) : null;
+            childNodeTime.end = timedPieceNode.childNodes[i].getAttribute('end') ? timeStampToSeconds(timedPieceNode.childNodes[i].getAttribute('end')) : null;
+            if (childNodeTime.start && childNodeTime.end) {
+              if (earliestStart === undefined || childNodeTime.start < earliestStart) {
+                earliestStart = childNodeTime.start;
+              }
+              if (latestEnd === undefined || childNodeTime.end > latestEnd) {
+                latestEnd = childNodeTime.end;
+              }
+            }
+          }
+
+          if (earliestStart && latestEnd) {
+            return {
+              start: earliestStart,
+              end: latestEnd
+            };
+          }
+        }
+      }
 
       function timeStampToSeconds (timeStamp) {
         var timePieces = timeStamp.split(':');
