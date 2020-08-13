@@ -12,6 +12,14 @@ define('bigscreenplayer/debugger/debugtool',
       var view;
       var visible = false;
 
+      var LOG_LEVELS = {
+        ERROR: 0,
+        INFO: 2,
+        VERBOSE: 3
+      };
+
+      var logLevel = LOG_LEVELS.INFO;
+
       var staticFieldValues = {};
 
       function toggleVisibility () {
@@ -19,6 +27,12 @@ define('bigscreenplayer/debugger/debugtool',
           hide();
         } else {
           show();
+        }
+      }
+
+      function setLogLevel (newLogLevel) {
+        if (newLogLevel !== undefined) {
+          logLevel = newLogLevel;
         }
       }
 
@@ -36,6 +50,36 @@ define('bigscreenplayer/debugger/debugtool',
         view.tearDown();
         Chronicle.unregisterForUpdates(presenter.update);
         visible = false;
+      }
+
+      function info (log) {
+        if (logLevel >= LOG_LEVELS.INFO) {
+          Chronicle.info(log);
+        }
+      }
+
+      function event (log) {
+        if (logLevel >= LOG_LEVELS.INFO) {
+          Chronicle.event(log);
+        }
+      }
+
+      function time (log) {
+        if (logLevel >= LOG_LEVELS.INFO) {
+          Chronicle.time(log);
+        }
+      }
+
+      function error (log) {
+        if (logLevel >= LOG_LEVELS.ERROR) {
+          Chronicle.error(log);
+        }
+      }
+
+      function verbose (log) {
+        if (logLevel >= LOG_LEVELS.VERBOSE) {
+          Chronicle.verbose(log);
+        }
       }
 
       function updateKeyValue (message) {
@@ -66,10 +110,13 @@ define('bigscreenplayer/debugger/debugtool',
       return {
         toggleVisibility: toggleVisibility,
         setRootElement: setRootElement,
-        info: Chronicle.info,
-        error: Chronicle.error,
-        event: Chronicle.event,
-        time: Chronicle.time,
+        setLogLevel: setLogLevel,
+        logLevels: LOG_LEVELS,
+        verbose: verbose,
+        info: info,
+        error: error,
+        event: event,
+        time: time,
         apicall: Chronicle.apicall,
         keyValue: updateKeyValue,
         tearDown: tearDown

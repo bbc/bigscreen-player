@@ -320,7 +320,11 @@ define('bigscreenplayer/bigscreenplayer',
           return Version;
         },
         convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
-        toggleDebug: toggleDebug
+        toggleDebug: toggleDebug,
+        getLogLevels: function () {
+          return DebugTool.logLevels;
+        },
+        setLogLevel: DebugTool.setLogLevel
       };
     }
 
