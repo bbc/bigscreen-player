@@ -339,6 +339,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             'bufferAheadToKeep': 20,
             'bufferTimeAtTopQuality': 12,
             'bufferTimeAtTopQualityLongForm': 12,
+            'stableBufferTime': 7,
             'abr': {
               'initialBitrate': {
                 'video': 827 // stream specific hardcoded to test
