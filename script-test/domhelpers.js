@@ -6,19 +6,6 @@ require(
     'use strict';
 
     describe('DOMHelpers', function () {
-      it('returns false when attribute does not exist', function () {
-        var pTag = document.createElement('p');
-
-        expect(DOMHelpers.hasAttribute(pTag, 'thing')).toBeFalse();
-      });
-
-      it('returns true when attribute exists', function () {
-        var pTag = document.createElement('p');
-        pTag.setAttribute('thing', 'exists');
-
-        expect(DOMHelpers.hasAttribute(pTag, 'thing')).toBeTrue();
-      });
-
       it('Converts an RGBA tuple string to RGB tripple string', function () {
         expect(DOMHelpers.rgbaToRGB('#FFAAFFAA')).toBe('#FFAAFF');
       });

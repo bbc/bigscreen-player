@@ -22,6 +22,23 @@ define('bigscreenplayer/captions',
       }
     ];
 
+    /**
+    * Safely checks if an attribute exists on an element.
+    * Browsers < DOM Level 2 do not have 'hasAttribute'
+    *
+    * The interesting case - can be null when it isn't there or "", but then can also return "" when there is an attribute with no value.
+    * For subs this is good enough. There should not be attributes without values.
+    * @param {Element} el HTML Element
+    * @param {String} attribute attribute to check for
+    */
+    var hasAttribute = function (el, attribute) {
+      return !!el.getAttribute(attribute);
+    };
+
+    function hasNestedTime (element) {
+      return (!hasAttribute(element, 'begin') || !hasAttribute(element, 'end'));
+    }
+
     var Captions = function (id, uri, media) {
       var timedItems = [];
       var liveItems = [];
@@ -166,7 +183,16 @@ define('bigscreenplayer/captions',
         var items = [];
 
         for (var k = 0, m = ps.length; k < m; k++) {
-          items.push(TimedPiece(ps[k], elementToStyle));
+          if (hasNestedTime(ps[k])) {
+            var tag = ps[k];
+            for (var index = 0; index < tag.childNodes.length; index++) {
+              if (hasAttribute(tag.childNodes[index], 'begin') && hasAttribute(tag.childNodes[index], 'end')) {
+                items.push(TimedPiece(tag.childNodes[index], elementToStyle));
+              }
+            }
+          } else {
+            items.push(TimedPiece(ps[k], elementToStyle));
+          }
         }
 
         timedItems = items;
@@ -293,51 +319,10 @@ define('bigscreenplayer/captions',
     };
 
     var TimedPiece = function (timedPieceNode, toStyleFunc) {
-      var timings = parseTimings(timedPieceNode);
-      var start = timings.start;
-      var end = timings.end;
+      var start = timeStampToSeconds(timedPieceNode.getAttribute('begin'));
+      var end = timeStampToSeconds(timedPieceNode.getAttribute('end'));
       var _node = timedPieceNode;
       var htmlElementNode;
-
-      function parseTimings (timedPieceNode) {
-        if (hasNestedTime(timedPieceNode)) {
-          return parseNestedTime(timedPieceNode);
-        } else {
-          return {
-            start: timeStampToSeconds(timedPieceNode.getAttribute('begin')),
-            end: timeStampToSeconds(timedPieceNode.getAttribute('end'))
-          };
-        }
-
-        function hasNestedTime (timedPieceNode) {
-          return (!DOMHelpers.hasAttribute(timedPieceNode, 'begin') || !DOMHelpers.hasAttribute(timedPieceNode, 'end'));
-        }
-
-        function parseNestedTime (timedPieceNode) {
-          var earliestStart;
-          var latestEnd;
-          for (var i = 0; i < timedPieceNode.childNodes.length; i++) {
-            var childNodeTime = {};
-            childNodeTime.start = DOMHelpers.hasAttribute(timedPieceNode.childNodes[i], 'begin') ? timeStampToSeconds(timedPieceNode.childNodes[i].getAttribute('begin')) : null;
-            childNodeTime.end = DOMHelpers.hasAttribute(timedPieceNode.childNodes[i], 'end') ? timeStampToSeconds(timedPieceNode.childNodes[i].getAttribute('end')) : null;
-            if (childNodeTime.start !== null && childNodeTime.end !== null) {
-              if (earliestStart === undefined || childNodeTime.start < earliestStart) {
-                earliestStart = childNodeTime.start;
-              }
-              if (latestEnd === undefined || childNodeTime.end > latestEnd) {
-                latestEnd = childNodeTime.end;
-              }
-            }
-          }
-
-          if (earliestStart !== undefined && latestEnd !== undefined) {
-            return {
-              start: earliestStart,
-              end: latestEnd
-            };
-          }
-        }
-      }
 
       function timeStampToSeconds (timeStamp) {
         var timePieces = timeStamp.split(':');
@@ -368,6 +353,13 @@ define('bigscreenplayer/captions',
         var source = node || _node;
 
         var localName = source.localName || source.tagName;
+
+        // We lose line breaks with nested TimePieces, so this provides similar layout
+        var parentNodeLocalName = source.parentNode.localName || source.parentNode.tagName;
+        if (localName === 'span' && parentNodeLocalName === 'p' && hasNestedTime(source.parentNode)) {
+          localName = 'p';
+        }
+
         var html = document.createElement(localName);
         var style = toStyleFunc(source);
         if (style) {
