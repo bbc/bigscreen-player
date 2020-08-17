@@ -1,11 +1,10 @@
 define('bigscreenplayer/subtitles/captions',
   [
     'bigscreenplayer/debugger/debugtool',
-    'bigscreenplayer/domhelpers',
     'bigscreenplayer/utils/loadurl',
     'bigscreenplayer/subtitles/subtitlestransformer'
   ],
-  function (DebugTool, DOMHelpers, LoadURL, SubtitlesTransformer) {
+  function (DebugTool, LoadURL, SubtitlesTransformer) {
     'use strict';
 
     // Decoupling:
@@ -14,7 +13,7 @@ define('bigscreenplayer/subtitles/captions',
     // Style And How to attach to DOM (TimedPiece)
     // Render (Deciding when to display in here)
 
-    var Captions = function (id, url, media) {
+    var Captions = function (id, url, mediaPlayer) {
       var subtitles = [];
       var liveItems = [];
       var iterator = 0;
@@ -57,16 +56,16 @@ define('bigscreenplayer/subtitles/captions',
           outputElement.style.display = 'none';
         }
 
-        cleanOldCaptions(media.getDuration());
+        cleanOldCaptions(mediaPlayer.getDuration());
         clearInterval(interval);
       }
 
       function update () {
-        if (!media) {
+        if (!mediaPlayer) {
           stop();
         }
 
-        var time = media.getCurrentTime();
+        var time = mediaPlayer.getCurrentTime();
         updateCaptions(time);
       }
 
