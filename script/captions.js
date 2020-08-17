@@ -310,7 +310,7 @@ define('bigscreenplayer/captions',
         }
 
         function hasNestedTime (timedPieceNode) {
-          if (!timedPieceNode.getAttribute('begin') || !timedPieceNode.getAttribute('end')) return true;
+          return (!DOMHelpers.hasAttribute(timedPieceNode, 'begin') || !DOMHelpers.hasAttribute(timedPieceNode, 'end'));
         }
 
         function parseNestedTime (timedPieceNode) {
@@ -318,9 +318,9 @@ define('bigscreenplayer/captions',
           var latestEnd;
           for (var i = 0; i < timedPieceNode.childNodes.length; i++) {
             var childNodeTime = {};
-            childNodeTime.start = timedPieceNode.childNodes[i].getAttribute('begin') ? timeStampToSeconds(timedPieceNode.childNodes[i].getAttribute('begin')) : null;
-            childNodeTime.end = timedPieceNode.childNodes[i].getAttribute('end') ? timeStampToSeconds(timedPieceNode.childNodes[i].getAttribute('end')) : null;
-            if (childNodeTime.start && childNodeTime.end) {
+            childNodeTime.start = DOMHelpers.hasAttribute(timedPieceNode.childNodes[i], 'begin') ? timeStampToSeconds(timedPieceNode.childNodes[i].getAttribute('begin')) : null;
+            childNodeTime.end = DOMHelpers.hasAttribute(timedPieceNode.childNodes[i], 'end') ? timeStampToSeconds(timedPieceNode.childNodes[i].getAttribute('end')) : null;
+            if (childNodeTime.start !== null && childNodeTime.end !== null) {
               if (earliestStart === undefined || childNodeTime.start < earliestStart) {
                 earliestStart = childNodeTime.start;
               }
@@ -330,7 +330,7 @@ define('bigscreenplayer/captions',
             }
           }
 
-          if (earliestStart && latestEnd) {
+          if (earliestStart !== undefined && latestEnd !== undefined) {
             return {
               start: earliestStart,
               end: latestEnd

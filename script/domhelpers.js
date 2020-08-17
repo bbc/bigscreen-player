@@ -52,13 +52,25 @@ define(
       }
     };
 
+    /**
+     * Safely checks if an attribute exists on an element.
+     * Browsers < DOM Level 2 do not have 'hasAttribute'
+     *
+     * @param {Element} el HTML Element
+     * @param {String} attribute attribute to check for
+     */
+    var hasAttribute = function (el, attribute) {
+      return !!el.getAttribute(attribute);
+    };
+
     return {
       addClass: addClass,
       removeClass: removeClass,
       hasClass: hasClass,
       rgbaToRGB: rgbaToRGB,
       isRGBA: isRGBATuple,
-      safeRemoveElement: safeRemoveElement
+      safeRemoveElement: safeRemoveElement,
+      hasAttribute: hasAttribute
     };
   }
 );
