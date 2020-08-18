@@ -23,6 +23,23 @@ define('bigscreenplayer/subtitles/subtitlestransformer',
         }
       ];
 
+      /**
+      * Safely checks if an attribute exists on an element.
+      * Browsers < DOM Level 2 do not have 'hasAttribute'
+      *
+      * The interesting case - can be null when it isn't there or "", but then can also return "" when there is an attribute with no value.
+      * For subs this is good enough. There should not be attributes without values.
+      * @param {Element} el HTML Element
+      * @param {String} attribute attribute to check for
+      */
+      var hasAttribute = function (el, attribute) {
+        return !!el.getAttribute(attribute);
+      };
+
+      function hasNestedTime (element) {
+        return (!hasAttribute(element, 'begin') || !hasAttribute(element, 'end'));
+      }
+
       function isEBUDistribution (metadata) {
         return metadata === 'urn:ebu:tt:distribution:2014-01' || metadata === 'urn:ebu:tt:distribution:2018-04';
       }
@@ -127,7 +144,16 @@ define('bigscreenplayer/subtitles/subtitlestransformer',
         var items = [];
 
         for (var k = 0, m = ps.length; k < m; k++) {
-          items.push(TimedText(ps[k], elementToStyle));
+          if (hasNestedTime(ps[k])) {
+            var tag = ps[k];
+            for (var index = 0; index < tag.childNodes.length; index++) {
+              if (hasAttribute(tag.childNodes[index], 'begin') && hasAttribute(tag.childNodes[index], 'end')) {
+                items.push(TimedText(tag.childNodes[index], elementToStyle));
+              }
+            }
+          } else {
+            items.push(TimedText(ps[k], elementToStyle));
+          }
         }
 
         return {

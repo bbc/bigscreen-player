@@ -5,52 +5,28 @@ define('bigscreenplayer/subtitles/timedtext',
   function (DOMHelpers) {
     'use strict';
 
-    return function (timedTextNode, toStyleFunc) {
-      var timings = parseTimings(timedTextNode);
-      var start = timings.start;
-      var end = timings.end;
-      var _node = timedTextNode;
+    /**
+    * Safely checks if an attribute exists on an element.
+    * Browsers < DOM Level 2 do not have 'hasAttribute'
+    *
+    * The interesting case - can be null when it isn't there or "", but then can also return "" when there is an attribute with no value.
+    * For subs this is good enough. There should not be attributes without values.
+    * @param {Element} el HTML Element
+    * @param {String} attribute attribute to check for
+    */
+    var hasAttribute = function (el, attribute) {
+      return !!el.getAttribute(attribute);
+    };
+
+    function hasNestedTime (element) {
+      return (!hasAttribute(element, 'begin') || !hasAttribute(element, 'end'));
+    }
+
+    return function (timedPieceNode, toStyleFunc) {
+      var start = timeStampToSeconds(timedPieceNode.getAttribute('begin'));
+      var end = timeStampToSeconds(timedPieceNode.getAttribute('end'));
+      var _node = timedPieceNode;
       var htmlElementNode;
-
-      function parseTimings (timedTextNode) {
-        if (hasNestedTime(timedTextNode)) {
-          return parseNestedTime(timedTextNode);
-        } else {
-          return {
-            start: timeStampToSeconds(timedTextNode.getAttribute('begin')),
-            end: timeStampToSeconds(timedTextNode.getAttribute('end'))
-          };
-        }
-
-        function hasNestedTime (timedTextNode) {
-          if (!timedTextNode.getAttribute('begin') || !timedTextNode.getAttribute('end')) return true;
-        }
-
-        function parseNestedTime (timedTextNode) {
-          var earliestStart;
-          var latestEnd;
-          for (var i = 0; i < timedTextNode.childNodes.length; i++) {
-            var childNodeTime = {};
-            childNodeTime.start = timedTextNode.childNodes[i].getAttribute('begin') ? timeStampToSeconds(timedTextNode.childNodes[i].getAttribute('begin')) : null;
-            childNodeTime.end = timedTextNode.childNodes[i].getAttribute('end') ? timeStampToSeconds(timedTextNode.childNodes[i].getAttribute('end')) : null;
-            if (childNodeTime.start && childNodeTime.end) {
-              if (earliestStart === undefined || childNodeTime.start < earliestStart) {
-                earliestStart = childNodeTime.start;
-              }
-              if (latestEnd === undefined || childNodeTime.end > latestEnd) {
-                latestEnd = childNodeTime.end;
-              }
-            }
-          }
-
-          if (earliestStart && latestEnd) {
-            return {
-              start: earliestStart,
-              end: latestEnd
-            };
-          }
-        }
-      }
 
       function timeStampToSeconds (timeStamp) {
         var timePieces = timeStamp.split(':');
@@ -81,6 +57,13 @@ define('bigscreenplayer/subtitles/timedtext',
         var source = node || _node;
 
         var localName = source.localName || source.tagName;
+
+        // We lose line breaks with nested TimePieces, so this provides similar layout
+        var parentNodeLocalName = source.parentNode.localName || source.parentNode.tagName;
+        if (localName === 'span' && parentNodeLocalName === 'p' && hasNestedTime(source.parentNode)) {
+          localName = 'p';
+        }
+
         var html = document.createElement(localName);
         var style = toStyleFunc(source);
         if (style) {
@@ -110,8 +93,8 @@ define('bigscreenplayer/subtitles/timedtext',
       return {
         start: start,
         end: end,
-        addToDom: addToDom,
-        removeFromDomIfExpired: removeFromDomIfExpired
+        removeFromDomIfExpired: removeFromDomIfExpired,
+        addToDom: addToDom
       };
     };
   });
