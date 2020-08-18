@@ -1,7 +1,7 @@
 /**
  * Encapsulate Subtitles, Captions, Availability
  */
-define('bigscreenplayer/subtitles',
+define('bigscreenplayer/subtitles/subtitles',
   [ ],
   // TODO: Needs captions, callbacks, DOM element, networking.
   function () {
