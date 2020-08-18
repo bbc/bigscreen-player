@@ -21,7 +21,7 @@ require(
         mockCaptionsSpy.render.and.returnValue(document.createElement('div'));
 
         injector.mock({
-          'bigscreenplayer/captions': mockCaptionsConstructor
+          'bigscreenplayer/subtitles/captions': mockCaptionsConstructor
         });
         injector.require(['bigscreenplayer/captionscontainer'], function (CaptionsContainer) {
           CaptionsContainerWithMocks = CaptionsContainer;

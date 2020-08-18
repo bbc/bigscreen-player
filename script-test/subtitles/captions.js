@@ -1,8 +1,8 @@
 require(
   [
-    'bigscreenplayer/captions'
+    'bigscreenplayer/subtitles/subtitlestransformer'
   ],
-  function (Captions) {
+  function (SubtitlesTransformer) {
     'use strict';
 
     var ttml = '<?xml version="1.0" encoding="utf-8"?>' +
@@ -46,25 +46,25 @@ require(
 
     describe('Caption formats', function () {
       it('Should load TTML', function () {
-        var captions = new Captions();
         var docparser = new DOMParser();
 
         var xmldoc = docparser.parseFromString(ttml, 'text/xml');
-        var items = captions.transformXML(xmldoc);
+        var subtitles = SubtitlesTransformer().transformXML(xmldoc).subtitles;
 
-        expect(items.length).toBeGreaterThan(0);
-        expect(items[0].generateHtmlElementNode().getAttribute('style')).toContain('color');
+        expect(subtitles.length).toBeGreaterThan(0);
+        expect(subtitles[0]).toEqual(jasmine.objectContaining({start: 14.04, end: 16.16}));
+        // expect(items[0].generateHtmlElementNode().getAttribute('style')).toContain('color');
       });
 
       it('Should load EBU-TT-D', function () {
-        var captions = new Captions();
         var docparser = new DOMParser();
 
         var xmldoc = docparser.parseFromString(ebu, 'text/xml');
-        var items = captions.transformXML(xmldoc);
+        var subtitles = SubtitlesTransformer().transformXML(xmldoc).subtitles;
 
-        expect(items.length).toBeGreaterThan(0);
-        expect(items[0].generateHtmlElementNode().firstChild.getAttribute('style')).toContain('color');
+        expect(subtitles.length).toBeGreaterThan(0);
+        expect(subtitles[0]).toEqual(jasmine.objectContaining({start: 33.560, end: 34.960}));
+        // expect(items[0].generateHtmlElementNode().firstChild.getAttribute('style')).toContain('color');
       });
     });
   }

@@ -1,6 +1,6 @@
 define(
   'bigscreenplayer/captionscontainer', [
-    'bigscreenplayer/captions',
+    'bigscreenplayer/subtitles/captions',
     'bigscreenplayer/models/transportcontrolposition',
     'bigscreenplayer/domhelpers'
   ],
