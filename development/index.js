@@ -27,6 +27,18 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
       }
     }
 
+  function setUpCaptionsContainerCSS() {
+    var captionsContainer = document.getElementById('playerCaptionsContainer');
+    captionsContainer.style.position = 'absolute';
+    captionsContainer.style.top = '80%';
+    captionsContainer.style.right = '50%';
+  }
+  
+  function normaliseVolume () {
+    var videoElement = document.getElementsByTagName('video')[0];
+    videoElement.volume = 0.1;
+  }
+
   document.body.appendChild(playbackElement)
   let bigscreenPlayer = BigscreenPlayer();
   window._bigscreenPlayer = bigscreenPlayer;
@@ -35,6 +47,8 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
     {
       onSuccess: function () {
         bigscreenPlayer.toggleDebug();
+        setUpCaptionsContainerCSS();
+        normaliseVolume();
       },
       onError: function () {
         bigscreenPlayer.toggleDebug();
