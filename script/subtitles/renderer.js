@@ -1,4 +1,4 @@
-define('bigscreenplayer/subtitles/captions',
+define('bigscreenplayer/subtitles/renderer',
   [
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/utils/loadurl',
