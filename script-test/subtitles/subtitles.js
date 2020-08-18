@@ -1,5 +1,5 @@
 require(
-  ['bigscreenplayer/subtitles'],
+  ['bigscreenplayer/subtitles/subtitles'],
   function (Subtitles) {
     'use strict';
     describe('Subtitles ', function () {
