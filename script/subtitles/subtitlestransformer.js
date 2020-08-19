@@ -148,6 +148,7 @@ define('bigscreenplayer/subtitles/subtitlestransformer',
             var tag = ps[k];
             for (var index = 0; index < tag.childNodes.length; index++) {
               if (hasAttribute(tag.childNodes[index], 'begin') && hasAttribute(tag.childNodes[index], 'end')) {
+                // TODO: rather than pass a function, can't we make timedText look after it's style from this point?
                 items.push(TimedText(tag.childNodes[index], elementToStyle));
               }
             }

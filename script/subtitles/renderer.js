@@ -7,13 +7,7 @@ define('bigscreenplayer/subtitles/renderer',
   function (DebugTool, LoadURL, SubtitlesTransformer) {
     'use strict';
 
-    // Decoupling:
-    // LoadURL from external
-    // Parse xml document into TimedPiece
-    // Style And How to attach to DOM (TimedPiece)
-    // Render (Deciding when to display in here)
-
-    var Captions = function (id, url, mediaPlayer) {
+    var Renderer = function (id, url, mediaPlayer) {
       var subtitles = [];
       var liveItems = [];
       var iterator = 0;
@@ -100,9 +94,7 @@ define('bigscreenplayer/subtitles/renderer',
       }
 
       function updateCaptions (time) {
-        // Clear out old captions
         cleanOldCaptions(time);
-        // Add new captions
         addNewCaptions(time);
       }
 
@@ -120,6 +112,7 @@ define('bigscreenplayer/subtitles/renderer',
         var fresh = groupUnseenFor(time);
         liveItems = live.concat(fresh);
         for (var i = 0, j = fresh.length; i < j; i++) {
+          // TODO: Probably start doing this in here rather than calling through.
           fresh[i].addToDom(outputElement);
         }
       }
@@ -131,6 +124,6 @@ define('bigscreenplayer/subtitles/renderer',
       };
     };
 
-    return Captions;
+    return Renderer;
   }
 );
