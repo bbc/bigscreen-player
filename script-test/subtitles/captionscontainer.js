@@ -23,7 +23,7 @@ require(
         injector.mock({
           'bigscreenplayer/subtitles/renderer': mockCaptionsConstructor
         });
-        injector.require(['bigscreenplayer/captionscontainer'], function (CaptionsContainer) {
+        injector.require(['bigscreenplayer/subtitles/captionscontainer'], function (CaptionsContainer) {
           CaptionsContainerWithMocks = CaptionsContainer;
           done();
         });
