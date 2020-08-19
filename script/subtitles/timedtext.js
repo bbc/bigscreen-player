@@ -93,7 +93,7 @@ define('bigscreenplayer/subtitles/timedtext',
       return {
         start: start,
         end: end,
-        // TODO: can we stop this from adding/removing itself from the DOM? Just expose the 'generateNode' function?
+        // TODO: can we stop this from adding/removing itself from the DOM? Just expose the 'generateNode' function? OR just generate the node at creation and have a property...
         removeFromDomIfExpired: removeFromDomIfExpired,
         addToDom: addToDom
       };
