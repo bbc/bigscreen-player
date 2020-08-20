@@ -120,7 +120,7 @@ require(
         };
 
         injector.mock({
-          'bigscreenplayer/captionscontainer': mockCaptionsContainerConstructor,
+          'bigscreenplayer/subtitles/captionscontainer': mockCaptionsContainerConstructor,
           'bigscreenplayer/playbackstrategy/mockstrategy': mockStrategyConstructor,
           'bigscreenplayer/plugins': mockPlugins
         });
