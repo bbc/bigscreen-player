@@ -13,7 +13,7 @@ define('bigscreenplayer/subtitles/subtitlestransformer',
           property: 'color'
         }, {
           attribute: 'tts:backgroundColor',
-          property: 'background-color'
+          property: 'text-shadow'
         }, {
           attribute: 'tts:fontStyle',
           property: 'font-style'
