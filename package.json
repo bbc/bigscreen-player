@@ -1,6 +1,6 @@
 {
   "name": "bigscreen-player",
-  "version": "3.18.1",
+  "version": "3.18.2",
   "description": "Simplified media playback for bigscreen devices.",
   "main": "script/bigscreenplayer.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "spec": "grunt --force spec-web",
     "lint": "npx eslint .",
     "lint:code:changed": "git diff-index --name-only HEAD | egrep '.js$' | xargs eslint",
-    "build:dist": "npm run build:dist:clean && npm run build:version && mkdir dist && npm run build:copy:script && npm run build:copy:files",    
+    "build:dist": "npm run build:dist:clean && npm run build:version && mkdir dist && npm run build:copy:script && npm run build:copy:files",
     "build:dist:clean": "rm -fR ./dist",
     "build:version": "node ./buildVersion.js",
     "build:copy:script": "cp -R ./script/ ./dist/script/",
