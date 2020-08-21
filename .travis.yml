@@ -1,6 +1,9 @@
 language: node_js
 node_js:
-- lts/*
+  - lts/*
+
+before_deploy: npm run build:dist && cd dist
+
 deploy:
   provider: npm
   email: ConnectedTV-Development@lists.forge.bbc.co.uk

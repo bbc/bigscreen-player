@@ -22,6 +22,23 @@ define('bigscreenplayer/captions',
       }
     ];
 
+    /**
+    * Safely checks if an attribute exists on an element.
+    * Browsers < DOM Level 2 do not have 'hasAttribute'
+    *
+    * The interesting case - can be null when it isn't there or "", but then can also return "" when there is an attribute with no value.
+    * For subs this is good enough. There should not be attributes without values.
+    * @param {Element} el HTML Element
+    * @param {String} attribute attribute to check for
+    */
+    var hasAttribute = function (el, attribute) {
+      return !!el.getAttribute(attribute);
+    };
+
+    function hasNestedTime (element) {
+      return (!hasAttribute(element, 'begin') || !hasAttribute(element, 'end'));
+    }
+
     var Captions = function (id, uri, media) {
       var timedItems = [];
       var liveItems = [];
@@ -32,6 +49,8 @@ define('bigscreenplayer/captions',
       var outputElement;
 
       loadData(uri);
+
+      DebugTool.info('Loading captions from: ' + uri);
 
       function loadData (dataFeedUrl) {
         var req = new XMLHttpRequest();
@@ -164,7 +183,16 @@ define('bigscreenplayer/captions',
         var items = [];
 
         for (var k = 0, m = ps.length; k < m; k++) {
-          items.push(TimedPiece(ps[k], elementToStyle));
+          if (hasNestedTime(ps[k])) {
+            var tag = ps[k];
+            for (var index = 0; index < tag.childNodes.length; index++) {
+              if (hasAttribute(tag.childNodes[index], 'begin') && hasAttribute(tag.childNodes[index], 'end')) {
+                items.push(TimedPiece(tag.childNodes[index], elementToStyle));
+              }
+            }
+          } else {
+            items.push(TimedPiece(ps[k], elementToStyle));
+          }
         }
 
         timedItems = items;
@@ -310,12 +338,7 @@ define('bigscreenplayer/captions',
 
       function removeFromDomIfExpired (time) {
         if (time > end || time < start) {
-          if (htmlElementNode) {
-            var e = htmlElementNode;
-            if (e.parentNode) {
-              e.parentNode.removeChild(e);
-            }
-          }
+          DOMHelpers.safeRemoveElement(htmlElementNode);
           return true;
         }
         return false;
@@ -330,6 +353,13 @@ define('bigscreenplayer/captions',
         var source = node || _node;
 
         var localName = source.localName || source.tagName;
+
+        // We lose line breaks with nested TimePieces, so this provides similar layout
+        var parentNodeLocalName = source.parentNode.localName || source.parentNode.tagName;
+        if (localName === 'span' && parentNodeLocalName === 'p' && hasNestedTime(source.parentNode)) {
+          localName = 'p';
+        }
+
         var html = document.createElement(localName);
         var style = toStyleFunc(source);
         if (style) {

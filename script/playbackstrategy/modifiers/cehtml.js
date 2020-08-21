@@ -2,9 +2,10 @@ define(
   'bigscreenplayer/playbackstrategy/modifiers/cehtml',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/domhelpers'
   ],
-  function (MediaPlayerBase, DebugTool) {
+  function (MediaPlayerBase, DebugTool, DOMHelpers) {
     'use strict';
     var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
 
@@ -560,10 +561,7 @@ define(
 
       function destroyMediaElement () {
         delete mediaElement.onPlayStateChange;
-        if (mediaElement.parentElement) {
-          mediaElement.parentElement.removeChild(mediaElement);
-        } else {
-        }
+        DOMHelpers.safeRemoveElement(mediaElement);
         mediaElement = undefined;
       }
 
