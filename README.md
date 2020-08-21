@@ -222,9 +222,22 @@ See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player
 
 ## Releasing
 
-1. `npm run pre-release:major|minor|patch` will bump the package.json and internal version.
-2. Create a Github release.
-3. Publishing to NPM is handled with our [Travis CI integration](https://github.com/bbc/bigscreen-player/blob/master/.travis.yml).
+1. Create a PR.
+2. Label the PR with one of these labels:
+ - `semver prerelease` 
+ - `semver patch`
+ - `semver minor`
+ - `semver major` 
+  
+    along with one of the following:
+    - `has a user facing change`
+    - `has no user facing changes`
+
+    The labels-checker PR check will let you know if it is correct.
+3. Get a review from the core team.
+4. If the PR checks are green. The core team can merge to master.
+5. Automation takes care of the package versioning.
+6. Publishing to NPM is handled with our [Travis CI integration](https://github.com/bbc/bigscreen-player/blob/master/.travis.yml).
 
 ## API Reference
 
