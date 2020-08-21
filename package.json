@@ -15,7 +15,7 @@
     "build:version": "node ./buildVersion.js",
     "build:copy:script": "cp -R ./script/ ./dist/script/",
     "build:copy:files": "cp package.json package-lock.json CONTRIBUTING.md README.md LICENSE ./dist/",
-    "postinstall": "test -f ./buildVersion.js && npm run build:version"
+    "postinstall": "[[ -f ./buildVersion.js ]] && npm run build:version || echo 'Version already set.'"
   },
   "husky": {
     "hooks": {
