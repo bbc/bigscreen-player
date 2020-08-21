@@ -223,11 +223,11 @@ See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player
 ## Releasing
 
 1. Create a PR.
-2. Label the PR with one of these labels:
- - `semver prerelease` 
- - `semver patch`
- - `semver minor`
- - `semver major` 
+2. Label the PR with one of these labels: 
+    - `semver prerelease` 
+    - `semver patch`
+    - `semver minor`
+    - `semver major` 
   
     along with one of the following:
     - `has a user facing change`
