@@ -452,7 +452,6 @@ define('bigscreenplayer/bigscreenplayer',
          * An enum may be used to set the on-screen position of any transport controls
          * (work in progress to remove this - UI concern).
          * @function
-         * @deprecated
          * @param {*} position
          */
         setTransportControlsPosition: function (position) {
@@ -522,7 +521,6 @@ define('bigscreenplayer/bigscreenplayer',
         /**
          * Returns an object with a number of functions related to the ability to transition state
          * given the current state and the playback strategy in use.
-         * @deprecated
          * @function
          */
         transitions: function () {
@@ -530,7 +528,6 @@ define('bigscreenplayer/bigscreenplayer',
         },
 
         /**
-         * @deprecated
          * @function
          * @return The media element currently being used.
          */
@@ -539,7 +536,6 @@ define('bigscreenplayer/bigscreenplayer',
         },
 
         /**
-         * @deprecated
          * @function
          * @param {Number} epochTime - Unix Epoch based time in milliseconds.
          * @return the time in seconds within the current sliding window.
@@ -557,7 +553,6 @@ define('bigscreenplayer/bigscreenplayer',
         },
 
         /**
-         * @deprecated
          * @function
          * @param {Number} time - Seconds
          * @return the time in milliseconds within the current sliding window.
@@ -568,7 +563,21 @@ define('bigscreenplayer/bigscreenplayer',
          * Toggle the visibility of the debug tool overlay.
          * @function
          */
-        toggleDebug: toggleDebug
+        toggleDebug: toggleDebug,
+
+        /**
+         * @function
+         * @return {Object} - Key value pairs of available log levels
+         */
+        getLogLevels: function () {
+          return DebugTool.logLevels;
+        },
+
+        /**
+         * @function
+         * @param logLevel -  log level to display @see getLogLevels
+         */
+        setLogLevel: DebugTool.setLogLevel
       };
     }
 
