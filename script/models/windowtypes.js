@@ -8,11 +8,11 @@ define(
   function () {
     'use strict';
     return /** @alias module:bigscreenplayer/models/windowtypes */ {
-      /** Media with a duration */
+      // Media with a duration
       STATIC: 'staticWindow',
-      /** Media with a start without an initial duration */
+      // Media with a start time but without a duration until an indeterminate time in the future
       GROWING: 'growingWindow',
-      /** Media with a rewind window that progresses through a media timeline */
+      // Media with a rewind window that progresses through a media timeline
       SLIDING: 'slidingWindow'
     };
   });

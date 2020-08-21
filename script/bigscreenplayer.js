@@ -422,7 +422,7 @@ define('bigscreenplayer/bigscreenplayer',
         },
 
         /**
-         * Set whether or not subtiles should be enabled.
+         * Set whether or not subtitles should be enabled.
          * @function
          * @param {boolean} value
          */
@@ -441,7 +441,7 @@ define('bigscreenplayer/bigscreenplayer',
 
         /**
          * @function
-         * @return Returns whether or no subtiles are currently enabled.
+         * @return Returns whether or not subtitles are currently enabled.
          */
         isSubtitlesAvailable: function () {
           return playerComponent ? playerComponent.isSubtitlesAvailable() : false;
