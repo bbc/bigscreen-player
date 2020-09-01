@@ -27,6 +27,23 @@ require(
 
         expect(domElement.hasChildNodes()).toBeTrue();
       });
+
+      it('Should remove itself from a parent DOM element', function () {
+        var domElement = document.createElement('div');
+        var mockElement = document.createElement('span');
+        mockElement.setAttribute('begin', '00:00:10');
+        mockElement.setAttribute('end', '00:00:13');
+        var mockParentElement = document.createElement('p');
+        mockParentElement.appendChild(mockElement);
+
+        var mockFunction = jasmine.createSpy('styleFunction');
+        var timedText = TimedText(mockElement, mockFunction);
+
+        timedText.addToDom(domElement);
+        timedText.removeFromDomIfExpired(14);
+
+        expect(domElement.hasChildNodes()).toBeFalse();
+      });
     });
   }
 );
