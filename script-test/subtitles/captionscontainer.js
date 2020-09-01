@@ -7,18 +7,18 @@ require(
     'use strict';
 
     var injector = new Squire();
-    var mockCaptionsSpy;
+    var mockRendererSpy;
     var captionsContainer;
     var CaptionsContainerWithMocks;
     var parentElement = document.createElement('div');
 
     describe('Captions Container', function () {
       beforeEach(function (done) {
-        mockCaptionsSpy = jasmine.createSpyObj('mockCaptions', ['start', 'stop', 'render', 'loadData', 'update', 'transformXML', 'elementToStyle', 'groupUnseenFor', 'updateCaptions', 'cleanOldCaptions', 'addNewCaptions']);
+        mockRendererSpy = jasmine.createSpyObj('mockCaptions', ['start', 'stop', 'render']);
         var mockCaptionsConstructor = function () {
-          return mockCaptionsSpy;
+          return mockRendererSpy;
         };
-        mockCaptionsSpy.render.and.returnValue(document.createElement('div'));
+        mockRendererSpy.render.and.returnValue(document.createElement('div'));
 
         injector.mock({
           'bigscreenplayer/subtitles/renderer': mockCaptionsConstructor
@@ -44,26 +44,26 @@ require(
           captionsContainer = new CaptionsContainerWithMocks(null, 'potatoUrl', false, parentElement);
           captionsContainer.start();
 
-          expect(mockCaptionsSpy.start).toHaveBeenCalledWith();
+          expect(mockRendererSpy.start).toHaveBeenCalledWith();
         });
 
         it('Does not start captions if there is not a caption URL', function () {
           captionsContainer = new CaptionsContainerWithMocks(null, null, false, parentElement);
           captionsContainer.start();
 
-          expect(mockCaptionsSpy.start).not.toHaveBeenCalledWith();
+          expect(mockRendererSpy.start).not.toHaveBeenCalledWith();
         });
 
         it('Starts captions if auto start is set', function () {
           captionsContainer = new CaptionsContainerWithMocks(null, 'http://', true, parentElement);
 
-          expect(mockCaptionsSpy.start).toHaveBeenCalledWith();
+          expect(mockRendererSpy.start).toHaveBeenCalledWith();
         });
 
         it('Does not start captions if auto start is not set', function () {
           captionsContainer = new CaptionsContainerWithMocks(null, 'http://', false, parentElement);
 
-          expect(mockCaptionsSpy.start).not.toHaveBeenCalledWith();
+          expect(mockRendererSpy.start).not.toHaveBeenCalledWith();
         });
       });
 
@@ -72,14 +72,14 @@ require(
           captionsContainer = new CaptionsContainerWithMocks(null, 'http://', false, parentElement);
           captionsContainer.stop();
 
-          expect(mockCaptionsSpy.stop).toHaveBeenCalledWith();
+          expect(mockRendererSpy.stop).toHaveBeenCalledWith();
         });
 
         it('Does not stop the captions if there is not a URL', function () {
           captionsContainer = new CaptionsContainerWithMocks(null, null, false, parentElement);
           captionsContainer.stop();
 
-          expect(mockCaptionsSpy.stop).not.toHaveBeenCalledWith();
+          expect(mockRendererSpy.stop).not.toHaveBeenCalledWith();
         });
       });
 
