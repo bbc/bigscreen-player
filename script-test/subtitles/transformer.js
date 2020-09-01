@@ -50,11 +50,18 @@ require(
         var xmldoc = docparser.parseFromString(ttml, 'text/xml');
         var doc = Transformer().transformXML(xmldoc);
 
+        var subtitlesForZero = doc.subtitlesForTime(0);
+        var singleSubtitle = doc.subtitlesForTime(14.1);
+        var outOfRangeSubtitles = doc.subtitlesForTime(NaN);
+
         expect(doc.baseStyle).toEqual(jasmine.any(String));
-        expect(doc.subtitles.length).toBeGreaterThan(0);
-        expect(doc.subtitles[0]).toEqual(jasmine.objectContaining({start: 14.04, end: 16.16}));
-        expect(doc.subtitlesForTime(14.1)[0]).toEqual(jasmine.objectContaining({start: 14.04, end: 16.16}));
-        // expect(items[0].generateHtmlElementNode().getAttribute('style')).toContain('color');
+
+        expect(subtitlesForZero.length).toBe(0);
+
+        expect(singleSubtitle.length).toBe(1);
+        expect(singleSubtitle[0]).toEqual(jasmine.objectContaining({start: 14.04, end: 16.16}));
+
+        expect(outOfRangeSubtitles.length).toBe(0);
       });
 
       it('Should load EBU-TT-D document', function () {
@@ -62,15 +69,22 @@ require(
 
         var xmldoc = docparser.parseFromString(ebuttd, 'text/xml');
         var doc = Transformer().transformXML(xmldoc);
-
-        var subtitlesForTime = doc.subtitlesForTime(35.5);
+        var subtitlesForZero = doc.subtitlesForTime(0);
+        var singleSubtitle = doc.subtitlesForTime(33.6);
+        var cumulativeSubtitles = doc.subtitlesForTime(35.5);
+        var outOfRangeSubtitles = doc.subtitlesForTime(NaN);
 
         expect(doc.baseStyle).toEqual(jasmine.any(String));
-        expect(doc.subtitles.length).toBeGreaterThan(0);
-        expect(doc.subtitles[0]).toEqual(jasmine.objectContaining({start: 33.560, end: 34.960}));
-        expect(subtitlesForTime.length).toBe(2);
-        expect(subtitlesForTime[0]).toEqual(jasmine.objectContaining({start: 34.960, end: 37}));
-        // expect(items[0].generateHtmlElementNode().firstChild.getAttribute('style')).toContain('color');
+
+        expect(subtitlesForZero.length).toBe(0);
+
+        expect(singleSubtitle.length).toBe(1);
+        expect(singleSubtitle[0]).toEqual(jasmine.objectContaining({start: 33.560, end: 34.960}));
+
+        expect(cumulativeSubtitles.length).toBe(2);
+        expect(cumulativeSubtitles[0]).toEqual(jasmine.objectContaining({start: 34.960, end: 37}));
+
+        expect(outOfRangeSubtitles.length).toBe(0);
       });
     });
   }

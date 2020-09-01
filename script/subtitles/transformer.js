@@ -158,10 +158,9 @@ define('bigscreenplayer/subtitles/transformer',
         }
 
         return {
-          subtitles: items,
           baseStyle: s,
           subtitlesForTime: function (time) {
-            return this.subtitles.filter(function (subtitle) {
+            return items.filter(function (subtitle) {
               return subtitle.start < time && subtitle.end > time;
             });
           }
