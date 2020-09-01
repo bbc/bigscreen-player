@@ -59,7 +59,7 @@ define('bigscreenplayer/subtitles/timedtext',
         var localName = source.localName || source.tagName;
 
         // We lose line breaks with nested TimePieces, so this provides similar layout
-        var parentNodeLocalName = source.parentNode.localName || source.parentNode.tagName;
+        var parentNodeLocalName = source.parentNode && source.parentNode.localName || source.parentNode && source.parentNode.tagName;
         if (localName === 'span' && parentNodeLocalName === 'p' && hasNestedTime(source.parentNode)) {
           localName = 'p';
         }
