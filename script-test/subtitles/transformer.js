@@ -1,9 +1,9 @@
 /* eslint-disable es5/no-template-literals */
 require(
   [
-    'bigscreenplayer/subtitles/subtitlestransformer'
+    'bigscreenplayer/subtitles/transformer'
   ],
-  function (SubtitlesTransformer) {
+  function (Transformer) {
     'use strict';
     var ttml = `
             <tt xmlns="http://www.w3.org/2006/10/ttaf1" xmlns:ttp="http://www.w3.org/2006/10/ttaf1#parameter" ttp:timeBase="media" xmlns:tts="http://www.w3.org/2006/10/ttaf1#style" xml:lang="en" xmlns:ttm="http://www.w3.org/2006/10/ttaf1#metadata">
@@ -48,7 +48,7 @@ require(
         var docparser = new DOMParser();
 
         var xmldoc = docparser.parseFromString(ttml, 'text/xml');
-        var doc = SubtitlesTransformer().transformXML(xmldoc);
+        var doc = Transformer().transformXML(xmldoc);
 
         expect(doc.baseStyle).toEqual(jasmine.any(String));
         expect(doc.subtitles.length).toBeGreaterThan(0);
@@ -60,7 +60,7 @@ require(
         var docparser = new DOMParser();
 
         var xmldoc = docparser.parseFromString(ebuttd, 'text/xml');
-        var doc = SubtitlesTransformer().transformXML(xmldoc);
+        var doc = Transformer().transformXML(xmldoc);
 
         expect(doc.baseStyle).toEqual(jasmine.any(String));
         expect(doc.subtitles.length).toBeGreaterThan(0);

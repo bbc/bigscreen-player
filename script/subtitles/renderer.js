@@ -2,9 +2,9 @@ define('bigscreenplayer/subtitles/renderer',
   [
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/utils/loadurl',
-    'bigscreenplayer/subtitles/subtitlestransformer'
+    'bigscreenplayer/subtitles/transformer'
   ],
-  function (DebugTool, LoadURL, SubtitlesTransformer) {
+  function (DebugTool, LoadURL, Transformer) {
     'use strict';
 
     var Renderer = function (id, url, mediaPlayer) {
@@ -22,7 +22,7 @@ define('bigscreenplayer/subtitles/renderer',
       var xhr = LoadURL(url, {
         onLoad: function (response, status) {
           if (status === 200) {
-            var transformedSubtitles = SubtitlesTransformer().transformXML(xhr.responseXML);
+            var transformedSubtitles = Transformer().transformXML(xhr.responseXML);
             subtitles = transformedSubtitles.subtitles;
             outputElement.setAttribute('style', transformedSubtitles.baseStyle);
             outputElement.style.cssText = transformedSubtitles.baseStyle;

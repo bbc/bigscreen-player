@@ -1,4 +1,4 @@
-define('bigscreenplayer/subtitles/subtitlestransformer',
+define('bigscreenplayer/subtitles/transformer',
   [
     'bigscreenplayer/subtitles/timedtext',
     'bigscreenplayer/domhelpers'
