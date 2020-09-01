@@ -53,6 +53,7 @@ require(
         expect(doc.baseStyle).toEqual(jasmine.any(String));
         expect(doc.subtitles.length).toBeGreaterThan(0);
         expect(doc.subtitles[0]).toEqual(jasmine.objectContaining({start: 14.04, end: 16.16}));
+        expect(doc.subtitlesForTime(14.1)[0]).toEqual(jasmine.objectContaining({start: 14.04, end: 16.16}));
         // expect(items[0].generateHtmlElementNode().getAttribute('style')).toContain('color');
       });
 
@@ -62,9 +63,13 @@ require(
         var xmldoc = docparser.parseFromString(ebuttd, 'text/xml');
         var doc = Transformer().transformXML(xmldoc);
 
+        var subtitlesForTime = doc.subtitlesForTime(35.5);
+
         expect(doc.baseStyle).toEqual(jasmine.any(String));
         expect(doc.subtitles.length).toBeGreaterThan(0);
         expect(doc.subtitles[0]).toEqual(jasmine.objectContaining({start: 33.560, end: 34.960}));
+        expect(subtitlesForTime.length).toBe(2);
+        expect(subtitlesForTime[0]).toEqual(jasmine.objectContaining({start: 34.960, end: 37}));
         // expect(items[0].generateHtmlElementNode().firstChild.getAttribute('style')).toContain('color');
       });
     });

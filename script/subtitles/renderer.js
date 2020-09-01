@@ -8,10 +8,8 @@ define('bigscreenplayer/subtitles/renderer',
     'use strict';
 
     var Renderer = function (id, url, mediaPlayer) {
-      var subtitles = [];
+      var subtitles;
       var liveItems = [];
-      var iterator = 0;
-      var lastTimeSeen = 0;
       var interval = 0;
       var outputElement;
       outputElement = document.createElement('div');
@@ -23,7 +21,7 @@ define('bigscreenplayer/subtitles/renderer',
         onLoad: function (response, status) {
           if (status === 200) {
             var transformedSubtitles = Transformer().transformXML(xhr.responseXML);
-            subtitles = transformedSubtitles.subtitles;
+            subtitles = transformedSubtitles;
             outputElement.setAttribute('style', transformedSubtitles.baseStyle);
             outputElement.style.cssText = transformedSubtitles.baseStyle;
           }
@@ -63,35 +61,35 @@ define('bigscreenplayer/subtitles/renderer',
         updateCaptions(time);
       }
 
-      function groupUnseenFor (time) {
-        // Basic approach first.
-        // TODO - seek backwards and do fast seeking if long timestamp
-        // differences. Also add a cache for last timestamp seen. If next time is older, reset.
-        var it;
-        if (time < lastTimeSeen) {
-          it = 0;
-        } else {
-          it = iterator || 0;
-        }
-        lastTimeSeen = time;
-        var itms = subtitles;
-        var max = itms.length;
+      // function groupUnseenFor (time) {
+      //   // Basic approach first.
+      //   // TODO - seek backwards and do fast seeking if long timestamp
+      //   // differences. Also add a cache for last timestamp seen. If next time is older, reset.
+      //   var it;
+      //   if (time < lastTimeSeen) {
+      //     it = 0;
+      //   } else {
+      //     it = iterator || 0;
+      //   }
+      //   lastTimeSeen = time;
+      //   var itms = subtitles;
+      //   var max = itms.length;
 
-        // The current iterated item was not returned last time.
-        // If its time has not come, we return nothing.
-        var ready = [];
-        var itm = itms[it];
-        while (it !== max && itm.start < time) {
-          if (itm.end > time) {
-            ready.push(itm);
-          }
-          it++;
-          itm = itms[it];
-        }
-        iterator = it;
+      //   // The current iterated item was not returned last time.
+      //   // If its time has not come, we return nothing.
+      //   var ready = [];
+      //   var itm = itms[it];
+      //   while (it !== max && itm.start < time) {
+      //     if (itm.end > time) {
+      //       ready.push(itm);
+      //     }
+      //     it++;
+      //     itm = itms[it];
+      //   }
+      //   iterator = it;
 
-        return ready;
-      }
+      //   return ready;
+      // }
 
       function updateCaptions (time) {
         cleanOldCaptions(time);
@@ -109,7 +107,7 @@ define('bigscreenplayer/subtitles/renderer',
 
       function addNewCaptions (time) {
         var live = liveItems;
-        var fresh = groupUnseenFor(time);
+        var fresh = subtitles.subtitlesForTime(time);
         liveItems = live.concat(fresh);
         for (var i = 0, j = fresh.length; i < j; i++) {
           // TODO: Probably start doing this in here rather than calling through.
