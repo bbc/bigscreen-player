@@ -6,10 +6,6 @@ define('bigscreenplayer/subtitles/transformer',
   function (TimedText, DOMHelpers) {
     'use strict';
     return function () {
-      var lastTimeSeen = 0;
-      var subtitles = [];
-      var iterator = 0;
-
       var _styles = {};
       var elementToStyleMap = [
         {
@@ -161,50 +157,15 @@ define('bigscreenplayer/subtitles/transformer',
           }
         }
 
-        // function (time) {
-        //   return this.subtitles.filter(function (subtitle) {
-        //     return subtitle.start < time && subtitle.end > time;
-        //   });
-        // }
-
-        // temporary for testing
-        subtitles = items;
-
         return {
           subtitles: items,
           baseStyle: s,
-          subtitlesForTime: groupUnseenFor
-        };
-      }
-
-      function groupUnseenFor (time) {
-        // Basic approach first.
-        // TODO - seek backwards and do fast seeking if long timestamp
-        // differences. Also add a cache for last timestamp seen. If next time is older, reset.
-        var it;
-        if (time < lastTimeSeen) {
-          it = 0;
-        } else {
-          it = iterator || 0;
-        }
-        lastTimeSeen = time;
-        var itms = subtitles;
-        var max = itms.length;
-
-        // The current iterated item was not returned last time.
-        // If its time has not come, we return nothing.
-        var ready = [];
-        var itm = itms[it];
-        while (it !== max && itm.start < time) {
-          if (itm.end > time) {
-            ready.push(itm);
+          subtitlesForTime: function (time) {
+            return this.subtitles.filter(function (subtitle) {
+              return subtitle.start < time && subtitle.end > time;
+            });
           }
-          it++;
-          itm = itms[it];
-        }
-        iterator = it;
-
-        return ready;
+        };
       }
 
       return {
