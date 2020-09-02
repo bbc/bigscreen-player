@@ -79,7 +79,7 @@ define('bigscreenplayer/subtitles/renderer',
         var fresh = transformedSubtitles.subtitlesForTime(time);
         liveItems = live.concat(fresh);
         for (var i = 0, j = fresh.length; i < j; i++) {
-          // TODO: Probably start doing this in here rather than calling through.
+          // TODO: Probably start adding to the DOM here rather than calling through.
           fresh[i].addToDom(outputElement);
         }
       }

@@ -114,9 +114,6 @@ define('bigscreenplayer/subtitles/transformer',
         var styles = _styles;
         var styleElements = xml.getElementsByTagNameNS(captionStandard.namespace, 'style');
 
-        // iterate styles from the elements in the xml doc.
-        // if there is a style, add it to styles[] based on the id attribute
-
         for (var i = 0; i < styleElements.length; i++) {
           var se = styleElements[i];
           var id = se.getAttribute(captionStandard.idAttribute);
