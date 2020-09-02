@@ -6,7 +6,7 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
   let enableSubtitles = false;
   
   let minimalData = {
-      media: {
+    media: {
         type: 'application/dash+xml',
         mimeType: 'video/mp4',
         kind: 'video',
@@ -33,11 +33,6 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
     captionsContainer.style.top = '80%';
     captionsContainer.style.right = '50%';
   }
-  
-  function normaliseVolume () {
-    var videoElement = document.getElementsByTagName('video')[0];
-    videoElement.volume = 0.1;
-  }
 
   document.body.appendChild(playbackElement)
   let bigscreenPlayer = BigscreenPlayer();
@@ -48,7 +43,6 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
       onSuccess: function () {
         bigscreenPlayer.toggleDebug();
         setUpCaptionsContainerCSS();
-        normaliseVolume();
       },
       onError: function () {
         bigscreenPlayer.toggleDebug();
