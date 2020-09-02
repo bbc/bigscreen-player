@@ -114,29 +114,18 @@ define('bigscreenplayer/subtitles/transformer',
         var styles = _styles;
         var styleElements = xml.getElementsByTagNameNS(captionStandard.namespace, 'style');
 
-        var max = styleElements.length;
-        // We should get at least one each time. If we don't, then the data
-        // is broken or structured in a way this can't cope with.
-        // This prevents an infinite loop.
-        var seenNonOk = false;
-        do {
-          for (var i = 0, j = styleElements.length; i < j; i++) {
-            var se = styleElements[i];
-            if (se.ok) {
-              continue;
-            }
+        // iterate styles from the elements in the xml doc.
+        // if there is a style, add it to styles[] based on the id attribute
 
-            var id = se.getAttribute(captionStandard.idAttribute);
-            var myStyles = elementToStyle(se);
+        for (var i = 0; i < styleElements.length; i++) {
+          var se = styleElements[i];
+          var id = se.getAttribute(captionStandard.idAttribute);
+          var style = elementToStyle(se);
 
-            if (myStyles) {
-              styles[id] = myStyles;
-              se.ok = true;
-            } else {
-              seenNonOk = true;
-            }
+          if (style) {
+            styles[id] = style;
           }
-        } while (seenNonOk && max--);
+        }
 
         var body = xml.getElementsByTagNameNS(captionStandard.namespace, 'body')[0];
         var s = elementToStyle(body);
