@@ -83,6 +83,7 @@ require(
 
         expect(cumulativeSubtitles.length).toBe(2);
         expect(cumulativeSubtitles[0]).toEqual(jasmine.objectContaining({start: 34.960, end: 37}));
+        expect(cumulativeSubtitles[1]).toEqual(jasmine.objectContaining({start: 35.200, end: 37}));
 
         expect(outOfRangeSubtitles.length).toBe(0);
       });
