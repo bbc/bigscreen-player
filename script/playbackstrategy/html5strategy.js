@@ -77,44 +77,37 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         mediaElement.addEventListener('seeked', onSeeked);
         mediaElement.addEventListener('ended', onEnded);
         mediaElement.addEventListener('error', onError);
-        mediaElement.addEventListener('loadedmetadata', onLoadedMetadata, false);
+        mediaElement.addEventListener('loadedmetadata', onLoadedMetadata);
       }
 
       function onPlaying () {
-        console.log('playing');
         publishMediaState(MediaState.PLAYING);
       }
 
       function onPaused () {
-        console.log('paused');
         publishMediaState(MediaState.PAUSED);
       }
 
       function onSeeking () {
-        console.log('seeking');
         publishMediaState(MediaState.WAITING);
       }
 
       function onWaiting () {
-        console.log('waiting');
         publishMediaState(MediaState.WAITING);
       }
 
       function onSeeked () {
-        console.log('seeked');
         if (isPaused()) {
           if (windowType === WindowTypes.SLIDING) {
             startAutoResumeTimeout();
           }
           publishMediaState(MediaState.PAUSED);
         } else {
-          // publish here as mediaElement playing event not thrown after a seek whilst in playback
           publishMediaState(MediaState.PLAYING);
         }
       }
 
       function onEnded () {
-        console.log('ended');
         publishMediaState(MediaState.ENDED);
       }
 
@@ -123,17 +116,14 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onError (event) {
-        console.log('error');
         publishError();
       }
 
       function onLoadedMetadata () {
-        console.log('loadedmetadata');
         metaDataLoaded = true;
       }
 
       function onCanPlay () {
-        console.log('canplay');
         if (playFromTime && metaDataLoaded) {
           mediaElement.currentTime = getClampedTime(playFromTime, getSeekableRange()) + timeCorrection;
           playFromTime = undefined;
@@ -220,6 +210,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         getCurrentTime: getCurrentTime,
         getDuration: getDuration,
         tearDown: function () {
+          mediaElement.removeEventListener('canplay', onCanPlay);
           mediaElement.removeEventListener('timeupdate', onTimeUpdate);
           mediaElement.removeEventListener('playing', onPlaying);
           mediaElement.removeEventListener('pause', onPaused);
@@ -228,13 +219,17 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
           mediaElement.removeEventListener('seeked', onSeeked);
           mediaElement.removeEventListener('ended', onEnded);
           mediaElement.removeEventListener('error', onError);
+          mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
 
           DOMHelpers.safeRemoveElement(mediaElement);
 
-          mediaElement = undefined;
           eventCallbacks = [];
           errorCallback = undefined;
           timeUpdateCallback = undefined;
+
+          mediaElement = undefined;
+          playFromTime = undefined;
+          metaDataLoaded = undefined;
           timeCorrection = undefined;
         },
         reset: function () {
