@@ -1,6 +1,6 @@
 {
   "name": "bigscreen-player",
-  "version": "3.15.1",
+  "version": "3.18.4",
   "description": "Simplified media playback for bigscreen devices.",
   "main": "script/bigscreenplayer.js",
   "scripts": {
@@ -10,14 +10,15 @@
     "spec": "grunt --force spec-web",
     "lint": "npx eslint .",
     "lint:code:changed": "git diff-index --name-only HEAD | egrep '.js$' | xargs eslint",
+    "build:dist": "npm run build:dist:clean && npm run build:version && mkdir dist && npm run build:copy:script && npm run build:copy:files",
+    "build:dist:clean": "rm -fR ./dist",
     "build:version": "node ./buildVersion.js",
-    "pre-release:patch": "npm version patch --no-git-tag --no-git-commit && npm run build:version",
-    "pre-release:minor": "npm version minor --no-git-tag --no-git-commit && npm run build:version",
-    "pre-release:major": "npm version major --no-git-tag --no-git-commit && npm run build:version"
+    "build:copy:script": "cp -R ./script/ ./dist/script/",
+    "build:copy:files": "cp package.json package-lock.json CONTRIBUTING.md README.md LICENSE ./dist/",
+    "postinstall": "[[ -f ./buildVersion.js ]] && npm run build:version || echo 'Version already set.'"
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm test",
       "pre-push": "npm test"
     }
   },
@@ -46,7 +47,7 @@
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v2.9.3-4"
+    "dashjs": "github:bbc/dash.js#smp-v3.0.0-7"
   },
   "repository": {
     "type": "git",

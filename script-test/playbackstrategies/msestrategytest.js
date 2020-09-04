@@ -22,7 +22,6 @@ require(
     var mockDashjs;
     var mockDashInstance;
     var mockDashMediaPlayer;
-    var mockDashDebug;
     var mockPlugins;
     var mockPluginsInterface;
     var mockDynamicWindowUtils;
@@ -47,16 +46,15 @@ require(
       beforeAll(function () {
         mockDashjs = jasmine.createSpyObj('mockDashjs', ['MediaPlayer']);
         mockDashMediaPlayer = jasmine.createSpyObj('mockDashMediaPlayer', ['create']);
-        mockDashDebug = jasmine.createSpyObj('mockDashDebug', ['setLogToBrowserConsole']);
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'retrieveManifest', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
-            'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getMetricsFor', 'setBufferToKeep',
-            'setBufferAheadToKeep', 'setBufferTimeAtTopQuality', 'setBufferTimeAtTopQualityLongForm', 'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'setLiveDelay']);
+            'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getDashAdapter',
+            'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'updateSettings', 'setDuration']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
         mockPlugins = {
           interface: mockPluginsInterface
         };
-        mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange', 'shouldAutoResume']);
+        mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange']);
 
         spyOn(mockVideoElement, 'addEventListener');
         spyOn(mockVideoElement, 'removeEventListener');
@@ -80,8 +78,6 @@ require(
         // For DVRInfo Based Seekable Range
         mockDashInstance.duration.and.returnValue(101);
         mockDashInstance.isReady.and.returnValue(true);
-        mockDashInstance.getDebug.and.returnValue(mockDashDebug);
-        mockDashInstance.getMetricsFor.and.returnValue(true);
         mockDashInstance.getDVRWindowSize.and.returnValue(101);
 
         mockDashInstance.on.and.callFake(function (eventType, handler) {
@@ -109,7 +105,10 @@ require(
           },
           getCurrentIndexForRepresentation: function () {
             return 1;
-          },
+          }
+        });
+
+        mockDashInstance.getDashAdapter.and.returnValue({
           getIndexForRepresentation: function () {
             return 0;
           }
@@ -816,6 +815,88 @@ require(
         });
       });
 
+      describe('mseDurationOverride', function () {
+        beforeEach(function () {
+          // due to interaction with emitPlayerInfo()
+          mockDashInstance.getBitrateInfoListFor.and.returnValue([{ bitrate: 1024000 }, { bitrate: 200000 }, { bitrate: 3000000 }]);
+          window.bigscreenPlayer.mseDurationOverride = undefined;
+        });
+
+        afterEach(function () {
+          mockDashInstance.setDuration.calls.reset();
+        });
+
+        describe('overrides dynamic stream duration', function () {
+          it('when mseDurationOverride configration property is true and window type is sliding', function () {
+            window.bigscreenPlayer.mseDurationOverride = true;
+
+            setUpMSE(0, WindowTypes.SLIDING);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+
+          it('when mseDurationOverride configration property is true and window type is growing', function () {
+            window.bigscreenPlayer.mseDurationOverride = true;
+
+            setUpMSE(0, WindowTypes.GROWING);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+        });
+
+        describe('does not override stream duration', function () {
+          it('when mseDurationOverride configration property is true and window type is static', function () {
+            window.bigscreenPlayer.mseDurationOverride = true;
+
+            setUpMSE(0, WindowTypes.STATIC);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+
+          it('when mseDurationOverride configration property is false and window type is static', function () {
+            window.bigscreenPlayer.mseDurationOverride = undefined;
+
+            setUpMSE(0, WindowTypes.STATIC);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+
+          it('when mseDurationOverride configration property is false and window type is sliding', function () {
+            window.bigscreenPlayer.mseDurationOverride = undefined;
+
+            setUpMSE(0, WindowTypes.SLIDING);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+
+          it('when mseDurationOverride configration property is false and window type is growing', function () {
+            window.bigscreenPlayer.mseDurationOverride = undefined;
+
+            setUpMSE(0, WindowTypes.GROWING);
+            mseStrategy.load(null, 0);
+
+            eventHandlers.streamInitialized();
+
+            expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER);
+          });
+        });
+      });
+
       describe('onMetricAdded and onQualityChangeRendered', function () {
         var mockEvent = {
           mediaType: 'video',
@@ -895,11 +976,11 @@ require(
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalledWith();
         });
 
-        it('should not publish error event on content download error', function () {
+        it('should not publish error event on initial segment download error', function () {
           var mockEvent = {
-            error: 'download',
-            event: {
-              id: 'content'
+            error: {
+              message: 'initial segment download error',
+              code: 28
             }
           };
 
@@ -912,14 +993,54 @@ require(
 
           dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
 
-          expect(mockErrorCallback).not.toHaveBeenCalledWith();
+          expect(mockErrorCallback).not.toHaveBeenCalled();
+        });
+
+        it('should not publish error event on segment index download error', function () {
+          var mockEvent = {
+            error: {
+              message: 'segment index download error',
+              code: 26
+            }
+          };
+
+          setUpMSE();
+
+          var mockErrorCallback = jasmine.createSpy();
+          mseStrategy.addErrorCallback(null, mockErrorCallback);
+
+          mseStrategy.load(null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
+
+          expect(mockErrorCallback).not.toHaveBeenCalled();
+        });
+
+        it('should not publish error event on content download error', function () {
+          var mockEvent = {
+            error: {
+              message: 'content download error',
+              code: 27
+            }
+          };
+
+          setUpMSE();
+
+          var mockErrorCallback = jasmine.createSpy();
+          mseStrategy.addErrorCallback(null, mockErrorCallback);
+
+          mseStrategy.load(null, 0);
+
+          dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent);
+
+          expect(mockErrorCallback).not.toHaveBeenCalled();
         });
 
         it('should not publish error event on manifest download error', function () {
           var mockEvent = {
-            error: 'download',
-            event: {
-              id: 'manifest'
+            error: {
+              message: 'manifest download error',
+              code: 25
             }
           };
 
@@ -937,9 +1058,9 @@ require(
 
         it('should initiate a failover with correct parameters on manifest download error', function () {
           var mockEvent = {
-            error: 'download',
-            event: {
-              id: 'manifest'
+            error: {
+              message: 'manifest download error',
+              code: 25
             }
           };
 
@@ -962,9 +1083,9 @@ require(
 
         it('should publish an error event on manifest download error but there are no more sources to CDN failover to', function () {
           var mockEvent = {
-            error: 'download',
-            event: {
-              id: 'manifest'
+            error: {
+              message: 'manifest download error',
+              code: 25
             }
           };
 

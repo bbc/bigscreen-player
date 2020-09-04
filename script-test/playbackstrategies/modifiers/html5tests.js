@@ -116,8 +116,15 @@ require(
         spyOn(mockVideoMediaElement, 'load');
         spyOn(mockVideoMediaElement, 'pause');
 
+        spyOn(mockAudioMediaElement, 'play');
+        spyOn(mockAudioMediaElement, 'load');
+        spyOn(mockAudioMediaElement, 'pause');
         createPlayer(config);
         done();
+      });
+
+      afterEach(function () {
+        player = null;
       });
 
       describe('Media Player Common Tests', function () {
@@ -351,9 +358,14 @@ require(
 
         describe('Buffering state tests', function () {
           beforeEach(function () {
+            jasmine.clock().install();
             player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
             player.beginPlaybackFrom(0);
             recentEvents = [];
+          });
+
+          afterEach(function () {
+            jasmine.clock().uninstall();
           });
 
           it('Get Source Returns Expected Value In Buffering State', function () {
@@ -409,8 +421,10 @@ require(
 
           it('Time Passing Does Not Cause Status Event To Be Sent In Buffering State', function () {
             mockVideoMediaElement.currentTime += 1;
+            jasmine.clock().tick(1200);
 
-            expect(recentEvents).toEqual([]);
+            // sentinel & playing events
+            expect(recentEvents).toEqual([MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING, MediaPlayerBase.EVENT.PLAYING]);
           });
 
           it('When Buffering Finishes And No Further Api Calls Then We Go To Playing State', function () {
@@ -462,7 +476,6 @@ require(
         describe('Playing State Tests', function () {
           beforeEach(function () {
             spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(100);
-
             player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
             player.beginPlaybackFrom(0);
             finishedBufferingCallback();
@@ -473,7 +486,6 @@ require(
 
           afterEach(function () {
             jasmine.clock().uninstall();
-            player = null;
           });
 
           it('Get Source Returns Expected Value In Playing State', function () {
@@ -1184,9 +1196,7 @@ require(
         });
 
         it(' Get Seekable Range Gets End Time From Duration When No Seekable Property', function () {
-          metaDataCallback();
           spyOnProperty(mockVideoMediaElement, 'duration').and.returnValue(60);
-
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
           player.beginPlayback();
           metaDataCallback({start: 0, end: 30});
