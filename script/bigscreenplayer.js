@@ -144,6 +144,17 @@ define('bigscreenplayer/bigscreenplayer',
         });
       }
 
+      function injectErrorEvent(msg) {
+        if (playerComponent) {
+          playerComponent.injectErrorEvent(msg);
+        }
+      }
+
+      function raiseError(msg) {
+        DebugTool.info('raiseError: ' + msg);
+        playerComponent.bubbleFatalError(false);
+      }
+
       return {
         init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, callbacks) {
           Chronicle.init();
@@ -321,6 +332,8 @@ define('bigscreenplayer/bigscreenplayer',
         },
         convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
         toggleDebug: toggleDebug,
+        injectErrorEvent: injectErrorEvent,
+        raiseError: raiseError,
         getLogLevels: function () {
           return DebugTool.logLevels;
         },

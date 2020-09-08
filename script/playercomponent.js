@@ -220,6 +220,10 @@ define(
         }, bufferingTimeout);
       }
 
+      function injectErrorEvent(msg) {
+        playbackStrategy.injectErrorEvent(msg);
+      }
+
       function raiseError () {
         clearBufferingErrorTimeout();
         publishMediaStateUpdate(MediaState.WAITING);
@@ -382,7 +386,12 @@ define(
         setSubtitlesEnabled: setSubtitlesEnabled,
         isPaused: isPaused,
         setTransportControlPosition: setTransportControlPosition,
-        tearDown: tearDown
+        tearDown: tearDown,
+        startFatalErrorTimeout: startFatalErrorTimeout,
+        onError: onError,
+        raiseError: raiseError,
+        injectErrorEvent: injectErrorEvent,
+        bubbleFatalError: bubbleFatalError
       };
     };
 

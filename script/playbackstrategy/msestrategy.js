@@ -502,6 +502,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         getSeekableRange: getSeekableRange,
         getCurrentTime: getCurrentTime,
         getDuration: getDuration,
+        injectErrorEvent: function(msg) {
+          onError({error : {message: msg}});
+        },
         tearDown: function () {
           mediaPlayer.reset();
 

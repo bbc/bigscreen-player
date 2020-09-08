@@ -375,6 +375,10 @@ define(
         reportError('Media element error code: ' + mediaElement.error.code);
       }
 
+      function raiseCustomError(msg) {
+        reportError('Custom error raised: ' + msg + ' media element error code: ' + mediaElement.error.code);
+      }
+
       function onSourceError () {
         reportError('Media source element error');
       }
@@ -863,7 +867,9 @@ define(
 
         toPaused: toPaused,
 
-        toPlaying: toPlaying
+        toPlaying: toPlaying,
+
+        raiseCustomError: raiseCustomError
       };
     }
 
