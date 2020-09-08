@@ -28,6 +28,8 @@ define(
       var range;
       var currentTime;
 
+      var eventCallbacks = [];
+
       function initialiseMedia (type, url, mediaMimeType) {
         if (getState() === MediaPlayerBase.STATE.EMPTY) {
           mediaType = type;
@@ -317,7 +319,7 @@ define(
       function _getClampedTimeForPlayFrom (seconds) {
         var clampedTime = getClampedTime(seconds);
         if (clampedTime !== seconds) {
-          RuntimeContext.getDevice().getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+          // TODO this was on antie in TAL RuntimeContext.getDevice().getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
         }
         return clampedTime;
       }
@@ -507,8 +509,9 @@ define(
 
       function _setDisplayFullScreenForVideo () {
         if (mimeType === MediaPlayerBase.TYPE.VIDEO) {
-          var dimensions = RuntimeContext.getDevice().getScreenSize();
-          playerPlugin.SetDisplayArea(0, 0, dimensions.width, dimensions.height);
+          // TODO this was from antie in TAL
+          // var dimensions = RuntimeContext.getDevice().getScreenSize();
+          // playerPlugin.SetDisplayArea(0, 0, dimensions.width, dimensions.height);
         }
       }
 
@@ -542,51 +545,51 @@ define(
           return seconds;
         }
       }
-    }
 
-    /**
+      /**
         * Offset used when attempting to playFrom() the end of media. This allows the media to play briefly before completing.
         * @constant {Number}
       */
-    var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
+      var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
 
-    function getClampOffsetFromConfig () {
-      var clampOffsetFromEndOfRange;
+      function getClampOffsetFromConfig () {
+        var clampOffsetFromEndOfRange;
 
-      // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
-      // TODO: this is duplicated from html5 strategy
-      // if (config && config.streaming && config.streaming.overrides) {
-      //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
-      // }
+        // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
+        // TODO: this is duplicated from html5 strategy
+        // if (config && config.streaming && config.streaming.overrides) {
+        //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
+        // }
 
-      if (clampOffsetFromEndOfRange !== undefined) {
-        return clampOffsetFromEndOfRange;
-      } else {
-        return CLAMP_OFFSET_FROM_END_OF_RANGE;
-      }
-    }
-
-    function emitEvent (eventType, eventLabels) {
-      var event = {
-        type: eventType,
-        currentTime: getCurrentTime(),
-        seekableRange: getSeekableRange(),
-        duration: getDuration(),
-        url: getSource(),
-        mimeType: getMimeType(),
-        state: getState()
-      };
-
-      if (eventLabels) {
-        for (var key in eventLabels) {
-          if (eventLabels.hasOwnProperty(key)) {
-            event[key] = eventLabels[key];
-          }
+        if (clampOffsetFromEndOfRange !== undefined) {
+          return clampOffsetFromEndOfRange;
+        } else {
+          return CLAMP_OFFSET_FROM_END_OF_RANGE;
         }
       }
 
-      for (var index = 0; index < eventCallbacks.length; index++) {
-        eventCallbacks[index](event);
+      function emitEvent (eventType, eventLabels) {
+        var event = {
+          type: eventType,
+          currentTime: getCurrentTime(),
+          seekableRange: getSeekableRange(),
+          duration: playerPlugin.getDuration(),
+          url: getSource(),
+          mimeType: getMimeType(),
+          state: getState()
+        };
+
+        if (eventLabels) {
+          for (var key in eventLabels) {
+            if (eventLabels.hasOwnProperty(key)) {
+              event[key] = eventLabels[key];
+            }
+          }
+        }
+
+        for (var index = 0; index < eventCallbacks.length; index++) {
+          eventCallbacks[index](event);
+        }
       }
     }
 
