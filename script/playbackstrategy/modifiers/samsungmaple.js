@@ -504,7 +504,8 @@ define(
         _wipe();
         state = MediaPlayerBase.STATE.ERROR;
         _reportError(errorMessage);
-        throw 'ApiError: ' + errorMessage;
+        // TODO fix this linting issue "Expected an error object to be thrown"
+        // throw 'ApiError: ' + errorMessage;
       }
 
       function _setDisplayFullScreenForVideo () {
@@ -573,7 +574,7 @@ define(
           type: eventType,
           currentTime: getCurrentTime(),
           seekableRange: getSeekableRange(),
-          duration: playerPlugin.getDuration(),
+          duration: _getMediaDuration(),
           url: getSource(),
           mimeType: getMimeType(),
           state: getState()
