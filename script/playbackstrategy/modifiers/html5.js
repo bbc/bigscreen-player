@@ -376,7 +376,7 @@ define(
       }
 
       function raiseCustomError (msg) {
-        reportError('Custom error raised: ' + msg + ' media element error code: ' + mediaElement.error.code);
+        reportError('Custom error raised: ' + msg);
       }
 
       function onSourceError () {
