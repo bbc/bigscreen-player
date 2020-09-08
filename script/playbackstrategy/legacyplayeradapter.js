@@ -277,6 +277,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           }
         },
         injectErrorEvent: function (msg) {
+          DebugTool.info('LegacyAdaptor (native|tal) Error: ' + msg);
           mediaPlayer.raiseCustomError(msg);
         },
         isPaused: function () {

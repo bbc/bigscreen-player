@@ -376,6 +376,12 @@ define(
       }
 
       function raiseCustomError (msg) {
+        if (mediaElement.error) {
+          if (mediaElement.error.code) {
+            reportError('Custom error raised: ' + msg + 'media element error code: ' + mediaElement.error.code);
+            return;
+          }
+        }
         reportError('Custom error raised: ' + msg);
       }
 
