@@ -220,7 +220,7 @@ define(
         }, bufferingTimeout);
       }
 
-      function injectErrorEvent(msg) {
+      function injectErrorEvent (msg) {
         playbackStrategy.injectErrorEvent(msg);
       }
 

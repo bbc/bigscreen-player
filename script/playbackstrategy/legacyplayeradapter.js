@@ -276,7 +276,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             mediaPlayer.pause(options);
           }
         },
-        injectErrorEvent: function(msg) {
+        injectErrorEvent: function (msg) {
           mediaPlayer.raiseCustomError(msg);
         },
         isPaused: function () {

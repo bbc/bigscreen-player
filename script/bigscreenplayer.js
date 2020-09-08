@@ -144,13 +144,13 @@ define('bigscreenplayer/bigscreenplayer',
         });
       }
 
-      function injectErrorEvent(msg) {
+      function injectErrorEvent (msg) {
         if (playerComponent) {
           playerComponent.injectErrorEvent(msg);
         }
       }
 
-      function raiseError(msg) {
+      function raiseError (msg) {
         DebugTool.info('raiseError: ' + msg);
         playerComponent.bubbleFatalError(false);
       }
