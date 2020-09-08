@@ -77,7 +77,7 @@ define(
             _toBuffering();
             if (!currentTimeKnown) {
               deferSeekingTo = seekingTo;
-            } else if (this._isNearToCurrentTime(seekingTo)) {
+            } else if (_isNearToCurrentTime(seekingTo)) {
               _toPlaying();
             } else {
               _seekToWithFailureStateTransition(seekingTo);
@@ -88,7 +88,7 @@ define(
             _toBuffering();
             if (!currentTimeKnown) {
               deferSeekingTo = seekingTo;
-            } else if (this._isNearToCurrentTime(seekingTo)) {
+            } else if (_isNearToCurrentTime(seekingTo)) {
               playerPlugin.Resume();
               _toPlaying();
             } else {
@@ -274,7 +274,7 @@ define(
       function _onStatus () {
         var state = getState();
         if (state === MediaPlayer.STATE.PLAYING) {
-          this._emitEvent(MediaPlayer.EVENT.STATUS);
+          emitEvent(MediaPlayer.EVENT.STATUS);
         }
       }
 
@@ -301,7 +301,7 @@ define(
 
       function _deferredSeek () {
         var clampedTime = _getClampedTimeForPlayFrom(deferSeekingTo);
-        var isNearCurrentTime = this._isNearToCurrentTime(clampedTime);
+        var isNearCurrentTime = _isNearToCurrentTime(clampedTime);
 
         if (isNearCurrentTime) {
           _toPlaying();
@@ -315,7 +315,7 @@ define(
       }
 
       function _getClampedTimeForPlayFrom (seconds) {
-        var clampedTime = this._getClampedTime(seconds);
+        var clampedTime = getClampedTime(seconds);
         if (clampedTime !== seconds) {
           RuntimeContext.getDevice().getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
         }
@@ -423,7 +423,7 @@ define(
       }
 
       function _seekTo (seconds) {
-        var offset = seconds - this.getCurrentTime();
+        var offset = seconds - getCurrentTime();
         var success = _isSuccessCode(_jump(offset));
 
         if (success) {
@@ -463,34 +463,34 @@ define(
 
       function _reportError (errorMessage) {
         RuntimeContext.getDevice().getLogger().error(errorMessage);
-        this._emitEvent(MediaPlayer.EVENT.ERROR, {'errorMessage': errorMessage});
+        emitEvent(MediaPlayer.EVENT.ERROR, {'errorMessage': errorMessage});
       }
 
       function _toStopped () {
         currentTime = 0;
         range = undefined;
         state = MediaPlayer.STATE.STOPPED;
-        this._emitEvent(MediaPlayer.EVENT.STOPPED);
+        emitEvent(MediaPlayer.EVENT.STOPPED);
       }
 
       function _toBuffering () {
         state = MediaPlayer.STATE.BUFFERING;
-        this._emitEvent(MediaPlayer.EVENT.BUFFERING);
+        emitEvent(MediaPlayer.EVENT.BUFFERING);
       }
 
       function _toPlaying () {
         state = MediaPlayer.STATE.PLAYING;
-        this._emitEvent(MediaPlayer.EVENT.PLAYING);
+        emitEvent(MediaPlayer.EVENT.PLAYING);
       }
 
       function _toPaused () {
         state = MediaPlayer.STATE.PAUSED;
-        this._emitEvent(MediaPlayer.EVENT.PAUSED);
+        emitEvent(MediaPlayer.EVENT.PAUSED);
       }
 
       function _toComplete () {
         state = MediaPlayer.STATE.COMPLETE;
-        this._emitEvent(MediaPlayer.EVENT.COMPLETE);
+        emitEvent(MediaPlayer.EVENT.COMPLETE);
       }
 
       function _toEmpty () {
@@ -523,6 +523,71 @@ define(
        * by 2.5 seconds was always seen to work.
        */
       var CURRENT_TIME_TOLERANCE = 2.5;
+
+      function _isNearToCurrentTime (seconds) {
+        var currentTime = getCurrentTime();
+        var targetTime = getClampedTime(seconds);
+        return Math.abs(currentTime - targetTime) <= CURRENT_TIME_TOLERANCE;
+      }
+
+      function getClampedTime (seconds) {
+        var range = getSeekableRange();
+        var offsetFromEnd = getClampOffsetFromConfig();
+        var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
+        if (seconds < range.start) {
+          return range.start;
+        } else if (seconds > nearToEnd) {
+          return nearToEnd;
+        } else {
+          return seconds;
+        }
+      }
+    }
+
+    /**
+        * Offset used when attempting to playFrom() the end of media. This allows the media to play briefly before completing.
+        * @constant {Number}
+      */
+    var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
+
+    function getClampOffsetFromConfig () {
+      var clampOffsetFromEndOfRange;
+
+      // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
+      // TODO: this is duplicated from html5 strategy
+      // if (config && config.streaming && config.streaming.overrides) {
+      //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
+      // }
+
+      if (clampOffsetFromEndOfRange !== undefined) {
+        return clampOffsetFromEndOfRange;
+      } else {
+        return CLAMP_OFFSET_FROM_END_OF_RANGE;
+      }
+    }
+
+    function emitEvent (eventType, eventLabels) {
+      var event = {
+        type: eventType,
+        currentTime: getCurrentTime(),
+        seekableRange: getSeekableRange(),
+        duration: getDuration(),
+        url: getSource(),
+        mimeType: getMimeType(),
+        state: getState()
+      };
+
+      if (eventLabels) {
+        for (var key in eventLabels) {
+          if (eventLabels.hasOwnProperty(key)) {
+            event[key] = eventLabels[key];
+          }
+        }
+      }
+
+      for (var index = 0; index < eventCallbacks.length; index++) {
+        eventCallbacks[index](event);
+      }
     }
 
     return Player;
