@@ -10,11 +10,11 @@ define(
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
     'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaPlayer, DebugTool) {
+  function (MediaPlayerBase, DebugTool) {
     'use strict';
 
     function Player () {
-      var state = MediaPlayer.STATE.EMPTY;
+      var state = MediaPlayerBase.STATE.EMPTY;
       var playerPlugin = document.getElementById('playerPlugin');
       var deferSeekingTo = null;
       var postBufferingState = null;
@@ -29,31 +29,31 @@ define(
       var currentTime;
 
       function initialiseMedia (type, url, mediaMimeType) {
-        if (getState() === MediaPlayer.STATE.EMPTY) {
+        if (getState() === MediaPlayerBase.STATE.EMPTY) {
           mediaType = type;
           source = url;
           mimeType = mediaMimeType;
           _registerEventHandlers();
           _toStopped();
         } else {
-          _toError('Cannot set source unless in the \'' + MediaPlayer.STATE.EMPTY + '\' state');
+          _toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state');
         }
       }
 
       function resume () {
-        postBufferingState = MediaPlayer.STATE.PLAYING;
+        postBufferingState = MediaPlayerBase.STATE.PLAYING;
         switch (getState()) {
-          case MediaPlayer.STATE.PLAYING:
+          case MediaPlayerBase.STATE.PLAYING:
             break;
 
-          case MediaPlayer.STATE.BUFFERING:
+          case MediaPlayerBase.STATE.BUFFERING:
             if (tryingToPause) {
               tryingToPause = false;
               _toPlaying();
             }
             break;
 
-          case MediaPlayer.STATE.PAUSED:
+          case MediaPlayerBase.STATE.PAUSED:
             playerPlugin.Resume();
             _toPlaying();
             break;
@@ -65,15 +65,15 @@ define(
       }
 
       function playFrom (seconds) {
-        postBufferingState = MediaPlayer.STATE.PLAYING;
+        postBufferingState = MediaPlayerBase.STATE.PLAYING;
         var seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds;
 
         switch (getState()) {
-          case MediaPlayer.STATE.BUFFERING:
+          case MediaPlayerBase.STATE.BUFFERING:
             deferSeekingTo = seekingTo;
             break;
 
-          case MediaPlayer.STATE.PLAYING:
+          case MediaPlayerBase.STATE.PLAYING:
             _toBuffering();
             if (!currentTimeKnown) {
               deferSeekingTo = seekingTo;
@@ -84,7 +84,7 @@ define(
             }
             break;
 
-          case MediaPlayer.STATE.PAUSED:
+          case MediaPlayerBase.STATE.PAUSED:
             _toBuffering();
             if (!currentTimeKnown) {
               deferSeekingTo = seekingTo;
@@ -97,7 +97,7 @@ define(
             }
             break;
 
-          case MediaPlayer.STATE.COMPLETE:
+          case MediaPlayerBase.STATE.COMPLETE:
             playerPlugin.Stop();
             _setDisplayFullScreenForVideo();
             playerPlugin.ResumePlay(_wrappedSource(), seekingTo);
@@ -111,9 +111,9 @@ define(
       }
 
       function beginPlayback () {
-        postBufferingState = MediaPlayer.STATE.PLAYING;
+        postBufferingState = MediaPlayerBase.STATE.PLAYING;
         switch (getState()) {
-          case MediaPlayer.STATE.STOPPED:
+          case MediaPlayerBase.STATE.STOPPED:
             _toBuffering();
             _setDisplayFullScreenForVideo();
             playerPlugin.Play(_wrappedSource());
@@ -126,11 +126,11 @@ define(
       }
 
       function beginPlaybackFrom (seconds) {
-        postBufferingState = MediaPlayer.STATE.PLAYING;
+        postBufferingState = MediaPlayerBase.STATE.PLAYING;
         var seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds;
 
         switch (getState()) {
-          case MediaPlayer.STATE.STOPPED:
+          case MediaPlayerBase.STATE.STOPPED:
             _setDisplayFullScreenForVideo();
             playerPlugin.ResumePlay(_wrappedSource(), seekingTo);
             _toBuffering();
@@ -143,13 +143,13 @@ define(
       }
 
       function pause () {
-        postBufferingState = MediaPlayer.STATE.PAUSED;
+        postBufferingState = MediaPlayerBase.STATE.PAUSED;
         switch (getState()) {
-          case MediaPlayer.STATE.BUFFERING:
-          case MediaPlayer.STATE.PAUSED:
+          case MediaPlayerBase.STATE.BUFFERING:
+          case MediaPlayerBase.STATE.PAUSED:
             break;
 
-          case MediaPlayer.STATE.PLAYING:
+          case MediaPlayerBase.STATE.PLAYING:
             _tryPauseWithStateTransition();
             break;
 
@@ -161,13 +161,13 @@ define(
 
       function stop () {
         switch (getState()) {
-          case MediaPlayer.STATE.STOPPED:
+          case MediaPlayerBase.STATE.STOPPED:
             break;
 
-          case MediaPlayer.STATE.BUFFERING:
-          case MediaPlayer.STATE.PLAYING:
-          case MediaPlayer.STATE.PAUSED:
-          case MediaPlayer.STATE.COMPLETE:
+          case MediaPlayerBase.STATE.BUFFERING:
+          case MediaPlayerBase.STATE.PLAYING:
+          case MediaPlayerBase.STATE.PAUSED:
+          case MediaPlayerBase.STATE.COMPLETE:
             _stopPlayer();
             _toStopped();
             break;
@@ -180,11 +180,11 @@ define(
 
       function reset () {
         switch (getState()) {
-          case MediaPlayer.STATE.EMPTY:
+          case MediaPlayerBase.STATE.EMPTY:
             break;
 
-          case MediaPlayer.STATE.STOPPED:
-          case MediaPlayer.STATE.ERROR:
+          case MediaPlayerBase.STATE.STOPPED:
+          case MediaPlayerBase.STATE.ERROR:
             _toEmpty();
             break;
 
@@ -203,7 +203,7 @@ define(
       }
 
       function getCurrentTime () {
-        if (getState() === MediaPlayer.STATE.STOPPED) {
+        if (getState() === MediaPlayerBase.STATE.STOPPED) {
           return undefined;
         } else {
           return currentTime;
@@ -230,12 +230,12 @@ define(
       }
 
       function _onFinishedBuffering () {
-        if (getState() !== MediaPlayer.STATE.BUFFERING) {
+        if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
           return;
         }
 
         if (deferSeekingTo === null) {
-          if (postBufferingState === MediaPlayer.STATE.PAUSED) {
+          if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
             _tryPauseWithStateTransition();
           } else {
             _toPlaying();
@@ -248,7 +248,7 @@ define(
       }
 
       function _onDeviceBuffering () {
-        if (getState() === MediaPlayer.STATE.PLAYING) {
+        if (getState() === MediaPlayerBase.STATE.PLAYING) {
           _toBuffering();
         }
       }
@@ -273,8 +273,8 @@ define(
 
       function _onStatus () {
         var state = getState();
-        if (state === MediaPlayer.STATE.PLAYING) {
-          emitEvent(MediaPlayer.EVENT.STATUS);
+        if (state === MediaPlayerBase.STATE.PLAYING) {
+          emitEvent(MediaPlayerBase.EVENT.STATUS);
         }
       }
 
@@ -462,51 +462,51 @@ define(
       }
 
       function _reportError (errorMessage) {
-        RuntimeContext.getDevice().getLogger().error(errorMessage);
-        emitEvent(MediaPlayer.EVENT.ERROR, {'errorMessage': errorMessage});
+        // TODO this was from antie in TAL RuntimeContext.getDevice().getLogger().error(errorMessage);
+        emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
       }
 
       function _toStopped () {
         currentTime = 0;
         range = undefined;
-        state = MediaPlayer.STATE.STOPPED;
-        emitEvent(MediaPlayer.EVENT.STOPPED);
+        state = MediaPlayerBase.STATE.STOPPED;
+        emitEvent(MediaPlayerBase.EVENT.STOPPED);
       }
 
       function _toBuffering () {
-        state = MediaPlayer.STATE.BUFFERING;
-        emitEvent(MediaPlayer.EVENT.BUFFERING);
+        state = MediaPlayerBase.STATE.BUFFERING;
+        emitEvent(MediaPlayerBase.EVENT.BUFFERING);
       }
 
       function _toPlaying () {
-        state = MediaPlayer.STATE.PLAYING;
-        emitEvent(MediaPlayer.EVENT.PLAYING);
+        state = MediaPlayerBase.STATE.PLAYING;
+        emitEvent(MediaPlayerBase.EVENT.PLAYING);
       }
 
       function _toPaused () {
-        state = MediaPlayer.STATE.PAUSED;
-        emitEvent(MediaPlayer.EVENT.PAUSED);
+        state = MediaPlayerBase.STATE.PAUSED;
+        emitEvent(MediaPlayerBase.EVENT.PAUSED);
       }
 
       function _toComplete () {
-        state = MediaPlayer.STATE.COMPLETE;
-        emitEvent(MediaPlayer.EVENT.COMPLETE);
+        state = MediaPlayerBase.STATE.COMPLETE;
+        emitEvent(MediaPlayerBase.EVENT.COMPLETE);
       }
 
       function _toEmpty () {
         _wipe();
-        state = MediaPlayer.STATE.EMPTY;
+        state = MediaPlayerBase.STATE.EMPTY;
       }
 
       function _toError (errorMessage) {
         _wipe();
-        state = MediaPlayer.STATE.ERROR;
+        state = MediaPlayerBase.STATE.ERROR;
         _reportError(errorMessage);
         throw 'ApiError: ' + errorMessage;
       }
 
       function _setDisplayFullScreenForVideo () {
-        if (mimeType === MediaPlayer.TYPE.VIDEO) {
+        if (mimeType === MediaPlayerBase.TYPE.VIDEO) {
           var dimensions = RuntimeContext.getDevice().getScreenSize();
           playerPlugin.SetDisplayArea(0, 0, dimensions.width, dimensions.height);
         }
@@ -594,17 +594,17 @@ define(
   });
 
 /**
-       * Main MediaPlayer implementation for Samsung devices implementing the Maple API.
+       * Main MediaPlayerBase implementation for Samsung devices implementing the Maple API.
        * Use this device modifier if a device implements the Samsung Maple media playback standard.
        * It must support creation of &lt;object&gt; elements with appropriate SAMSUNG_INFOLINK classids.
        * Those objects must expose an API in accordance with the Samsung Maple media specification.
-       * @name antie.devices.mediaplayer.SamsungMaple
+       * @name antie.devices.MediaPlayerBase.SamsungMaple
        * @class
-       * @extends antie.devices.mediaplayer.MediaPlayer
+       * @extends antie.devices.MediaPlayerBase.MediaPlayerBase
        */
 //   var instance = new Player();
 
-//   // Mixin this MediaPlayer implementation, so that device.getMediaPlayer() returns the correct implementation for the device
+//   // Mixin this MediaPlayerBase implementation, so that device.getMediaPlayer() returns the correct implementation for the device
 //   Device.prototype.getMediaPlayer = function () {
 //     return instance;
 //   };
