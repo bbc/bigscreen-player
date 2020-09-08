@@ -509,7 +509,7 @@ define(
       }
 
       function _setDisplayFullScreenForVideo () {
-        if (mimeType === MediaPlayerBase.TYPE.VIDEO) {
+        if (mediaType === MediaPlayerBase.TYPE.VIDEO) {
           // TODO this was from antie in TAL
           // var dimensions = RuntimeContext.getDevice().getScreenSize();
           // playerPlugin.SetDisplayArea(0, 0, dimensions.width, dimensions.height);
@@ -592,6 +592,17 @@ define(
           eventCallbacks[index](event);
         }
       }
+
+      return {
+        initialiseMedia: initialiseMedia,
+        resume: resume,
+        playFrom: playFrom,
+        beginPlayback: beginPlayback,
+        beginPlaybackFrom: beginPlaybackFrom,
+        pause: pause,
+        reset: reset,
+        getPlayerElement: getPlayerElement
+      };
     }
 
     return Player;
