@@ -128,9 +128,6 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
           mediaElement.currentTime = getClampedTime(playFromTime, getSeekableRange()) + timeCorrection;
           playFromTime = undefined;
         }
-        if (!isPaused()) {
-          mediaElement.play();
-        }
       }
 
       function isPaused () {
