@@ -186,7 +186,11 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
           function (event) {
             return event !== MediaState.PAUSED;
           },
-          mediaElement.play);
+          play);
+      }
+
+      function play () {
+        mediaElement.play();
       }
 
       return {
@@ -247,9 +251,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
             startAutoResumeTimeout();
           }
         },
-        play: function () {
-          mediaElement.play();
-        },
+        play: play,
         setCurrentTime: function (time) {
           mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection;
         }
