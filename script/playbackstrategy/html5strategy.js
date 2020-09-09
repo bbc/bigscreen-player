@@ -147,15 +147,19 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
             start: mediaElement.seekable.start(0),
             end: mediaElement.seekable.end(0)
           };
+        } else {
+          return {
+            start: 0,
+            end: 0
+          };
         }
-        return undefined;
       }
 
       function getDuration () {
         if (mediaElement && metaDataLoaded) {
           return mediaElement.duration;
         }
-        return undefined;
+        return 0;
       }
 
       function getCurrentTime () {
