@@ -217,7 +217,7 @@ define(
         return range;
       }
 
-      function _getMediaDuration () {
+      function getDuration () {
         if (range) {
           return range.end;
         }
@@ -481,12 +481,12 @@ define(
         emitEvent(MediaPlayerBase.EVENT.BUFFERING);
       }
 
-      function _toPlaying () {
+      function toPlaying () {
         state = MediaPlayerBase.STATE.PLAYING;
         emitEvent(MediaPlayerBase.EVENT.PLAYING);
       }
 
-      function _toPaused () {
+      function toPaused () {
         state = MediaPlayerBase.STATE.PAUSED;
         emitEvent(MediaPlayerBase.EVENT.PAUSED);
       }
@@ -575,7 +575,7 @@ define(
           type: eventType,
           currentTime: getCurrentTime(),
           seekableRange: getSeekableRange(),
-          duration: _getMediaDuration(),
+          duration: getDuration(),
           url: getSource(),
           mimeType: getMimeType(),
           state: getState()
@@ -615,19 +615,37 @@ define(
 
         initialiseMedia: initialiseMedia,
 
-        resume: resume,
-
         playFrom: playFrom,
 
         beginPlayback: beginPlayback,
 
         beginPlaybackFrom: beginPlaybackFrom,
 
+        resume: resume,
+
         pause: pause,
+
+        stop: stop,
 
         reset: reset,
 
-        getPlayerElement: getPlayerElement
+        getSeekableRange: getSeekableRange,
+
+        getState: getState,
+
+        getPlayerElement: getPlayerElement,
+
+        getSource: getSource,
+
+        getMimeType: getMimeType,
+
+        getCurrentTime: getCurrentTime,
+
+        getDuration: getDuration,
+
+        toPaused: toPaused,
+
+        toPlaying: toPlaying
       };
     }
 
