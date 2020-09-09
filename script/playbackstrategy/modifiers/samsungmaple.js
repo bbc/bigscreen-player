@@ -510,10 +510,25 @@ define(
 
       function _setDisplayFullScreenForVideo () {
         if (mediaType === MediaPlayerBase.TYPE.VIDEO) {
-          // TODO figure out what getScreenSize is!
-          // var dimensions = RuntimeContext.getDevice().getScreenSize();
-          // playerPlugin.SetDisplayArea(0, 0, dimensions.width, dimensions.height);
+          var dimensions = _getScreenSize();
+          playerPlugin.SetDisplayArea(0, 0, dimensions.width, dimensions.height);
         }
+      }
+
+      function _getScreenSize () {
+        var w, h;
+        if (typeof (window.innerWidth) === 'number') {
+          w = window.innerWidth;
+          h = window.innerHeight;
+        } else {
+          var d = document.documentElement || document.body;
+          h = d.clientHeight || d.offsetHeight;
+          w = d.clientWidth || d.offsetWidth;
+        }
+        return {
+          width: w,
+          height: h
+        };
       }
 
       function _isSuccessCode (code) {
