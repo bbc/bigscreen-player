@@ -29,6 +29,7 @@ define(
       var currentTime;
 
       var eventCallbacks = [];
+      var eventCallback;
 
       function initialiseMedia (type, url, mediaMimeType) {
         if (getState() === MediaPlayerBase.STATE.EMPTY) {
@@ -594,13 +595,38 @@ define(
       }
 
       return {
+        addEventCallback: function (thisArg, newCallback) {
+          eventCallback = function (event) {
+            newCallback.call(thisArg, event);
+          };
+          eventCallbacks.push(eventCallback);
+        },
+
+        removeEventCallback: function (callback) {
+          var index = eventCallbacks.indexOf(callback);
+          if (index !== -1) {
+            eventCallbacks.splice(index, 1);
+          }
+        },
+
+        removeAllEventCallbacks: function () {
+          eventCallbacks = [];
+        },
+
         initialiseMedia: initialiseMedia,
+
         resume: resume,
+
         playFrom: playFrom,
+
         beginPlayback: beginPlayback,
+
         beginPlaybackFrom: beginPlaybackFrom,
+
         pause: pause,
+
         reset: reset,
+
         getPlayerElement: getPlayerElement
       };
     }
@@ -608,21 +634,3 @@ define(
     return Player;
   });
 
-/**
-       * Main MediaPlayerBase implementation for Samsung devices implementing the Maple API.
-       * Use this device modifier if a device implements the Samsung Maple media playback standard.
-       * It must support creation of &lt;object&gt; elements with appropriate SAMSUNG_INFOLINK classids.
-       * Those objects must expose an API in accordance with the Samsung Maple media specification.
-       * @name antie.devices.MediaPlayerBase.SamsungMaple
-       * @class
-       * @extends antie.devices.MediaPlayerBase.MediaPlayerBase
-       */
-//   var instance = new Player();
-
-//   // Mixin this MediaPlayerBase implementation, so that device.getMediaPlayer() returns the correct implementation for the device
-//   Device.prototype.getMediaPlayer = function () {
-//     return instance;
-//   };
-
-//   return Player;
-// }
