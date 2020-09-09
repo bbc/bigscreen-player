@@ -121,13 +121,13 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
 
       function onLoadedMetadata () {
         metaDataLoaded = true;
-      }
-
-      function onCanPlay () {
-        if (playFromTime && metaDataLoaded) {
+        if (playFromTime) {
           mediaElement.currentTime = getClampedTime(playFromTime, getSeekableRange()) + timeCorrection;
           playFromTime = undefined;
         }
+      }
+
+      function onCanPlay () {
         if (!isPaused()) {
           mediaElement.play();
         }
