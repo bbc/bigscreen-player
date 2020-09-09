@@ -52,13 +52,13 @@ define(
           case MediaPlayerBase.STATE.BUFFERING:
             if (tryingToPause) {
               tryingToPause = false;
-              _toPlaying();
+              toPlaying();
             }
             break;
 
           case MediaPlayerBase.STATE.PAUSED:
             playerPlugin.Resume();
-            _toPlaying();
+            toPlaying();
             break;
 
           default:
@@ -81,7 +81,7 @@ define(
             if (!currentTimeKnown) {
               deferSeekingTo = seekingTo;
             } else if (_isNearToCurrentTime(seekingTo)) {
-              _toPlaying();
+              toPlaying();
             } else {
               _seekToWithFailureStateTransition(seekingTo);
             }
@@ -93,7 +93,7 @@ define(
               deferSeekingTo = seekingTo;
             } else if (_isNearToCurrentTime(seekingTo)) {
               playerPlugin.Resume();
-              _toPlaying();
+              toPlaying();
             } else {
               _seekToWithFailureStateTransition(seekingTo);
               playerPlugin.Resume();
@@ -241,7 +241,7 @@ define(
           if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
             _tryPauseWithStateTransition();
           } else {
-            _toPlaying();
+            toPlaying();
           }
         }
       }
@@ -268,7 +268,7 @@ define(
       function _tryPauseWithStateTransition () {
         var success = _isSuccessCode(playerPlugin.Pause());
         if (success) {
-          _toPaused();
+          toPaused();
         }
 
         tryingToPause = !success;
@@ -307,7 +307,7 @@ define(
         var isNearCurrentTime = _isNearToCurrentTime(clampedTime);
 
         if (isNearCurrentTime) {
-          _toPlaying();
+          toPlaying();
           deferSeekingTo = null;
         } else {
           var seekResult = _seekTo(clampedTime);
@@ -320,7 +320,7 @@ define(
       function _getClampedTimeForPlayFrom (seconds) {
         var clampedTime = getClampedTime(seconds);
         if (clampedTime !== seconds) {
-          // TODO this was on antie in TAL RuntimeContext.getDevice().getLogger().debug('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+          DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
         }
         return clampedTime;
       }
@@ -439,7 +439,7 @@ define(
       function _seekToWithFailureStateTransition (seconds) {
         var success = _seekTo(seconds);
         if (!success) {
-          _toPlaying();
+          toPlaying();
         }
       }
 
@@ -465,7 +465,7 @@ define(
       }
 
       function _reportError (errorMessage) {
-        // TODO this was from antie in TAL RuntimeContext.getDevice().getLogger().error(errorMessage);
+        DebugTool.info(errorMessage);
         emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
       }
 
@@ -505,13 +505,12 @@ define(
         _wipe();
         state = MediaPlayerBase.STATE.ERROR;
         _reportError(errorMessage);
-        // TODO fix this linting issue "Expected an error object to be thrown"
-        // throw 'ApiError: ' + errorMessage;
+        throw new Error('ApiError: ' + errorMessage);
       }
 
       function _setDisplayFullScreenForVideo () {
         if (mediaType === MediaPlayerBase.TYPE.VIDEO) {
-          // TODO this was from antie in TAL
+          // TODO figure out what getScreenSize is!
           // var dimensions = RuntimeContext.getDevice().getScreenSize();
           // playerPlugin.SetDisplayArea(0, 0, dimensions.width, dimensions.height);
         }
