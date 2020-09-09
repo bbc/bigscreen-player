@@ -128,7 +128,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onCanPlay () {
-        if (metaDataLoaded && !isPaused()) {
+        if (!isPaused()) {
           mediaElement.play();
         }
       }
