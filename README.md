@@ -105,7 +105,7 @@ State changes which are emitted from the player can be acted upon to by register
 - MediaState.ENDED
 - MediaState.FATAL_ERROR
 
-State changes may be registered for before initialisation and will automatically be cleared upon `tearDown()` of the player.
+State changes may be registered for before initialisation and will automatically be cleared upon `tearDown()` of the player. 
 
 ```javascript
 var bigscreenPlayer = BigscreenPlayer();
