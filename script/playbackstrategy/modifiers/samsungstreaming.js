@@ -106,35 +106,6 @@ define(
         }
       }
 
-      function _openPlayerPlugin () {
-        if (currentPlayer !== undefined) {
-          playerPlugin.Close();
-        }
-        playerPlugin.Open('Player', '1.010', 'Player');
-        currentPlayer = PlayerEmps.Player;
-      }
-
-      function _openStreamingPlayerPlugin () {
-        if (currentPlayer !== undefined) {
-          playerPlugin.Close();
-        }
-        playerPlugin.Open('StreamingPlayer', '1.0', 'StreamingPlayer');
-        currentPlayer = PlayerEmps.StreamingPlayer;
-      }
-
-      function _closePlugin () {
-        playerPlugin.Close();
-        currentPlayer = undefined;
-      }
-
-      function _initPlayer (source) {
-        var result = playerPlugin.Execute('InitPlayer', source);
-
-        if (result !== 1) {
-          _toError('Failed to initialize video: ' + source);
-        }
-      }
-
       function resume () {
         postBufferingState = MediaPlayerBase.STATE.PLAYING;
         switch (getState()) {
@@ -323,16 +294,6 @@ define(
         return undefined;
       }
 
-      function _isLiveRangeOutdated () {
-        var time = Math.floor(currentTime);
-        if (time % 8 === 0 && !updatingTime && lastWindowRanged !== time) {
-          lastWindowRanged = time;
-          return true;
-        } else {
-          return false;
-        }
-      }
-
       function getDuration () {
         if (range) {
           return range.end;
@@ -346,6 +307,100 @@ define(
 
       function getPlayerElement () {
         return playerPlugin;
+      }
+
+      function toPlaying () {
+        if (_isHlsMimeType() && _isLiveMedia() && !updatingTime) {
+          _updateRange();
+        }
+        state = MediaPlayerBase.STATE.PLAYING;
+        _emitEvent(MediaPlayerBase.EVENT.PLAYING);
+      }
+
+      function toPaused () {
+        state = MediaPlayerBase.STATE.PAUSED;
+        _emitEvent(MediaPlayerBase.EVENT.PAUSED);
+      }
+
+      function _toStopped () {
+        currentTime = 0;
+        range = undefined;
+        state = MediaPlayerBase.STATE.STOPPED;
+        _emitEvent(MediaPlayerBase.EVENT.STOPPED);
+      }
+
+      function _toBuffering () {
+        state = MediaPlayerBase.STATE.BUFFERING;
+        _emitEvent(MediaPlayerBase.EVENT.BUFFERING);
+      }
+
+      function _toComplete () {
+        state = MediaPlayerBase.STATE.COMPLETE;
+        _emitEvent(MediaPlayerBase.EVENT.COMPLETE);
+      }
+
+      function _toEmpty () {
+        _wipe();
+        state = MediaPlayerBase.STATE.EMPTY;
+      }
+
+      function _toError (errorMessage) {
+        _wipe();
+        state = MediaPlayerBase.STATE.ERROR;
+        _reportError(errorMessage);
+        throw new Error('ApiError: ' + errorMessage);
+      }
+
+      function _getClampedTime (seconds) {
+        var range = getSeekableRange();
+        var offsetFromEnd = _getClampOffsetFromConfig();
+        var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
+        if (seconds < range.start) {
+          return range.start;
+        } else if (seconds > nearToEnd) {
+          return nearToEnd;
+        } else {
+          return seconds;
+        }
+      }
+
+      function _openPlayerPlugin () {
+        if (currentPlayer !== undefined) {
+          playerPlugin.Close();
+        }
+        playerPlugin.Open('Player', '1.010', 'Player');
+        currentPlayer = PlayerEmps.Player;
+      }
+
+      function _isLiveRangeOutdated () {
+        var time = Math.floor(currentTime);
+        if (time % 8 === 0 && !updatingTime && lastWindowRanged !== time) {
+          lastWindowRanged = time;
+          return true;
+        } else {
+          return false;
+        }
+      }
+
+      function _openStreamingPlayerPlugin () {
+        if (currentPlayer !== undefined) {
+          playerPlugin.Close();
+        }
+        playerPlugin.Open('StreamingPlayer', '1.0', 'StreamingPlayer');
+        currentPlayer = PlayerEmps.StreamingPlayer;
+      }
+
+      function _closePlugin () {
+        playerPlugin.Close();
+        currentPlayer = undefined;
+      }
+
+      function _initPlayer (source) {
+        var result = playerPlugin.Execute('InitPlayer', source);
+
+        if (result !== 1) {
+          _toError('Failed to initialize video: ' + source);
+        }
       }
 
       function _onFinishedBuffering () {
@@ -400,7 +455,7 @@ define(
       function _onStatus () {
         var state = getState();
         if (state === MediaPlayerBase.STATE.PLAYING) {
-          emitEvent(MediaPlayerBase.EVENT.STATUS);
+          _emitEvent(MediaPlayerBase.EVENT.STATUS);
         }
       }
 
@@ -471,7 +526,7 @@ define(
         if (currentPlayer === PlayerEmps.StreamingPlayer && !updatingTime) {
           _updateRange();
         }
-        var clampedTime = getClampedTime(seconds);
+        var clampedTime = _getClampedTime(seconds);
         if (clampedTime !== seconds) {
           DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
         }
@@ -653,75 +708,20 @@ define(
 
       function _reportError (errorMessage) {
         DebugTool.info(errorMessage);
-        emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
-      }
-
-      function _toStopped () {
-        currentTime = 0;
-        range = undefined;
-        state = MediaPlayerBase.STATE.STOPPED;
-        emitEvent(MediaPlayerBase.EVENT.STOPPED);
-      }
-
-      function _toBuffering () {
-        state = MediaPlayerBase.STATE.BUFFERING;
-        emitEvent(MediaPlayerBase.EVENT.BUFFERING);
-      }
-
-      function toPlaying () {
-        if (_isHlsMimeType() && _isLiveMedia() && !updatingTime) {
-          _updateRange();
-        }
-        state = MediaPlayerBase.STATE.PLAYING;
-        emitEvent(MediaPlayerBase.EVENT.PLAYING);
-      }
-
-      function toPaused () {
-        state = MediaPlayerBase.STATE.PAUSED;
-        emitEvent(MediaPlayerBase.EVENT.PAUSED);
-      }
-
-      function _toComplete () {
-        state = MediaPlayerBase.STATE.COMPLETE;
-        emitEvent(MediaPlayerBase.EVENT.COMPLETE);
-      }
-
-      function _toEmpty () {
-        _wipe();
-        state = MediaPlayerBase.STATE.EMPTY;
-      }
-
-      function _toError (errorMessage) {
-        _wipe();
-        state = MediaPlayerBase.STATE.ERROR;
-        _reportError(errorMessage);
-        throw new Error('ApiError: ' + errorMessage);
+        _emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
       }
 
       function _isNearToCurrentTime (seconds) {
         var currentTime = getCurrentTime();
-        var targetTime = getClampedTime(seconds);
+        var targetTime = _getClampedTime(seconds);
         return Math.abs(currentTime - targetTime) <= CURRENT_TIME_TOLERANCE;
-      }
-
-      function getClampedTime (seconds) {
-        var range = getSeekableRange();
-        var offsetFromEnd = _getClampOffsetFromConfig();
-        var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
-        if (seconds < range.start) {
-          return range.start;
-        } else if (seconds > nearToEnd) {
-          return nearToEnd;
-        } else {
-          return seconds;
-        }
       }
 
       function _isLiveMedia () {
         return (mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO) || (mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO);
       }
 
-      function emitEvent (eventType, eventLabels) {
+      function _emitEvent (eventType, eventLabels) {
         var event = {
           type: eventType,
           currentTime: getCurrentTime(),
