@@ -226,6 +226,45 @@ define(
         return playerPlugin;
       }
 
+      function toPlaying () {
+        state = MediaPlayerBase.STATE.PLAYING;
+        _emitEvent(MediaPlayerBase.EVENT.PLAYING);
+      }
+
+      function toPaused () {
+        state = MediaPlayerBase.STATE.PAUSED;
+        _emitEvent(MediaPlayerBase.EVENT.PAUSED);
+      }
+
+      function _toStopped () {
+        currentTime = 0;
+        range = undefined;
+        state = MediaPlayerBase.STATE.STOPPED;
+        _emitEvent(MediaPlayerBase.EVENT.STOPPED);
+      }
+
+      function _toBuffering () {
+        state = MediaPlayerBase.STATE.BUFFERING;
+        _emitEvent(MediaPlayerBase.EVENT.BUFFERING);
+      }
+
+      function _toComplete () {
+        state = MediaPlayerBase.STATE.COMPLETE;
+        _emitEvent(MediaPlayerBase.EVENT.COMPLETE);
+      }
+
+      function _toEmpty () {
+        _wipe();
+        state = MediaPlayerBase.STATE.EMPTY;
+      }
+
+      function _toError (errorMessage) {
+        _wipe();
+        state = MediaPlayerBase.STATE.ERROR;
+        _reportError(errorMessage);
+        throw new Error('ApiError: ' + errorMessage);
+      }
+
       function _onFinishedBuffering () {
         if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
           return;
@@ -271,7 +310,7 @@ define(
       function _onStatus () {
         var state = getState();
         if (state === MediaPlayerBase.STATE.PLAYING) {
-          emitEvent(MediaPlayerBase.EVENT.STATUS);
+          _emitEvent(MediaPlayerBase.EVENT.STATUS);
         }
       }
 
@@ -458,46 +497,7 @@ define(
 
       function _reportError (errorMessage) {
         DebugTool.info(errorMessage);
-        emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
-      }
-
-      function _toStopped () {
-        currentTime = 0;
-        range = undefined;
-        state = MediaPlayerBase.STATE.STOPPED;
-        emitEvent(MediaPlayerBase.EVENT.STOPPED);
-      }
-
-      function _toBuffering () {
-        state = MediaPlayerBase.STATE.BUFFERING;
-        emitEvent(MediaPlayerBase.EVENT.BUFFERING);
-      }
-
-      function toPlaying () {
-        state = MediaPlayerBase.STATE.PLAYING;
-        emitEvent(MediaPlayerBase.EVENT.PLAYING);
-      }
-
-      function toPaused () {
-        state = MediaPlayerBase.STATE.PAUSED;
-        emitEvent(MediaPlayerBase.EVENT.PAUSED);
-      }
-
-      function _toComplete () {
-        state = MediaPlayerBase.STATE.COMPLETE;
-        emitEvent(MediaPlayerBase.EVENT.COMPLETE);
-      }
-
-      function _toEmpty () {
-        _wipe();
-        state = MediaPlayerBase.STATE.EMPTY;
-      }
-
-      function _toError (errorMessage) {
-        _wipe();
-        state = MediaPlayerBase.STATE.ERROR;
-        _reportError(errorMessage);
-        throw new Error('ApiError: ' + errorMessage);
+        _emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
       }
 
       function _setDisplayFullScreenForVideo () {
@@ -543,7 +543,7 @@ define(
 
       function getClampedTime (seconds) {
         var range = getSeekableRange();
-        var offsetFromEnd = getClampOffsetFromConfig();
+        var offsetFromEnd = _getClampOffsetFromConfig();
         var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
         if (seconds < range.start) {
           return range.start;
@@ -560,7 +560,7 @@ define(
       */
       var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
 
-      function getClampOffsetFromConfig () {
+      function _getClampOffsetFromConfig () {
         var clampOffsetFromEndOfRange;
 
         // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
@@ -576,7 +576,7 @@ define(
         }
       }
 
-      function emitEvent (eventType, eventLabels) {
+      function _emitEvent (eventType, eventLabels) {
         var event = {
           type: eventType,
           currentTime: getCurrentTime(),
