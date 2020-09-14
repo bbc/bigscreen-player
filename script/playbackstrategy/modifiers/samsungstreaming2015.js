@@ -33,13 +33,14 @@ define(
       var eventCallbacks = [];
       var eventCallback;
 
-      var playerPlugin = document.getElementById('sefPlayer');
-      var tvmwPlugin = document.getElementById('pluginObjectTVMW');
-      var originalSource = tvmwPlugin.GetSource();
-      window.addEventListener('hide', function () {
-        stop();
-        tvmwPlugin.SetSource(originalSource);
-      }, false);
+      var playerPlugin;
+      var tvmwPlugin;
+      var originalSource;
+
+      try {
+        _registerSamsungPlugins();
+      } catch (ignoreErr) {
+      }
 
       var PlayerEventCodes = {
         CONNECTION_FAILED: 1,
@@ -343,6 +344,16 @@ define(
         state = MediaPlayerBase.STATE.ERROR;
         _reportError(errorMessage);
         throw new Error('ApiError: ' + errorMessage);
+      }
+
+      function _registerSamsungPlugins () {
+        playerPlugin = document.getElementById('sefPlayer');
+        tvmwPlugin = document.getElementById('pluginObjectTVMW');
+        originalSource = tvmwPlugin.GetSource();
+        window.addEventListener('hide', function () {
+          stop();
+          tvmwPlugin.SetSource(originalSource);
+        }, false);
       }
 
       function _getClampedTime (seconds) {
