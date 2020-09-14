@@ -4,7 +4,7 @@
  */
 
 define(
-  'bigscreenplayer/playbackstrategy/modifiers/samsungmaple',
+  'bigscreenplayer/playbackstrategy/modifiers/samsungstreaming2015',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
     'bigscreenplayer/debugger/debugtool'
