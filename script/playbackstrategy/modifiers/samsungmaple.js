@@ -543,36 +543,14 @@ define(
 
       function getClampedTime (seconds) {
         var range = getSeekableRange();
-        var offsetFromEnd = _getClampOffsetFromConfig();
-        var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
+        var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
+        var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start);
         if (seconds < range.start) {
           return range.start;
         } else if (seconds > nearToEnd) {
           return nearToEnd;
         } else {
           return seconds;
-        }
-      }
-
-      /**
-        * Offset used when attempting to playFrom() the end of media. This allows the media to play briefly before completing.
-        * @constant {Number}
-      */
-      var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
-
-      function _getClampOffsetFromConfig () {
-        var clampOffsetFromEndOfRange;
-
-        // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
-        // TODO: this is duplicated from html5 strategy
-        // if (config && config.streaming && config.streaming.overrides) {
-        //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
-        // }
-
-        if (clampOffsetFromEndOfRange !== undefined) {
-          return clampOffsetFromEndOfRange;
-        } else {
-          return CLAMP_OFFSET_FROM_END_OF_RANGE;
         }
       }
 
