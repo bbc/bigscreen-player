@@ -142,8 +142,8 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       function getSeekableRange () {
         if (mediaElement && metaDataLoaded) {
           return {
-            start: mediaElement.seekable.start(0),
-            end: mediaElement.seekable.end(0)
+            start: mediaElement.seekable.start(0) - timeCorrection, // need to subtract the time correction
+            end: mediaElement.seekable.end(0) - timeCorrection
           };
         } else {
           return {
@@ -255,6 +255,9 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         play: play,
         setCurrentTime: function (time) {
           mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection;
+        },
+        getPlayerElement: function () {
+          return mediaElement || undefined;
         }
       };
     };

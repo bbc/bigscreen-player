@@ -230,6 +230,8 @@ require(
 
           expect(html5Strategy.getSeekableRange()).toEqual({ start: 0, end: 100 });
         });
+
+        // TODO: add a test that ensures we're subtracting the timeCorrection from seekable range
       });
 
       describe('getDuration', function () {
@@ -387,11 +389,61 @@ require(
       });
 
       describe('tearDown', function () {
+        beforeEach(function () {
 
+        });
+
+        it('should remove all event listener bindings', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 0);
+          html5Strategy.tearDown();
+
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('canplay', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('pause', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('waiting', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('seeking', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('seeked', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('ended', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('error', jasmine.any(Function));
+          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('loadedmetadata', jasmine.any(Function));
+        });
+
+        it('should remove the video element', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 0);
+
+          expect(playbackElement.childElementCount).toBe(1);
+
+          html5Strategy.tearDown();
+
+          expect(playbackElement.childElementCount).toBe(0);
+        });
+
+        it('should empty the eventCallbacks ', function () {
+          setUpStrategy();
+
+          function tearDownAndError () {
+            html5Strategy.addEventCallback(function () {}); // add event callback to prove array is emptied in tearDown
+            html5Strategy.load(null, 0);
+            html5Strategy.tearDown();
+            eventCallbacks('pause');
+          }
+
+          expect(tearDownAndError).not.toThrowError();
+        });
+
+        // TODO: ensure error and timeUpdate callbacks are undefined
       });
 
       describe('getPlayerElement', function () {
+        it('should return the mediaPlayer element', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 0);
 
+          expect(html5Strategy.getPlayerElement()).toEqual(mockVideoElement);
+        });
       });
 
       describe('events', function () {
