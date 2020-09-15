@@ -56,14 +56,15 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         mediaElement.style.height = '100%';
         mediaElement.autoplay = true;
         mediaElement.preload = 'auto';
+        mediaElement.src = mediaSources.currentSource();
 
         playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
 
-        var sourceElement = document.createElement('source');
-        sourceElement.src = mediaSources.currentSource();
-        sourceElement.type = mimeType;
+        // var sourceElement = document.createElement('source');
+        // sourceElement.src = mediaSources.currentSource();
+        // sourceElement.type = mimeType;
 
-        mediaElement.appendChild(sourceElement);
+        // mediaElement.appendChild(sourceElement);
         mediaElement.load();
       }
 
