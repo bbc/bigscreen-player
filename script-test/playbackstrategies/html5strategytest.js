@@ -447,15 +447,120 @@ require(
       });
 
       describe('events', function () {
-        // it('should publish a state change to playing on playing event', function () {
+        var eventCallbackSpy;
 
-        // });
+        beforeEach(function () {
+          setUpStrategy();
+          html5Strategy.load(null, 25);
 
-        // it('should publish a state change to paused on pause event', function () {
+          eventCallbackSpy = jasmine.createSpy('eventSpy');
+          html5Strategy.addEventCallback(this, eventCallbackSpy);
+        });
 
-        // });
+        afterEach(function () {
+          eventCallbackSpy.calls.reset();
+        });
 
-        // TODO: etc, (buffering, ended, time update, errors)
+        it('should publish a state change to PLAYING on playing event', function () {
+          eventCallbacks('playing');
+
+          expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PLAYING);
+          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should publish a state change to PAUSED on pause event', function () {
+          eventCallbacks('pause');
+
+          expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PAUSED);
+          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should publish a state change to WAITING on seeking event', function () {
+          eventCallbacks('seeking');
+
+          expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.WAITING);
+          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should publish a state change to WAITING on waiting event', function () {
+          eventCallbacks('waiting');
+
+          expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.WAITING);
+          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should publish a state change to ENDED on ended event', function () {
+          eventCallbacks('ended');
+
+          expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.ENDED);
+          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should publish a state change to PLAYING on seeked event if media element is not paused', function () {
+          spyOnProperty(mockVideoElement, 'paused').and.returnValue(false);
+          eventCallbacks('seeked');
+
+          expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PLAYING);
+          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should publish a state change to PAUSED on seeked event if media element is paused', function () {
+          spyOnProperty(mockVideoElement, 'paused').and.returnValue(true);
+          eventCallbacks('seeked');
+
+          expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PAUSED);
+          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
+        });
+
+        // TODO: should start the auto-resume timeout on seeked if in paused state
+
+        it('should set the current time on the media element if there is one and the metadata is loaded on canplay event', function () {
+          spyOnProperty(mockVideoElement, 'seekable').and.returnValue(
+            {
+              start: function () {
+                return 0;
+              },
+              end: function () {
+                return 100;
+              },
+              length: 2
+            });
+
+          expect(mockVideoElement.currentTime).toEqual(0);
+
+          eventCallbacks('loadedmetadata');
+
+          expect(mockVideoElement.currentTime).toEqual(0);
+
+          eventCallbacks('canplay');
+
+          expect(mockVideoElement.currentTime).toEqual(25);
+        });
+
+        it('should only set the current time on the media element on the first canplay event', function () {
+          spyOnProperty(mockVideoElement, 'seekable').and.returnValue(
+            {
+              start: function () {
+                return 0;
+              },
+              end: function () {
+                return 100;
+              },
+              length: 2
+            });
+
+          eventCallbacks('loadedmetadata');
+          eventCallbacks('canplay');
+
+          expect(mockVideoElement.currentTime).toEqual(25);
+
+          mockVideoElement.currentTime = 35;
+          eventCallbacks('canplay');
+
+          expect(mockVideoElement.currentTime).toEqual(35);
+        });
+
+        // TODO: etc, ( time update, errors)
       });
     });
   });
