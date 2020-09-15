@@ -238,6 +238,10 @@ require(
       });
 
       describe('Restartable features', function () {
+        afterEach(function () {
+          delete window.bigscreenPlayer.overrides;
+        });
+
         it('begins playback with the desired offset', function () {
           initialiseRestartableMediaPlayer();
           var offset = 10;
@@ -248,14 +252,11 @@ require(
         });
 
         it('should respect config forcing playback from the end of the window', function () {
-          var config = {
-            streaming: {
-              overrides: {
-                forceBeginPlaybackToEndOfWindow: true
-              }
-            }
+          window.bigscreenPlayer.overrides = {
+            forceBeginPlaybackToEndOfWindow: true
           };
-          initialiseRestartableMediaPlayer(config);
+
+          initialiseRestartableMediaPlayer();
 
           restartableMediaPlayer.beginPlayback();
 

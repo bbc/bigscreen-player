@@ -121,15 +121,16 @@ require(
       });
 
       describe('Seekable features', function () {
+        afterEach(function () {
+          delete window.bigscreenPlayer.overrides;
+        });
+
         it('should respect config forcing playback from the end of the window', function () {
-          var config = {
-            streaming: {
-              overrides: {
-                forceBeginPlaybackToEndOfWindow: true
-              }
-            }
+          window.bigscreenPlayer.overrides = {
+            forceBeginPlaybackToEndOfWindow: true
           };
-          initialiseSeekableMediaPlayer(config);
+
+          initialiseSeekableMediaPlayer();
 
           seekableMediaPlayer.beginPlayback();
 

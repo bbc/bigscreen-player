@@ -38,8 +38,7 @@ define(
         },
 
         beginPlayback: function beginPlayback () {
-          var config = deviceConfig;
-          if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
+          if (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow) {
             mediaPlayer.beginPlaybackFrom(Infinity);
           } else {
             mediaPlayer.beginPlayback();

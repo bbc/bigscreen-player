@@ -1861,6 +1861,7 @@ require(
 
         afterEach(function () {
           jasmine.clock().uninstall();
+          delete window.bigscreenPlayer.overrides;
         });
 
         it(' Waiting Html5 Event While Buffering Only Gives Single Buffering Event', function () {
@@ -1920,17 +1921,12 @@ require(
           expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
         });
 
-        it(' Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
-          var restartTimeoutConfig = {
-            streaming: {
-              overrides: {
-                forceBeginPlaybackToEndOfWindow: true
-              }
-            },
+        it('Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
+          window.bigscreenPlayer.overrides = {
             restartTimeout: 10000
           };
 
-          createPlayer(restartTimeoutConfig);
+          createPlayer();
 
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
 
@@ -1940,6 +1936,8 @@ require(
           waitingCallback();
           playingCallback();
 
+          // Needs to be triggered 6 times to set emitSeekFinishedAtCorrectStartingPoint counter to 5.
+          timeupdateCallback();
           timeupdateCallback();
           timeupdateCallback();
           timeupdateCallback();

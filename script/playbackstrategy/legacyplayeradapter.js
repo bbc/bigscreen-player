@@ -125,7 +125,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             forceBeginPlaybackToEndOfWindow: false
           };
 
-          var streaming = config.streaming || {
+          var streaming = window.bigscreenPlayer || {
             overrides: doNotForceBeginPlaybackToEndOfWindow
           };
 

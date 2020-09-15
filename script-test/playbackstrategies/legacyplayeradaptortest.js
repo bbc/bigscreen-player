@@ -575,6 +575,7 @@ require(
 
         afterEach(function () {
           delete window.bigscreenPlayer.showLiveCurtain;
+          delete window.bigscreenPlayer.overrides;
         });
 
         it('should show curtain for a live restart and we get a seek-attempted event', function () {
@@ -608,17 +609,11 @@ require(
         });
 
         it('should show curtain when the forceBeginPlaybackToEndOfWindow config is set and the playback type is live', function () {
-          var configReplacement = {
-            brand: 'default',
-            model: 'webkit',
-            streaming: {
-              overrides: {
-                forceBeginPlaybackToEndOfWindow: true
-              }
-            }
+          window.bigscreenPlayer.overrides = {
+            forceBeginPlaybackToEndOfWindow: true
           };
 
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement});
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 

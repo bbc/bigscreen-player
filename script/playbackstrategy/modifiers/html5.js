@@ -397,10 +397,10 @@ define(
 
         count = 0;
         timeoutHappened = false;
-        if (deviceConfig.restartTimeout) {
+        if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.restartTimeout) {
           setTimeout(function () {
             timeoutHappened = true;
-          }, deviceConfig.restartTimeout);
+          }, window.bigscreenPlayer.overrides.restartTimeout);
         } else {
           timeoutHappened = true;
         }
