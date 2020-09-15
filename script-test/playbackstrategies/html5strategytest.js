@@ -459,6 +459,7 @@ require(
 
         afterEach(function () {
           eventCallbackSpy.calls.reset();
+          mockVideoElement.currentTime = 0;
         });
 
         it('should publish a state change to PLAYING on playing event', function () {
