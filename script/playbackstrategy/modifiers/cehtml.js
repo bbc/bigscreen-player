@@ -108,29 +108,13 @@ define(
 
       function getClampedTime (seconds) {
         var range = getSeekableRange();
-        var offsetFromEnd = getClampOffsetFromConfig();
-        var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
+        var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start);
         if (seconds < range.start) {
           return range.start;
         } else if (seconds > nearToEnd) {
           return nearToEnd;
         } else {
           return seconds;
-        }
-      }
-
-      function getClampOffsetFromConfig () {
-        var clampOffsetFromEndOfRange;
-
-        // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
-        // if (config && config.streaming && config.streaming.overrides) {
-        //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
-        // }
-
-        if (clampOffsetFromEndOfRange !== undefined) {
-          return clampOffsetFromEndOfRange;
-        } else {
-          return CLAMP_OFFSET_FROM_END_OF_RANGE;
         }
       }
 

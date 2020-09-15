@@ -531,16 +531,7 @@ define(
       }
 
       function _getClampOffsetFromConfig () {
-        var clampOffsetFromEndOfRange;
-        // TODO
-        // var config = RuntimeContext.getDevice().getConfig();
-        // if (config && config.streaming && config.streaming.overrides) {
-        //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
-        // }
-
-        if (clampOffsetFromEndOfRange !== undefined) {
-          return clampOffsetFromEndOfRange;
-        } else if (_isLiveMedia()) {
+        if (_isLiveMedia()) {
           return CLAMP_OFFSET_FROM_END_OF_LIVE_RANGE;
         } else {
           return CLAMP_OFFSET_FROM_END_OF_RANGE;
