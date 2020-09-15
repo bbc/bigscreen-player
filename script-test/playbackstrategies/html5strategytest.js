@@ -351,11 +351,39 @@ require(
       });
 
       describe('isPaused', function () {
+        it('should return false when the media element is not paused', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 0);
+          spyOnProperty(mockVideoElement, 'paused').and.returnValue(false);
 
+          expect(html5Strategy.isPaused()).toBe(false);
+        });
+
+        it('should return true when the media element is paused', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 0);
+          spyOnProperty(mockVideoElement, 'paused').and.returnValue(true);
+
+          expect(html5Strategy.isPaused()).toBe(true);
+        });
       });
 
       describe('isEnded', function () {
+        it('should return false when the media element is not ended', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 0);
+          spyOnProperty(mockVideoElement, 'ended').and.returnValue(false);
 
+          expect(html5Strategy.isEnded()).toBe(false);
+        });
+
+        it('should return true when the media element is ended', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 0);
+          spyOnProperty(mockVideoElement, 'ended').and.returnValue(true);
+
+          expect(html5Strategy.isEnded()).toBe(true);
+        });
       });
 
       describe('tearDown', function () {
