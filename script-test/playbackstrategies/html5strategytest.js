@@ -11,9 +11,10 @@ require(
     var html5Strategy;
     var cdnArray;
     var playbackElement;
-    var mediaSources;
+    var mockMediaSources;
     var eventCallbacks;
     var eventHandlers = {};
+    var testTimeCorrection;
 
     var mockAudioElement = document.createElement('audio');
     var mockVideoElement = document.createElement('video');
@@ -22,7 +23,7 @@ require(
       var defaultWindowType = windowType || WindowTypes.STATIC;
       var defaultMediaKind = mediaKind || MediaKinds.VIDEO;
 
-      html5Strategy = HTML5Strategy(mediaSources, defaultWindowType, defaultMediaKind, playbackElement);
+      html5Strategy = HTML5Strategy(mockMediaSources, defaultWindowType, defaultMediaKind, playbackElement);
     }
 
     describe('HTML5 Strategy', function () {
@@ -37,9 +38,14 @@ require(
           { url: 'http://testcdn3/test/', cdn: 'http://testcdn3/test/' }
         ];
 
-        var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-        mediaSources = new MediaSources();
-        mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
+        mockMediaSources = {
+          time: function () {
+            return {correction: testTimeCorrection};
+          },
+          currentSource: function () {
+            return cdnArray[0].url;
+          }
+        };
 
         spyOn(document, 'createElement').and.callFake(function (elementType) {
           if (elementType === 'audio') {
@@ -62,6 +68,10 @@ require(
             eventHandlers[event].call(event);
           };
         });
+      });
+
+      afterEach(function () {
+        testTimeCorrection = 0;
       });
 
       describe('transitions', function () {
@@ -269,10 +279,75 @@ require(
 
           expect(html5Strategy.getCurrentTime()).toEqual(10);
         });
+
+        it('subtracts any time correction from the media elements current time', function () {
+          testTimeCorrection = 20;
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          mockVideoElement.currentTime = 50;
+
+          expect(html5Strategy.getCurrentTime()).toEqual(30);
+        });
       });
 
       describe('setCurrentTime', function () {
+        beforeEach(function () {
+          spyOnProperty(mockVideoElement, 'seekable').and.returnValue(
+            {
+              start: function () {
+                return 0;
+              },
+              end: function () {
+                return 100;
+              },
+              length: 2
+            });
 
+          mockVideoElement.currentTime = 5;
+        });
+
+        it('sets the current time on the media element to that passed in', function () {
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          html5Strategy.setCurrentTime(10);
+
+          expect(html5Strategy.getCurrentTime()).toEqual(10);
+        });
+
+        it('clamps the time to the start of the seekable range if passed in a time prior to this', function () {
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          html5Strategy.setCurrentTime(-5);
+
+          expect(html5Strategy.getCurrentTime()).toEqual(0);
+        });
+
+        it('clamps the time to the end of the seekable range if passed in a time after this', function () {
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          html5Strategy.setCurrentTime(110);
+
+          expect(html5Strategy.getCurrentTime()).toEqual(98.9);
+        });
+
+        it('adds time correction from the media source onto the passed in seek time', function () {
+          testTimeCorrection = 20;
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          html5Strategy.setCurrentTime(50);
+
+          expect(mockVideoElement.currentTime).toEqual(70);
+        });
       });
 
       describe('isPaused', function () {
@@ -292,13 +367,13 @@ require(
       });
 
       describe('events', function () {
-        it('should publish a state change to playing on playing event', function () {
+        // it('should publish a state change to playing on playing event', function () {
 
-        });
+        // });
 
-        it('should publish a state change to paused on pause event', function () {
+        // it('should publish a state change to paused on pause event', function () {
 
-        });
+        // });
 
         // TODO: etc, (buffering, ended, time update, errors)
       });
