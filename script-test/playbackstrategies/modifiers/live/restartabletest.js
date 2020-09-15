@@ -23,9 +23,9 @@ require(
       }
     };
 
-    function initialiseRestartableMediaPlayer (config, windowType) {
+    function initialiseRestartableMediaPlayer (windowType) {
       windowType = windowType || WindowTypes.SLIDING;
-      restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, mockMediaSources);
+      restartableMediaPlayer = RestartableMediaPlayer(player, windowType, mockMediaSources);
     }
 
     describe('restartable HMTL5 Live Player', function () {
@@ -203,7 +203,7 @@ require(
           });
 
           it('should only increase end for a growing window', function () {
-            initialiseRestartableMediaPlayer({}, WindowTypes.GROWING);
+            initialiseRestartableMediaPlayer(WindowTypes.GROWING);
             restartableMediaPlayer.beginPlaybackFrom(0);
             timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
             jasmine.clock().tick(1000);
@@ -268,7 +268,7 @@ require(
         var mockCallback = [];
 
         function startPlaybackAndPause (startTime, disableAutoResume, windowType) {
-          initialiseRestartableMediaPlayer(undefined, windowType);
+          initialiseRestartableMediaPlayer(windowType);
 
           restartableMediaPlayer.beginPlaybackFrom(startTime);
 

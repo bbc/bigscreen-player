@@ -40,15 +40,6 @@ require(
 
       var cdnArray = [];
 
-      var device = {
-        getConfig: function () {
-          return {
-            brand: 'default',
-            model: 'webkit'
-          };
-        }
-      };
-
       var injector = new Squire();
 
       var mockGlitchCurtainConstructorInstance = function () {
@@ -93,8 +84,6 @@ require(
 
         cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
 
-        var config = options.config || device.getConfig();
-
         var windowType = options.windowType || WindowTypes.STATIC;
 
         mediaPlayer.addEventCallback.and.callFake(function (component, callback) {
@@ -106,7 +95,7 @@ require(
         videoContainer = document.createElement('div');
         videoContainer.id = 'app';
         document.body.appendChild(videoContainer);
-        legacyAdaptor = squiredLegacyAdaptor(mockMediaSources, windowType, videoContainer, options.isUHD, config, mediaPlayer);
+        legacyAdaptor = squiredLegacyAdaptor(mockMediaSources, windowType, videoContainer, options.isUHD, mediaPlayer);
       }
       describe('transitions', function () {
         it('should pass back possible transitions', function () {
@@ -122,6 +111,10 @@ require(
       });
 
       describe('load', function () {
+        afterEach(function () {
+          delete window.bigscreenPlayer.overrides;
+        });
+
         it('should initialise the media player', function () {
           setUpLegacyAdaptor();
 
@@ -164,15 +157,11 @@ require(
         });
 
         it('should disable sentinels if we are watching UHD and configured to do so', function () {
-          var configReplacement = {
-            brand: 'default',
-            model: 'webkit',
-            streaming: {
-              liveUhdDisableSentinels: true
-            }
+          window.bigscreenPlayer.overrides = {
+            liveUhdDisableSentinels: true
           };
 
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement, isUHD: true});
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, isUHD: true});
 
           legacyAdaptor.load('video/mp4', undefined);
 
@@ -708,6 +697,10 @@ require(
       });
 
       describe('delay pause until after seek', function () {
+        afterEach(function () {
+          delete window.bigscreenPlayer.overrides;
+        });
+
         it('should pause the player if we were in a paused state on dash live', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
@@ -725,13 +718,11 @@ require(
         });
 
         it('should pause the player if we were in a paused state for devices with known issues', function () {
-          var configReplacement = {
-            brand: 'default',
-            model: 'webkit',
-            capabilities: ['playFailsAfterPauseOnExitSeek']
+          window.bigscreenPlayer.overrides = {
+            pauseOnExitSeek: true
           };
 
-          setUpLegacyAdaptor({config: configReplacement});
+          setUpLegacyAdaptor();
 
           legacyAdaptor.load('video/mp4', undefined);
 

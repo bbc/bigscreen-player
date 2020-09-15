@@ -7,7 +7,7 @@ define(
   function (MediaPlayerBase, DOMHelpers) {
     'use strict';
 
-    function Player (deviceConfig) {
+    function Player () {
       var eventCallback;
       var eventCallbacks = [];
       var state = MediaPlayerBase.STATE.EMPTY;

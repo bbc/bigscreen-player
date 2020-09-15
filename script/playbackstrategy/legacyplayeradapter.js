@@ -7,7 +7,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
     'bigscreenplayer/playbackstrategy/liveglitchcurtain'
   ],
   function (AllowedMediaTransitions, MediaState, WindowTypes, DebugTool, LiveGlitchCurtain) {
-    return function (mediaSources, windowType, playbackElement, isUHD, deviceConfig, player) {
+    return function (mediaSources, windowType, playbackElement, isUHD, player) {
       var EVENT_HISTORY_LENGTH = 2;
 
       var mediaPlayer = player;
@@ -33,9 +33,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var liveGlitchCurtain;
 
       var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
-      var config = deviceConfig;
       var setSourceOpts = {
-        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels,
+        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.liveUhdDisableSentinels,
         disableSeekSentinel: window.bigscreenPlayer.disableSeekSentinel
       };
 
@@ -173,8 +172,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       function setupExitSeekWorkarounds (mimeType) {
         handleErrorOnExitingSeek = windowType !== WindowTypes.STATIC && mimeType === 'application/dash+xml';
 
-        var capabilities = config.capabilities || [];
-        var deviceFailsPlayAfterPauseOnExitSeek = capabilities.indexOf('playFailsAfterPauseOnExitSeek') !== -1;
+        var deviceFailsPlayAfterPauseOnExitSeek = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.pauseOnExitSeek;
         delayPauseOnExitSeek = handleErrorOnExitingSeek || deviceFailsPlayAfterPauseOnExitSeek;
       }
 

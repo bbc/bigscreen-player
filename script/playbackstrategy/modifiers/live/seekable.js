@@ -7,7 +7,7 @@ define(
   ],
   function (MediaPlayerBase, DynamicWindowUtils, WindowTypes) {
     'use strict';
-    function SeekableLivePlayer (mediaPlayer, deviceConfig, windowType) {
+    function SeekableLivePlayer (mediaPlayer, windowType) {
       var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
       function addEventCallback (thisArg, callback) {

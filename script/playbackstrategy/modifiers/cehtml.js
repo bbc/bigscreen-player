@@ -19,7 +19,7 @@ define(
       ERROR: 6
     };
 
-    return function (deviceConfig) {
+    return function () {
       var eventCallbacks = [];
       var state = MediaPlayerBase.STATE.EMPTY;
 

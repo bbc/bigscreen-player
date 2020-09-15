@@ -21,8 +21,8 @@ require(
       }
     }
 
-    function initialiseSeekableMediaPlayer (config, windowType) {
-      seekableMediaPlayer = SeekableMediaPlayer(player, config, windowType);
+    function initialiseSeekableMediaPlayer (windowType) {
+      seekableMediaPlayer = SeekableMediaPlayer(player, windowType);
     }
 
     describe('Seekable HMTL5 Live Player', function () {
@@ -174,7 +174,7 @@ require(
           jasmine.clock().install();
           jasmine.clock().mockDate();
 
-          initialiseSeekableMediaPlayer(undefined, WindowTypes.SLIDING);
+          initialiseSeekableMediaPlayer(WindowTypes.SLIDING);
 
           player.getSeekableRange.and.returnValue({start: 0});
           player.getCurrentTime.and.returnValue(20);
