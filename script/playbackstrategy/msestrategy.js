@@ -15,7 +15,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'dashjs'
   ],
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
-    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
+    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD) {
       var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
       var mediaElement;
