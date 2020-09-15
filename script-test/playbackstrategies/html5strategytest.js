@@ -448,6 +448,8 @@ require(
 
       describe('events', function () {
         var eventCallbackSpy;
+        var timeUpdateCallbackSpy;
+        var errorCallbackSpy;
 
         beforeEach(function () {
           setUpStrategy();
@@ -455,10 +457,18 @@ require(
 
           eventCallbackSpy = jasmine.createSpy('eventSpy');
           html5Strategy.addEventCallback(this, eventCallbackSpy);
+
+          timeUpdateCallbackSpy = jasmine.createSpy('timeUpdateSpy');
+          html5Strategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy);
+
+          errorCallbackSpy = jasmine.createSpy('errorSpy');
+          html5Strategy.addErrorCallback(this, errorCallbackSpy);
         });
 
         afterEach(function () {
           eventCallbackSpy.calls.reset();
+          timeUpdateCallbackSpy.calls.reset();
+          errorCallbackSpy.calls.reset();
           mockVideoElement.currentTime = 0;
         });
 
@@ -561,7 +571,19 @@ require(
           expect(mockVideoElement.currentTime).toEqual(35);
         });
 
-        // TODO: etc, ( time update, errors)
+        it('should publish a time update event on time update', function () {
+          eventCallbacks('timeupdate');
+
+          expect(timeUpdateCallbackSpy).toHaveBeenCalled();
+          expect(timeUpdateCallbackSpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('should publish a error event on error', function () {
+          eventCallbacks('error');
+
+          expect(errorCallbackSpy).toHaveBeenCalled();
+          expect(errorCallbackSpy).toHaveBeenCalledTimes(1);
+        });
       });
     });
   });
