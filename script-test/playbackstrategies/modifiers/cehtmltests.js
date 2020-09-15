@@ -15,14 +15,6 @@ require(
         recentEvents.push(event.type);
       }
 
-      var config = {
-        streaming: {
-          overrides: {
-            forceBeginPlaybackToEndOfWindow: true
-          }
-        }
-      };
-
       beforeEach(function () {
         jasmine.clock().install();
         jasmine.clock().mockDate();
@@ -36,7 +28,7 @@ require(
 
         recentEvents = [];
 
-        player = CehtmlMediaPlayer(config);
+        player = CehtmlMediaPlayer();
         player.addEventCallback(this, eventCallbackReporter);
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
       });
