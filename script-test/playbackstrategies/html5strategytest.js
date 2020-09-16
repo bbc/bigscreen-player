@@ -1,13 +1,15 @@
 require(
   [
-    'bigscreenplayer/playbackstrategy/html5strategy',
+    'squire',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/models/mediastate',
     'bigscreenplayer/mediasources',
     'bigscreenplayer/models/livesupport'
   ],
-  function (HTML5Strategy, WindowTypes, MediaKinds, MediaState, MediaSources, LiveSupport) {
+  function (Squire, WindowTypes, MediaKinds, MediaState, MediaSources, LiveSupport) {
+    var injector = new Squire();
+    var HTML5Strategy;
     var html5Strategy;
     var cdnArray;
     var playbackElement;
@@ -19,6 +21,8 @@ require(
     var mockAudioElement = document.createElement('audio');
     var mockVideoElement = document.createElement('video');
 
+    var mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange']);
+
     function setUpStrategy (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
       var defaultWindowType = windowType || WindowTypes.STATIC;
       var defaultMediaKind = mediaKind || MediaKinds.VIDEO;
@@ -27,7 +31,7 @@ require(
     }
 
     describe('HTML5 Strategy', function () {
-      beforeEach(function () {
+      beforeEach(function (done) {
         playbackElement = document.createElement('div');
         playbackElement.id = 'app';
         document.body.appendChild(playbackElement);
@@ -47,30 +51,41 @@ require(
           }
         };
 
-        spyOn(document, 'createElement').and.callFake(function (elementType) {
-          if (elementType === 'audio') {
-            return mockAudioElement;
-          } else if (elementType === 'video') {
-            return mockVideoElement;
-          }
+        injector.mock({
+          'bigscreenplayer/dynamicwindowutils': mockDynamicWindowUtils
         });
 
-        spyOn(mockVideoElement, 'load');
-        spyOn(mockVideoElement, 'play');
-        spyOn(mockVideoElement, 'pause');
-        spyOn(mockVideoElement, 'addEventListener');
-        spyOn(mockVideoElement, 'removeEventListener');
+        injector.require(['bigscreenplayer/playbackstrategy/html5strategy'], function (SquiredHTML5Strategy) {
+          HTML5Strategy = SquiredHTML5Strategy;
 
-        mockVideoElement.addEventListener.and.callFake(function (eventType, handler) {
-          eventHandlers[eventType] = handler;
+          spyOn(document, 'createElement').and.callFake(function (elementType) {
+            if (elementType === 'audio') {
+              return mockAudioElement;
+            } else if (elementType === 'video') {
+              return mockVideoElement;
+            }
+          });
 
-          eventCallbacks = function (event) {
-            eventHandlers[event].call(event);
-          };
+          spyOn(mockVideoElement, 'load');
+          spyOn(mockVideoElement, 'play');
+          spyOn(mockVideoElement, 'pause');
+          spyOn(mockVideoElement, 'addEventListener');
+          spyOn(mockVideoElement, 'removeEventListener');
+
+          mockVideoElement.addEventListener.and.callFake(function (eventType, handler) {
+            eventHandlers[eventType] = handler;
+
+            eventCallbacks = function (event) {
+              eventHandlers[event].call(event);
+            };
+          });
+
+          done();
         });
       });
 
       afterEach(function () {
+        mockDynamicWindowUtils.autoResumeAtStartOfRange.calls.reset();
         mockVideoElement.currentTime = 0;
         testTimeCorrection = 0;
         html5Strategy.tearDown();
@@ -175,27 +190,25 @@ require(
           expect(mockVideoElement.pause).toHaveBeenCalled();
         });
 
-        // TODO: autoresume - will likely need dynamicWindowUtils squiring in
+        it('should start autoresume timeout if sliding window', function () {
+          setUpStrategy(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
+          html5Strategy.load(null, 0);
+          html5Strategy.pause();
 
-        // it('should start autoresume timeout if sliding window', function () {
-        //   setUpStrategy();
-        //   html5Strategy.load(null, 0);
-        //   html5Strategy.pause();
+          expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
+        });
 
-        //   expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
-        // });
+        it('should not start autoresume timeout if sliding window but disableAutoResume is set', function () {
+          var opts = {
+            disableAutoResume: true
+          };
 
-        // it('should not start autoresume timeout if sliding window but disableAutoResume is set', function () {
-        //   var opts = {
-        //     disableAutoResume: true
-        //   };
+          setUpStrategy(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
+          html5Strategy.load(null, 0);
+          html5Strategy.pause(opts);
 
-        //   setUpStrategy();
-        //   html5Strategy.load(null, 0);
-        //   html5Strategy.pause(opts);
-
-        //   expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
-        // });
+          expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
+        });
       });
 
       describe('getSeekableRange', function () {
@@ -461,7 +474,7 @@ require(
         var errorCallbackSpy;
 
         beforeEach(function () {
-          setUpStrategy();
+          setUpStrategy(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
           html5Strategy.load(null, 25);
 
           eventCallbackSpy = jasmine.createSpy('eventSpy');
@@ -531,7 +544,12 @@ require(
           expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
         });
 
-        // TODO: should start the auto-resume timeout on seeked if in paused state
+        it('should start auto-resume timeout on seeked event if media element is paused and SLIDING window', function () {
+          spyOnProperty(mockVideoElement, 'paused').and.returnValue(true);
+          eventCallbacks('seeked');
+
+          expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
+        });
 
         it('should set the current time on the media element if there is one and the metadata is loaded on canplay event', function () {
           spyOnProperty(mockVideoElement, 'seekable').and.returnValue(
