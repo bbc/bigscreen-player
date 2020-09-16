@@ -456,6 +456,30 @@ require(
           expect(tearDownAndError).not.toThrowError();
         });
 
+        it('should undefine the error callback', function () {
+          var errorCallbackSpy = jasmine.createSpy('errorSpy');
+
+          setUpStrategy();
+          html5Strategy.addErrorCallback(this, errorCallbackSpy);
+          html5Strategy.load(null, 0);
+          html5Strategy.tearDown();
+          eventCallbacks('error');
+
+          expect(errorCallbackSpy).not.toHaveBeenCalled();
+        });
+
+        it('should undefine the timeupdate callback', function () {
+          var timeUpdateCallbackSpy = jasmine.createSpy('timeUpdateSpy');
+
+          setUpStrategy();
+          html5Strategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy);
+          html5Strategy.load(null, 0);
+          html5Strategy.tearDown();
+          eventCallbacks('timeupdate');
+
+          expect(timeUpdateCallbackSpy).not.toHaveBeenCalled();
+        });
+
         // TODO: ensure error and timeUpdate callbacks are undefined
       });
 
