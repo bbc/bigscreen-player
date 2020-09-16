@@ -71,7 +71,9 @@ require(
       });
 
       afterEach(function () {
+        mockVideoElement.currentTime = 0;
         testTimeCorrection = 0;
+        html5Strategy.tearDown();
       });
 
       describe('transitions', function () {
@@ -201,7 +203,7 @@ require(
           spyOnProperty(mockVideoElement, 'seekable').and.returnValue(
             {
               start: function () {
-                return 0;
+                return 25;
               },
               end: function () {
                 return 100;
@@ -228,10 +230,17 @@ require(
           html5Strategy.load(null, undefined);
           eventCallbacks('loadedmetadata');
 
-          expect(html5Strategy.getSeekableRange()).toEqual({ start: 0, end: 100 });
+          expect(html5Strategy.getSeekableRange()).toEqual({ start: 25, end: 100 });
         });
 
-        // TODO: add a test that ensures we're subtracting the timeCorrection from seekable range
+        it('returns the correct start and end time minus any time correction', function () {
+          testTimeCorrection = 20;
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          expect(html5Strategy.getSeekableRange()).toEqual({ start: 5, end: 80 });
+        });
       });
 
       describe('getDuration', function () {
@@ -469,7 +478,6 @@ require(
           eventCallbackSpy.calls.reset();
           timeUpdateCallbackSpy.calls.reset();
           errorCallbackSpy.calls.reset();
-          mockVideoElement.currentTime = 0;
         });
 
         it('should publish a state change to PLAYING on playing event', function () {

@@ -216,18 +216,19 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         getCurrentTime: getCurrentTime,
         getDuration: getDuration,
         tearDown: function () {
-          mediaElement.removeEventListener('canplay', onCanPlay);
-          mediaElement.removeEventListener('timeupdate', onTimeUpdate);
-          mediaElement.removeEventListener('playing', onPlaying);
-          mediaElement.removeEventListener('pause', onPaused);
-          mediaElement.removeEventListener('waiting', onWaiting);
-          mediaElement.removeEventListener('seeking', onSeeking);
-          mediaElement.removeEventListener('seeked', onSeeked);
-          mediaElement.removeEventListener('ended', onEnded);
-          mediaElement.removeEventListener('error', onError);
-          mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
-
-          DOMHelpers.safeRemoveElement(mediaElement);
+          if (mediaElement) {
+            mediaElement.removeEventListener('canplay', onCanPlay);
+            mediaElement.removeEventListener('timeupdate', onTimeUpdate);
+            mediaElement.removeEventListener('playing', onPlaying);
+            mediaElement.removeEventListener('pause', onPaused);
+            mediaElement.removeEventListener('waiting', onWaiting);
+            mediaElement.removeEventListener('seeking', onSeeking);
+            mediaElement.removeEventListener('seeked', onSeeked);
+            mediaElement.removeEventListener('ended', onEnded);
+            mediaElement.removeEventListener('error', onError);
+            mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+            DOMHelpers.safeRemoveElement(mediaElement);
+          }
 
           eventCallbacks = [];
           errorCallback = undefined;
