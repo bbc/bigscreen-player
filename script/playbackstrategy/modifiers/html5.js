@@ -568,6 +568,9 @@ define(
       }
 
       function unloadMediaSrc () {
+        if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableMediaSourceUnload) {
+          return;
+        }
         // Reset source as advised by HTML5 video spec, section 4.8.10.15:
         // http://www.w3.org/TR/2011/WD-html5-20110405/video.html#best-practices-for-authors-using-media-elements
         mediaElement.removeAttribute('src');

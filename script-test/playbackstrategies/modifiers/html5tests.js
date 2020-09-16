@@ -1075,6 +1075,10 @@ require(
       });
 
       describe('Reset and Stop', function () {
+        afterEach(function () {
+          delete window.bigscreenPlayer.overrides;
+        });
+
         it('Video is removed from the DOM', function () {
           spyOn(sourceContainer, 'appendChild').and.callThrough();
           spyOn(sourceContainer, 'removeChild').and.callThrough();
@@ -1126,6 +1130,21 @@ require(
           expect(mockVideoMediaElement.removeAttribute).toHaveBeenCalledWith('src');
           expect(mockVideoMediaElement.removeAttribute).toHaveBeenCalledTimes(1);
           expect(mockVideoMediaElement.load).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not Unload Media Element Source if disabled', function () {
+          window.bigscreenPlayer.overrides = {
+            disableMediaSourceUnload: true
+          };
+
+          player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
+          mockVideoMediaElement.load.calls.reset();
+          spyOn(mockVideoMediaElement, 'removeAttribute');
+
+          player.reset();
+
+          expect(mockVideoMediaElement.removeAttribute).toHaveBeenCalledTimes(0);
+          expect(mockVideoMediaElement.load).toHaveBeenCalledTimes(0);
         });
 
         it(' Calling Stop In Stopped State Does Not Call Pause On The Device', function () {
