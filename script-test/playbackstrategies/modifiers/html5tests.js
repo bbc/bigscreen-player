@@ -49,21 +49,14 @@ require(
         }
       }
 
-      function createPlayer (config) {
-        player = Html5MediaPlayer(config);
+      function createPlayer () {
+        player = Html5MediaPlayer();
         spyOn(player, 'toPaused').and.callThrough();
 
         player.addEventCallback(this, eventCallbackReporter);
       }
 
       beforeEach(function (done) {
-        var config = {
-          streaming: {
-            overrides: {
-              forceBeginPlaybackToEndOfWindow: true
-            }
-          }
-        };
         mockSourceElement = document.createElement('source');
         mockVideoMediaElement = document.createElement('video');
         mockAudioMediaElement = document.createElement('audio');
@@ -119,7 +112,7 @@ require(
         spyOn(mockAudioMediaElement, 'play');
         spyOn(mockAudioMediaElement, 'load');
         spyOn(mockAudioMediaElement, 'pause');
-        createPlayer(config);
+        createPlayer();
         done();
       });
 
@@ -2599,21 +2592,6 @@ require(
 
           expect(recentEvents).toEqual([]);
           expect(mockVideoMediaElement.pause).not.toHaveBeenCalled();
-          expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
-        });
-
-        it(' Pause Sentinel Does Not Retry Pause If Pause Succeeds', function () {
-          player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
-          metaDataCallback({start: 0, end: 100});
-
-          player.beginPlaybackFrom(0);
-          finishedBufferingCallback();
-          player.pause();
-
-          recentEvents = [];
-          waitForSentinels();
-
-          expect(recentEvents).toEqual([]);
           expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
         });
 

@@ -468,7 +468,7 @@ define(
       }
 
       function deferredPlayFrom () {
-        if (window.bigscreenPLayer.overrides && window.bigscreenPLayer.overrides.deferredPlayback) {
+        if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.deferredPlayback) {
           mediaElement.play();
           seekTo(targetSeekTime);
         } else {
