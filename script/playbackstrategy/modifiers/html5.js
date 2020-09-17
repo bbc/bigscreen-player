@@ -468,8 +468,14 @@ define(
       }
 
       function deferredPlayFrom () {
-        seekTo(targetSeekTime);
-        mediaElement.play();
+        if (window.bigscreenPLayer.overrides && window.bigscreenPLayer.overrides.deferredPlayback) {
+          mediaElement.play();
+          seekTo(targetSeekTime);
+        } else {
+          seekTo(targetSeekTime);
+          mediaElement.play();
+        }
+
         if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
           pauseMediaElement();
         }
