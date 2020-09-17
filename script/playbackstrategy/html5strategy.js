@@ -60,11 +60,6 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
 
         playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
 
-        // var sourceElement = document.createElement('source');
-        // sourceElement.src = mediaSources.currentSource();
-        // sourceElement.type = mimeType;
-
-        // mediaElement.appendChild(sourceElement);
         mediaElement.load();
       }
 
@@ -227,6 +222,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
             mediaElement.removeEventListener('ended', onEnded);
             mediaElement.removeEventListener('error', onError);
             mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+            mediaElement.removeAttribute('src'); // potentially call a load too now src is empty.
             DOMHelpers.safeRemoveElement(mediaElement);
           }
 
