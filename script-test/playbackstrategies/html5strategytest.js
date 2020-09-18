@@ -342,26 +342,6 @@ require(
           expect(html5Strategy.getCurrentTime()).toEqual(10);
         });
 
-        it('clamps the time to the start of the seekable range if passed in a time prior to this', function () {
-          setUpStrategy();
-          html5Strategy.load(null, undefined);
-          eventCallbacks('loadedmetadata');
-
-          html5Strategy.setCurrentTime(-5);
-
-          expect(html5Strategy.getCurrentTime()).toEqual(0);
-        });
-
-        it('clamps the time to the end of the seekable range if passed in a time after this', function () {
-          setUpStrategy();
-          html5Strategy.load(null, undefined);
-          eventCallbacks('loadedmetadata');
-
-          html5Strategy.setCurrentTime(110);
-
-          expect(html5Strategy.getCurrentTime()).toEqual(100);
-        });
-
         it('adds time correction from the media source onto the passed in seek time', function () {
           testTimeCorrection = 20;
           setUpStrategy();
@@ -549,22 +529,6 @@ require(
           eventCallbacks('ended');
 
           expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.ENDED);
-          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
-        });
-
-        it('should publish a state change to PLAYING on seeked event if media element is not paused', function () {
-          spyOnProperty(mockVideoElement, 'paused').and.returnValue(false);
-          eventCallbacks('seeked');
-
-          expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PLAYING);
-          expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
-        });
-
-        it('should publish a state change to PAUSED on seeked event if media element is paused', function () {
-          spyOnProperty(mockVideoElement, 'paused').and.returnValue(true);
-          eventCallbacks('seeked');
-
-          expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PAUSED);
           expect(eventCallbackSpy).toHaveBeenCalledTimes(1);
         });
 
