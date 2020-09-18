@@ -38,9 +38,13 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function load (mimeType, startTime) {
-        playFromTime = startTime;
-        setUpMediaElement();
-        setUpMediaListeners();
+        if (!mediaElement) {
+          playFromTime = startTime;
+          setUpMediaElement();
+          setUpMediaListeners();
+        } else {
+          mediaElement.src = mediaSources.currentSource();
+        }
       }
 
       function setUpMediaElement () {
