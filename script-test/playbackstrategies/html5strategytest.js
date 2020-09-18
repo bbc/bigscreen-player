@@ -359,7 +359,7 @@ require(
 
           html5Strategy.setCurrentTime(110);
 
-          expect(html5Strategy.getCurrentTime()).toEqual(98.9);
+          expect(html5Strategy.getCurrentTime()).toEqual(100);
         });
 
         it('adds time correction from the media source onto the passed in seek time', function () {

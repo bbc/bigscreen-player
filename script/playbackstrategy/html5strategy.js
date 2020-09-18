@@ -10,8 +10,6 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
   ],
   function (MediaState, WindowTypes, MediaKinds, LiveSupport, DynamicWindowUtils, DOMHelpers, DebugTool) {
     var HTML5Strategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
-      var LIVE_DELAY_SECONDS = 1.1;
-
       var eventCallbacks = [];
       var errorCallback;
       var timeUpdateCallback;
@@ -41,11 +39,11 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
 
       function load (mimeType, startTime) {
         playFromTime = startTime;
-        setUpMediaElement(playbackElement, mimeType);
+        setUpMediaElement();
         setUpMediaListeners();
       }
 
-      function setUpMediaElement (playbackElement, mimeType) {
+      function setUpMediaElement () {
         if (mediaKind === MediaKinds.AUDIO) {
           mediaElement = document.createElement('audio');
         } else {
@@ -131,7 +129,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function getClampedTime (time, range) {
-        return Math.min(Math.max(time, range.start), range.end - LIVE_DELAY_SECONDS);
+        return Math.min(Math.max(time, range.start), range.end);
       }
 
       function getSeekableRange () {
