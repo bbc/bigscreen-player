@@ -91,13 +91,8 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onSeeked () {
-        if (isPaused()) {
-          if (windowType === WindowTypes.SLIDING) {
-            startAutoResumeTimeout();
-          }
-          publishMediaState(MediaState.PAUSED);
-        } else {
-          publishMediaState(MediaState.PLAYING);
+        if (isPaused() && windowType === WindowTypes.SLIDING) {
+          startAutoResumeTimeout();
         }
       }
 
@@ -118,18 +113,14 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onCanPlay () {
-        if (playFromTime && metaDataLoaded) {
-          mediaElement.currentTime = getClampedTime(playFromTime, getSeekableRange()) + timeCorrection;
+        if (playFromTime) {
+          mediaElement.currentTime = playFromTime + timeCorrection;
           playFromTime = undefined;
         }
       }
 
       function isPaused () {
         return mediaElement.paused;
-      }
-
-      function getClampedTime (time, range) {
-        return Math.min(Math.max(time, range.start), range.end);
       }
 
       function getSeekableRange () {
@@ -220,7 +211,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
             mediaElement.removeEventListener('ended', onEnded);
             mediaElement.removeEventListener('error', onError);
             mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
-            mediaElement.removeAttribute('src'); // potentially call a load too now src is empty.
+            mediaElement.removeAttribute('src');
             mediaElement.load();
             DOMHelpers.safeRemoveElement(mediaElement);
           }
@@ -250,7 +241,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         },
         play: play,
         setCurrentTime: function (time) {
-          mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection;
+          mediaElement.currentTime = time + timeCorrection;
         },
         getPlayerElement: function () {
           return mediaElement || undefined;
