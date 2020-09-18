@@ -223,6 +223,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
             mediaElement.removeEventListener('error', onError);
             mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
             mediaElement.removeAttribute('src'); // potentially call a load too now src is empty.
+            mediaElement.load();
             DOMHelpers.safeRemoveElement(mediaElement);
           }
 
