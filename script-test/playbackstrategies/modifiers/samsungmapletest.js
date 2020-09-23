@@ -39,6 +39,17 @@ require(
         player.addEventCallback(this, eventCallbackReporter);
       });
 
+      describe('initialiseMedia', function () {
+        it('should set the source and mimeType and emit a stopped event', function () {
+          recentEvents = [];
+          player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
+
+          expect(player.getSource()).toEqual('testUrl');
+          expect(player.getMimeType()).toEqual('testMimeType');
+          expect(recentEvents).toContain(MediaPlayerBase.EVENT.STOPPED);
+        });
+      });
+
       describe('beginPlaybackFrom', function () {
         it('should call ResumePlay on the player plugin if in a stopped state', function () {
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
