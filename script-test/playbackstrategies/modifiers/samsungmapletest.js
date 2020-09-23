@@ -115,7 +115,7 @@ require(
             expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING);
           });
 
-          it('should call JumpBackwards on the player plugin if seeking backwards', function () {
+          it('should call JumpBackward on the player plugin if seeking backwards', function () {
             player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
             player.beginPlaybackFrom(20);
             window.SamsungMapleOnCurrentPlayTime(20000);
@@ -156,6 +156,52 @@ require(
 
             expect(mockPlayerPlugin.JumpForward).toHaveBeenCalledTimes(1);
             expect(mockPlayerPlugin.Resume).toHaveBeenCalledTimes(1);
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING);
+          });
+
+          it('should call JumpBackward and Resume on the player plugin if seeking backwards', function () {
+            player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
+            player.beginPlaybackFrom(20);
+            window.SamsungMapleOnCurrentPlayTime(20000);
+            window.SamsungMapleOnStreamInfoReady();
+            player.toPaused();
+            recentEvents = [];
+            player.playFrom(0);
+
+            expect(mockPlayerPlugin.JumpBackward).toHaveBeenCalledTimes(1);
+            expect(mockPlayerPlugin.Resume).toHaveBeenCalledTimes(1);
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING);
+          });
+
+          it('should not attempt to seek and call Resume on the player plugin if seeking close to current time', function () {
+            player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
+            player.beginPlayback();
+            window.SamsungMapleOnCurrentPlayTime(0);
+            window.SamsungMapleOnStreamInfoReady();
+            player.toPaused();
+            recentEvents = [];
+            player.playFrom(1.5);
+
+            expect(mockPlayerPlugin.JumpForward).toHaveBeenCalledTimes(0);
+            expect(mockPlayerPlugin.JumpBackward).toHaveBeenCalledTimes(0);
+            expect(mockPlayerPlugin.Resume).toHaveBeenCalledTimes(1);
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING);
+            expect(recentEvents).toContain(MediaPlayerBase.EVENT.PLAYING);
+          });
+        });
+
+        describe('in a complete state', function () {
+          it('calls Stop and ResumePlay on the player plugin, and emits a buffering event', function () {
+            player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
+            player.beginPlayback();
+            window.SamsungMapleOnCurrentPlayTime(0);
+            window.SamsungMapleOnStreamInfoReady();
+            window.SamsungMapleOnRenderingComplete();
+            recentEvents = [];
+            player.playFrom(20);
+
+            expect(mockPlayerPlugin.Stop).toHaveBeenCalledTimes(1);
+            expect(mockPlayerPlugin.ResumePlay).toHaveBeenCalledTimes(1);
             expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING);
           });
         });
