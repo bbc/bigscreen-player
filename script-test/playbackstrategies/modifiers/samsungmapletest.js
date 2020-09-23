@@ -42,18 +42,22 @@ require(
       describe('beginPlaybackFrom', function () {
         it('should call ResumePlay on the player plugin if in a stopped state', function () {
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
+          recentEvents = [];
           player.beginPlaybackFrom(0);
 
           expect(mockPlayerPlugin.ResumePlay).toHaveBeenCalledTimes(1);
+          expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING);
         });
       });
 
       describe('beginPlayback', function () {
         it('should call Play on the player plugin if in a stopped state', function () {
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
+          recentEvents = [];
           player.beginPlayback();
 
           expect(mockPlayerPlugin.Play).toHaveBeenCalledTimes(1);
+          expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING);
         });
       });
 
@@ -62,6 +66,7 @@ require(
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
           player.beginPlayback();
           player.toPlaying();
+          recentEvents = [];
           player.pause();
 
           expect(recentEvents).toContain(MediaPlayerBase.EVENT.PAUSED);
@@ -73,6 +78,7 @@ require(
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
           player.beginPlayback();
           player.toPaused();
+          recentEvents = [];
           player.resume();
 
           expect(recentEvents).toContain(MediaPlayerBase.EVENT.PLAYING);
@@ -84,6 +90,7 @@ require(
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType');
           player.beginPlayback();
           player.toPlaying();
+          recentEvents = [];
           player.stop();
 
           expect(mockPlayerPlugin.Stop).toHaveBeenCalledTimes(1);
