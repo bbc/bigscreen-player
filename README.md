@@ -58,7 +58,7 @@ require(
     var optionalData = {
       initialPlaybackTime: 0, // Time (in seconds) to begin playback from
       media: {
-        mimeType: 'video/mp4', // Used by TAL
+        mimeType: 'video/mp4',
         bitrate: 8940,         // Displayed by Debug Tool
         captionsUrl: 'https://www.somelovelycaptionsurl.com/captions',
         codec: 'h264',
@@ -90,7 +90,7 @@ require(
 The Bigscreen Player has some global configuration that is needed before initialisation. A *playback strategy* must be configured:
 
 ```javascript
-window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'talstrategy' (deprecated)
+window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy'
 ```
 
 See the [configuration](https://github.com/bbc/bigscreen-player/wiki/Playback-Strategy) wiki page for further details on these strategies.
