@@ -24,7 +24,7 @@ The player will render itself into a supplied parent element, and playback will 
 // configure the media player that will be used before loading
 // see below for further details of ths config
 
-// options are: msestrategy, nativestrategy, hybridstrategy, talstrategy (deprecated)
+// options are: msestrategy, nativestrategy, hybridstrategy
 window.bigscreenPlayer.playbackStrategy = 'msestrategy';
 
 require(
