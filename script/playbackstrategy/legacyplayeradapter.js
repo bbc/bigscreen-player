@@ -35,7 +35,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
       var setSourceOpts = {
         disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.liveUhdDisableSentinels,
-        disableSeekSentinel: window.bigscreenPlayer.disableSeekSentinel
+        disableSeekSentinel: window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableSeekSentinel
       };
 
       mediaPlayer.addEventCallback(this, eventHandler);
@@ -208,7 +208,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       }
 
       function requiresLiveCurtain () {
-        return !!window.bigscreenPlayer.showLiveCurtain;
+        return !!window.bigscreenPlayer.overrides.showLiveCurtain && !!window.bigscreenPlayer.overrides.showLiveCurtain;
       }
 
       function reset () {

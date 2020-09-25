@@ -171,7 +171,9 @@ require(
         });
 
         it('should disable seek sentinels if we are configured to do so', function () {
-          window.bigscreenPlayer.disableSeekSentinel = true;
+          window.bigscreenPlayer.overrides = {
+            disableSeekSentinel: true
+          };
 
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
@@ -559,11 +561,12 @@ require(
 
       describe('live glitch curtain', function () {
         beforeEach(function () {
-          window.bigscreenPlayer.showLiveCurtain = true;
+          window.bigscreenPlayer.overrides = {
+            showLiveCurtain: true
+          };
         });
 
         afterEach(function () {
-          delete window.bigscreenPlayer.showLiveCurtain;
           delete window.bigscreenPlayer.overrides;
         });
 
@@ -598,9 +601,7 @@ require(
         });
 
         it('should show curtain when the forceBeginPlaybackToEndOfWindow config is set and the playback type is live', function () {
-          window.bigscreenPlayer.overrides = {
-            forceBeginPlaybackToEndOfWindow: true
-          };
+          window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow = true;
 
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
