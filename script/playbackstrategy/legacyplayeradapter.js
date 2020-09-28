@@ -208,7 +208,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
       }
 
       function requiresLiveCurtain () {
-        return !!window.bigscreenPlayer.overrides.showLiveCurtain && !!window.bigscreenPlayer.overrides.showLiveCurtain;
+        return !!window.bigscreenPlayer.overrides && !!window.bigscreenPlayer.overrides.showLiveCurtain;
       }
 
       function reset () {
