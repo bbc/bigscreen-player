@@ -25,6 +25,7 @@ define('bigscreenplayer/bigscreenplayer',
       var initialPlaybackTimeEpoch;
       var serverDate;
       var playerComponent;
+      var resizer = Resizer();
       var pauseTrigger;
       var isSeeking = false;
       var endOfStream;
@@ -198,6 +199,7 @@ define('bigscreenplayer/bigscreenplayer',
           windowType = undefined;
           mediaSources = undefined;
           subtitlesHidden = undefined;
+          resizer = undefined;
           this.unregisterPlugin();
           DebugTool.tearDown();
           Chronicle.tearDown();
@@ -290,13 +292,13 @@ define('bigscreenplayer/bigscreenplayer',
         resize: function (top, left, width, height, zIndex) {
           subtitlesHidden = isSubtitlesEnabled();
           setSubtitlesEnabled(false);
-          Resizer.resize(playbackElement, top, left, width, height, zIndex);
+          resizer.resize(playbackElement, top, left, width, height, zIndex);
         },
         clearResize: function () {
           if (subtitlesHidden) {
             setSubtitlesEnabled(true);
           }
-          Resizer.clearResize(playbackElement);
+          resizer.clear(playbackElement);
         },
         setSubtitlesEnabled: setSubtitlesEnabled,
         isSubtitlesEnabled: isSubtitlesEnabled,

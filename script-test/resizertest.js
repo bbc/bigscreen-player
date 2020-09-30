@@ -13,10 +13,10 @@ require(
         element.style.left = '0px';
         element.style.width = '1280px';
         element.style.height = '720px';
-        resizer = Resizer;
+        resizer = Resizer();
       });
 
-      describe('resize()', function () {
+      describe('resize', function () {
         it('Resizes and positions the element with the correct values', function () {
           resizer.resize(element, 10, 20, 3, 4, 5);
 
@@ -29,10 +29,10 @@ require(
         });
       });
 
-      describe('clearResize()', function () {
+      describe('clear', function () {
         it('resets the css properties', function () {
           resizer.resize(element, 1, 2, 3, 4, 5);
-          resizer.clearResize(element);
+          resizer.clear(element);
 
           expect(element.style.top).toEqual('');
           expect(element.style.left).toEqual('');

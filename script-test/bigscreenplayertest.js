@@ -115,19 +115,23 @@ require(
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
           'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
           'getWindowStartTime', 'getWindowEndTime']);
-        mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clearResize']);
+        mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear']);
         successCallback = jasmine.createSpy('successCallback');
         errorCallback = jasmine.createSpy('errorCallback');
         setupManifestData();
         liveSupport = LiveSupport.SEEKABLE;
         noCallbacks = false;
 
+        var mockResizerConstructor = function () {
+          return mockResizer;
+        };
+
         injector.mock({
           'bigscreenplayer/mediasources': mediaSourcesMock,
           'bigscreenplayer/playercomponent': mockPlayerComponent,
           'bigscreenplayer/plugins': Plugins,
           'bigscreenplayer/debugger/debugtool': mockDebugTool,
-          'bigscreenplayer/resizer': mockResizer
+          'bigscreenplayer/resizer': mockResizerConstructor
         });
 
         injector.require(['bigscreenplayer/bigscreenplayer'], function (bigscreenPlayerReference) {
@@ -144,7 +148,7 @@ require(
         errorCallback.calls.reset();
         forceMediaSourcesConstructionFailure = false;
         mockResizer.resize.calls.reset();
-        mockResizer.clearResize.calls.reset();
+        mockResizer.clear.calls.reset();
 
         mediaSourcesCallbackSuccessSpy && mediaSourcesCallbackSuccessSpy.calls && mediaSourcesCallbackSuccessSpy.calls.reset();
         mediaSourcesCallbackErrorSpy && mediaSourcesCallbackErrorSpy.calls && mediaSourcesCallbackErrorSpy.calls.reset();
@@ -809,22 +813,33 @@ require(
         });
       });
 
-      // describe('clearResize', function () {
-      // it('calls resizers clear function', function () {
-      //   initialiseBigscreenPlayer();
-      //   bigscreenPlayer.clearResize();
+      describe('clearResize', function () {
+        it('calls resizers clear function', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.clearResize();
 
-      //   expect(mockResizer.clearResize).toHaveBeenCalledWith(playbackElement);
-      // });
+          expect(mockResizer.clear).toHaveBeenCalledWith(playbackElement);
+        });
 
-      // it('enables subtitles when cleared if they were previously shown', function () {
+        it('enables subtitles when cleared if they were previously shown', function () {
+          initialiseBigscreenPlayer();
+          mockPlayerComponentInstance.isSubtitlesEnabled.and.returnValue(true);
+          bigscreenPlayer.resize(10, 10, 160, 90, 100);
+          bigscreenPlayer.clearResize();
 
-      // });
+          expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(true);
+        });
 
-      // it('does not enable subtitles when cleared if they were previously not shown', function () {
+        it('does not enable subtitles when cleared if they were previously not shown', function () {
+          initialiseBigscreenPlayer();
+          mockPlayerComponentInstance.isSubtitlesEnabled.and.returnValue(false);
+          bigscreenPlayer.resize(10, 10, 160, 90, 100);
+          mockPlayerComponentInstance.setSubtitlesEnabled.calls.reset();
+          bigscreenPlayer.clearResize();
 
-      // });
-      // });
+          expect(mockPlayerComponentInstance.setSubtitlesEnabled).not.toHaveBeenCalled();
+        });
+      });
 
       describe('canSeek', function () {
         it('should return true when in VOD playback', function () {
