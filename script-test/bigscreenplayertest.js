@@ -22,6 +22,7 @@ require(
 
     var mockEventHook;
     var mockPlayerComponentInstance;
+    var mockResizer;
 
     var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
       mockEventHook = callback;
@@ -114,6 +115,7 @@ require(
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
           'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
           'getWindowStartTime', 'getWindowEndTime']);
+        mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clearResize']);
         successCallback = jasmine.createSpy('successCallback');
         errorCallback = jasmine.createSpy('errorCallback');
         setupManifestData();
@@ -124,7 +126,8 @@ require(
           'bigscreenplayer/mediasources': mediaSourcesMock,
           'bigscreenplayer/playercomponent': mockPlayerComponent,
           'bigscreenplayer/plugins': Plugins,
-          'bigscreenplayer/debugger/debugtool': mockDebugTool
+          'bigscreenplayer/debugger/debugtool': mockDebugTool,
+          'bigscreenplayer/resizer': mockResizer
         });
 
         injector.require(['bigscreenplayer/bigscreenplayer'], function (bigscreenPlayerReference) {
@@ -140,6 +143,8 @@ require(
         successCallback.calls.reset();
         errorCallback.calls.reset();
         forceMediaSourcesConstructionFailure = false;
+        mockResizer.resize.calls.reset();
+        mockResizer.clearResize.calls.reset();
 
         mediaSourcesCallbackSuccessSpy && mediaSourcesCallbackSuccessSpy.calls && mediaSourcesCallbackSuccessSpy.calls.reset();
         mediaSourcesCallbackErrorSpy && mediaSourcesCallbackErrorSpy.calls && mediaSourcesCallbackErrorSpy.calls.reset();
@@ -787,6 +792,39 @@ require(
           expect(mockPlayerComponentInstance.isSubtitlesAvailable).toHaveBeenCalledWith();
         });
       });
+
+      describe('resize', function () {
+        it('calls resizer with correct values', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.resize(10, 10, 160, 90, 100);
+
+          expect(mockResizer.resize).toHaveBeenCalledWith(playbackElement, 10, 10, 160, 90, 100);
+        });
+
+        it('disables subtitles whilst resized', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.resize(10, 10, 160, 90, 100);
+
+          expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(false);
+        });
+      });
+
+      // describe('clearResize', function () {
+      // it('calls resizers clear function', function () {
+      //   initialiseBigscreenPlayer();
+      //   bigscreenPlayer.clearResize();
+
+      //   expect(mockResizer.clearResize).toHaveBeenCalledWith(playbackElement);
+      // });
+
+      // it('enables subtitles when cleared if they were previously shown', function () {
+
+      // });
+
+      // it('does not enable subtitles when cleared if they were previously not shown', function () {
+
+      // });
+      // });
 
       describe('canSeek', function () {
         it('should return true when in VOD playback', function () {
