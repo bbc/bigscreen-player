@@ -20,12 +20,11 @@ define('bigscreenplayer/bigscreenplayer',
       var stateChangeCallbacks = [];
       var timeUpdateCallbacks = [];
       var subtitleCallbacks = [];
-
       var mediaKind;
       var initialPlaybackTimeEpoch;
       var serverDate;
       var playerComponent;
-      var resizer = Resizer();
+      var resizer;
       var pauseTrigger;
       var isSeeking = false;
       var endOfStream;
@@ -160,6 +159,7 @@ define('bigscreenplayer/bigscreenplayer',
       return {
         init: function (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, callbacks) {
           Chronicle.init();
+          resizer = Resizer();
           DebugTool.setRootElement(playbackElement);
           DebugTool.keyValue({key: 'framework-version', value: Version});
           device = newDevice;
