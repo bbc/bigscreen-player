@@ -63,6 +63,7 @@ require(
       });
 
       afterEach(function () {
+        delete window.bigscreenPlayer.overrides;
         mockGlitchCurtainInstance.showCurtain.calls.reset();
         mockGlitchCurtainInstance.hideCurtain.calls.reset();
         mockGlitchCurtainInstance.tearDown.calls.reset();
@@ -111,10 +112,6 @@ require(
       });
 
       describe('load', function () {
-        afterEach(function () {
-          delete window.bigscreenPlayer.overrides;
-        });
-
         it('should initialise the media player', function () {
           setUpLegacyAdaptor();
 
@@ -566,10 +563,6 @@ require(
           };
         });
 
-        afterEach(function () {
-          delete window.bigscreenPlayer.overrides;
-        });
-
         it('should show curtain for a live restart and we get a seek-attempted event', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
@@ -698,10 +691,6 @@ require(
       });
 
       describe('delay pause until after seek', function () {
-        afterEach(function () {
-          delete window.bigscreenPlayer.overrides;
-        });
-
         it('should pause the player if we were in a paused state on dash live', function () {
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
