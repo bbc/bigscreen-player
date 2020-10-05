@@ -142,7 +142,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     }
 
     var mockFunctions = {
-      init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, device, callbacks) {
+      init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
         currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0;
         liveWindowStart = undefined;
         pausedState = true;

@@ -23,7 +23,7 @@ require(
     var mockEventHook;
     var mockPlayerComponentInstance;
 
-    var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
+    var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback) {
       mockEventHook = callback;
       return mockPlayerComponentInstance;
     };
@@ -52,7 +52,6 @@ require(
       options = options || {};
 
       var windowType = options.windowType || WindowTypes.STATIC;
-      var device = options.device;
       var subtitlesEnabled = options.subtitlesEnabled || false;
 
       playbackElement = document.createElement('div');
@@ -86,7 +85,7 @@ require(
       if (!noCallbacks) {
         callbacks = {onSuccess: successCallback, onError: errorCallback};
       }
-      bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, device, callbacks);
+      bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, callbacks);
     }
 
     describe('Bigscreen Player', function () {
