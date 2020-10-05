@@ -5,8 +5,7 @@ define(
     return {
       MSE: 'msestrategy',
       HYBRID: 'hybridstrategy',
-      NATIVE: 'nativestrategy',
-      TAL: 'talstrategy'
+      NATIVE: 'nativestrategy'
     };
   });
 

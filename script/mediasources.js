@@ -65,11 +65,9 @@ define('bigscreenplayer/mediasources',
         if (isFirstManifest(failoverParams.serviceLocation)) {
           return false;
         }
-
-        var talRestartable = window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.TAL && liveSupport === LiveSupport.RESTARTABLE;
         var aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5;
         var shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd;
-        var shouldLiveFailover = windowType !== WindowTypes.STATIC && !talRestartable;
+        var shouldLiveFailover = windowType !== WindowTypes.STATIC;
         return isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
       }
 

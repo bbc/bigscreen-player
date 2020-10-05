@@ -21,12 +21,6 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
       }
     };
 
-    let fakeDevice = {
-      getConfig: function () {
-        return {};
-      }
-    }
-
   function setUpCaptionsContainerCSS() {
     var captionsContainer = document.getElementById('playerCaptionsContainer');
     captionsContainer.style.position = 'absolute';
@@ -38,7 +32,7 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
   let bigscreenPlayer = BigscreenPlayer();
   window._bigscreenPlayer = bigscreenPlayer;
 
-  bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles, fakeDevice,
+  bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles,
     {
       onSuccess: function () {
         bigscreenPlayer.toggleDebug();

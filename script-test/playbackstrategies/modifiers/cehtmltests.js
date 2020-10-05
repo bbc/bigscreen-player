@@ -15,14 +15,6 @@ require(
         recentEvents.push(event.type);
       }
 
-      var config = {
-        streaming: {
-          overrides: {
-            forceBeginPlaybackToEndOfWindow: true
-          }
-        }
-      };
-
       beforeEach(function () {
         jasmine.clock().install();
         jasmine.clock().mockDate();
@@ -36,7 +28,7 @@ require(
 
         recentEvents = [];
 
-        player = CehtmlMediaPlayer(config);
+        player = CehtmlMediaPlayer();
         player.addEventCallback(this, eventCallbackReporter);
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
       });
@@ -46,6 +38,10 @@ require(
       });
 
       describe('Seek attempted and finished events', function () {
+        afterEach(function () {
+          delete window.bigscreenPlayer.overrides;
+        });
+
         it('Seek Attempted Event Emitted On Initialise Media If The State Is Empty', function () {
           expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
         });
@@ -95,16 +91,11 @@ require(
         });
 
         it('Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
-          var restartTimeoutConfig = {
-            streaming: {
-              overrides: {
-                forceBeginPlaybackToEndOfWindow: true
-              }
-            },
+          window.bigscreenPlayer.overrides = {
             restartTimeout: 10000
           };
 
-          player = CehtmlMediaPlayer(restartTimeoutConfig);
+          player = CehtmlMediaPlayer();
           player.addEventCallback(this, eventCallbackReporter);
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
 

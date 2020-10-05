@@ -14,7 +14,7 @@ define(
   function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
     'use strict';
 
-    var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
+    var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback) {
       var isInitialPlay = true;
       var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
@@ -33,8 +33,7 @@ define(
         windowType,
         mediaKind,
         playbackElement,
-        bigscreenPlayerData.media.isUHD,
-        device
+        bigscreenPlayerData.media.isUHD
       );
 
       playbackStrategy.addEventCallback(this, eventCallback);
@@ -124,7 +123,7 @@ define(
         return window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
                transferFormat === TransferFormats.HLS &&
                windowType !== WindowTypes.STATIC &&
-               getLiveSupport(device) === LiveSupport.RESTARTABLE;
+               getLiveSupport() === LiveSupport.RESTARTABLE;
       }
 
       function reloadMediaElement (time) {
@@ -386,8 +385,8 @@ define(
       };
     };
 
-    function getLiveSupport (device) {
-      return PlaybackStrategy.getLiveSupport(device);
+    function getLiveSupport () {
+      return PlaybackStrategy.getLiveSupport();
     }
 
     PlayerComponent.getLiveSupport = getLiveSupport;

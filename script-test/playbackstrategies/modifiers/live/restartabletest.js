@@ -23,9 +23,9 @@ require(
       }
     };
 
-    function initialiseRestartableMediaPlayer (config, windowType) {
+    function initialiseRestartableMediaPlayer (windowType) {
       windowType = windowType || WindowTypes.SLIDING;
-      restartableMediaPlayer = RestartableMediaPlayer(player, config, windowType, mockMediaSources);
+      restartableMediaPlayer = RestartableMediaPlayer(player, windowType, mockMediaSources);
     }
 
     describe('restartable HMTL5 Live Player', function () {
@@ -203,7 +203,7 @@ require(
           });
 
           it('should only increase end for a growing window', function () {
-            initialiseRestartableMediaPlayer({}, WindowTypes.GROWING);
+            initialiseRestartableMediaPlayer(WindowTypes.GROWING);
             restartableMediaPlayer.beginPlaybackFrom(0);
             timeUpdate({ state: MediaPlayerBase.STATE.PLAYING });
             jasmine.clock().tick(1000);
@@ -238,6 +238,10 @@ require(
       });
 
       describe('Restartable features', function () {
+        afterEach(function () {
+          delete window.bigscreenPlayer.overrides;
+        });
+
         it('begins playback with the desired offset', function () {
           initialiseRestartableMediaPlayer();
           var offset = 10;
@@ -248,14 +252,11 @@ require(
         });
 
         it('should respect config forcing playback from the end of the window', function () {
-          var config = {
-            streaming: {
-              overrides: {
-                forceBeginPlaybackToEndOfWindow: true
-              }
-            }
+          window.bigscreenPlayer.overrides = {
+            forceBeginPlaybackToEndOfWindow: true
           };
-          initialiseRestartableMediaPlayer(config);
+
+          initialiseRestartableMediaPlayer();
 
           restartableMediaPlayer.beginPlayback();
 
@@ -267,7 +268,7 @@ require(
         var mockCallback = [];
 
         function startPlaybackAndPause (startTime, disableAutoResume, windowType) {
-          initialiseRestartableMediaPlayer(undefined, windowType);
+          initialiseRestartableMediaPlayer(windowType);
 
           restartableMediaPlayer.beginPlaybackFrom(startTime);
 
