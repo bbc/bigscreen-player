@@ -195,7 +195,6 @@ define('bigscreenplayer/bigscreenplayer',
           pauseTrigger = undefined;
           windowType = undefined;
           mediaSources = undefined;
-          playbackElement = undefined;
           subtitlesHidden = undefined;
           resizer = undefined;
           this.unregisterPlugin();
