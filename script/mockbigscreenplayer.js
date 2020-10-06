@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 define('bigscreenplayer/mockbigscreenplayer',
   [
     'bigscreenplayer/models/mediastate',
@@ -29,6 +30,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     var windowType;
     var subtitlesAvailable;
     var subtitlesEnabled;
+    var subtitlesHidden;
     var endOfStream;
     var canSeekState;
     var canPauseState;
@@ -48,6 +50,8 @@ define('bigscreenplayer/mockbigscreenplayer',
 
     var liveWindowData;
     var manifestError;
+
+    var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds'];
 
     function startProgress (progressCause) {
       setTimeout(function () {
@@ -84,8 +88,12 @@ define('bigscreenplayer/mockbigscreenplayer',
       shallowClone = PlaybackUtils.clone(BigscreenPlayer);
 
       // Divert existing functions
-      for (var mock in mockFunctions) {
-        BigscreenPlayer[mock] = mockFunctions[mock];
+      for (var func in BigscreenPlayer) {
+        if (BigscreenPlayer[func] && mockFunctions[func]) {
+          BigscreenPlayer[func] = mockFunctions[func];
+        } else if (!PlaybackUtils.contains(excludedFuncs, func)) {
+          throw new Error(func + ' was not mocked or included in the exclusion list');
+        }
       }
       // Add extra functions
       for (var hook in mockingHooks) {
@@ -101,9 +109,11 @@ define('bigscreenplayer/mockbigscreenplayer',
         throw new Error('mockJasmine() was called while BigscreenPlayer was already mocked');
       }
 
-      for (var mock in mockFunctions) {
-        if (BigscreenPlayer[mock]) {
-          spyOn(BigscreenPlayer, mock).and.callFake(mockFunctions[mock]);
+      for (var fn in BigscreenPlayer) {
+        if (BigscreenPlayer[fn] && mockFunctions[fn]) {
+          spyOn(BigscreenPlayer, fn).and.callFake(mockFunctions[fn]);
+        } else if (!PlaybackUtils.contains(excludedFuncs, fn)) {
+          throw new Error(fn + ' was not mocked or included in the exclusion list');
         }
       }
 
@@ -284,6 +294,16 @@ define('bigscreenplayer/mockbigscreenplayer',
           canBePaused: function () { return true; },
           canBeginSeek: function () { return true; }
         };
+      },
+      isPlayingAtLiveEdge: function () {
+        return false;
+      },
+      resize: function () {
+        subtitlesHidden = this.isSubtitlesEnabled();
+        this.setSubtitlesEnabled(subtitlesHidden);
+      },
+      clearResize: function () {
+        this.setSubtitlesEnabled(subtitlesHidden);
       },
       getPlayerElement: function () {
         return;
