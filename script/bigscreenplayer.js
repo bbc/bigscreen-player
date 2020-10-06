@@ -94,7 +94,7 @@ define('bigscreenplayer/bigscreenplayer',
         return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : undefined;
       }
 
-      function bigscreenPlayerDataLoaded (playbackElement, bigscreenPlayerData, enableSubtitles, successCallback) {
+      function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles, successCallback) {
         if (windowType !== WindowTypes.STATIC) {
           bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
@@ -169,7 +169,7 @@ define('bigscreenplayer/bigscreenplayer',
 
           var mediaSourceCallbacks = {
             onSuccess: function () {
-              bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, callbacks.onSuccess);
+              bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles, callbacks.onSuccess);
             },
             onError: function (error) {
               if (callbacks.onError) {
@@ -195,6 +195,7 @@ define('bigscreenplayer/bigscreenplayer',
           pauseTrigger = undefined;
           windowType = undefined;
           mediaSources = undefined;
+          playbackElement = undefined;
           subtitlesHidden = undefined;
           resizer = undefined;
           this.unregisterPlugin();
