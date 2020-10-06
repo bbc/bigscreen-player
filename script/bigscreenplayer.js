@@ -11,24 +11,27 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/utils/timeutils',
     'bigscreenplayer/mediasources',
-    'bigscreenplayer/version'
+    'bigscreenplayer/version',
+    'bigscreenplayer/resizer'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version, Resizer) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
       var timeUpdateCallbacks = [];
       var subtitleCallbacks = [];
-
       var mediaKind;
       var initialPlaybackTimeEpoch;
       var serverDate;
       var playerComponent;
+      var resizer;
       var pauseTrigger;
       var isSeeking = false;
       var endOfStream;
       var windowType;
       var mediaSources;
+      var playbackElement;
+      var subtitlesHidden;
 
       var END_OF_STREAM_TOLERANCE = 10;
 
@@ -91,7 +94,7 @@ define('bigscreenplayer/bigscreenplayer',
         return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : undefined;
       }
 
-      function bigscreenPlayerDataLoaded (playbackElement, bigscreenPlayerData, enableSubtitles, successCallback) {
+      function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles, successCallback) {
         if (windowType !== WindowTypes.STATIC) {
           bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
@@ -142,9 +145,20 @@ define('bigscreenplayer/bigscreenplayer',
         });
       }
 
+      function setSubtitlesEnabled (value) {
+        playerComponent.setSubtitlesEnabled(value);
+        callSubtitlesCallbacks(value);
+      }
+
+      function isSubtitlesEnabled () {
+        return playerComponent ? playerComponent.isSubtitlesEnabled() : false;
+      }
+
       return {
-        init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
+        init: function (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
+          playbackElement = newPlaybackElement;
           Chronicle.init();
+          resizer = Resizer();
           DebugTool.setRootElement(playbackElement);
           DebugTool.keyValue({key: 'framework-version', value: Version});
           windowType = newWindowType;
@@ -155,7 +169,7 @@ define('bigscreenplayer/bigscreenplayer',
 
           var mediaSourceCallbacks = {
             onSuccess: function () {
-              bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, callbacks.onSuccess);
+              bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles, callbacks.onSuccess);
             },
             onError: function (error) {
               if (callbacks.onError) {
@@ -181,6 +195,8 @@ define('bigscreenplayer/bigscreenplayer',
           pauseTrigger = undefined;
           windowType = undefined;
           mediaSources = undefined;
+          subtitlesHidden = undefined;
+          resizer = undefined;
           this.unregisterPlugin();
           DebugTool.tearDown();
           Chronicle.tearDown();
@@ -270,13 +286,19 @@ define('bigscreenplayer/bigscreenplayer',
           pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
           playerComponent.pause(opts);
         },
-        setSubtitlesEnabled: function (value) {
-          playerComponent.setSubtitlesEnabled(value);
-          callSubtitlesCallbacks(value);
+        resize: function (top, left, width, height, zIndex) {
+          subtitlesHidden = isSubtitlesEnabled();
+          setSubtitlesEnabled(false);
+          resizer.resize(playbackElement, top, left, width, height, zIndex);
         },
-        isSubtitlesEnabled: function () {
-          return playerComponent ? playerComponent.isSubtitlesEnabled() : false;
+        clearResize: function () {
+          if (subtitlesHidden) {
+            setSubtitlesEnabled(true);
+          }
+          resizer.clear(playbackElement);
         },
+        setSubtitlesEnabled: setSubtitlesEnabled,
+        isSubtitlesEnabled: isSubtitlesEnabled,
         isSubtitlesAvailable: function () {
           return playerComponent ? playerComponent.isSubtitlesAvailable() : false;
         },
