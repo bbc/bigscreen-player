@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 define('bigscreenplayer/mockbigscreenplayer',
   [
     'bigscreenplayer/models/mediastate',
