@@ -82,7 +82,7 @@ define('bigscreenplayer/mockbigscreenplayer',
       autoProgress = opts && opts.autoProgress;
 
       if (opts && opts.excludedFuncs) {
-        excludedFuncs = PlaybackUtils.merge(excludedFuncs, opts.excludedFuncs);
+        excludedFuncs = excludedFuncs.concat(opts.excludedFuncs);
       }
 
       if (mockStatus.currentlyMocked) {
@@ -109,7 +109,7 @@ define('bigscreenplayer/mockbigscreenplayer',
       autoProgress = opts && opts.autoProgress;
 
       if (opts && opts.excludedFuncs) {
-        excludedFuncs = PlaybackUtils.merge(excludedFuncs, opts.excludedFuncs);
+        excludedFuncs = excludedFuncs.concat(opts.excludedFuncs);
       }
 
       if (mockStatus.currentlyMocked) {
