@@ -81,6 +81,10 @@ define('bigscreenplayer/mockbigscreenplayer',
     function mock (BigscreenPlayer, opts) {
       autoProgress = opts && opts.autoProgress;
 
+      if (opts && opts.excludedFuncs) {
+        PlaybackUtils.merge(excludedFuncs, opts.excludedFuncs);
+      }
+
       if (mockStatus.currentlyMocked) {
         throw new Error('mock() was called while BigscreenPlayer was already mocked');
       }
@@ -103,6 +107,10 @@ define('bigscreenplayer/mockbigscreenplayer',
 
     function mockJasmine (BigscreenPlayer, opts) {
       autoProgress = opts && opts.autoProgress;
+
+      if (opts && opts.excludedFuncs) {
+        PlaybackUtils.merge(excludedFuncs, opts.excludedFuncs);
+      }
 
       if (mockStatus.currentlyMocked) {
         throw new Error('mockJasmine() was called while BigscreenPlayer was already mocked');
