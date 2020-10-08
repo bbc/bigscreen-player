@@ -1070,6 +1070,30 @@ require(
           expect(mockPluginTwo.onError).not.toHaveBeenCalled();
         });
       });
+
+      describe('mock', function () {
+        afterEach(function () {
+          bigscreenPlayer.unmock();
+        });
+
+        it('should return a mock object with jasmine spies on the same interface as the main api', function () {
+          initialiseBigscreenPlayer();
+          var moduleKeys = Object.keys(bigscreenPlayer);
+          bigscreenPlayer.mockJasmine();
+          var mockKeys = Object.keys(bigscreenPlayer);
+
+          expect(mockKeys).toEqual(jasmine.objectContaining(moduleKeys));
+        });
+
+        it('should return a mock object on the same interface as the main api', function () {
+          initialiseBigscreenPlayer();
+          var moduleKeys = Object.keys(bigscreenPlayer);
+          bigscreenPlayer.mock();
+          var mockKeys = Object.keys(bigscreenPlayer);
+
+          expect(mockKeys).toEqual(jasmine.objectContaining(moduleKeys));
+        });
+      });
     });
   }
 );
