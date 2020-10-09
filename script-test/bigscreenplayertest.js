@@ -186,21 +186,6 @@ require(
           expect(callback).toHaveBeenCalledWith({currentTime: 0, endOfStream: false});
         });
 
-        it('should call the suppiled success callback if playing VOD', function () {
-          initialiseBigscreenPlayer();
-
-          expect(successCallback).toHaveBeenCalledWith();
-          expect(errorCallback).not.toHaveBeenCalled();
-        });
-
-        it('should call the suppiled success callback if playing LIVE and the manifest loads', function () {
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-
-          expect(mediaSourcesCallbackSuccessSpy).toHaveBeenCalledTimes(1);
-          expect(successCallback).toHaveBeenCalledWith();
-          expect(errorCallback).not.toHaveBeenCalled();
-        });
-
         it('should call the supplied error callback if manifest fails to load', function () {
           forceMediaSourcesConstructionFailure = true;
           initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
@@ -350,6 +335,132 @@ require(
           mockEventHook({data: {state: MediaState.PLAYING}});
 
           expect(listener1).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
+        });
+      });
+
+      describe('player ready callback', function () {
+        describe('on state change event', function () {
+          it('should not be called when it is a fatal error', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {state: MediaState.FATAL_ERROR}});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('should be called if playing VOD and event time is valid', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {state: MediaState.BUFFERING, currentTime: 0}});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('should be called if playing VOD with an initial start time and event time is valid', function () {
+            initialiseBigscreenPlayer({initialPlaybackTime: 20});
+            mockEventHook({data: {state: MediaState.BUFFERING, currentTime: 0}});
+
+            expect(successCallback).not.toHaveBeenCalled();
+            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 20}});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('should be called if playing Live and event time is valid', function () {
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 10,
+                windowEndTime: 100
+              }
+            });
+
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 0}});
+
+            expect(successCallback).not.toHaveBeenCalled();
+            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 10}});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('after a valid state change should not be called on succesive valid state changes', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {state: MediaState.BUFFERING, currentTime: 0}});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+            successCallback.calls.reset();
+            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 0}});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('after a valid state change should not be called on succesive valid time updates', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {state: MediaState.BUFFERING, currentTime: 0}});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+            successCallback.calls.reset();
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+        });
+
+        describe('on time update', function () {
+          it('should be called if playing VOD and current time is valid', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('should be called if playing VOD with an initial start time and current time is valid', function () {
+            initialiseBigscreenPlayer({initialPlaybackTime: 20});
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).not.toHaveBeenCalled();
+            mockEventHook({data: {currentTime: 20}, timeUpdate: true});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('should be called if playing Live and current time is valid', function () {
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 10,
+                windowEndTime: 100
+              }
+            });
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).not.toHaveBeenCalled();
+            mockEventHook({data: {currentTime: 10}, timeUpdate: true});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('after a valid time update should not be called on succesive valid time updates', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+            successCallback.calls.reset();
+            mockEventHook({data: {currentTime: 2}, timeUpdate: true});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('after a valid time update should not be called on succesive valid state changes', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+            successCallback.calls.reset();
+            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 2}});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
         });
       });
 

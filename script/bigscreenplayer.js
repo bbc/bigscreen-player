@@ -20,6 +20,8 @@ define('bigscreenplayer/bigscreenplayer',
       var stateChangeCallbacks = [];
       var timeUpdateCallbacks = [];
       var subtitleCallbacks = [];
+      var playerReadyCallback;
+      var mediaElementReady;
       var mediaKind;
       var initialPlaybackTimeEpoch;
       var serverDate;
@@ -80,6 +82,21 @@ define('bigscreenplayer/bigscreenplayer',
         if (evt.data.duration) {
           DebugTool.keyValue({key: 'duration', value: evt.data.duration});
         }
+
+        if (!mediaElementReady) {
+          callPlayerReady(evt);
+        }
+      }
+
+      function callPlayerReady (evt) {
+        if (isPlayerReady(evt) && playerReadyCallback) {
+          playerReadyCallback();
+          mediaElementReady = true;
+        }
+      }
+
+      function isPlayerReady (evt) {
+        return true;
       }
 
       function deviceTimeToDate (time) {
@@ -94,7 +111,7 @@ define('bigscreenplayer/bigscreenplayer',
         return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : undefined;
       }
 
-      function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles, successCallback) {
+      function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
         if (windowType !== WindowTypes.STATIC) {
           bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
@@ -118,10 +135,6 @@ define('bigscreenplayer/bigscreenplayer',
 
         if (enableSubtitles) {
           callSubtitlesCallbacks(true);
-        }
-
-        if (successCallback) {
-          successCallback();
         }
       }
 
@@ -166,10 +179,12 @@ define('bigscreenplayer/bigscreenplayer',
           if (!callbacks) {
             callbacks = {};
           }
+          playerReadyCallback = callbacks.onSuccess;
+          mediaElementReady = false;
 
           var mediaSourceCallbacks = {
             onSuccess: function () {
-              bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles, callbacks.onSuccess);
+              bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles);
             },
             onError: function (error) {
               if (callbacks.onError) {
