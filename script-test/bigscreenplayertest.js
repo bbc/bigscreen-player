@@ -349,14 +349,14 @@ require(
 
           it('should be called if playing VOD and event time is valid', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {state: MediaState.BUFFERING, currentTime: 0}});
+            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
 
             expect(successCallback).toHaveBeenCalledTimes(1);
           });
 
           it('should be called if playing VOD with an initial start time and event time is valid', function () {
             initialiseBigscreenPlayer({initialPlaybackTime: 20});
-            mockEventHook({data: {state: MediaState.BUFFERING, currentTime: 0}});
+            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
 
             expect(successCallback).not.toHaveBeenCalled();
             mockEventHook({data: {state: MediaState.PLAYING, currentTime: 20}});
@@ -374,17 +374,37 @@ require(
             });
 
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 0}});
+            mockEventHook({
+              data:
+              {
+                state: MediaState.WAITING,
+                currentTime: 0,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              }
+            });
 
             expect(successCallback).not.toHaveBeenCalled();
-            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 10}});
+            mockEventHook({
+              data:
+              {
+                state: MediaState.PLAYING,
+                currentTime: 10,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              }
+            });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
           });
 
           it('after a valid state change should not be called on succesive valid state changes', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {state: MediaState.BUFFERING, currentTime: 0}});
+            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
 
             expect(successCallback).toHaveBeenCalledTimes(1);
             successCallback.calls.reset();
@@ -395,7 +415,7 @@ require(
 
           it('after a valid state change should not be called on succesive valid time updates', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {state: MediaState.BUFFERING, currentTime: 0}});
+            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
 
             expect(successCallback).toHaveBeenCalledTimes(1);
             successCallback.calls.reset();
@@ -432,10 +452,30 @@ require(
               }
             });
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+            mockEventHook({
+              data:
+              {
+                currentTime: 0,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              },
+              timeUpdate: true
+            });
 
             expect(successCallback).not.toHaveBeenCalled();
-            mockEventHook({data: {currentTime: 10}, timeUpdate: true});
+            mockEventHook({
+              data:
+              {
+                currentTime: 10,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              },
+              timeUpdate: true
+            });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
           });

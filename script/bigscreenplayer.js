@@ -21,9 +21,10 @@ define('bigscreenplayer/bigscreenplayer',
       var timeUpdateCallbacks = [];
       var subtitleCallbacks = [];
       var playerReadyCallback;
-      var mediaElementReady;
+      var mediaElementReady = false;
       var mediaKind;
       var initialPlaybackTimeEpoch;
+      var initialPlaybackTimeRelative;
       var serverDate;
       var playerComponent;
       var resizer;
@@ -84,19 +85,48 @@ define('bigscreenplayer/bigscreenplayer',
         }
 
         if (!mediaElementReady) {
-          callPlayerReady(evt);
+          checkPlayerReady(evt);
         }
       }
 
-      function callPlayerReady (evt) {
+      function checkPlayerReady (evt) {
         if (isPlayerReady(evt) && playerReadyCallback) {
-          playerReadyCallback();
           mediaElementReady = true;
+          playerReadyCallback();
         }
       }
 
       function isPlayerReady (evt) {
-        return true;
+        if (!evt.data) {
+          return false;
+        }
+
+        if (evt.timeUpdate) {
+          return isValidTime(evt.data);
+        } else {
+          return isValidState(evt.data) && isValidTime(evt.data);
+        }
+      }
+
+      function isValidState (evtData) {
+        return evtData.state && evtData.state !== MediaState.FATAL_ERROR;
+      }
+
+      function isValidTime (evtData) {
+        if (windowType === WindowTypes.STATIC && evtData.currentTime >= initialPlaybackTimeRelative) {
+          return true;
+        }
+
+        if (windowType !== WindowTypes.STATIC) {
+          if (isValidSeekableRange(evtData.seekableRange) && (evtData.currentTime >= evtData.seekableRange.start && evtData.currentTime <= evtData.seekableRange.end)) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function isValidSeekableRange (seekableRange) {
+        return seekableRange ? !(seekableRange.start === 0 && seekableRange.end === 0) : false;
       }
 
       function deviceTimeToDate (time) {
@@ -112,7 +142,9 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
-        if (windowType !== WindowTypes.STATIC) {
+        if (windowType === WindowTypes.STATIC) {
+          initialPlaybackTimeRelative = bigscreenPlayerData.initialPlaybackTime ? bigscreenPlayerData.initialPlaybackTime : 0;
+        } else {
           bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
 
