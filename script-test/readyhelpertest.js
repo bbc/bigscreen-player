@@ -7,7 +7,7 @@ require(
   function (MediaState, ReadyHelper, WindowTypes) {
     var callback;
 
-    fdescribe('readyHelper', function () {
+    describe('readyHelper', function () {
       var readyHelper;
 
       beforeEach(function () {
@@ -52,7 +52,7 @@ require(
         });
       });
 
-      describe('- Static, No Initial Time -', function () {
+      describe('- VoD, No Initial Time -', function () {
         beforeEach(function () {
           readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, callback);
         });
@@ -111,7 +111,7 @@ require(
         });
       });
 
-      describe('- Static, Initial Time -', function () {
+      describe('- VoD, Initial Time -', function () {
         beforeEach(function () {
           readyHelper = new ReadyHelper(60, WindowTypes.STATIC, callback);
         });
@@ -132,6 +132,67 @@ require(
             timeUpdate: true,
             data: {
               currentTime: 59
+            }
+          });
+
+          expect(callback).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('- Live -', function () {
+        beforeEach(function () {
+          readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, callback);
+        });
+
+        it('calls the supplied callback when given a valid seekable range and current time', function () {
+          readyHelper.callbackWhenReady({
+            timeUpdate: true,
+            data: {
+              currentTime: 60,
+              seekableRange: {
+                start: 59,
+                end: 61
+              }
+            }
+          });
+
+          expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not call the supplied callback when current time is outside of seekable range', function () {
+          readyHelper.callbackWhenReady({
+            timeUpdate: true,
+            data: {
+              currentTime: 1000000,
+              seekableRange: {
+                start: 0,
+                end: 1
+              }
+            }
+          });
+
+          expect(callback).not.toHaveBeenCalled();
+        });
+
+        it('does not call the supplied callback when the seekable range is undefined', function () {
+          readyHelper.callbackWhenReady({
+            timeUpdate: true,
+            data: {
+              currentTime: 0
+            }
+          });
+
+          expect(callback).not.toHaveBeenCalled();
+        });
+
+        it('does not call the supplied callback when seekable range is 0 - 0', function () {
+          readyHelper.callbackWhenReady({
+            timeUpdate: true,
+            data: {
+              seekableRange: {
+                start: 0,
+                end: 0
+              }
             }
           });
 
