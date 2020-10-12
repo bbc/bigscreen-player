@@ -12,19 +12,18 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/utils/timeutils',
     'bigscreenplayer/mediasources',
     'bigscreenplayer/version',
-    'bigscreenplayer/resizer'
+    'bigscreenplayer/resizer',
+    'bigscreenplayer/readyhelper'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version, Resizer) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version, Resizer, ReadyHelper) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
       var timeUpdateCallbacks = [];
       var subtitleCallbacks = [];
       var playerReadyCallback;
-      var mediaElementReady = false;
       var mediaKind;
       var initialPlaybackTimeEpoch;
-      var initialPlaybackTimeRelative;
       var serverDate;
       var playerComponent;
       var resizer;
@@ -35,6 +34,7 @@ define('bigscreenplayer/bigscreenplayer',
       var mediaSources;
       var playbackElement;
       var subtitlesHidden;
+      var readyHelper;
 
       var END_OF_STREAM_TOLERANCE = 10;
 
@@ -84,49 +84,9 @@ define('bigscreenplayer/bigscreenplayer',
           DebugTool.keyValue({key: 'duration', value: evt.data.duration});
         }
 
-        if (!mediaElementReady) {
-          checkPlayerReady(evt);
+        if (readyHelper) {
+          readyHelper.callbackWhenReady(evt);
         }
-      }
-
-      function checkPlayerReady (evt) {
-        if (isPlayerReady(evt) && playerReadyCallback) {
-          mediaElementReady = true;
-          playerReadyCallback();
-        }
-      }
-
-      function isPlayerReady (evt) {
-        if (!evt.data) {
-          return false;
-        }
-
-        if (evt.timeUpdate) {
-          return isValidTime(evt.data);
-        } else {
-          return isValidState(evt.data) && isValidTime(evt.data);
-        }
-      }
-
-      function isValidState (evtData) {
-        return evtData.state && evtData.state !== MediaState.FATAL_ERROR;
-      }
-
-      function isValidTime (evtData) {
-        if (windowType === WindowTypes.STATIC && evtData.currentTime >= initialPlaybackTimeRelative) {
-          return true;
-        }
-
-        if (windowType !== WindowTypes.STATIC) {
-          if (isValidSeekableRange(evtData.seekableRange) && (evtData.currentTime >= evtData.seekableRange.start && evtData.currentTime <= evtData.seekableRange.end)) {
-            return true;
-          }
-        }
-        return false;
-      }
-
-      function isValidSeekableRange (seekableRange) {
-        return seekableRange ? !(seekableRange.start === 0 && seekableRange.end === 0) : false;
       }
 
       function deviceTimeToDate (time) {
@@ -142,9 +102,12 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
-        if (windowType === WindowTypes.STATIC) {
-          initialPlaybackTimeRelative = bigscreenPlayerData.initialPlaybackTime ? bigscreenPlayerData.initialPlaybackTime : 0;
-        } else {
+        readyHelper = new ReadyHelper(
+          bigscreenPlayerData.initialPlaybackTime,
+          windowType,
+          playerReadyCallback);
+
+        if (windowType !== WindowTypes.STATIC) {
           bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
 
@@ -212,7 +175,6 @@ define('bigscreenplayer/bigscreenplayer',
             callbacks = {};
           }
           playerReadyCallback = callbacks.onSuccess;
-          mediaElementReady = false;
 
           var mediaSourceCallbacks = {
             onSuccess: function () {
