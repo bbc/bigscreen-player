@@ -7,8 +7,6 @@ define(
     var ReadyHelper = function (initialPlaybackTime, windowType, callback) {
       var ready = false;
 
-      initialPlaybackTime = initialPlaybackTime || 0;
-
       var callbackWhenReady = function (evt) {
         if (ready) return;
 
@@ -32,8 +30,12 @@ define(
       function isValidTime (evtData) {
         var isStatic = windowType === WindowTypes.STATIC;
 
-        if (isStatic && evtData.currentTime >= initialPlaybackTime) {
-          return true;
+        if (isStatic) {
+          if (initialPlaybackTime) {
+            return evtData.currentTime > 0;
+          } else {
+            return evtData.currentTime >= 0;
+          }
         }
 
         if (!isStatic) {

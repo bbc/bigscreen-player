@@ -127,11 +127,11 @@ require(
           expect(callback).toHaveBeenCalledTimes(1);
         });
 
-        it('does not call the supplied callback when current time precedes intital time', function () {
+        it('does not call the supplied callback when current time is 0', function () {
           readyHelper.callbackWhenReady({
             timeUpdate: true,
             data: {
-              currentTime: 59
+              currentTime: 0
             }
           });
 
