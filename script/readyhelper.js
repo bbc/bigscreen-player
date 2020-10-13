@@ -5,23 +5,20 @@ define(
   ],
   function (MediaState, WindowTypes) {
     var ReadyHelper = function (initialPlaybackTime, windowType, callback) {
-      var complete = false;
+      var ready = false;
 
       var callbackWhenReady = function (evt) {
-        if (complete) return;
-
-        var ready = false;
+        if (ready) return;
 
         if (!evt.data) {
-          return;
+          ready = false;
         } else if (evt.timeUpdate) {
           ready = isValidTime(evt.data);
         } else {
           ready = isValidState(evt.data) && isValidTime(evt.data);
         }
 
-        if (ready && !complete) {
-          complete = true;
+        if (ready) {
           callback();
         }
       };
