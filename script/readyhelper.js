@@ -42,8 +42,10 @@ define(
           var validSeekableRange = isValidSeekableRange(evtData.seekableRange);
 
           if (validSeekableRange) {
-            var currTimeGtStart = evtData.currentTime >= evtData.seekableRange.start;
-            var currTimeLtEnd = evtData.currentTime <= evtData.seekableRange.end;
+            var currTimeGtStart =
+              evtData.currentTime >= evtData.seekableRange.start;
+            var currTimeLtEnd =
+              evtData.currentTime <= evtData.seekableRange.end;
 
             return currTimeGtStart && currTimeLtEnd;
           }
