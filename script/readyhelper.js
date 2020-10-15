@@ -31,21 +31,27 @@ define(
         var isStatic = windowType === WindowTypes.STATIC;
 
         if (isStatic) {
-          if (initialPlaybackTime) {
-            return evtData.currentTime > 0;
+          if (evtData.currentTime) {
+            if (initialPlaybackTime) {
+              return evtData.currentTime > 0;
+            } else {
+              return evtData.currentTime >= 0;
+            }
           } else {
-            return evtData.currentTime >= 0;
+            return false;
           }
         }
 
         if (!isStatic) {
-          var validSeekableRange = isValidSeekableRange(evtData.seekableRange);
+          if (evtData.currentTime && evtData.seekableRange) {
+            var validSeekableRange = isValidSeekableRange(evtData.seekableRange);
 
-          if (validSeekableRange) {
-            var currTimeGtStart = evtData.currentTime >= evtData.seekableRange.start;
-            var currTimeLtEnd = evtData.currentTime <= evtData.seekableRange.end;
+            if (validSeekableRange) {
+              var currTimeGtStart = evtData.currentTime >= evtData.seekableRange.start;
+              var currTimeLtEnd = evtData.currentTime <= evtData.seekableRange.end;
 
-            return currTimeGtStart && currTimeLtEnd;
+              return currTimeGtStart && currTimeLtEnd;
+            }
           }
         }
 
