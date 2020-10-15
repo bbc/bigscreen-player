@@ -84,6 +84,8 @@ define('bigscreenplayer/bigscreenplayer',
           DebugTool.keyValue({key: 'duration', value: evt.data.duration});
         }
 
+        DebugTool.error(JSON.stringify(evt));
+
         if (readyHelper) {
           readyHelper.callbackWhenReady(evt);
         }

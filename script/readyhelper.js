@@ -53,9 +53,10 @@ define(
       }
 
       function isValidSeekableRange (seekableRange) {
-        return seekableRange
-          ? !(seekableRange.start === 0 && seekableRange.end === 0)
-          : false;
+        return true;
+        // return seekableRange
+        //   ? !(seekableRange.start === 0 && seekableRange.end === 0)
+        //   : false;
       }
 
       return {
