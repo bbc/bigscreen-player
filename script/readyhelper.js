@@ -8,7 +8,9 @@ define(
       var ready = true;
 
       var callbackWhenReady = function (evt) {
-        if (ready) return;
+        if (ready) {
+          return;
+        }
 
         if (!evt.data) {
           ready = false;
