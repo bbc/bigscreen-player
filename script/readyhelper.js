@@ -5,7 +5,7 @@ define(
   ],
   function (MediaState, WindowTypes) {
     var ReadyHelper = function (initialPlaybackTime, windowType, callback) {
-      var ready = false;
+      var ready = true;
 
       var callbackWhenReady = function (evt) {
         if (ready) return;
