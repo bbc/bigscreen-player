@@ -30,11 +30,11 @@ define(
       function isValidTime (evtData) {
         var isStatic = windowType === WindowTypes.STATIC;
 
-        if (currentTime) {
+        if (evtData.currentTime) {
           if (initialPlaybackTime || !isStatic) {
-            return currentTime > 0;
+            return evtData.currentTime > 0;
           } else {
-            return currentTime >= 0;
+            return evtData.currentTime >= 0;
           }
         }
         return false;
