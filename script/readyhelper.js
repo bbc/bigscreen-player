@@ -30,16 +30,8 @@ define(
       function isValidTime (evtData) {
         var isStatic = windowType === WindowTypes.STATIC;
 
-        if (isStatic) {
-          return validateStaticTime(evtData.currentTime);
-        } else {
-          return validateLiveTime(evtData.currentTime, evtData.seekableRange);
-        }
-      }
-
-      function validateStaticTime (currentTime) {
         if (currentTime) {
-          if (initialPlaybackTime) {
+          if (initialPlaybackTime || !isStatic) {
             return currentTime > 0;
           } else {
             return currentTime >= 0;
@@ -48,20 +40,30 @@ define(
         return false;
       }
 
-      function validateLiveTime (currentTime, seekableRange) {
-        return true;
-        if (currentTime && seekableRange) {
-          var validSeekableRange = isValidSeekableRange(seekableRange);
+      // function validateStaticTime (currentTime) {
+      //   if (currentTime) {
+      //     if (initialPlaybackTime) {
+      //       return currentTime > 0;
+      //     } else {
+      //       return currentTime >= 0;
+      //     }
+      //   }
+      //   return false;
+      // }
 
-          if (validSeekableRange) {
-            var currTimeGtStart = currentTime >= seekableRange.start;
-            var currTimeLtEnd = currentTime <= seekableRange.end;
+      // function validateLiveTime (currentTime, seekableRange) {
+      //   if (currentTime && seekableRange) {
+      //     var validSeekableRange = isValidSeekableRange(seekableRange);
 
-            return currTimeGtStart && currTimeLtEnd;
-          }
-        }
-        return false;
-      }
+      //     if (validSeekableRange) {
+      //       var currTimeGtStart = currentTime >= seekableRange.start;
+      //       var currTimeLtEnd = currentTime <= seekableRange.end;
+
+      //       return currTimeGtStart && currTimeLtEnd;
+      //     }
+      //   }
+      //   return false;
+      // }
 
       function isValidSeekableRange (seekableRange) {
         return seekableRange
