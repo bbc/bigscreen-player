@@ -2,9 +2,10 @@ require(
   [
     'bigscreenplayer/models/mediastate',
     'bigscreenplayer/readyhelper',
-    'bigscreenplayer/models/windowtypes'
+    'bigscreenplayer/models/windowtypes',
+    'bigscreenplayer/models/livesupport'
   ],
-  function (MediaState, ReadyHelper, WindowTypes) {
+  function (MediaState, ReadyHelper, WindowTypes, LiveSupport) {
     var callback;
 
     describe('readyHelper', function () {
@@ -16,7 +17,7 @@ require(
 
       describe('- Basic -', function () {
         beforeEach(function () {
-          readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, callback);
+          readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback);
         });
 
         it('does not call the supplied callback in init', function () {
@@ -54,7 +55,7 @@ require(
 
       describe('- VoD, No Initial Time -', function () {
         beforeEach(function () {
-          readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, callback);
+          readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback);
         });
 
         it('calls the supplied callback when given event data containing a valid time', function () {
@@ -113,7 +114,7 @@ require(
 
       describe('- VoD, Initial Time -', function () {
         beforeEach(function () {
-          readyHelper = new ReadyHelper(60, WindowTypes.STATIC, callback);
+          readyHelper = new ReadyHelper(60, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback);
         });
 
         it('calls the supplied callback when current time exceeds intital time', function () {
@@ -141,7 +142,7 @@ require(
 
       describe('- Live -', function () {
         beforeEach(function () {
-          readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, callback);
+          readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.RESTARTABLE, callback);
         });
 
         it('calls the supplied callback when given a valid seekable range and current time', function () {
@@ -189,6 +190,7 @@ require(
           readyHelper.callbackWhenReady({
             timeUpdate: true,
             data: {
+              currentTime: 0,
               seekableRange: {
                 start: 0,
                 end: 0
@@ -197,6 +199,24 @@ require(
           });
 
           expect(callback).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('- Live, Playable -', function () {
+        beforeEach(function () {
+          readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.PLAYABLE, callback);
+        });
+
+        it('calls the supplied callback regardless of seekable range if current time is positive', function () {
+          readyHelper.callbackWhenReady({
+            timeUpdate: true,
+            data: {
+              currentTime: 60,
+              seekableRange: {}
+            }
+          });
+
+          expect(callback).toHaveBeenCalledTimes(1);
         });
       });
     });

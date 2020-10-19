@@ -48,8 +48,6 @@ define('bigscreenplayer/bigscreenplayer',
             });
           });
         } else {
-          DebugTool.info(JSON.stringify(evt));
-
           var stateObject = {state: evt.data.state};
           if (evt.data.state === MediaState.PAUSED) {
             endOfStream = false;
@@ -104,11 +102,6 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
-        readyHelper = new ReadyHelper(
-          bigscreenPlayerData.initialPlaybackTime,
-          windowType,
-          playerReadyCallback);
-
         if (windowType !== WindowTypes.STATIC) {
           bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
@@ -120,6 +113,13 @@ define('bigscreenplayer/bigscreenplayer',
 
         mediaKind = bigscreenPlayerData.media.kind;
         endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0);
+
+        readyHelper = new ReadyHelper(
+          bigscreenPlayerData.initialPlaybackTime,
+          windowType,
+          PlayerComponent.getLiveSupport(),
+          playerReadyCallback
+        );
 
         playerComponent = new PlayerComponent(
           playbackElement,

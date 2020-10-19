@@ -1,10 +1,11 @@
 define(
   'bigscreenplayer/readyhelper', [
     'bigscreenplayer/models/mediastate',
-    'bigscreenplayer/models/windowtypes'
+    'bigscreenplayer/models/windowtypes',
+    'bigscreenplayer/models/livesupport'
   ],
-  function (MediaState, WindowTypes) {
-    var ReadyHelper = function (initialPlaybackTime, windowType, callback) {
+  function (MediaState, WindowTypes, LiveSupport) {
+    var ReadyHelper = function (initialPlaybackTime, windowType, liveSupport, callback) {
       var ready = false;
 
       var callbackWhenReady = function (evt) {
@@ -30,45 +31,46 @@ define(
       function isValidTime (evtData) {
         var isStatic = windowType === WindowTypes.STATIC;
 
-        if (evtData.currentTime) {
-          if (initialPlaybackTime || !isStatic) {
-            return evtData.currentTime > 0;
+        if (isStatic) {
+          return validateStaticTime(evtData.currentTime);
+        } else {
+          return validateLiveTime(evtData.currentTime, evtData.seekableRange);
+        }
+      }
+
+      function validateStaticTime (currentTime) {
+        if (currentTime !== undefined) {
+          if (initialPlaybackTime) {
+            return currentTime > 0;
           } else {
-            return evtData.currentTime >= 0;
+            return currentTime >= 0;
           }
         }
         return false;
       }
 
-      // function validateStaticTime (currentTime) {
-      //   if (currentTime) {
-      //     if (initialPlaybackTime) {
-      //       return currentTime > 0;
-      //     } else {
-      //       return currentTime >= 0;
-      //     }
-      //   }
-      //   return false;
-      // }
+      function validateLiveTime (currentTime, seekableRange) {
+        if (liveSupport === LiveSupport.PLAYABLE) {
+          return currentTime >= 0;
+        }
 
-      // function validateLiveTime (currentTime, seekableRange) {
-      //   if (currentTime && seekableRange) {
-      //     var validSeekableRange = isValidSeekableRange(seekableRange);
+        if (isValidSeekableRange(seekableRange)) {
+          var currTimeGtStart = currentTime >= seekableRange.start;
+          var currTimeLtEnd = currentTime <= seekableRange.end;
 
-      //     if (validSeekableRange) {
-      //       var currTimeGtStart = currentTime >= seekableRange.start;
-      //       var currTimeLtEnd = currentTime <= seekableRange.end;
-
-      //       return currTimeGtStart && currTimeLtEnd;
-      //     }
-      //   }
-      //   return false;
-      // }
+          return currTimeGtStart && currTimeLtEnd;
+        }
+        return false;
+      }
 
       function isValidSeekableRange (seekableRange) {
-        return seekableRange
-          ? !(seekableRange.start === 0 && seekableRange.end === 0)
-          : false;
+        if (seekableRange) {
+          if (seekableRange.start === 0 && seekableRange.end === 0) {
+            return false;
+          }
+          return true;
+        }
+        return false;
       }
 
       return {
