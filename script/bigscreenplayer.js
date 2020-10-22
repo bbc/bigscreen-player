@@ -84,7 +84,7 @@ define('bigscreenplayer/bigscreenplayer',
           DebugTool.keyValue({key: 'duration', value: evt.data.duration});
         }
 
-        if (readyHelper) {
+        if (playerComponent && readyHelper) {
           readyHelper.callbackWhenReady(evt);
         }
       }
@@ -114,6 +114,13 @@ define('bigscreenplayer/bigscreenplayer',
         mediaKind = bigscreenPlayerData.media.kind;
         endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0);
 
+        readyHelper = new ReadyHelper(
+          bigscreenPlayerData.initialPlaybackTime,
+          windowType,
+          PlayerComponent.getLiveSupport(),
+          playerReadyCallback
+        );
+
         playerComponent = new PlayerComponent(
           playbackElement,
           bigscreenPlayerData,
@@ -121,13 +128,6 @@ define('bigscreenplayer/bigscreenplayer',
           windowType,
           enableSubtitles,
           mediaStateUpdateCallback
-        );
-
-        readyHelper = new ReadyHelper(
-          bigscreenPlayerData.initialPlaybackTime,
-          windowType,
-          PlayerComponent.getLiveSupport(),
-          playerReadyCallback
         );
 
         if (enableSubtitles) {
