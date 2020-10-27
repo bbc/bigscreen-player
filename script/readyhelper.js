@@ -55,10 +55,8 @@ define(
         }
 
         if (isValidSeekableRange(seekableRange)) {
-          var currTimeGtStart = currentTime >= seekableRange.start;
-          var currTimeLtEnd = currentTime <= seekableRange.end;
-
-          return currTimeGtStart && currTimeLtEnd;
+          return currentTime >= seekableRange.start &&
+            currentTime <= seekableRange.end;
         }
         return false;
       }
