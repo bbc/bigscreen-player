@@ -2,10 +2,9 @@ define(
   'bigscreenplayer/readyhelper', [
     'bigscreenplayer/models/mediastate',
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/models/livesupport'
   ],
-  function (MediaState, WindowTypes, LiveSupport, DebugTool) {
+  function (MediaState, WindowTypes, LiveSupport) {
     var ReadyHelper = function (initialPlaybackTime, windowType, liveSupport, callback) {
       var ready = false;
 
@@ -21,7 +20,6 @@ define(
         }
 
         if (ready) {
-          DebugTool.info('player ready callback called!!!!!!!!!!!!!!!!!!!!!!!!!!');
           callback();
         }
       };
