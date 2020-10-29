@@ -12,14 +12,16 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/utils/timeutils',
     'bigscreenplayer/mediasources',
     'bigscreenplayer/version',
-    'bigscreenplayer/resizer'
+    'bigscreenplayer/resizer',
+    'bigscreenplayer/readyhelper'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version, Resizer) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version, Resizer, ReadyHelper) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
       var timeUpdateCallbacks = [];
       var subtitleCallbacks = [];
+      var playerReadyCallback;
       var mediaKind;
       var initialPlaybackTimeEpoch;
       var serverDate;
@@ -32,6 +34,7 @@ define('bigscreenplayer/bigscreenplayer',
       var mediaSources;
       var playbackElement;
       var subtitlesHidden;
+      var readyHelper;
 
       var END_OF_STREAM_TOLERANCE = 10;
 
@@ -80,6 +83,10 @@ define('bigscreenplayer/bigscreenplayer',
         if (evt.data.duration) {
           DebugTool.keyValue({key: 'duration', value: evt.data.duration});
         }
+
+        if (playerComponent && readyHelper) {
+          readyHelper.callbackWhenReady(evt);
+        }
       }
 
       function deviceTimeToDate (time) {
@@ -94,7 +101,7 @@ define('bigscreenplayer/bigscreenplayer',
         return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : undefined;
       }
 
-      function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles, successCallback) {
+      function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
         if (windowType !== WindowTypes.STATIC) {
           bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
@@ -107,6 +114,13 @@ define('bigscreenplayer/bigscreenplayer',
         mediaKind = bigscreenPlayerData.media.kind;
         endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0);
 
+        readyHelper = new ReadyHelper(
+          bigscreenPlayerData.initialPlaybackTime,
+          windowType,
+          PlayerComponent.getLiveSupport(),
+          playerReadyCallback
+        );
+
         playerComponent = new PlayerComponent(
           playbackElement,
           bigscreenPlayerData,
@@ -118,10 +132,6 @@ define('bigscreenplayer/bigscreenplayer',
 
         if (enableSubtitles) {
           callSubtitlesCallbacks(true);
-        }
-
-        if (successCallback) {
-          successCallback();
         }
       }
 
@@ -166,10 +176,11 @@ define('bigscreenplayer/bigscreenplayer',
           if (!callbacks) {
             callbacks = {};
           }
+          playerReadyCallback = callbacks.onSuccess;
 
           var mediaSourceCallbacks = {
             onSuccess: function () {
-              bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles, callbacks.onSuccess);
+              bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles);
             },
             onError: function (error) {
               if (callbacks.onError) {
