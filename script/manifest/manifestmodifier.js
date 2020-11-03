@@ -5,7 +5,7 @@ define('bigscreenplayer/manifest/manifestmodifier',
   function (DebugTool) {
     'use strict';
 
-    function filter (manifest, representationOptions, oldDashCodecRequired) {
+    function filter (manifest, representationOptions) {
       var constantFps = representationOptions.constantFps;
       var maxFps = representationOptions.maxFps;
 
@@ -25,13 +25,6 @@ define('bigscreenplayer/manifest/manifestmodifier',
           }
           return adaptationSet;
         });
-      }
-
-      if (oldDashCodecRequired) {
-        DebugTool.keyValue({ key: 'Video Container', value: 'avc1' });
-        manifest = rewriteDashCodec(manifest);
-      } else {
-        DebugTool.keyValue({ key: 'Video Container', value: 'avc3' });
       }
 
       return manifest;
@@ -85,29 +78,6 @@ define('bigscreenplayer/manifest/manifestmodifier',
       manifest.BaseURL_asArray = baseUrls;
       if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
       if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
-    }
-
-    function rewriteDashCodec (manifest) {
-      var periods = manifest.Period_asArray || [manifest.Period];
-      if (periods) {
-        for (var i = 0; i < periods.length; i++) {
-          var sets = periods[i].AdaptationSet_asArray || periods[i].AdaptationSet;
-          if (sets) {
-            for (var j = 0; j < sets.length; j++) {
-              var representations = sets[j].Representation_asArray || [sets[j].Representation];
-              if (representations) {
-                for (var k = 0; k < representations.length; k++) {
-                  var rep = representations[k];
-                  if (rep.mimeType === 'video/mp4') {
-                    rep.codecs = rep.codecs.replace('avc3', 'avc1');
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      return manifest;
     }
 
     return {
