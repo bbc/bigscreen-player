@@ -72,20 +72,16 @@ define('bigscreenplayer/subtitles/renderer',
 
           confirmCaptionsRendered();
         } catch (e) {
-          confirmCaptionsRendered(e);
+          DebugTool.info('Exception while rendering subtitles: ' + e);
+          Plugins.interface.onSubtitlesRenderError();
         }
       }
 
-      function confirmCaptionsRendered (error) {
-        if (error) {
+      function confirmCaptionsRendered () {
+        // Did it actually get added to the DOM each time?
+        if (outputElement && !outputElement.hasChildNodes && liveItems.length > 0) {
+          // There were live items that should be displayed but aren't on the DOM.
           Plugins.interface.onSubtitlesRenderError();
-          DebugTool.info('Exception while rendering subtitles: ' + error);
-        } else {
-          // Did it actually get added to the DOM each time?
-          if (outputElement && !outputElement.hasChildNodes && liveItems.length > 0) {
-            // There were live items that should be displayed but aren't on the DOM.
-            Plugins.interface.onSubtitlesRenderError();
-          }
         }
       }
 
