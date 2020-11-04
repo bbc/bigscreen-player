@@ -16,15 +16,11 @@ define(
 
       // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
       if (captionsURL) {
-        subtitlesRenderer = new Renderer('playerCaptions', captionsURL, mediaPlayer, container);
+        subtitlesRenderer = new Renderer('playerCaptions', captionsURL, mediaPlayer, container, autoStart);
         container.appendChild(subtitlesRenderer.render());
       }
 
       parentElement.appendChild(container);
-
-      if (autoStart) {
-        start();
-      }
 
       function start () {
         if (subtitlesRenderer) {

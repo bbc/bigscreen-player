@@ -2,12 +2,13 @@ define('bigscreenplayer/subtitles/renderer',
   [
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/utils/loadurl',
-    'bigscreenplayer/subtitles/transformer'
+    'bigscreenplayer/subtitles/transformer',
+    'bigscreenplayer/plugins'
   ],
-  function (DebugTool, LoadURL, Transformer) {
+  function (DebugTool, LoadURL, Transformer, Plugins) {
     'use strict';
 
-    var Renderer = function (id, url, mediaPlayer) {
+    var Renderer = function (id, url, mediaPlayer, autoStart) {
       var transformedSubtitles;
       var liveItems = [];
       var interval = 0;
@@ -20,13 +21,22 @@ define('bigscreenplayer/subtitles/renderer',
       var xhr = LoadURL(url, {
         onLoad: function (response, status) {
           if (status === 200) {
-            transformedSubtitles = Transformer().transformXML(xhr.responseXML);
-            outputElement.setAttribute('style', transformedSubtitles.baseStyle);
-            outputElement.style.cssText = transformedSubtitles.baseStyle;
+            try {
+              transformedSubtitles = Transformer().transformXML(xhr.responseXML);
+              outputElement.setAttribute('style', transformedSubtitles.baseStyle);
+              outputElement.style.cssText = transformedSubtitles.baseStyle;
+              if (autoStart) {
+                start();
+              }
+            } catch (e) {
+              DebugTool.info('Error transforming captions : ' + e);
+              Plugins.interface.onSubtitlesTransformError();
+            }
           }
         },
         onError: function (error) {
           DebugTool.info('Error loading captions data: ' + error);
+          Plugins.interface.onSubtitlesLoadError();
         }
       });
 
@@ -52,12 +62,31 @@ define('bigscreenplayer/subtitles/renderer',
       }
 
       function update () {
-        if (!mediaPlayer) {
-          stop();
-        }
+        try {
+          if (!mediaPlayer) {
+            stop();
+          }
 
-        var time = mediaPlayer.getCurrentTime();
-        updateCaptions(time);
+          var time = mediaPlayer.getCurrentTime();
+          updateCaptions(time);
+
+          confirmCaptionsRendered();
+        } catch (e) {
+          confirmCaptionsRendered(e);
+        }
+      }
+
+      function confirmCaptionsRendered (error) {
+        if (error) {
+          Plugins.interface.onSubtitlesRenderError();
+          DebugTool.info('Exception while rendering subtitles: ' + error);
+        } else {
+          // Did it actually get added to the DOM each time?
+          if (outputElement && !outputElement.hasChildNodes && liveItems.length > 0) {
+            // There were live items that should be displayed but aren't on the DOM.
+            Plugins.interface.onSubtitlesRenderError();
+          }
+        }
       }
 
       function updateCaptions (time) {
