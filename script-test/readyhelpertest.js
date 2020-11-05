@@ -15,6 +15,21 @@ require(
         callback = jasmine.createSpy('callback');
       });
 
+      describe('- Initialisation -', function () {
+        it('does not attempt to call callback if it is not supplied', function () {
+          readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, undefined);
+
+          readyHelper.callbackWhenReady({
+            timeUpdate: true,
+            data: {
+              currentTime: 1
+            }
+          });
+
+          expect(callback).not.toHaveBeenCalled();
+        });
+      });
+
       describe('- Basic -', function () {
         beforeEach(function () {
           readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback);
