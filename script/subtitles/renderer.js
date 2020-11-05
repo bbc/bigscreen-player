@@ -21,16 +21,9 @@ define('bigscreenplayer/subtitles/renderer',
       var xhr = LoadURL(url, {
         onLoad: function (response, status) {
           if (status === 200) {
-            try {
-              transformedSubtitles = Transformer().transformXML(xhr.responseXML);
-              outputElement.setAttribute('style', transformedSubtitles.baseStyle);
-              outputElement.style.cssText = transformedSubtitles.baseStyle;
-              if (autoStart) {
-                start();
-              }
-            } catch (e) {
-              DebugTool.info('Error transforming captions : ' + e);
-              Plugins.interface.onSubtitlesTransformError();
+            transformedSubtitles = Transformer().transformXML(xhr.responseXML);
+            if (autoStart) {
+              start();
             }
           }
         },
@@ -45,10 +38,13 @@ define('bigscreenplayer/subtitles/renderer',
       }
 
       function start () {
-        interval = setInterval(function () { update(); }, 750);
-
-        if (outputElement) {
-          outputElement.style.display = 'block';
+        if (transformedSubtitles) {
+          interval = setInterval(function () { update(); }, 750);
+          if (outputElement) {
+            outputElement.style.display = 'block';
+            outputElement.setAttribute('style', transformedSubtitles.baseStyle);
+            outputElement.style.cssText = transformedSubtitles.baseStyle;
+          }
         }
       }
 

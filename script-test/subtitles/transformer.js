@@ -1,9 +1,10 @@
 /* eslint-disable es5/no-template-literals */
 require(
   [
-    'bigscreenplayer/subtitles/transformer'
+    'bigscreenplayer/subtitles/transformer',
+    'bigscreenplayer/plugins'
   ],
-  function (Transformer) {
+  function (Transformer, Plugins) {
     'use strict';
     var ttml = `
             <tt xmlns="http://www.w3.org/2006/10/ttaf1" xmlns:ttp="http://www.w3.org/2006/10/ttaf1#parameter" ttp:timeBase="media" xmlns:tts="http://www.w3.org/2006/10/ttaf1#style" xml:lang="en" xmlns:ttm="http://www.w3.org/2006/10/ttaf1#metadata">
@@ -64,7 +65,7 @@ require(
         expect(outOfRangeSubtitles.length).toBe(0);
       });
 
-      it('Should load EBU-TT-D document', function () {
+      it('Should load an EBU-TT-D document', function () {
         var docparser = new DOMParser();
 
         var xmldoc = docparser.parseFromString(ebuttd, 'text/xml');
@@ -86,6 +87,13 @@ require(
         expect(cumulativeSubtitles[1]).toEqual(jasmine.objectContaining({start: 35.200, end: 37}));
 
         expect(outOfRangeSubtitles.length).toBe(0);
+      });
+
+      it('Should fire a onSubtitlesTransformError on transform failure', function () {
+        spyOn(Plugins.interface, 'onSubtitlesTransformError');
+        Transformer().transformXML('');
+
+        expect(Plugins.interface.onSubtitlesTransformError).toHaveBeenCalled();
       });
     });
   }
