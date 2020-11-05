@@ -19,7 +19,7 @@ define(
           ready = isValidState(evt.data) && isValidTime(evt.data);
         }
 
-        if (ready) {
+        if (ready && callback) {
           callback();
         }
       };
