@@ -75,7 +75,7 @@ define('bigscreenplayer/subtitles/renderer',
 
       function confirmCaptionsRendered () {
         // Did it actually get added to the DOM each time?
-        if (outputElement && !outputElement.hasChildNodes && liveItems.length > 0) {
+        if (outputElement && !outputElement.hasChildNodes() && liveItems.length > 0) {
           // There were live items that should be displayed but aren't on the DOM.
           Plugins.interface.onSubtitlesRenderError();
         }
