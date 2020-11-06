@@ -2,9 +2,10 @@ define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/domhelpers'
+    'bigscreenplayer/domhelpers',
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaPlayerBase, DOMHelpers) {
+  function (MediaPlayerBase, DOMHelpers, DebugTool) {
     'use strict';
 
     function Player () {
@@ -271,11 +272,14 @@ define(
         clearSentinels();
         sentinelIntervalNumber = 0;
         lastSentinelTime = getCurrentTime();
+        DebugTool.info('Last Sentinel current time ' + getCurrentTime());
         sentinelInterval = setInterval(function () {
           sentinelIntervalNumber += 1;
           var newTime = getCurrentTime();
+          DebugTool.info('Sentinel current time ' + getCurrentTime());
 
           hasSentinelTimeChangedWithinTolerance = (Math.abs(newTime - lastSentinelTime) > 0.2);
+          DebugTool.info('hasSentinelTimeChanged ' + hasSentinelTimeChangedWithinTolerance);
           nearEndOfMedia = (getDuration() - (newTime || lastSentinelTime)) <= 1;
           lastSentinelTime = newTime;
 
@@ -426,6 +430,7 @@ define(
       }
 
       function onStatus () {
+        DebugTool.info('status ' + getCurrentTime());
         if (getState() === MediaPlayerBase.STATE.PLAYING) {
           emitEvent(MediaPlayerBase.EVENT.STATUS);
         }
