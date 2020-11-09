@@ -53,18 +53,6 @@ require(
 
           expect(mockRendererSpy.start).not.toHaveBeenCalledWith();
         });
-
-        it('Starts captions if auto start is set', function () {
-          captionsContainer = new CaptionsContainerWithMocks(null, 'http://', true, parentElement);
-
-          expect(mockRendererSpy.start).toHaveBeenCalledWith();
-        });
-
-        it('Does not start captions if auto start is not set', function () {
-          captionsContainer = new CaptionsContainerWithMocks(null, 'http://', false, parentElement);
-
-          expect(mockRendererSpy.start).not.toHaveBeenCalledWith();
-        });
       });
 
       describe('Stop', function () {

@@ -1,9 +1,11 @@
 define('bigscreenplayer/subtitles/transformer',
   [
     'bigscreenplayer/subtitles/timedtext',
-    'bigscreenplayer/domhelpers'
+    'bigscreenplayer/domhelpers',
+    'bigscreenplayer/plugins',
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (TimedText, DOMHelpers) {
+  function (TimedText, DOMHelpers, Plugins, DebugTool) {
     'use strict';
     return function () {
       var _styles = {};
@@ -93,64 +95,69 @@ define('bigscreenplayer/subtitles/transformer',
       }
 
       function transformXML (xml) {
-        // Use .getElementsByTagNameNS() when parsing XML as some implementations of .getElementsByTagName() will lowercase its argument before proceding
-        var conformsToStandardElements = Array.prototype.slice.call(xml.getElementsByTagNameNS('urn:ebu:tt:metadata', 'conformsToStandard'));
-        var isEBUTTD = conformsToStandardElements && conformsToStandardElements.some(function (node) {
-          return isEBUDistribution(node.textContent);
-        });
+        try {
+          // Use .getElementsByTagNameNS() when parsing XML as some implementations of .getElementsByTagName() will lowercase its argument before proceding
+          var conformsToStandardElements = Array.prototype.slice.call(xml.getElementsByTagNameNS('urn:ebu:tt:metadata', 'conformsToStandard'));
+          var isEBUTTD = conformsToStandardElements && conformsToStandardElements.some(function (node) {
+            return isEBUDistribution(node.textContent);
+          });
 
-        var captionValues = {
-          ttml: {
-            namespace: 'http://www.w3.org/2006/10/ttaf1',
-            idAttribute: 'id'
-          },
-          ebuttd: {
-            namespace: 'http://www.w3.org/ns/ttml',
-            idAttribute: 'xml:id'
-          }
-        };
-
-        var captionStandard = isEBUTTD ? captionValues.ebuttd : captionValues.ttml;
-        var styles = _styles;
-        var styleElements = xml.getElementsByTagNameNS(captionStandard.namespace, 'style');
-
-        for (var i = 0; i < styleElements.length; i++) {
-          var se = styleElements[i];
-          var id = se.getAttribute(captionStandard.idAttribute);
-          var style = elementToStyle(se);
-
-          if (style) {
-            styles[id] = style;
-          }
-        }
-
-        var body = xml.getElementsByTagNameNS(captionStandard.namespace, 'body')[0];
-        var s = elementToStyle(body);
-        var ps = xml.getElementsByTagNameNS(captionStandard.namespace, 'p');
-        var items = [];
-
-        for (var k = 0, m = ps.length; k < m; k++) {
-          if (hasNestedTime(ps[k])) {
-            var tag = ps[k];
-            for (var index = 0; index < tag.childNodes.length; index++) {
-              if (hasAttribute(tag.childNodes[index], 'begin') && hasAttribute(tag.childNodes[index], 'end')) {
-                // TODO: rather than pass a function, can't we make timedText look after it's style from this point?
-                items.push(TimedText(tag.childNodes[index], elementToStyle));
-              }
+          var captionValues = {
+            ttml: {
+              namespace: 'http://www.w3.org/2006/10/ttaf1',
+              idAttribute: 'id'
+            },
+            ebuttd: {
+              namespace: 'http://www.w3.org/ns/ttml',
+              idAttribute: 'xml:id'
             }
-          } else {
-            items.push(TimedText(ps[k], elementToStyle));
-          }
-        }
+          };
 
-        return {
-          baseStyle: s,
-          subtitlesForTime: function (time) {
-            return items.filter(function (subtitle) {
-              return subtitle.start < time && subtitle.end > time;
-            });
+          var captionStandard = isEBUTTD ? captionValues.ebuttd : captionValues.ttml;
+          var styles = _styles;
+          var styleElements = xml.getElementsByTagNameNS(captionStandard.namespace, 'style');
+
+          for (var i = 0; i < styleElements.length; i++) {
+            var se = styleElements[i];
+            var id = se.getAttribute(captionStandard.idAttribute);
+            var style = elementToStyle(se);
+
+            if (style) {
+              styles[id] = style;
+            }
           }
-        };
+
+          var body = xml.getElementsByTagNameNS(captionStandard.namespace, 'body')[0];
+          var s = elementToStyle(body);
+          var ps = xml.getElementsByTagNameNS(captionStandard.namespace, 'p');
+          var items = [];
+
+          for (var k = 0, m = ps.length; k < m; k++) {
+            if (hasNestedTime(ps[k])) {
+              var tag = ps[k];
+              for (var index = 0; index < tag.childNodes.length; index++) {
+                if (hasAttribute(tag.childNodes[index], 'begin') && hasAttribute(tag.childNodes[index], 'end')) {
+                  // TODO: rather than pass a function, can't we make timedText look after it's style from this point?
+                  items.push(TimedText(tag.childNodes[index], elementToStyle));
+                }
+              }
+            } else {
+              items.push(TimedText(ps[k], elementToStyle));
+            }
+          }
+
+          return {
+            baseStyle: s,
+            subtitlesForTime: function (time) {
+              return items.filter(function (subtitle) {
+                return subtitle.start < time && subtitle.end > time;
+              });
+            }
+          };
+        } catch (e) {
+          DebugTool.info('Error transforming captions : ' + e);
+          Plugins.interface.onSubtitlesTransformError();
+        }
       }
 
       return {

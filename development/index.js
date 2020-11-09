@@ -32,6 +32,18 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
   let bigscreenPlayer = BigscreenPlayer();
   window._bigscreenPlayer = bigscreenPlayer;
 
+  bigscreenPlayer.registerPlugin({onSubtitlesLoadError: function () {
+    console.log('Loading subtitles failed...')
+  }})
+
+  bigscreenPlayer.registerPlugin({onSubtitlesRenderError: function () {
+    console.log('Rendering subtitles failed...')
+  }})
+
+  bigscreenPlayer.registerPlugin({onSubtitlesTransformError: function () {
+    console.log('Transforming subtitles failed...')
+  }})
+
   bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles,
     {
       onSuccess: function () {
