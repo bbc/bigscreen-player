@@ -18,7 +18,7 @@ require(
       var playerComponent;
       var playbackElement;
       var mockStrategy;
-      var mockCaptionsContainer;
+      var mockSubtitles;
       var mockPlugins;
       var mockPluginsInterface;
       var PlayerComponentWithMocks;
@@ -97,7 +97,7 @@ require(
 
       beforeEach(function (done) {
         injector = new Squire();
-        mockCaptionsContainer = jasmine.createSpyObj('CaptionsContainer', ['start', 'stop', 'updatePosition', 'tearDown']);
+        mockSubtitles = jasmine.createSpyObj('Subtitles', ['start', 'stop', 'updatePosition', 'tearDown']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
 
         mockPlugins = {
@@ -106,8 +106,8 @@ require(
 
         mockStrategy = MockStrategy();
 
-        function mockCaptionsContainerConstructor () {
-          return mockCaptionsContainer;
+        function mockSubtitlesConstructor () {
+          return mockSubtitles;
         }
 
         function mockStrategyConstructor () {
@@ -120,7 +120,7 @@ require(
         };
 
         injector.mock({
-          'bigscreenplayer/subtitles/captionscontainer': mockCaptionsContainerConstructor,
+          'bigscreenplayer/subtitles/subtitles': mockSubtitlesConstructor,
           'bigscreenplayer/playbackstrategy/mockstrategy': mockStrategyConstructor,
           'bigscreenplayer/plugins': mockPlugins
         });
@@ -235,7 +235,7 @@ require(
 
             playerComponent.setSubtitlesEnabled(true);
 
-            expect(mockCaptionsContainer.start).toHaveBeenCalledWith();
+            expect(mockSubtitles.start).toHaveBeenCalledWith();
           });
 
           it('should stop subtitles', function () {
@@ -243,7 +243,7 @@ require(
 
             playerComponent.setSubtitlesEnabled(false);
 
-            expect(mockCaptionsContainer.stop).toHaveBeenCalledWith();
+            expect(mockSubtitles.stop).toHaveBeenCalledWith();
           });
         });
 
@@ -253,7 +253,7 @@ require(
 
             playerComponent.setSubtitlesEnabled(true);
 
-            expect(mockCaptionsContainer.start).not.toHaveBeenCalled();
+            expect(mockSubtitles.start).not.toHaveBeenCalled();
           });
 
           it('should not stop subtitles', function () {
@@ -261,7 +261,7 @@ require(
 
             playerComponent.setSubtitlesEnabled(false);
 
-            expect(mockCaptionsContainer.stop).not.toHaveBeenCalled();
+            expect(mockSubtitles.stop).not.toHaveBeenCalled();
           });
         });
       });
@@ -286,7 +286,7 @@ require(
 
           playerComponent.setTransportControlPosition(TransportControlPosition.CONTROLS_ONLY);
 
-          expect(mockCaptionsContainer.updatePosition).toHaveBeenCalledWith(TransportControlPosition.CONTROLS_ONLY);
+          expect(mockSubtitles.updatePosition).toHaveBeenCalledWith(TransportControlPosition.CONTROLS_ONLY);
         });
       });
 
@@ -1034,7 +1034,7 @@ require(
 
           playerComponent.tearDown();
 
-          expect(mockCaptionsContainer.stop).toHaveBeenCalledWith();
+          expect(mockSubtitles.stop).toHaveBeenCalledWith();
         });
       });
     });

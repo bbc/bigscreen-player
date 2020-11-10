@@ -1,5 +1,5 @@
 define(
-  'bigscreenplayer/subtitles/captionscontainer', [
+  'bigscreenplayer/subtitles/legacysubtitles', [
     'bigscreenplayer/subtitles/renderer',
     'bigscreenplayer/models/transportcontrolposition',
     'bigscreenplayer/domhelpers'
