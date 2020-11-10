@@ -1,6 +1,6 @@
 define('bigscreenplayer/subtitles/imscsubtitles',
-  [],
-  function () {
+  [ 'smp-imscjs' ],
+  function (IMSC) {
     'use strict';
     return function () {
       return {
