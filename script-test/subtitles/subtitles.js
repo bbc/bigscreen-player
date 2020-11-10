@@ -4,22 +4,21 @@ require(
     var originalBSPWindowConfig = window.bigscreenPlayer;
 
     describe('Subtitles', function () {
-      beforeAll(function () {
-        window.bigscreenPlayer = {
-          overrides: {
-            legacySubtitles: true
-          }
-        };
-      });
-
       afterAll(function () {
         window.bigscreenPlayer = originalBSPWindowConfig;
       });
 
-      describe('initialises with legacy implementation', function () {
+      describe('legacy implementation', function () {
         var captionsMockSpy;
         var Subtitles;
+
         beforeEach(function (done) {
+          window.bigscreenPlayer = {
+            overrides: {
+              legacySubtitles: true
+            }
+          };
+
           var injector = new Squire();
           captionsMockSpy = jasmine.createSpy();
           window.bigscreenPlayer = {
@@ -34,24 +33,27 @@ require(
           });
         });
 
-        it('initialise with the legacy captions', function () {
+        it('initialises with the legacy subtitles module', function () {
           Subtitles();
 
           expect(captionsMockSpy).toHaveBeenCalled();
         });
       });
 
-      describe('initialises with imsc library implementation', function () {
+      describe('imsc library implementation', function () {
         var captionsMockSpy;
         var Subtitles;
+
         beforeEach(function (done) {
-          var injector = new Squire();
-          captionsMockSpy = jasmine.createSpy();
           window.bigscreenPlayer = {
             overrides: {
               legacySubtitles: false
             }
           };
+
+          var injector = new Squire();
+          captionsMockSpy = jasmine.createSpy();
+
           injector.mock({ 'bigscreenplayer/subtitles/imscsubtitles': captionsMockSpy });
           injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
             Subtitles = Subs;
@@ -59,18 +61,12 @@ require(
           });
         });
 
-        it('initialise with the imscjs captions', function () {
+        it('initialises with the imscjs module', function () {
           Subtitles();
 
           expect(captionsMockSpy).toHaveBeenCalled();
         });
       });
-      // TODO : interface check in each strategy
-
-      //   expect(subtitles).toEqual(jasmine.objectContaining({
-      //     start: jasmine.any(Function),
-      //     stop: jasmine.any(Function),
-      //     setTransportControlsPosition: jasmine.any(Function) }));
     });
   }
 );
