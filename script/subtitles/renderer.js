@@ -1,11 +1,10 @@
 define('bigscreenplayer/subtitles/renderer',
   [
     'bigscreenplayer/debugger/debugtool',
-    'bigscreenplayer/utils/loadurl',
     'bigscreenplayer/subtitles/transformer',
     'bigscreenplayer/plugins'
   ],
-  function (DebugTool, LoadURL, Transformer, Plugins) {
+  function (DebugTool, Transformer, Plugins) {
     'use strict';
 
     var Renderer = function (id, captionsXML, mediaPlayer, autoStart) {

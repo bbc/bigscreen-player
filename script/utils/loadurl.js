@@ -17,7 +17,7 @@ define(
             }
           } else {
             if (opts.onError) {
-              opts.onError(xhr.responseXML, xhr.responseText, xhr.status);
+              opts.onError(xhr.status + ' recieved');
             }
           }
         }
