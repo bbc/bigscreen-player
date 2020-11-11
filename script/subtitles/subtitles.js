@@ -1,6 +1,6 @@
 define('bigscreenplayer/subtitles/subtitles',
   [
-    'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'imscsubtitles'),
+    'bigscreenplayer/subtitles/legacysubtitles',
     'bigscreenplayer/utils/loadurl',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins'

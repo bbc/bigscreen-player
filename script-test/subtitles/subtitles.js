@@ -1,7 +1,6 @@
 require(
   ['squire'],
   function (Squire) {
-    var originalBSPWindowConfig = window.bigscreenPlayer;
     var loadURLError = false;
     var pluginInterfaceMock;
     var pluginsMock;
@@ -15,10 +14,6 @@ require(
     };
 
     describe('Subtitles', function () {
-      afterAll(function () {
-        window.bigscreenPlayer = originalBSPWindowConfig;
-      });
-
       afterEach(function () {
         loadURLError = false;
       });
@@ -29,12 +24,6 @@ require(
         var mockCaptions;
 
         beforeEach(function (done) {
-          window.bigscreenPlayer = {
-            overrides: {
-              legacySubtitles: true
-            }
-          };
-
           mockCaptionsSpies = jasmine.createSpyObj('mockCaptions', ['start', 'stop', 'updatePosition', 'tearDown']);
           mockCaptions = jasmine.createSpy();
           mockCaptions.and.callFake(function () {
@@ -45,11 +34,6 @@ require(
           pluginsMock = {interface: pluginInterfaceMock};
 
           var injector = new Squire();
-          window.bigscreenPlayer = {
-            overrides: {
-              legacySubtitles: true
-            }
-          };
           injector.mock({
             'bigscreenplayer/subtitles/legacysubtitles': mockCaptions,
             'bigscreenplayer/utils/loadurl': loadUrlMock,
@@ -198,43 +182,6 @@ require(
 
             expect(mockCaptionsSpies.tearDown).not.toHaveBeenCalled();
           });
-        });
-      });
-
-      describe('imsc library implementation', function () {
-        var Subtitles;
-        var mockCaptionsSpies;
-        var mockCaptions;
-
-        beforeEach(function (done) {
-          window.bigscreenPlayer = {
-            overrides: {
-              legacySubtitles: false
-            }
-          };
-
-          mockCaptionsSpies = jasmine.createSpyObj('mockCaptions', ['start', 'stop', 'updatePosition', 'tearDown']);
-          mockCaptions = jasmine.createSpy();
-          mockCaptions.and.callFake(function () {
-            return mockCaptionsSpies;
-          });
-
-          var injector = new Squire();
-
-          injector.mock({
-            'bigscreenplayer/subtitles/imscsubtitles': mockCaptions,
-            'bigscreenplayer/utils/loadurl': loadUrlMock
-          });
-          injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
-            Subtitles = Subs;
-            done();
-          });
-        });
-
-        it('initialises with the imscjs module', function () {
-          Subtitles();
-
-          expect(mockCaptions).toHaveBeenCalled();
         });
       });
     });
