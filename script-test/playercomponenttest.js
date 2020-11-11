@@ -19,6 +19,7 @@ require(
       var playbackElement;
       var mockStrategy;
       var mockSubtitles;
+      var mockSubtitlesConstructor;
       var mockPlugins;
       var mockPluginsInterface;
       var PlayerComponentWithMocks;
@@ -106,9 +107,10 @@ require(
 
         mockStrategy = MockStrategy();
 
-        function mockSubtitlesConstructor () {
+        mockSubtitlesConstructor = jasmine.createSpy();
+        mockSubtitlesConstructor.and.callFake(function () {
           return mockSubtitles;
-        }
+        });
 
         function mockStrategyConstructor () {
           return mockStrategy;
@@ -138,7 +140,7 @@ require(
         updateTestTime = false;
       });
 
-      describe('init', function () {
+      describe('Construction', function () {
         it('should fire error cleared on the plugins', function () {
           var pluginData = {
             status: PluginEnums.STATUS.DISMISSED,
@@ -154,7 +156,12 @@ require(
           expect(mockPluginsInterface.onErrorCleared).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
         });
 
-        // TODO: ensure that subtitles is properly constructed
+        it('should attempt to construct a subtitles module', function () {
+          var opts = {subtitlesEnabled: true};
+          setUpPlayerComponent(opts);
+
+          expect(mockSubtitlesConstructor).toHaveBeenCalledWith(jasmine.anything(), corePlaybackData.media.captionsUrl, opts.subtitlesEnabled, playbackElement);
+        });
       });
 
       describe('Pause', function () {
