@@ -8,7 +8,7 @@ define('bigscreenplayer/subtitles/renderer',
   function (DebugTool, LoadURL, Transformer, Plugins) {
     'use strict';
 
-    var Renderer = function (id, url, mediaPlayer, autoStart) {
+    var Renderer = function (id, captionsXML, mediaPlayer, autoStart) {
       var transformedSubtitles;
       var liveItems = [];
       var interval = 0;
@@ -16,22 +16,10 @@ define('bigscreenplayer/subtitles/renderer',
       outputElement = document.createElement('div');
       outputElement.id = id;
 
-      DebugTool.info('Loading captions from: ' + url);
-
-      var xhr = LoadURL(url, {
-        onLoad: function (response, status) {
-          if (status === 200) {
-            transformedSubtitles = Transformer().transformXML(xhr.responseXML);
-            if (autoStart) {
-              start();
-            }
-          }
-        },
-        onError: function (error) {
-          DebugTool.info('Error loading captions data: ' + error);
-          Plugins.interface.onSubtitlesLoadError();
-        }
-      });
+      transformedSubtitles = Transformer().transformXML(captionsXML);
+      if (autoStart) {
+        start();
+      }
 
       function render () {
         return outputElement;
@@ -41,9 +29,9 @@ define('bigscreenplayer/subtitles/renderer',
         if (transformedSubtitles) {
           interval = setInterval(function () { update(); }, 750);
           if (outputElement) {
-            outputElement.style.display = 'block';
             outputElement.setAttribute('style', transformedSubtitles.baseStyle);
             outputElement.style.cssText = transformedSubtitles.baseStyle;
+            outputElement.style.display = 'block';
           }
         }
       }

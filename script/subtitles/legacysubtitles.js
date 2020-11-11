@@ -7,7 +7,7 @@ define(
   function (Renderer, TransportControlPosition, DOMHelpers) {
     'use strict';
 
-    return function (mediaPlayer, captionsURL, autoStart, parentElement) {
+    return function (mediaPlayer, captionsXML, autoStart, parentElement) {
       var container = document.createElement('div');
       var subtitlesRenderer;
 
@@ -15,8 +15,8 @@ define(
       DOMHelpers.addClass(container, 'playerCaptions');
 
       // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
-      if (captionsURL) {
-        subtitlesRenderer = new Renderer('playerCaptions', captionsURL, mediaPlayer, autoStart);
+      if (captionsXML) {
+        subtitlesRenderer = new Renderer('playerCaptions', captionsXML, mediaPlayer, autoStart);
         container.appendChild(subtitlesRenderer.render());
       }
 

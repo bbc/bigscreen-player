@@ -2,10 +2,25 @@ require(
   ['squire'],
   function (Squire) {
     var originalBSPWindowConfig = window.bigscreenPlayer;
+    var loadURLError = false;
+    var pluginInterfaceMock;
+    var pluginsMock;
+
+    var loadUrlMock = function (url, callbackObject) {
+      if (loadURLError) {
+        callbackObject.onError();
+      } else {
+        callbackObject.onLoad('', '', 200);
+      }
+    };
 
     describe('Subtitles', function () {
       afterAll(function () {
         window.bigscreenPlayer = originalBSPWindowConfig;
+      });
+
+      afterEach(function () {
+        loadURLError = false;
       });
 
       describe('legacy implementation', function () {
@@ -19,6 +34,9 @@ require(
             }
           };
 
+          pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesLoadError']);
+          pluginsMock = {interface: pluginInterfaceMock};
+
           var injector = new Squire();
           captionsMockSpy = jasmine.createSpy();
           window.bigscreenPlayer = {
@@ -26,7 +44,11 @@ require(
               legacySubtitles: true
             }
           };
-          injector.mock({ 'bigscreenplayer/subtitles/legacysubtitles': captionsMockSpy });
+          injector.mock({
+            'bigscreenplayer/subtitles/legacysubtitles': captionsMockSpy,
+            'bigscreenplayer/utils/loadurl': loadUrlMock,
+            'bigscreenplayer/plugins': pluginsMock
+          });
           injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
             Subtitles = Subs;
             done();
@@ -37,6 +59,13 @@ require(
           Subtitles();
 
           expect(captionsMockSpy).toHaveBeenCalled();
+        });
+
+        it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
+          loadURLError = true;
+          Subtitles();
+
+          expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalled();
         });
       });
 
@@ -54,7 +83,10 @@ require(
           var injector = new Squire();
           captionsMockSpy = jasmine.createSpy();
 
-          injector.mock({ 'bigscreenplayer/subtitles/imscsubtitles': captionsMockSpy });
+          injector.mock({
+            'bigscreenplayer/subtitles/imscsubtitles': captionsMockSpy,
+            'bigscreenplayer/utils/loadurl': loadUrlMock
+          });
           injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
             Subtitles = Subs;
             done();
