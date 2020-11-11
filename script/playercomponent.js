@@ -19,10 +19,8 @@ define(
       var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
       var mediaKind = bigscreenPlayerData.media.kind;
-      var subtitlesEnabled;
       var stateUpdateCallback = callback;
       var playbackStrategy;
-      var subtitles;
       var mediaMetaData;
       var fatalErrorTimeout;
       var fatalError;
@@ -42,8 +40,7 @@ define(
 
       bubbleErrorCleared();
 
-      setSubtitlesEnabled(enableSubtitles || false);
-
+      var subtitles = Subtitles(playbackStrategy, captionsURL, enableSubtitles, playbackElement);
       initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime);
 
       function play () {
@@ -91,26 +88,23 @@ define(
       }
 
       function setSubtitlesEnabled (enabled) {
-        subtitlesEnabled = enabled || false;
-        if (isSubtitlesAvailable() && subtitles) {
-          subtitlesEnabled ? subtitles.start() : subtitles.stop();
-        }
+        subtitles.setEnabled();
       }
 
       function isSubtitlesEnabled () {
-        return subtitlesEnabled;
+        subtitles.areEnabled();
       }
 
       function isSubtitlesAvailable () {
-        return !!captionsURL;
+        subtitles.areAvailable();
+      }
+
+      function setTransportControlPosition (flags) {
+        subtitles.setPosition(flags);
       }
 
       function isPaused () {
         return playbackStrategy.isPaused();
-      }
-
-      function setTransportControlPosition (flags) {
-        subtitles.updatePosition(flags);
       }
 
       function setCurrentTime (time) {
@@ -327,10 +321,6 @@ define(
       function initialMediaPlay (media, startTime) {
         mediaMetaData = media;
         loadMedia(media.type, startTime);
-
-        if (!subtitles) {
-          subtitles = Subtitles(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
-        }
       }
 
       function loadMedia (type, startTime, thenPause) {
@@ -346,18 +336,14 @@ define(
         playbackStrategy.tearDown();
         playbackStrategy = null;
 
-        if (subtitles) {
-          subtitles.stop();
-          subtitles.tearDown();
-          subtitles = null;
-        }
+        subtitles.tearDown();
+        subtitles = null;
 
         isInitialPlay = true;
         captionsURL = undefined;
         errorTimeoutID = undefined;
         windowType = undefined;
         mediaKind = undefined;
-        subtitlesEnabled = undefined;
         stateUpdateCallback = undefined;
         mediaMetaData = undefined;
         fatalErrorTimeout = undefined;

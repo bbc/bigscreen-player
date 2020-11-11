@@ -97,7 +97,7 @@ require(
 
       beforeEach(function (done) {
         injector = new Squire();
-        mockSubtitles = jasmine.createSpyObj('Subtitles', ['start', 'stop', 'updatePosition', 'tearDown']);
+        mockSubtitles = jasmine.createSpyObj('Subtitles', ['setEnabled', 'areEnabled', 'areAvailable', 'setPosition', 'tearDown']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
 
         mockPlugins = {
@@ -153,6 +153,8 @@ require(
 
           expect(mockPluginsInterface.onErrorCleared).toHaveBeenCalledWith(jasmine.objectContaining(pluginData));
         });
+
+        // TODO: ensure that subtitles is properly constructed
       });
 
       describe('Pause', function () {
@@ -229,64 +231,38 @@ require(
       });
 
       describe('setSubtitlesEnabled', function () {
-        describe('when available', function () {
-          it('should start subtitles', function () {
-            setUpPlayerComponent({subtitlesAvailable: true});
+        it('should call through to subtitles setEnabled function', function () {
+          setUpPlayerComponent();
+          playerComponent.setSubtitlesEnabled();
 
-            playerComponent.setSubtitlesEnabled(true);
-
-            expect(mockSubtitles.start).toHaveBeenCalledWith();
-          });
-
-          it('should stop subtitles', function () {
-            setUpPlayerComponent({subtitlesAvailable: true});
-
-            playerComponent.setSubtitlesEnabled(false);
-
-            expect(mockSubtitles.stop).toHaveBeenCalledWith();
-          });
-        });
-
-        describe('when unavailable', function () {
-          it('should not start subtitles', function () {
-            setUpPlayerComponent({subtitlesAvailable: false});
-
-            playerComponent.setSubtitlesEnabled(true);
-
-            expect(mockSubtitles.start).not.toHaveBeenCalled();
-          });
-
-          it('should not stop subtitles', function () {
-            setUpPlayerComponent({subtitlesAvailable: false});
-
-            playerComponent.setSubtitlesEnabled(false);
-
-            expect(mockSubtitles.stop).not.toHaveBeenCalled();
-          });
+          expect(mockSubtitles.setEnabled).toHaveBeenCalled();
         });
       });
 
       describe('isSubtitlesEnabled', function () {
-        it('should return true if subtitles are enabled', function () {
-          setUpPlayerComponent({subtitlesEnabled: true});
+        it('should call through to subtitles areEnabled function', function () {
+          setUpPlayerComponent();
+          playerComponent.isSubtitlesEnabled();
 
-          expect(playerComponent.isSubtitlesEnabled()).toEqual(true);
+          expect(mockSubtitles.areEnabled).toHaveBeenCalled();
         });
+      });
 
-        it('should return false if subtitles are disabled', function () {
-          setUpPlayerComponent({subtitlesEnabled: false});
+      describe('isSubtitlesAvailable', function () {
+        it('should call through to subtitles areAvailable function', function () {
+          setUpPlayerComponent();
+          playerComponent.isSubtitlesAvailable();
 
-          expect(playerComponent.isSubtitlesEnabled()).toEqual(false);
+          expect(mockSubtitles.areAvailable).toHaveBeenCalled();
         });
       });
 
       describe('setTransportControlPosition', function () {
-        it('should update the postion of subtitles', function () {
+        it('should call through to subtitles setPosition function', function () {
           setUpPlayerComponent();
+          playerComponent.setTransportControlPosition();
 
-          playerComponent.setTransportControlPosition(TransportControlPosition.CONTROLS_ONLY);
-
-          expect(mockSubtitles.updatePosition).toHaveBeenCalledWith(TransportControlPosition.CONTROLS_ONLY);
+          expect(mockSubtitles.setPosition).toHaveBeenCalled();
         });
       });
 
@@ -1029,12 +1005,12 @@ require(
           expect(mockStrategy.tearDown).toHaveBeenCalledWith();
         });
 
-        it('should stop the captions container', function () {
+        it('should call through to tearDown of subtitles', function () {
           setUpPlayerComponent();
 
           playerComponent.tearDown();
 
-          expect(mockSubtitles.stop).toHaveBeenCalledWith();
+          expect(mockSubtitles.tearDown).toHaveBeenCalled();
         });
       });
     });
