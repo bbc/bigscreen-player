@@ -256,18 +256,22 @@ require(
       describe('isSubtitlesEnabled', function () {
         it('should call through to subtitles areEnabled function', function () {
           setUpPlayerComponent();
-          playerComponent.isSubtitlesEnabled();
+          mockSubtitles.areEnabled.and.returnValue(true);
+          var value = playerComponent.isSubtitlesEnabled();
 
           expect(mockSubtitles.areEnabled).toHaveBeenCalled();
+          expect(value).toBe(true);
         });
       });
 
       describe('isSubtitlesAvailable', function () {
         it('should call through to subtitles areAvailable function', function () {
           setUpPlayerComponent();
-          playerComponent.isSubtitlesAvailable();
+          mockSubtitles.areAvailable.and.returnValue(true);
+          var value = playerComponent.isSubtitlesAvailable();
 
           expect(mockSubtitles.areAvailable).toHaveBeenCalled();
+          expect(value).toBe(true);
         });
       });
 

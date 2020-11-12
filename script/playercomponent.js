@@ -92,11 +92,11 @@ define(
       }
 
       function isSubtitlesEnabled () {
-        subtitles.areEnabled();
+        return subtitles.areEnabled();
       }
 
       function isSubtitlesAvailable () {
-        subtitles.areAvailable();
+        return subtitles.areAvailable();
       }
 
       function setTransportControlPosition (flags) {
