@@ -141,13 +141,6 @@ require(
 
             expect(subtitles.areAvailable()).toEqual(false);
           });
-
-          it('returns false if the subtitles XML has failed to load', function () {
-            loadURLError = true;
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
-
-            expect(subtitles.areAvailable()).toEqual(false);
-          });
         });
 
         describe('setPosition', function () {

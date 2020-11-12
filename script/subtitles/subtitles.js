@@ -22,7 +22,6 @@ define('bigscreenplayer/subtitles/subtitles',
         },
         onError: function (error) {
           DebugTool.info('Error loading captions data: ' + error);
-          available = false;
           Plugins.interface.onSubtitlesLoadError();
         }
       });
