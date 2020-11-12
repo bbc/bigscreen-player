@@ -9,7 +9,7 @@ require(
       if (loadURLError) {
         callbackObject.onError();
       } else {
-        callbackObject.onLoad('', '', 200);
+        callbackObject.onLoad('<?xml>', '', 200);
       }
     };
 
@@ -30,7 +30,7 @@ require(
             return mockCaptionsSpies;
           });
 
-          pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesLoadError']);
+          pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesLoadError', 'onSubtitlesTransformError']);
           pluginsMock = { interface: pluginInterfaceMock };
 
           var injector = new Squire();

@@ -16,6 +16,12 @@ define('bigscreenplayer/subtitles/subtitles',
       DebugTool.info('Loading subtitles from: ' + url);
       LoadURL(url, {
         onLoad: function (responseXML, responseText, status) {
+          if (!responseXML) {
+            DebugTool.info('Error: responseXML is invalid.');
+            Plugins.interface.onSubtitlesTransformError();
+            return;
+          }
+
           if (status === 200) {
             subtitlesContainer = SubtitlesContainer(mediaPlayer, responseXML, autoStart, playbackElement);
           }
