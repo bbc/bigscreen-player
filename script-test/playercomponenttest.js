@@ -31,6 +31,10 @@ require(
       var testTime;
       var updateTestTime = false;
 
+      beforeAll(function () {
+        mockStateUpdateCallback = jasmine.createSpy('mockStateUpdateCallback');
+      });
+
       // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
       function setUpPlayerComponent (opts) {
         opts = opts || {};
@@ -83,8 +87,6 @@ require(
 
         var windowType = opts.windowType || WindowTypes.STATIC;
 
-        mockStateUpdateCallback = jasmine.createSpy('mockStateUpdateCallback');
-
         playerComponent = new PlayerComponentWithMocks(
           playbackElement,
           corePlaybackData,
@@ -98,7 +100,7 @@ require(
 
       beforeEach(function (done) {
         injector = new Squire();
-        mockSubtitles = jasmine.createSpyObj('Subtitles', ['setEnabled', 'enabled', 'available', 'setPosition', 'tearDown']);
+        mockSubtitles = jasmine.createSpyObj('Subtitles', ['enable', 'disable', 'enabled', 'available', 'setPosition', 'tearDown']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
 
         mockPlugins = {
@@ -238,18 +240,18 @@ require(
       });
 
       describe('setSubtitlesEnabled', function () {
-        it('should call through to subtitles setEnabled function with true argument', function () {
+        it('should call through to subtitles enable', function () {
           setUpPlayerComponent();
           playerComponent.setSubtitlesEnabled(true);
 
-          expect(mockSubtitles.setEnabled).toHaveBeenCalledWith(true);
+          expect(mockSubtitles.enable).toHaveBeenCalledTimes(1);
         });
 
-        it('should call through to subtitles setEnabled function with false argument', function () {
+        it('should call through to subtitles disable', function () {
           setUpPlayerComponent();
           playerComponent.setSubtitlesEnabled(false);
 
-          expect(mockSubtitles.setEnabled).toHaveBeenCalledWith(false);
+          expect(mockSubtitles.disable).toHaveBeenCalledTimes(1);
         });
       });
 

@@ -31,7 +31,7 @@ require(
           });
 
           pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesLoadError']);
-          pluginsMock = {interface: pluginInterfaceMock};
+          pluginsMock = { interface: pluginInterfaceMock };
 
           var injector = new Squire();
           injector.mock({
@@ -67,37 +67,35 @@ require(
           });
         });
 
-        describe('setEnabled', function () {
-          describe('when available', function () {
-            it('should start subtitles', function () {
-              var subtitles = Subtitles(null, 'http://some-url', null, null);
-              subtitles.setEnabled(true);
+        describe('enable', function () {
+          it('should start subtitles when available', function () {
+            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            subtitles.enable();
 
-              expect(mockCaptionsSpies.start).toHaveBeenCalledWith();
-            });
-
-            it('should stop subtitles', function () {
-              var subtitles = Subtitles(null, 'http://some-url', null, null);
-              subtitles.setEnabled(false);
-
-              expect(mockCaptionsSpies.stop).toHaveBeenCalledWith();
-            });
+            expect(mockCaptionsSpies.start).toHaveBeenCalledWith();
           });
 
-          describe('when unavailable', function () {
-            it('should not start subtitles', function () {
-              var subtitles = Subtitles(null, undefined, null, null);
-              subtitles.setEnabled(true);
+          it('should not start subtitles when unavailable', function () {
+            var subtitles = Subtitles(null, undefined, null, null);
+            subtitles.enable();
 
-              expect(mockCaptionsSpies.start).not.toHaveBeenCalledWith();
-            });
+            expect(mockCaptionsSpies.start).not.toHaveBeenCalledWith();
+          });
+        });
 
-            it('should not stop subtitles', function () {
-              var subtitles = Subtitles(null, undefined, null, null);
-              subtitles.setEnabled(false);
+        describe('disable', function () {
+          it('should stop subtitles when available', function () {
+            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            subtitles.disable();
 
-              expect(mockCaptionsSpies.stop).not.toHaveBeenCalledWith();
-            });
+            expect(mockCaptionsSpies.stop).toHaveBeenCalledWith();
+          });
+
+          it('should not stop subtitles when unavailable', function () {
+            var subtitles = Subtitles(null, undefined, null, null);
+            subtitles.disable();
+
+            expect(mockCaptionsSpies.stop).not.toHaveBeenCalledWith();
           });
         });
 
@@ -110,7 +108,7 @@ require(
 
           it('should return true if subtitles are enabled by an api call', function () {
             var subtitles = Subtitles(null, undefined, false, null);
-            subtitles.setEnabled(true);
+            subtitles.enable();
 
             expect(subtitles.enabled()).toEqual(true);
           });
@@ -123,7 +121,7 @@ require(
 
           it('should return true if subtitles are disabled by an api call', function () {
             var subtitles = Subtitles(null, undefined, true, null);
-            subtitles.setEnabled(false);
+            subtitles.disable();
 
             expect(subtitles.enabled()).toEqual(false);
           });

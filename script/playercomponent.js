@@ -88,7 +88,7 @@ define(
       }
 
       function setSubtitlesEnabled (enabled) {
-        subtitles.setEnabled(enabled);
+        enabled ? subtitles.enable() : subtitles.disable();
       }
 
       function isSubtitlesEnabled () {
