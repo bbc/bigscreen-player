@@ -2,12 +2,15 @@ require(
   ['squire'],
   function (Squire) {
     var loadURLError = false;
+    var returnInvalidXML = false;
     var pluginInterfaceMock;
     var pluginsMock;
 
     var loadUrlMock = function (url, callbackObject) {
       if (loadURLError) {
         callbackObject.onError();
+      } else if (returnInvalidXML) {
+        callbackObject.onLoad(null, '', 200);
       } else {
         callbackObject.onLoad('<?xml>', '', 200);
       }
@@ -16,6 +19,7 @@ require(
     describe('Subtitles', function () {
       afterEach(function () {
         loadURLError = false;
+        returnInvalidXML = false;
       });
 
       describe('legacy implementation', function () {
@@ -64,6 +68,13 @@ require(
             Subtitles();
 
             expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalled();
+          });
+
+          it('fires subtitleTransformError if responseXML from the loader is invalid', function () {
+            returnInvalidXML = true;
+            Subtitles(null, 'http://some-url', null, null);
+
+            expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalled();
           });
         });
 
