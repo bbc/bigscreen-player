@@ -5,31 +5,31 @@ define('bigscreenplayer/subtitles/subtitles',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins'
   ],
-  function (Captions, LoadURL, DebugTool, Plugins) {
+  function (SubtitlesContainer, LoadURL, DebugTool, Plugins) {
     'use strict';
     // playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement TODO: change the ordering of this, doesn't make sense.
     return function (mediaPlayer, url, autoStart, playbackElement) {
-      var captions;
+      var subtitlesContainer;
       var subtitlesEnabled = autoStart;
       var subtitlesAvailable = !!url;
 
-      DebugTool.info('Loading captions from: ' + url);
+      DebugTool.info('Loading subtitles from: ' + url);
       LoadURL(url, {
         onLoad: function (responseXML, responseText, status) {
           if (status === 200) {
-            captions = Captions(mediaPlayer, responseXML, autoStart, playbackElement);
+            subtitlesContainer = SubtitlesContainer(mediaPlayer, responseXML, autoStart, playbackElement);
           }
         },
         onError: function (error) {
-          DebugTool.info('Error loading captions data: ' + error);
+          DebugTool.info('Error loading subtitles data: ' + error);
           Plugins.interface.onSubtitlesLoadError();
         }
       });
 
       function setEnabled (enabled) {
         subtitlesEnabled = enabled || false;
-        if (available() && captions) {
-          subtitlesEnabled ? captions.start() : captions.stop();
+        if (available() && subtitlesContainer) {
+          subtitlesEnabled ? subtitlesContainer.start() : subtitlesContainer.stop();
         }
       }
 
@@ -42,14 +42,14 @@ define('bigscreenplayer/subtitles/subtitles',
       }
 
       function setPosition (position) {
-        if (captions) {
-          captions.updatePosition(position);
+        if (subtitlesContainer) {
+          subtitlesContainer.updatePosition(position);
         }
       }
 
       function tearDown () {
-        if (captions) {
-          captions.tearDown();
+        if (subtitlesContainer) {
+          subtitlesContainer.tearDown();
         }
       }
 
