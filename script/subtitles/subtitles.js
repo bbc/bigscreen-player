@@ -33,7 +33,7 @@ define('bigscreenplayer/subtitles/subtitles',
         }
       }
 
-      function areEnabled () {
+      function enabled () {
         return subtitlesEnabled;
       }
 
@@ -55,7 +55,7 @@ define('bigscreenplayer/subtitles/subtitles',
 
       return {
         setEnabled: setEnabled,
-        areEnabled: areEnabled,
+        enabled: enabled,
         areAvailable: areAvailable,
         setPosition: setPosition,
         tearDown: tearDown

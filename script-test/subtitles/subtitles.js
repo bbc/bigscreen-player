@@ -101,31 +101,31 @@ require(
           });
         });
 
-        describe('areEnabled', function () {
+        describe('enabled', function () {
           it('should return true if subtitles are enabled at construction', function () {
             var subtitles = Subtitles(null, undefined, true, null);
 
-            expect(subtitles.areEnabled()).toEqual(true);
+            expect(subtitles.enabled()).toEqual(true);
           });
 
           it('should return true if subtitles are enabled by an api call', function () {
             var subtitles = Subtitles(null, undefined, false, null);
             subtitles.setEnabled(true);
 
-            expect(subtitles.areEnabled()).toEqual(true);
+            expect(subtitles.enabled()).toEqual(true);
           });
 
           it('should return false if subtitles are disabled at construction', function () {
             var subtitles = Subtitles(null, undefined, false, null);
 
-            expect(subtitles.areEnabled()).toEqual(false);
+            expect(subtitles.enabled()).toEqual(false);
           });
 
           it('should return true if subtitles are disabled by an api call', function () {
             var subtitles = Subtitles(null, undefined, true, null);
             subtitles.setEnabled(false);
 
-            expect(subtitles.areEnabled()).toEqual(false);
+            expect(subtitles.enabled()).toEqual(false);
           });
         });
 

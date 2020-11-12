@@ -92,7 +92,7 @@ define(
       }
 
       function isSubtitlesEnabled () {
-        return subtitles.areEnabled();
+        return subtitles.enabled();
       }
 
       function isSubtitlesAvailable () {
