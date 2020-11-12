@@ -238,11 +238,18 @@ require(
       });
 
       describe('setSubtitlesEnabled', function () {
-        it('should call through to subtitles setEnabled function', function () {
+        it('should call through to subtitles setEnabled function with true argument', function () {
           setUpPlayerComponent();
-          playerComponent.setSubtitlesEnabled();
+          playerComponent.setSubtitlesEnabled(true);
 
-          expect(mockSubtitles.setEnabled).toHaveBeenCalled();
+          expect(mockSubtitles.setEnabled).toHaveBeenCalledWith(true);
+        });
+
+        it('should call through to subtitles setEnabled function with false argument', function () {
+          setUpPlayerComponent();
+          playerComponent.setSubtitlesEnabled(false);
+
+          expect(mockSubtitles.setEnabled).toHaveBeenCalledWith(false);
         });
       });
 
