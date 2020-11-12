@@ -1,15 +1,81 @@
 require(
   ['squire'],
   function (Squire) {
+    var originalBSPWindowConfig = window.bigscreenPlayer;
     var pluginInterfaceMock;
     var pluginsMock;
+    var Subtitles;
+    var subtitlesMock;
+    var loadUrlMock;
+    var injector;
 
     describe('Subtitles', function () {
-      describe('legacy implementation', function () {
-        var Subtitles;
+      beforeEach(function () {
+        injector = new Squire();
+        loadUrlMock = jasmine.createSpy();
+        loadUrlMock.and.callFake(function (url, callbackObject) {
+          callbackObject.onLoad('<?xml>', '', 200);
+        });
+      });
+
+      afterEach(function () {
+        window.bigscreenPlayer = originalBSPWindowConfig;
+      });
+
+      describe('strategy construction', function () {
+        describe('legacy', function () {
+          beforeEach(function (done) {
+            window.bigscreenPlayer = {
+              overrides: {
+                legacySubtitles: true
+              }
+            };
+            subtitlesMock = jasmine.createSpy();
+
+            injector.mock({
+              'bigscreenplayer/subtitles/legacysubtitles': subtitlesMock,
+              'bigscreenplayer/utils/loadurl': loadUrlMock
+            });
+
+            injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
+              Subtitles = Subs;
+              done();
+            });
+          });
+
+          it('implementation is available when legacy subtitles override is true', function () {
+            Subtitles();
+
+            expect(subtitlesMock).toHaveBeenCalledTimes(1);
+          });
+        });
+
+        describe('imscjs', function () {
+          beforeEach(function (done) {
+            subtitlesMock = jasmine.createSpy();
+
+            injector.mock({
+              'bigscreenplayer/subtitles/imscsubtitles': subtitlesMock,
+              'bigscreenplayer/utils/loadurl': loadUrlMock
+            });
+
+            injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
+              Subtitles = Subs;
+              done();
+            });
+          });
+
+          it('implementation is available when legacy subtitles override is false', function () {
+            Subtitles();
+
+            expect(subtitlesMock).toHaveBeenCalledTimes(1);
+          });
+        });
+      });
+
+      describe('generic calls', function () {
         var subtitlesContainerSpies;
         var subtitlesContainer;
-        var loadUrlMock;
 
         beforeEach(function (done) {
           subtitlesContainerSpies = jasmine.createSpyObj('subtitlesContainer', ['start', 'stop', 'updatePosition', 'tearDown']);
@@ -21,17 +87,12 @@ require(
           pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesLoadError', 'onSubtitlesTransformError']);
           pluginsMock = { interface: pluginInterfaceMock };
 
-          loadUrlMock = jasmine.createSpy();
-          loadUrlMock.and.callFake(function (url, callbackObject) {
-            callbackObject.onLoad('<?xml>', '', 200);
-          });
-
-          var injector = new Squire();
           injector.mock({
-            'bigscreenplayer/subtitles/legacysubtitles': subtitlesContainer,
+            'bigscreenplayer/subtitles/imscsubtitles': subtitlesContainer,
             'bigscreenplayer/utils/loadurl': loadUrlMock,
             'bigscreenplayer/plugins': pluginsMock
           });
+
           injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
             Subtitles = Subs;
             done();
@@ -46,19 +107,13 @@ require(
         });
 
         describe('construction', function () {
-          it('initialises with the legacy subtitles module', function () {
-            Subtitles();
-
-            expect(subtitlesContainer).toHaveBeenCalled();
-          });
-
           it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
             Subtitles();
 
-            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalled();
+            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
           });
 
           it('fires subtitleTransformError if responseXML from the loader is invalid', function () {
@@ -67,7 +122,7 @@ require(
             });
             Subtitles(null, 'http://some-url', null, null);
 
-            expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalled();
+            expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
           });
         });
 
@@ -76,14 +131,14 @@ require(
             var subtitles = Subtitles(null, 'http://some-url', null, null);
             subtitles.enable();
 
-            expect(subtitlesContainerSpies.start).toHaveBeenCalledWith();
+            expect(subtitlesContainerSpies.start).toHaveBeenCalledTimes(1);
           });
 
           it('should not start subtitles when unavailable', function () {
             var subtitles = Subtitles(null, undefined, null, null);
             subtitles.enable();
 
-            expect(subtitlesContainerSpies.start).not.toHaveBeenCalledWith();
+            expect(subtitlesContainerSpies.start).not.toHaveBeenCalled();
           });
         });
 
@@ -92,14 +147,14 @@ require(
             var subtitles = Subtitles(null, 'http://some-url', null, null);
             subtitles.disable();
 
-            expect(subtitlesContainerSpies.stop).toHaveBeenCalledWith();
+            expect(subtitlesContainerSpies.stop).toHaveBeenCalled();
           });
 
           it('should not stop subtitles when unavailable', function () {
             var subtitles = Subtitles(null, undefined, null, null);
             subtitles.disable();
 
-            expect(subtitlesContainerSpies.stop).not.toHaveBeenCalledWith();
+            expect(subtitlesContainerSpies.stop).not.toHaveBeenCalled();
           });
         });
 

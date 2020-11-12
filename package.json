@@ -47,7 +47,8 @@
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v3.0.0-7"
+    "dashjs": "github:bbc/dash.js#smp-v3.0.0-7",
+    "smp-imsc": "github:bbc/imscjs#v1.0.0"
   },
   "repository": {
     "type": "git",
