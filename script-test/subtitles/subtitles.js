@@ -1,31 +1,15 @@
 require(
   ['squire'],
   function (Squire) {
-    var loadURLError = false;
-    var returnInvalidXML = false;
     var pluginInterfaceMock;
     var pluginsMock;
 
-    var loadUrlMock = function (url, callbackObject) {
-      if (loadURLError) {
-        callbackObject.onError();
-      } else if (returnInvalidXML) {
-        callbackObject.onLoad(null, '', 200);
-      } else {
-        callbackObject.onLoad('<?xml>', '', 200);
-      }
-    };
-
     describe('Subtitles', function () {
-      afterEach(function () {
-        loadURLError = false;
-        returnInvalidXML = false;
-      });
-
       describe('legacy implementation', function () {
         var Subtitles;
         var mockCaptionsSpies;
         var mockCaptions;
+        var loadUrlMock;
 
         beforeEach(function (done) {
           mockCaptionsSpies = jasmine.createSpyObj('mockCaptions', ['start', 'stop', 'updatePosition', 'tearDown']);
@@ -36,6 +20,11 @@ require(
 
           pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesLoadError', 'onSubtitlesTransformError']);
           pluginsMock = { interface: pluginInterfaceMock };
+
+          loadUrlMock = jasmine.createSpy();
+          loadUrlMock.and.callFake(function (url, callbackObject) {
+            callbackObject.onLoad('<?xml>', '', 200);
+          });
 
           var injector = new Squire();
           injector.mock({
@@ -64,14 +53,18 @@ require(
           });
 
           it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
-            loadURLError = true;
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
             Subtitles();
 
             expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalled();
           });
 
           it('fires subtitleTransformError if responseXML from the loader is invalid', function () {
-            returnInvalidXML = true;
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onLoad(null, '', 200);
+            });
             Subtitles(null, 'http://some-url', null, null);
 
             expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalled();
@@ -161,7 +154,9 @@ require(
           });
 
           it('does not attempt to call through to captions updatePosition if no captions exist', function () {
-            loadURLError = true;
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
             var subtitles = Subtitles(null, 'http://some-url', true, null);
             subtitles.setPosition('pos');
 
@@ -178,7 +173,9 @@ require(
           });
 
           it('does not attempt to call through to captions tearDown if no captions exist', function () {
-            loadURLError = true;
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
             var subtitles = Subtitles(null, 'http://some-url', true, null);
             subtitles.tearDown();
 
