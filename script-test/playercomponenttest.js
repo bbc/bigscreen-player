@@ -98,7 +98,7 @@ require(
 
       beforeEach(function (done) {
         injector = new Squire();
-        mockSubtitles = jasmine.createSpyObj('Subtitles', ['setEnabled', 'enabled', 'areAvailable', 'setPosition', 'tearDown']);
+        mockSubtitles = jasmine.createSpyObj('Subtitles', ['setEnabled', 'enabled', 'available', 'setPosition', 'tearDown']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
 
         mockPlugins = {
@@ -265,12 +265,12 @@ require(
       });
 
       describe('isSubtitlesAvailable', function () {
-        it('should call through to subtitles areAvailable function', function () {
+        it('should call through to subtitles available function', function () {
           setUpPlayerComponent();
-          mockSubtitles.areAvailable.and.returnValue(true);
+          mockSubtitles.available.and.returnValue(true);
           var value = playerComponent.isSubtitlesAvailable();
 
-          expect(mockSubtitles.areAvailable).toHaveBeenCalled();
+          expect(mockSubtitles.available).toHaveBeenCalled();
           expect(value).toBe(true);
         });
       });

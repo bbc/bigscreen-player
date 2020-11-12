@@ -96,7 +96,7 @@ define(
       }
 
       function isSubtitlesAvailable () {
-        return subtitles.areAvailable();
+        return subtitles.available();
       }
 
       function setTransportControlPosition (flags) {

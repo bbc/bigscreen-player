@@ -11,7 +11,7 @@ define('bigscreenplayer/subtitles/subtitles',
     return function (mediaPlayer, url, autoStart, playbackElement) {
       var captions;
       var subtitlesEnabled = autoStart;
-      var available = !!url;
+      var subtitlesAvailable = !!url;
 
       DebugTool.info('Loading captions from: ' + url);
       LoadURL(url, {
@@ -28,7 +28,7 @@ define('bigscreenplayer/subtitles/subtitles',
 
       function setEnabled (enabled) {
         subtitlesEnabled = enabled || false;
-        if (areAvailable() && captions) {
+        if (available() && captions) {
           subtitlesEnabled ? captions.start() : captions.stop();
         }
       }
@@ -37,8 +37,8 @@ define('bigscreenplayer/subtitles/subtitles',
         return subtitlesEnabled;
       }
 
-      function areAvailable () {
-        return available;
+      function available () {
+        return subtitlesAvailable;
       }
 
       function setPosition (position) {
@@ -56,7 +56,7 @@ define('bigscreenplayer/subtitles/subtitles',
       return {
         setEnabled: setEnabled,
         enabled: enabled,
-        areAvailable: areAvailable,
+        available: available,
         setPosition: setPosition,
         tearDown: tearDown
       };

@@ -129,17 +129,17 @@ require(
           });
         });
 
-        describe('areAvailable', function () {
+        describe('available', function () {
           it('returns true if a url exists at construction', function () {
             var subtitles = Subtitles(null, 'http://some-url', true, null);
 
-            expect(subtitles.areAvailable()).toEqual(true);
+            expect(subtitles.available()).toEqual(true);
           });
 
           it('returns false if no url exists at construction', function () {
             var subtitles = Subtitles(null, undefined, true, null);
 
-            expect(subtitles.areAvailable()).toEqual(false);
+            expect(subtitles.available()).toEqual(false);
           });
         });
 
