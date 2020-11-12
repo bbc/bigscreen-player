@@ -7,15 +7,15 @@ require(
     describe('Subtitles', function () {
       describe('legacy implementation', function () {
         var Subtitles;
-        var mockCaptionsSpies;
-        var mockCaptions;
+        var subtitlesContainerSpies;
+        var subtitlesContainer;
         var loadUrlMock;
 
         beforeEach(function (done) {
-          mockCaptionsSpies = jasmine.createSpyObj('mockCaptions', ['start', 'stop', 'updatePosition', 'tearDown']);
-          mockCaptions = jasmine.createSpy();
-          mockCaptions.and.callFake(function () {
-            return mockCaptionsSpies;
+          subtitlesContainerSpies = jasmine.createSpyObj('subtitlesContainer', ['start', 'stop', 'updatePosition', 'tearDown']);
+          subtitlesContainer = jasmine.createSpy();
+          subtitlesContainer.and.callFake(function () {
+            return subtitlesContainerSpies;
           });
 
           pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesLoadError', 'onSubtitlesTransformError']);
@@ -28,7 +28,7 @@ require(
 
           var injector = new Squire();
           injector.mock({
-            'bigscreenplayer/subtitles/legacysubtitles': mockCaptions,
+            'bigscreenplayer/subtitles/legacysubtitles': subtitlesContainer,
             'bigscreenplayer/utils/loadurl': loadUrlMock,
             'bigscreenplayer/plugins': pluginsMock
           });
@@ -39,17 +39,17 @@ require(
         });
 
         afterEach(function () {
-          mockCaptionsSpies.start.calls.reset();
-          mockCaptionsSpies.stop.calls.reset();
-          mockCaptionsSpies.updatePosition.calls.reset();
-          mockCaptionsSpies.tearDown.calls.reset();
+          subtitlesContainerSpies.start.calls.reset();
+          subtitlesContainerSpies.stop.calls.reset();
+          subtitlesContainerSpies.updatePosition.calls.reset();
+          subtitlesContainerSpies.tearDown.calls.reset();
         });
 
         describe('construction', function () {
           it('initialises with the legacy subtitles module', function () {
             Subtitles();
 
-            expect(mockCaptions).toHaveBeenCalled();
+            expect(subtitlesContainer).toHaveBeenCalled();
           });
 
           it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
@@ -76,14 +76,14 @@ require(
             var subtitles = Subtitles(null, 'http://some-url', null, null);
             subtitles.enable();
 
-            expect(mockCaptionsSpies.start).toHaveBeenCalledWith();
+            expect(subtitlesContainerSpies.start).toHaveBeenCalledWith();
           });
 
           it('should not start subtitles when unavailable', function () {
             var subtitles = Subtitles(null, undefined, null, null);
             subtitles.enable();
 
-            expect(mockCaptionsSpies.start).not.toHaveBeenCalledWith();
+            expect(subtitlesContainerSpies.start).not.toHaveBeenCalledWith();
           });
         });
 
@@ -92,14 +92,14 @@ require(
             var subtitles = Subtitles(null, 'http://some-url', null, null);
             subtitles.disable();
 
-            expect(mockCaptionsSpies.stop).toHaveBeenCalledWith();
+            expect(subtitlesContainerSpies.stop).toHaveBeenCalledWith();
           });
 
           it('should not stop subtitles when unavailable', function () {
             var subtitles = Subtitles(null, undefined, null, null);
             subtitles.disable();
 
-            expect(mockCaptionsSpies.stop).not.toHaveBeenCalledWith();
+            expect(subtitlesContainerSpies.stop).not.toHaveBeenCalledWith();
           });
         });
 
@@ -146,40 +146,40 @@ require(
         });
 
         describe('setPosition', function () {
-          it('calls through to captions updatePosition', function () {
+          it('calls through to subtitlesContainer updatePosition', function () {
             var subtitles = Subtitles(null, 'http://some-url', true, null);
             subtitles.setPosition('pos');
 
-            expect(mockCaptionsSpies.updatePosition).toHaveBeenCalledWith('pos');
+            expect(subtitlesContainerSpies.updatePosition).toHaveBeenCalledWith('pos');
           });
 
-          it('does not attempt to call through to captions updatePosition if no captions exist', function () {
+          it('does not attempt to call through to subtitlesContainer updatePosition if subtitles have not been loaded', function () {
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
             var subtitles = Subtitles(null, 'http://some-url', true, null);
             subtitles.setPosition('pos');
 
-            expect(mockCaptionsSpies.updatePosition).not.toHaveBeenCalledWith('pos');
+            expect(subtitlesContainerSpies.updatePosition).not.toHaveBeenCalledWith('pos');
           });
         });
 
         describe('tearDown', function () {
-          it('calls through to captions tearDown', function () {
+          it('calls through to subtitlesContainer tearDown', function () {
             var subtitles = Subtitles(null, 'http://some-url', true, null);
             subtitles.tearDown();
 
-            expect(mockCaptionsSpies.tearDown).toHaveBeenCalled();
+            expect(subtitlesContainerSpies.tearDown).toHaveBeenCalled();
           });
 
-          it('does not attempt to call through to captions tearDown if no captions exist', function () {
+          it('does not attempt to call through to subtitlesContainer tearDown if subtitles have not been loaded', function () {
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
             var subtitles = Subtitles(null, 'http://some-url', true, null);
             subtitles.tearDown();
 
-            expect(mockCaptionsSpies.tearDown).not.toHaveBeenCalled();
+            expect(subtitlesContainerSpies.tearDown).not.toHaveBeenCalled();
           });
         });
       });
