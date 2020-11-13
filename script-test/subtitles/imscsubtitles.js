@@ -22,10 +22,18 @@ require(
         });
       });
 
-      it('Calls to fromXML on creation', function () {
-        ImscSubtitles();
+      describe('construction', function () {
+        it('is constructed with the correct interface', function () {
+          var subtitles = ImscSubtitles();
 
-        expect(imscMock.fromXML).toHaveBeenCalledTimes(1);
+          expect(subtitles).toEqual(jasmine.objectContaining({start: jasmine.any(Function), stop: jasmine.any(Function), updatePosition: jasmine.any(Function), tearDown: jasmine.any(Function)}));
+        });
+
+        it('Calls to fromXML on creation', function () {
+          ImscSubtitles();
+
+          expect(imscMock.fromXML).toHaveBeenCalledTimes(1);
+        });
       });
 
       describe('update interval', function () {
