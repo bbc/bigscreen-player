@@ -10,9 +10,14 @@ require(
       var mockParentElement = document.createElement('div');
       var stubResponse = 'test';
       var fromXmlReturn;
+      var mediaPlayer;
+      var subtitles;
 
       beforeEach(function (done) {
         injector = new Squire();
+
+        mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['getCurrentTime']);
+        jasmine.clock().install();
 
         fromXmlReturn = {
           getMediaTimeEvents: function () {
@@ -32,39 +37,54 @@ require(
         });
       });
 
+      afterEach(function () {
+        jasmine.clock().uninstall();
+        imscMock.generateISD.calls.reset();
+        imscMock.renderHTML.calls.reset();
+      });
+
+      function progressTime (mediaPlayerTime) {
+        mediaPlayer.getCurrentTime.and.returnValue(mediaPlayerTime);
+        jasmine.clock().tick(751);
+      }
+
       describe('construction', function () {
+        afterEach(function () {
+          subtitles.stop();
+        });
+
         it('is constructed with the correct interface', function () {
-          var subtitles = ImscSubtitles({}, {xml: '', text: stubResponse}, true, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, false, mockParentElement);
 
           expect(subtitles).toEqual(jasmine.objectContaining({start: jasmine.any(Function), stop: jasmine.any(Function), updatePosition: jasmine.any(Function), tearDown: jasmine.any(Function)}));
         });
 
         it('Calls fromXML on creation with the text property of the response argument', function () {
-          ImscSubtitles({}, {xml: '', text: stubResponse}, true, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, false, mockParentElement);
 
           expect(imscMock.fromXML).toHaveBeenCalledWith(stubResponse, jasmine.any(Function));
+        });
+
+        it('autoplay argument starts the update loop', function () {
+          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, true, mockParentElement);
+          progressTime(1.5);
+
+          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1, jasmine.any(Function));
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
       });
 
       describe('update interval', function () {
-        var mediaPlayer;
-        function progressTime (mediaPlayerTime) {
-          mediaPlayer.getCurrentTime.and.returnValue(mediaPlayerTime);
-          jasmine.clock().tick(751);
-        }
         beforeEach(function () {
-          jasmine.clock().install();
+          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, false, mockParentElement);
         });
 
         afterEach(function () {
-          jasmine.clock().uninstall();
-          imscMock.generateISD.calls.reset();
-          imscMock.renderHTML.calls.reset();
+          subtitles.stop();
         });
 
         it('only generate and render when there are new subtitles to display', function () {
-          mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['getCurrentTime']);
-          var subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, true, mockParentElement);
           subtitles.start();
 
           progressTime(0.75);
@@ -98,8 +118,6 @@ require(
         });
 
         it('resuming playback mid way through a stream renders correct subtitles', function () {
-          mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['getCurrentTime']);
-          var subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, true, mockParentElement);
           subtitles.start();
 
           progressTime(9);
