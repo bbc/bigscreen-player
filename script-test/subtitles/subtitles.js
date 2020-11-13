@@ -7,6 +7,7 @@ require(
     var Subtitles;
     var subtitlesMock;
     var loadUrlMock;
+    var stubResponse = '<?xml>';
     var injector;
 
     describe('Subtitles', function () {
@@ -14,7 +15,7 @@ require(
         injector = new Squire();
         loadUrlMock = jasmine.createSpy();
         loadUrlMock.and.callFake(function (url, callbackObject) {
-          callbackObject.onLoad('<?xml>', '', 200);
+          callbackObject.onLoad(stubResponse, stubResponse, 200);
         });
       });
 
@@ -107,6 +108,17 @@ require(
         });
 
         describe('construction', function () {
+          it('calls subtitles strategy with the correct arguments', function () {
+            var mockMediaPlayer = {};
+            var url = 'http://captions.example.test';
+            var autoStart = true;
+            var mockPlaybackElement = document.createElement('div');
+
+            Subtitles(mockMediaPlayer, url, autoStart, mockPlaybackElement);
+
+            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, jasmine.objectContaining({text: stubResponse, xml: stubResponse}), autoStart, mockPlaybackElement);
+          });
+
           it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();

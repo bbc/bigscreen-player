@@ -22,8 +22,13 @@ define('bigscreenplayer/subtitles/subtitles',
             return;
           }
 
+          var response = {
+            text: responseText,
+            xml: responseXML
+          };
+
           if (status === 200) {
-            subtitlesContainer = SubtitlesContainer(mediaPlayer, responseXML, autoStart, playbackElement);
+            subtitlesContainer = SubtitlesContainer(mediaPlayer, response, autoStart, playbackElement);
           }
         },
         onError: function (error) {
