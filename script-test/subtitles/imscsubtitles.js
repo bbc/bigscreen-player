@@ -47,12 +47,30 @@ require(
           jasmine.clock().uninstall();
         });
 
+        it('only generate and render when there are new subtitles to display', function () {
+          // Input
+          // - xml.getMediaTimeEvents() normally gives us times. (Mock This)
+          // - Behaviour: We use these to quickly check if we should update rather than overdoing the work updating the DOM everytime.
+          // Output
+          // - Only then should generateISD and renderHTML be called.
+        });
+
         it('calls to generateISD', function () {
           var subtitles = ImscSubtitles({}, {xml: '', text: stubResponse}, true, mockParentElement);
           subtitles.start();
           jasmine.clock().tick(751);
 
+          // TODO: toHaveBeenCalledWith.
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
+        });
+
+        it('calls to renderHTML', function () {
+          var subtitles = ImscSubtitles({}, {xml: '', text: stubResponse}, true, mockParentElement);
+          subtitles.start();
+          jasmine.clock().tick(751);
+
+          // TODO: toHaveBeenCalledWith.
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
       });
     });
