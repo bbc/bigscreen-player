@@ -7,6 +7,8 @@ require(
       var injector;
       var ImscSubtitles;
       var imscMock;
+      var mockParentElement = document.createElement('div');
+      var stubResponse = 'test';
 
       beforeEach(function (done) {
         injector = new Squire();
@@ -24,15 +26,15 @@ require(
 
       describe('construction', function () {
         it('is constructed with the correct interface', function () {
-          var subtitles = ImscSubtitles();
+          var subtitles = ImscSubtitles({}, {xml: '', text: stubResponse}, true, mockParentElement);
 
           expect(subtitles).toEqual(jasmine.objectContaining({start: jasmine.any(Function), stop: jasmine.any(Function), updatePosition: jasmine.any(Function), tearDown: jasmine.any(Function)}));
         });
 
-        it('Calls to fromXML on creation', function () {
-          ImscSubtitles();
+        it('Calls fromXML on creation with the text property of the response argument', function () {
+          ImscSubtitles({}, {xml: '', text: stubResponse}, true, mockParentElement);
 
-          expect(imscMock.fromXML).toHaveBeenCalledTimes(1);
+          expect(imscMock.fromXML).toHaveBeenCalledWith(stubResponse, jasmine.any(Function));
         });
       });
 
@@ -46,7 +48,7 @@ require(
         });
 
         it('calls to generateISD', function () {
-          var subtitles = ImscSubtitles();
+          var subtitles = ImscSubtitles({}, {xml: '', text: stubResponse}, true, mockParentElement);
           subtitles.start();
           jasmine.clock().tick(751);
 

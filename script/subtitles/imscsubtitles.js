@@ -4,13 +4,13 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   ],
   function (IMSC, DOMHelpers) {
     'use strict';
-    return function (mediaPlayer, captionsXML, autoStart, parentElement) {
+    return function (mediaPlayer, response, autoStart, parentElement) {
       // TODO: This is obviously a placeholder
       var errorHandlerNoOp = function () {};
       var updateInterval;
       var currentSubtitlesElement;
       // args: xmlstring, errorHandler, metadataHandler
-      var xml = IMSC.fromXML(captionsXML, errorHandlerNoOp);
+      var xml = IMSC.fromXML(response.text, errorHandlerNoOp);
 
       return {
         start: function () {
