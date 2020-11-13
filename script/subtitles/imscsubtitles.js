@@ -9,28 +9,47 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var errorHandlerNoOp = function () {};
       var updateInterval;
       var currentSubtitlesElement;
-      // args: xmlstring, errorHandler, metadataHandler
       var xml = IMSC.fromXML(response.text, errorHandlerNoOp);
+      var times = xml.getMediaTimeEvents();
+      var currentCaptionTime;
+      var previousCaptionTime;
 
-      return {
-        start: function () {
-          updateInterval = setInterval(function () {
-            // Does the action need doing?
-            // - safely remove the old output (DOMUtils)
-            // - generate new output spans
-            // - update the DOM
+      if (autoStart) {
+        start();
+      }
 
+      function start () {
+        updateInterval = setInterval(function () {
+          var currentTime = mediaPlayer.getCurrentTime();
+
+          if (currentTime > times[0]) {
+            for (var i = 0; i < times.length; i++) {
+              if (currentTime < times[i]) {
+                currentCaptionTime = i === 0 ? times[i] : times[i - 1];
+                break;
+              }
+              currentCaptionTime = times[i];
+            }
+          }
+
+          if (currentCaptionTime !== previousCaptionTime) {
             if (currentSubtitlesElement) {
               DOMHelpers.safeRemoveElement(currentSubtitlesElement);
             }
             currentSubtitlesElement = document.createElement('div');
-            // args: tt, offset, errorHandler
-            var isd = IMSC.generateISD(xml, 0, errorHandlerNoOp);
-            // args: isd, element, imgResolver, eheight, ewidth, displayForcedOnlyMode, errorHandler, previousISDState, enableRollUp
-            // TODO: real args, ish: isd, currentSubtitlesElement, null, parentElement.height, parentElement.width, false, errorHandlerNoOp, null, false
-            IMSC.renderHTML(isd);
-          }, 750);
-        },
+            currentSubtitlesElement.id = 'bsp_subtitles';
+
+            var isd = IMSC.generateISD(xml, currentCaptionTime, errorHandlerNoOp);
+            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, errorHandlerNoOp, null, false);
+
+            parentElement.appendChild(currentSubtitlesElement);
+            previousCaptionTime = currentCaptionTime;
+          }
+        }, 750);
+      }
+
+      return {
+        start: start,
         stop: function () {
           clearInterval(updateInterval);
         },
