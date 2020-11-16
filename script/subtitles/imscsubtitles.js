@@ -11,7 +11,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var currentSubtitlesElement;
       var xml = IMSC.fromXML(response.text, errorHandlerNoOp);
       var times = xml.getMediaTimeEvents();
-      var previousCaptionIndex = null;
+      var previousSubtitlesIndex = null;
 
       if (autoStart) {
         start();
@@ -33,8 +33,9 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         updateInterval = setInterval(function () {
           var currentTime = mediaPlayer.getCurrentTime();
           var subtitlesIndex = nextSubtitleIndex(currentTime);
+          var generateAndRender = subtitlesIndex !== previousSubtitlesIndex;
 
-          if (subtitlesIndex !== previousCaptionIndex) {
+          if (generateAndRender) {
             if (currentSubtitlesElement) {
               DOMHelpers.safeRemoveElement(currentSubtitlesElement);
             }
@@ -45,7 +46,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, errorHandlerNoOp, null, false);
 
             parentElement.appendChild(currentSubtitlesElement);
-            previousCaptionIndex = subtitlesIndex;
+            previousSubtitlesIndex = subtitlesIndex;
           }
         }, 750);
       }
