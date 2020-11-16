@@ -8,9 +8,9 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       // TODO: This is obviously a placeholder
       var errorHandlerNoOp = function () {};
       var updateInterval;
-      var currentSubtitlesElement;
       var xml = IMSC.fromXML(response.text, errorHandlerNoOp);
       var times = xml.getMediaTimeEvents();
+      var currentSubtitlesElement;
       var previousSubtitlesIndex = null;
 
       if (autoStart) {
@@ -29,25 +29,34 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         return futureIndices[0];
       }
 
+      function removeCurrentSubtitlesElement () {
+        if (currentSubtitlesElement) {
+          DOMHelpers.safeRemoveElement(currentSubtitlesElement);
+          currentSubtitlesElement = undefined;
+        }
+      }
+
+      function update (currentTime) {
+        var subtitlesIndex = nextSubtitleIndex(currentTime);
+        var generateAndRender = subtitlesIndex !== previousSubtitlesIndex;
+
+        if (generateAndRender) {
+          removeCurrentSubtitlesElement();
+
+          currentSubtitlesElement = document.createElement('div');
+          currentSubtitlesElement.id = 'bsp_subtitles';
+
+          var isd = IMSC.generateISD(xml, currentTime, errorHandlerNoOp);
+          IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, errorHandlerNoOp, null, false);
+
+          parentElement.appendChild(currentSubtitlesElement);
+          previousSubtitlesIndex = subtitlesIndex;
+        }
+      }
+
       function start () {
         updateInterval = setInterval(function () {
-          var currentTime = mediaPlayer.getCurrentTime();
-          var subtitlesIndex = nextSubtitleIndex(currentTime);
-          var generateAndRender = subtitlesIndex !== previousSubtitlesIndex;
-
-          if (generateAndRender) {
-            if (currentSubtitlesElement) {
-              DOMHelpers.safeRemoveElement(currentSubtitlesElement);
-            }
-            currentSubtitlesElement = document.createElement('div');
-            currentSubtitlesElement.id = 'bsp_subtitles';
-
-            var isd = IMSC.generateISD(xml, currentTime, errorHandlerNoOp);
-            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, errorHandlerNoOp, null, false);
-
-            parentElement.appendChild(currentSubtitlesElement);
-            previousSubtitlesIndex = subtitlesIndex;
-          }
+          update(mediaPlayer.getCurrentTime());
         }, 750);
       }
 
@@ -55,9 +64,15 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         start: start,
         stop: function () {
           clearInterval(updateInterval);
+          removeCurrentSubtitlesElement();
         },
         updatePosition: function () {},
-        tearDown: function () {}
+        tearDown: function () {
+          stop();
+          xml = undefined;
+          times = undefined;
+          previousSubtitlesIndex = undefined;
+        }
       };
     };
   }
