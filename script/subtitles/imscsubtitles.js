@@ -18,19 +18,23 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         start();
       }
 
+      function currentSubtitleTime () {
+        var currentTime = mediaPlayer.getCurrentTime();
+
+        if (currentTime > times[0]) {
+          for (var i = 0; i < times.length; i++) {
+            if (currentTime < times[i]) {
+              currentCaptionTime = i === 0 ? times[i] : times[i - 1];
+              break;
+            }
+            currentCaptionTime = times[i];
+          }
+        }
+      }
+
       function start () {
         updateInterval = setInterval(function () {
-          var currentTime = mediaPlayer.getCurrentTime();
-
-          if (currentTime > times[0]) {
-            for (var i = 0; i < times.length; i++) {
-              if (currentTime < times[i]) {
-                currentCaptionTime = i === 0 ? times[i] : times[i - 1];
-                break;
-              }
-              currentCaptionTime = times[i];
-            }
-          }
+          currentSubtitleTime();
 
           if (currentCaptionTime !== previousCaptionTime) {
             if (currentSubtitlesElement) {
