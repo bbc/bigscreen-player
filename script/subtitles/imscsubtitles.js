@@ -18,7 +18,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function nextSubtitleIndex (currentTime) {
-        if (currentTime < times[0]) {
+        if (currentTime < times[0] || currentTime === undefined) {
           return null;
         }
 

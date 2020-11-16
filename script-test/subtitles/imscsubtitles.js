@@ -84,6 +84,14 @@ require(
           subtitles.stop();
         });
 
+        it('does not try to generate and render when current time is undefined', function () {
+          subtitles.start();
+          progressTime(undefined);
+
+          expect(imscMock.generateISD).not.toHaveBeenCalled();
+          expect(imscMock.renderHTML).not.toHaveBeenCalled();
+        });
+
         it('only generate and render when there are new subtitles to display', function () {
           subtitles.start();
 
