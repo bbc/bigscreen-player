@@ -11,43 +11,41 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var currentSubtitlesElement;
       var xml = IMSC.fromXML(response.text, errorHandlerNoOp);
       var times = xml.getMediaTimeEvents();
-      var currentCaptionTime;
-      var previousCaptionTime;
+      var previousCaptionIndex = null;
 
       if (autoStart) {
         start();
       }
 
-      function currentSubtitleTime () {
-        var currentTime = mediaPlayer.getCurrentTime();
-
-        if (currentTime > times[0]) {
-          for (var i = 0; i < times.length; i++) {
-            if (currentTime < times[i]) {
-              currentCaptionTime = i === 0 ? times[i] : times[i - 1];
-              break;
-            }
-            currentCaptionTime = times[i];
-          }
+      function nextSubtitleIndex (currentTime) {
+        if (currentTime < times[0]) {
+          return null;
         }
+
+        var futureIndices = times.filter(function (time, index) {
+          return time > currentTime ? index : null;
+        });
+
+        return futureIndices[0];
       }
 
       function start () {
         updateInterval = setInterval(function () {
-          currentSubtitleTime();
+          var currentTime = mediaPlayer.getCurrentTime();
+          var subtitlesIndex = nextSubtitleIndex(currentTime);
 
-          if (currentCaptionTime !== previousCaptionTime) {
+          if (subtitlesIndex !== previousCaptionIndex) {
             if (currentSubtitlesElement) {
               DOMHelpers.safeRemoveElement(currentSubtitlesElement);
             }
             currentSubtitlesElement = document.createElement('div');
             currentSubtitlesElement.id = 'bsp_subtitles';
 
-            var isd = IMSC.generateISD(xml, currentCaptionTime, errorHandlerNoOp);
+            var isd = IMSC.generateISD(xml, currentTime, errorHandlerNoOp);
             IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, errorHandlerNoOp, null, false);
 
             parentElement.appendChild(currentSubtitlesElement);
-            previousCaptionTime = currentCaptionTime;
+            previousCaptionIndex = subtitlesIndex;
           }
         }, 750);
       }

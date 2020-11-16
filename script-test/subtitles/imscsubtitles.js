@@ -70,7 +70,7 @@ require(
           progressTime(1.5);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5, jasmine.any(Function));
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
       });
@@ -95,13 +95,13 @@ require(
           progressTime(1.5);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5, jasmine.any(Function));
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
 
           progressTime(2.25);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5, jasmine.any(Function));
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
 
           progressTime(3);
@@ -113,17 +113,17 @@ require(
           progressTime(9);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(3);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 8, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 9, jasmine.any(Function));
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(3);
         });
 
         it('resuming playback mid way through a stream renders correct subtitles', function () {
           subtitles.start();
 
-          progressTime(9);
+          progressTime(3);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 8, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 3, jasmine.any(Function));
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
       });
