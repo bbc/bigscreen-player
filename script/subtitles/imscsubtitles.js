@@ -18,8 +18,12 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function nextSubtitleIndex (currentTime) {
-        if (currentTime < times[0] || currentTime === undefined) {
+        if (currentTime === undefined || currentTime < times[0]) {
           return null;
+        }
+
+        if (currentTime > times[times.length - 1]) {
+          return times.length - 1;
         }
 
         var futureIndices = times.filter(function (time, index) {

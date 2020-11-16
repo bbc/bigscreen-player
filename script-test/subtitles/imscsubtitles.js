@@ -92,13 +92,41 @@ require(
           expect(imscMock.renderHTML).not.toHaveBeenCalled();
         });
 
-        it('only generate and render when there are new subtitles to display', function () {
+        it('does not try to generate and render when the initial current time is less than the first subtitle time', function () {
           subtitles.start();
 
           progressTime(0.75);
 
           expect(imscMock.generateISD).not.toHaveBeenCalled();
           expect(imscMock.renderHTML).not.toHaveBeenCalled();
+        });
+
+        it('does attempt to generate and render when the initial current time is greater than the final subtitle time', function () {
+          subtitles.start();
+          progressTime(9);
+
+          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 9, jasmine.any(Function));
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
+
+          progressTime(9.25);
+
+          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
+        });
+
+        it('does attempt to generate and render when the initial current time is mid way through a stream', function () {
+          subtitles.start();
+
+          progressTime(4);
+
+          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 4, jasmine.any(Function));
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
+        });
+
+        it('only generate and render when there are new subtitles to display', function () {
+          subtitles.start();
 
           progressTime(1.5);
 
@@ -109,7 +137,6 @@ require(
           progressTime(2.25);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5, jasmine.any(Function));
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
 
           progressTime(3);
@@ -123,16 +150,6 @@ require(
           expect(imscMock.generateISD).toHaveBeenCalledTimes(3);
           expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 9, jasmine.any(Function));
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(3);
-        });
-
-        it('resuming playback mid way through a stream renders correct subtitles', function () {
-          subtitles.start();
-
-          progressTime(3);
-
-          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 3, jasmine.any(Function));
-          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
       });
     });
