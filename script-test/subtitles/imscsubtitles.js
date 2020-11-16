@@ -151,6 +151,20 @@ require(
           expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 9, jasmine.any(Function));
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(3);
         });
+
+        it('no longer attempts any rendering if subtitles have been stopped', function () {
+          subtitles.start();
+          progressTime(1.5);
+
+          imscMock.generateISD.calls.reset();
+          imscMock.renderHTML.calls.reset();
+
+          subtitles.stop();
+          progressTime(4);
+
+          expect(imscMock.generateISD).not.toHaveBeenCalled();
+          expect(imscMock.renderHTML).not.toHaveBeenCalled();
+        });
       });
     });
   }
