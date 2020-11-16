@@ -165,6 +165,20 @@ require(
           expect(imscMock.generateISD).not.toHaveBeenCalled();
           expect(imscMock.renderHTML).not.toHaveBeenCalled();
         });
+
+        it('no longer attempts any rendering if subtitles have been torn down', function () {
+          subtitles.start();
+          progressTime(1.5);
+
+          imscMock.generateISD.calls.reset();
+          imscMock.renderHTML.calls.reset();
+
+          subtitles.tearDown();
+          progressTime(4);
+
+          expect(imscMock.generateISD).not.toHaveBeenCalled();
+          expect(imscMock.renderHTML).not.toHaveBeenCalled();
+        });
       });
     });
   }

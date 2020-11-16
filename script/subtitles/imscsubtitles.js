@@ -64,12 +64,14 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         }, 750);
       }
 
+      function stop () {
+        clearInterval(updateInterval);
+        removeCurrentSubtitlesElement();
+      }
+
       return {
         start: start,
-        stop: function () {
-          clearInterval(updateInterval);
-          removeCurrentSubtitlesElement();
-        },
+        stop: stop,
         updatePosition: function () {},
         tearDown: function () {
           stop();
