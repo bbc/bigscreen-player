@@ -3,10 +3,11 @@ window.bigscreenPlayer = { playbackStrategy: 'msestrategy'};
 require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){  
   let playbackElement = document.createElement('div')
   let windowType = 'staticWindow';
-  let enableSubtitles = false;
+  let enableSubtitles = true;
   
   let minimalData = {
     media: {
+        captionsUrl: 'https://vod-sub-uk-live.bbcfmt.s.llnwi.net/iplayer/subtitles/ng/modav/bUnknown-c1553d9d-e8b0-4e2e-87e0-f97f00481bb7_p05v9vv2_cUnknown_1604505734224.xml?s=1605597995&e=1605641195&h=da6aff796e8992abc1610fab81109f33',
         type: 'application/dash+xml',
         mimeType: 'video/mp4',
         kind: 'video',

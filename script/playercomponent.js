@@ -88,7 +88,7 @@ define(
       }
 
       function setSubtitlesEnabled (enabled) {
-        subtitles.setEnabled(enabled);
+        enabled ? subtitles.enable() : subtitles.disable();
       }
 
       function showSubtitles () {
@@ -100,11 +100,11 @@ define(
       }
 
       function isSubtitlesEnabled () {
-        return subtitles.areEnabled();
+        return subtitles.enabled();
       }
 
       function isSubtitlesAvailable () {
-        return subtitles.areAvailable();
+        return subtitles.available();
       }
 
       function setTransportControlPosition (flags) {

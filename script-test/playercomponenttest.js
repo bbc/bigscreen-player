@@ -31,6 +31,10 @@ require(
       var testTime;
       var updateTestTime = false;
 
+      beforeAll(function () {
+        mockStateUpdateCallback = jasmine.createSpy('mockStateUpdateCallback');
+      });
+
       // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
       function setUpPlayerComponent (opts) {
         opts = opts || {};
@@ -83,8 +87,6 @@ require(
 
         var windowType = opts.windowType || WindowTypes.STATIC;
 
-        mockStateUpdateCallback = jasmine.createSpy('mockStateUpdateCallback');
-
         playerComponent = new PlayerComponentWithMocks(
           playbackElement,
           corePlaybackData,
@@ -98,7 +100,7 @@ require(
 
       beforeEach(function (done) {
         injector = new Squire();
-        mockSubtitles = jasmine.createSpyObj('Subtitles', ['setEnabled', 'show', 'hide', 'areEnabled', 'areAvailable', 'setPosition', 'tearDown']);
+        mockSubtitles = jasmine.createSpyObj('Subtitles', ['enable', 'disable', 'show', 'hide', 'enabled', 'available', 'setPosition', 'tearDown']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
 
         mockPlugins = {
@@ -238,18 +240,18 @@ require(
       });
 
       describe('setSubtitlesEnabled', function () {
-        it('should call through to subtitles setEnabled function with true argument', function () {
+        it('should call through to subtitles enable', function () {
           setUpPlayerComponent();
           playerComponent.setSubtitlesEnabled(true);
 
-          expect(mockSubtitles.setEnabled).toHaveBeenCalledWith(true);
+          expect(mockSubtitles.enable).toHaveBeenCalledTimes(1);
         });
 
-        it('should call through to subtitles setEnabled function with false argument', function () {
+        it('should call through to subtitles disable', function () {
           setUpPlayerComponent();
           playerComponent.setSubtitlesEnabled(false);
 
-          expect(mockSubtitles.setEnabled).toHaveBeenCalledWith(false);
+          expect(mockSubtitles.disable).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -272,23 +274,23 @@ require(
       });
 
       describe('isSubtitlesEnabled', function () {
-        it('should call through to subtitles areEnabled function', function () {
+        it('should call through to subtitles enabled function', function () {
           setUpPlayerComponent();
-          mockSubtitles.areEnabled.and.returnValue(true);
+          mockSubtitles.enabled.and.returnValue(true);
           var value = playerComponent.isSubtitlesEnabled();
 
-          expect(mockSubtitles.areEnabled).toHaveBeenCalled();
+          expect(mockSubtitles.enabled).toHaveBeenCalled();
           expect(value).toBe(true);
         });
       });
 
       describe('isSubtitlesAvailable', function () {
-        it('should call through to subtitles areAvailable function', function () {
+        it('should call through to subtitles available function', function () {
           setUpPlayerComponent();
-          mockSubtitles.areAvailable.and.returnValue(true);
+          mockSubtitles.available.and.returnValue(true);
           var value = playerComponent.isSubtitlesAvailable();
 
-          expect(mockSubtitles.areAvailable).toHaveBeenCalled();
+          expect(mockSubtitles.available).toHaveBeenCalled();
           expect(value).toBe(true);
         });
       });

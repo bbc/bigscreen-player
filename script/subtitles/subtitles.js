@@ -5,69 +5,80 @@ define('bigscreenplayer/subtitles/subtitles',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins'
   ],
-  function (Captions, LoadURL, DebugTool, Plugins) {
+  function (SubtitlesContainer, LoadURL, DebugTool, Plugins) {
     'use strict';
     // playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement TODO: change the ordering of this, doesn't make sense.
     return function (mediaPlayer, url, autoStart, playbackElement) {
-      var captions;
+      var subtitlesContainer;
       var subtitlesEnabled = autoStart;
-      var available = !!url;
+      var subtitlesAvailable = !!url;
 
-      DebugTool.info('Loading captions from: ' + url);
+      DebugTool.info('Loading subtitles from: ' + url);
       LoadURL(url, {
         onLoad: function (responseXML, responseText, status) {
+          if (!responseXML) {
+            DebugTool.info('Error: responseXML is invalid.');
+            Plugins.interface.onSubtitlesTransformError();
+            return;
+          }
+
           if (status === 200) {
-            captions = Captions(mediaPlayer, responseXML, autoStart, playbackElement);
+            subtitlesContainer = SubtitlesContainer(mediaPlayer, responseXML, autoStart, playbackElement);
           }
         },
         onError: function (error) {
-          DebugTool.info('Error loading captions data: ' + error);
+          DebugTool.info('Error loading subtitles data: ' + error);
           Plugins.interface.onSubtitlesLoadError();
         }
       });
 
-      function setEnabled (enabled) {
-        subtitlesEnabled = enabled || false;
+      function enable () {
+        subtitlesEnabled = true;
+      }
+
+      function disable () {
+        subtitlesEnabled = false;
       }
 
       function show () {
-        if (areAvailable() && areEnabled() && captions) {
-          captions.start();
+        if (available() && enabled() && subtitlesContainer) {
+          subtitlesContainer.start();
         }
       }
 
       function hide () {
-        if (areAvailable() && captions) {
-          captions.stop();
+        if (available() && subtitlesContainer) {
+          subtitlesContainer.stop();
         }
       }
 
-      function areEnabled () {
+      function enabled () {
         return subtitlesEnabled;
       }
 
-      function areAvailable () {
-        return available;
+      function available () {
+        return subtitlesAvailable;
       }
 
       function setPosition (position) {
-        if (captions) {
-          captions.updatePosition(position);
+        if (subtitlesContainer) {
+          subtitlesContainer.updatePosition(position);
         }
       }
 
       function tearDown () {
-        if (captions) {
-          captions.tearDown();
+        if (subtitlesContainer) {
+          subtitlesContainer.tearDown();
         }
       }
 
       return {
-        setEnabled: setEnabled,
+        enable: enable,
+        disable: disable,
         show: show,
         hide: hide,
-        areEnabled: areEnabled,
-        areAvailable: areAvailable,
+        enabled: enabled,
+        available: available,
         setPosition: setPosition,
         tearDown: tearDown
       };
