@@ -13,24 +13,26 @@ define('bigscreenplayer/subtitles/subtitles',
       var subtitlesEnabled = autoStart;
       var subtitlesAvailable = !!url;
 
-      DebugTool.info('Loading subtitles from: ' + url);
-      LoadURL(url, {
-        onLoad: function (responseXML, responseText, status) {
-          if (!responseXML) {
-            DebugTool.info('Error: responseXML is invalid.');
-            Plugins.interface.onSubtitlesTransformError();
-            return;
-          }
+      if (subtitlesAvailable) {
+        DebugTool.info('Loading subtitles from: ' + url);
+        LoadURL(url, {
+          onLoad: function (responseXML, responseText, status) {
+            if (!responseXML) {
+              DebugTool.info('Error: responseXML is invalid.');
+              Plugins.interface.onSubtitlesTransformError();
+              return;
+            }
 
-          if (status === 200) {
-            subtitlesContainer = SubtitlesContainer(mediaPlayer, responseXML, autoStart, playbackElement);
+            if (status === 200) {
+              subtitlesContainer = SubtitlesContainer(mediaPlayer, responseXML, autoStart, playbackElement);
+            }
+          },
+          onError: function (error) {
+            DebugTool.info('Error loading subtitles data: ' + error);
+            Plugins.interface.onSubtitlesLoadError();
           }
-        },
-        onError: function (error) {
-          DebugTool.info('Error loading subtitles data: ' + error);
-          Plugins.interface.onSubtitlesLoadError();
-        }
-      });
+        });
+      }
 
       function start () {
         subtitlesEnabled = true;
