@@ -914,7 +914,7 @@ require(
       });
 
       describe('setSubtitlesEnabled', function () {
-        it('should turn subtitles on/off when a value is passed', function () {
+        it('should turn subtitles on/off when a value is passed in', function () {
           initialiseBigscreenPlayer();
           bigscreenPlayer.setSubtitlesEnabled(true);
 
