@@ -28,8 +28,17 @@ define('bigscreenplayer/subtitles/subtitles',
 
       function setEnabled (enabled) {
         subtitlesEnabled = enabled || false;
+      }
+
+      function show () {
+        if (areAvailable() && areEnabled() && captions) {
+          captions.start();
+        }
+      }
+
+      function hide () {
         if (areAvailable() && captions) {
-          subtitlesEnabled ? captions.start() : captions.stop();
+          captions.stop();
         }
       }
 
@@ -55,6 +64,8 @@ define('bigscreenplayer/subtitles/subtitles',
 
       return {
         setEnabled: setEnabled,
+        show: show,
+        hide: hide,
         areEnabled: areEnabled,
         areAvailable: areAvailable,
         setPosition: setPosition,

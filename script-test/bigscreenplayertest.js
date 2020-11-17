@@ -112,9 +112,9 @@ require(
         var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'keyValue', 'tearDown', 'setRootElement']);
         mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-          'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
+          'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'showSubtitles', 'hideSubtitles', 'tearDown',
           'getWindowStartTime', 'getWindowEndTime']);
-        mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear']);
+        mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
         errorCallback = jasmine.createSpy('errorCallback');
         setupManifestData();
@@ -914,9 +914,8 @@ require(
       });
 
       describe('setSubtitlesEnabled', function () {
-        it('should turn subtitles on/off when a value is passed in and they are available', function () {
-          initialiseBigscreenPlayer({ subtitlesAvailable: true });
-
+        it('should turn subtitles on/off when a value is passed', function () {
+          initialiseBigscreenPlayer();
           bigscreenPlayer.setSubtitlesEnabled(true);
 
           expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(true);
@@ -924,6 +923,38 @@ require(
           bigscreenPlayer.setSubtitlesEnabled(false);
 
           expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(false);
+        });
+
+        it('should call through to playerComponent showSubtitles when called with true', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.setSubtitlesEnabled(true);
+
+          expect(mockPlayerComponentInstance.showSubtitles).toHaveBeenCalledTimes(1);
+        });
+
+        it('should call through to playerComponent hideSubtitles when called with false', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.setSubtitlesEnabled(false);
+
+          expect(mockPlayerComponentInstance.hideSubtitles).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not show subtitles when resized', function () {
+          initialiseBigscreenPlayer();
+          mockResizer.isResized.and.returnValue(true);
+
+          bigscreenPlayer.setSubtitlesEnabled(true);
+
+          expect(mockPlayerComponentInstance.showSubtitles).not.toHaveBeenCalled();
+        });
+
+        it('should not hide subtitles when resized', function () {
+          initialiseBigscreenPlayer();
+          mockResizer.isResized.and.returnValue(true);
+
+          bigscreenPlayer.setSubtitlesEnabled(true);
+
+          expect(mockPlayerComponentInstance.hideSubtitles).not.toHaveBeenCalled();
         });
       });
 
@@ -955,11 +986,11 @@ require(
           expect(mockResizer.resize).toHaveBeenCalledWith(playbackElement, 10, 10, 160, 90, 100);
         });
 
-        it('disables subtitles whilst resized', function () {
+        it('hides subtitles when resized', function () {
           initialiseBigscreenPlayer();
           bigscreenPlayer.resize(10, 10, 160, 90, 100);
 
-          expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(false);
+          expect(mockPlayerComponentInstance.hideSubtitles).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -971,23 +1002,22 @@ require(
           expect(mockResizer.clear).toHaveBeenCalledWith(playbackElement);
         });
 
-        it('enables subtitles when cleared if they were previously shown', function () {
-          initialiseBigscreenPlayer();
+        it('shows subtitles if subtitles are enabled', function () {
           mockPlayerComponentInstance.isSubtitlesEnabled.and.returnValue(true);
-          bigscreenPlayer.resize(10, 10, 160, 90, 100);
+
+          initialiseBigscreenPlayer();
           bigscreenPlayer.clearResize();
 
-          expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(true);
+          expect(mockPlayerComponentInstance.showSubtitles).toHaveBeenCalledTimes(1);
         });
 
-        it('does not enable subtitles when cleared if they were previously not shown', function () {
-          initialiseBigscreenPlayer();
+        it('hides subtitles if subtitles are disabled', function () {
           mockPlayerComponentInstance.isSubtitlesEnabled.and.returnValue(false);
-          bigscreenPlayer.resize(10, 10, 160, 90, 100);
-          mockPlayerComponentInstance.setSubtitlesEnabled.calls.reset();
+
+          initialiseBigscreenPlayer();
           bigscreenPlayer.clearResize();
 
-          expect(mockPlayerComponentInstance.setSubtitlesEnabled).not.toHaveBeenCalled();
+          expect(mockPlayerComponentInstance.hideSubtitles).toHaveBeenCalledTimes(1);
         });
       });
 
