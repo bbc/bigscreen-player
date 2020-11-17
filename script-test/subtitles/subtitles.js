@@ -47,7 +47,7 @@ require(
 
         describe('construction', function () {
           it('initialises with the legacy subtitles module', function () {
-            Subtitles();
+            Subtitles(null, 'http://some-url', null, null);
 
             expect(subtitlesContainer).toHaveBeenCalledTimes(1);
           });
@@ -56,7 +56,7 @@ require(
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
-            Subtitles();
+            Subtitles(null, 'http://some-url', null, null);
 
             expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
           });
@@ -68,6 +68,12 @@ require(
             Subtitles(null, 'http://some-url', null, null);
 
             expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
+          });
+
+          it('does not attempt to load subtitles if there is no captions url', function () {
+            Subtitles(null, undefined, null, null);
+
+            expect(loadUrlMock).not.toHaveBeenCalled();
           });
         });
 
