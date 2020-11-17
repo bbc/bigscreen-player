@@ -160,9 +160,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         if (event.data) {
           var manifest = event.data;
           var representationOptions = window.bigscreenPlayer.representationOptions || {};
-          var oldDashCodecRequired = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.oldDashCodecRequired;
 
-          ManifestModifier.filter(manifest, representationOptions, oldDashCodecRequired);
+          ManifestModifier.filter(manifest, representationOptions);
           ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources());
         }
       }

@@ -45,7 +45,11 @@ require(
           });
 
           it('implementation is available when legacy subtitles override is true', function () {
-            Subtitles();
+            var mockMediaPlayer = {};
+            var url = 'http://captions.example.test';
+            var autoStart = true;
+            var mockPlaybackElement = document.createElement('div');
+            Subtitles(mockMediaPlayer, url, autoStart, mockPlaybackElement);
 
             expect(subtitlesMock).toHaveBeenCalledTimes(1);
           });
@@ -67,7 +71,12 @@ require(
           });
 
           it('implementation is available when legacy subtitles override is false', function () {
-            Subtitles();
+            var mockMediaPlayer = {};
+            var url = 'http://captions.example.test';
+            var autoStart = true;
+            var mockPlaybackElement = document.createElement('div');
+
+            Subtitles(mockMediaPlayer, url, autoStart, mockPlaybackElement);
 
             expect(subtitlesMock).toHaveBeenCalledTimes(1);
           });
@@ -123,9 +132,9 @@ require(
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
-            Subtitles();
+            Subtitles(null, 'http://some-url', null, null);
 
-            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
+            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalled();
           });
 
           it('fires subtitleTransformError if responseXML from the loader is invalid', function () {
@@ -134,7 +143,13 @@ require(
             });
             Subtitles(null, 'http://some-url', null, null);
 
-            expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
+            expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalled();
+          });
+
+          it('does not attempt to load subtitles if there is no captions url', function () {
+            Subtitles(null, undefined, null, null);
+
+            expect(loadUrlMock).not.toHaveBeenCalled();
           });
         });
 

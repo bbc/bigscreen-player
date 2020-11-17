@@ -5,6 +5,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   function (IMSC, DOMHelpers) {
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement) {
+      var noOpErrorFunc = function () {};
       var xml = parseXMl(response.text);
       var times = xml.getMediaTimeEvents();
       var currentSubtitlesElement;
@@ -18,7 +19,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       // TODO: general pattern for lib access
       function parseXMl (xmlString) {
         try {
-          return IMSC.fromXML(xmlString);
+          return IMSC.fromXML(xmlString, noOpErrorFunc);
         } catch (e) {
           // DebugTool
           // Plugin
@@ -58,12 +59,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           currentSubtitlesElement = document.createElement('div');
           currentSubtitlesElement.id = 'bsp_subtitles';
 
-          try {
-            var isd = IMSC.generateISD(xml, currentTime);
-            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false);
-          } catch (e) {
-            DebugTool.info('IMSC Error: ' + e);
-          }
+          var isd = IMSC.generateISD(xml, currentTime, noOpErrorFunc);
+          IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, noOpErrorFunc, null, false);
 
           parentElement.appendChild(currentSubtitlesElement);
           previousSubtitlesIndex = subtitlesIndex;
