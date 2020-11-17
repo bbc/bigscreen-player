@@ -6,27 +6,23 @@ require(
     describe('Renderer', function () {
       var Renderer;
       var squire;
-      var loadURLError = false;
-      var pluginInterfaceMock;
-      var pluginsMock;
+      var transformerMock;
 
-      var loadUrlMock = function (url, callbackObject) {
-        if (loadURLError) {
-          callbackObject.onError();
-        } else {
-          callbackObject.onLoad('', 200);
-        }
-      };
       beforeEach(function (done) {
-        loadURLError = false;
-
-        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesLoadError']);
-        pluginsMock = {interface: pluginInterfaceMock};
+        transformerMock = function () {
+          return {
+            transformXML: function () {
+              return {
+                baseStyle: '',
+                subtitlesForTime: function () {}
+              };
+            }
+          };
+        };
 
         squire = new Squire();
         squire.mock({
-          'bigscreenplayer/utils/loadurl': loadUrlMock,
-          'bigscreenplayer/plugins': pluginsMock
+          'bigscreenplayer/subtitles/transformer': transformerMock
         });
         squire.require(['bigscreenplayer/subtitles/renderer'], function (RendererWithMocks) {
           Renderer = RendererWithMocks;
@@ -34,21 +30,27 @@ require(
         });
       });
 
-      it('should initialise with a url, id and media player', function () {
-        // Checking construction, not calling a real url...
-        loadURLError = true;
+      it('should initialise with a id, xml object, media player and autoStart value', function () {
         var mockMediaPlayer = jasmine.createSpy();
-        var renderer = Renderer('http://some-url', 'subtitlesOutputId', mockMediaPlayer);
+        var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer, true);
 
         expect(renderer).toEqual(jasmine.objectContaining({render: jasmine.any(Function), start: jasmine.any(Function), stop: jasmine.any(Function)}));
       });
 
-      it('should report onSubtitlesLoadError when a captions url fails to load', function () {
-        loadURLError = true;
+      it('should set the output elements display style if autoStart is true', function () {
         var mockMediaPlayer = jasmine.createSpy();
-        Renderer('http://some-url', 'subtitlesOutputId', mockMediaPlayer);
+        var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer, true);
+        var outputElement = renderer.render();
 
-        expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalled();
+        expect(outputElement.style.display).toBe('block');
+      });
+
+      it('should not set the output elements display style if autoStart is false', function () {
+        var mockMediaPlayer = jasmine.createSpy();
+        var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer, false);
+        var outputElement = renderer.render();
+
+        expect(outputElement.style.display).toBe('');
       });
     });
   }

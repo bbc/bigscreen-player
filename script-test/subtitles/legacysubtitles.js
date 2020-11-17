@@ -8,64 +8,64 @@ require(
 
     var injector = new Squire();
     var mockRendererSpy;
-    var captionsContainer;
-    var CaptionsContainerWithMocks;
+    var legacySubtitles;
+    var LegacySubtitlesWithMocks;
     var parentElement = document.createElement('div');
 
-    describe('Captions Container', function () {
+    describe('Legacy Subtitles', function () {
       beforeEach(function (done) {
-        mockRendererSpy = jasmine.createSpyObj('mockCaptions', ['start', 'stop', 'render']);
-        var mockCaptionsConstructor = function () {
+        mockRendererSpy = jasmine.createSpyObj('mockRenderer', ['start', 'stop', 'render']);
+        var mockRendererConstructor = function () {
           return mockRendererSpy;
         };
         mockRendererSpy.render.and.returnValue(document.createElement('div'));
 
         injector.mock({
-          'bigscreenplayer/subtitles/renderer': mockCaptionsConstructor
+          'bigscreenplayer/subtitles/renderer': mockRendererConstructor
         });
-        injector.require(['bigscreenplayer/subtitles/captionscontainer'], function (CaptionsContainer) {
-          CaptionsContainerWithMocks = CaptionsContainer;
+        injector.require(['bigscreenplayer/subtitles/legacysubtitles'], function (LegacySubtitles) {
+          LegacySubtitlesWithMocks = LegacySubtitles;
           done();
         });
       });
 
       afterEach(function () {
-        captionsContainer.tearDown();
+        legacySubtitles.tearDown();
       });
 
-      it('Has a player captions class', function () {
-        captionsContainer = new CaptionsContainerWithMocks(null, '', false, parentElement);
+      it('Has a player subtitles class', function () {
+        legacySubtitles = new LegacySubtitlesWithMocks(null, '', false, parentElement);
 
         expect(parentElement.firstChild.className).toContain('playerCaptions');
       });
 
       describe('Start', function () {
-        it('Starts captions if there is a caption URL', function () {
-          captionsContainer = new CaptionsContainerWithMocks(null, 'potatoUrl', false, parentElement);
-          captionsContainer.start();
+        it('Starts if there is a truthy value in the xml argument field', function () {
+          legacySubtitles = new LegacySubtitlesWithMocks(null, 'This once would have been xml', false, parentElement);
+          legacySubtitles.start();
 
           expect(mockRendererSpy.start).toHaveBeenCalledWith();
         });
 
-        it('Does not start captions if there is not a caption URL', function () {
-          captionsContainer = new CaptionsContainerWithMocks(null, null, false, parentElement);
-          captionsContainer.start();
+        it('Does not start subtitles if there is a falsey value in the xml argument field', function () {
+          legacySubtitles = new LegacySubtitlesWithMocks(null, null, false, parentElement);
+          legacySubtitles.start();
 
           expect(mockRendererSpy.start).not.toHaveBeenCalledWith();
         });
       });
 
       describe('Stop', function () {
-        it('Stops the captions if there is a URL', function () {
-          captionsContainer = new CaptionsContainerWithMocks(null, 'http://', false, parentElement);
-          captionsContainer.stop();
+        it('Stops the subtitles if there is a truthy value in the xml argument field', function () {
+          legacySubtitles = new LegacySubtitlesWithMocks(null, 'This once would have been xml', false, parentElement);
+          legacySubtitles.stop();
 
           expect(mockRendererSpy.stop).toHaveBeenCalledWith();
         });
 
-        it('Does not stop the captions if there is not a URL', function () {
-          captionsContainer = new CaptionsContainerWithMocks(null, null, false, parentElement);
-          captionsContainer.stop();
+        it('Does not stop the subtitles if there is not a truthy value in the xml argument field', function () {
+          legacySubtitles = new LegacySubtitlesWithMocks(null, null, false, parentElement);
+          legacySubtitles.stop();
 
           expect(mockRendererSpy.stop).not.toHaveBeenCalledWith();
         });
@@ -73,7 +73,7 @@ require(
 
       describe('Updating position', function () {
         beforeEach(function () {
-          captionsContainer = new CaptionsContainerWithMocks(null, 'http://', true, parentElement);
+          legacySubtitles = new LegacySubtitlesWithMocks(null, 'This once would have been xml', true, parentElement);
         });
 
         [
@@ -83,17 +83,17 @@ require(
           {className: 'bottomCarouselVisible', pos: TransportControlPosition.BOTTOM_CAROUSEL}
         ].forEach(function (position) {
           it('Has class ' + position.className + ' for position ' + position.pos, function () {
-            captionsContainer.updatePosition(position.pos);
+            legacySubtitles.updatePosition(position.pos);
 
             expect(parentElement.firstChild.className).toContain(position.className);
           });
         });
 
         it('Replaces classes when position changed', function () {
-          captionsContainer.updatePosition(TransportControlPosition.CONTROLS_ONLY);
+          legacySubtitles.updatePosition(TransportControlPosition.CONTROLS_ONLY);
 
           expect(parentElement.firstChild.className).toContain('controlsVisible');
-          captionsContainer.updatePosition(TransportControlPosition.CONTROLS_WITH_INFO);
+          legacySubtitles.updatePosition(TransportControlPosition.CONTROLS_WITH_INFO);
 
           expect(parentElement.firstChild.className).not.toContain('controlsVisible');
         });
