@@ -10,10 +10,11 @@
     "spec": "grunt --force spec-web",
     "lint": "npx eslint .",
     "lint:code:changed": "git diff-index --name-only HEAD | egrep '.js$' | xargs eslint",
-    "build:dist": "npm run build:dist:clean && npm run build:version && mkdir dist && npm run build:copy:script && npm run build:copy:files",
-    "build:dist:clean": "rm -fR ./dist",
+    "build": "npm run build:external",
     "build:external": "mkdir -p ./script/external && cp -R ./node_modules/smp-imsc/dist/imsc.all.min.js ./script/external/smp-imsc.js",
     "build:version": "node ./buildVersion.js",
+    "build:dist": "npm run build:dist:clean && npm run build:version && mkdir dist && npm run build:copy:script && npm run build:copy:files",
+    "build:dist:clean": "rm -fR ./dist",
     "build:copy:script": "cp -R ./script/ ./dist/script/",
     "build:copy:files": "cp package.json package-lock.json CONTRIBUTING.md README.md LICENSE ./dist/",
     "postinstall": "[[ -f ./buildVersion.js ]] && npm run build:version || echo 'Version already set.'"
