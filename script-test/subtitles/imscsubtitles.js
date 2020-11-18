@@ -28,7 +28,7 @@ require(
         imscMock.fromXML.and.returnValue(fromXmlReturn);
 
         injector.mock({
-          'smp-imsc': imscMock
+          'bigscreenplayer/external/smp-imsc': imscMock
         });
 
         injector.require(['bigscreenplayer/subtitles/imscsubtitles'], function (IMSCSubs) {

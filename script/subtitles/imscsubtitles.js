@@ -1,5 +1,6 @@
 define('bigscreenplayer/subtitles/imscsubtitles',
-  [ 'smp-imsc',
+  [
+    'bigscreenplayer/external/smp-imsc',
     'bigscreenplayer/domhelpers'
   ],
   function (IMSC, DOMHelpers) {
