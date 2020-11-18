@@ -1,5 +1,5 @@
 const fs = require('fs');
-const smpImscDistPath = require.resolve('smp-imsc/dist/imsc.min.js')
+const smpImscDistPath = require.resolve('smp-imsc/dist/imsc.all.min.js')
 const externalPath = process.cwd() + '/script/external/smp-imsc.js'
 
 console.log(process.cwd())
