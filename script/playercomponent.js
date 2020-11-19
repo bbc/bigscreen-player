@@ -91,6 +91,14 @@ define(
         enabled ? subtitles.enable() : subtitles.disable();
       }
 
+      function showSubtitles () {
+        subtitles.show();
+      }
+
+      function hideSubtitles () {
+        subtitles.hide();
+      }
+
       function isSubtitlesEnabled () {
         return subtitles.enabled();
       }
@@ -363,6 +371,8 @@ define(
         getSeekableRange: getSeekableRange,
         getPlayerElement: getPlayerElement,
         isSubtitlesAvailable: isSubtitlesAvailable,
+        showSubtitles: showSubtitles,
+        hideSubtitles: hideSubtitles,
         isSubtitlesEnabled: isSubtitlesEnabled,
         setSubtitlesEnabled: setSubtitlesEnabled,
         isPaused: isPaused,

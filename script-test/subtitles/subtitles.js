@@ -49,7 +49,7 @@ require(
           it('initialises with the legacy subtitles module', function () {
             Subtitles(null, 'http://some-url', null, null);
 
-            expect(subtitlesContainer).toHaveBeenCalled();
+            expect(subtitlesContainer).toHaveBeenCalledTimes(1);
           });
 
           it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
@@ -58,7 +58,7 @@ require(
             });
             Subtitles(null, 'http://some-url', null, null);
 
-            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalled();
+            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
           });
 
           it('fires subtitleTransformError if responseXML from the loader is invalid', function () {
@@ -67,7 +67,7 @@ require(
             });
             Subtitles(null, 'http://some-url', null, null);
 
-            expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalled();
+            expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
           });
 
           it('does not attempt to load subtitles if there is no captions url', function () {
@@ -77,35 +77,64 @@ require(
           });
         });
 
-        describe('enable', function () {
-          it('should start subtitles when available', function () {
+        describe('show', function () {
+          it('should start subtitles when enabled and available', function () {
             var subtitles = Subtitles(null, 'http://some-url', null, null);
             subtitles.enable();
+            subtitles.show();
 
             expect(subtitlesContainerSpies.start).toHaveBeenCalledWith();
           });
 
-          it('should not start subtitles when unavailable', function () {
+          it('should not start subtitles when disabled and available', function () {
+            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            subtitles.disable();
+            subtitles.show();
+
+            expect(subtitlesContainerSpies.start).not.toHaveBeenCalled();
+          });
+
+          it('should not start subtitles when enabled and unavailable', function () {
             var subtitles = Subtitles(null, undefined, null, null);
             subtitles.enable();
+            subtitles.show();
 
-            expect(subtitlesContainerSpies.start).not.toHaveBeenCalledWith();
+            expect(subtitlesContainerSpies.start).not.toHaveBeenCalled();
+          });
+
+          it('should not start subtitles when disabled and unavailable', function () {
+            var subtitles = Subtitles(null, undefined, null, null);
+            subtitles.disable();
+            subtitles.show();
+
+            expect(subtitlesContainerSpies.start).not.toHaveBeenCalled();
+          });
+        });
+
+        describe('hide', function () {
+          it('should stop subtitles when available', function () {
+            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            subtitles.hide();
+
+            expect(subtitlesContainerSpies.stop).toHaveBeenCalledWith();
+          });
+        });
+
+        describe('enable', function () {
+          it('should set enabled state to true', function () {
+            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            subtitles.enable();
+
+            expect(subtitles.enabled()).toEqual(true);
           });
         });
 
         describe('disable', function () {
-          it('should stop subtitles when available', function () {
+          it('should set enabled state to false', function () {
             var subtitles = Subtitles(null, 'http://some-url', null, null);
             subtitles.disable();
 
-            expect(subtitlesContainerSpies.stop).toHaveBeenCalledWith();
-          });
-
-          it('should not stop subtitles when unavailable', function () {
-            var subtitles = Subtitles(null, undefined, null, null);
-            subtitles.disable();
-
-            expect(subtitlesContainerSpies.stop).not.toHaveBeenCalledWith();
+            expect(subtitles.enabled()).toEqual(false);
           });
         });
 

@@ -34,15 +34,21 @@ define('bigscreenplayer/subtitles/subtitles',
         });
       }
 
-      function start () {
+      function enable () {
         subtitlesEnabled = true;
-        if (available() && subtitlesContainer) {
+      }
+
+      function disable () {
+        subtitlesEnabled = false;
+      }
+
+      function show () {
+        if (available() && enabled() && subtitlesContainer) {
           subtitlesContainer.start();
         }
       }
 
-      function stop () {
-        subtitlesEnabled = false;
+      function hide () {
         if (available() && subtitlesContainer) {
           subtitlesContainer.stop();
         }
@@ -69,8 +75,10 @@ define('bigscreenplayer/subtitles/subtitles',
       }
 
       return {
-        enable: start,
-        disable: stop,
+        enable: enable,
+        disable: disable,
+        show: show,
+        hide: hide,
         enabled: enabled,
         available: available,
         setPosition: setPosition,

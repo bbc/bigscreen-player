@@ -3,6 +3,8 @@ define(
   function () {
     'use strict';
     return function () {
+      var resized;
+
       function resize (element, top, left, width, height, zIndex) {
         element.style.top = top + 'px';
         element.style.left = left + 'px';
@@ -10,6 +12,7 @@ define(
         element.style.height = height + 'px';
         element.style.zIndex = zIndex + '';
         element.style.position = 'absolute';
+        resized = true;
       }
 
       function clear (element) {
@@ -19,11 +22,17 @@ define(
         element.style.height = null;
         element.style.zIndex = null;
         element.style.position = null;
+        resized = false;
+      }
+
+      function isResized () {
+        return resized || false;
       }
 
       return {
         resize: resize,
-        clear: clear
+        clear: clear,
+        isResized: isResized
       };
     };
   }
