@@ -59,11 +59,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
           currentSubtitlesElement = document.createElement('div');
           currentSubtitlesElement.id = 'bsp_subtitles';
+          parentElement.appendChild(currentSubtitlesElement);
 
           var isd = IMSC.generateISD(xml, currentTime, noOpErrorFunc);
           IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, noOpErrorFunc, null, false);
 
-          parentElement.appendChild(currentSubtitlesElement);
           previousSubtitlesIndex = subtitlesIndex;
         }
       }
