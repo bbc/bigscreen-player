@@ -7,6 +7,8 @@ require(
       var injector;
       var ImscSubtitles;
       var imscMock;
+      var pluginInterfaceMock;
+      var pluginsMock;
       var mockParentElement = document.createElement('div');
       var stubResponse = 'test';
       var fromXmlReturn;
@@ -27,8 +29,12 @@ require(
         imscMock = jasmine.createSpyObj('imscjs-lib', ['fromXML', 'generateISD', 'renderHTML']);
         imscMock.fromXML.and.returnValue(fromXmlReturn);
 
+        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError']);
+        pluginsMock = { interface: pluginInterfaceMock };
+
         injector.mock({
-          'bigscreenplayer/external/smp-imsc': imscMock
+          'bigscreenplayer/external/smp-imsc': imscMock,
+          'bigscreenplayer/plugins': pluginsMock
         });
 
         injector.require(['bigscreenplayer/subtitles/imscsubtitles'], function (IMSCSubs) {
@@ -73,6 +79,23 @@ require(
           expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5, jasmine.any(Function));
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
+
+        it('fires tranformError plugin if IMSC throws an exception when parsing', function () {
+          imscMock.fromXML.and.throwError();
+          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, true, mockParentElement);
+
+          expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not try to generate and render when xml transforming has failed', function () {
+          imscMock.fromXML.and.throwError();
+          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, true, mockParentElement);
+
+          progressTime(1.5);
+
+          expect(imscMock.generateISD).not.toHaveBeenCalled();
+          expect(imscMock.renderHTML).not.toHaveBeenCalled();
+        });
       });
 
       describe('update interval', function () {
@@ -82,6 +105,17 @@ require(
 
         afterEach(function () {
           subtitles.stop();
+        });
+
+        it('cannot start when xml transforming has failed', function () {
+          imscMock.fromXML.and.throwError();
+          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, false, mockParentElement);
+
+          subtitles.start();
+          progressTime(1.5);
+
+          expect(imscMock.generateISD).not.toHaveBeenCalled();
+          expect(imscMock.renderHTML).not.toHaveBeenCalled();
         });
 
         it('does not try to generate and render when current time is undefined', function () {
@@ -178,6 +212,24 @@ require(
 
           expect(imscMock.generateISD).not.toHaveBeenCalled();
           expect(imscMock.renderHTML).not.toHaveBeenCalled();
+        });
+
+        it('fires onSubtitlesRenderError plugin if IMSC throws an exception when rendering', function () {
+          imscMock.renderHTML.and.throwError();
+
+          subtitles.start();
+          progressTime(1.5);
+
+          expect(pluginsMock.interface.onSubtitlesRenderError).toHaveBeenCalledTimes(1);
+        });
+
+        it('fires onSubtitlesRenderError plugin if IMSC throws an exception when generating ISD', function () {
+          imscMock.generateISD.and.throwError();
+
+          subtitles.start();
+          progressTime(1.5);
+
+          expect(pluginsMock.interface.onSubtitlesRenderError).toHaveBeenCalledTimes(1);
         });
       });
     });

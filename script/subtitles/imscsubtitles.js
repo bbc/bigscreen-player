@@ -1,30 +1,29 @@
 define('bigscreenplayer/subtitles/imscsubtitles',
   [
     'bigscreenplayer/external/smp-imsc',
-    'bigscreenplayer/domhelpers'
+    'bigscreenplayer/domhelpers',
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/plugins'
   ],
-  function (IMSC, DOMHelpers) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins) {
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement) {
       var noOpErrorFunc = function () {};
-      var xml = parseXMl(response.text);
-      var times = xml.getMediaTimeEvents();
       var currentSubtitlesElement;
       var previousSubtitlesIndex = null;
       var updateInterval;
+      var xml;
+      var times = [];
 
-      if (autoStart) {
-        start();
-      }
-
-      // TODO: general pattern for lib access
-      function parseXMl (xmlString) {
-        try {
-          return IMSC.fromXML(xmlString, noOpErrorFunc);
-        } catch (e) {
-          // DebugTool
-          // Plugin
+      try {
+        xml = IMSC.fromXML(response.text, noOpErrorFunc);
+        times = xml.getMediaTimeEvents();
+        if (autoStart) {
+          start();
         }
+      } catch (e) {
+        DebugTool.info('Error transforming captions : ' + e);
+        Plugins.interface.onSubtitlesTransformError();
       }
 
       function nextSubtitleIndex (currentTime) {
@@ -61,17 +60,24 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           currentSubtitlesElement.id = 'bsp_subtitles';
           parentElement.appendChild(currentSubtitlesElement);
 
-          var isd = IMSC.generateISD(xml, currentTime, noOpErrorFunc);
-          IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, noOpErrorFunc, null, false);
+          try {
+            var isd = IMSC.generateISD(xml, currentTime, noOpErrorFunc);
+            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, noOpErrorFunc, null, false);
+          } catch (e) {
+            DebugTool.info('Exception while rendering subtitles: ' + e);
+            Plugins.interface.onSubtitlesRenderError();
+          }
 
           previousSubtitlesIndex = subtitlesIndex;
         }
       }
 
       function start () {
-        updateInterval = setInterval(function () {
-          update(mediaPlayer.getCurrentTime());
-        }, 750);
+        if (xml && times.length > 0) {
+          updateInterval = setInterval(function () {
+            update(mediaPlayer.getCurrentTime());
+          }, 750);
+        }
       }
 
       function stop () {
