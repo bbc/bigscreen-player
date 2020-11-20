@@ -68,7 +68,7 @@ require(
         it('Calls fromXML on creation with the text property of the response argument', function () {
           subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, false, mockParentElement);
 
-          expect(imscMock.fromXML).toHaveBeenCalledWith(stubResponse, jasmine.any(Function));
+          expect(imscMock.fromXML).toHaveBeenCalledWith(stubResponse);
         });
 
         it('autoplay argument starts the update loop', function () {
@@ -76,7 +76,7 @@ require(
           progressTime(1.5);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5);
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
 
@@ -140,7 +140,7 @@ require(
           progressTime(9);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 9, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 9);
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
 
           progressTime(9.25);
@@ -155,7 +155,7 @@ require(
           progressTime(4);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 4, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 4);
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
 
@@ -165,7 +165,7 @@ require(
           progressTime(1.5);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5);
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
 
           progressTime(2.25);
@@ -176,13 +176,13 @@ require(
           progressTime(3);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(2);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 3, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 3);
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(2);
 
           progressTime(9);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(3);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 9, jasmine.any(Function));
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 9);
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(3);
         });
 

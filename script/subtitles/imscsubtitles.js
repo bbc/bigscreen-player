@@ -8,7 +8,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   function (IMSC, DOMHelpers, DebugTool, Plugins) {
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement) {
-      var noOpErrorFunc = function () {};
       var currentSubtitlesElement;
       var previousSubtitlesIndex = null;
       var updateInterval;
@@ -16,7 +15,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var times = [];
 
       try {
-        xml = IMSC.fromXML(response.text, noOpErrorFunc);
+        xml = IMSC.fromXML(response.text);
         times = xml.getMediaTimeEvents();
         if (autoStart) {
           start();
@@ -61,8 +60,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           parentElement.appendChild(currentSubtitlesElement);
 
           try {
-            var isd = IMSC.generateISD(xml, currentTime, noOpErrorFunc);
-            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, noOpErrorFunc, null, false);
+            var isd = IMSC.generateISD(xml, currentTime);
+            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false);
           } catch (e) {
             DebugTool.info('Exception while rendering subtitles: ' + e);
             Plugins.interface.onSubtitlesRenderError();
