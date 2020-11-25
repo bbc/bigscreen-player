@@ -22,8 +22,9 @@ require(
 
     var mockEventHook;
     var mockPlayerComponentInstance;
+    var mockResizer;
 
-    var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback, device) {
+    var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback) {
       mockEventHook = callback;
       return mockPlayerComponentInstance;
     };
@@ -52,7 +53,6 @@ require(
       options = options || {};
 
       var windowType = options.windowType || WindowTypes.STATIC;
-      var device = options.device;
       var subtitlesEnabled = options.subtitlesEnabled || false;
 
       playbackElement = document.createElement('div');
@@ -86,7 +86,7 @@ require(
       if (!noCallbacks) {
         callbacks = {onSuccess: successCallback, onError: errorCallback};
       }
-      bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, device, callbacks);
+      bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, callbacks);
     }
 
     describe('Bigscreen Player', function () {
@@ -112,19 +112,25 @@ require(
         var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'keyValue', 'tearDown', 'setRootElement']);
         mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-          'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'tearDown',
+          'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'showSubtitles', 'hideSubtitles', 'tearDown',
           'getWindowStartTime', 'getWindowEndTime']);
+        mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
         errorCallback = jasmine.createSpy('errorCallback');
         setupManifestData();
         liveSupport = LiveSupport.SEEKABLE;
         noCallbacks = false;
 
+        var mockResizerConstructor = function () {
+          return mockResizer;
+        };
+
         injector.mock({
           'bigscreenplayer/mediasources': mediaSourcesMock,
           'bigscreenplayer/playercomponent': mockPlayerComponent,
           'bigscreenplayer/plugins': Plugins,
-          'bigscreenplayer/debugger/debugtool': mockDebugTool
+          'bigscreenplayer/debugger/debugtool': mockDebugTool,
+          'bigscreenplayer/resizer': mockResizerConstructor
         });
 
         injector.require(['bigscreenplayer/bigscreenplayer'], function (bigscreenPlayerReference) {
@@ -140,6 +146,8 @@ require(
         successCallback.calls.reset();
         errorCallback.calls.reset();
         forceMediaSourcesConstructionFailure = false;
+        mockResizer.resize.calls.reset();
+        mockResizer.clear.calls.reset();
 
         mediaSourcesCallbackSuccessSpy && mediaSourcesCallbackSuccessSpy.calls && mediaSourcesCallbackSuccessSpy.calls.reset();
         mediaSourcesCallbackErrorSpy && mediaSourcesCallbackErrorSpy.calls && mediaSourcesCallbackErrorSpy.calls.reset();
@@ -176,21 +184,6 @@ require(
           mockEventHook({data: {currentTime: 0}, timeUpdate: true, isBufferingTimeoutError: false});
 
           expect(callback).toHaveBeenCalledWith({currentTime: 0, endOfStream: false});
-        });
-
-        it('should call the suppiled success callback if playing VOD', function () {
-          initialiseBigscreenPlayer();
-
-          expect(successCallback).toHaveBeenCalledWith();
-          expect(errorCallback).not.toHaveBeenCalled();
-        });
-
-        it('should call the suppiled success callback if playing LIVE and the manifest loads', function () {
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-
-          expect(mediaSourcesCallbackSuccessSpy).toHaveBeenCalledTimes(1);
-          expect(successCallback).toHaveBeenCalledWith();
-          expect(errorCallback).not.toHaveBeenCalled();
         });
 
         it('should call the supplied error callback if manifest fails to load', function () {
@@ -342,6 +335,172 @@ require(
           mockEventHook({data: {state: MediaState.PLAYING}});
 
           expect(listener1).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
+        });
+      });
+
+      describe('player ready callback', function () {
+        describe('on state change event', function () {
+          it('should not be called when it is a fatal error', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {state: MediaState.FATAL_ERROR}});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('should be called if playing VOD and event time is valid', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('should be called if playing VOD with an initial start time and event time is valid', function () {
+            initialiseBigscreenPlayer({initialPlaybackTime: 20});
+            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
+
+            expect(successCallback).not.toHaveBeenCalled();
+            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 20}});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('should be called if playing Live and event time is valid', function () {
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 10,
+                windowEndTime: 100
+              }
+            });
+
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+            mockEventHook({
+              data:
+              {
+                state: MediaState.WAITING,
+                currentTime: 0,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              }
+            });
+
+            expect(successCallback).not.toHaveBeenCalled();
+            mockEventHook({
+              data:
+              {
+                state: MediaState.PLAYING,
+                currentTime: 10,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              }
+            });
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('after a valid state change should not be called on succesive valid state changes', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+            successCallback.calls.reset();
+            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 0}});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('after a valid state change should not be called on succesive valid time updates', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+            successCallback.calls.reset();
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+        });
+
+        describe('on time update', function () {
+          it('should be called if playing VOD and current time is valid', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('should be called if playing VOD with an initial start time and current time is valid', function () {
+            initialiseBigscreenPlayer({initialPlaybackTime: 20});
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).not.toHaveBeenCalled();
+            mockEventHook({data: {currentTime: 20}, timeUpdate: true});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('should be called if playing Live and current time is valid', function () {
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 10,
+                windowEndTime: 100
+              }
+            });
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+            mockEventHook({
+              data:
+              {
+                currentTime: 0,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              },
+              timeUpdate: true
+            });
+
+            expect(successCallback).not.toHaveBeenCalled();
+            mockEventHook({
+              data:
+              {
+                currentTime: 10,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              },
+              timeUpdate: true
+            });
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
+
+          it('after a valid time update should not be called on succesive valid time updates', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+            successCallback.calls.reset();
+            mockEventHook({data: {currentTime: 2}, timeUpdate: true});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
+
+          it('after a valid time update should not be called on succesive valid state changes', function () {
+            initialiseBigscreenPlayer();
+            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+
+            expect(successCallback).toHaveBeenCalledTimes(1);
+            successCallback.calls.reset();
+            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 2}});
+
+            expect(successCallback).not.toHaveBeenCalled();
+          });
         });
       });
 
@@ -755,9 +914,8 @@ require(
       });
 
       describe('setSubtitlesEnabled', function () {
-        it('should turn subtitles on/off when a value is passed in and they are available', function () {
-          initialiseBigscreenPlayer({ subtitlesAvailable: true });
-
+        it('should turn subtitles on/off when a value is passed in', function () {
+          initialiseBigscreenPlayer();
           bigscreenPlayer.setSubtitlesEnabled(true);
 
           expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(true);
@@ -765,6 +923,38 @@ require(
           bigscreenPlayer.setSubtitlesEnabled(false);
 
           expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(false);
+        });
+
+        it('should call through to playerComponent showSubtitles when called with true', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.setSubtitlesEnabled(true);
+
+          expect(mockPlayerComponentInstance.showSubtitles).toHaveBeenCalledTimes(1);
+        });
+
+        it('should call through to playerComponent hideSubtitles when called with false', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.setSubtitlesEnabled(false);
+
+          expect(mockPlayerComponentInstance.hideSubtitles).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not show subtitles when resized', function () {
+          initialiseBigscreenPlayer();
+          mockResizer.isResized.and.returnValue(true);
+
+          bigscreenPlayer.setSubtitlesEnabled(true);
+
+          expect(mockPlayerComponentInstance.showSubtitles).not.toHaveBeenCalled();
+        });
+
+        it('should not hide subtitles when resized', function () {
+          initialiseBigscreenPlayer();
+          mockResizer.isResized.and.returnValue(true);
+
+          bigscreenPlayer.setSubtitlesEnabled(true);
+
+          expect(mockPlayerComponentInstance.hideSubtitles).not.toHaveBeenCalled();
         });
       });
 
@@ -785,6 +975,49 @@ require(
           bigscreenPlayer.isSubtitlesAvailable();
 
           expect(mockPlayerComponentInstance.isSubtitlesAvailable).toHaveBeenCalledWith();
+        });
+      });
+
+      describe('resize', function () {
+        it('calls resizer with correct values', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.resize(10, 10, 160, 90, 100);
+
+          expect(mockResizer.resize).toHaveBeenCalledWith(playbackElement, 10, 10, 160, 90, 100);
+        });
+
+        it('hides subtitles when resized', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.resize(10, 10, 160, 90, 100);
+
+          expect(mockPlayerComponentInstance.hideSubtitles).toHaveBeenCalledTimes(1);
+        });
+      });
+
+      describe('clearResize', function () {
+        it('calls resizers clear function', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.clearResize();
+
+          expect(mockResizer.clear).toHaveBeenCalledWith(playbackElement);
+        });
+
+        it('shows subtitles if subtitles are enabled', function () {
+          mockPlayerComponentInstance.isSubtitlesEnabled.and.returnValue(true);
+
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.clearResize();
+
+          expect(mockPlayerComponentInstance.showSubtitles).toHaveBeenCalledTimes(1);
+        });
+
+        it('hides subtitles if subtitles are disabled', function () {
+          mockPlayerComponentInstance.isSubtitlesEnabled.and.returnValue(false);
+
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.clearResize();
+
+          expect(mockPlayerComponentInstance.hideSubtitles).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -1016,6 +1249,30 @@ require(
 
           expect(mockPlugin.onError).not.toHaveBeenCalled();
           expect(mockPluginTwo.onError).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('mock', function () {
+        afterEach(function () {
+          bigscreenPlayer.unmock();
+        });
+
+        it('should return a mock object with jasmine spies on the same interface as the main api', function () {
+          initialiseBigscreenPlayer();
+          var moduleKeys = Object.keys(bigscreenPlayer);
+          bigscreenPlayer.mockJasmine();
+          var mockKeys = Object.keys(bigscreenPlayer);
+
+          expect(mockKeys).toEqual(jasmine.objectContaining(moduleKeys));
+        });
+
+        it('should return a mock object on the same interface as the main api', function () {
+          initialiseBigscreenPlayer();
+          var moduleKeys = Object.keys(bigscreenPlayer);
+          bigscreenPlayer.mock();
+          var mockKeys = Object.keys(bigscreenPlayer);
+
+          expect(mockKeys).toEqual(jasmine.objectContaining(moduleKeys));
         });
       });
     });

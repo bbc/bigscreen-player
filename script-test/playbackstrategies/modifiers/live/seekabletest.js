@@ -21,8 +21,8 @@ require(
       }
     }
 
-    function initialiseSeekableMediaPlayer (config, windowType) {
-      seekableMediaPlayer = SeekableMediaPlayer(player, config, windowType);
+    function initialiseSeekableMediaPlayer (windowType) {
+      seekableMediaPlayer = SeekableMediaPlayer(player, windowType);
     }
 
     describe('Seekable HMTL5 Live Player', function () {
@@ -121,15 +121,16 @@ require(
       });
 
       describe('Seekable features', function () {
+        afterEach(function () {
+          delete window.bigscreenPlayer.overrides;
+        });
+
         it('should respect config forcing playback from the end of the window', function () {
-          var config = {
-            streaming: {
-              overrides: {
-                forceBeginPlaybackToEndOfWindow: true
-              }
-            }
+          window.bigscreenPlayer.overrides = {
+            forceBeginPlaybackToEndOfWindow: true
           };
-          initialiseSeekableMediaPlayer(config);
+
+          initialiseSeekableMediaPlayer();
 
           seekableMediaPlayer.beginPlayback();
 
@@ -173,7 +174,7 @@ require(
           jasmine.clock().install();
           jasmine.clock().mockDate();
 
-          initialiseSeekableMediaPlayer(undefined, WindowTypes.SLIDING);
+          initialiseSeekableMediaPlayer(WindowTypes.SLIDING);
 
           player.getSeekableRange.and.returnValue({start: 0});
           player.getCurrentTime.and.returnValue(20);

@@ -19,7 +19,7 @@ define(
       ERROR: 6
     };
 
-    return function (deviceConfig) {
+    return function () {
       var eventCallbacks = [];
       var state = MediaPlayerBase.STATE.EMPTY;
 
@@ -108,29 +108,13 @@ define(
 
       function getClampedTime (seconds) {
         var range = getSeekableRange();
-        var offsetFromEnd = getClampOffsetFromConfig();
-        var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
+        var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start);
         if (seconds < range.start) {
           return range.start;
         } else if (seconds > nearToEnd) {
           return nearToEnd;
         } else {
           return seconds;
-        }
-      }
-
-      function getClampOffsetFromConfig () {
-        var clampOffsetFromEndOfRange;
-
-        // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
-        // if (config && config.streaming && config.streaming.overrides) {
-        //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
-        // }
-
-        if (clampOffsetFromEndOfRange !== undefined) {
-          return clampOffsetFromEndOfRange;
-        } else {
-          return CLAMP_OFFSET_FROM_END_OF_RANGE;
         }
       }
 
@@ -422,10 +406,10 @@ define(
 
         count = 0;
         timeoutHappened = false;
-        if (deviceConfig.restartTimeout) {
+        if (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.restartTimeout) {
           setTimeout(function () {
             timeoutHappened = true;
-          }, deviceConfig.restartTimeout);
+          }, window.bigscreenPlayer.overrides.restartTimeout);
         } else {
           timeoutHappened = true;
         }

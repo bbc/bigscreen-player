@@ -15,7 +15,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'dashjs'
   ],
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
-    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
+    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD) {
       var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
       var mediaElement;
@@ -159,7 +159,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         if (event.data) {
           var manifest = event.data;
-          ManifestModifier.filter(manifest, window.bigscreenPlayer.representationOptions || {}, window.bigscreenPlayer.oldDashCodecRequired);
+          var representationOptions = window.bigscreenPlayer.representationOptions || {};
+
+          ManifestModifier.filter(manifest, representationOptions);
           ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources());
         }
       }
@@ -169,7 +171,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onStreamInitialised () {
-        if (window.bigscreenPlayer.mseDurationOverride && (windowType === WindowTypes.SLIDING || windowType === WindowTypes.GROWING)) {
+        var setMseDuration = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.mseDurationOverride;
+        if (setMseDuration && (windowType === WindowTypes.SLIDING || windowType === WindowTypes.GROWING)) {
           // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
           mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
         }

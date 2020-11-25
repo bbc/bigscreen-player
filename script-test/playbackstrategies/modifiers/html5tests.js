@@ -49,21 +49,14 @@ require(
         }
       }
 
-      function createPlayer (config) {
-        player = Html5MediaPlayer(config);
+      function createPlayer () {
+        player = Html5MediaPlayer();
         spyOn(player, 'toPaused').and.callThrough();
 
         player.addEventCallback(this, eventCallbackReporter);
       }
 
       beforeEach(function (done) {
-        var config = {
-          streaming: {
-            overrides: {
-              forceBeginPlaybackToEndOfWindow: true
-            }
-          }
-        };
         mockSourceElement = document.createElement('source');
         mockVideoMediaElement = document.createElement('video');
         mockAudioMediaElement = document.createElement('audio');
@@ -119,7 +112,7 @@ require(
         spyOn(mockAudioMediaElement, 'play');
         spyOn(mockAudioMediaElement, 'load');
         spyOn(mockAudioMediaElement, 'pause');
-        createPlayer(config);
+        createPlayer();
         done();
       });
 
@@ -1075,6 +1068,10 @@ require(
       });
 
       describe('Reset and Stop', function () {
+        afterEach(function () {
+          delete window.bigscreenPlayer.overrides;
+        });
+
         it('Video is removed from the DOM', function () {
           spyOn(sourceContainer, 'appendChild').and.callThrough();
           spyOn(sourceContainer, 'removeChild').and.callThrough();
@@ -1126,6 +1123,21 @@ require(
           expect(mockVideoMediaElement.removeAttribute).toHaveBeenCalledWith('src');
           expect(mockVideoMediaElement.removeAttribute).toHaveBeenCalledTimes(1);
           expect(mockVideoMediaElement.load).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not Unload Media Element Source if disabled', function () {
+          window.bigscreenPlayer.overrides = {
+            disableMediaSourceUnload: true
+          };
+
+          player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
+          mockVideoMediaElement.load.calls.reset();
+          spyOn(mockVideoMediaElement, 'removeAttribute');
+
+          player.reset();
+
+          expect(mockVideoMediaElement.removeAttribute).toHaveBeenCalledTimes(0);
+          expect(mockVideoMediaElement.load).toHaveBeenCalledTimes(0);
         });
 
         it(' Calling Stop In Stopped State Does Not Call Pause On The Device', function () {
@@ -1861,6 +1873,7 @@ require(
 
         afterEach(function () {
           jasmine.clock().uninstall();
+          delete window.bigscreenPlayer.overrides;
         });
 
         it(' Waiting Html5 Event While Buffering Only Gives Single Buffering Event', function () {
@@ -1920,17 +1933,12 @@ require(
           expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
         });
 
-        it(' Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
-          var restartTimeoutConfig = {
-            streaming: {
-              overrides: {
-                forceBeginPlaybackToEndOfWindow: true
-              }
-            },
+        it('Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
+          window.bigscreenPlayer.overrides = {
             restartTimeout: 10000
           };
 
-          createPlayer(restartTimeoutConfig);
+          createPlayer();
 
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
 
@@ -1940,6 +1948,8 @@ require(
           waitingCallback();
           playingCallback();
 
+          // Needs to be triggered 6 times to set emitSeekFinishedAtCorrectStartingPoint counter to 5.
+          timeupdateCallback();
           timeupdateCallback();
           timeupdateCallback();
           timeupdateCallback();
@@ -2582,21 +2592,6 @@ require(
 
           expect(recentEvents).toEqual([]);
           expect(mockVideoMediaElement.pause).not.toHaveBeenCalled();
-          expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
-        });
-
-        it(' Pause Sentinel Does Not Retry Pause If Pause Succeeds', function () {
-          player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false});
-          metaDataCallback({start: 0, end: 100});
-
-          player.beginPlaybackFrom(0);
-          finishedBufferingCallback();
-          player.pause();
-
-          recentEvents = [];
-          waitForSentinels();
-
-          expect(recentEvents).toEqual([]);
           expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED);
         });
 

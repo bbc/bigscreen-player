@@ -1,39 +1,36 @@
 define(
-  'bigscreenplayer/captionscontainer', [
-    'bigscreenplayer/captions',
+  'bigscreenplayer/subtitles/legacysubtitles', [
+    'bigscreenplayer/subtitles/renderer',
     'bigscreenplayer/models/transportcontrolposition',
     'bigscreenplayer/domhelpers'
   ],
-  function (Captions, TransportControlPosition, DOMHelpers) {
+  function (Renderer, TransportControlPosition, DOMHelpers) {
     'use strict';
 
-    return function (mediaPlayer, captionsURL, autoStart, parentElement) {
+    return function (mediaPlayer, captionsXML, autoStart, parentElement) {
       var container = document.createElement('div');
-      var captions;
+      var subtitlesRenderer;
 
       container.id = 'playerCaptionsContainer';
       DOMHelpers.addClass(container, 'playerCaptions');
 
-      if (captionsURL) {
-        captions = new Captions('playerCaptions', captionsURL, mediaPlayer, container);
-        container.appendChild(captions.render());
+      // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
+      if (captionsXML) {
+        subtitlesRenderer = new Renderer('playerCaptions', captionsXML, mediaPlayer, autoStart);
+        container.appendChild(subtitlesRenderer.render());
       }
 
       parentElement.appendChild(container);
 
-      if (autoStart) {
-        start();
-      }
-
       function start () {
-        if (captions) {
-          captions.start();
+        if (subtitlesRenderer) {
+          subtitlesRenderer.start();
         }
       }
 
       function stop () {
-        if (captions) {
-          captions.stop();
+        if (subtitlesRenderer) {
+          subtitlesRenderer.stop();
         }
       }
 

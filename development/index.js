@@ -6,7 +6,7 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
   let enableSubtitles = false;
   
   let minimalData = {
-      media: {
+    media: {
         type: 'application/dash+xml',
         mimeType: 'video/mp4',
         kind: 'video',
@@ -21,20 +21,34 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
       }
     };
 
-    let fakeDevice = {
-      getConfig: function () {
-        return {};
-      }
-    }
+  function setUpCaptionsContainerCSS() {
+    var captionsContainer = document.getElementById('playerCaptionsContainer');
+    captionsContainer.style.position = 'absolute';
+    captionsContainer.style.top = '80%';
+    captionsContainer.style.right = '50%';
+  }
 
   document.body.appendChild(playbackElement)
   let bigscreenPlayer = BigscreenPlayer();
   window._bigscreenPlayer = bigscreenPlayer;
 
-  bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles, fakeDevice,
+  bigscreenPlayer.registerPlugin({onSubtitlesLoadError: function () {
+    console.log('Loading subtitles failed...')
+  }})
+
+  bigscreenPlayer.registerPlugin({onSubtitlesRenderError: function () {
+    console.log('Rendering subtitles failed...')
+  }})
+
+  bigscreenPlayer.registerPlugin({onSubtitlesTransformError: function () {
+    console.log('Transforming subtitles failed...')
+  }})
+
+  bigscreenPlayer.init(playbackElement, minimalData, windowType, enableSubtitles,
     {
       onSuccess: function () {
         bigscreenPlayer.toggleDebug();
+        setUpCaptionsContainerCSS();
       },
       onError: function () {
         bigscreenPlayer.toggleDebug();

@@ -8,7 +8,7 @@ define(
   function (MediaPlayerBase, WindowTypes, DynamicWindowUtils) {
     'use strict';
 
-    function RestartableLivePlayer (mediaPlayer, deviceConfig, windowType, mediaSources) {
+    function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
       var callbacksMap = [];
       var startTime;
       var fakeTimer = {};
@@ -82,12 +82,10 @@ define(
 
       return {
         beginPlayback: function () {
-          var config = deviceConfig;
-
           startTime = Date.now();
           fakeTimer.currentTime = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000;
 
-          if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
+          if (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow) {
             mediaPlayer.beginPlaybackFrom(Infinity);
           } else {
             mediaPlayer.beginPlayback();
