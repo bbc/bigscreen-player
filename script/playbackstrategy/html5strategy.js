@@ -96,7 +96,12 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
 
       function onSeeked () {
         if (isPaused() && windowType === WindowTypes.SLIDING) {
-          startAutoResumeTimeout();
+          if (windowType === WindowTypes.SLIDING) {
+            startAutoResumeTimeout();
+          }
+          publishMediaState(MediaState.PAUSED);
+        } else {
+          publishMediaState(MediaState.PLAYING);
         }
       }
 
