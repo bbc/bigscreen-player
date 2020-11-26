@@ -79,22 +79,27 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onPlaying () {
+        console.log('playing event');
         publishMediaState(MediaState.PLAYING);
       }
 
       function onPaused () {
+        console.log('paused event');
         publishMediaState(MediaState.PAUSED);
       }
 
       function onSeeking () {
+        console.log('seeking event');
         publishMediaState(MediaState.WAITING);
       }
 
       function onWaiting () {
+        console.log('waiting event');
         publishMediaState(MediaState.WAITING);
       }
 
       function onSeeked () {
+        console.log('seeked event');
         if (isPaused() && windowType === WindowTypes.SLIDING) {
           if (windowType === WindowTypes.SLIDING) {
             startAutoResumeTimeout();
@@ -106,6 +111,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onEnded () {
+        console.log('ended event');
         publishMediaState(MediaState.ENDED);
       }
 
@@ -118,10 +124,12 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onLoadedMetadata () {
+        console.log('loaded metadata');
         metaDataLoaded = true;
       }
 
       function onCanPlay () {
+        console.log('can play event');
         if (playFromTime) {
           mediaElement.currentTime = playFromTime + timeCorrection;
           playFromTime = undefined;
