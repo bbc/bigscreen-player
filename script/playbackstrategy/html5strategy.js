@@ -100,7 +100,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
 
       function onSeeked () {
         console.log('seeked event');
-        if (isPaused() && windowType === WindowTypes.SLIDING) {
+        if (isPaused()) {
           if (windowType === WindowTypes.SLIDING) {
             startAutoResumeTimeout();
           }
