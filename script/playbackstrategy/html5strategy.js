@@ -38,8 +38,8 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function load (mimeType, startTime) {
+        playFromTime = startTime;
         if (!mediaElement) {
-          playFromTime = startTime;
           setUpMediaElement();
           setUpMediaListeners();
         } else {
@@ -101,7 +101,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
           }
           publishMediaState(MediaState.PAUSED);
         } else {
-          publishMediaState(MediaState.PLAYING);
+          // publishMediaState(MediaState.PLAYING);
         }
       }
 
