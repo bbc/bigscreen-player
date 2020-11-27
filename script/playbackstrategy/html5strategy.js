@@ -259,6 +259,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         },
         play: play,
         setCurrentTime: function (time) {
+          console.log('setting time to: ' + (time + timeCorrection));
           mediaElement.currentTime = time + timeCorrection;
         },
         getPlayerElement: function () {
