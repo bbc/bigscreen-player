@@ -99,13 +99,14 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onSeeked () {
-        console.log('seeked event');
         if (isPaused()) {
           if (windowType === WindowTypes.SLIDING) {
             startAutoResumeTimeout();
           }
+          console.log('seeked event - paused');
           publishMediaState(MediaState.PAUSED);
         } else {
+          console.log('seeked event - not paused');
           publishMediaState(MediaState.PLAYING);
         }
       }
@@ -126,14 +127,14 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       function onLoadedMetadata () {
         console.log('loaded metadata');
         metaDataLoaded = true;
-      }
-
-      function onCanPlay () {
-        console.log('can play event');
         if (playFromTime) {
           mediaElement.currentTime = playFromTime + timeCorrection;
           playFromTime = undefined;
         }
+      }
+
+      function onCanPlay () {
+        console.log('can play metadata');
       }
 
       function isPaused () {
