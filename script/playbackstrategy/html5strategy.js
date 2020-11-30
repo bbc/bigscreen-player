@@ -60,6 +60,11 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         mediaElement.preload = 'auto';
         mediaElement.src = mediaSources.currentSource();
 
+        if (playFromTime) {
+          mediaElement.currentTime = playFromTime + timeCorrection;
+          playFromTime = undefined;
+        }
+
         playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
 
         mediaElement.load();
@@ -127,10 +132,6 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       function onLoadedMetadata () {
         console.log('loaded metadata');
         metaDataLoaded = true;
-        if (playFromTime) {
-          mediaElement.currentTime = playFromTime + timeCorrection;
-          playFromTime = undefined;
-        }
       }
 
       function onCanPlay () {
