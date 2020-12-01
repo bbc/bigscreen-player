@@ -213,6 +213,14 @@ require(
           html5Strategy.pause();
 
           expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
+          expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledWith(
+            0,
+            { start: 0, end: 0 },
+            jasmine.any(Function),
+            jasmine.any(Function),
+            jasmine.any(Function),
+            html5Strategy.play
+          );
         });
 
         it('should not start autoresume timeout if sliding window but disableAutoResume is set', function () {
@@ -232,11 +240,19 @@ require(
         beforeEach(function () {
           spyOnProperty(mockVideoElement, 'seekable').and.returnValue(
             {
-              start: function () {
-                return 25;
+              start: function (index) {
+                if (index === 0) {
+                  return 25;
+                } else {
+                  return undefined;
+                }
               },
-              end: function () {
-                return 100;
+              end: function (index) {
+                if (index === 0) {
+                  return 100;
+                } else {
+                  return undefined;
+                }
               },
               length: 2
             });
@@ -311,10 +327,11 @@ require(
           expect(html5Strategy.getCurrentTime()).toEqual(0);
         });
 
-        it('returns the correct currentTime load has been called', function () {
+        it('returns the correct currentTime once load has been called', function () {
           setUpStrategy();
           html5Strategy.load(null, undefined);
-          eventCallbacks('loadedmetadata');
+
+          expect(html5Strategy.getCurrentTime()).toEqual(5);
 
           mockVideoElement.currentTime = 10;
 
@@ -325,7 +342,6 @@ require(
           testTimeCorrection = 20;
           setUpStrategy();
           html5Strategy.load(null, undefined);
-          eventCallbacks('loadedmetadata');
 
           mockVideoElement.currentTime = 50;
 
@@ -358,7 +374,6 @@ require(
         it('sets the current time on the media element to that passed in', function () {
           setUpStrategy();
           html5Strategy.load(null, undefined);
-          eventCallbacks('loadedmetadata');
 
           html5Strategy.setCurrentTime(10);
 
@@ -369,11 +384,19 @@ require(
           testTimeCorrection = 20;
           setUpStrategy();
           html5Strategy.load(null, undefined);
-          eventCallbacks('loadedmetadata');
 
           html5Strategy.setCurrentTime(50);
 
           expect(mockVideoElement.currentTime).toEqual(70);
+        });
+
+        it('does not attempt to clamp time if meta data is not loaded', function () {
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+
+          html5Strategy.setCurrentTime(110); // this is greater than expected seekable range. although range does not exist until meta data loaded
+
+          expect(mockVideoElement.currentTime).toEqual(110);
         });
 
         it('clamps to 1.1 seconds before seekable range end when seeking to end', function () {
@@ -404,6 +427,16 @@ require(
           html5Strategy.setCurrentTime(seekableRange.end - 1);
 
           expect(mockVideoElement.currentTime).toEqual(seekableRange.end - clampOffset);
+        });
+
+        it('clamps to the start of seekable range when seeking before start of range', function () {
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          html5Strategy.setCurrentTime(seekableRange.start - 10);
+
+          expect(mockVideoElement.currentTime).toEqual(seekableRange.start);
         });
       });
 
@@ -444,10 +477,6 @@ require(
       });
 
       describe('tearDown', function () {
-        beforeEach(function () {
-
-        });
-
         it('should remove all event listener bindings', function () {
           setUpStrategy();
           html5Strategy.load(null, 0);
@@ -513,7 +542,13 @@ require(
           expect(timeUpdateCallbackSpy).not.toHaveBeenCalled();
         });
 
-        // TODO: ensure error and timeUpdate callbacks are undefined
+        it('should undefine the mediaPlayer element', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 0);
+          html5Strategy.tearDown();
+
+          expect(html5Strategy.getPlayerElement()).toBe(undefined);
+        });
       });
 
       describe('getPlayerElement', function () {

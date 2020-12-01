@@ -146,7 +146,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       function getSeekableRange () {
         if (mediaElement && metaDataLoaded) {
           return {
-            start: mediaElement.seekable.start(0) - timeCorrection, // need to subtract the time correction
+            start: mediaElement.seekable.start(0) - timeCorrection,
             end: mediaElement.seekable.end(0) - timeCorrection
           };
         } else {
@@ -196,6 +196,14 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
 
       function play () {
         mediaElement.play();
+      }
+
+      function setCurrentTime (time) {
+        if (metaDataLoaded) { // Without metadata we cannot clamp to seekableRange
+          mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection;
+        } else {
+          mediaElement.currentTime = time + timeCorrection;
+        }
       }
 
       function getClampedTime (time, range) {
@@ -264,9 +272,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
           }
         },
         play: play,
-        setCurrentTime: function (time) {
-          mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection;
-        },
+        setCurrentTime: setCurrentTime,
         getPlayerElement: function () {
           return mediaElement || undefined;
         }
