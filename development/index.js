@@ -1,12 +1,21 @@
 window.bigscreenPlayer = { playbackStrategy: 'msestrategy'};
+// Reminder - Add overrides as appropriate
+// e.g overrides: {legacySubtitles: true}
 
 require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){  
   let playbackElement = document.createElement('div')
+
+  playbackElement.style.position = 'absolute';
+  playbackElement.style.height = '720px';
+  playbackElement.style.width = '1280px';
+
   let windowType = 'staticWindow';
   let enableSubtitles = false;
   
   let minimalData = {
+    initialPlaybackTime: 30,
     media: {
+      captionsUrl: '',
         type: 'application/dash+xml',
         mimeType: 'video/mp4',
         kind: 'video',
@@ -21,11 +30,14 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
       }
     };
 
+  // Useful for testing legacy subtitles implementation
   function setUpCaptionsContainerCSS() {
     var captionsContainer = document.getElementById('playerCaptionsContainer');
-    captionsContainer.style.position = 'absolute';
-    captionsContainer.style.top = '80%';
-    captionsContainer.style.right = '50%';
+    if (captionsContainer) {
+      captionsContainer.style.position = 'absolute';
+      captionsContainer.style.top = '80%';
+      captionsContainer.style.right = '50%';
+    }
   }
 
   document.body.appendChild(playbackElement)
