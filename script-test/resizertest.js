@@ -42,6 +42,26 @@ require(
           expect(element.style.position).toEqual('');
         });
       });
+
+      describe('isResized', function () {
+        it('should return false if no call to resize or clear has been made', function () {
+          expect(resizer.isResized()).toBe(false);
+        });
+
+        it('should return true if the last call was to resized', function () {
+          resizer.clear(element);
+          resizer.resize(element, 1, 2, 3, 4, 5);
+
+          expect(resizer.isResized()).toBe(true);
+        });
+
+        it('should return true if the last call was to clear', function () {
+          resizer.resize(element, 1, 2, 3, 4, 5);
+          resizer.clear(element);
+
+          expect(resizer.isResized()).toBe(false);
+        });
+      });
     });
   });
 

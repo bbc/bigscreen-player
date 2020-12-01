@@ -33,7 +33,6 @@ define('bigscreenplayer/bigscreenplayer',
       var windowType;
       var mediaSources;
       var playbackElement;
-      var subtitlesHidden;
       var readyHelper;
 
       var END_OF_STREAM_TOLERANCE = 10;
@@ -158,6 +157,10 @@ define('bigscreenplayer/bigscreenplayer',
       function setSubtitlesEnabled (value) {
         playerComponent.setSubtitlesEnabled(value);
         callSubtitlesCallbacks(value);
+
+        if (!resizer.isResized()) {
+          value ? playerComponent.showSubtitles() : playerComponent.hideSubtitles();
+        }
       }
 
       function isSubtitlesEnabled () {
@@ -206,7 +209,6 @@ define('bigscreenplayer/bigscreenplayer',
           pauseTrigger = undefined;
           windowType = undefined;
           mediaSources = undefined;
-          subtitlesHidden = undefined;
           resizer = undefined;
           this.unregisterPlugin();
           DebugTool.tearDown();
@@ -298,13 +300,14 @@ define('bigscreenplayer/bigscreenplayer',
           playerComponent.pause(opts);
         },
         resize: function (top, left, width, height, zIndex) {
-          subtitlesHidden = isSubtitlesEnabled();
-          setSubtitlesEnabled(false);
+          playerComponent.hideSubtitles();
           resizer.resize(playbackElement, top, left, width, height, zIndex);
         },
         clearResize: function () {
-          if (subtitlesHidden) {
-            setSubtitlesEnabled(true);
+          if (playerComponent.isSubtitlesEnabled()) {
+            playerComponent.showSubtitles();
+          } else {
+            playerComponent.hideSubtitles();
           }
           resizer.clear(playbackElement);
         },
