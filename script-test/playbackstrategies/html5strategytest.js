@@ -147,6 +147,13 @@ require(
           expect(mockVideoElement.src).toBe('http://testcdn1/test/');
         });
 
+        it('should set the currentTime to initial playback time if one is provided', function () {
+          setUpStrategy(null, null, MediaKinds.VIDEO);
+          html5Strategy.load(null, 25);
+
+          expect(mockVideoElement.currentTime).toEqual(25);
+        });
+
         it('should call load on the media element', function () {
           setUpStrategy();
           html5Strategy.load(null, undefined);
@@ -317,14 +324,20 @@ require(
       });
 
       describe('setCurrentTime', function () {
+        var seekableRange = {
+          start: 0,
+          end: 100
+        };
+        var clampOffset = 1.1;
+
         beforeEach(function () {
           spyOnProperty(mockVideoElement, 'seekable').and.returnValue(
             {
               start: function () {
-                return 0;
+                return seekableRange.start;
               },
               end: function () {
-                return 100;
+                return seekableRange.end;
               },
               length: 2
             });
@@ -351,6 +364,36 @@ require(
           html5Strategy.setCurrentTime(50);
 
           expect(mockVideoElement.currentTime).toEqual(70);
+        });
+
+        it('clamps to 1.1 seconds before seekable range end when seeking to end', function () {
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          html5Strategy.setCurrentTime(seekableRange.end);
+
+          expect(mockVideoElement.currentTime).toEqual(seekableRange.end - clampOffset);
+        });
+
+        it('clamps to 1.1 seconds before seekable range end when seeking past end', function () {
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          html5Strategy.setCurrentTime(seekableRange.end + 10);
+
+          expect(mockVideoElement.currentTime).toEqual(seekableRange.end - clampOffset);
+        });
+
+        it('clamps to 1.1 seconds before seekable range end when seeking prior to end', function () {
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+          eventCallbacks('loadedmetadata');
+
+          html5Strategy.setCurrentTime(seekableRange.end - 1);
+
+          expect(mockVideoElement.currentTime).toEqual(seekableRange.end - clampOffset);
         });
       });
 
@@ -537,52 +580,6 @@ require(
           eventCallbacks('seeked');
 
           expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
-        });
-
-        it('should set the current time on the media element if there is one and the metadata is loaded on canplay event', function () {
-          spyOnProperty(mockVideoElement, 'seekable').and.returnValue(
-            {
-              start: function () {
-                return 0;
-              },
-              end: function () {
-                return 100;
-              },
-              length: 2
-            });
-
-          expect(mockVideoElement.currentTime).toEqual(0);
-
-          eventCallbacks('loadedmetadata');
-
-          expect(mockVideoElement.currentTime).toEqual(0);
-
-          eventCallbacks('canplay');
-
-          expect(mockVideoElement.currentTime).toEqual(25);
-        });
-
-        it('should only set the current time on the media element on the first canplay event', function () {
-          spyOnProperty(mockVideoElement, 'seekable').and.returnValue(
-            {
-              start: function () {
-                return 0;
-              },
-              end: function () {
-                return 100;
-              },
-              length: 2
-            });
-
-          eventCallbacks('loadedmetadata');
-          eventCallbacks('canplay');
-
-          expect(mockVideoElement.currentTime).toEqual(25);
-
-          mockVideoElement.currentTime = 35;
-          eventCallbacks('canplay');
-
-          expect(mockVideoElement.currentTime).toEqual(35);
         });
 
         it('should publish a time update event on time update', function () {

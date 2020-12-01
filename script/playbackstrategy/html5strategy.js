@@ -18,6 +18,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       var playFromTime;
       var metaDataLoaded;
       var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
+      var CLAMP_OFFSET_SECONDS = 1.1;
 
       function publishMediaState (mediaState) {
         for (var index = 0; index < eventCallbacks.length; index++) {
@@ -197,6 +198,10 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         mediaElement.play();
       }
 
+      function getClampedTime (time, range) {
+        return Math.min(Math.max(time, range.start), range.end - CLAMP_OFFSET_SECONDS);
+      }
+
       return {
         transitions: {
           canBePaused: function () { return true; },
@@ -260,8 +265,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         },
         play: play,
         setCurrentTime: function (time) {
-          console.log('setting time to: ' + (time + timeCorrection));
-          mediaElement.currentTime = time + timeCorrection;
+          mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection;
         },
         getPlayerElement: function () {
           return mediaElement || undefined;
