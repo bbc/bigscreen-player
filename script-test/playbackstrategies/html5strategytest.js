@@ -18,8 +18,8 @@ require(
     var eventHandlers = {};
     var testTimeCorrection;
 
-    var mockAudioElement = document.createElement('audio');
-    var mockVideoElement = document.createElement('video');
+    var mockAudioElement;
+    var mockVideoElement;
 
     var mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange']);
 
@@ -32,6 +32,8 @@ require(
 
     describe('HTML5 Strategy', function () {
       beforeEach(function (done) {
+        mockAudioElement = document.createElement('audio');
+        mockVideoElement = document.createElement('video');
         playbackElement = document.createElement('div');
         playbackElement.id = 'app';
         document.body.appendChild(playbackElement);
@@ -86,9 +88,10 @@ require(
 
       afterEach(function () {
         mockDynamicWindowUtils.autoResumeAtStartOfRange.calls.reset();
-        mockVideoElement.currentTime = 0;
         testTimeCorrection = 0;
         html5Strategy.tearDown();
+        mockVideoElement = undefined;
+        mockAudioElement = undefined;
       });
 
       describe('transitions', function () {
@@ -152,6 +155,13 @@ require(
           html5Strategy.load(null, 25);
 
           expect(mockVideoElement.currentTime).toEqual(25);
+        });
+
+        it('should not set the currentTime to initial playback time if one is not provided', function () {
+          setUpStrategy(null, MediaKinds.VIDEO);
+          html5Strategy.load(null, undefined);
+
+          expect(mockVideoElement.currentTime).toEqual(0);
         });
 
         it('should call load on the media element', function () {
