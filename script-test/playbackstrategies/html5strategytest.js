@@ -23,7 +23,7 @@ require(
 
     var mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange']);
 
-    function setUpStrategy (windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
+    function setUpStrategy (windowType, mediaKind) {
       var defaultWindowType = windowType || WindowTypes.STATIC;
       var defaultMediaKind = mediaKind || MediaKinds.VIDEO;
 
@@ -198,7 +198,7 @@ require(
         });
 
         it('should start autoresume timeout if sliding window', function () {
-          setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
+          setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO);
           html5Strategy.load(null, 0);
           html5Strategy.pause();
 
@@ -210,7 +210,7 @@ require(
             disableAutoResume: true
           };
 
-          setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
+          setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO);
           html5Strategy.load(null, 0);
           html5Strategy.pause(opts);
 
@@ -521,7 +521,7 @@ require(
         var errorCallbackSpy;
 
         beforeEach(function () {
-          setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
+          setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO);
           html5Strategy.load(null, 25);
 
           eventCallbackSpy = jasmine.createSpy('eventSpy');
