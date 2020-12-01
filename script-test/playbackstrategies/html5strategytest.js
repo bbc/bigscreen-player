@@ -23,7 +23,7 @@ require(
 
     var mockDynamicWindowUtils = jasmine.createSpyObj('mockDynamicWindowUtils', ['autoResumeAtStartOfRange']);
 
-    function setUpStrategy (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
+    function setUpStrategy (windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
       var defaultWindowType = windowType || WindowTypes.STATIC;
       var defaultMediaKind = mediaKind || MediaKinds.VIDEO;
 
@@ -102,7 +102,7 @@ require(
 
       describe('load', function () {
         it('should create a video element and add it to the playback element', function () {
-          setUpStrategy(null, null, MediaKinds.VIDEO);
+          setUpStrategy(null, MediaKinds.VIDEO);
 
           expect(playbackElement.childElementCount).toBe(0);
 
@@ -113,7 +113,7 @@ require(
         });
 
         it('should create an audio element and add it to the playback element', function () {
-          setUpStrategy(null, null, MediaKinds.AUDIO);
+          setUpStrategy(null, MediaKinds.AUDIO);
 
           expect(playbackElement.childElementCount).toBe(0);
 
@@ -124,7 +124,7 @@ require(
         });
 
         it('should set the style properties correctly on the media element', function () {
-          setUpStrategy(null, null, MediaKinds.VIDEO);
+          setUpStrategy(null, MediaKinds.VIDEO);
           html5Strategy.load(null, 0);
 
           expect(mockVideoElement.style.position).toBe('absolute');
@@ -133,7 +133,7 @@ require(
         });
 
         it('should set the autoplay and preload properties correctly on the media element', function () {
-          setUpStrategy(null, null, MediaKinds.VIDEO);
+          setUpStrategy(null, MediaKinds.VIDEO);
           html5Strategy.load(null, 0);
 
           expect(mockVideoElement.autoplay).toBe(true);
@@ -141,14 +141,14 @@ require(
         });
 
         it('should set the source url correctly on the media element', function () {
-          setUpStrategy(null, null, MediaKinds.VIDEO);
+          setUpStrategy(null, MediaKinds.VIDEO);
           html5Strategy.load(null, 0);
 
           expect(mockVideoElement.src).toBe('http://testcdn1/test/');
         });
 
         it('should set the currentTime to initial playback time if one is provided', function () {
-          setUpStrategy(null, null, MediaKinds.VIDEO);
+          setUpStrategy(null, MediaKinds.VIDEO);
           html5Strategy.load(null, 25);
 
           expect(mockVideoElement.currentTime).toEqual(25);
@@ -198,7 +198,7 @@ require(
         });
 
         it('should start autoresume timeout if sliding window', function () {
-          setUpStrategy(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
+          setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
           html5Strategy.load(null, 0);
           html5Strategy.pause();
 
@@ -210,7 +210,7 @@ require(
             disableAutoResume: true
           };
 
-          setUpStrategy(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
+          setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
           html5Strategy.load(null, 0);
           html5Strategy.pause(opts);
 
@@ -521,7 +521,7 @@ require(
         var errorCallbackSpy;
 
         beforeEach(function () {
-          setUpStrategy(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
+          setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000);
           html5Strategy.load(null, 25);
 
           eventCallbackSpy = jasmine.createSpy('eventSpy');
