@@ -210,6 +210,65 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         return Math.min(Math.max(time, range.start), range.end - CLAMP_OFFSET_SECONDS);
       }
 
+      function addErrorCallback (thisArg, newErrorCallback) {
+        errorCallback = function (event) {
+          newErrorCallback.call(thisArg, event);
+        };
+      }
+
+      function addTimeUpdateCallback (thisArg, newTimeUpdateCallback) {
+        timeUpdateCallback = function () {
+          newTimeUpdateCallback.call(thisArg);
+        };
+      }
+
+      function tearDown () {
+        if (mediaElement) {
+          mediaElement.removeEventListener('canplay', onCanPlay);
+          mediaElement.removeEventListener('timeupdate', onTimeUpdate);
+          mediaElement.removeEventListener('playing', onPlaying);
+          mediaElement.removeEventListener('pause', onPaused);
+          mediaElement.removeEventListener('waiting', onWaiting);
+          mediaElement.removeEventListener('seeking', onSeeking);
+          mediaElement.removeEventListener('seeked', onSeeked);
+          mediaElement.removeEventListener('ended', onEnded);
+          mediaElement.removeEventListener('error', onError);
+          mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+          mediaElement.removeAttribute('src');
+          mediaElement.load();
+          DOMHelpers.safeRemoveElement(mediaElement);
+        }
+
+        eventCallbacks = [];
+        errorCallback = undefined;
+        timeUpdateCallback = undefined;
+
+        mediaElement = undefined;
+        playFromTime = undefined;
+        metaDataLoaded = undefined;
+        timeCorrection = undefined;
+      }
+
+      function reset () {
+        return;
+      }
+
+      function isEnded () {
+        return mediaElement.ended;
+      }
+
+      function pause (opts) {
+        mediaElement.pause();
+        opts = opts || {};
+        if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
+          startAutoResumeTimeout();
+        }
+      }
+
+      function getPlayerElement () {
+        return mediaElement || undefined;
+      }
+
       return {
         transitions: {
           canBePaused: function () { return true; },
@@ -217,65 +276,20 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         },
         addEventCallback: addEventCallback,
         removeEventCallback: removeEventCallback,
-        addErrorCallback: function (thisArg, newErrorCallback) {
-          errorCallback = function (event) {
-            newErrorCallback.call(thisArg, event);
-          };
-        },
-        addTimeUpdateCallback: function (thisArg, newTimeUpdateCallback) {
-          timeUpdateCallback = function () {
-            newTimeUpdateCallback.call(thisArg);
-          };
-        },
+        addErrorCallback: addErrorCallback,
+        addTimeUpdateCallback: addTimeUpdateCallback,
         load: load,
         getSeekableRange: getSeekableRange,
         getCurrentTime: getCurrentTime,
         getDuration: getDuration,
-        tearDown: function () {
-          if (mediaElement) {
-            mediaElement.removeEventListener('canplay', onCanPlay);
-            mediaElement.removeEventListener('timeupdate', onTimeUpdate);
-            mediaElement.removeEventListener('playing', onPlaying);
-            mediaElement.removeEventListener('pause', onPaused);
-            mediaElement.removeEventListener('waiting', onWaiting);
-            mediaElement.removeEventListener('seeking', onSeeking);
-            mediaElement.removeEventListener('seeked', onSeeked);
-            mediaElement.removeEventListener('ended', onEnded);
-            mediaElement.removeEventListener('error', onError);
-            mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
-            mediaElement.removeAttribute('src');
-            mediaElement.load();
-            DOMHelpers.safeRemoveElement(mediaElement);
-          }
-
-          eventCallbacks = [];
-          errorCallback = undefined;
-          timeUpdateCallback = undefined;
-
-          mediaElement = undefined;
-          playFromTime = undefined;
-          metaDataLoaded = undefined;
-          timeCorrection = undefined;
-        },
-        reset: function () {
-          return;
-        },
-        isEnded: function () {
-          return mediaElement.ended;
-        },
+        tearDown: tearDown,
+        reset: reset,
+        isEnded: isEnded,
         isPaused: isPaused,
-        pause: function (opts) {
-          mediaElement.pause();
-          opts = opts || {};
-          if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
-            startAutoResumeTimeout();
-          }
-        },
+        pause: pause,
         play: play,
         setCurrentTime: setCurrentTime,
-        getPlayerElement: function () {
-          return mediaElement || undefined;
-        }
+        getPlayerElement: getPlayerElement
       };
     };
 
