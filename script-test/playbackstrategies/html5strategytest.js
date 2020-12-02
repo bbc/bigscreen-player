@@ -150,14 +150,14 @@ require(
           expect(mockVideoElement.src).toBe('http://testcdn1/test/');
         });
 
-        it('should set the currentTime to initial playback time if one is provided', function () {
+        it('should set the currentTime to start time if one is provided', function () {
           setUpStrategy(null, MediaKinds.VIDEO);
           html5Strategy.load(null, 25);
 
           expect(mockVideoElement.currentTime).toEqual(25);
         });
 
-        it('should not set the currentTime to initial playback time if one is not provided', function () {
+        it('should not set the currentTime to start time if one is not provided', function () {
           setUpStrategy(null, MediaKinds.VIDEO);
           html5Strategy.load(null, undefined);
 
@@ -169,6 +169,43 @@ require(
           html5Strategy.load(null, undefined);
 
           expect(mockVideoElement.load).toHaveBeenCalled();
+        });
+
+        it('should update the media element source if load is when media element already exists', function () {
+          setUpStrategy();
+          html5Strategy.load(null, undefined);
+
+          expect(mockVideoElement.src).toBe('http://testcdn1/test/');
+
+          mockMediaSources.currentSource = function () {
+            return cdnArray[1].url;
+          };
+
+          html5Strategy.load(null, undefined);
+
+          expect(mockVideoElement.src).toBe('http://testcdn2/test/');
+        });
+
+        it('should update the media element currentTime if load is called with a start time when media element already exists', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 25);
+
+          expect(mockVideoElement.currentTime).toEqual(25);
+
+          html5Strategy.load(null, 35);
+
+          expect(mockVideoElement.currentTime).toEqual(35);
+        });
+
+        it('should not update the media element currentTime if load is called without a start time when media element already exists', function () {
+          setUpStrategy();
+          html5Strategy.load(null, 25);
+
+          expect(mockVideoElement.currentTime).toEqual(25);
+
+          html5Strategy.load(null, undefined);
+
+          expect(mockVideoElement.currentTime).toEqual(25);
         });
 
         it('should set up bindings to media element events correctly', function () {

@@ -15,7 +15,6 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       var timeUpdateCallback;
 
       var mediaElement;
-      var playFromTime;
       var metaDataLoaded;
       var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
       var CLAMP_OFFSET_SECONDS = 1.1;
@@ -39,16 +38,16 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function load (mimeType, startTime) {
-        playFromTime = startTime;
         if (!mediaElement) {
-          setUpMediaElement();
+          setUpMediaElement(startTime);
           setUpMediaListeners();
         } else {
           mediaElement.src = mediaSources.currentSource();
+          setStartTime(startTime);
         }
       }
 
-      function setUpMediaElement () {
+      function setUpMediaElement (startTime) {
         if (mediaKind === MediaKinds.AUDIO) {
           mediaElement = document.createElement('audio');
         } else {
@@ -61,13 +60,9 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         mediaElement.preload = 'auto';
         mediaElement.src = mediaSources.currentSource();
 
-        if (playFromTime) {
-          mediaElement.currentTime = playFromTime + timeCorrection;
-          playFromTime = undefined;
-        }
-
         playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
 
+        setStartTime(startTime);
         mediaElement.load();
       }
 
@@ -82,6 +77,12 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         mediaElement.addEventListener('ended', onEnded);
         mediaElement.addEventListener('error', onError);
         mediaElement.addEventListener('loadedmetadata', onLoadedMetadata);
+      }
+
+      function setStartTime (startTime) {
+        if (startTime) {
+          mediaElement.currentTime = startTime + timeCorrection;
+        }
       }
 
       function onPlaying () {
@@ -244,7 +245,6 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         timeUpdateCallback = undefined;
 
         mediaElement = undefined;
-        playFromTime = undefined;
         metaDataLoaded = undefined;
         timeCorrection = undefined;
       }
