@@ -44,6 +44,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
         } else {
           mediaElement.src = mediaSources.currentSource();
           setStartTime(startTime);
+          mediaElement.load();
         }
       }
 
