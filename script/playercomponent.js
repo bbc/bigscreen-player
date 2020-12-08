@@ -9,9 +9,10 @@ define(
     'bigscreenplayer/plugins',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/models/playbackstrategy'
+    'bigscreenplayer/models/playbackstrategy',
+    'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaState, Subtitles, PlaybackStrategy, WindowTypes, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
+  function (MediaState, Subtitles, PlaybackStrategy, WindowTypes, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel, DebugTool) {
     'use strict';
 
     var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback) {
@@ -192,6 +193,7 @@ define(
       }
 
       function onBuffering () {
+        DebugTool.info('Temp - playerComponent - onBuffering');
         publishMediaStateUpdate(MediaState.WAITING);
         startBufferingErrorTimeout();
         bubbleErrorCleared();
@@ -208,11 +210,13 @@ define(
       }
 
       function onError () {
+        DebugTool.info('Temp - playerComponent - onError');
         bubbleBufferingCleared();
         raiseError();
       }
 
       function startBufferingErrorTimeout () {
+        DebugTool.info('Temp - playerComponent - startBufferingErrorTimeout');
         var bufferingTimeout = isInitialPlay ? 30000 : 20000;
         clearBufferingErrorTimeout();
         errorTimeoutID = setTimeout(function () {
@@ -222,6 +226,7 @@ define(
       }
 
       function raiseError () {
+        DebugTool.info('Temp - playerComponent - raiseError');
         clearBufferingErrorTimeout();
         publishMediaStateUpdate(MediaState.WAITING);
         bubbleErrorRaised();
@@ -229,6 +234,7 @@ define(
       }
 
       function startFatalErrorTimeout () {
+        DebugTool.info('Temp - playerComponent - startFatalErrorTimeout');
         if (!fatalErrorTimeout && !fatalError) {
           fatalErrorTimeout = setTimeout(function () {
             fatalErrorTimeout = null;
@@ -239,6 +245,7 @@ define(
       }
 
       function attemptCdnFailover (bufferingTimeoutError) {
+        DebugTool.info('attemptCdnFailover - bufferingTimeoutError = ' + bufferingTimeoutError);
         var time = getCurrentTime();
         var oldWindowStartTime = getWindowStartTime();
 
@@ -254,6 +261,7 @@ define(
           var windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000;
           var failoverTime = time - (windowOffset || 0);
           tearDownMediaElement();
+          DebugTool.info('attemptCdnFailover - doLoadMedia - failoverTime: ' + failoverTime);
           loadMedia(mediaMetaData.type, failoverTime, thenPause);
         };
 
@@ -265,6 +273,7 @@ define(
       }
 
       function clearFatalErrorTimeout () {
+        DebugTool.info('Temp - playerComponent - clearFatalErrorTimeout');
         if (fatalErrorTimeout !== null) {
           clearTimeout(fatalErrorTimeout);
           fatalErrorTimeout = null;
@@ -272,6 +281,7 @@ define(
       }
 
       function clearBufferingErrorTimeout () {
+        DebugTool.info('Temp - playerComponent - clearBufferingErrorTimeout');
         if (errorTimeoutID !== null) {
           clearTimeout(errorTimeoutID);
           errorTimeoutID = null;
@@ -279,6 +289,7 @@ define(
       }
 
       function clearTimeouts () {
+        DebugTool.info('Temp - playerComponent - clearTimeouts');
         clearBufferingErrorTimeout();
         clearFatalErrorTimeout();
         fatalError = false;
