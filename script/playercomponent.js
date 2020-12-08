@@ -228,9 +228,13 @@ define(
       function raiseError () {
         DebugTool.info('Temp - playerComponent - raiseError');
         clearBufferingErrorTimeout();
-        publishMediaStateUpdate(MediaState.WAITING);
-        bubbleErrorRaised();
-        startFatalErrorTimeout();
+        try {
+          publishMediaStateUpdate(MediaState.WAITING);
+          bubbleErrorRaised();
+          startFatalErrorTimeout();
+        } catch (e) {
+          DebugTool.info('Temp - playerComponent - EXCEPTION ' + e);
+        }
       }
 
       function startFatalErrorTimeout () {
