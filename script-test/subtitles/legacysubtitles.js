@@ -12,6 +12,14 @@ require(
     var LegacySubtitlesWithMocks;
     var parentElement = document.createElement('div');
 
+    var mockText = '<tt xmlns="http://www.w3.org/2006/10/ttaf1"> </tt>';
+    var parser = new DOMParser();
+    var mockXml = parser.parseFromString(mockText, 'application/xml');
+    var mockResponse = {
+      text: mockText,
+      xml: mockXml
+    };
+
     describe('Legacy Subtitles', function () {
       beforeEach(function (done) {
         mockRendererSpy = jasmine.createSpyObj('mockRenderer', ['start', 'stop', 'render']);
@@ -34,21 +42,21 @@ require(
       });
 
       it('Has a player subtitles class', function () {
-        legacySubtitles = new LegacySubtitlesWithMocks(null, '', false, parentElement);
+        legacySubtitles = new LegacySubtitlesWithMocks(null, mockResponse, false, parentElement);
 
         expect(parentElement.firstChild.className).toContain('playerCaptions');
       });
 
       describe('Start', function () {
-        it('Starts if there is a truthy value in the xml argument field', function () {
-          legacySubtitles = new LegacySubtitlesWithMocks(null, 'This once would have been xml', false, parentElement);
+        it('Starts if there is valid xml in the response object', function () {
+          legacySubtitles = new LegacySubtitlesWithMocks(null, mockResponse, false, parentElement);
           legacySubtitles.start();
 
           expect(mockRendererSpy.start).toHaveBeenCalledWith();
         });
 
-        it('Does not start subtitles if there is a falsey value in the xml argument field', function () {
-          legacySubtitles = new LegacySubtitlesWithMocks(null, null, false, parentElement);
+        it('Does not start subtitles if there is invalid xml in the response object', function () {
+          legacySubtitles = new LegacySubtitlesWithMocks(null, {xml: undefined}, false, parentElement);
           legacySubtitles.start();
 
           expect(mockRendererSpy.start).not.toHaveBeenCalledWith();
@@ -56,15 +64,15 @@ require(
       });
 
       describe('Stop', function () {
-        it('Stops the subtitles if there is a truthy value in the xml argument field', function () {
-          legacySubtitles = new LegacySubtitlesWithMocks(null, 'This once would have been xml', false, parentElement);
+        it('Stops the subtitles if there is valid xml in the response object', function () {
+          legacySubtitles = new LegacySubtitlesWithMocks(null, mockResponse, false, parentElement);
           legacySubtitles.stop();
 
           expect(mockRendererSpy.stop).toHaveBeenCalledWith();
         });
 
-        it('Does not stop the subtitles if there is not a truthy value in the xml argument field', function () {
-          legacySubtitles = new LegacySubtitlesWithMocks(null, null, false, parentElement);
+        it('Does not stop the subtitles if there is is invalid xml in the response object', function () {
+          legacySubtitles = new LegacySubtitlesWithMocks(null, {xml: undefined}, false, parentElement);
           legacySubtitles.stop();
 
           expect(mockRendererSpy.stop).not.toHaveBeenCalledWith();
@@ -73,7 +81,7 @@ require(
 
       describe('Updating position', function () {
         beforeEach(function () {
-          legacySubtitles = new LegacySubtitlesWithMocks(null, 'This once would have been xml', true, parentElement);
+          legacySubtitles = new LegacySubtitlesWithMocks(null, mockResponse, true, parentElement);
         });
 
         [

@@ -1,6 +1,6 @@
 {
   "name": "bigscreen-player",
-  "version": "4.4.3",
+  "version": "4.5.2",
   "description": "Simplified media playback for bigscreen devices.",
   "main": "script/bigscreenplayer.js",
   "scripts": {
@@ -10,12 +10,14 @@
     "spec": "grunt --force spec-web",
     "lint": "npx eslint .",
     "lint:code:changed": "git diff-index --name-only HEAD | egrep '.js$' | xargs eslint",
+    "build": "npm run build:external",
+    "build:external": "mkdir -p ./script/external && node ./build/buildExternal.js",
+    "build:version": "node ./build/buildVersion.js",
     "build:dist": "npm run build:dist:clean && npm run build:version && mkdir dist && npm run build:copy:script && npm run build:copy:files",
-    "build:dist:clean": "rm -fR ./dist",
-    "build:version": "node ./buildVersion.js",
-    "build:copy:script": "cp -R ./script/ ./dist/script/",
+    "build:dist:clean": "rm -fR ./dist && rm -R ./script/external",
+    "build:copy:script": "cp -R ./script/ ./dist/script/ && cp -R ./build/ ./dist/build/",
     "build:copy:files": "cp package.json package-lock.json CONTRIBUTING.md README.md LICENSE ./dist/",
-    "postinstall": "[[ -f ./buildVersion.js ]] && npm run build:version || echo 'Version already set.'"
+    "postinstall": "[[ -f ./buildVersion.js ]] && npm run build:version || echo 'Version already set.' && npm run build"
   },
   "husky": {
     "hooks": {
@@ -47,7 +49,8 @@
     "webpack-dev-server": "^3.11.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v3.0.0-7"
+    "dashjs": "github:bbc/dash.js#smp-v3.0.0-7",
+    "smp-imsc": "github:bbc/imscjs#v1.0.0"
   },
   "repository": {
     "type": "git",
