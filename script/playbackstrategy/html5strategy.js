@@ -146,7 +146,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function getSeekableRange () {
-        if (mediaElement && metaDataLoaded && mediaElement.seekable.length > 0) {
+        if (mediaElement && mediaElement.seekable && mediaElement.seekable.length > 0 && metaDataLoaded) {
           return {
             start: mediaElement.seekable.start(0) - timeCorrection,
             end: mediaElement.seekable.end(0) - timeCorrection
