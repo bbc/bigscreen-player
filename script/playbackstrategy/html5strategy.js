@@ -68,7 +68,6 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function setUpMediaListeners () {
-        mediaElement.addEventListener('canplay', onCanPlay);
         mediaElement.addEventListener('timeupdate', onTimeUpdate);
         mediaElement.addEventListener('playing', onPlaying);
         mediaElement.addEventListener('pause', onPaused);
@@ -87,22 +86,18 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onPlaying () {
-        console.log('playing event');
         publishMediaState(MediaState.PLAYING);
       }
 
       function onPaused () {
-        console.log('paused event');
         publishMediaState(MediaState.PAUSED);
       }
 
       function onSeeking () {
-        console.log('seeking event');
         publishMediaState(MediaState.WAITING);
       }
 
       function onWaiting () {
-        console.log('waiting event');
         publishMediaState(MediaState.WAITING);
       }
 
@@ -111,16 +106,13 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
           if (windowType === WindowTypes.SLIDING) {
             startAutoResumeTimeout();
           }
-          console.log('seeked event - paused');
           publishMediaState(MediaState.PAUSED);
         } else {
-          console.log('seeked event - not paused');
           publishMediaState(MediaState.PLAYING);
         }
       }
 
       function onEnded () {
-        console.log('ended event');
         publishMediaState(MediaState.ENDED);
       }
 
@@ -133,12 +125,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       }
 
       function onLoadedMetadata () {
-        console.log('loaded metadata');
         metaDataLoaded = true;
-      }
-
-      function onCanPlay () {
-        console.log('can play metadata');
       }
 
       function isPaused () {
@@ -226,7 +213,6 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
 
       function tearDown () {
         if (mediaElement) {
-          mediaElement.removeEventListener('canplay', onCanPlay);
           mediaElement.removeEventListener('timeupdate', onTimeUpdate);
           mediaElement.removeEventListener('playing', onPlaying);
           mediaElement.removeEventListener('pause', onPaused);
