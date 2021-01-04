@@ -212,7 +212,6 @@ require(
           setUpStrategy();
           html5Strategy.load(null, undefined);
 
-          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('canplay', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('pause', jasmine.any(Function));
@@ -519,7 +518,6 @@ require(
           html5Strategy.load(null, 0);
           html5Strategy.tearDown();
 
-          expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('canplay', jasmine.any(Function));
           expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
           expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
           expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('pause', jasmine.any(Function));
