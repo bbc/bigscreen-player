@@ -54,7 +54,10 @@ define(
           return currentTime >= 0;
         }
 
-        if (!isValidSeekableRange(seekableRange)) { return false; }
+        if (!isValidSeekableRange(seekableRange)) {
+          return false;
+        }
+
         return true;
       }
 

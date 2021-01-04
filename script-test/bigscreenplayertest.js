@@ -364,43 +364,31 @@ require(
             expect(successCallback).toHaveBeenCalledTimes(1);
           });
 
-          // it('should be called if playing Live and event time is valid', function () {
-          //   setupManifestData({
-          //     transferFormat: TransferFormats.DASH,
-          //     time: {
-          //       windowStartTime: 10,
-          //       windowEndTime: 100
-          //     }
-          //   });
+          it('should be called if playing Live and event time is valid', function () {
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 10,
+                windowEndTime: 100
+              }
+            });
 
-          //   initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-          //   mockEventHook({
-          //     data:
-          //     {
-          //       state: MediaState.WAITING,
-          //       currentTime: 0,
-          //       seekableRange: {
-          //         start: 10,
-          //         end: 100
-          //       }
-          //     }
-          //   });
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
 
-          //   expect(successCallback).not.toHaveBeenCalled();
-          //   mockEventHook({
-          //     data:
-          //     {
-          //       state: MediaState.PLAYING,
-          //       currentTime: 10,
-          //       seekableRange: {
-          //         start: 10,
-          //         end: 100
-          //       }
-          //     }
-          //   });
+            mockEventHook({
+              data:
+              {
+                state: MediaState.PLAYING,
+                currentTime: 10,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              }
+            });
 
-          //   expect(successCallback).toHaveBeenCalledTimes(1);
-          // });
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
 
           it('after a valid state change should not be called on succesive valid state changes', function () {
             initialiseBigscreenPlayer();
@@ -443,42 +431,30 @@ require(
             expect(successCallback).toHaveBeenCalledTimes(1);
           });
 
-          //  it('should be called if playing Live and current time is valid', function () {
-          //   setupManifestData({
-          //     transferFormat: TransferFormats.DASH,
-          //     time: {
-          //       windowStartTime: 10,
-          //       windowEndTime: 100
-          //     }
-          //   });
-          //   initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-          //   mockEventHook({
-          //     data:
-          //     {
-          //       currentTime: 0,
-          //       seekableRange: {
-          //         start: 10,
-          //         end: 100
-          //       }
-          //     },
-          //     timeUpdate: true
-          //   });
+          it('should be called if playing Live and current time is valid', function () {
+            setupManifestData({
+              transferFormat: TransferFormats.DASH,
+              time: {
+                windowStartTime: 10,
+                windowEndTime: 100
+              }
+            });
+            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
 
-          //   expect(successCallback).not.toHaveBeenCalled();
-          //   mockEventHook({
-          //     data:
-          //     {
-          //       currentTime: 10,
-          //       seekableRange: {
-          //         start: 10,
-          //         end: 100
-          //       }
-          //     },
-          //     timeUpdate: true
-          //   });
+            mockEventHook({
+              data:
+              {
+                currentTime: 10,
+                seekableRange: {
+                  start: 10,
+                  end: 100
+                }
+              },
+              timeUpdate: true
+            });
 
-          //   expect(successCallback).toHaveBeenCalledTimes(1);
-          // });
+            expect(successCallback).toHaveBeenCalledTimes(1);
+          });
 
           it('after a valid time update should not be called on succesive valid time updates', function () {
             initialiseBigscreenPlayer();
