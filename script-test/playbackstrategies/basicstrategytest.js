@@ -9,8 +9,8 @@ require(
   ],
   function (Squire, WindowTypes, MediaKinds, MediaState, MediaSources, LiveSupport) {
     var injector = new Squire();
-    var HTML5Strategy;
-    var html5Strategy;
+    var BasicStrategy;
+    var basicStrategy;
     var cdnArray;
     var playbackElement;
     var mockMediaSources;
@@ -27,7 +27,7 @@ require(
       var defaultWindowType = windowType || WindowTypes.STATIC;
       var defaultMediaKind = mediaKind || MediaKinds.VIDEO;
 
-      html5Strategy = HTML5Strategy(mockMediaSources, defaultWindowType, defaultMediaKind, playbackElement);
+      basicStrategy = BasicStrategy(mockMediaSources, defaultWindowType, defaultMediaKind, playbackElement);
     }
 
     describe('HTML5 Strategy', function () {
@@ -57,8 +57,8 @@ require(
           'bigscreenplayer/dynamicwindowutils': mockDynamicWindowUtils
         });
 
-        injector.require(['bigscreenplayer/playbackstrategy/html5strategy'], function (SquiredHTML5Strategy) {
-          HTML5Strategy = SquiredHTML5Strategy;
+        injector.require(['bigscreenplayer/playbackstrategy/basicstrategy'], function (SquiredBasicStrategy) {
+          BasicStrategy = SquiredBasicStrategy;
 
           spyOn(document, 'createElement').and.callFake(function (elementType) {
             if (elementType === 'audio') {
@@ -89,7 +89,7 @@ require(
       afterEach(function () {
         mockDynamicWindowUtils.autoResumeAtStartOfRange.calls.reset();
         testTimeCorrection = 0;
-        html5Strategy.tearDown();
+        basicStrategy.tearDown();
         mockVideoElement = undefined;
         mockAudioElement = undefined;
       });
@@ -98,8 +98,8 @@ require(
         it('canBePaused() and canBeginSeek transitions are true', function () {
           setUpStrategy();
 
-          expect(html5Strategy.transitions.canBePaused()).toBe(true);
-          expect(html5Strategy.transitions.canBeginSeek()).toBe(true);
+          expect(basicStrategy.transitions.canBePaused()).toBe(true);
+          expect(basicStrategy.transitions.canBeginSeek()).toBe(true);
         });
       });
 
@@ -109,7 +109,7 @@ require(
 
           expect(playbackElement.childElementCount).toBe(0);
 
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
 
           expect(playbackElement.firstChild).toBe(mockVideoElement);
           expect(playbackElement.childElementCount).toBe(1);
@@ -120,7 +120,7 @@ require(
 
           expect(playbackElement.childElementCount).toBe(0);
 
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
 
           expect(playbackElement.firstChild).toBe(mockAudioElement);
           expect(playbackElement.childElementCount).toBe(1);
@@ -128,7 +128,7 @@ require(
 
         it('should set the style properties correctly on the media element', function () {
           setUpStrategy(null, MediaKinds.VIDEO);
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
 
           expect(mockVideoElement.style.position).toBe('absolute');
           expect(mockVideoElement.style.width).toBe('100%');
@@ -137,7 +137,7 @@ require(
 
         it('should set the autoplay and preload properties correctly on the media element', function () {
           setUpStrategy(null, MediaKinds.VIDEO);
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
 
           expect(mockVideoElement.autoplay).toBe(true);
           expect(mockVideoElement.preload).toBe('auto');
@@ -145,35 +145,35 @@ require(
 
         it('should set the source url correctly on the media element', function () {
           setUpStrategy(null, MediaKinds.VIDEO);
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
 
           expect(mockVideoElement.src).toBe('http://testcdn1/test/');
         });
 
         it('should set the currentTime to start time if one is provided', function () {
           setUpStrategy(null, MediaKinds.VIDEO);
-          html5Strategy.load(null, 25);
+          basicStrategy.load(null, 25);
 
           expect(mockVideoElement.currentTime).toEqual(25);
         });
 
         it('should not set the currentTime to start time if one is not provided', function () {
           setUpStrategy(null, MediaKinds.VIDEO);
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
           expect(mockVideoElement.currentTime).toEqual(0);
         });
 
         it('should call load on the media element', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
           expect(mockVideoElement.load).toHaveBeenCalled();
         });
 
         it('should update the media element source if load is when media element already exists', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
           expect(mockVideoElement.src).toBe('http://testcdn1/test/');
 
@@ -181,36 +181,36 @@ require(
             return cdnArray[1].url;
           };
 
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
           expect(mockVideoElement.src).toBe('http://testcdn2/test/');
         });
 
         it('should update the media element currentTime if load is called with a start time when media element already exists', function () {
           setUpStrategy();
-          html5Strategy.load(null, 25);
+          basicStrategy.load(null, 25);
 
           expect(mockVideoElement.currentTime).toEqual(25);
 
-          html5Strategy.load(null, 35);
+          basicStrategy.load(null, 35);
 
           expect(mockVideoElement.currentTime).toEqual(35);
         });
 
         it('should not update the media element currentTime if load is called without a start time when media element already exists', function () {
           setUpStrategy();
-          html5Strategy.load(null, 25);
+          basicStrategy.load(null, 25);
 
           expect(mockVideoElement.currentTime).toEqual(25);
 
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
           expect(mockVideoElement.currentTime).toEqual(25);
         });
 
         it('should set up bindings to media element events correctly', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
@@ -227,8 +227,8 @@ require(
       describe('play', function () {
         it('should call through to the media elements play function', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
-          html5Strategy.play();
+          basicStrategy.load(null, 0);
+          basicStrategy.play();
 
           expect(mockVideoElement.play).toHaveBeenCalled();
         });
@@ -237,16 +237,16 @@ require(
       describe('pause', function () {
         it('should call through to the media elements pause function', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
-          html5Strategy.pause();
+          basicStrategy.load(null, 0);
+          basicStrategy.pause();
 
           expect(mockVideoElement.pause).toHaveBeenCalled();
         });
 
         it('should start autoresume timeout if sliding window', function () {
           setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO);
-          html5Strategy.load(null, 0);
-          html5Strategy.pause();
+          basicStrategy.load(null, 0);
+          basicStrategy.pause();
 
           expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1);
           expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledWith(
@@ -255,7 +255,7 @@ require(
             jasmine.any(Function),
             jasmine.any(Function),
             jasmine.any(Function),
-            html5Strategy.play
+            basicStrategy.play
           );
         });
 
@@ -265,8 +265,8 @@ require(
           };
 
           setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO);
-          html5Strategy.load(null, 0);
-          html5Strategy.pause(opts);
+          basicStrategy.load(null, 0);
+          basicStrategy.pause(opts);
 
           expect(mockDynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled();
         });
@@ -297,31 +297,31 @@ require(
         it('returns the correct start and end time before load has been called', function () {
           setUpStrategy();
 
-          expect(html5Strategy.getSeekableRange()).toEqual({ start: 0, end: 0 });
+          expect(basicStrategy.getSeekableRange()).toEqual({ start: 0, end: 0 });
         });
 
         it('returns the correct start and end time before meta data has loaded', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
-          expect(html5Strategy.getSeekableRange()).toEqual({ start: 0, end: 0 });
+          expect(basicStrategy.getSeekableRange()).toEqual({ start: 0, end: 0 });
         });
 
         it('returns the correct start and end time once meta data has loaded', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
           eventCallbacks('loadedmetadata');
 
-          expect(html5Strategy.getSeekableRange()).toEqual({ start: 25, end: 100 });
+          expect(basicStrategy.getSeekableRange()).toEqual({ start: 25, end: 100 });
         });
 
         it('returns the correct start and end time minus any time correction', function () {
           testTimeCorrection = 20;
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
           eventCallbacks('loadedmetadata');
 
-          expect(html5Strategy.getSeekableRange()).toEqual({ start: 5, end: 80 });
+          expect(basicStrategy.getSeekableRange()).toEqual({ start: 5, end: 80 });
         });
       });
 
@@ -333,22 +333,22 @@ require(
         it('returns duration of zero before load has been called', function () {
           setUpStrategy();
 
-          expect(html5Strategy.getDuration()).toEqual(0);
+          expect(basicStrategy.getDuration()).toEqual(0);
         });
 
         it('returns duration of zero before meta data has loaded', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
-          expect(html5Strategy.getDuration()).toEqual(0);
+          expect(basicStrategy.getDuration()).toEqual(0);
         });
 
         it('returns the correct duration once meta data has loaded', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
           eventCallbacks('loadedmetadata');
 
-          expect(html5Strategy.getDuration()).toEqual(100);
+          expect(basicStrategy.getDuration()).toEqual(100);
         });
       });
 
@@ -360,28 +360,28 @@ require(
         it('returns currentTime of zero before load has been called', function () {
           setUpStrategy();
 
-          expect(html5Strategy.getCurrentTime()).toEqual(0);
+          expect(basicStrategy.getCurrentTime()).toEqual(0);
         });
 
         it('returns the correct currentTime once load has been called', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
-          expect(html5Strategy.getCurrentTime()).toEqual(5);
+          expect(basicStrategy.getCurrentTime()).toEqual(5);
 
           mockVideoElement.currentTime = 10;
 
-          expect(html5Strategy.getCurrentTime()).toEqual(10);
+          expect(basicStrategy.getCurrentTime()).toEqual(10);
         });
 
         it('subtracts any time correction from the media elements current time', function () {
           testTimeCorrection = 20;
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
           mockVideoElement.currentTime = 50;
 
-          expect(html5Strategy.getCurrentTime()).toEqual(30);
+          expect(basicStrategy.getCurrentTime()).toEqual(30);
         });
       });
 
@@ -409,68 +409,68 @@ require(
 
         it('sets the current time on the media element to that passed in', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
-          html5Strategy.setCurrentTime(10);
+          basicStrategy.setCurrentTime(10);
 
-          expect(html5Strategy.getCurrentTime()).toEqual(10);
+          expect(basicStrategy.getCurrentTime()).toEqual(10);
         });
 
         it('adds time correction from the media source onto the passed in seek time', function () {
           testTimeCorrection = 20;
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
-          html5Strategy.setCurrentTime(50);
+          basicStrategy.setCurrentTime(50);
 
           expect(mockVideoElement.currentTime).toEqual(70);
         });
 
         it('does not attempt to clamp time if meta data is not loaded', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
 
-          html5Strategy.setCurrentTime(110); // this is greater than expected seekable range. although range does not exist until meta data loaded
+          basicStrategy.setCurrentTime(110); // this is greater than expected seekable range. although range does not exist until meta data loaded
 
           expect(mockVideoElement.currentTime).toEqual(110);
         });
 
         it('clamps to 1.1 seconds before seekable range end when seeking to end', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
           eventCallbacks('loadedmetadata');
 
-          html5Strategy.setCurrentTime(seekableRange.end);
+          basicStrategy.setCurrentTime(seekableRange.end);
 
           expect(mockVideoElement.currentTime).toEqual(seekableRange.end - clampOffset);
         });
 
         it('clamps to 1.1 seconds before seekable range end when seeking past end', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
           eventCallbacks('loadedmetadata');
 
-          html5Strategy.setCurrentTime(seekableRange.end + 10);
+          basicStrategy.setCurrentTime(seekableRange.end + 10);
 
           expect(mockVideoElement.currentTime).toEqual(seekableRange.end - clampOffset);
         });
 
         it('clamps to 1.1 seconds before seekable range end when seeking prior to end', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
           eventCallbacks('loadedmetadata');
 
-          html5Strategy.setCurrentTime(seekableRange.end - 1);
+          basicStrategy.setCurrentTime(seekableRange.end - 1);
 
           expect(mockVideoElement.currentTime).toEqual(seekableRange.end - clampOffset);
         });
 
         it('clamps to the start of seekable range when seeking before start of range', function () {
           setUpStrategy();
-          html5Strategy.load(null, undefined);
+          basicStrategy.load(null, undefined);
           eventCallbacks('loadedmetadata');
 
-          html5Strategy.setCurrentTime(seekableRange.start - 10);
+          basicStrategy.setCurrentTime(seekableRange.start - 10);
 
           expect(mockVideoElement.currentTime).toEqual(seekableRange.start);
         });
@@ -479,44 +479,44 @@ require(
       describe('isPaused', function () {
         it('should return false when the media element is not paused', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
           spyOnProperty(mockVideoElement, 'paused').and.returnValue(false);
 
-          expect(html5Strategy.isPaused()).toBe(false);
+          expect(basicStrategy.isPaused()).toBe(false);
         });
 
         it('should return true when the media element is paused', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
           spyOnProperty(mockVideoElement, 'paused').and.returnValue(true);
 
-          expect(html5Strategy.isPaused()).toBe(true);
+          expect(basicStrategy.isPaused()).toBe(true);
         });
       });
 
       describe('isEnded', function () {
         it('should return false when the media element is not ended', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
           spyOnProperty(mockVideoElement, 'ended').and.returnValue(false);
 
-          expect(html5Strategy.isEnded()).toBe(false);
+          expect(basicStrategy.isEnded()).toBe(false);
         });
 
         it('should return true when the media element is ended', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
           spyOnProperty(mockVideoElement, 'ended').and.returnValue(true);
 
-          expect(html5Strategy.isEnded()).toBe(true);
+          expect(basicStrategy.isEnded()).toBe(true);
         });
       });
 
       describe('tearDown', function () {
         it('should remove all event listener bindings', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
-          html5Strategy.tearDown();
+          basicStrategy.load(null, 0);
+          basicStrategy.tearDown();
 
           expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('timeupdate', jasmine.any(Function));
           expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('playing', jasmine.any(Function));
@@ -531,11 +531,11 @@ require(
 
         it('should remove the video element', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
 
           expect(playbackElement.childElementCount).toBe(1);
 
-          html5Strategy.tearDown();
+          basicStrategy.tearDown();
 
           expect(playbackElement.childElementCount).toBe(0);
         });
@@ -544,9 +544,9 @@ require(
           setUpStrategy();
 
           function tearDownAndError () {
-            html5Strategy.addEventCallback(function () {}); // add event callback to prove array is emptied in tearDown
-            html5Strategy.load(null, 0);
-            html5Strategy.tearDown();
+            basicStrategy.addEventCallback(function () {}); // add event callback to prove array is emptied in tearDown
+            basicStrategy.load(null, 0);
+            basicStrategy.tearDown();
             eventCallbacks('pause');
           }
 
@@ -557,9 +557,9 @@ require(
           var errorCallbackSpy = jasmine.createSpy('errorSpy');
 
           setUpStrategy();
-          html5Strategy.addErrorCallback(this, errorCallbackSpy);
-          html5Strategy.load(null, 0);
-          html5Strategy.tearDown();
+          basicStrategy.addErrorCallback(this, errorCallbackSpy);
+          basicStrategy.load(null, 0);
+          basicStrategy.tearDown();
           eventCallbacks('error');
 
           expect(errorCallbackSpy).not.toHaveBeenCalled();
@@ -569,9 +569,9 @@ require(
           var timeUpdateCallbackSpy = jasmine.createSpy('timeUpdateSpy');
 
           setUpStrategy();
-          html5Strategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy);
-          html5Strategy.load(null, 0);
-          html5Strategy.tearDown();
+          basicStrategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy);
+          basicStrategy.load(null, 0);
+          basicStrategy.tearDown();
           eventCallbacks('timeupdate');
 
           expect(timeUpdateCallbackSpy).not.toHaveBeenCalled();
@@ -579,19 +579,19 @@ require(
 
         it('should undefine the mediaPlayer element', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
-          html5Strategy.tearDown();
+          basicStrategy.load(null, 0);
+          basicStrategy.tearDown();
 
-          expect(html5Strategy.getPlayerElement()).toBe(undefined);
+          expect(basicStrategy.getPlayerElement()).toBe(undefined);
         });
       });
 
       describe('getPlayerElement', function () {
         it('should return the mediaPlayer element', function () {
           setUpStrategy();
-          html5Strategy.load(null, 0);
+          basicStrategy.load(null, 0);
 
-          expect(html5Strategy.getPlayerElement()).toEqual(mockVideoElement);
+          expect(basicStrategy.getPlayerElement()).toEqual(mockVideoElement);
         });
       });
 
@@ -602,16 +602,16 @@ require(
 
         beforeEach(function () {
           setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO);
-          html5Strategy.load(null, 25);
+          basicStrategy.load(null, 25);
 
           eventCallbackSpy = jasmine.createSpy('eventSpy');
-          html5Strategy.addEventCallback(this, eventCallbackSpy);
+          basicStrategy.addEventCallback(this, eventCallbackSpy);
 
           timeUpdateCallbackSpy = jasmine.createSpy('timeUpdateSpy');
-          html5Strategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy);
+          basicStrategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy);
 
           errorCallbackSpy = jasmine.createSpy('errorSpy');
-          html5Strategy.addErrorCallback(this, errorCallbackSpy);
+          basicStrategy.addErrorCallback(this, errorCallbackSpy);
         });
 
         afterEach(function () {

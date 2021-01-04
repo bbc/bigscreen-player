@@ -1,4 +1,4 @@
-define('bigscreenplayer/playbackstrategy/html5strategy',
+define('bigscreenplayer/playbackstrategy/basicstrategy',
   [
     'bigscreenplayer/models/mediastate',
     'bigscreenplayer/models/windowtypes',
@@ -9,7 +9,7 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
     'bigscreenplayer/debugger/debugtool'
   ],
   function (MediaState, WindowTypes, MediaKinds, LiveSupport, DynamicWindowUtils, DOMHelpers, DebugTool) {
-    var HTML5Strategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
+    var BasicStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
       var eventCallbacks = [];
       var errorCallback;
       var timeUpdateCallback;
@@ -280,10 +280,10 @@ define('bigscreenplayer/playbackstrategy/html5strategy',
       };
     };
 
-    HTML5Strategy.getLiveSupport = function () {
+    BasicStrategy.getLiveSupport = function () {
       return LiveSupport.SEEKABLE;
     };
 
-    return HTML5Strategy;
+    return BasicStrategy;
   }
 );
