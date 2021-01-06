@@ -374,19 +374,7 @@ require(
             });
 
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-            mockEventHook({
-              data:
-              {
-                state: MediaState.WAITING,
-                currentTime: 0,
-                seekableRange: {
-                  start: 10,
-                  end: 100
-                }
-              }
-            });
 
-            expect(successCallback).not.toHaveBeenCalled();
             mockEventHook({
               data:
               {
@@ -452,19 +440,7 @@ require(
               }
             });
             initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-            mockEventHook({
-              data:
-              {
-                currentTime: 0,
-                seekableRange: {
-                  start: 10,
-                  end: 100
-                }
-              },
-              timeUpdate: true
-            });
 
-            expect(successCallback).not.toHaveBeenCalled();
             mockEventHook({
               data:
               {

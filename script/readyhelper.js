@@ -54,11 +54,11 @@ define(
           return currentTime >= 0;
         }
 
-        if (isValidSeekableRange(seekableRange)) {
-          return currentTime >= seekableRange.start &&
-            currentTime <= seekableRange.end;
+        if (!isValidSeekableRange(seekableRange)) {
+          return false;
         }
-        return false;
+
+        return true;
       }
 
       function isValidSeekableRange (seekableRange) {

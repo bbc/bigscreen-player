@@ -175,21 +175,6 @@ require(
           expect(callback).toHaveBeenCalledTimes(1);
         });
 
-        it('does not call the supplied callback when current time is outside of seekable range', function () {
-          readyHelper.callbackWhenReady({
-            timeUpdate: true,
-            data: {
-              currentTime: 1000000,
-              seekableRange: {
-                start: 0,
-                end: 1
-              }
-            }
-          });
-
-          expect(callback).not.toHaveBeenCalled();
-        });
-
         it('does not call the supplied callback when the seekable range is undefined', function () {
           readyHelper.callbackWhenReady({
             timeUpdate: true,
