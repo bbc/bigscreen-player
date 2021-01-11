@@ -42,8 +42,8 @@ define('bigscreenplayer/playbackstrategy/basicstrategy',
           setUpMediaElement(startTime);
           setUpMediaListeners();
         } else {
-          mediaElement.src = mediaSources.currentSource();
-          setStartTime(startTime);
+          var anchor = startTime ? '#t=' + (startTime + timeCorrection) : '';
+          mediaElement.src = mediaSources.currentSource() + anchor;
           mediaElement.load();
         }
       }
@@ -59,11 +59,11 @@ define('bigscreenplayer/playbackstrategy/basicstrategy',
         mediaElement.style.height = '100%';
         mediaElement.autoplay = true;
         mediaElement.preload = 'auto';
-        mediaElement.src = mediaSources.currentSource();
+        var anchor = startTime ? '#t=' + (startTime + timeCorrection) : '';
+        mediaElement.src = mediaSources.currentSource() + anchor;
 
         playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
 
-        setStartTime(startTime);
         mediaElement.load();
       }
 
@@ -79,11 +79,11 @@ define('bigscreenplayer/playbackstrategy/basicstrategy',
         mediaElement.addEventListener('loadedmetadata', onLoadedMetadata);
       }
 
-      function setStartTime (startTime) {
-        if (startTime) {
-          mediaElement.currentTime = startTime + timeCorrection;
-        }
-      }
+      // function setStartTime (startTime) {
+      //   if (startTime) {
+      //     mediaElement.currentTime = startTime + timeCorrection;
+      //   }
+      // }
 
       function onPlaying () {
         publishMediaState(MediaState.PLAYING);
