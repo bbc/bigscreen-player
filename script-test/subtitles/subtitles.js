@@ -122,10 +122,11 @@ require(
             var url = 'http://captions.example.test';
             var autoStart = true;
             var mockPlaybackElement = document.createElement('div');
+            var customDefaultStyle = {};
 
-            Subtitles(mockMediaPlayer, url, autoStart, mockPlaybackElement);
+            Subtitles(mockMediaPlayer, url, autoStart, mockPlaybackElement, customDefaultStyle);
 
-            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, jasmine.objectContaining({text: stubResponse, xml: stubResponse}), autoStart, mockPlaybackElement);
+            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, jasmine.objectContaining({text: stubResponse, xml: stubResponse}), autoStart, mockPlaybackElement, customDefaultStyle);
           });
 
           it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
