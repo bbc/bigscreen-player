@@ -7,9 +7,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   ],
   function (IMSC, DOMHelpers, DebugTool, Plugins) {
     'use strict';
-    return function (mediaPlayer, response, autoStart, parentElement) {
+    return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
       var previousSubtitlesIndex = null;
+      var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
       var xml;
       var times = [];
@@ -23,6 +24,22 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       } catch (e) {
         DebugTool.info('Error transforming captions : ' + e);
         Plugins.interface.onSubtitlesTransformError();
+      }
+
+      // Opts: { backgroundColour: string (css colour, hex), fontFamily: string }
+      function transformStyleOptions (opts) {
+        if (opts === undefined) return;
+
+        var customStyles = {};
+
+        if (opts.backgroundColour) {
+          customStyles.spanBackgroundColorAdjust = {transparent: opts.backgroundColour, black: opts.backgroundColour};
+        }
+
+        if (opts.fontFamily) {
+          customStyles.fontFamily = opts.fontFamily;
+        }
+        return customStyles;
       }
 
       function nextSubtitleIndex (currentTime) {
@@ -61,7 +78,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
           try {
             var isd = IMSC.generateISD(xml, currentTime);
-            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false);
+            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false, imscRenderOpts);
           } catch (e) {
             DebugTool.info('Exception while rendering subtitles: ' + e);
             Plugins.interface.onSubtitlesRenderError();
