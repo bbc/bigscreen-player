@@ -128,7 +128,7 @@ require(
 
         it('overrides the subtitles styling metadata with supplied defaults when rendering', function () {
           var styleOpts = { backgroundColour: 'black', fontFamily: 'Arial' };
-          var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black', black: 'black' }, fontFamily: 'Arial' };
+          var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial' };
           subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement, styleOpts);
 
           subtitles.start();
