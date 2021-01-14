@@ -33,7 +33,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var customStyles = {};
 
         if (opts.backgroundColour) {
-          customStyles.spanBackgroundColorAdjust = {transparent: opts.backgroundColour, black: opts.backgroundColour};
+          customStyles.spanBackgroundColorAdjust = {transparent: opts.backgroundColour};
         }
 
         if (opts.fontFamily) {
