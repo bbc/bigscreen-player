@@ -26,7 +26,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         Plugins.interface.onSubtitlesTransformError();
       }
 
-      // Opts: { backgroundColour: string (css colour, hex), fontFamily: string }
+      // Opts: { backgroundColour: string (css colour, hex), fontFamily: string , size: number, lineHeight: number }
       function transformStyleOptions (opts) {
         if (opts === undefined) return;
 
@@ -39,6 +39,15 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         if (opts.fontFamily) {
           customStyles.fontFamily = opts.fontFamily;
         }
+
+        if (opts.size) {
+          customStyles.sizeAdjust = opts.size;
+        }
+
+        if (opts.lineHeight) {
+          customStyles.lineHeightAdjust = opts.lineHeight;
+        }
+
         return customStyles;
       }
 
