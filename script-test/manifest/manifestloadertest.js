@@ -93,7 +93,8 @@ require(
 
             var expectedResponse = {
               transferFormat: TransferFormats.DASH,
-              time: jasmine.any(Object)
+              time: jasmine.any(Object),
+              manifest: jasmine.any(Object)
             };
 
             expect(callbackSpies.onSuccess).toHaveBeenCalledWith(expectedResponse);

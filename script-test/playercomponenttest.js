@@ -162,7 +162,7 @@ require(
           var opts = {subtitlesEnabled: true};
           setUpPlayerComponent(opts);
 
-          expect(mockSubtitlesConstructor).toHaveBeenCalledWith(jasmine.anything(), corePlaybackData.media.captionsUrl, opts.subtitlesEnabled, playbackElement);
+          expect(mockSubtitlesConstructor).toHaveBeenCalledWith(jasmine.anything(), corePlaybackData.media.captionsUrl, opts.subtitlesEnabled, playbackElement, mockMediaSources);
         });
       });
 
