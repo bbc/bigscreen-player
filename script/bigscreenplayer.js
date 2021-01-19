@@ -183,8 +183,7 @@ define('bigscreenplayer/bigscreenplayer',
 
           var mediaSourceCallbacks = {
             onSuccess: function () {
-              // default enable subtitles to true! for live subs!!!!
-              bigscreenPlayerDataLoaded(bigscreenPlayerData, true);
+              bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles);
             },
             onError: function (error) {
               if (callbacks.onError) {
