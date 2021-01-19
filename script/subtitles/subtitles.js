@@ -1,7 +1,7 @@
 define('bigscreenplayer/subtitles/subtitles',
   [
     'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'imscsubtitles'),
-    'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'fragmentedsubtitles'),
+    'bigscreenplayer/subtitles/fragmentedsubtitles',
     'bigscreenplayer/utils/loadurl',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins'

@@ -1,4 +1,4 @@
-define('bigscreenplayer/subtitles/imscsubtitles',
+define('bigscreenplayer/subtitles/fragmentedsubtitles',
   [
     'bigscreenplayer/external/smp-imsc',
     'bigscreenplayer/domhelpers',
