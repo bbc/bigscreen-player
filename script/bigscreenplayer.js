@@ -270,10 +270,12 @@ define('bigscreenplayer/bigscreenplayer',
           return playerComponent ? playerComponent.getSeekableRange() : {};
         },
         isPlayingAtLiveEdge: function () {
-          externalDebugger.info('BSP', {seekableRange: this.getSeekableRange().end, currenttime: this.getCurrentTime()});
           var seekableRangeEndCurrentTimeDiff = Math.abs(this.getSeekableRange().end - this.getCurrentTime())
           var isAtLivePoint = !!playerComponent && windowType !== WindowTypes.STATIC &&  seekableRangeEndCurrentTimeDiff < END_OF_STREAM_TOLERANCE;
-          externalDebugger.warn('BSP', {difference: seekableRangeEndCurrentTimeDiff, isAtLivePoint: isAtLivePoint});
+          if(externalDebugger) {
+            externalDebugger.info('BSP', {seekableRange: this.getSeekableRange().end, currenttime: this.getCurrentTime()});
+            externalDebugger.warn('BSP', {difference: seekableRangeEndCurrentTimeDiff, isAtLivePoint: isAtLivePoint});
+          }
           return isAtLivePoint;
         },
         getLiveWindowData: function () {
