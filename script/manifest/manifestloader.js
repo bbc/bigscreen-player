@@ -19,7 +19,8 @@ define(
               if (responseXML) {
                 callbacks.onSuccess({
                   transferFormat: TransferFormats.DASH,
-                  time: ManifestParser.parse(responseXML, 'mpd', dateWithOffset)
+                  time: ManifestParser.parse(responseXML, 'mpd', dateWithOffset),
+                  manifest: responseXML
                 });
               } else {
                 callbacks.onError('Unable to retrieve DASH XML response');

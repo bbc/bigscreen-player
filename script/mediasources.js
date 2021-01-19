@@ -20,6 +20,7 @@ define('bigscreenplayer/mediasources',
       var serverDate;
       var time = {};
       var transferFormat;
+      var manifest;
 
       function init (urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
         if (urls === undefined || urls.length === 0) {
@@ -110,6 +111,7 @@ define('bigscreenplayer/mediasources',
         var onManifestLoadSuccess = function (manifestData) {
           time = manifestData.time;
           transferFormat = manifestData.transferFormat;
+          manifest = manifestData.manifest;
           callbacks.onSuccess();
         };
 
@@ -194,13 +196,18 @@ define('bigscreenplayer/mediasources',
         DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
       }
 
+      function getManifest () {
+        return manifest;
+      }
+
       return {
         init: init,
         failover: failover,
         refresh: refresh,
         currentSource: getCurrentUrl,
         availableSources: availableUrls,
-        time: generateTime
+        time: generateTime,
+        getManifest: getManifest
       };
     };
   });

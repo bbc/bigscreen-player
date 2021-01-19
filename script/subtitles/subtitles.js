@@ -1,42 +1,48 @@
 define('bigscreenplayer/subtitles/subtitles',
   [
     'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'imscsubtitles'),
+    'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'fragmentedsubtitles'),
     'bigscreenplayer/utils/loadurl',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins'
   ],
-  function (SubtitlesContainer, LoadURL, DebugTool, Plugins) {
+  function (SubtitlesContainer, FragmentedSubtitles, LoadURL, DebugTool, Plugins) {
     'use strict';
     // playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement TODO: change the ordering of this, doesn't make sense.
-    return function (mediaPlayer, url, autoStart, playbackElement) {
+    return function (mediaPlayer, url, autoStart, playbackElement, mediaSources) {
       var subtitlesContainer;
       var subtitlesEnabled = autoStart;
       var subtitlesAvailable = !!url;
 
-      if (subtitlesAvailable) {
-        DebugTool.info('Loading subtitles from: ' + url);
-        LoadURL(url, {
-          onLoad: function (responseXML, responseText, status) {
-            if (!responseXML) {
-              DebugTool.info('Error: responseXML is invalid.');
-              Plugins.interface.onSubtitlesTransformError();
-              return;
-            }
+      // race condition
+      if (mediaSources && mediaSources.time().windowStartTime) {
+        subtitlesContainer = FragmentedSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources);
+      } else {
+        if (subtitlesAvailable) {
+          DebugTool.info('Loading subtitles from: ' + url);
+          LoadURL(url, {
+            onLoad: function (responseXML, responseText, status) {
+              if (!responseXML) {
+                DebugTool.info('Error: responseXML is invalid.');
+                Plugins.interface.onSubtitlesTransformError();
+                return;
+              }
 
-            var response = {
-              text: responseText,
-              xml: responseXML
-            };
+              var response = {
+                text: responseText,
+                xml: responseXML
+              };
 
-            if (status === 200) {
-              subtitlesContainer = SubtitlesContainer(mediaPlayer, response, autoStart, playbackElement);
+              if (status === 200) {
+                subtitlesContainer = SubtitlesContainer(mediaPlayer, response, autoStart, playbackElement);
+              }
+            },
+            onError: function (error) {
+              DebugTool.info('Error loading subtitles data: ' + error);
+              Plugins.interface.onSubtitlesLoadError();
             }
-          },
-          onError: function (error) {
-            DebugTool.info('Error loading subtitles data: ' + error);
-            Plugins.interface.onSubtitlesLoadError();
-          }
-        });
+          });
+        }
       }
 
       function enable () {
