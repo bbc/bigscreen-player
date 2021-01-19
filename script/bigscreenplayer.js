@@ -35,6 +35,8 @@ define('bigscreenplayer/bigscreenplayer',
       var playbackElement;
       var readyHelper;
 
+      var externalDebugger;
+
       var END_OF_STREAM_TOLERANCE = 10;
 
       function mediaStateUpdateCallback (evt) {
@@ -168,7 +170,8 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       return {
-        init: function (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
+        init: function (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks, newExternalDebugger) {
+          externalDebugger = newExternalDebugger;
           playbackElement = newPlaybackElement;
           Chronicle.init();
           resizer = Resizer();
@@ -267,7 +270,11 @@ define('bigscreenplayer/bigscreenplayer',
           return playerComponent ? playerComponent.getSeekableRange() : {};
         },
         isPlayingAtLiveEdge: function () {
-          return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
+          externalDebugger.info('BSP', {seekableRange: this.getSeekableRange().end, currenttime: this.getCurrentTime()});
+          var seekableRangeEndCurrentTimeDiff = Math.abs(this.getSeekableRange().end - this.getCurrentTime())
+          var isAtLivePoint = !!playerComponent && windowType !== WindowTypes.STATIC &&  seekableRangeEndCurrentTimeDiff < END_OF_STREAM_TOLERANCE;
+          externalDebugger.warn('BSP', {difference: seekableRangeEndCurrentTimeDiff, isAtLivePoint: isAtLivePoint});
+          return isAtLivePoint;
         },
         getLiveWindowData: function () {
           if (windowType === WindowTypes.STATIC) {
