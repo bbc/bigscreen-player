@@ -744,22 +744,29 @@ require(
           expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false);
         });
 
-        it('should return true when playing live and current time is within tolerance of seekable range end', function () {
+        it('should return true on when playback has been started from the live point', function () {
           initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-
-          mockPlayerComponentInstance.getCurrentTime.and.returnValue(100);
-          mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 105});
 
           expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(true);
         });
 
-        it('should return false when playing live and current time is outside the tolerance of seekable range end', function () {
+        it('should return false when playing live and pause event is recieved', function () {
           initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
-
-          mockPlayerComponentInstance.getCurrentTime.and.returnValue(95);
-          mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 105});
+          mockEventHook({data: {state: MediaState.PAUSED}});
 
           expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false);
+        });
+
+        it('should return true when seeking to end and current time is within tolerance of the seekable range end', function () {
+          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+          mockEventHook({data: {state: MediaState.PAUSED}});
+
+          mockPlayerComponentInstance.getCurrentTime.and.returnValue(50);
+          mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 105});
+
+          bigscreenPlayer.setCurrentTime(100);
+
+          expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(true);
         });
       });
 

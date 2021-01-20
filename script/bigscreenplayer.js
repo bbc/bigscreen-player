@@ -29,7 +29,7 @@ define('bigscreenplayer/bigscreenplayer',
       var resizer;
       var pauseTrigger;
       var isSeeking = false;
-      var endOfStream;
+      var endOfStream = false;
       var windowType;
       var mediaSources;
       var playbackElement;
