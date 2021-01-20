@@ -267,7 +267,8 @@ define('bigscreenplayer/bigscreenplayer',
           return playerComponent ? playerComponent.getSeekableRange() : {};
         },
         isPlayingAtLiveEdge: function () {
-          return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
+          // prefer this 'user intent' method of determining this, as some devices don't start up close enough to live
+          return endOfStream;
         },
         getLiveWindowData: function () {
           if (windowType === WindowTypes.STATIC) {
