@@ -12,7 +12,7 @@ define('bigscreenplayer/subtitles/subtitles',
     return function (mediaPlayer, url, autoStart, playbackElement, mediaSources, fragmentedSubtitleData) {
       var subtitlesContainer;
       var subtitlesEnabled = autoStart;
-      var subtitlesAvailable = !!url || (mediaSources && mediaSources.time().windowStartTime);
+      var subtitlesAvailable = !!url || fragmentedSubtitleData;
 
       // race condition
       if (fragmentedSubtitleData) {
