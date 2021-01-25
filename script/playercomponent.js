@@ -40,7 +40,7 @@ define(
 
       bubbleErrorCleared();
 
-      var subtitles = Subtitles(playbackStrategy, captionsURL, enableSubtitles, playbackElement, mediaSources);
+      var subtitles = Subtitles(playbackStrategy, captionsURL, enableSubtitles, playbackElement, mediaSources, bigscreenPlayerData.media.fragmentedSubtitlesData);
       initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime);
 
       function play () {

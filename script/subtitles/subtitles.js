@@ -9,14 +9,14 @@ define('bigscreenplayer/subtitles/subtitles',
   function (SubtitlesContainer, FragmentedSubtitles, LoadURL, DebugTool, Plugins) {
     'use strict';
     // playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement TODO: change the ordering of this, doesn't make sense.
-    return function (mediaPlayer, url, autoStart, playbackElement, mediaSources) {
+    return function (mediaPlayer, url, autoStart, playbackElement, mediaSources, fragmentedSubtitleData) {
       var subtitlesContainer;
       var subtitlesEnabled = autoStart;
       var subtitlesAvailable = !!url || (mediaSources && mediaSources.time().windowStartTime);
 
       // race condition
-      if (mediaSources && mediaSources.time().windowStartTime) {
-        subtitlesContainer = FragmentedSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources);
+      if (fragmentedSubtitleData) {
+        subtitlesContainer = FragmentedSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, fragmentedSubtitleData);
       } else {
         if (subtitlesAvailable) {
           DebugTool.info('Loading subtitles from: ' + url);

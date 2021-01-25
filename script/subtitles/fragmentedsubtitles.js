@@ -8,7 +8,7 @@ define('bigscreenplayer/subtitles/fragmentedsubtitles',
   ],
   function (IMSC, DOMHelpers, DebugTool, Plugins, LoadURL) {
     'use strict';
-    return function (mediaPlayer, autoStart, parentElement, mediaSources) {
+    return function (mediaPlayer, autoStart, parentElement, mediaSources, fragmentedSubtitleData) {
       var currentSubtitlesElement;
       var updateInterval;
       var fragments = [null, null, null, null, null, null, null, null, null, null];
@@ -67,9 +67,9 @@ define('bigscreenplayer/subtitles/fragmentedsubtitles',
       function start () {
         setInterval(function () {
           var epochSeconds = (mediaSources.time().windowStartTime / 1000) + mediaPlayer.getCurrentTime();
-          var segmentToLoad = Math.floor(epochSeconds / 3.84) + 2;
+          var segmentToLoad = Math.floor(epochSeconds / fragmentedSubtitleData.segmentLength) + 2;
 
-          var url = getCaptionsUrl('caption1=64000', segmentToLoad);
+          var url = fragmentedSubtitleData.url.replace('$segment$', segmentToLoad);
 
           var segmentNotLoaded = liveSegmentsLoaded.indexOf(segmentToLoad) === -1;
 
