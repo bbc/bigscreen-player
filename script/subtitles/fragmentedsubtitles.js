@@ -91,7 +91,7 @@ define('bigscreenplayer/subtitles/fragmentedsubtitles',
                   previousIndex: null
                 };
 
-                // circular buffer - keep 10 fragments
+                // circular buffer - keep 10 fragments -
                 fragmentIndex++;
                 if (fragmentIndex > 9) {
                   fragmentIndex = 0;
