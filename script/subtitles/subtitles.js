@@ -8,7 +8,7 @@ define('bigscreenplayer/subtitles/subtitles',
   function (SubtitlesContainer, LoadURL, DebugTool, Plugins) {
     'use strict';
     // playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement TODO: change the ordering of this, doesn't make sense.
-    return function (mediaPlayer, url, autoStart, playbackElement) {
+    return function (mediaPlayer, url, autoStart, playbackElement, defaultStyleOpts) {
       var subtitlesContainer;
       var subtitlesEnabled = autoStart;
       var subtitlesAvailable = !!url;
@@ -29,7 +29,7 @@ define('bigscreenplayer/subtitles/subtitles',
             };
 
             if (status === 200) {
-              subtitlesContainer = SubtitlesContainer(mediaPlayer, response, autoStart, playbackElement);
+              subtitlesContainer = SubtitlesContainer(mediaPlayer, response, autoStart, playbackElement, defaultStyleOpts);
             }
           },
           onError: function (error) {

@@ -100,7 +100,7 @@ require(
 
       describe('update interval', function () {
         beforeEach(function () {
-          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, false, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement);
         });
 
         afterEach(function () {
@@ -109,7 +109,7 @@ require(
 
         it('cannot start when xml transforming has failed', function () {
           imscMock.fromXML.and.throwError();
-          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, false, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement);
 
           subtitles.start();
           progressTime(1.5);
@@ -124,6 +124,17 @@ require(
 
           expect(imscMock.generateISD).not.toHaveBeenCalled();
           expect(imscMock.renderHTML).not.toHaveBeenCalled();
+        });
+
+        it('overrides the subtitles styling metadata with supplied defaults when rendering', function () {
+          var styleOpts = { backgroundColour: 'black', fontFamily: 'Arial' };
+          var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial' };
+          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement, styleOpts);
+
+          subtitles.start();
+          progressTime(9);
+
+          expect(imscMock.renderHTML).toHaveBeenCalledWith(undefined, jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
         });
 
         it('does not try to generate and render when the initial current time is less than the first subtitle time', function () {
