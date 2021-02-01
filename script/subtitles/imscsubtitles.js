@@ -4,9 +4,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'bigscreenplayer/domhelpers',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/utils/playbackutils'
+    'bigscreenplayer/utils/playbackutils',
+    'bigscreenplayer/subtitles/stubxml'
   ],
-  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, StubXML) {
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
@@ -101,6 +102,28 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         }
       }
 
+      function renderExample (testString, styleOpts, div) {
+        var xmlString = StubXML(testString);
+        var exampleXml = IMSC.fromXML(xmlString);
+
+        var customStyleOptions = transformStyleOptions(styleOpts);
+        var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions);
+
+        //removeCurrentSubtitlesElement();
+
+        var exampleSubtitlesElement = document.createElement('div');
+        exampleSubtitlesElement.id = 'example_subtitles';
+        div.appendChild(exampleSubtitlesElement);
+
+        try {
+          var isd = IMSC.generateISD(exampleXml, 10);
+          IMSC.renderHTML(isd, exampleSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false, exampleStyle);
+        } catch (e) {
+          DebugTool.info('Exception while rendering subtitles: ' + e);
+          Plugins.interface.onSubtitlesRenderError();
+        }
+      }
+
       function start () {
         if (xml && times.length > 0) {
           updateInterval = setInterval(function () {
@@ -125,6 +148,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         stop: stop,
         updatePosition: function () {},
         customise: customise,
+        renderExample: renderExample,
         tearDown: function () {
           stop();
           xml = undefined;
