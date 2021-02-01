@@ -109,7 +109,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var customStyleOptions = transformStyleOptions(styleOpts);
         var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions);
 
-        //removeCurrentSubtitlesElement();
+        // removeCurrentSubtitlesElement();
 
         var exampleSubtitlesElement = document.createElement('div');
         exampleSubtitlesElement.id = 'example_subtitles';
