@@ -100,7 +100,7 @@ require(
 
       beforeEach(function (done) {
         injector = new Squire();
-        mockSubtitles = jasmine.createSpyObj('Subtitles', ['enable', 'disable', 'show', 'hide', 'enabled', 'available', 'setPosition', 'tearDown']);
+        mockSubtitles = jasmine.createSpyObj('Subtitles', ['enable', 'disable', 'show', 'hide', 'enabled', 'available', 'setPosition', 'customise', 'tearDown']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
 
         mockPlugins = {
@@ -292,6 +292,16 @@ require(
 
           expect(mockSubtitles.available).toHaveBeenCalled();
           expect(value).toBe(true);
+        });
+      });
+
+      describe('customiseSubtitles', function () {
+        it('should pass through style object to subtitles customise function', function () {
+          setUpPlayerComponent();
+          var customStyleObj = { size: 0.7 };
+          playerComponent.customiseSubtitles(customStyleObj);
+
+          expect(mockSubtitles.customise).toHaveBeenCalledWith(customStyleObj);
         });
       });
 

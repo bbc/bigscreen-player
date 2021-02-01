@@ -112,7 +112,7 @@ require(
         var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'keyValue', 'tearDown', 'setRootElement']);
         mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-          'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'showSubtitles', 'hideSubtitles', 'tearDown',
+          'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'showSubtitles', 'hideSubtitles', 'customiseSubtitles', 'tearDown',
           'getWindowStartTime', 'getWindowEndTime']);
         mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
@@ -951,6 +951,16 @@ require(
           bigscreenPlayer.isSubtitlesAvailable();
 
           expect(mockPlayerComponentInstance.isSubtitlesAvailable).toHaveBeenCalledWith();
+        });
+      });
+
+      describe('customiseSubtitles', function () {
+        it('passes through custom styles to playerComponent customiseSubtitles when called', function () {
+          initialiseBigscreenPlayer();
+          var customStyleObj = { size: 0.7 };
+          bigscreenPlayer.customiseSubtitles(customStyleObj);
+
+          expect(mockPlayerComponentInstance.customiseSubtitles).toHaveBeenCalledWith(customStyleObj);
         });
       });
 
