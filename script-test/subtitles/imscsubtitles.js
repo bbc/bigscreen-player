@@ -148,6 +148,20 @@ require(
           expect(imscMock.renderHTML).toHaveBeenCalledWith(undefined, jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
         });
 
+        it('merges the current subtitles styling metadata with new supplied custom styles when rendering', function () {
+          var defaultStyleOpts = { backgroundColour: 'black', fontFamily: 'Arial' };
+          var customStyleOpts = { size: 0.7, lineHeight: 0.9 };
+          var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial', sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
+
+          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement, defaultStyleOpts);
+
+          subtitles.start();
+          subtitles.customise(customStyleOpts);
+          progressTime(9);
+
+          expect(imscMock.renderHTML).toHaveBeenCalledWith(undefined, jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
+        });
+
         it('does not try to generate and render when the initial current time is less than the first subtitle time', function () {
           subtitles.start();
 

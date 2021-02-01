@@ -3,9 +3,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'bigscreenplayer/external/smp-imsc',
     'bigscreenplayer/domhelpers',
     'bigscreenplayer/debugger/debugtool',
-    'bigscreenplayer/plugins'
+    'bigscreenplayer/plugins',
+    'bigscreenplayer/utils/playbackutils'
   ],
-  function (IMSC, DOMHelpers, DebugTool, Plugins) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils) {
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
@@ -111,7 +112,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function customise (styleOpts) {
-        imscRenderOpts = transformStyleOptions(styleOpts);
+        var customStyleOptions = transformStyleOptions(styleOpts);
+        imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions);
       }
 
       return {
