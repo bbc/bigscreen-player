@@ -107,8 +107,8 @@ define(
         return subtitles.available();
       }
 
-      function customiseSubtitles (opts) {
-        subtitles.customise(opts);
+      function customiseSubtitles (styleOpts) {
+        subtitles.customise(styleOpts);
       }
 
       function setTransportControlPosition (flags) {

@@ -73,9 +73,9 @@ define('bigscreenplayer/subtitles/subtitles',
         }
       }
 
-      function customise (opts) {
+      function customise (styleOpts) {
         if (subtitlesContainer) {
-          subtitlesContainer.customise(opts);
+          subtitlesContainer.customise(styleOpts);
         }
       }
 

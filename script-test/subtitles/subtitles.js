@@ -88,7 +88,7 @@ require(
         var subtitlesContainer;
 
         beforeEach(function (done) {
-          subtitlesContainerSpies = jasmine.createSpyObj('subtitlesContainer', ['start', 'stop', 'updatePosition', 'tearDown']);
+          subtitlesContainerSpies = jasmine.createSpyObj('subtitlesContainer', ['start', 'stop', 'updatePosition', 'customise', 'tearDown']);
           subtitlesContainer = jasmine.createSpy();
           subtitlesContainer.and.callFake(function () {
             return subtitlesContainerSpies;
@@ -274,6 +274,25 @@ require(
             subtitles.setPosition('pos');
 
             expect(subtitlesContainerSpies.updatePosition).not.toHaveBeenCalledWith('pos');
+          });
+        });
+
+        describe('customise', function () {
+          it('calls through to subtitlesContainer customise', function () {
+            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            subtitles.customise({});
+
+            expect(subtitlesContainerSpies.customise).toHaveBeenCalledWith(jasmine.any(Object));
+          });
+
+          it('does not attempt to call through to subtitlesContainer customise if subtitles have not been loaded', function () {
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
+            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            subtitles.customise({});
+
+            expect(subtitlesContainerSpies.customise).not.toHaveBeenCalled();
           });
         });
 

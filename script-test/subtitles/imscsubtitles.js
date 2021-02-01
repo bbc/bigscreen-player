@@ -137,6 +137,17 @@ require(
           expect(imscMock.renderHTML).toHaveBeenCalledWith(undefined, jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
         });
 
+        it('overrides the subtitles styling metadata with supplied custom styles when rendering', function () {
+          var styleOpts = { size: 0.7, lineHeight: 0.9 };
+          var expectedOpts = { sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
+
+          subtitles.start();
+          subtitles.customise(styleOpts);
+          progressTime(9);
+
+          expect(imscMock.renderHTML).toHaveBeenCalledWith(undefined, jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
+        });
+
         it('does not try to generate and render when the initial current time is less than the first subtitle time', function () {
           subtitles.start();
 
