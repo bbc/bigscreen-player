@@ -143,7 +143,6 @@ require(
 
           subtitles.start();
           subtitles.customise(styleOpts);
-          progressTime(9);
 
           expect(imscMock.renderHTML).toHaveBeenCalledWith(undefined, jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
         });
@@ -157,7 +156,6 @@ require(
 
           subtitles.start();
           subtitles.customise(customStyleOpts);
-          progressTime(9);
 
           expect(imscMock.renderHTML).toHaveBeenCalledWith(undefined, jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
         });

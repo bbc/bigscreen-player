@@ -80,21 +80,24 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var generateAndRender = subtitlesIndex !== previousSubtitlesIndex;
 
         if (generateAndRender) {
-          removeCurrentSubtitlesElement();
-
-          currentSubtitlesElement = document.createElement('div');
-          currentSubtitlesElement.id = 'bsp_subtitles';
-          parentElement.appendChild(currentSubtitlesElement);
-
-          try {
-            var isd = IMSC.generateISD(xml, currentTime);
-            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false, imscRenderOpts);
-          } catch (e) {
-            DebugTool.info('Exception while rendering subtitles: ' + e);
-            Plugins.interface.onSubtitlesRenderError();
-          }
-
+          render(currentTime);
           previousSubtitlesIndex = subtitlesIndex;
+        }
+      }
+
+      function render (currentTime) {
+        removeCurrentSubtitlesElement();
+
+        currentSubtitlesElement = document.createElement('div');
+        currentSubtitlesElement.id = 'bsp_subtitles';
+        parentElement.appendChild(currentSubtitlesElement);
+
+        try {
+          var isd = IMSC.generateISD(xml, currentTime);
+          IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false, imscRenderOpts);
+        } catch (e) {
+          DebugTool.info('Exception while rendering subtitles: ' + e);
+          Plugins.interface.onSubtitlesRenderError();
         }
       }
 
@@ -114,6 +117,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       function customise (styleOpts) {
         var customStyleOptions = transformStyleOptions(styleOpts);
         imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions);
+        render(mediaPlayer.getCurrentTime());
       }
 
       return {
