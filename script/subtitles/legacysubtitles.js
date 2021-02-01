@@ -62,6 +62,7 @@ define(
         start: start,
         stop: stop,
         updatePosition: updatePosition,
+        customise: function () {},
         tearDown: tearDown
       };
     };

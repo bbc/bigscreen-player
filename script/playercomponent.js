@@ -107,6 +107,10 @@ define(
         return subtitles.available();
       }
 
+      function customiseSubtitles (opts) {
+        subtitles.customise(opts);
+      }
+
       function setTransportControlPosition (flags) {
         subtitles.setPosition(flags);
       }
@@ -375,6 +379,7 @@ define(
         hideSubtitles: hideSubtitles,
         isSubtitlesEnabled: isSubtitlesEnabled,
         setSubtitlesEnabled: setSubtitlesEnabled,
+        customiseSubtitles: customiseSubtitles,
         isPaused: isPaused,
         setTransportControlPosition: setTransportControlPosition,
         tearDown: tearDown

@@ -110,10 +110,15 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         removeCurrentSubtitlesElement();
       }
 
+      function customise (styleOpts) {
+        imscRenderOpts = transformStyleOptions(styleOpts);
+      }
+
       return {
         start: start,
         stop: stop,
         updatePosition: function () {},
+        customise: customise,
         tearDown: function () {
           stop();
           xml = undefined;

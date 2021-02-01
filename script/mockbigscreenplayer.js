@@ -286,6 +286,7 @@ define('bigscreenplayer/mockbigscreenplayer',
       isSubtitlesAvailable: function () {
         return subtitlesAvailable;
       },
+      customiseSubtitles: function (opts) {},
       setTransportControlsPosition: function (position) {},
       canSeek: function () {
         return canSeekState;
