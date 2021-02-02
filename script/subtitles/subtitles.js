@@ -79,6 +79,12 @@ define('bigscreenplayer/subtitles/subtitles',
         }
       }
 
+      function renderExample (xmlString, styleOpts, div) {
+        if (subtitlesContainer) {
+          subtitlesContainer.renderExample(xmlString, styleOpts, div);
+        }
+      }
+
       function tearDown () {
         if (subtitlesContainer) {
           subtitlesContainer.tearDown();
@@ -94,6 +100,7 @@ define('bigscreenplayer/subtitles/subtitles',
         available: available,
         setPosition: setPosition,
         customise: customise,
+        renderExample: renderExample,
         tearDown: tearDown
       };
     };

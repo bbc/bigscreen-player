@@ -111,6 +111,10 @@ define(
         subtitles.customise(styleOpts);
       }
 
+      function renderSubtitleExample (xmlString, styleOpts, div) {
+        subtitles.renderExample(xmlString, styleOpts, div);
+      }
+
       function setTransportControlPosition (flags) {
         subtitles.setPosition(flags);
       }
@@ -380,6 +384,7 @@ define(
         isSubtitlesEnabled: isSubtitlesEnabled,
         setSubtitlesEnabled: setSubtitlesEnabled,
         customiseSubtitles: customiseSubtitles,
+        renderSubtitleExample: renderSubtitleExample,
         isPaused: isPaused,
         setTransportControlPosition: setTransportControlPosition,
         tearDown: tearDown

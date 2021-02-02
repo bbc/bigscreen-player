@@ -63,6 +63,7 @@ define(
         stop: stop,
         updatePosition: updatePosition,
         customise: function () {},
+        renderExample: function () {},
         tearDown: tearDown
       };
     };

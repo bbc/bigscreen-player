@@ -4,10 +4,9 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'bigscreenplayer/domhelpers',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/utils/playbackutils',
-    'bigscreenplayer/subtitles/stubxml'
+    'bigscreenplayer/utils/playbackutils'
   ],
-  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, StubXML) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils) {
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
@@ -102,14 +101,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         }
       }
 
-      function renderExample (testString, styleOpts, div) {
-        var xmlString = StubXML(testString);
+      function renderExample (xmlString, styleOpts, div) {
         var exampleXml = IMSC.fromXML(xmlString);
-
         var customStyleOptions = transformStyleOptions(styleOpts);
         var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions);
-
-        // removeCurrentSubtitlesElement();
 
         var exampleSubtitlesElement = document.createElement('div');
         exampleSubtitlesElement.id = 'example_subtitles';
