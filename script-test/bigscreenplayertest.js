@@ -112,7 +112,7 @@ require(
         var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'keyValue', 'tearDown', 'setRootElement']);
         mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-          'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'showSubtitles', 'hideSubtitles', 'customiseSubtitles', 'tearDown',
+          'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'showSubtitles', 'hideSubtitles', 'customiseSubtitles', 'renderSubtitleExample', 'tearDown',
           'getWindowStartTime', 'getWindowEndTime']);
         mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
@@ -955,12 +955,25 @@ require(
       });
 
       describe('customiseSubtitles', function () {
-        it('passes through custom styles to playerComponent customiseSubtitles when called', function () {
+        it('passes through custom styles to playerComponent customiseSubtitles', function () {
           initialiseBigscreenPlayer();
           var customStyleObj = { size: 0.7 };
           bigscreenPlayer.customiseSubtitles(customStyleObj);
 
           expect(mockPlayerComponentInstance.customiseSubtitles).toHaveBeenCalledWith(customStyleObj);
+        });
+      });
+
+      describe('renderSubtitleExample', function () {
+        it('calls playerComponent renderSubtitleExample with correct values', function () {
+          initialiseBigscreenPlayer();
+          var xmlText = 'test xml';
+          var customStyleObj = { size: 0.7 };
+          var div = document.createElement('div');
+          var currentTime = 10;
+          bigscreenPlayer.renderSubtitleExample(xmlText, customStyleObj, div, currentTime);
+
+          expect(mockPlayerComponentInstance.renderSubtitleExample).toHaveBeenCalledWith(xmlText, customStyleObj, div, currentTime);
         });
       });
 
