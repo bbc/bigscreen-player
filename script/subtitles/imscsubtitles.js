@@ -103,12 +103,12 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         renderHTML(xml, currentTime, parentElement, currentSubtitlesElement, imscRenderOpts);
       }
 
-      function loadExample (exampleSubtitlesUrl, styleOpts) {
+      function loadExample (exampleSubtitlesUrl, styleOpts, safePosition) {
         if (!exampleXml) {
           LoadURL(exampleSubtitlesUrl, {
             onLoad: function (responseXML, responseText, status) {
               exampleXml = IMSC.fromXML(responseText);
-              renderExample(exampleXml, styleOpts);
+              renderExample(exampleXml, styleOpts, safePosition);
             },
             onError: function (error) {
               DebugTool.info('Error loading subtitles example data: ' + error);
@@ -116,11 +116,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             }
           });
         } else {
-          renderExample(exampleXml, styleOpts);
+          renderExample(exampleXml, styleOpts, safePosition);
         }
       }
 
-      function renderExample (exampleXml, styleOpts) {
+      function renderExample (exampleXml, styleOpts, safePosition) {
         removeCurrentSubtitlesElement();
 
         var customStyleOptions = transformStyleOptions(styleOpts);
@@ -128,6 +128,15 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
         exampleSubtitlesElement = document.createElement('div');
         exampleSubtitlesElement.id = 'subtitlesPreview';
+
+        // TODO: verify positions!
+        if (safePosition) {
+          exampleSubtitlesElement.style.top = safePosition.top;
+          exampleSubtitlesElement.style.left = safePosition.left;
+          exampleSubtitlesElement.style.right = safePosition.right;
+          exampleSubtitlesElement.style.bottom = safePosition.bottom;
+        }
+
         parentElement.appendChild(exampleSubtitlesElement);
 
         renderHTML(exampleXml, 1, parentElement, exampleSubtitlesElement, exampleStyle);
