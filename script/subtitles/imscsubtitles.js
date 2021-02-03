@@ -92,16 +92,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         currentSubtitlesElement.id = 'bsp_subtitles';
         parentElement.appendChild(currentSubtitlesElement);
 
-        try {
-          var isd = IMSC.generateISD(xml, currentTime);
-          IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false, imscRenderOpts);
-        } catch (e) {
-          DebugTool.info('Exception while rendering subtitles: ' + e);
-          Plugins.interface.onSubtitlesRenderError();
-        }
+        renderHTML(xml, currentTime, parentElement, currentSubtitlesElement, imscRenderOpts);
       }
 
-      function renderExample (xmlString, styleOpts, div) {
+      function renderExample (xmlString, styleOpts, div, currentTime) {
         var exampleXml = IMSC.fromXML(xmlString);
         var customStyleOptions = transformStyleOptions(styleOpts);
         var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions);
@@ -110,9 +104,13 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         exampleSubtitlesElement.id = 'example_subtitles';
         div.appendChild(exampleSubtitlesElement);
 
+        renderHTML(exampleXml, currentTime, div, exampleSubtitlesElement, exampleStyle);
+      }
+
+      function renderHTML (xml, currentTime, parent, subsElement, styleOpts) {
         try {
-          var isd = IMSC.generateISD(exampleXml, 10);
-          IMSC.renderHTML(isd, exampleSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false, exampleStyle);
+          var isd = IMSC.generateISD(xml, currentTime);
+          IMSC.renderHTML(isd, subsElement, null, parent.clientHeight, parent.clientWidth, false, null, null, false, styleOpts);
         } catch (e) {
           DebugTool.info('Exception while rendering subtitles: ' + e);
           Plugins.interface.onSubtitlesRenderError();
