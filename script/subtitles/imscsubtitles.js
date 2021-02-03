@@ -127,7 +127,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions);
 
         exampleSubtitlesElement = document.createElement('div');
-        exampleSubtitlesElement.id = 'example_subtitles';
+        exampleSubtitlesElement.id = 'subtitlesPreview';
         parentElement.appendChild(exampleSubtitlesElement);
 
         renderHTML(exampleXml, 1, parentElement, exampleSubtitlesElement, exampleStyle);

@@ -316,6 +316,9 @@ define('bigscreenplayer/bigscreenplayer',
         isSubtitlesAvailable: function () {
           return playerComponent ? playerComponent.isSubtitlesAvailable() : false;
         },
+        areSubtitlesCustomisable: function () {
+          return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles);
+        },
         customiseSubtitles: function (styleOpts) {
           if (playerComponent) {
             playerComponent.customiseSubtitles(styleOpts);
