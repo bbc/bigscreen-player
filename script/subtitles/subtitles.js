@@ -79,9 +79,9 @@ define('bigscreenplayer/subtitles/subtitles',
         }
       }
 
-      function renderExample (xmlString, styleOpts, div) {
+      function renderExample (xmlString, styleOpts, div, currentTime) {
         if (subtitlesContainer) {
-          subtitlesContainer.renderExample(xmlString, styleOpts, div);
+          subtitlesContainer.renderExample(xmlString, styleOpts, div, currentTime);
         }
       }
 

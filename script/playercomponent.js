@@ -111,8 +111,8 @@ define(
         subtitles.customise(styleOpts);
       }
 
-      function renderSubtitleExample (xmlString, styleOpts, div) {
-        subtitles.renderExample(xmlString, styleOpts, div);
+      function renderSubtitleExample (xmlString, styleOpts, div, currentTime) {
+        subtitles.renderExample(xmlString, styleOpts, div, currentTime);
       }
 
       function setTransportControlPosition (flags) {

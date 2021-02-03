@@ -321,9 +321,9 @@ define('bigscreenplayer/bigscreenplayer',
             playerComponent.customiseSubtitles(styleOpts);
           }
         },
-        renderSubtitleExample: function (xmlString, styleOpts, div) {
+        renderSubtitleExample: function (xmlString, styleOpts, div, currentTime) {
           if (playerComponent) {
-            playerComponent.renderSubtitleExample(xmlString, styleOpts, div);
+            playerComponent.renderSubtitleExample(xmlString, styleOpts, div, currentTime);
           }
         },
         setTransportControlsPosition: function (position) {
