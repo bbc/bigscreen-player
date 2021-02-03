@@ -300,13 +300,11 @@ require(
         describe('renderExample', function () {
           it('calls subtitlesContainer renderExample function with correct values', function () {
             var subtitles = Subtitles(null, 'http://some-url', true, null);
-            var xmlText = 'test xml';
+            var exampleUrl = '';
             var customStyleObj = { size: 0.7 };
-            var div = document.createElement('div');
-            var currentTime = 10;
-            subtitles.renderExample(xmlText, customStyleObj, div, currentTime);
+            subtitles.renderExample(exampleUrl, customStyleObj);
 
-            expect(subtitlesContainerSpies.renderExample).toHaveBeenCalledWith(xmlText, customStyleObj, div, currentTime);
+            expect(subtitlesContainerSpies.renderExample).toHaveBeenCalledWith(exampleUrl, customStyleObj);
           });
 
           it('does not attempt to call through to subtitlesContainer renderExample if subtitles have not been loaded', function () {
@@ -314,7 +312,7 @@ require(
               callbackObject.onError();
             });
             var subtitles = Subtitles(null, 'http://some-url', true, null);
-            subtitles.renderExample('testXml', {}, document.createElement('div'), 10);
+            subtitles.renderExample('', {});
 
             expect(subtitlesContainerSpies.renderExample).not.toHaveBeenCalled();
           });

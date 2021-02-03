@@ -308,13 +308,11 @@ require(
       describe('renderSubtitleExample', function () {
         it('should call subtitles renderExample function with correct values', function () {
           setUpPlayerComponent();
-          var xmlText = 'test xml';
+          var exampleURl = '';
           var customStyleObj = { size: 0.7 };
-          var div = document.createElement('div');
-          var currentTime = 10;
-          playerComponent.renderSubtitleExample(xmlText, customStyleObj, div, currentTime);
+          playerComponent.renderSubtitleExample(exampleURl, customStyleObj);
 
-          expect(mockSubtitles.renderExample).toHaveBeenCalledWith(xmlText, customStyleObj, div, 10);
+          expect(mockSubtitles.renderExample).toHaveBeenCalledWith(exampleURl, customStyleObj);
         });
       });
 

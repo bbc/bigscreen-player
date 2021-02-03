@@ -4,9 +4,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'bigscreenplayer/domhelpers',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/utils/playbackutils'
+    'bigscreenplayer/utils/playbackutils',
+    'bigscreenplayer/utils/loadurl'
   ],
-  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL) {
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
@@ -14,6 +15,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var previousSubtitlesIndex = null;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
+      var exampleXml;
       var xml;
       var times = [];
 
@@ -101,18 +103,34 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         renderHTML(xml, currentTime, parentElement, currentSubtitlesElement, imscRenderOpts);
       }
 
-      function renderExample (xmlString, styleOpts, div, currentTime) {
+      function loadExample (exampleSubtitlesUrl, styleOpts) {
+        if (!exampleXml) {
+          LoadURL(exampleSubtitlesUrl, {
+            onLoad: function (responseXML, responseText, status) {
+              exampleXml = IMSC.fromXML(responseText);
+              renderExample(exampleXml, styleOpts);
+            },
+            onError: function (error) {
+              DebugTool.info('Error loading subtitles example data: ' + error);
+              Plugins.interface.onSubtitlesLoadError();
+            }
+          });
+        } else {
+          renderExample(exampleXml, styleOpts);
+        }
+      }
+
+      function renderExample (exampleXml, styleOpts) {
         removeCurrentSubtitlesElement();
 
-        var exampleXml = IMSC.fromXML(xmlString);
         var customStyleOptions = transformStyleOptions(styleOpts);
         var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions);
 
         exampleSubtitlesElement = document.createElement('div');
         exampleSubtitlesElement.id = 'example_subtitles';
-        div.appendChild(exampleSubtitlesElement);
+        parentElement.appendChild(exampleSubtitlesElement);
 
-        renderHTML(exampleXml, currentTime, div, exampleSubtitlesElement, exampleStyle);
+        renderHTML(exampleXml, 1, parentElement, exampleSubtitlesElement, exampleStyle);
       }
 
       function renderHTML (xml, currentTime, parent, subsElement, styleOpts) {
@@ -149,7 +167,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         stop: stop,
         updatePosition: function () {},
         customise: customise,
-        renderExample: renderExample,
+        renderExample: loadExample,
         tearDown: function () {
           stop();
           xml = undefined;

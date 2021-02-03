@@ -967,13 +967,11 @@ require(
       describe('renderSubtitleExample', function () {
         it('calls playerComponent renderSubtitleExample with correct values', function () {
           initialiseBigscreenPlayer();
-          var xmlText = 'test xml';
+          var exampleUrl = '';
           var customStyleObj = { size: 0.7 };
-          var div = document.createElement('div');
-          var currentTime = 10;
-          bigscreenPlayer.renderSubtitleExample(xmlText, customStyleObj, div, currentTime);
+          bigscreenPlayer.renderSubtitleExample(exampleUrl, customStyleObj);
 
-          expect(mockPlayerComponentInstance.renderSubtitleExample).toHaveBeenCalledWith(xmlText, customStyleObj, div, currentTime);
+          expect(mockPlayerComponentInstance.renderSubtitleExample).toHaveBeenCalledWith(exampleUrl, customStyleObj);
         });
       });
 
