@@ -88,7 +88,7 @@ require(
         var subtitlesContainer;
 
         beforeEach(function (done) {
-          subtitlesContainerSpies = jasmine.createSpyObj('subtitlesContainer', ['start', 'stop', 'updatePosition', 'customise', 'tearDown']);
+          subtitlesContainerSpies = jasmine.createSpyObj('subtitlesContainer', ['start', 'stop', 'updatePosition', 'customise', 'renderExample', 'tearDown']);
           subtitlesContainer = jasmine.createSpy();
           subtitlesContainer.and.callFake(function () {
             return subtitlesContainerSpies;
@@ -294,6 +294,29 @@ require(
             subtitles.customise({});
 
             expect(subtitlesContainerSpies.customise).not.toHaveBeenCalled();
+          });
+        });
+
+        describe('renderExample', function () {
+          it('calls subtitlesContainer renderExample function with correct values', function () {
+            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var xmlText = 'test xml';
+            var customStyleObj = { size: 0.7 };
+            var div = document.createElement('div');
+            var currentTime = 10;
+            subtitles.renderExample(xmlText, customStyleObj, div, currentTime);
+
+            expect(subtitlesContainerSpies.renderExample).toHaveBeenCalledWith(xmlText, customStyleObj, div, currentTime);
+          });
+
+          it('does not attempt to call through to subtitlesContainer renderExample if subtitles have not been loaded', function () {
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
+            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            subtitles.renderExample('testXml', {}, document.createElement('div'), 10);
+
+            expect(subtitlesContainerSpies.renderExample).not.toHaveBeenCalled();
           });
         });
 
