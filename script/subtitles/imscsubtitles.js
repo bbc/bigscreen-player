@@ -10,6 +10,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
+      var exampleSubtitlesElement;
       var previousSubtitlesIndex = null;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
@@ -73,6 +74,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           DOMHelpers.safeRemoveElement(currentSubtitlesElement);
           currentSubtitlesElement = undefined;
         }
+
+        if (exampleSubtitlesElement) {
+          DOMHelpers.safeRemoveElement(exampleSubtitlesElement);
+          exampleSubtitlesElement = undefined;
+        }
       }
 
       function update (currentTime) {
@@ -96,11 +102,13 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function renderExample (xmlString, styleOpts, div, currentTime) {
+        removeCurrentSubtitlesElement();
+
         var exampleXml = IMSC.fromXML(xmlString);
         var customStyleOptions = transformStyleOptions(styleOpts);
         var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions);
 
-        var exampleSubtitlesElement = document.createElement('div');
+        exampleSubtitlesElement = document.createElement('div');
         exampleSubtitlesElement.id = 'example_subtitles';
         div.appendChild(exampleSubtitlesElement);
 
