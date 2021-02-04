@@ -1,0 +1,7 @@
+#subtitlesPreview {
+    position: absolute;
+}
+
+#subtitlesPreview p span {
+    position: inherit;
+}
