@@ -79,8 +79,8 @@ define('bigscreenplayer/mediasources',
       // the serviceLocation is set to our first cdn url
       // see manifest modifier - generateBaseUrls
       function isFirstManifest (serviceLocation) {
-        // Matches anything between *:// and /
-        var hostRegex = /\w*?:\/\/(.*?)\//;
+        // Matches anything between *:// and / or the end of the line
+        var hostRegex = /\w*?:\/\/(.*?)(?:\/|$)/;
 
         var serviceLocationHost = hostRegex.exec(serviceLocation);
         var currentUrlHost = hostRegex.exec(getCurrentUrl());
