@@ -71,6 +71,10 @@ define('bigscreenplayer/mediasources',
         return isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover);
       }
 
+      function stripQueryParamsAndHash (url) {
+        return url.split(/[?#]/)[0];
+      }
+
       // we don't want to failover on the first playback
       // the serviceLocation is set to our first cdn url
       // see manifest modifier - generateBaseUrls
@@ -83,7 +87,8 @@ define('bigscreenplayer/mediasources',
 
         return serviceLocationHost && currentUrlHost
           ? serviceLocationHost[1] === currentUrlHost[1]
-          : serviceLocation === getCurrentUrl();
+          : stripQueryParamsAndHash(serviceLocation) 
+            === stripQueryParamsAndHash(getCurrentUrl());
       }
 
       function isFailoverInfoValid (failoverParams) {
