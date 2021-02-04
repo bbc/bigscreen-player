@@ -72,7 +72,7 @@ define('bigscreenplayer/mediasources',
       }
 
       function stripQueryParamsAndHash (url) {
-        return url.split(/[?#]/)[0];
+        return url ? url.split(/[?#]/)[0] : url;
       }
 
       // we don't want to failover on the first playback
@@ -87,8 +87,8 @@ define('bigscreenplayer/mediasources',
 
         return serviceLocationHost && currentUrlHost
           ? serviceLocationHost[1] === currentUrlHost[1]
-          : stripQueryParamsAndHash(serviceLocation) 
-            === stripQueryParamsAndHash(getCurrentUrl());
+          : stripQueryParamsAndHash(serviceLocation) ===
+            stripQueryParamsAndHash(getCurrentUrl());
       }
 
       function isFailoverInfoValid (failoverParams) {
