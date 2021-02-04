@@ -64,8 +64,8 @@ require(
           MediaSources = SquiredMediaSources;
 
           testSources = [
-            {url: 'source1', cdn: 'supplier1'},
-            {url: 'source2', cdn: 'supplier2'}
+            {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
+            {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
           ];
           done();
         });
@@ -96,7 +96,7 @@ require(
           mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           testSources[0].url = 'clonetest';
 
-          expect(mediaSources.currentSource()).toEqual('source1');
+          expect(mediaSources.currentSource()).toEqual('http://source1.com/');
         });
 
         it('throws an error when callbacks are undefined', function () {
@@ -203,7 +203,7 @@ require(
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
-          mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init([{url: 'http://source1.com/', cdn: 'http://supplier1.com/'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(onFailureAction).toHaveBeenCalledWith();
@@ -221,8 +221,8 @@ require(
             status: PluginEnums.STATUS.FAILOVER,
             stateType: PluginEnums.TYPE.ERROR,
             isBufferingTimeoutError: true,
-            cdn: 'supplier1',
-            newCdn: 'supplier2',
+            cdn: 'http://supplier1.com/',
+            newCdn: 'http://supplier2.com/',
             isInitialPlay: undefined,
             timeStamp: jasmine.any(Object)
           };
@@ -234,7 +234,7 @@ require(
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
-          mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init([{url: 'http://source1.com/', cdn: 'http://supplier1.com/'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
@@ -244,8 +244,8 @@ require(
       describe('currentSource', function () {
         beforeEach(function () {
           testSources = [
-            {url: 'source1', cdn: 'supplier1'},
-            {url: 'source2', cdn: 'supplier2'}
+            {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
+            {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
           ];
         });
 
@@ -274,7 +274,7 @@ require(
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
-          expect(mediaSources.availableSources()).toEqual(['source1', 'source2']);
+          expect(mediaSources.availableSources()).toEqual(['http://source1.com/', 'http://source2.com/']);
         });
       });
 
