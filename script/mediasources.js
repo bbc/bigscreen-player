@@ -75,7 +75,10 @@ define('bigscreenplayer/mediasources',
       // the serviceLocation is set to our first cdn url
       // see manifest modifier - generateBaseUrls
       function isFirstManifest (serviceLocation) {
-        return serviceLocation === getCurrentUrl();
+        var serviceLocationHost = new URL(serviceLocation).host;
+        var currentUrlHost = new URL(getCurrentUrl()).host;
+
+        return serviceLocationHost === currentUrlHost;
       }
 
       function isFailoverInfoValid (failoverParams) {
