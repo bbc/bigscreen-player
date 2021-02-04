@@ -1,5 +1,6 @@
 #subtitlesPreview {
     position: absolute;
+    overflow: hidden;
 }
 
 #subtitlesPreview p span {

@@ -129,12 +129,13 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         exampleSubtitlesElement = document.createElement('div');
         exampleSubtitlesElement.id = 'subtitlesPreview';
 
+        var SAFE_REGION = 8;
         // TODO: verify positions!
         if (safePosition) {
-          exampleSubtitlesElement.style.top = safePosition.top;
-          exampleSubtitlesElement.style.left = safePosition.left;
-          exampleSubtitlesElement.style.right = safePosition.right;
-          exampleSubtitlesElement.style.bottom = safePosition.bottom;
+          exampleSubtitlesElement.style.top = safePosition.top + '%';
+          exampleSubtitlesElement.style.left = safePosition.left + '%';
+          exampleSubtitlesElement.style.height = (100 - safePosition.top - SAFE_REGION) + '%';
+          exampleSubtitlesElement.style.width = (100 - safePosition.left - SAFE_REGION) + '%';
         }
 
         parentElement.appendChild(exampleSubtitlesElement);
