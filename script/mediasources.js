@@ -80,7 +80,7 @@ define('bigscreenplayer/mediasources',
       // see manifest modifier - generateBaseUrls
       function isFirstManifest (serviceLocation) {
         // Matches anything between *:// and / or the end of the line
-        var hostRegex = /\w*?:\/\/(.*?)(?:\/|$)/;
+        var hostRegex = /\w+?:\/\/(.*?)(?:\/|$)/;
 
         var serviceLocationHost = hostRegex.exec(serviceLocation);
         var currentUrlHost = hostRegex.exec(getCurrentUrl());
