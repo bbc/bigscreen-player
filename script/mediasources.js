@@ -72,7 +72,7 @@ define('bigscreenplayer/mediasources',
       }
 
       function stripQueryParamsAndHash (url) {
-        return url ? url.split(/[?#]/)[0] : url;
+        return typeof (url) === 'string' ? url.split(/[?#]/)[0] : url;
       }
 
       // we don't want to failover on the first playback
