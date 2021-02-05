@@ -241,7 +241,7 @@ require(
         });
       });
 
-      fdescribe('isFirstManifest', function () {
+      describe('isFirstManifest', function () {
         it('does not failover if service location is identical to current source cdn besides hash and query', function () {
           var mediaSources = new MediaSources();
           mediaSources.init(
