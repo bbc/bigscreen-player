@@ -241,6 +241,33 @@ require(
         });
       });
 
+      fdescribe('isFirstManifest', function () {
+        it('does not failover if service location is identical to current source cdn besides hash and query', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(
+            [
+              {url: 'http://source1.com', cdn: 'http://cdn1.com'},
+              {url: 'http://source2.com', cdn: 'http://cdn2.com'}],
+            new Date(),
+            WindowTypes.STATIC,
+            LiveSupport.SEEKABLE,
+            testCallbacks);
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com');
+
+          mediaSources.failover(
+            function () {}, function () {},
+            {
+              duration: 999,
+              currentTime: 1,
+              errorMessage: '',
+              isBufferingTimeoutError: false,
+              serviceLocation: 'http://source1.com?key=value#hash'});
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com');
+        });
+      });
+
       describe('currentSource', function () {
         beforeEach(function () {
           testSources = [

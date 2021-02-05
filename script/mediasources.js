@@ -82,13 +82,15 @@ define('bigscreenplayer/mediasources',
         // Matches anything between *:// and / or the end of the line
         var hostRegex = /\w+?:\/\/(.*?)(?:\/|$)/;
 
-        var serviceLocationHost = hostRegex.exec(serviceLocation);
-        var currentUrlHost = hostRegex.exec(getCurrentUrl());
+        var serviceLocNoQueryHash = stripQueryParamsAndHash(serviceLocation);
+        var currUrlNoQueryHash = stripQueryParamsAndHash(getCurrentUrl());
+
+        var serviceLocationHost = hostRegex.exec(serviceLocNoQueryHash);
+        var currentUrlHost = hostRegex.exec(currUrlNoQueryHash);
 
         return serviceLocationHost && currentUrlHost
           ? serviceLocationHost[1] === currentUrlHost[1]
-          : stripQueryParamsAndHash(serviceLocation) ===
-            stripQueryParamsAndHash(getCurrentUrl());
+          : serviceLocNoQueryHash === currUrlNoQueryHash;
       }
 
       function isFailoverInfoValid (failoverParams) {
