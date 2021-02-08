@@ -132,6 +132,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var SAFE_REGION = 8;
         // TODO: verify positions!
         if (safePosition) {
+          exampleSubtitlesElement.style.position = 'absolute';
+          exampleSubtitlesElement.style.overflow = 'hidden';
           exampleSubtitlesElement.style.top = safePosition.top + '%';
           exampleSubtitlesElement.style.left = safePosition.left + '%';
           exampleSubtitlesElement.style.height = (100 - safePosition.top - SAFE_REGION) + '%';
