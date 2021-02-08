@@ -242,6 +242,31 @@ require(
       });
 
       describe('isFirstManifest', function () {
+        it('does not failover if service location is identical to current source cdn besides path', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(
+            [
+              { url: 'http://source1.com/path/to/thing.extension', cdn: 'http://cdn1.com' },
+              { url: 'http://source2.com', cdn: 'http://cdn2.com' }],
+            new Date(),
+            WindowTypes.STATIC,
+            LiveSupport.SEEKABLE,
+            testCallbacks);
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com/path/to/thing.extension');
+
+          mediaSources.failover(
+            function () { }, function () { },
+            {
+              duration: 999,
+              currentTime: 1,
+              errorMessage: '',
+              isBufferingTimeoutError: false,
+              serviceLocation: 'http://source1.com/path/to/different/thing.extension'
+            });
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com/path/to/thing.extension');
+        });
         it('does not failover if service location is identical to current source cdn besides hash and query', function () {
           var mediaSources = new MediaSources();
           mediaSources.init(
