@@ -64,8 +64,8 @@ require(
           MediaSources = SquiredMediaSources;
 
           testSources = [
-            {url: 'source1', cdn: 'supplier1'},
-            {url: 'source2', cdn: 'supplier2'}
+            {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
+            {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
           ];
           done();
         });
@@ -96,7 +96,7 @@ require(
           mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           testSources[0].url = 'clonetest';
 
-          expect(mediaSources.currentSource()).toEqual('source1');
+          expect(mediaSources.currentSource()).toEqual('http://source1.com/');
         });
 
         it('throws an error when callbacks are undefined', function () {
@@ -203,7 +203,7 @@ require(
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
-          mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init([{url: 'http://source1.com/', cdn: 'http://supplier1.com/'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(onFailureAction).toHaveBeenCalledWith();
@@ -221,8 +221,8 @@ require(
             status: PluginEnums.STATUS.FAILOVER,
             stateType: PluginEnums.TYPE.ERROR,
             isBufferingTimeoutError: true,
-            cdn: 'supplier1',
-            newCdn: 'supplier2',
+            cdn: 'http://supplier1.com/',
+            newCdn: 'http://supplier2.com/',
             isInitialPlay: undefined,
             timeStamp: jasmine.any(Object)
           };
@@ -234,18 +234,70 @@ require(
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
-          mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init([{url: 'http://source1.com/', cdn: 'http://supplier1.com/'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
         });
       });
 
+      describe('isFirstManifest', function () {
+        it('does not failover if service location is identical to current source cdn besides path', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(
+            [
+              { url: 'http://source1.com/path/to/thing.extension', cdn: 'http://cdn1.com' },
+              { url: 'http://source2.com', cdn: 'http://cdn2.com' }],
+            new Date(),
+            WindowTypes.STATIC,
+            LiveSupport.SEEKABLE,
+            testCallbacks);
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com/path/to/thing.extension');
+
+          mediaSources.failover(
+            function () { }, function () { },
+            {
+              duration: 999,
+              currentTime: 1,
+              errorMessage: '',
+              isBufferingTimeoutError: false,
+              serviceLocation: 'http://source1.com/path/to/different/thing.extension'
+            });
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com/path/to/thing.extension');
+        });
+        it('does not failover if service location is identical to current source cdn besides hash and query', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(
+            [
+              {url: 'http://source1.com', cdn: 'http://cdn1.com'},
+              {url: 'http://source2.com', cdn: 'http://cdn2.com'}],
+            new Date(),
+            WindowTypes.STATIC,
+            LiveSupport.SEEKABLE,
+            testCallbacks);
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com');
+
+          mediaSources.failover(
+            function () {}, function () {},
+            {
+              duration: 999,
+              currentTime: 1,
+              errorMessage: '',
+              isBufferingTimeoutError: false,
+              serviceLocation: 'http://source1.com?key=value#hash'});
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com');
+        });
+      });
+
       describe('currentSource', function () {
         beforeEach(function () {
           testSources = [
-            {url: 'source1', cdn: 'supplier1'},
-            {url: 'source2', cdn: 'supplier2'}
+            {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
+            {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
           ];
         });
 
@@ -274,7 +326,7 @@ require(
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
-          expect(mediaSources.availableSources()).toEqual(['source1', 'source2']);
+          expect(mediaSources.availableSources()).toEqual(['http://source1.com/', 'http://source2.com/']);
         });
       });
 
