@@ -2,7 +2,7 @@ define(
   'bigscreenplayer/playercomponent', [
     'bigscreenplayer/models/mediastate',
     'bigscreenplayer/subtitles/subtitles',
-    'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
+    'bigscreenplayer/playbackstrategy/basicstrategy',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
