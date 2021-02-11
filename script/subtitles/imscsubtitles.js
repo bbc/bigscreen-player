@@ -75,7 +75,9 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           DOMHelpers.safeRemoveElement(currentSubtitlesElement);
           currentSubtitlesElement = undefined;
         }
+      }
 
+      function removeExampleSubtitlesElement () {
         if (exampleSubtitlesElement) {
           DOMHelpers.safeRemoveElement(exampleSubtitlesElement);
           exampleSubtitlesElement = undefined;
@@ -104,7 +106,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function renderExample (exampleXmlString, styleOpts, safePosition) {
         var exampleXml = IMSC.fromXML(exampleXmlString);
-        removeCurrentSubtitlesElement();
+        removeExampleSubtitlesElement();
 
         var customStyleOptions = transformStyleOptions(styleOpts);
         var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions);
@@ -161,6 +163,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         updatePosition: function () {},
         customise: customise,
         renderExample: renderExample,
+        clearExample: removeExampleSubtitlesElement,
         tearDown: function () {
           stop();
           xml = undefined;

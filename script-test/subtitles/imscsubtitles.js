@@ -266,6 +266,19 @@ require(
           expect(pluginsMock.interface.onSubtitlesRenderError).toHaveBeenCalledTimes(1);
         });
       });
+
+      describe('example rendering', function () {
+        it('should call fromXML, generate and render when renderExample is called', function () {
+          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement, {});
+          imscMock.fromXML.calls.reset();
+
+          subtitles.renderExample('', {}, {});
+
+          expect(imscMock.fromXML).toHaveBeenCalledTimes(1);
+          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
+        });
+      });
     });
   }
 );

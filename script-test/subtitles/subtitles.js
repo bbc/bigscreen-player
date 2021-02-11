@@ -88,7 +88,7 @@ require(
         var subtitlesContainer;
 
         beforeEach(function (done) {
-          subtitlesContainerSpies = jasmine.createSpyObj('subtitlesContainer', ['start', 'stop', 'updatePosition', 'customise', 'renderExample', 'tearDown']);
+          subtitlesContainerSpies = jasmine.createSpyObj('subtitlesContainer', ['start', 'stop', 'updatePosition', 'customise', 'renderExample', 'clearExample', 'tearDown']);
           subtitlesContainer = jasmine.createSpy();
           subtitlesContainer.and.callFake(function () {
             return subtitlesContainerSpies;
@@ -133,7 +133,7 @@ require(
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
-            Subtitles(null, 'http://some-url', null, null);
+            Subtitles(null, 'http://some-url.test', null, null);
 
             expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
           });
@@ -142,7 +142,7 @@ require(
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onLoad(null, '', 200);
             });
-            Subtitles(null, 'http://some-url', null, null);
+            Subtitles(null, 'http://some-url.test', null, null);
 
             expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
           });
@@ -156,7 +156,7 @@ require(
 
         describe('show', function () {
           it('should start subtitles when enabled and available', function () {
-            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', null, null);
             subtitles.enable();
             subtitles.show();
 
@@ -164,7 +164,7 @@ require(
           });
 
           it('should not start subtitles when disabled and available', function () {
-            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', null, null);
             subtitles.disable();
             subtitles.show();
 
@@ -190,7 +190,7 @@ require(
 
         describe('hide', function () {
           it('should stop subtitles when available', function () {
-            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', null, null);
             subtitles.hide();
 
             expect(subtitlesContainerSpies.stop).toHaveBeenCalled();
@@ -199,7 +199,7 @@ require(
 
         describe('enable', function () {
           it('should set enabled state to true', function () {
-            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', null, null);
             subtitles.enable();
 
             expect(subtitles.enabled()).toEqual(true);
@@ -208,7 +208,7 @@ require(
 
         describe('disable', function () {
           it('should set enabled state to false', function () {
-            var subtitles = Subtitles(null, 'http://some-url', null, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', null, null);
             subtitles.disable();
 
             expect(subtitlesContainerSpies.stop).not.toHaveBeenCalled();
@@ -246,7 +246,7 @@ require(
 
         describe('available', function () {
           it('returns true if a url exists at construction', function () {
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
 
             expect(subtitles.available()).toEqual(true);
           });
@@ -260,7 +260,7 @@ require(
 
         describe('setPosition', function () {
           it('calls through to subtitlesContainer updatePosition', function () {
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
             subtitles.setPosition('pos');
 
             expect(subtitlesContainerSpies.updatePosition).toHaveBeenCalledWith('pos');
@@ -270,7 +270,7 @@ require(
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
             subtitles.setPosition('pos');
 
             expect(subtitlesContainerSpies.updatePosition).not.toHaveBeenCalledWith('pos');
@@ -279,7 +279,7 @@ require(
 
         describe('customise', function () {
           it('passes through custom style object to subtitlesContainer customise function', function () {
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
             var customStyleObj = { size: 0.7 };
             subtitles.customise(customStyleObj);
 
@@ -290,7 +290,7 @@ require(
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
             subtitles.customise({});
 
             expect(subtitlesContainerSpies.customise).not.toHaveBeenCalled();
@@ -299,7 +299,7 @@ require(
 
         describe('renderExample', function () {
           it('calls subtitlesContainer renderExample function with correct values', function () {
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
             var exampleUrl = '';
             var customStyleObj = { size: 0.7 };
             var safePosition = { left: 30, top: 0 };
@@ -312,29 +312,48 @@ require(
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
             subtitles.renderExample('', {});
 
             expect(subtitlesContainerSpies.renderExample).not.toHaveBeenCalled();
           });
         });
 
+        describe('clearExample', function () {
+          it('calls subtitlesContainer clearExample function ', function () {
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
+            subtitles.clearExample();
+
+            expect(subtitlesContainerSpies.clearExample).toHaveBeenCalledTimes(1);
+          });
+
+          it('does not call through to subtitlesContainer clearExample if subtitles have not been loaded', function () {
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
+            subtitles.clearExample();
+
+            expect(subtitlesContainerSpies.clearExample).not.toHaveBeenCalled();
+          });
+        });
+
         describe('tearDown', function () {
           it('calls through to subtitlesContainer tearDown', function () {
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
             subtitles.tearDown();
 
-            expect(subtitlesContainerSpies.tearDown).toHaveBeenCalled();
+            expect(subtitlesContainerSpies.tearDown).toHaveBeenCalledTimes(1);
           });
 
           it('does not attempt to call through to subtitlesContainer tearDown if subtitles have not been loaded', function () {
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
             });
-            var subtitles = Subtitles(null, 'http://some-url', true, null);
+            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
             subtitles.tearDown();
 
-            expect(subtitlesContainerSpies.tearDown).not.toHaveBeenCalled();
+            expect(subtitlesContainerSpies.tearDown).not.toHaveBeenCalledTimes(1);
           });
         });
       });

@@ -118,7 +118,7 @@ require(
         mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
           'getPlayerElement', 'tearDown', 'getWindowStartTime', 'getWindowEndTime']);
-        mockSubtitlesInstance = jasmine.createSpyObj('mockSubtitlesInstance', ['enable', 'disable', 'show', 'hide', 'enabled', 'available', 'setPosition', 'customise', 'renderExample', 'tearDown']);
+        mockSubtitlesInstance = jasmine.createSpyObj('mockSubtitlesInstance', ['enable', 'disable', 'show', 'hide', 'enabled', 'available', 'setPosition', 'customise', 'renderExample', 'clearExample', 'tearDown']);
         mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
         errorCallback = jasmine.createSpy('errorCallback');
@@ -585,7 +585,7 @@ require(
           expect(callback).not.toHaveBeenCalled();
         });
 
-        it('returns a reference to the callback passed in', function () {
+        it('returns a reference to the callback supplied', function () {
           var callback = jasmine.createSpy();
           var reference = bigscreenPlayer.registerForSubtitleChanges(callback);
 
@@ -905,11 +905,11 @@ require(
           initialiseBigscreenPlayer();
           bigscreenPlayer.setSubtitlesEnabled(true);
 
-          expect(mockSubtitlesInstance.enable).toHaveBeenCalled();
+          expect(mockSubtitlesInstance.enable).toHaveBeenCalledTimes(1);
 
           bigscreenPlayer.setSubtitlesEnabled(false);
 
-          expect(mockSubtitlesInstance.disable).toHaveBeenCalled();
+          expect(mockSubtitlesInstance.disable).toHaveBeenCalledTimes(1);
         });
 
         it('should show subtitles when called with true', function () {
@@ -987,12 +987,21 @@ require(
         });
       });
 
+      describe('clearSubtitleExample', function () {
+        it('calls Subtitles clearExample', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.clearSubtitleExample();
+
+          expect(mockSubtitlesInstance.clearExample).toHaveBeenCalledTimes(1);
+        });
+      });
+
       describe('setTransportControlsPosition', function () {
         it('should call through to Subtitles setPosition function', function () {
           initialiseBigscreenPlayer();
           bigscreenPlayer.setTransportControlsPosition();
 
-          expect(mockSubtitlesInstance.setPosition).toHaveBeenCalled();
+          expect(mockSubtitlesInstance.setPosition).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -1229,7 +1238,7 @@ require(
 
           Plugins.interface.onError();
 
-          expect(mockPlugin.onError).toHaveBeenCalled();
+          expect(mockPlugin.onError).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -1257,7 +1266,7 @@ require(
           Plugins.interface.onError();
 
           expect(mockPlugin.onError).not.toHaveBeenCalled();
-          expect(mockPluginTwo.onError).toHaveBeenCalled();
+          expect(mockPluginTwo.onError).toHaveBeenCalledTimes(1);
         });
 
         it('should remove all plugins', function () {
