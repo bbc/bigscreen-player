@@ -15,7 +15,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var previousSubtitlesIndex = null;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
-      var exampleXml;
       var xml;
       var times = [];
 
@@ -100,27 +99,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         currentSubtitlesElement.id = 'bsp_subtitles';
         parentElement.appendChild(currentSubtitlesElement);
 
-        renderHTML(xml, currentTime, parentElement, currentSubtitlesElement, imscRenderOpts);
+        renderHTML(xml, currentTime, currentSubtitlesElement, imscRenderOpts, parentElement.clientHeight, parentElement.clientWidth);
       }
 
-      function loadExample (exampleSubtitlesUrl, styleOpts, safePosition) {
-        if (!exampleXml) {
-          LoadURL(exampleSubtitlesUrl, {
-            onLoad: function (responseXML, responseText, status) {
-              exampleXml = IMSC.fromXML(responseText);
-              renderExample(exampleXml, styleOpts, safePosition);
-            },
-            onError: function (error) {
-              DebugTool.info('Error loading subtitles example data: ' + error);
-              Plugins.interface.onSubtitlesLoadError();
-            }
-          });
-        } else {
-          renderExample(exampleXml, styleOpts, safePosition);
-        }
-      }
-
-      function renderExample (exampleXml, styleOpts, safePosition) {
+      function renderExample (exampleXmlString, styleOpts, safePosition) {
+        var exampleXml = IMSC.fromXML(exampleXmlString);
         removeCurrentSubtitlesElement();
 
         var customStyleOptions = transformStyleOptions(styleOpts);
@@ -129,30 +112,24 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         exampleSubtitlesElement = document.createElement('div');
         exampleSubtitlesElement.id = 'subtitlesPreview';
 
-        var SAFE_REGION = 64;
-
-        // TODO: verify positions!
+        var renderWidth = parentElement.clientWidth;
         if (safePosition) {
           exampleSubtitlesElement.style.position = 'absolute';
-          exampleSubtitlesElement.style.overflow = 'hidden';
-          exampleSubtitlesElement.style.top = safePosition.top + '%';
           exampleSubtitlesElement.style.left = safePosition.left + '%';
 
-          var safeHeight = (SAFE_REGION / parentElement.clientHeight) * 100;
-          var safeWidth = (SAFE_REGION / parentElement.clientWidth) * 100;
-          exampleSubtitlesElement.style.height = (100 - safePosition.top - safeHeight) + '%';
-          exampleSubtitlesElement.style.width = (100 - safePosition.left - safeWidth) + '%';
+          var leftPixels = parentElement.clientWidth * (safePosition.left / 100);
+          renderWidth = parentElement.clientWidth - leftPixels;
         }
 
         parentElement.appendChild(exampleSubtitlesElement);
 
-        renderHTML(exampleXml, 1, parentElement, exampleSubtitlesElement, exampleStyle);
+        renderHTML(exampleXml, 1, exampleSubtitlesElement, exampleStyle, parentElement.clientHeight, renderWidth);
       }
 
-      function renderHTML (xml, currentTime, parent, subsElement, styleOpts) {
+      function renderHTML (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
         try {
           var isd = IMSC.generateISD(xml, currentTime);
-          IMSC.renderHTML(isd, subsElement, null, parent.clientHeight, parent.clientWidth, false, null, null, false, styleOpts);
+          IMSC.renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts);
         } catch (e) {
           DebugTool.info('Exception while rendering subtitles: ' + e);
           Plugins.interface.onSubtitlesRenderError();
@@ -183,7 +160,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         stop: stop,
         updatePosition: function () {},
         customise: customise,
-        renderExample: loadExample,
+        renderExample: renderExample,
         tearDown: function () {
           stop();
           xml = undefined;
