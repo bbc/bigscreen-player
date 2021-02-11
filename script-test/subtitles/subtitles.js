@@ -302,9 +302,10 @@ require(
             var subtitles = Subtitles(null, 'http://some-url', true, null);
             var exampleUrl = '';
             var customStyleObj = { size: 0.7 };
-            subtitles.renderExample(exampleUrl, customStyleObj);
+            var safePosition = { left: 30, top: 0 };
+            subtitles.renderExample(exampleUrl, customStyleObj, safePosition);
 
-            expect(subtitlesContainerSpies.renderExample).toHaveBeenCalledWith(exampleUrl, customStyleObj);
+            expect(subtitlesContainerSpies.renderExample).toHaveBeenCalledWith(exampleUrl, customStyleObj, safePosition);
           });
 
           it('does not attempt to call through to subtitlesContainer renderExample if subtitles have not been loaded', function () {
