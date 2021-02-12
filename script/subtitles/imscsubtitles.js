@@ -111,10 +111,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
         exampleSubtitlesElement = document.createElement('div');
         exampleSubtitlesElement.id = 'subtitlesPreview';
+        exampleSubtitlesElement.style.position = 'absolute';
+        exampleSubtitlesElement.style.top = '0%';
 
         var renderWidth = parentElement.clientWidth;
         if (safePosition) {
-          exampleSubtitlesElement.style.position = 'absolute';
           exampleSubtitlesElement.style.left = safePosition.left + '%';
 
           var leftPixels = parentElement.clientWidth * (safePosition.left / 100);
