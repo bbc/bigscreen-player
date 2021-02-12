@@ -341,9 +341,14 @@ define('bigscreenplayer/bigscreenplayer',
             subtitles.customise(styleOpts);
           }
         },
-        renderSubtitleExample: function (xml, styleOpts, safePosition) {
+        renderSubtitleExample: function (xmlString, styleOpts, safePosition) {
           if (subtitles) {
-            subtitles.renderExample(xml, styleOpts, safePosition);
+            subtitles.renderExample(xmlString, styleOpts, safePosition);
+          }
+        },
+        clearSubtitleExample: function () {
+          if (subtitles) {
+            subtitles.clearExample();
           }
         },
         setTransportControlsPosition: function (position) {

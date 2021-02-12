@@ -50,7 +50,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     var liveWindowData;
     var manifestError;
 
-    var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'customiseSubtitles', 'renderSubtitleExample', 'areSubtitlesCustomisable'];
+    var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'customiseSubtitles', 'renderSubtitleExample', 'clearSubtitleExample', 'areSubtitlesCustomisable'];
 
     function startProgress (progressCause) {
       setTimeout(function () {
