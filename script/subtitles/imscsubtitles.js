@@ -99,6 +99,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
         currentSubtitlesElement = document.createElement('div');
         currentSubtitlesElement.id = 'bsp_subtitles';
+        currentSubtitlesElement.style.position = 'absolute';
         parentElement.appendChild(currentSubtitlesElement);
 
         renderHTML(xml, currentTime, currentSubtitlesElement, imscRenderOpts, parentElement.clientHeight, parentElement.clientWidth);
@@ -114,7 +115,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         exampleSubtitlesElement = document.createElement('div');
         exampleSubtitlesElement.id = 'subtitlesPreview';
         exampleSubtitlesElement.style.position = 'absolute';
-        exampleSubtitlesElement.style.top = '0%';
 
         var renderWidth = parentElement.clientWidth;
         if (safePosition) {
