@@ -292,12 +292,12 @@ define('bigscreenplayer/bigscreenplayer',
         },
         play: function () {
           DebugTool.apicall('play');
-          playerComponent.play();
+          playerComponent && playerComponent.play();
         },
         pause: function (opts) {
           DebugTool.apicall('pause');
           pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
-          playerComponent.pause(opts);
+          playerComponent && playerComponent.pause(opts);
         },
         resize: function (top, left, width, height, zIndex) {
           playerComponent.hideSubtitles();
