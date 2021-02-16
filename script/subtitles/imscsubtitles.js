@@ -4,10 +4,9 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'bigscreenplayer/domhelpers',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/utils/playbackutils',
-    'bigscreenplayer/utils/loadurl'
+    'bigscreenplayer/utils/playbackutils'
   ],
-  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils) {
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
