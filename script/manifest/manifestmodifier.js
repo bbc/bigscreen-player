@@ -51,7 +51,7 @@ define('bigscreenplayer/manifest/manifestmodifier',
     function generateBaseUrls (manifest, sources) {
       var baseUrl = extractBaseUrl(manifest);
       var baseUrls = [];
-      if (!baseUrl) return;
+      // if (!baseUrl) return;
 
       function generateBaseUrl (source, priority, serviceLocation) {
         return {
@@ -61,7 +61,7 @@ define('bigscreenplayer/manifest/manifestmodifier',
         };
       }
 
-      if (baseUrl.match(/^https?:\/\//)) {
+      if (baseUrl && baseUrl.match(/^https?:\/\//)) {
         var newBaseUrl = generateBaseUrl(baseUrl, 0, sources[0]);
         baseUrls = [newBaseUrl];
 
@@ -70,8 +70,11 @@ define('bigscreenplayer/manifest/manifestmodifier',
         }
       } else {
         baseUrls = sources.map(function (source, priority) {
-          var sourceUrl = new URL(baseUrl, source);
-          return generateBaseUrl(sourceUrl.href, priority, source);
+          if (baseUrl) {
+            var sourceUrl = new URL(baseUrl, source);
+            return generateBaseUrl(sourceUrl.href, priority, source);
+          }
+          return generateBaseUrl(source, priority, source);
         });
       }
 
