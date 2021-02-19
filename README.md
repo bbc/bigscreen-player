@@ -1,6 +1,6 @@
 # Bigscreen Player
 
-[![Build Status](https://travis-ci.com/bbc/bigscreen-player.svg?branch=master)](https://travis-ci.com/bbc/bigscreen-player/branches)
+[![Build Status](https://github.com/bbc/bigscreen-player/actions/workflows/pull-requests.yml/badge.svg)](https://github.com/bbc/bigscreen-player/actions/workflows/npm-publish.yml)
 
 > Simplified media playback for bigscreen devices.
 
@@ -238,7 +238,9 @@ See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player
 3. Get a review from the core team.
 4. If the PR checks are green. The core team can merge to master.
 5. Automation takes care of the package versioning.
-6. Publishing to NPM is handled with our [Travis CI integration](https://github.com/bbc/bigscreen-player/blob/master/.travis.yml).
+6. Publishing to NPM is handled with our [GitHub Actions CI integration](https://github.com/bbc/bigscreen-player/blob/master/.github/workflows/deploy-requests.yml).
+
+
 
 ## API Reference
 
