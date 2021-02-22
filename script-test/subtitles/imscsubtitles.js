@@ -142,7 +142,7 @@ require(
           var expectedOpts = { sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
 
           subtitles.start();
-          subtitles.customise(styleOpts);
+          subtitles.customise(styleOpts, true);
 
           expect(imscMock.renderHTML).toHaveBeenCalledWith(undefined, jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
         });
@@ -155,9 +155,17 @@ require(
           subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement, defaultStyleOpts);
 
           subtitles.start();
-          subtitles.customise(customStyleOpts);
+          subtitles.customise(customStyleOpts, true);
 
           expect(imscMock.renderHTML).toHaveBeenCalledWith(undefined, jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
+        });
+
+        it('does not render custom styles when subtitles are not enabled', function () {
+          var subsEnabled = false;
+          subtitles.start();
+          subtitles.customise({}, subsEnabled);
+
+          expect(imscMock.renderHTML).not.toHaveBeenCalled();
         });
 
         it('does not try to generate and render when the initial current time is less than the first subtitle time', function () {

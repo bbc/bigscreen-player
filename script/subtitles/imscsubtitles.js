@@ -151,10 +151,12 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         removeCurrentSubtitlesElement();
       }
 
-      function customise (styleOpts) {
+      function customise (styleOpts, enabled) {
         var customStyleOptions = transformStyleOptions(styleOpts);
         imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions);
-        render(mediaPlayer.getCurrentTime());
+        if (enabled) {
+          render(mediaPlayer.getCurrentTime());
+        }
       }
 
       return {

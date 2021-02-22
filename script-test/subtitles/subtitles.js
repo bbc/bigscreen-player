@@ -278,12 +278,12 @@ require(
         });
 
         describe('customise', function () {
-          it('passes through custom style object to subtitlesContainer customise function', function () {
+          it('passes through custom style object and enabled state to subtitlesContainer customise function', function () {
             var subtitles = Subtitles(null, 'http://some-url.test', true, null);
             var customStyleObj = { size: 0.7 };
             subtitles.customise(customStyleObj);
 
-            expect(subtitlesContainerSpies.customise).toHaveBeenCalledWith(customStyleObj);
+            expect(subtitlesContainerSpies.customise).toHaveBeenCalledWith(customStyleObj, jasmine.any(Boolean));
           });
 
           it('does not attempt to call through to subtitlesContainer customise if subtitles have not been loaded', function () {
