@@ -3,12 +3,14 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'bigscreenplayer/external/smp-imsc',
     'bigscreenplayer/domhelpers',
     'bigscreenplayer/debugger/debugtool',
-    'bigscreenplayer/plugins'
+    'bigscreenplayer/plugins',
+    'bigscreenplayer/utils/playbackutils'
   ],
-  function (IMSC, DOMHelpers, DebugTool, Plugins) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils) {
     'use strict';
     return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
+      var exampleSubtitlesElement;
       var previousSubtitlesIndex = null;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
@@ -74,26 +76,65 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         }
       }
 
+      function removeExampleSubtitlesElement () {
+        if (exampleSubtitlesElement) {
+          DOMHelpers.safeRemoveElement(exampleSubtitlesElement);
+          exampleSubtitlesElement = undefined;
+        }
+      }
+
       function update (currentTime) {
         var subtitlesIndex = nextSubtitleIndex(currentTime);
         var generateAndRender = subtitlesIndex !== previousSubtitlesIndex;
 
         if (generateAndRender) {
-          removeCurrentSubtitlesElement();
-
-          currentSubtitlesElement = document.createElement('div');
-          currentSubtitlesElement.id = 'bsp_subtitles';
-          parentElement.appendChild(currentSubtitlesElement);
-
-          try {
-            var isd = IMSC.generateISD(xml, currentTime);
-            IMSC.renderHTML(isd, currentSubtitlesElement, null, parentElement.clientHeight, parentElement.clientWidth, false, null, null, false, imscRenderOpts);
-          } catch (e) {
-            DebugTool.info('Exception while rendering subtitles: ' + e);
-            Plugins.interface.onSubtitlesRenderError();
-          }
-
+          render(currentTime);
           previousSubtitlesIndex = subtitlesIndex;
+        }
+      }
+
+      function render (currentTime) {
+        removeCurrentSubtitlesElement();
+
+        currentSubtitlesElement = document.createElement('div');
+        currentSubtitlesElement.id = 'bsp_subtitles';
+        currentSubtitlesElement.style.position = 'absolute';
+        parentElement.appendChild(currentSubtitlesElement);
+
+        renderHTML(xml, currentTime, currentSubtitlesElement, imscRenderOpts, parentElement.clientHeight, parentElement.clientWidth);
+      }
+
+      function renderExample (exampleXmlString, styleOpts, safePosition) {
+        var exampleXml = IMSC.fromXML(exampleXmlString);
+        removeExampleSubtitlesElement();
+
+        var customStyleOptions = transformStyleOptions(styleOpts);
+        var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions);
+
+        exampleSubtitlesElement = document.createElement('div');
+        exampleSubtitlesElement.id = 'subtitlesPreview';
+        exampleSubtitlesElement.style.position = 'absolute';
+
+        var renderWidth = parentElement.clientWidth;
+        if (safePosition) {
+          exampleSubtitlesElement.style.left = safePosition.left + '%';
+
+          var leftPixels = parentElement.clientWidth * (safePosition.left / 100);
+          renderWidth = parentElement.clientWidth - leftPixels;
+        }
+
+        parentElement.appendChild(exampleSubtitlesElement);
+
+        renderHTML(exampleXml, 1, exampleSubtitlesElement, exampleStyle, parentElement.clientHeight, renderWidth);
+      }
+
+      function renderHTML (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
+        try {
+          var isd = IMSC.generateISD(xml, currentTime);
+          IMSC.renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts);
+        } catch (e) {
+          DebugTool.info('Exception while rendering subtitles: ' + e);
+          Plugins.interface.onSubtitlesRenderError();
         }
       }
 
@@ -110,10 +151,21 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         removeCurrentSubtitlesElement();
       }
 
+      function customise (styleOpts, enabled) {
+        var customStyleOptions = transformStyleOptions(styleOpts);
+        imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions);
+        if (enabled) {
+          render(mediaPlayer.getCurrentTime());
+        }
+      }
+
       return {
         start: start,
         stop: stop,
         updatePosition: function () {},
+        customise: customise,
+        renderExample: renderExample,
+        clearExample: removeExampleSubtitlesElement,
         tearDown: function () {
           stop();
           xml = undefined;

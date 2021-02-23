@@ -13,9 +13,10 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/mediasources',
     'bigscreenplayer/version',
     'bigscreenplayer/resizer',
-    'bigscreenplayer/readyhelper'
+    'bigscreenplayer/readyhelper',
+    'bigscreenplayer/subtitles/subtitles'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version, Resizer, ReadyHelper) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version, Resizer, ReadyHelper, Subtitles) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -34,6 +35,7 @@ define('bigscreenplayer/bigscreenplayer',
       var mediaSources;
       var playbackElement;
       var readyHelper;
+      var subtitles;
 
       var END_OF_STREAM_TOLERANCE = 10;
 
@@ -125,8 +127,15 @@ define('bigscreenplayer/bigscreenplayer',
           bigscreenPlayerData,
           mediaSources,
           windowType,
-          enableSubtitles,
           mediaStateUpdateCallback
+        );
+
+        subtitles = Subtitles(
+          playerComponent,
+          bigscreenPlayerData.media.captionsUrl,
+          enableSubtitles,
+          playbackElement,
+          bigscreenPlayerData.media.subtitleCustomisation
         );
 
         if (enableSubtitles) {
@@ -154,17 +163,21 @@ define('bigscreenplayer/bigscreenplayer',
         });
       }
 
-      function setSubtitlesEnabled (value) {
-        playerComponent.setSubtitlesEnabled(value);
-        callSubtitlesCallbacks(value);
+      function setSubtitlesEnabled (enabled) {
+        enabled ? subtitles.enable() : subtitles.disable();
+        callSubtitlesCallbacks(enabled);
 
         if (!resizer.isResized()) {
-          value ? playerComponent.showSubtitles() : playerComponent.hideSubtitles();
+          enabled ? subtitles.show() : subtitles.hide();
         }
       }
 
       function isSubtitlesEnabled () {
-        return playerComponent ? playerComponent.isSubtitlesEnabled() : false;
+        return subtitles ? subtitles.enabled() : false;
+      }
+
+      function isSubtitlesAvailable () {
+        return subtitles ? subtitles.available() : false;
       }
 
       return {
@@ -201,6 +214,12 @@ define('bigscreenplayer/bigscreenplayer',
             playerComponent.tearDown();
             playerComponent = undefined;
           }
+
+          if (subtitles) {
+            subtitles.tearDown();
+            subtitles = undefined;
+          }
+
           stateChangeCallbacks = [];
           timeUpdateCallbacks = [];
           subtitleCallbacks = [];
@@ -300,24 +319,42 @@ define('bigscreenplayer/bigscreenplayer',
           playerComponent.pause(opts);
         },
         resize: function (top, left, width, height, zIndex) {
-          playerComponent.hideSubtitles();
+          subtitles.hide();
           resizer.resize(playbackElement, top, left, width, height, zIndex);
         },
         clearResize: function () {
-          if (playerComponent.isSubtitlesEnabled()) {
-            playerComponent.showSubtitles();
+          if (subtitles.enabled()) {
+            subtitles.show();
           } else {
-            playerComponent.hideSubtitles();
+            subtitles.hide();
           }
           resizer.clear(playbackElement);
         },
         setSubtitlesEnabled: setSubtitlesEnabled,
         isSubtitlesEnabled: isSubtitlesEnabled,
-        isSubtitlesAvailable: function () {
-          return playerComponent ? playerComponent.isSubtitlesAvailable() : false;
+        isSubtitlesAvailable: isSubtitlesAvailable,
+        areSubtitlesCustomisable: function () {
+          return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles);
+        },
+        customiseSubtitles: function (styleOpts) {
+          if (subtitles) {
+            subtitles.customise(styleOpts);
+          }
+        },
+        renderSubtitleExample: function (xmlString, styleOpts, safePosition) {
+          if (subtitles) {
+            subtitles.renderExample(xmlString, styleOpts, safePosition);
+          }
+        },
+        clearSubtitleExample: function () {
+          if (subtitles) {
+            subtitles.clearExample();
+          }
         },
         setTransportControlsPosition: function (position) {
-          playerComponent.setTransportControlPosition(position);
+          if (subtitles) {
+            subtitles.setPosition(position);
+          }
         },
         canSeek: function () {
           return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange());

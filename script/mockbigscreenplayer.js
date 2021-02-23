@@ -50,7 +50,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     var liveWindowData;
     var manifestError;
 
-    var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds'];
+    var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'clearSubtitleExample', 'areSubtitlesCustomisable'];
 
     function startProgress (progressCause) {
       setTimeout(function () {
@@ -286,6 +286,8 @@ define('bigscreenplayer/mockbigscreenplayer',
       isSubtitlesAvailable: function () {
         return subtitlesAvailable;
       },
+      customiseSubtitles: function () {},
+      renderSubtitleExample: function () {},
       setTransportControlsPosition: function (position) {},
       canSeek: function () {
         return canSeekState;
