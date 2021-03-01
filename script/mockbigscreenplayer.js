@@ -6,17 +6,20 @@ define('bigscreenplayer/mockbigscreenplayer',
     'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/plugins',
     'bigscreenplayer/plugindata',
-    'bigscreenplayer/pluginenums'
+    'bigscreenplayer/pluginenums',
+    'bigscreenplayer/version'
   ],
-  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums) {
+  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums, Version) {
     var sourceList;
     var source;
     var cdn;
 
     var timeUpdateCallbacks = [];
+    var subtitleCallbacks = [];
     var stateChangeCallbacks = [];
 
     var currentTime;
+    var isSeeking;
     var seekableRange;
     var duration;
     var liveWindowStart;
@@ -26,6 +29,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     var windowType;
     var subtitlesAvailable;
     var subtitlesEnabled;
+    var subtitlesHidden;
     var endOfStream;
     var canSeekState;
     var canPauseState;
@@ -42,6 +46,11 @@ define('bigscreenplayer/mockbigscreenplayer',
     var autoProgress;
     var autoProgressInterval;
     var initialBuffering = false;
+
+    var liveWindowData;
+    var manifestError;
+
+    var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'clearSubtitleExample', 'areSubtitlesCustomisable'];
 
     function startProgress (progressCause) {
       setTimeout(function () {
@@ -72,14 +81,22 @@ define('bigscreenplayer/mockbigscreenplayer',
     function mock (BigscreenPlayer, opts) {
       autoProgress = opts && opts.autoProgress;
 
+      if (opts && opts.excludedFuncs) {
+        excludedFuncs = excludedFuncs.concat(opts.excludedFuncs);
+      }
+
       if (mockStatus.currentlyMocked) {
         throw new Error('mock() was called while BigscreenPlayer was already mocked');
       }
       shallowClone = PlaybackUtils.clone(BigscreenPlayer);
 
       // Divert existing functions
-      for (var mock in mockFunctions) {
-        BigscreenPlayer[mock] = mockFunctions[mock];
+      for (var func in BigscreenPlayer) {
+        if (BigscreenPlayer[func] && mockFunctions[func]) {
+          BigscreenPlayer[func] = mockFunctions[func];
+        } else if (!PlaybackUtils.contains(excludedFuncs, func)) {
+          throw new Error(func + ' was not mocked or included in the exclusion list');
+        }
       }
       // Add extra functions
       for (var hook in mockingHooks) {
@@ -91,13 +108,19 @@ define('bigscreenplayer/mockbigscreenplayer',
     function mockJasmine (BigscreenPlayer, opts) {
       autoProgress = opts && opts.autoProgress;
 
+      if (opts && opts.excludedFuncs) {
+        excludedFuncs = excludedFuncs.concat(opts.excludedFuncs);
+      }
+
       if (mockStatus.currentlyMocked) {
         throw new Error('mockJasmine() was called while BigscreenPlayer was already mocked');
       }
 
-      for (var mock in mockFunctions) {
-        if (BigscreenPlayer[mock]) {
-          spyOn(BigscreenPlayer, mock).and.callFake(mockFunctions[mock]);
+      for (var fn in BigscreenPlayer) {
+        if (BigscreenPlayer[fn] && mockFunctions[fn]) {
+          spyOn(BigscreenPlayer, fn).and.callFake(mockFunctions[fn]);
+        } else if (!PlaybackUtils.contains(excludedFuncs, fn)) {
+          throw new Error(fn + ' was not mocked or included in the exclusion list');
         }
       }
 
@@ -129,16 +152,22 @@ define('bigscreenplayer/mockbigscreenplayer',
       mockStatus = {currentlyMocked: false, mode: mockModes.NONE};
     }
 
+    function callSubtitlesCallbacks (enabled) {
+      subtitleCallbacks.forEach(function (callback) {
+        callback({ enabled: enabled });
+      });
+    }
+
     var mockFunctions = {
-      init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport) {
+      init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
         currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0;
         liveWindowStart = undefined;
         pausedState = true;
         endedState = false;
-        mediaKind = 'video';
+        mediaKind = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.kind || 'video';
         windowType = newWindowType || WindowTypes.STATIC;
         subtitlesAvailable = true;
-        subtitlesEnabled = false;
+        subtitlesEnabled = enableSubtitles;
         canSeekState = true;
         canPauseState = true;
         sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls;
@@ -148,6 +177,13 @@ define('bigscreenplayer/mockbigscreenplayer',
         duration = windowType === WindowTypes.STATIC ? 4808 : Infinity;
         seekableRange = {start: 0, end: 4808};
 
+        if (manifestError) {
+          if (callbacks && callbacks.onError) {
+            callbacks.onError({error: 'manifest'});
+          }
+          return;
+        }
+
         mockingHooks.changeState(MediaState.WAITING);
 
         if (autoProgress && !initialBuffering) {
@@ -155,6 +191,14 @@ define('bigscreenplayer/mockbigscreenplayer',
         }
 
         initialised = true;
+
+        if (enableSubtitles) {
+          callSubtitlesCallbacks(true);
+        }
+
+        if (callbacks && callbacks.onSuccess) {
+          callbacks.onSuccess();
+        }
       },
       registerForTimeUpdates: function (callback) {
         timeUpdateCallbacks.push(callback);
@@ -165,6 +209,17 @@ define('bigscreenplayer/mockbigscreenplayer',
 
         if (indexOf !== -1) {
           timeUpdateCallbacks.splice(indexOf, 1);
+        }
+      },
+      registerForSubtitleChanges: function (callback) {
+        subtitleCallbacks.push(callback);
+        return callback;
+      },
+      unregisterForSubtitleChanges: function (callback) {
+        var indexOf = subtitleCallbacks.indexOf(callback);
+
+        if (indexOf !== -1) {
+          subtitleCallbacks.splice(indexOf, 1);
         }
       },
       registerForStateChanges: function (callback) {
@@ -180,9 +235,10 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       setCurrentTime: function (time) {
         currentTime = time;
+        isSeeking = true;
         if (autoProgress) {
+          mockingHooks.changeState(MediaState.WAITING, 'other');
           if (!pausedState) {
-            mockingHooks.changeState(MediaState.WAITING, 'other');
             startProgress();
           }
         } else {
@@ -222,6 +278,7 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       setSubtitlesEnabled: function (value) {
         subtitlesEnabled = value;
+        callSubtitlesCallbacks(value);
       },
       isSubtitlesEnabled: function () {
         return subtitlesEnabled;
@@ -229,6 +286,8 @@ define('bigscreenplayer/mockbigscreenplayer',
       isSubtitlesAvailable: function () {
         return subtitlesAvailable;
       },
+      customiseSubtitles: function () {},
+      renderSubtitleExample: function () {},
       setTransportControlsPosition: function (position) {},
       canSeek: function () {
         return canSeekState;
@@ -245,16 +304,30 @@ define('bigscreenplayer/mockbigscreenplayer',
           canBeginSeek: function () { return true; }
         };
       },
+      isPlayingAtLiveEdge: function () {
+        return false;
+      },
+      resize: function () {
+        subtitlesHidden = this.isSubtitlesEnabled();
+        this.setSubtitlesEnabled(subtitlesHidden);
+      },
+      clearResize: function () {
+        this.setSubtitlesEnabled(subtitlesHidden);
+      },
       getPlayerElement: function () {
         return;
       },
+      getFrameworkVersion: function () {
+        return Version;
+      },
       tearDown: function () {
+        manifestError = false;
         if (!initialised) {
           return;
         }
 
-        Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: {dismissed_by: 'teardown'}, isInitialPlay: initialBuffering}));
-        Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: {dismissed_by: 'teardown'}}));
+        Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}));
+        Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}));
         Plugins.unregisterPlugin();
 
         timeUpdateCallbacks = [];
@@ -271,6 +344,17 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       unregisterPlugin: function (plugin) {
         Plugins.unregisterPlugin(plugin);
+      },
+      getLiveWindowData: function () {
+        if (windowType === WindowTypes.STATIC) {
+          return {};
+        }
+        return {
+          windowStartTime: liveWindowData.windowStartTime,
+          windowEndTime: liveWindowData.windowEndTime,
+          initialPlaybackTime: liveWindowData.initialPlaybackTime,
+          serverDate: liveWindowData.serverDate
+        };
       }
     };
 
@@ -286,9 +370,9 @@ define('bigscreenplayer/mockbigscreenplayer',
           fatalErrorBufferingTimeout = true;
           Plugins.interface.onBuffering(new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING}));
         } else {
-          Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: {dismissed_by: eventTrigger}, isInitialPlay: initialBuffering}));
+          Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}));
         }
-        Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: {dismissed_by: eventTrigger}}));
+        Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}));
 
         if (state === MediaState.FATAL_ERROR) {
           Plugins.interface.onFatalError(new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout}));
@@ -302,6 +386,10 @@ define('bigscreenplayer/mockbigscreenplayer',
         if (state === MediaState.FATAL_ERROR) {
           stateObject.errorId = opts && opts.error;
           stateObject.isBufferingTimeoutError = opts && opts.isBufferingTimeoutError;
+        }
+        if (state === MediaState.WAITING) {
+          stateObject.isSeeking = isSeeking;
+          isSeeking = false;
         }
         stateObject.endOfStream = endOfStream;
 
@@ -362,14 +450,17 @@ define('bigscreenplayer/mockbigscreenplayer',
         this.changeState(MediaState.WAITING);
         stopProgress();
       },
+      triggerManifestError: function () {
+        manifestError = true;
+      },
       triggerErrorHandled: function () {
         if (sourceList && sourceList.length > 1) {
           sourceList.shift();
           source = sourceList[0].url;
           cdn = sourceList[0].cdn;
         }
-        Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: {dismissed_by: 'timeout'}, isInitialPlay: initialBuffering}));
-        Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: {dismissed_by: 'timeout'}}));
+        Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}));
+        Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}));
         Plugins.interface.onErrorHandled(new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout, cdn: cdn}));
 
         if (autoProgress) {
@@ -379,6 +470,9 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       setInitialBuffering: function (value) {
         initialBuffering = value;
+      },
+      setLiveWindowData: function (newLiveWindowData) {
+        liveWindowData = newLiveWindowData;
       }
     };
 

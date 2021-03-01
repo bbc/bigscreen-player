@@ -1,4 +1,4 @@
-define('bigscreenplayer/playbackstrategy/talstrategy',
+define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
   [
     'bigscreenplayer/allowedmediatransitions',
     'bigscreenplayer/models/mediastate',
@@ -7,17 +7,17 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
     'bigscreenplayer/playbackstrategy/liveglitchcurtain'
   ],
   function (AllowedMediaTransitions, MediaState, WindowTypes, DebugTool, LiveGlitchCurtain) {
-    return function (windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+    return function (mediaSources, windowType, playbackElement, isUHD, player) {
       var EVENT_HISTORY_LENGTH = 2;
 
-      var mediaPlayer = getMediaPlayer(windowType);
+      var mediaPlayer = player;
       var transitions = new AllowedMediaTransitions(mediaPlayer);
       var eventHistory = [];
       var eventCallback;
       var errorCallback;
       var timeUpdateCallback;
-      var currentTime = 0;
-      var timeCorrection = timeData && timeData.correction || 0;
+      var currentTime;
+      var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
       var duration = 0;
       var isPaused;
       var isEnded = false;
@@ -32,20 +32,15 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
 
       var liveGlitchCurtain;
 
-      var config = device.getConfig();
+      var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy;
       var setSourceOpts = {
-        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && config.streaming && config.streaming.liveUhdDisableSentinels
+        disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.liveUhdDisableSentinels,
+        disableSeekSentinel: window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableSeekSentinel
       };
 
       mediaPlayer.addEventCallback(this, eventHandler);
 
-      function getMediaPlayer (windowType) {
-        if (windowType === WindowTypes.STATIC) {
-          return device.getMediaPlayer();
-        } else {
-          return device.getLivePlayer();
-        }
-      }
+      strategy = strategy.match(/.+(?=strategy)/g)[0];
 
       function eventHandler (event) {
         var handleEvent = {
@@ -62,7 +57,7 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
         if (handleEvent.hasOwnProperty(event.type)) {
           handleEvent[event.type].call(this, event);
         } else {
-          DebugTool.info('TAL Event:' + event.type);
+          DebugTool.info(getSelection() + ' Event:' + event.type);
         }
 
         if (event.type !== 'status') {
@@ -93,7 +88,14 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
 
       function onTimeUpdate (event) {
         isPaused = false;
-        currentTime = event.currentTime - timeCorrection;
+
+        // Note: Multiple consecutive CDN failover logic
+        // A newly loaded video element will always report a 0 time update
+        // This is slightly unhelpful if we want to continue from a later point but consult currentTime as the source of truth.
+        if (parseInt(event.currentTime) !== 0) {
+          currentTime = event.currentTime - timeCorrection;
+        }
+
         // Must publish this time update before checkSeekSucceded - which could cause a pause event
         // This is a device specific event ordering issue.
         publishTimeUpdate();
@@ -108,22 +110,41 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
         publishMediaState(MediaState.ENDED);
       }
 
-      function onError (event) {
+      function onError () {
         if (handleErrorOnExitingSeek && exitingSeek) {
           restartMediaPlayer();
         } else {
-          event.errorProperties = createEventHistoryLabels();
-          event.errorProperties.error_mssg = event.errorMessage;
-          publishError(event);
+          publishError();
         }
       }
 
-      function onSeekAttempted (event) {
-        showCurtain();
+      function onSeekAttempted () {
+        if (requiresLiveCurtain()) {
+          var doNotForceBeginPlaybackToEndOfWindow = {
+            forceBeginPlaybackToEndOfWindow: false
+          };
+
+          var streaming = window.bigscreenPlayer || {
+            overrides: doNotForceBeginPlaybackToEndOfWindow
+          };
+
+          var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
+
+          var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
+
+          if (shouldShowCurtain) {
+            liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
+            liveGlitchCurtain.showCurtain();
+          }
+        }
       }
 
       function onSeekFinished (event) {
-        hideCurtain();
+        if (requiresLiveCurtain()) {
+          if (liveGlitchCurtain) {
+            liveGlitchCurtain.hideCurtain();
+          }
+        }
       }
 
       function publishMediaState (mediaState) {
@@ -132,9 +153,9 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
         }
       }
 
-      function publishError (errorEvent) {
+      function publishError () {
         if (errorCallback) {
-          errorCallback(errorEvent);
+          errorCallback();
         }
       }
 
@@ -144,21 +165,14 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
         }
       }
 
-      function createEventHistoryLabels () {
-        var properties = {};
-        var now = new Date().getTime();
-        for (var i = 0; i < eventHistory.length; i++) {
-          properties['event_history_' + (i + 1)] = eventHistory[i].type;
-          properties['event_history_time_' + (i + 1)] = now - eventHistory[i].time;
-        }
-        return properties;
+      function getStrategy () {
+        return strategy.toUpperCase();
       }
 
       function setupExitSeekWorkarounds (mimeType) {
         handleErrorOnExitingSeek = windowType !== WindowTypes.STATIC && mimeType === 'application/dash+xml';
 
-        var capabilities = config.capabilities || [];
-        var deviceFailsPlayAfterPauseOnExitSeek = capabilities.indexOf('playFailsAfterPauseOnExitSeek') !== -1;
+        var deviceFailsPlayAfterPauseOnExitSeek = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.pauseOnExitSeek;
         delayPauseOnExitSeek = handleErrorOnExitingSeek || deviceFailsPlayAfterPauseOnExitSeek;
       }
 
@@ -193,29 +207,8 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
         mediaPlayer.beginPlaybackFrom(currentTime + timeCorrection || 0);
       }
 
-      function showCurtain () {
-        var doNotForceBeginPlaybackToEndOfWindow = {
-          forceBeginPlaybackToEndOfWindow: false
-        };
-
-        var streaming = config.streaming || {
-          overrides: doNotForceBeginPlaybackToEndOfWindow
-        };
-
-        var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow;
-
-        var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow);
-
-        if (shouldShowCurtain) {
-          liveGlitchCurtain = new LiveGlitchCurtain(playbackElement);
-          liveGlitchCurtain.showCurtain();
-        }
-      }
-
-      function hideCurtain () {
-        if (liveGlitchCurtain) {
-          liveGlitchCurtain.hideCurtain();
-        }
+      function requiresLiveCurtain () {
+        return !!window.bigscreenPlayer.overrides && !!window.bigscreenPlayer.overrides.showLiveCurtain;
       }
 
       function reset () {
@@ -242,20 +235,22 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (src, mimeType, startTime) {
+        load: function (mimeType, startTime) {
           setupExitSeekWorkarounds(mimeType);
           isPaused = false;
 
           hasStartTime = startTime || startTime === 0;
-          var isLiveNonRestart = windowType !== WindowTypes.STATIC && !hasStartTime;
+          var isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime;
 
-          mediaPlayer.initialiseMedia('video', src, mimeType, playbackElement, setSourceOpts);
-          if (mediaPlayer.beginPlaybackFrom && !isLiveNonRestart) {
+          mediaPlayer.initialiseMedia('video', mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts);
+          if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
+            currentTime = startTime;
+            DebugTool.keyValue({key: 'initial-playback-time', value: startTime + timeCorrection});
             mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0);
           } else {
             mediaPlayer.beginPlayback();
           }
-          DebugTool.keyValue({key: 'strategy', value: 'TAL'});
+          DebugTool.keyValue({key: 'strategy', value: getStrategy()});
         },
         play: function () {
           isPaused = false;
@@ -327,6 +322,7 @@ define('bigscreenplayer/playbackstrategy/talstrategy',
             mediaPlayer.pause();
           }
         },
+        getStrategy: getStrategy(),
         reset: reset,
         tearDown: function () {
           mediaPlayer.removeAllEventCallbacks();

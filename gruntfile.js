@@ -8,7 +8,7 @@ module.exports = function (grunt) {
       keepRunner: true,
       specs: 'script-test/**/*.js',
       vendor: [
-        'spec/lib/require-2_0_0.js'
+        'node_modules/requirejs/require.js'
       ],
       template: 'spec/support/test-runner/SpecRunner.html',
       outfile: 'spec/support/test-runner/WebRunner.html',

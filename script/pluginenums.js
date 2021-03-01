@@ -1,20 +1,20 @@
 define(
-    'bigscreenplayer/pluginenums',
-    function () {
-      'use strict';
+  'bigscreenplayer/pluginenums',
+  function () {
+    'use strict';
 
-      return {
-        STATUS: {
-          STARTED: 'started',
-          DISMISSED: 'dismissed',
-          FATAL: 'fatal',
-          FAILOVER: 'failover'
-        },
-        TYPE: {
-          BUFFERING: 'buffering',
-          ERROR: 'error'
-        }
-      };
-    }
+    return {
+      STATUS: {
+        STARTED: 'started',
+        DISMISSED: 'dismissed',
+        FATAL: 'fatal',
+        FAILOVER: 'failover'
+      },
+      TYPE: {
+        BUFFERING: 'buffering',
+        ERROR: 'error'
+      }
+    };
+  }
 );
 

@@ -1,18 +1,26 @@
 define('bigscreenplayer/playbackstrategy/hybridstrategy',
   [
-    'bigscreenplayer/playbackstrategy/talstrategy',
+    'bigscreenplayer/playbackstrategy/nativestrategy',
     'bigscreenplayer/playbackstrategy/msestrategy',
-    'bigscreenplayer/playbackstrategy/strategypicker'
+    'bigscreenplayer/playbackstrategy/strategypicker',
+    'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/models/playbackstrategy'
   ],
-  function (TAL, MSE, StrategyPicker) {
-    return function (windowType, mediaKind, timeCorrection, videoElement, isUHD, device) {
+  function (Native, MSE, StrategyPicker, LiveSupport, PlaybackStrategy) {
+    var HybridStrategy = function (mediaSources, windowType, mediaKind, videoElement, isUHD) {
       var strategy = StrategyPicker(windowType, isUHD);
 
-      if (strategy === 'mseStrategy') {
-        return MSE(windowType, mediaKind, timeCorrection, videoElement, isUHD);
+      if (strategy === PlaybackStrategy.MSE) {
+        return MSE(mediaSources, windowType, mediaKind, videoElement, isUHD);
       }
 
-      return TAL(windowType, mediaKind, timeCorrection, videoElement, isUHD, device);
+      return Native(mediaSources, windowType, mediaKind, videoElement, isUHD);
     };
+
+    HybridStrategy.getLiveSupport = function () {
+      return LiveSupport.SEEKABLE;
+    };
+
+    return HybridStrategy;
   }
 );

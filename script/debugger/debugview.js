@@ -1,89 +1,104 @@
 define('bigscreenplayer/debugger/debugview',
- function () {
-   'use strict';
-   var logBox, logContainer, staticContainer, staticBox;
-   var appElement = document.getElementById('app');
+  [
+    'bigscreenplayer/domhelpers'
+  ],
+  function (DOMHelpers) {
+    'use strict';
+    var appElement, logBox, logContainer, staticContainer, staticBox;
 
-   function init () {
-     logBox = document.createElement('div');
-     logContainer = document.createElement('span');
-     staticBox = document.createElement('div');
-     staticContainer = document.createElement('span');
+    function init () {
+      logBox = document.createElement('div');
+      logContainer = document.createElement('span');
+      staticBox = document.createElement('div');
+      staticContainer = document.createElement('span');
 
-     logBox.id = 'logBox';
-     logBox.style.position = 'absolute';
-     logBox.style.width = '63%';
-     logBox.style.left = '5%';
-     logBox.style.top = '15%';
-     logBox.style.bottom = '25%';
-     logBox.style.backgroundColor = '#1D1D1D';
-     logBox.style.opacity = 0.9;
-     logBox.style.overflow = 'wrap';
+      if (appElement === undefined) {
+        appElement = document.body;
+      }
 
-     staticBox.id = 'staticBox';
-     staticBox.style.position = 'absolute';
-     staticBox.style.width = '26%';
-     staticBox.style.right = '5%';
-     staticBox.style.top = '15%';
-     staticBox.style.bottom = '25%';
-     staticBox.style.backgroundColor = '#1D1D1D';
-     staticBox.style.opacity = 0.9;
-     staticBox.style.overflow = 'wrap';
+      logBox.id = 'logBox';
+      logBox.style.position = 'absolute';
+      logBox.style.width = '63%';
+      logBox.style.left = '5%';
+      logBox.style.top = '15%';
+      logBox.style.bottom = '25%';
+      logBox.style.backgroundColor = '#1D1D1D';
+      logBox.style.opacity = 0.9;
+      logBox.style.overflow = 'hidden';
 
-     logContainer.id = 'logContainer';
-     logContainer.style.color = '#ffffff';
-     logContainer.style.fontSize = '13pt';
-     logContainer.style.position = 'absolute';
-     logContainer.style.bottom = '1%';
-     logContainer.style.left = '1%';
-     logContainer.style.wordWrap = 'break-word';
+      staticBox.id = 'staticBox';
+      staticBox.style.position = 'absolute';
+      staticBox.style.width = '26%';
+      staticBox.style.right = '5%';
+      staticBox.style.top = '15%';
+      staticBox.style.bottom = '25%';
+      staticBox.style.backgroundColor = '#1D1D1D';
+      staticBox.style.opacity = 0.9;
+      staticBox.style.overflow = 'hidden';
 
-     staticContainer.id = 'staticContainer';
-     staticContainer.style.color = '#ffffff';
-     staticContainer.style.fontSize = '13pt';
-     staticContainer.style.wordWrap = 'break-word';
-     staticContainer.style.left = '1%';
+      logContainer.id = 'logContainer';
+      logContainer.style.color = '#ffffff';
+      logContainer.style.fontSize = '11pt';
+      logContainer.style.position = 'absolute';
+      logContainer.style.bottom = '1%';
+      logContainer.style.left = '1%';
+      logContainer.style.wordWrap = 'break-word';
+      logContainer.style.whiteSpace = 'pre-line';
 
-     logBox.appendChild(logContainer);
-     staticBox.appendChild(staticContainer);
-     appElement.appendChild(logBox);
-     appElement.appendChild(staticBox);
-   }
+      staticContainer.id = 'staticContainer';
+      staticContainer.style.color = '#ffffff';
+      staticContainer.style.fontSize = '11pt';
+      staticContainer.style.wordWrap = 'break-word';
+      staticContainer.style.left = '1%';
+      staticContainer.style.whiteSpace = 'pre-line';
 
-   function render (logData) {
-     var dynamicLogs = logData.dynamic;
-     var LINES_TO_DISPLAY = 29;
-     if (dynamicLogs.length === 0) {
-       logContainer.innerHTML = '';
-     }
+      logBox.appendChild(logContainer);
+      staticBox.appendChild(staticContainer);
+      appElement.appendChild(logBox);
+      appElement.appendChild(staticBox);
+    }
 
-     dynamicLogs = dynamicLogs.slice(-LINES_TO_DISPLAY);
-     logContainer.innerHTML = dynamicLogs.join('<br>');
+    function setRootElement (root) {
+      if (root) {
+        appElement = root;
+      }
+    }
 
-     var rowElements = logData.static.map(function (staticElement) {
-       var staticRow = document.createElement('p');
-       staticRow.innerText = staticElement.key + ': ' + staticElement.value;
-       return staticRow;
-     });
+    function render (logData) {
+      var dynamicLogs = logData.dynamic;
+      var LINES_TO_DISPLAY = 29;
+      if (dynamicLogs.length === 0) {
+        logContainer.innerHTML = '';
+      }
 
-     staticContainer.innerHTML = '';
-     rowElements.forEach(function (row) {
-       staticContainer.appendChild(row);
-     });
-   }
+      dynamicLogs = dynamicLogs.slice(-LINES_TO_DISPLAY);
+      logContainer.innerHTML = dynamicLogs.join('\n');
 
-   function tearDown () {
-     appElement.removeChild(document.getElementById('logBox'));
-     appElement.removeChild(document.getElementById('staticBox'));
-     staticContainer = undefined;
-     logContainer = undefined;
-     logBox = undefined;
-     staticBox = undefined;
-   }
+      var staticLogString = '';
+      logData.static.forEach(function (log) {
+        staticLogString = staticLogString + log.key + ': ' + log.value + '\n\n';
+      });
 
-   return {
-     init: init,
-     render: render,
-     tearDown: tearDown
-   };
- });
+      staticContainer.innerHTML = staticLogString;
+    }
+
+    function tearDown () {
+      var logBox = document.getElementById('logBox');
+      var staticBox = document.getElementById('staticBox');
+
+      DOMHelpers.safeRemoveElement(logBox);
+      DOMHelpers.safeRemoveElement(staticBox);
+
+      appElement = undefined;
+      staticContainer = undefined;
+      logContainer = undefined;
+      logBox = undefined;
+    }
+
+    return {
+      init: init,
+      setRootElement: setRootElement,
+      render: render,
+      tearDown: tearDown
+    };
+  });

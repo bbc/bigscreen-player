@@ -18,7 +18,7 @@ define(
       PLAYING: 2,
       /** Media is waiting for data (buffering). */
       WAITING: 4,
-      /** Media is seeking backwards or forwards. */
+      /** Media has ended. */
       ENDED: 5,
       /** Media has thrown a fatal error. */
       FATAL_ERROR: 6

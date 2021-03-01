@@ -8,22 +8,36 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/mockbigscreenplayer',
     'bigscreenplayer/plugins',
     'bigscreenplayer/debugger/chronicle',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/utils/timeutils',
+    'bigscreenplayer/mediasources',
+    'bigscreenplayer/version',
+    'bigscreenplayer/resizer',
+    'bigscreenplayer/readyhelper',
+    'bigscreenplayer/subtitles/subtitles'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version, Resizer, ReadyHelper, Subtitles) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
       var timeUpdateCallbacks = [];
-
+      var subtitleCallbacks = [];
+      var playerReadyCallback;
       var mediaKind;
-      var liveWindowStart;
-      var liveWindowEnd;
-      var liveSupport;
+      var initialPlaybackTimeEpoch;
+      var serverDate;
       var playerComponent;
+      var resizer;
       var pauseTrigger;
+      var isSeeking = false;
       var endOfStream;
       var windowType;
+      var mediaSources;
+      var playbackElement;
+      var readyHelper;
+      var subtitles;
+
+      var END_OF_STREAM_TOLERANCE = 10;
 
       function mediaStateUpdateCallback (evt) {
         if (evt.timeUpdate) {
@@ -48,12 +62,18 @@ define('bigscreenplayer/bigscreenplayer',
               isBufferingTimeoutError: evt.isBufferingTimeoutError
             };
           }
+
+          if (evt.data.state === MediaState.WAITING) {
+            stateObject.isSeeking = isSeeking;
+            isSeeking = false;
+          }
+
           stateObject.endOfStream = endOfStream;
+          DebugTool.event(stateObject);
 
           stateChangeCallbacks.forEach(function (callback) {
             callback(stateObject);
           });
-          DebugTool.event(stateObject);
         }
 
         if (evt.data.seekableRange) {
@@ -64,10 +84,14 @@ define('bigscreenplayer/bigscreenplayer',
         if (evt.data.duration) {
           DebugTool.keyValue({key: 'duration', value: evt.data.duration});
         }
+
+        if (playerComponent && readyHelper) {
+          readyHelper.callbackWhenReady(evt);
+        }
       }
 
       function deviceTimeToDate (time) {
-        if (liveWindowStart) {
+        if (getWindowStartTime()) {
           return new Date(convertVideoTimeSecondsToEpochMs(time));
         } else {
           return new Date(time * 1000);
@@ -75,31 +99,114 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function convertVideoTimeSecondsToEpochMs (seconds) {
-        return liveWindowStart ? liveWindowStart + (seconds * 1000) : undefined;
+        return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : undefined;
+      }
+
+      function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
+        if (windowType !== WindowTypes.STATIC) {
+          bigscreenPlayerData.time = mediaSources.time();
+          serverDate = bigscreenPlayerData.serverDate;
+
+          initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime;
+          // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
+          bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(bigscreenPlayerData.initialPlaybackTime, bigscreenPlayerData.time.windowStartTime);
+        }
+
+        mediaKind = bigscreenPlayerData.media.kind;
+        endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0);
+
+        readyHelper = new ReadyHelper(
+          bigscreenPlayerData.initialPlaybackTime,
+          windowType,
+          PlayerComponent.getLiveSupport(),
+          playerReadyCallback
+        );
+
+        playerComponent = new PlayerComponent(
+          playbackElement,
+          bigscreenPlayerData,
+          mediaSources,
+          windowType,
+          mediaStateUpdateCallback
+        );
+
+        subtitles = Subtitles(
+          playerComponent,
+          bigscreenPlayerData.media.captionsUrl,
+          enableSubtitles,
+          playbackElement,
+          bigscreenPlayerData.media.subtitleCustomisation
+        );
+
+        if (enableSubtitles) {
+          callSubtitlesCallbacks(true);
+        }
+      }
+
+      function getWindowStartTime () {
+        return mediaSources && mediaSources.time().windowStartTime;
+      }
+
+      function getWindowEndTime () {
+        return mediaSources && mediaSources.time().windowEndTime;
+      }
+
+      function toggleDebug () {
+        if (playerComponent) {
+          DebugTool.toggleVisibility();
+        }
+      }
+
+      function callSubtitlesCallbacks (enabled) {
+        subtitleCallbacks.forEach(function (callback) {
+          callback({ enabled: enabled });
+        });
+      }
+
+      function setSubtitlesEnabled (enabled) {
+        enabled ? subtitles.enable() : subtitles.disable();
+        callSubtitlesCallbacks(enabled);
+
+        if (!resizer.isResized()) {
+          enabled ? subtitles.show() : subtitles.hide();
+        }
+      }
+
+      function isSubtitlesEnabled () {
+        return subtitles ? subtitles.enabled() : false;
+      }
+
+      function isSubtitlesAvailable () {
+        return subtitles ? subtitles.available() : false;
       }
 
       return {
-        init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newLiveSupport, device) {
+        init: function (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
+          playbackElement = newPlaybackElement;
           Chronicle.init();
-          mediaKind = bigscreenPlayerData.media.kind;
-          liveWindowStart = bigscreenPlayerData.time && bigscreenPlayerData.time.windowStartTime;
-          liveWindowEnd = bigscreenPlayerData.time && bigscreenPlayerData.time.windowEndTime;
-          liveSupport = newLiveSupport;
+          resizer = Resizer();
+          DebugTool.setRootElement(playbackElement);
+          DebugTool.keyValue({key: 'framework-version', value: Version});
           windowType = newWindowType;
-          endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0);
+          serverDate = bigscreenPlayerData.serverDate;
+          if (!callbacks) {
+            callbacks = {};
+          }
+          playerReadyCallback = callbacks.onSuccess;
 
-          playerComponent = new PlayerComponent(
-            playbackElement,
-            bigscreenPlayerData,
-            windowType,
-            enableSubtitles,
-            mediaStateUpdateCallback,
-            device
-          );
+          var mediaSourceCallbacks = {
+            onSuccess: function () {
+              bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles);
+            },
+            onError: function (error) {
+              if (callbacks.onError) {
+                callbacks.onError(error);
+              }
+            }
+          };
 
-          DebugTool.keyValue({key: 'bitrate', value: bigscreenPlayerData.media.bitrate + ' kbps'});
-          DebugTool.keyValue({key: 'cdn', value: bigscreenPlayerData.media.urls[0].cdn});
-          DebugTool.keyValue({key: 'url', value: bigscreenPlayerData.media.urls[0].url});
+          mediaSources = new MediaSources();
+          mediaSources.init(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
         },
 
         tearDown: function () {
@@ -107,15 +214,21 @@ define('bigscreenplayer/bigscreenplayer',
             playerComponent.tearDown();
             playerComponent = undefined;
           }
+
+          if (subtitles) {
+            subtitles.tearDown();
+            subtitles = undefined;
+          }
+
           stateChangeCallbacks = [];
           timeUpdateCallbacks = [];
+          subtitleCallbacks = [];
           endOfStream = undefined;
           mediaKind = undefined;
-          liveWindowStart = undefined;
-          liveWindowEnd = undefined;
-          liveSupport = undefined;
           pauseTrigger = undefined;
           windowType = undefined;
+          mediaSources = undefined;
+          resizer = undefined;
           this.unregisterPlugin();
           DebugTool.tearDown();
           Chronicle.tearDown();
@@ -139,18 +252,26 @@ define('bigscreenplayer/bigscreenplayer',
             return callback !== existingCallback;
           });
         },
+        registerForSubtitleChanges: function (callback) {
+          subtitleCallbacks.push(callback);
+          return callback;
+        },
+        unregisterForSubtitleChanges: function (callback) {
+          var indexOf = subtitleCallbacks.indexOf(callback);
+          if (indexOf !== -1) {
+            subtitleCallbacks.splice(indexOf, 1);
+          }
+        },
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
           if (playerComponent) {
-            var END_OF_STREAM_TOLERANCE = 10;
-
+            isSeeking = true; // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
             playerComponent.setCurrentTime(time);
-
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
           }
         },
         getCurrentTime: function () {
-          return playerComponent ? playerComponent.getCurrentTime() : 0;
+          return playerComponent && playerComponent.getCurrentTime() || 0;
         },
         getMediaKind: function () {
           return mediaKind;
@@ -160,6 +281,21 @@ define('bigscreenplayer/bigscreenplayer',
         },
         getSeekableRange: function () {
           return playerComponent ? playerComponent.getSeekableRange() : {};
+        },
+        isPlayingAtLiveEdge: function () {
+          return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
+        },
+        getLiveWindowData: function () {
+          if (windowType === WindowTypes.STATIC) {
+            return {};
+          }
+
+          return {
+            windowStartTime: getWindowStartTime(),
+            windowEndTime: getWindowEndTime(),
+            initialPlaybackTime: initialPlaybackTimeEpoch,
+            serverDate: serverDate
+          };
         },
         getDuration: function () {
           return playerComponent && playerComponent.getDuration();
@@ -179,23 +315,49 @@ define('bigscreenplayer/bigscreenplayer',
           pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
           playerComponent.pause(opts);
         },
-        setSubtitlesEnabled: function (value) {
-          playerComponent.setSubtitlesEnabled(value);
+        resize: function (top, left, width, height, zIndex) {
+          subtitles.hide();
+          resizer.resize(playbackElement, top, left, width, height, zIndex);
         },
-        isSubtitlesEnabled: function () {
-          return playerComponent ? playerComponent.isSubtitlesEnabled() : false;
+        clearResize: function () {
+          if (subtitles.enabled()) {
+            subtitles.show();
+          } else {
+            subtitles.hide();
+          }
+          resizer.clear(playbackElement);
         },
-        isSubtitlesAvailable: function () {
-          return playerComponent ? playerComponent.isSubtitlesAvailable() : false;
+        setSubtitlesEnabled: setSubtitlesEnabled,
+        isSubtitlesEnabled: isSubtitlesEnabled,
+        isSubtitlesAvailable: isSubtitlesAvailable,
+        areSubtitlesCustomisable: function () {
+          return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles);
+        },
+        customiseSubtitles: function (styleOpts) {
+          if (subtitles) {
+            subtitles.customise(styleOpts);
+          }
+        },
+        renderSubtitleExample: function (xmlString, styleOpts, safePosition) {
+          if (subtitles) {
+            subtitles.renderExample(xmlString, styleOpts, safePosition);
+          }
+        },
+        clearSubtitleExample: function () {
+          if (subtitles) {
+            subtitles.clearExample();
+          }
         },
         setTransportControlsPosition: function (position) {
-          playerComponent.setTransportControlPosition(position);
+          if (subtitles) {
+            subtitles.setPosition(position);
+          }
         },
         canSeek: function () {
-          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(liveWindowStart, liveWindowEnd, liveSupport, this.getSeekableRange());
+          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange());
         },
         canPause: function () {
-          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(liveWindowStart, liveWindowEnd, liveSupport);
+          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport());
         },
         mock: function (opts) {
           MockBigscreenPlayer.mock(this, opts);
@@ -218,9 +380,28 @@ define('bigscreenplayer/bigscreenplayer',
         getPlayerElement: function () {
           return playerComponent && playerComponent.getPlayerElement();
         },
-        convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs
+        convertEpochMsToVideoTimeSeconds: function (epochTime) {
+          return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined;
+        },
+        getFrameworkVersion: function () {
+          return Version;
+        },
+        convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
+        toggleDebug: toggleDebug,
+        getLogLevels: function () {
+          return DebugTool.logLevels;
+        },
+        setLogLevel: DebugTool.setLogLevel
       };
     }
+
+    function getLiveSupport () {
+      return PlayerComponent.getLiveSupport();
+    }
+
+    BigscreenPlayer.getLiveSupport = getLiveSupport;
+
+    BigscreenPlayer.version = Version;
 
     return BigscreenPlayer;
   }

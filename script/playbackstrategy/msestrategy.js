@@ -4,28 +4,60 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/models/mediakinds',
+    'bigscreenplayer/plugins',
+    'bigscreenplayer/manifest/manifestmodifier',
+    'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/dynamicwindowutils',
+    'bigscreenplayer/utils/timeutils',
+    'bigscreenplayer/domhelpers',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds) {
-    return function (windowType, mediaKind, timeData, playbackElement) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
+    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD) {
+      var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
-      var eventCallback;
-      var errorCallback;
-      var timeUpdateCallback;
-      var timeCorrection = timeData && timeData.correction || 0;
-
-      var initialStartTime;
-      var isEnded = false;
       var mediaElement;
 
+      var eventCallbacks = [];
+      var errorCallback;
+      var timeUpdateCallback;
+
+      var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
+      var failoverTime;
+      var refreshFailoverTime;
+      var slidingWindowPausedTime = 0;
+      var isEnded = false;
+
+      var dashMetrics;
+
+      var publishedSeekEvent = false;
+      var isSeeking = false;
+
+      var playerMetadata = {
+        playbackBitrate: undefined,
+        bufferLength: undefined,
+        fragmentInfo: {
+          requestTime: undefined,
+          numDownloaded: undefined
+        }
+      };
+
       var DashJSEvents = {
+        LOG: 'log',
         ERROR: 'error',
         MANIFEST_LOADED: 'manifestLoaded',
+        DOWNLOAD_MANIFEST_ERROR_CODE: 25,
+        DOWNLOAD_SIDX_ERROR_CODE: 26,
+        DOWNLOAD_CONTENT_ERROR_CODE: 27,
+        DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
-        METRIC_ADDED: 'metricAdded'
+        BASE_URL_SELECTED: 'baseUrlSelected',
+        METRIC_ADDED: 'metricAdded',
+        METRIC_CHANGED: 'metricChanged',
+        STREAM_INITIALIZED: 'streamInitialized'
       };
 
       function onPlaying () {
@@ -39,12 +71,24 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function onBuffering () {
         isEnded = false;
-        publishMediaState(MediaState.WAITING);
+        if (!isSeeking || !publishedSeekEvent) {
+          publishMediaState(MediaState.WAITING);
+          publishedSeekEvent = true;
+        }
       }
 
       function onSeeked () {
+        isSeeking = false;
         DebugTool.info('Seeked Event');
-        publishMediaState(isPaused() ? MediaState.PAUSED : MediaState.PLAYING);
+
+        if (isPaused()) {
+          if (windowType === WindowTypes.SLIDING) {
+            startAutoResumeTimeout();
+          }
+          publishMediaState(MediaState.PAUSED);
+        } else {
+          publishMediaState(MediaState.PLAYING);
+        }
       }
 
       function onEnded () {
@@ -53,38 +97,189 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onTimeUpdate () {
+        var IN_STREAM_BUFFERING_SECONDS = 20;
+        var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo('video');
+
+        if (dvrInfo && windowType === WindowTypes.SLIDING) {
+          failoverTime = Math.max(0, parseInt(dvrInfo.time - dvrInfo.range.start) - IN_STREAM_BUFFERING_SECONDS);
+        } else {
+          var time = mediaElement.currentTime;
+
+          // Note: Multiple consecutive CDN failover logic
+          // A newly loaded video element will always report a 0 time update
+          // This is slightly unhelpful if we want to continue from a later point but consult failoverTime as the source of truth.
+          if (parseInt(time) !== 0) {
+            failoverTime = time;
+          }
+        }
+
         publishTimeUpdate();
       }
 
       function onError (event) {
-        event.errorProperties = {error_mssg: event.error};
-        DebugTool.info('MSE Error: ' + event.error);
-        publishError(event);
+        if (event.error && event.error.data) {
+          delete event.error.data;
+        }
+
+        if (event.error && event.error.message) {
+          DebugTool.info('MSE Error: ' + event.error.message);
+
+          // Don't raise an error on fragment download error
+          if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE ||
+            event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
+            event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE) {
+            return;
+          }
+
+          if (event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
+            manifestDownloadError(event);
+            return;
+          }
+        }
+        publishError();
+      }
+
+      function manifestDownloadError (event) {
+        var error = function () {
+          publishError();
+        };
+
+        var failoverParams = {
+          errorMessage: 'manifest-refresh',
+          isBufferingTimeoutError: false,
+          currentTime: getCurrentTime(),
+          duration: getDuration()
+        };
+
+        mediaSources.failover(load, error, failoverParams);
       }
 
       function onManifestLoaded (event) {
         DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration);
+
+        if (event.data) {
+          var manifest = event.data;
+          var representationOptions = window.bigscreenPlayer.representationOptions || {};
+
+          ManifestModifier.filter(manifest, representationOptions);
+          ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources());
+        }
       }
 
       function onManifestValidityChange (event) {
         DebugTool.info('Manifest validity changed. Duration is: ' + event.newDuration);
       }
 
-      function onQualityChangeRendered (event) {
-        if (event.mediaType === 'video') {
-          DebugTool.info('ABR Change Rendered from: ' + event.oldQuality + ' to: ' + event.newQuality);
+      function onStreamInitialised () {
+        var setMseDuration = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.mseDurationOverride;
+        if (setMseDuration && (windowType === WindowTypes.SLIDING || windowType === WindowTypes.GROWING)) {
+          // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
+          mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
         }
+        emitPlayerInfo();
+      }
+
+      function emitPlayerInfo () {
+        if (mediaKind === MediaKinds.VIDEO) {
+          playerMetadata.playbackBitrate = currentPlaybackBitrate(MediaKinds.VIDEO) + currentPlaybackBitrate(MediaKinds.AUDIO);
+        } else {
+          playerMetadata.playbackBitrate = currentPlaybackBitrate(MediaKinds.AUDIO);
+        }
+
+        DebugTool.keyValue({ key: 'playback bitrate', value: playerMetadata.playbackBitrate + ' kbps' });
+
+        Plugins.interface.onPlayerInfoUpdated({
+          bufferLength: playerMetadata.bufferLength,
+          playbackBitrate: playerMetadata.playbackBitrate
+        });
+      }
+
+      function currentPlaybackBitrate (mediaKind) {
+        var representationSwitch = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaKind);
+        var representation = representationSwitch ? representationSwitch.to : '';
+        return playbackBitrateForRepresentation(representation, mediaKind);
+      }
+
+      function playbackBitrateForRepresentation (representation, mediaKind) {
+        var repIdx = mediaPlayer.getDashAdapter().getIndexForRepresentation(representation, 0);
+        return playbackBitrateForRepresentationIndex(repIdx, mediaKind);
+      }
+
+      function playbackBitrateForRepresentationIndex (index, mediaKind) {
+        if (index === -1) return '';
+        var bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind);
+        return parseInt(bitrateInfoList[index].bitrate / 1000);
+      }
+
+      function onQualityChangeRendered (event) {
+        function logBitrate (mediaKind, event) {
+          var oldBitrate = isNaN(event.oldQuality) ? '--' : playbackBitrateForRepresentationIndex(event.oldQuality, mediaKind);
+          var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)';
+          var newRepresentation = event.newQuality + ' (' + playbackBitrateForRepresentationIndex(event.newQuality, mediaKind) + ' kbps)';
+          DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation });
+          DebugTool.info(mediaKind + ' ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation);
+        }
+
+        if (event.newQuality !== undefined) {
+          logBitrate(event.mediaType, event);
+        }
+
+        emitPlayerInfo();
+      }
+
+      /**
+       * Base url selected events are fired from dash.js whenever a priority weighted url is selected from a manifest
+       * Note: we ignore the initial selection as it isn't a failover.
+       * @param {*} event
+       */
+      function onBaseUrlSelected (event) {
+        var failoverInfo = {
+          errorMessage: 'download',
+          isBufferingTimeoutError: false
+        };
+
+        function log () {
+          DebugTool.info('BaseUrl selected: ' + event.baseUrl.url);
+        }
+
+        failoverInfo.serviceLocation = event.baseUrl.serviceLocation;
+        mediaSources.failover(log, log, failoverInfo);
       }
 
       function onMetricAdded (event) {
-        if (event.mediaType === 'video' && event.metric === 'DroppedFrames') {
-          DebugTool.keyValue({key: 'Dropped Frames', value: event.value.droppedFrames});
+        if (event.mediaType === 'video') {
+          if (event.metric === 'DroppedFrames') {
+            DebugTool.keyValue({ key: 'Dropped Frames', value: event.value.droppedFrames });
+          }
+        }
+        if (event.mediaType === mediaKind && event.metric === 'BufferLevel') {
+          dashMetrics = mediaPlayer.getDashMetrics();
+
+          if (dashMetrics) {
+            playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(event.mediaType);
+            DebugTool.keyValue({ key: 'Buffer Length', value: playerMetadata.bufferLength });
+            Plugins.interface.onPlayerInfoUpdated({
+              bufferLength: playerMetadata.bufferLength,
+              playbackBitrate: playerMetadata.playbackBitrate
+            });
+          }
+        }
+        if (event.mediaType === mediaKind && event.metric === 'HttpList' && event.value._tfinish && event.value.trequest) {
+          playerMetadata.fragmentInfo.requestTime = Math.floor(Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime()));
+          playerMetadata.fragmentInfo.numDownloaded = playerMetadata.fragmentInfo.numDownloaded ? ++playerMetadata.fragmentInfo.numDownloaded : 1;
+          Plugins.interface.onPlayerInfoUpdated({
+            fragmentInfo: playerMetadata.fragmentInfo
+          });
         }
       }
 
+      function onDebugLog (e) {
+        DebugTool.verbose(e.message);
+      }
+
       function publishMediaState (mediaState) {
-        if (eventCallback) {
-          eventCallback(mediaState);
+        for (var index = 0; index < eventCallbacks.length; index++) {
+          eventCallbacks[index](mediaState);
         }
       }
 
@@ -94,18 +289,29 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         }
       }
 
-      function publishError (errorEvent) {
+      function publishError () {
         if (errorCallback) {
-          errorCallback(errorEvent);
+          errorCallback();
         }
       }
 
       function isPaused () {
-        return (mediaPlayer) ? mediaPlayer.isPaused() : undefined;
+        return (mediaPlayer && mediaPlayer.isReady()) ? mediaPlayer.isPaused() : undefined;
       }
 
       function getClampedTime (time, range) {
-        return Math.min(Math.max(time, range.start), range.end - 1.1);
+        return Math.min(Math.max(time, range.start), range.end - LIVE_DELAY_SECONDS);
+      }
+
+      function load (mimeType, playbackTime) {
+        if (!mediaPlayer) {
+          failoverTime = playbackTime;
+          setUpMediaElement(playbackElement);
+          setUpMediaPlayer(playbackTime);
+          setUpMediaListeners();
+        } else {
+          modifySource(refreshFailoverTime || failoverTime);
+        }
       }
 
       function setUpMediaElement (playbackElement) {
@@ -121,17 +327,30 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
       }
 
-      function setUpMediaPlayer (src) {
+      function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
-        mediaPlayer.getDebug().setLogToBrowserConsole(false);
+        mediaPlayer.updateSettings({
+          'debug': {
+            'logLevel': 2
+          }
+        });
 
-        mediaPlayer.setBufferToKeep(0);
-        mediaPlayer.setBufferAheadToKeep(20);
+        mediaPlayer.updateSettings({
+          'streaming': {
+            'liveDelay': LIVE_DELAY_SECONDS,
+            'bufferToKeep': 0,
+            'bufferAheadToKeep': 20,
+            'bufferTimeAtTopQuality': 12,
+            'bufferTimeAtTopQualityLongForm': 12
+          }
+        });
 
-        mediaPlayer.setBufferTimeAtTopQuality(12);
-        mediaPlayer.setBufferTimeAtTopQualityLongForm(12);
+        mediaPlayer.initialize(mediaElement, null, true);
+        modifySource(playbackTime);
+      }
 
-        mediaPlayer.initialize(mediaElement, src, true);
+      function modifySource (playbackTime) {
+        mediaPlayer.attachSource(calculateSourceAnchor(mediaSources.currentSource(), playbackTime));
       }
 
       function setUpMediaListeners () {
@@ -145,17 +364,124 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaElement.addEventListener('error', onError);
         mediaPlayer.on(DashJSEvents.ERROR, onError);
         mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
+        mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised);
         mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
         mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
+        mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
+        mediaPlayer.on(DashJSEvents.LOG, onDebugLog);
       }
 
-      function cdnFailoverLoad (newSrc, currentSrcWithTime) {
-        // When an initial playback causes a failover and the media element is still reporting 0 rather than the initial start time
-        if (mediaElement.currentTime === 0) {
-          currentSrcWithTime = newSrc + '#t=' + initialStartTime;
+      /**
+       * Calculates a source url with anchor tags for playback within dashjs
+       *
+       * Anchor tags applied to the MPD source for playback:
+       *
+       * #r - relative to the start of the first period defined in the DASH manifest
+       * #t - time since the beginning of the first period defined in the DASH manifest
+       * @param {String} source
+       * @param {Number} startTime
+       */
+      function calculateSourceAnchor (source, startTime) {
+        if (startTime === undefined || isNaN(startTime)) {
+          return source;
         }
-        mediaPlayer.attachSource(currentSrcWithTime);
+
+        if (windowType === WindowTypes.STATIC) {
+          return startTime === 0 ? source : source + '#t=' + parseInt(startTime);
+        }
+
+        if (windowType === WindowTypes.SLIDING) {
+          DebugTool.keyValue({key: 'initial-playback-time', value: parseInt(startTime)});
+          return startTime === 0 ? source : source + '#r=' + parseInt(startTime);
+        }
+
+        if (windowType === WindowTypes.GROWING) {
+          var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
+          var srcWithTimeAnchor = source + '#t=';
+
+          startTime = parseInt(startTime);
+          return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
+        }
+      }
+
+      function getSeekableRange () {
+        if (mediaPlayer && mediaPlayer.isReady() && windowType !== WindowTypes.STATIC) {
+          var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind);
+          if (dvrInfo) {
+            return {
+              start: dvrInfo.range.start - timeCorrection,
+              end: dvrInfo.range.end - timeCorrection
+            };
+          }
+        }
+        return {
+          start: 0,
+          end: getDuration()
+        };
+      }
+
+      function getDuration () {
+        return (mediaPlayer && mediaPlayer.isReady()) ? mediaPlayer.duration() : 0;
+      }
+
+      function getCurrentTime () {
+        return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
+      }
+
+      function refreshManifestBeforeSeek (seekToTime) {
+        refreshFailoverTime = seekToTime;
+
+        mediaPlayer.refreshManifest(function (manifest) {
+          var mediaPresentationDuration = manifest && manifest.mediaPresentationDuration;
+          if (!isNaN(mediaPresentationDuration)) {
+            DebugTool.info('Stream ended. Clamping seek point to end of stream');
+            mediaPlayer.seek(getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration }));
+          } else {
+            mediaPlayer.seek(seekToTime);
+          }
+        });
+      }
+
+      function calculateSeekOffset (time) {
+        function getClampedTimeForLive (time) {
+          return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - LIVE_DELAY_SECONDS);
+        }
+
+        if (windowType === WindowTypes.SLIDING) {
+          var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind);
+          var offset = TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfo.range.start, timeCorrection, slidingWindowPausedTime);
+          slidingWindowPausedTime = 0;
+
+          return getClampedTimeForLive(offset);
+        }
+        return getClampedTime(time, getSeekableRange());
+      }
+
+      function addEventCallback (thisArg, newCallback) {
+        var eventCallback = function (event) {
+          newCallback.call(thisArg, event);
+        };
+        eventCallbacks.push(eventCallback);
+      }
+
+      function removeEventCallback (callback) {
+        var index = eventCallbacks.indexOf(callback);
+        if (index !== -1) {
+          eventCallbacks.splice(index, 1);
+        }
+      }
+
+      function startAutoResumeTimeout () {
+        DynamicWindowUtils.autoResumeAtStartOfRange(
+          getCurrentTime(),
+          getSeekableRange(),
+          addEventCallback,
+          removeEventCallback,
+          function (event) {
+            return event !== MediaState.PAUSED;
+          },
+          mediaPlayer.play);
       }
 
       return {
@@ -163,11 +489,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           canBePaused: function () { return true; },
           canBeginSeek: function () { return true; }
         },
-        addEventCallback: function (thisArg, newCallback) {
-          eventCallback = function (event) {
-            newCallback.call(thisArg, event);
-          };
-        },
+        addEventCallback: addEventCallback,
+        removeEventCallback: removeEventCallback,
         addErrorCallback: function (thisArg, newErrorCallback) {
           errorCallback = function (event) {
             newErrorCallback.call(thisArg, event);
@@ -178,59 +501,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             newTimeUpdateCallback.call(thisArg);
           };
         },
-        load: function (src, mimeType, startTime) {
-          var srcWithTime = startTime ? src + '#t=' + (startTime + timeCorrection) : src;
-
-          if (!mediaPlayer) {
-            initialStartTime = startTime + timeCorrection;
-
-            if (windowType === WindowTypes.GROWING) {
-              var windowStartTimeSeconds = (timeData.windowStartTime / 1000);
-              var srcWithTimeAnchor = src + '#t=';
-              // No need for an absolute time to play from live with a Webcast using dashjs.
-              srcWithTime = src;
-
-              if (startTime) {
-                startTime = parseInt(startTime);
-                srcWithTime = startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
-              }
-            }
-
-            if (windowType === WindowTypes.SLIDING) {
-              // zero start time indicates live point, relative time wise -1 will play almost from the live point,
-              // otherwise play from the given video start time relative to the window
-              startTime = (startTime === 0 ? -1 : startTime);
-              srcWithTime = src + '#r=' + parseInt(startTime);
-            }
-
-            setUpMediaElement(playbackElement);
-            setUpMediaPlayer(srcWithTime);
-            setUpMediaListeners();
-          } else {
-            cdnFailoverLoad(src, srcWithTime);
-          }
-        },
-        getSeekableRange: function () {
-          if (mediaPlayer && mediaPlayer.isReady() && windowType !== WindowTypes.STATIC) {
-            var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaPlayer.getMetricsFor(mediaKind));
-            if (dvrInfo) {
-              return {
-                start: dvrInfo.range.start - timeCorrection,
-                end: dvrInfo.range.end - timeCorrection
-              };
-            }
-          }
-          return {
-            start: 0,
-            end: this.getDuration()
-          };
-        },
-        getCurrentTime: function () {
-          return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
-        },
-        getDuration: function () {
-          return (mediaPlayer) ? mediaPlayer.duration() : 0;
-        },
+        load: load,
+        getSeekableRange: getSeekableRange,
+        getCurrentTime: getCurrentTime,
+        getDuration: getDuration,
         tearDown: function () {
           mediaPlayer.reset();
 
@@ -245,20 +519,31 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.ERROR, onError);
           mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
           mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange);
+          mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised);
           mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered);
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
+          mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
+          mediaPlayer.off(DashJSEvents.LOG, onDebugLog);
 
-          mediaElement.parentElement.removeChild(mediaElement);
+          DOMHelpers.safeRemoveElement(mediaElement);
 
           mediaPlayer = undefined;
           mediaElement = undefined;
-          eventCallback = undefined;
+          eventCallbacks = [];
           errorCallback = undefined;
           timeUpdateCallback = undefined;
-          isEnded = undefined;
-          initialStartTime = undefined;
           timeCorrection = undefined;
-          windowType = undefined;
+          failoverTime = undefined;
+          isEnded = undefined;
+          dashMetrics = undefined;
+          playerMetadata = {
+            playbackBitrate: undefined,
+            bufferLength: undefined,
+            fragmentInfo: {
+              requestTime: undefined,
+              numDownloaded: undefined
+            }
+          };
         },
         reset: function () {
           return;
@@ -267,27 +552,38 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return isEnded;
         },
         isPaused: isPaused,
-        pause: function () {
+        pause: function (opts) {
+          if (windowType === WindowTypes.SLIDING) {
+            slidingWindowPausedTime = Date.now();
+          }
+
           mediaPlayer.pause();
+          opts = opts || {};
+          if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
+            startAutoResumeTimeout();
+          }
         },
         play: function () {
           mediaPlayer.play();
         },
         setCurrentTime: function (time) {
-          if (windowType === WindowTypes.GROWING) {
-            DebugTool.info('Seeking and refreshing the manifest');
-            mediaPlayer.refreshManifest();
-          }
-
-          var seekToTime = getClampedTime(time, this.getSeekableRange());
-
-          if (windowType === WindowTypes.SLIDING) {
-            mediaElement.currentTime = (seekToTime + timeCorrection);
+          publishedSeekEvent = false;
+          isSeeking = true;
+          var seekToTime = getClampedTime(time, getSeekableRange());
+          if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
+            refreshManifestBeforeSeek(seekToTime);
           } else {
-            mediaPlayer.seek(seekToTime);
+            var seekTime = calculateSeekOffset(time);
+            mediaPlayer.seek(seekTime);
           }
         }
       };
     };
+
+    MSEStrategy.getLiveSupport = function () {
+      return LiveSupport.SEEKABLE;
+    };
+
+    return MSEStrategy;
   }
 );

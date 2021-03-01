@@ -1,53 +1,46 @@
 define(
   'bigscreenplayer/playercomponent', [
     'bigscreenplayer/models/mediastate',
-    'bigscreenplayer/captionscontainer',
     'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
     'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/utils/playbackutils',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/debugger/debugtool'
+    'bigscreenplayer/models/transferformats',
+    'bigscreenplayer/models/livesupport',
+    'bigscreenplayer/models/playbackstrategy'
   ],
-  function (MediaState, CaptionsContainer, PlaybackStrategy, WindowTypes, PlaybackUtils, PluginData, PluginEnums, Plugins, DebugTool) {
+  function (MediaState, PlaybackStrategy, WindowTypes, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
     'use strict';
 
-    return function (playbackElement, bigscreenPlayerData, windowType, enableSubtitles, callback, device) {
+    var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) {
       var isInitialPlay = true;
-      var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
       var mediaKind = bigscreenPlayerData.media.kind;
-      var subtitlesEnabled;
-      var userInteracted = false;
       var stateUpdateCallback = callback;
       var playbackStrategy;
-      var captionsContainer;
       var mediaMetaData;
       var fatalErrorTimeout;
       var fatalError;
+      var transferFormat = bigscreenPlayerData.media.transferFormat;
 
       playbackStrategy = PlaybackStrategy(
+        mediaSources,
         windowType,
         mediaKind,
-        bigscreenPlayerData.time,
         playbackElement,
-        bigscreenPlayerData.media.isUHD,
-        device
+        bigscreenPlayerData.media.isUHD
       );
 
       playbackStrategy.addEventCallback(this, eventCallback);
       playbackStrategy.addErrorCallback(this, onError);
       playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate);
 
-      bubbleErrorCleared(createPlaybackProperties());
-
-      setSubtitlesEnabled(enableSubtitles || false);
+      bubbleErrorCleared();
 
       initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime);
 
       function play () {
-        userInteracted = true;
         playbackStrategy.play();
       }
 
@@ -57,15 +50,22 @@ define(
 
       function pause (opts) {
         opts = opts || {};
-        userInteracted = true;
         if (transitions().canBePaused()) {
           var disableAutoResume = windowType === WindowTypes.GROWING ? true : opts.disableAutoResume;
-          playbackStrategy.pause({disableAutoResume: disableAutoResume});
+          playbackStrategy.pause({ disableAutoResume: disableAutoResume });
         }
       }
 
       function getDuration () {
         return playbackStrategy.getDuration();
+      }
+
+      function getWindowStartTime () {
+        return mediaSources && mediaSources.time().windowStartTime;
+      }
+
+      function getWindowEndTime () {
+        return mediaSources && mediaSources.time().windowEndTime;
       }
 
       function getPlayerElement () {
@@ -84,34 +84,47 @@ define(
         return playbackStrategy.getSeekableRange();
       }
 
-      function setSubtitlesEnabled (enabled) {
-        subtitlesEnabled = enabled || false;
-        if (isSubtitlesAvailable() && captionsContainer) {
-          subtitlesEnabled ? captionsContainer.start() : captionsContainer.stop();
-        }
-      }
-
-      function isSubtitlesEnabled () {
-        return subtitlesEnabled;
-      }
-
-      function isSubtitlesAvailable () {
-        return !!captionsURL;
-      }
-
       function isPaused () {
         return playbackStrategy.isPaused();
       }
 
-      function setTransportControlPosition (flags) {
-        captionsContainer.updatePosition(flags);
+      function setCurrentTime (time) {
+        if (transitions().canBeginSeek()) {
+          isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy.setCurrentTime(time);
+        }
       }
 
-      function setCurrentTime (time) {
-        userInteracted = true;
-        if (transitions().canBeginSeek()) {
-          playbackStrategy.setCurrentTime(time);
-        }
+      function isNativeHLSRestartable () {
+        return window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
+               transferFormat === TransferFormats.HLS &&
+               windowType !== WindowTypes.STATIC &&
+               getLiveSupport() === LiveSupport.RESTARTABLE;
+      }
+
+      function reloadMediaElement (time) {
+        var originalWindowStartOffset = getWindowStartTime();
+
+        var doSeek = function () {
+          var windowOffset = mediaSources.time().windowStartTime - originalWindowStartOffset;
+          var seekToTime = time - windowOffset / 1000;
+
+          var thenPause = playbackStrategy.isPaused();
+          var seekableRange = playbackStrategy.getSeekableRange();
+          tearDownMediaElement();
+
+          if (seekToTime > seekableRange.end - seekableRange.start - 30) {
+            seekToTime = undefined;
+            thenPause = false;
+          }
+          loadMedia(mediaMetaData.type, seekToTime, thenPause);
+        };
+
+        var onError = function () {
+          tearDownMediaElement();
+          bubbleFatalError(false);
+        };
+
+        mediaSources.refresh(doSeek, onError);
       }
 
       function transitions () {
@@ -119,9 +132,7 @@ define(
       }
 
       function tearDownMediaElement () {
-        var playbackProperties = createPlaybackProperties();
-        playbackProperties.dismissed_by = 'teardown';
-        playout(playbackProperties);
+        clearTimeouts();
         playbackStrategy.reset();
       }
 
@@ -143,92 +154,87 @@ define(
       }
 
       function onPlaying () {
-        playout(createPlaybackProperties());
+        clearTimeouts();
         publishMediaStateUpdate(MediaState.PLAYING, {});
         isInitialPlay = false;
       }
 
       function onPaused () {
         publishMediaStateUpdate(MediaState.PAUSED);
-        playout(createPlaybackProperties());
+        clearTimeouts();
       }
 
       function onBuffering () {
         publishMediaStateUpdate(MediaState.WAITING);
-        var playbackProperties = createPlaybackProperties();
-        startErrorTimeout(playbackProperties);
-        bubbleErrorCleared(playbackProperties);
-        bubbleBufferingRaised(playbackProperties);
-        userInteracted = false;
+        startBufferingErrorTimeout();
+        bubbleErrorCleared();
+        bubbleBufferingRaised();
       }
 
       function onEnded () {
-        playout(createPlaybackProperties());
+        clearTimeouts();
         publishMediaStateUpdate(MediaState.ENDED);
       }
 
       function onTimeUpdate () {
-        publishMediaStateUpdate(undefined, {timeUpdate: true});
+        publishMediaStateUpdate(undefined, { timeUpdate: true });
       }
 
-      function onError (event) {
-        var playbackProperties = createPlaybackProperties();
-        playbackProperties.dismissed_by = 'error';
-        bubbleBufferingCleared(playbackProperties);
-
-        var playbackErrorProperties = createPlaybackErrorProperties(event);
-        raiseError(playbackErrorProperties);
+      function onError () {
+        bubbleBufferingCleared();
+        raiseError();
       }
 
-      function startErrorTimeout (properties) {
+      function startBufferingErrorTimeout () {
         var bufferingTimeout = isInitialPlay ? 30000 : 20000;
-        var bufferingClearedProperties = PlaybackUtils.clone(properties);
-        clearErrorTimeout();
+        clearBufferingErrorTimeout();
         errorTimeoutID = setTimeout(function () {
-          bufferingClearedProperties.dismissed_by = 'timeout';
-          bubbleBufferingCleared(bufferingClearedProperties);
-          properties.error_mssg = 'Buffering timed out';
-          attemptCdnFailover(properties, true);
+          bubbleBufferingCleared();
+          attemptCdnFailover(true);
         }, bufferingTimeout);
       }
 
-      function raiseError (properties, bufferingTimeoutError) {
-        clearErrorTimeout();
+      function raiseError () {
+        clearBufferingErrorTimeout();
         publishMediaStateUpdate(MediaState.WAITING);
-        bubbleErrorRaised(properties, bufferingTimeoutError);
-        startFatalErrorTimeout(properties, bufferingTimeoutError);
+        bubbleErrorRaised();
+        startFatalErrorTimeout();
       }
 
-      function startFatalErrorTimeout (errorProperties, bufferingTimeoutError) {
+      function startFatalErrorTimeout () {
         if (!fatalErrorTimeout && !fatalError) {
           fatalErrorTimeout = setTimeout(function () {
             fatalErrorTimeout = null;
             fatalError = true;
-            attemptCdnFailover(errorProperties, bufferingTimeoutError);
+            attemptCdnFailover(false);
           }, 5000);
         }
       }
 
-      function attemptCdnFailover (errorProperties, bufferingTimeoutError) {
-        var aboutToEnd = getDuration() > 0 && (getDuration() - getCurrentTime()) <= 5;
-        if (mediaMetaData.urls.length > 1 && windowType === WindowTypes.STATIC && !aboutToEnd) {
-          cdnFailover(errorProperties, bufferingTimeoutError);
-        } else {
-          var evt = new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError});
-          Plugins.interface.onFatalError(evt);
-          publishMediaStateUpdate(MediaState.FATAL_ERROR, {isBufferingTimeoutError: bufferingTimeoutError});
-        }
-      }
+      function attemptCdnFailover (bufferingTimeoutError) {
+        var time = getCurrentTime();
+        var oldWindowStartTime = getWindowStartTime();
 
-      function cdnFailover (errorProperties, bufferingTimeoutError) {
-        var thenPause = playbackStrategy.isPaused();
-        tearDownMediaElement();
-        mediaMetaData.urls.shift();
-        var evt = new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError, cdn: mediaMetaData.urls[0].cdn});
-        Plugins.interface.onErrorHandled(evt);
-        DebugTool.keyValue({key: 'cdn', value: mediaMetaData.urls[0].cdn});
-        DebugTool.keyValue({key: 'url', value: mediaMetaData.urls[0].url});
-        loadMedia(mediaMetaData.urls[0].url, mediaMetaData.type, getCurrentTime(), thenPause);
+        var failoverParams = {
+          errorMessage: bufferingTimeoutError ? 'bufferingTimeoutError' : 'fatalError',
+          isBufferingTimeoutError: bufferingTimeoutError,
+          currentTime: getCurrentTime(),
+          duration: getDuration()
+        };
+
+        var doLoadMedia = function () {
+          var thenPause = isPaused();
+          var windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000;
+          var failoverTime = time - (windowOffset || 0);
+          tearDownMediaElement();
+          loadMedia(mediaMetaData.type, failoverTime, thenPause);
+        };
+
+        var doErrorCallback = function () {
+          bubbleFatalError(bufferingTimeoutError);
+        };
+
+        mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams);
       }
 
       function clearFatalErrorTimeout () {
@@ -238,122 +244,77 @@ define(
         }
       }
 
-      function clearErrorTimeout () {
+      function clearBufferingErrorTimeout () {
         if (errorTimeoutID !== null) {
           clearTimeout(errorTimeoutID);
           errorTimeoutID = null;
         }
       }
 
-      function playout (playbackProperties) {
-        clearErrorTimeout();
+      function clearTimeouts () {
+        clearBufferingErrorTimeout();
         clearFatalErrorTimeout();
         fatalError = false;
-        bubbleBufferingCleared(playbackProperties);
-        bubbleErrorCleared(playbackProperties);
-        userInteracted = false;
+        bubbleBufferingCleared();
+        bubbleErrorCleared();
       }
 
-      function bubbleErrorCleared (playbackProperties) {
-        var errorProperties = PlaybackUtils.clone(playbackProperties);
-        if (!errorProperties.dismissed_by) {
-          if (userInteracted) {
-            errorProperties.dismissed_by = 'other';
-          } else {
-            errorProperties.dismissed_by = 'device';
-          }
-        }
-        var evt = new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties});
+      function bubbleErrorCleared () {
+        var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR });
         Plugins.interface.onErrorCleared(evt);
       }
 
-      function bubbleErrorRaised (errorProperties, bufferingTimeoutError) {
-        var evt = new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, properties: errorProperties, isBufferingTimeoutError: bufferingTimeoutError});
+      function bubbleErrorRaised () {
+        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false });
         Plugins.interface.onError(evt);
       }
 
-      function bubbleBufferingRaised (playbackProperties) {
-        var evt = new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING, properties: playbackProperties});
+      function bubbleBufferingRaised () {
+        var evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING });
         Plugins.interface.onBuffering(evt);
       }
 
-      function bubbleBufferingCleared (playbackProperties) {
-        var bufferingProperties = PlaybackUtils.clone(playbackProperties);
-        if (!bufferingProperties.dismissed_by) {
-          if (userInteracted) {
-            bufferingProperties.dismissed_by = 'other';
-          } else {
-            bufferingProperties.dismissed_by = 'device';
-          }
-        }
-        var evt = new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, properties: bufferingProperties, isInitialPlay: isInitialPlay});
+      function bubbleBufferingCleared () {
+        var evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: isInitialPlay });
         Plugins.interface.onBufferingCleared(evt);
       }
 
-      function createPlaybackProperties () {
-        var playbackProperties = {};
-
-        playbackProperties.seekable_range = getSeekableRange().start + ' to ' + getSeekableRange().end;
-        playbackProperties.current_time = getCurrentTime();
-        playbackProperties.duration = getDuration();
-
-        return playbackProperties;
-      }
-
-      function createPlaybackErrorProperties (event) {
-        return PlaybackUtils.merge(createPlaybackProperties(), event.errorProperties);
+      function bubbleFatalError (bufferingTimeoutError) {
+        var evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: bufferingTimeoutError });
+        Plugins.interface.onFatalError(evt);
+        publishMediaStateUpdate(MediaState.FATAL_ERROR, { isBufferingTimeoutError: bufferingTimeoutError });
       }
 
       function publishMediaStateUpdate (state, opts) {
         var mediaData = {};
         mediaData.currentTime = getCurrentTime();
         mediaData.seekableRange = getSeekableRange();
-        mediaData.subtitles = {
-          enabled: isSubtitlesEnabled(),
-          available: isSubtitlesAvailable()
-        };
         mediaData.state = state;
         mediaData.duration = getDuration();
 
-        stateUpdateCallback({data: mediaData, timeUpdate: opts && opts.timeUpdate, isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError || false)});
+        stateUpdateCallback({ data: mediaData, timeUpdate: opts && opts.timeUpdate, isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError || false) });
       }
 
       function initialMediaPlay (media, startTime) {
         mediaMetaData = media;
-        loadMedia(media.urls[0].url, media.type, startTime);
-
-        if (!captionsContainer) {
-          captionsContainer = new CaptionsContainer(playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement);
-        }
+        loadMedia(media.type, startTime);
       }
 
-      function loadMedia (url, type, startTime, thenPause) {
-        playbackStrategy.load(url, type, startTime);
+      function loadMedia (type, startTime, thenPause) {
+        playbackStrategy.load(type, startTime);
         if (thenPause) {
           pause();
         }
       }
 
       function tearDown () {
-        userInteracted = false;
         tearDownMediaElement();
-
         playbackStrategy.tearDown();
         playbackStrategy = null;
-
-        if (captionsContainer) {
-          captionsContainer.stop();
-          captionsContainer.tearDown();
-          captionsContainer = null;
-        }
-
         isInitialPlay = true;
-        captionsURL = undefined;
         errorTimeoutID = undefined;
         windowType = undefined;
         mediaKind = undefined;
-        subtitlesEnabled = undefined;
-        userInteracted = undefined;
         stateUpdateCallback = undefined;
         mediaMetaData = undefined;
         fatalErrorTimeout = undefined;
@@ -368,15 +329,21 @@ define(
         setCurrentTime: setCurrentTime,
         getCurrentTime: getCurrentTime,
         getDuration: getDuration,
+        getWindowStartTime: getWindowStartTime,
+        getWindowEndTime: getWindowEndTime,
         getSeekableRange: getSeekableRange,
         getPlayerElement: getPlayerElement,
-        isSubtitlesAvailable: isSubtitlesAvailable,
-        isSubtitlesEnabled: isSubtitlesEnabled,
-        setSubtitlesEnabled: setSubtitlesEnabled,
         isPaused: isPaused,
-        setTransportControlPosition: setTransportControlPosition,
         tearDown: tearDown
       };
     };
+
+    function getLiveSupport () {
+      return PlaybackStrategy.getLiveSupport();
+    }
+
+    PlayerComponent.getLiveSupport = getLiveSupport;
+
+    return PlayerComponent;
   }
 );
