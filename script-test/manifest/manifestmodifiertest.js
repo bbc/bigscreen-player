@@ -302,7 +302,7 @@ require(
           });
         },
 
-        describe('no base url', function () {
+        describe('no base url on manifest', function () {
           it('should return base url objects', function () {
             var manifest = {
               Period: {}
