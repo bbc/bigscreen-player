@@ -38,7 +38,7 @@ require(
       return liveSupport;
     };
 
-    function setupManifestData(options) {
+    function setupManifestData (options) {
       manifestData = {
         time: options && options.time || {
           windowStartTime: 724000,
@@ -53,7 +53,7 @@ require(
     var mediaSourcesCallbackErrorSpy;
     var forceMediaSourcesConstructionFailure = false;
 
-    function initialiseBigscreenPlayer(options) {
+    function initialiseBigscreenPlayer (options) {
       // options = subtitlesAvailable, windowType, windowStartTime, windowEndTime
       options = options || {};
 
