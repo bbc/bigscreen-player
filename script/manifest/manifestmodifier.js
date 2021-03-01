@@ -51,7 +51,6 @@ define('bigscreenplayer/manifest/manifestmodifier',
     function generateBaseUrls (manifest, sources) {
       var baseUrl = extractBaseUrl(manifest);
       var baseUrls = [];
-      // if (!baseUrl) return;
 
       function generateBaseUrl (source, priority, serviceLocation) {
         return {
