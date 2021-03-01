@@ -347,11 +347,11 @@ require(
           bigscreenPlayer.registerForTimeUpdates(listener2);
           bigscreenPlayer.registerForTimeUpdates(listener3);
 
-          mockStrategy.mockingHooks.fireTimeUpdate();
+          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
           bigscreenPlayer.unregisterForTimeUpdates(listener2);
 
-          mockStrategy.mockingHooks.fireTimeUpdate();
+          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
           expect(listener1).toHaveBeenCalledTimes(2);
           expect(listener2).toHaveBeenCalledTimes(1);
@@ -574,8 +574,8 @@ require(
           bigscreenPlayer.registerForStateChanges(listener3);
           bigscreenPlayer.registerForStateChanges(listener4);
 
-          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
-          mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING);
+          mockEventHook({ data: { state: MediaState.PLAYING } });
+          mockEventHook({ data: { state: MediaState.PLAYING } });
 
           expect(listener1).toHaveBeenCalledTimes(2);
           expect(listener2).toHaveBeenCalledTimes(1);
