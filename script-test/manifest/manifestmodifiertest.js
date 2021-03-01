@@ -302,22 +302,24 @@ require(
           });
         },
 
-        it('should modify the manifest if there is no base url', function () {
-          var manifest = {
-            Period: {}
-          };
+        describe('no base url', function () {
+          it('should return base url objects', function () {
+            var manifest = {
+              Period: {}
+            };
 
-          var expectedManifest = {
-            Period: {},
-            BaseURL_asArray: [
-              { __text: 'https://cdn-a.com/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' },
-              { __text: 'https://cdn-b.com/', 'dvb:priority': 1, serviceLocation: 'https://cdn-b.com/' }
-            ]
-          };
+            var expectedManifest = {
+              Period: {},
+              BaseURL_asArray: [
+                { __text: 'https://cdn-a.com/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' },
+                { __text: 'https://cdn-b.com/', 'dvb:priority': 1, serviceLocation: 'https://cdn-b.com/' }
+              ]
+            };
 
-          ManifestModifier.generateBaseUrls(manifest, sources);
+            ManifestModifier.generateBaseUrls(manifest, sources);
 
-          expect(manifest).toEqual(expectedManifest);
+            expect(manifest).toEqual(expectedManifest);
+          });
         }));
       });
     });
