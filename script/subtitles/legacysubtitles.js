@@ -10,12 +10,12 @@ define(
   function (Renderer, TransportControlPosition, DOMHelpers, LoadURL, DebugTool, Plugins) {
     'use strict';
 
-    return function (mediaPlayer, url, autoStart, parentElement) {
+    return function (mediaPlayer, captions, autoStart, parentElement) {
       var container = document.createElement('div');
       var subtitlesRenderer;
 
-      if (url) {
-        LoadURL(url, {
+      if (captions.captionsUrl) {
+        LoadURL(captions.captionsUrl, {
           onLoad: function (responseXML, responseText, status) {
             if (!responseXML) {
               DebugTool.info('Error: responseXML is invalid.');

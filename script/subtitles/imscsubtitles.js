@@ -9,15 +9,15 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   ],
   function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL) {
     'use strict';
-    return function (mediaPlayer, url, autoStart, parentElement, defaultStyleOpts) {
+    return function (mediaPlayer, captions, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
       var exampleSubtitlesElement;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
       var fragments = [];
 
-      if (url) {
-        LoadURL(url, {
+      if (captions.captionsUrl) {
+        LoadURL(captions.captionsUrl, {
           onLoad: function (responseXML, responseText, status) {
             if (!responseXML) {
               DebugTool.info('Error: responseXML is invalid.');

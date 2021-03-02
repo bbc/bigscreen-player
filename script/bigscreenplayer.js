@@ -132,7 +132,7 @@ define('bigscreenplayer/bigscreenplayer',
 
         subtitles = Subtitles(
           playerComponent,
-          bigscreenPlayerData.media.captionsUrl,
+          bigscreenPlayerData.media.captions || { captionsUrl: bigscreenPlayerData.media.captionsUrl },
           enableSubtitles,
           playbackElement,
           bigscreenPlayerData.media.subtitleCustomisation

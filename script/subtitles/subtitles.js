@@ -4,10 +4,10 @@ define('bigscreenplayer/subtitles/subtitles',
   ],
   function (SubtitlesContainer) {
     'use strict';
-    return function (mediaPlayer, url, autoStart, playbackElement, defaultStyleOpts) {
+    return function (mediaPlayer, captions, autoStart, playbackElement, defaultStyleOpts) {
       var subtitlesEnabled = autoStart;
-      var subtitlesAvailable = !!url;
-      var subtitlesContainer = SubtitlesContainer(mediaPlayer, url, autoStart, playbackElement, defaultStyleOpts);
+      var subtitlesAvailable = !!captions.captionsUrl;
+      var subtitlesContainer = SubtitlesContainer(mediaPlayer, captions, autoStart, playbackElement, defaultStyleOpts);
 
       function enable () {
         subtitlesEnabled = true;
