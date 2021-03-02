@@ -2,25 +2,46 @@ define(
   'bigscreenplayer/subtitles/legacysubtitles', [
     'bigscreenplayer/subtitles/renderer',
     'bigscreenplayer/models/transportcontrolposition',
-    'bigscreenplayer/domhelpers'
+    'bigscreenplayer/domhelpers',
+    'bigscreenplayer/utils/loadurl',
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/plugins'
   ],
-  function (Renderer, TransportControlPosition, DOMHelpers) {
+  function (Renderer, TransportControlPosition, DOMHelpers, LoadURL, DebugTool, Plugins) {
     'use strict';
 
-    return function (mediaPlayer, response, autoStart, parentElement) {
+    return function (mediaPlayer, url, autoStart, parentElement) {
       var container = document.createElement('div');
       var subtitlesRenderer;
 
-      container.id = 'playerCaptionsContainer';
-      DOMHelpers.addClass(container, 'playerCaptions');
-
-      // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
-      if (response.xml) {
-        subtitlesRenderer = new Renderer('playerCaptions', response.xml, mediaPlayer, autoStart);
-        container.appendChild(subtitlesRenderer.render());
+      if (url) {
+        LoadURL(url, {
+          onLoad: function (responseXML, responseText, status) {
+            if (!responseXML) {
+              DebugTool.info('Error: responseXML is invalid.');
+              Plugins.interface.onSubtitlesTransformError();
+              return;
+            } else {
+              createContainer(responseXML);
+            }
+          },
+          onError: function (error) {
+            DebugTool.info('Error loading subtitles data: ' + error);
+            Plugins.interface.onSubtitlesLoadError();
+          }
+        });
       }
 
-      parentElement.appendChild(container);
+      function createContainer (xml) {
+        container.id = 'playerCaptionsContainer';
+        DOMHelpers.addClass(container, 'playerCaptions');
+
+        // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
+        subtitlesRenderer = new Renderer('playerCaptions', xml, mediaPlayer, autoStart);
+        container.appendChild(subtitlesRenderer.render());
+
+        parentElement.appendChild(container);
+      }
 
       function start () {
         if (subtitlesRenderer) {

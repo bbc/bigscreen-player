@@ -10,10 +10,14 @@ require(
       var pluginInterfaceMock;
       var pluginsMock;
       var mockParentElement = document.createElement('div');
-      var stubResponse = 'test';
       var fromXmlReturn;
       var mediaPlayer;
       var subtitles;
+      var stubCaptionsUrl = 'http://stub-captions.test';
+
+      var loadUrlMock;
+      var loadUrlStubResponseXml = '<?xml>';
+      var loadUrlStubResponseText = 'loadUrlStubResponseText';
 
       beforeEach(function (done) {
         injector = new Squire();
@@ -29,12 +33,18 @@ require(
         imscMock = jasmine.createSpyObj('imscjs-lib', ['fromXML', 'generateISD', 'renderHTML']);
         imscMock.fromXML.and.returnValue(fromXmlReturn);
 
-        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError']);
+        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesLoadError']);
         pluginsMock = { interface: pluginInterfaceMock };
+
+        loadUrlMock = jasmine.createSpy();
+        loadUrlMock.and.callFake(function (url, callbackObject) {
+          callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200);
+        });
 
         injector.mock({
           'bigscreenplayer/external/smp-imsc': imscMock,
-          'bigscreenplayer/plugins': pluginsMock
+          'bigscreenplayer/plugins': pluginsMock,
+          'bigscreenplayer/utils/loadurl': loadUrlMock
         });
 
         injector.require(['bigscreenplayer/subtitles/imscsubtitles'], function (IMSCSubs) {
@@ -60,19 +70,19 @@ require(
         });
 
         it('is constructed with the correct interface', function () {
-          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, false, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, false, mockParentElement);
 
           expect(subtitles).toEqual(jasmine.objectContaining({start: jasmine.any(Function), stop: jasmine.any(Function), updatePosition: jasmine.any(Function), tearDown: jasmine.any(Function)}));
         });
 
         it('Calls fromXML on creation with the text property of the response argument', function () {
-          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, false, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, false, mockParentElement);
 
-          expect(imscMock.fromXML).toHaveBeenCalledWith(stubResponse);
+          expect(imscMock.fromXML).toHaveBeenCalledWith(loadUrlStubResponseText);
         });
 
         it('autoplay argument starts the update loop', function () {
-          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, true, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, true, mockParentElement);
           progressTime(1.5);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
@@ -82,25 +92,55 @@ require(
 
         it('fires tranformError plugin if IMSC throws an exception when parsing', function () {
           imscMock.fromXML.and.throwError();
-          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, true, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, true, mockParentElement);
 
           expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
         });
 
+        it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
+          loadUrlMock.and.callFake(function (url, callbackObject) {
+            callbackObject.onError();
+          });
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, false, mockParentElement);
+
+          expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
+        });
+
+        it('fires subtitleTransformError if responseXML from the loader is invalid', function () {
+          loadUrlMock.and.callFake(function (url, callbackObject) {
+            callbackObject.onLoad(null, '', 200);
+          });
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, false, mockParentElement);
+
+          expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not attempt to load subtitles if there is no captions url', function () {
+          subtitles = ImscSubtitles(mediaPlayer, undefined, false, mockParentElement);
+
+          expect(loadUrlMock).not.toHaveBeenCalled();
+        });
+
         it('does not try to generate and render when xml transforming has failed', function () {
           imscMock.fromXML.and.throwError();
-          subtitles = ImscSubtitles(mediaPlayer, {xml: '', text: stubResponse}, true, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, true, mockParentElement);
 
           progressTime(1.5);
 
           expect(imscMock.generateISD).not.toHaveBeenCalled();
           expect(imscMock.renderHTML).not.toHaveBeenCalled();
         });
+
+        it('Should load the captions url', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, true, mockParentElement);
+
+          expect(loadUrlMock).toHaveBeenCalledWith(stubCaptionsUrl, jasmine.any(Object));
+        });
       });
 
       describe('update interval', function () {
         beforeEach(function () {
-          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, false, mockParentElement);
         });
 
         afterEach(function () {
@@ -109,7 +149,7 @@ require(
 
         it('cannot start when xml transforming has failed', function () {
           imscMock.fromXML.and.throwError();
-          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement);
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, false, mockParentElement);
 
           subtitles.start();
           progressTime(1.5);
@@ -129,7 +169,7 @@ require(
         it('overrides the subtitles styling metadata with supplied defaults when rendering', function () {
           var styleOpts = { backgroundColour: 'black', fontFamily: 'Arial' };
           var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial' };
-          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement, styleOpts);
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, false, mockParentElement, styleOpts);
 
           subtitles.start();
           progressTime(9);
@@ -152,7 +192,7 @@ require(
           var customStyleOpts = { size: 0.7, lineHeight: 0.9 };
           var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial', sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
 
-          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement, defaultStyleOpts);
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, false, mockParentElement, defaultStyleOpts);
 
           subtitles.start();
           subtitles.customise(customStyleOpts, true);
@@ -277,7 +317,7 @@ require(
 
       describe('example rendering', function () {
         it('should call fromXML, generate and render when renderExample is called', function () {
-          subtitles = ImscSubtitles(mediaPlayer, { xml: '', text: stubResponse }, false, mockParentElement, {});
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptionsUrl, false, mockParentElement, {});
           imscMock.fromXML.calls.reset();
 
           subtitles.renderExample('', {}, {});

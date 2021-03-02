@@ -2,21 +2,13 @@ require(
   ['squire'],
   function (Squire) {
     var originalBSPWindowConfig = window.bigscreenPlayer;
-    var pluginInterfaceMock;
-    var pluginsMock;
     var Subtitles;
     var subtitlesMock;
-    var loadUrlMock;
-    var stubResponse = '<?xml>';
     var injector;
 
     describe('Subtitles', function () {
       beforeEach(function () {
         injector = new Squire();
-        loadUrlMock = jasmine.createSpy();
-        loadUrlMock.and.callFake(function (url, callbackObject) {
-          callbackObject.onLoad(stubResponse, stubResponse, 200);
-        });
       });
 
       afterEach(function () {
@@ -34,8 +26,7 @@ require(
             subtitlesMock = jasmine.createSpy();
 
             injector.mock({
-              'bigscreenplayer/subtitles/legacysubtitles': subtitlesMock,
-              'bigscreenplayer/utils/loadurl': loadUrlMock
+              'bigscreenplayer/subtitles/legacysubtitles': subtitlesMock
             });
 
             injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
@@ -60,8 +51,7 @@ require(
             subtitlesMock = jasmine.createSpy();
 
             injector.mock({
-              'bigscreenplayer/subtitles/imscsubtitles': subtitlesMock,
-              'bigscreenplayer/utils/loadurl': loadUrlMock
+              'bigscreenplayer/subtitles/imscsubtitles': subtitlesMock
             });
 
             injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
@@ -94,13 +84,8 @@ require(
             return subtitlesContainerSpies;
           });
 
-          pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesLoadError', 'onSubtitlesTransformError']);
-          pluginsMock = { interface: pluginInterfaceMock };
-
           injector.mock({
-            'bigscreenplayer/subtitles/imscsubtitles': subtitlesContainer,
-            'bigscreenplayer/utils/loadurl': loadUrlMock,
-            'bigscreenplayer/plugins': pluginsMock
+            'bigscreenplayer/subtitles/imscsubtitles': subtitlesContainer
           });
 
           injector.require(['bigscreenplayer/subtitles/subtitles'], function (Subs) {
@@ -126,31 +111,7 @@ require(
 
             Subtitles(mockMediaPlayer, url, autoStart, mockPlaybackElement, customDefaultStyle);
 
-            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, jasmine.objectContaining({text: stubResponse, xml: stubResponse}), autoStart, mockPlaybackElement, customDefaultStyle);
-          });
-
-          it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
-            loadUrlMock.and.callFake(function (url, callbackObject) {
-              callbackObject.onError();
-            });
-            Subtitles(null, 'http://some-url.test', null, null);
-
-            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
-          });
-
-          it('fires subtitleTransformError if responseXML from the loader is invalid', function () {
-            loadUrlMock.and.callFake(function (url, callbackObject) {
-              callbackObject.onLoad(null, '', 200);
-            });
-            Subtitles(null, 'http://some-url.test', null, null);
-
-            expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
-          });
-
-          it('does not attempt to load subtitles if there is no captions url', function () {
-            Subtitles(null, undefined, null, null);
-
-            expect(loadUrlMock).not.toHaveBeenCalled();
+            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, url, autoStart, mockPlaybackElement, customDefaultStyle);
           });
         });
 
@@ -193,7 +154,7 @@ require(
             var subtitles = Subtitles(null, 'http://some-url.test', null, null);
             subtitles.hide();
 
-            expect(subtitlesContainerSpies.stop).toHaveBeenCalled();
+            expect(subtitlesContainerSpies.stop).toHaveBeenCalledWith();
           });
         });
 
@@ -265,16 +226,6 @@ require(
 
             expect(subtitlesContainerSpies.updatePosition).toHaveBeenCalledWith('pos');
           });
-
-          it('does not attempt to call through to subtitlesContainer updatePosition if subtitles have not been loaded', function () {
-            loadUrlMock.and.callFake(function (url, callbackObject) {
-              callbackObject.onError();
-            });
-            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
-            subtitles.setPosition('pos');
-
-            expect(subtitlesContainerSpies.updatePosition).not.toHaveBeenCalledWith('pos');
-          });
         });
 
         describe('customise', function () {
@@ -284,16 +235,6 @@ require(
             subtitles.customise(customStyleObj);
 
             expect(subtitlesContainerSpies.customise).toHaveBeenCalledWith(customStyleObj, jasmine.any(Boolean));
-          });
-
-          it('does not attempt to call through to subtitlesContainer customise if subtitles have not been loaded', function () {
-            loadUrlMock.and.callFake(function (url, callbackObject) {
-              callbackObject.onError();
-            });
-            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
-            subtitles.customise({});
-
-            expect(subtitlesContainerSpies.customise).not.toHaveBeenCalled();
           });
         });
 
@@ -307,16 +248,6 @@ require(
 
             expect(subtitlesContainerSpies.renderExample).toHaveBeenCalledWith(exampleUrl, customStyleObj, safePosition);
           });
-
-          it('does not attempt to call through to subtitlesContainer renderExample if subtitles have not been loaded', function () {
-            loadUrlMock.and.callFake(function (url, callbackObject) {
-              callbackObject.onError();
-            });
-            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
-            subtitles.renderExample('', {});
-
-            expect(subtitlesContainerSpies.renderExample).not.toHaveBeenCalled();
-          });
         });
 
         describe('clearExample', function () {
@@ -326,16 +257,6 @@ require(
 
             expect(subtitlesContainerSpies.clearExample).toHaveBeenCalledTimes(1);
           });
-
-          it('does not call through to subtitlesContainer clearExample if subtitles have not been loaded', function () {
-            loadUrlMock.and.callFake(function (url, callbackObject) {
-              callbackObject.onError();
-            });
-            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
-            subtitles.clearExample();
-
-            expect(subtitlesContainerSpies.clearExample).not.toHaveBeenCalled();
-          });
         });
 
         describe('tearDown', function () {
@@ -344,16 +265,6 @@ require(
             subtitles.tearDown();
 
             expect(subtitlesContainerSpies.tearDown).toHaveBeenCalledTimes(1);
-          });
-
-          it('does not attempt to call through to subtitlesContainer tearDown if subtitles have not been loaded', function () {
-            loadUrlMock.and.callFake(function (url, callbackObject) {
-              callbackObject.onError();
-            });
-            var subtitles = Subtitles(null, 'http://some-url.test', true, null);
-            subtitles.tearDown();
-
-            expect(subtitlesContainerSpies.tearDown).not.toHaveBeenCalledTimes(1);
           });
         });
       });

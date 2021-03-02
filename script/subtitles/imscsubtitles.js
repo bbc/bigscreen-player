@@ -4,11 +4,12 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'bigscreenplayer/domhelpers',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/utils/playbackutils'
+    'bigscreenplayer/utils/playbackutils',
+    'bigscreenplayer/utils/loadurl'
   ],
-  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL) {
     'use strict';
-    return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
+    return function (mediaPlayer, url, autoStart, parentElement, defaultStyleOpts) {
       var currentSubtitlesElement;
       var exampleSubtitlesElement;
       var previousSubtitlesIndex = null;
@@ -17,15 +18,31 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var xml;
       var times = [];
 
-      try {
-        xml = IMSC.fromXML(response.text);
-        times = xml.getMediaTimeEvents();
-        if (autoStart) {
-          start();
-        }
-      } catch (e) {
-        DebugTool.info('Error transforming captions : ' + e);
-        Plugins.interface.onSubtitlesTransformError();
+      if (url) {
+        LoadURL(url, {
+          onLoad: function (responseXML, responseText, status) {
+            if (!responseXML) {
+              DebugTool.info('Error: responseXML is invalid.');
+              Plugins.interface.onSubtitlesTransformError();
+              return;
+            }
+
+            try {
+              xml = IMSC.fromXML(responseText);
+              times = xml.getMediaTimeEvents();
+              if (autoStart) {
+                start();
+              }
+            } catch (e) {
+              DebugTool.info('Error transforming captions : ' + e);
+              Plugins.interface.onSubtitlesTransformError();
+            }
+          },
+          onError: function (error) {
+            DebugTool.info('Error loading subtitles data: ' + error);
+            Plugins.interface.onSubtitlesLoadError();
+          }
+        });
       }
 
       // Opts: { backgroundColour: string (css colour, hex), fontFamily: string , size: number, lineHeight: number }
