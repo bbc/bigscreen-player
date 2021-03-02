@@ -1,7 +1,6 @@
 define(
   'bigscreenplayer/playercomponent', [
     'bigscreenplayer/models/mediastate',
-    'bigscreenplayer/subtitles/subtitles',
     'bigscreenplayer/playbackstrategy/' + window.bigscreenPlayer.playbackStrategy,
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/plugindata',
@@ -11,12 +10,11 @@ define(
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/models/playbackstrategy'
   ],
-  function (MediaState, Subtitles, PlaybackStrategy, WindowTypes, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
+  function (MediaState, PlaybackStrategy, WindowTypes, PluginData, PluginEnums, Plugins, TransferFormats, LiveSupport, PlaybackStrategyModel) {
     'use strict';
 
-    var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback) {
+    var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) {
       var isInitialPlay = true;
-      var captionsURL = bigscreenPlayerData.media.captionsUrl;
       var errorTimeoutID = null;
       var mediaKind = bigscreenPlayerData.media.kind;
       var stateUpdateCallback = callback;
@@ -40,7 +38,6 @@ define(
 
       bubbleErrorCleared();
 
-      var subtitles = Subtitles(playbackStrategy, captionsURL, enableSubtitles, playbackElement, bigscreenPlayerData.media.subtitleCustomisation);
       initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime);
 
       function play () {
@@ -85,30 +82,6 @@ define(
 
       function getSeekableRange () {
         return playbackStrategy.getSeekableRange();
-      }
-
-      function setSubtitlesEnabled (enabled) {
-        enabled ? subtitles.enable() : subtitles.disable();
-      }
-
-      function showSubtitles () {
-        subtitles.show();
-      }
-
-      function hideSubtitles () {
-        subtitles.hide();
-      }
-
-      function isSubtitlesEnabled () {
-        return subtitles.enabled();
-      }
-
-      function isSubtitlesAvailable () {
-        return subtitles.available();
-      }
-
-      function setTransportControlPosition (flags) {
-        subtitles.setPosition(flags);
       }
 
       function isPaused () {
@@ -316,10 +289,6 @@ define(
         var mediaData = {};
         mediaData.currentTime = getCurrentTime();
         mediaData.seekableRange = getSeekableRange();
-        mediaData.subtitles = {
-          enabled: isSubtitlesEnabled(),
-          available: isSubtitlesAvailable()
-        };
         mediaData.state = state;
         mediaData.duration = getDuration();
 
@@ -340,15 +309,9 @@ define(
 
       function tearDown () {
         tearDownMediaElement();
-
         playbackStrategy.tearDown();
         playbackStrategy = null;
-
-        subtitles.tearDown();
-        subtitles = null;
-
         isInitialPlay = true;
-        captionsURL = undefined;
         errorTimeoutID = undefined;
         windowType = undefined;
         mediaKind = undefined;
@@ -370,13 +333,7 @@ define(
         getWindowEndTime: getWindowEndTime,
         getSeekableRange: getSeekableRange,
         getPlayerElement: getPlayerElement,
-        isSubtitlesAvailable: isSubtitlesAvailable,
-        showSubtitles: showSubtitles,
-        hideSubtitles: hideSubtitles,
-        isSubtitlesEnabled: isSubtitlesEnabled,
-        setSubtitlesEnabled: setSubtitlesEnabled,
         isPaused: isPaused,
-        setTransportControlPosition: setTransportControlPosition,
         tearDown: tearDown
       };
     };

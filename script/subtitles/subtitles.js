@@ -73,6 +73,24 @@ define('bigscreenplayer/subtitles/subtitles',
         }
       }
 
+      function customise (styleOpts) {
+        if (subtitlesContainer) {
+          subtitlesContainer.customise(styleOpts, subtitlesEnabled);
+        }
+      }
+
+      function renderExample (exampleXmlString, styleOpts, safePosition) {
+        if (subtitlesContainer) {
+          subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition);
+        }
+      }
+
+      function clearExample () {
+        if (subtitlesContainer) {
+          subtitlesContainer.clearExample();
+        }
+      }
+
       function tearDown () {
         if (subtitlesContainer) {
           subtitlesContainer.tearDown();
@@ -87,6 +105,9 @@ define('bigscreenplayer/subtitles/subtitles',
         enabled: enabled,
         available: available,
         setPosition: setPosition,
+        customise: customise,
+        renderExample: renderExample,
+        clearExample: clearExample,
         tearDown: tearDown
       };
     };

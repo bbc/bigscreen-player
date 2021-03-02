@@ -22,11 +22,16 @@ require(
 
     var mockEventHook;
     var mockPlayerComponentInstance;
+    var mockSubtitlesInstance;
     var mockResizer;
 
-    var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, enableSubtitles, callback) {
+    var mockPlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) {
       mockEventHook = callback;
       return mockPlayerComponentInstance;
+    };
+
+    var mockSubtitles = function () {
+      return mockSubtitlesInstance;
     };
 
     mockPlayerComponent.getLiveSupport = function () {
@@ -112,8 +117,8 @@ require(
         var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'keyValue', 'tearDown', 'setRootElement']);
         mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-          'getPlayerElement', 'isSubtitlesAvailable', 'isSubtitlesEnabled', 'setSubtitlesEnabled', 'showSubtitles', 'hideSubtitles', 'tearDown',
-          'getWindowStartTime', 'getWindowEndTime']);
+          'getPlayerElement', 'tearDown', 'getWindowStartTime', 'getWindowEndTime']);
+        mockSubtitlesInstance = jasmine.createSpyObj('mockSubtitlesInstance', ['enable', 'disable', 'show', 'hide', 'enabled', 'available', 'setPosition', 'customise', 'renderExample', 'clearExample', 'tearDown']);
         mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
         errorCallback = jasmine.createSpy('errorCallback');
@@ -130,7 +135,8 @@ require(
           'bigscreenplayer/playercomponent': mockPlayerComponent,
           'bigscreenplayer/plugins': Plugins,
           'bigscreenplayer/debugger/debugtool': mockDebugTool,
-          'bigscreenplayer/resizer': mockResizerConstructor
+          'bigscreenplayer/resizer': mockResizerConstructor,
+          'bigscreenplayer/subtitles/subtitles': mockSubtitles
         });
 
         injector.require(['bigscreenplayer/bigscreenplayer'], function (bigscreenPlayerReference) {
@@ -143,6 +149,11 @@ require(
         Object.keys(mockPlayerComponentInstance).forEach(function (spyFunction) {
           mockPlayerComponentInstance[spyFunction].calls.reset();
         });
+
+        Object.keys(mockSubtitles).forEach(function (spyFunction) {
+          mockSubtitles[spyFunction].calls.reset();
+        });
+
         successCallback.calls.reset();
         errorCallback.calls.reset();
         forceMediaSourcesConstructionFailure = false;
@@ -540,7 +551,7 @@ require(
       });
 
       describe('registerForSubtitleChanges', function () {
-        it('should call the callback when we subtitles are turned on/off', function () {
+        it('should call the callback when subtitles are turned on/off', function () {
           var callback = jasmine.createSpy('listener1');
           initialiseBigscreenPlayer();
           bigscreenPlayer.registerForSubtitleChanges(callback);
@@ -574,7 +585,7 @@ require(
           expect(callback).not.toHaveBeenCalled();
         });
 
-        it('returns a reference to the callback passed in', function () {
+        it('returns a reference to the callback supplied', function () {
           var callback = jasmine.createSpy();
           var reference = bigscreenPlayer.registerForSubtitleChanges(callback);
 
@@ -894,25 +905,25 @@ require(
           initialiseBigscreenPlayer();
           bigscreenPlayer.setSubtitlesEnabled(true);
 
-          expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(true);
+          expect(mockSubtitlesInstance.enable).toHaveBeenCalledTimes(1);
 
           bigscreenPlayer.setSubtitlesEnabled(false);
 
-          expect(mockPlayerComponentInstance.setSubtitlesEnabled).toHaveBeenCalledWith(false);
+          expect(mockSubtitlesInstance.disable).toHaveBeenCalledTimes(1);
         });
 
-        it('should call through to playerComponent showSubtitles when called with true', function () {
+        it('should show subtitles when called with true', function () {
           initialiseBigscreenPlayer();
           bigscreenPlayer.setSubtitlesEnabled(true);
 
-          expect(mockPlayerComponentInstance.showSubtitles).toHaveBeenCalledTimes(1);
+          expect(mockSubtitlesInstance.show).toHaveBeenCalledTimes(1);
         });
 
-        it('should call through to playerComponent hideSubtitles when called with false', function () {
+        it('should hide subtitleswhen called with false', function () {
           initialiseBigscreenPlayer();
           bigscreenPlayer.setSubtitlesEnabled(false);
 
-          expect(mockPlayerComponentInstance.hideSubtitles).toHaveBeenCalledTimes(1);
+          expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1);
         });
 
         it('should not show subtitles when resized', function () {
@@ -921,7 +932,7 @@ require(
 
           bigscreenPlayer.setSubtitlesEnabled(true);
 
-          expect(mockPlayerComponentInstance.showSubtitles).not.toHaveBeenCalled();
+          expect(mockSubtitlesInstance.show).not.toHaveBeenCalled();
         });
 
         it('should not hide subtitles when resized', function () {
@@ -930,27 +941,67 @@ require(
 
           bigscreenPlayer.setSubtitlesEnabled(true);
 
-          expect(mockPlayerComponentInstance.hideSubtitles).not.toHaveBeenCalled();
+          expect(mockSubtitlesInstance.hide).not.toHaveBeenCalled();
         });
       });
 
       describe('isSubtitlesEnabled', function () {
-        it('calls through to playerComponent isSubtitlesEnabled when called', function () {
+        it('calls through to Subtitles enabled when called', function () {
           initialiseBigscreenPlayer();
 
           bigscreenPlayer.isSubtitlesEnabled();
 
-          expect(mockPlayerComponentInstance.isSubtitlesEnabled).toHaveBeenCalledWith();
+          expect(mockSubtitlesInstance.enabled).toHaveBeenCalledWith();
         });
       });
 
       describe('isSubtitlesAvailable', function () {
-        it('calls through to playerComponent isSubtitlesAvailable when called', function () {
+        it('calls through to Subtitles available when called', function () {
           initialiseBigscreenPlayer();
 
           bigscreenPlayer.isSubtitlesAvailable();
 
-          expect(mockPlayerComponentInstance.isSubtitlesAvailable).toHaveBeenCalledWith();
+          expect(mockSubtitlesInstance.available).toHaveBeenCalledWith();
+        });
+      });
+
+      describe('customiseSubtitles', function () {
+        it('passes through custom styles to Subtitles customise', function () {
+          initialiseBigscreenPlayer();
+          var customStyleObj = { size: 0.7 };
+          bigscreenPlayer.customiseSubtitles(customStyleObj);
+
+          expect(mockSubtitlesInstance.customise).toHaveBeenCalledWith(customStyleObj);
+        });
+      });
+
+      describe('renderSubtitleExample', function () {
+        it('calls Subtitles renderExample with correct values', function () {
+          initialiseBigscreenPlayer();
+          var exampleUrl = '';
+          var customStyleObj = { size: 0.7 };
+          var safePosititon = { left: 30, top: 0 };
+          bigscreenPlayer.renderSubtitleExample(exampleUrl, customStyleObj, safePosititon);
+
+          expect(mockSubtitlesInstance.renderExample).toHaveBeenCalledWith(exampleUrl, customStyleObj, safePosititon);
+        });
+      });
+
+      describe('clearSubtitleExample', function () {
+        it('calls Subtitles clearExample', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.clearSubtitleExample();
+
+          expect(mockSubtitlesInstance.clearExample).toHaveBeenCalledTimes(1);
+        });
+      });
+
+      describe('setTransportControlsPosition', function () {
+        it('should call through to Subtitles setPosition function', function () {
+          initialiseBigscreenPlayer();
+          bigscreenPlayer.setTransportControlsPosition();
+
+          expect(mockSubtitlesInstance.setPosition).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -966,7 +1017,7 @@ require(
           initialiseBigscreenPlayer();
           bigscreenPlayer.resize(10, 10, 160, 90, 100);
 
-          expect(mockPlayerComponentInstance.hideSubtitles).toHaveBeenCalledTimes(1);
+          expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -979,21 +1030,21 @@ require(
         });
 
         it('shows subtitles if subtitles are enabled', function () {
-          mockPlayerComponentInstance.isSubtitlesEnabled.and.returnValue(true);
+          mockSubtitlesInstance.enabled.and.returnValue(true);
 
           initialiseBigscreenPlayer();
           bigscreenPlayer.clearResize();
 
-          expect(mockPlayerComponentInstance.showSubtitles).toHaveBeenCalledTimes(1);
+          expect(mockSubtitlesInstance.show).toHaveBeenCalledTimes(1);
         });
 
         it('hides subtitles if subtitles are disabled', function () {
-          mockPlayerComponentInstance.isSubtitlesEnabled.and.returnValue(false);
+          mockSubtitlesInstance.enabled.and.returnValue(false);
 
           initialiseBigscreenPlayer();
           bigscreenPlayer.clearResize();
 
-          expect(mockPlayerComponentInstance.hideSubtitles).toHaveBeenCalledTimes(1);
+          expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -1187,7 +1238,7 @@ require(
 
           Plugins.interface.onError();
 
-          expect(mockPlugin.onError).toHaveBeenCalled();
+          expect(mockPlugin.onError).toHaveBeenCalledTimes(1);
         });
       });
 
@@ -1215,7 +1266,7 @@ require(
           Plugins.interface.onError();
 
           expect(mockPlugin.onError).not.toHaveBeenCalled();
-          expect(mockPluginTwo.onError).toHaveBeenCalled();
+          expect(mockPluginTwo.onError).toHaveBeenCalledTimes(1);
         });
 
         it('should remove all plugins', function () {

@@ -62,6 +62,9 @@ define(
         start: start,
         stop: stop,
         updatePosition: updatePosition,
+        customise: function () {},
+        renderExample: function () {},
+        clearExample: function () {},
         tearDown: tearDown
       };
     };
