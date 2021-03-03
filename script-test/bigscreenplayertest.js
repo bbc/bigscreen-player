@@ -664,6 +664,30 @@ require(
           expect(listener3).toHaveBeenCalledTimes(2);
         });
 
+        it('should remove callback from subtitleCallbacks when a callback removes itself', function () {
+          initialiseBigscreenPlayer();
+
+          var listener1 = jasmine.createSpy('listener1');
+          var listener2 = jasmine.createSpy('listener2').and.callFake(function () {
+            bigscreenPlayer.unregisterForSubtitleChanges(listener2);
+          });
+          var listener3 = jasmine.createSpy('listener3');
+          var listener4 = jasmine.createSpy('listener4');
+
+          bigscreenPlayer.registerForSubtitleChanges(listener1);
+          bigscreenPlayer.registerForSubtitleChanges(listener2);
+          bigscreenPlayer.registerForSubtitleChanges(listener3);
+          bigscreenPlayer.registerForSubtitleChanges(listener4);
+
+          bigscreenPlayer.setSubtitlesEnabled(false);
+          bigscreenPlayer.setSubtitlesEnabled(true);
+
+          expect(listener1).toHaveBeenCalledTimes(2);
+          expect(listener2).toHaveBeenCalledTimes(1);
+          expect(listener3).toHaveBeenCalledTimes(2);
+          expect(listener4).toHaveBeenCalledTimes(2);
+        });
+
         it('should only remove existing callbacks from subtitleCallbacks', function () {
           initialiseBigscreenPlayer();
 

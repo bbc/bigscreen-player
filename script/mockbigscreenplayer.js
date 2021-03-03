@@ -214,11 +214,9 @@ define('bigscreenplayer/mockbigscreenplayer',
         return callback;
       },
       unregisterForSubtitleChanges: function (callback) {
-        var indexOf = subtitleCallbacks.indexOf(callback);
-
-        if (indexOf !== -1) {
-          subtitleCallbacks.splice(indexOf, 1);
-        }
+        subtitleCallbacks = subtitleCallbacks.filter(function (existingCallback) {
+          return callback !== existingCallback;
+        });
       },
       registerForStateChanges: function (callback) {
         stateChangeCallbacks.push(callback);
