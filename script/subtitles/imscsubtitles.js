@@ -24,15 +24,25 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         loadInitialFragments();
 
         fragmentInterval = setInterval(function () {
-          var segmentNumber = calculateSegmentNumber(DEFAULT_SEGMENT_OFFSET);
+          var toLoad = [];
 
           for (var i = 0; i < fragments.length; i++) {
-            if (fragments[i].segmentNumber === segmentNumber) {
-              return;
+            var segmentNumber = calculateSegmentNumber(i);
+            var found = false;
+
+            for (var j = 0; j < fragments.length; j++) {
+              if (fragments[j].segmentNumber === segmentNumber) {
+                found = true;
+              }
+            }
+            if (!found) {
+              toLoad.push(segmentNumber);
             }
           }
 
-          loadSegment(captions.captionsUrl, segmentNumber);
+          for (var k = 0; k < toLoad.length; k++) {
+            loadSegment(captions.captionsUrl, toLoad[k]);
+          }
         }, captions.segmentLength * 1000);
       }
 
@@ -58,7 +68,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             }
 
             try {
-              var xml = IMSC.fromXML(responseText);
+              var xml = IMSC.fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1]);
               var times = xml.getMediaTimeEvents();
 
               fragments.push({
@@ -67,6 +77,25 @@ define('bigscreenplayer/subtitles/imscsubtitles',
                 previousSubtitleIndex: null,
                 segmentNumber: segmentNumber
               });
+
+              var direction;
+              if (fragments.length > 3 && (fragments[3].segmentNumber < fragments[2].segmentNumber)) {
+                direction = 'backwards';
+              } else {
+                direction = 'forwards';
+              }
+
+              fragments.sort(function (a, b) {
+                return a.segmentNumber - b.segmentNumber;
+              });
+
+              if (direction === 'forwards') {
+                if (fragments.length > 3) {
+                  fragments.splice(0, 1);
+                }
+              } else {
+                fragments.pop();
+              }
 
               if (autoStart) {
                 start();
