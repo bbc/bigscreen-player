@@ -9,15 +9,47 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   ],
   function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL) {
     'use strict';
-    return function (mediaPlayer, captions, autoStart, parentElement, defaultStyleOpts) {
+    return function (mediaPlayer, captions, autoStart, parentElement, defaultStyleOpts, windowStartTime) {
       var currentSubtitlesElement;
       var exampleSubtitlesElement;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
+      var fragmentInterval;
       var fragments = [];
+      var DEFAULT_SEGMENT_OFFSET = 2;
 
-      if (captions.captionsUrl) {
-        LoadURL(captions.captionsUrl, {
+      if (captions.captionsUrl && !captions.segmentLength) {
+        loadSegment(captions.captionsUrl);
+      } else if (captions.captionsUrl && captions.segmentLength) {
+        loadInitialFragments();
+
+        fragmentInterval = setInterval(function () {
+          var segmentNumber = calculateSegmentNumber(DEFAULT_SEGMENT_OFFSET);
+
+          for (var i = 0; i < fragments.length; i++) {
+            if (fragments[i].segmentNumber === segmentNumber) {
+              return;
+            }
+          }
+
+          loadSegment(captions.captionsUrl, segmentNumber);
+        }, captions.segmentLength * 1000);
+      }
+
+      function loadInitialFragments () {
+        loadSegment(captions.captionsUrl, calculateSegmentNumber(0));
+        loadSegment(captions.captionsUrl, calculateSegmentNumber(1));
+        loadSegment(captions.captionsUrl, calculateSegmentNumber(DEFAULT_SEGMENT_OFFSET));
+      }
+
+      function calculateSegmentNumber (offset) {
+        var epochSeconds = (windowStartTime / 1000) + mediaPlayer.getCurrentTime();
+        return Math.floor(epochSeconds / captions.segmentLength) + offset;
+      }
+
+      function loadSegment (url, segmentNumber) {
+        url = url.replace('$segment$', segmentNumber);
+        LoadURL(url, {
           onLoad: function (responseXML, responseText, status) {
             if (!responseXML) {
               DebugTool.info('Error: responseXML is invalid.');
@@ -32,7 +64,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               fragments.push({
                 xml: xml,
                 times: times,
-                previousSubtitleIndex: null
+                previousSubtitleIndex: null,
+                segmentNumber: segmentNumber
               });
 
               if (autoStart) {
@@ -171,6 +204,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function stop () {
         clearInterval(updateInterval);
+        clearInterval(fragmentInterval);
         removeCurrentSubtitlesElement();
       }
 
