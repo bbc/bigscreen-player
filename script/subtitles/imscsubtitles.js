@@ -15,41 +15,34 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
       var fragmentInterval;
+      var FRAGMENTS_TO_KEEP = 3;
       var fragments = [];
-      var DEFAULT_SEGMENT_OFFSET = 2;
 
       if (captions.captionsUrl && !captions.segmentLength) {
         loadSegment(captions.captionsUrl);
       } else if (captions.captionsUrl && captions.segmentLength) {
-        loadInitialFragments();
+        loadAllRequiredSegments();
 
-        fragmentInterval = setInterval(function () {
-          var toLoad = [];
-
-          for (var i = 0; i < fragments.length; i++) {
-            var segmentNumber = calculateSegmentNumber(i);
-            var found = false;
-
-            for (var j = 0; j < fragments.length; j++) {
-              if (fragments[j].segmentNumber === segmentNumber) {
-                found = true;
-              }
-            }
-            if (!found) {
-              toLoad.push(segmentNumber);
-            }
-          }
-
-          for (var k = 0; k < toLoad.length; k++) {
-            loadSegment(captions.captionsUrl, toLoad[k]);
-          }
-        }, captions.segmentLength * 1000);
+        fragmentInterval = setInterval(loadAllRequiredSegments, captions.segmentLength * 1000);
       }
 
-      function loadInitialFragments () {
-        loadSegment(captions.captionsUrl, calculateSegmentNumber(0));
-        loadSegment(captions.captionsUrl, calculateSegmentNumber(1));
-        loadSegment(captions.captionsUrl, calculateSegmentNumber(DEFAULT_SEGMENT_OFFSET));
+      function loadAllRequiredSegments () {
+        var segmentsToLoad = [];
+
+        for (var i = 0; i < FRAGMENTS_TO_KEEP; i++) {
+          var segmentNumber = calculateSegmentNumber(i);
+          var alreadyLoaded = fragments.some(function (fragment) {
+            return fragment.segmentNumber === segmentNumber;
+          });
+
+          if (!alreadyLoaded) {
+            segmentsToLoad.push(segmentNumber);
+          }
+        }
+
+        segmentsToLoad.forEach(function (segment) {
+          loadSegment(captions.captionsUrl, segment);
+        });
       }
 
       function calculateSegmentNumber (offset) {
@@ -90,7 +83,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               });
 
               if (direction === 'forwards') {
-                if (fragments.length > 3) {
+                if (fragments.length > FRAGMENTS_TO_KEEP) {
                   fragments.splice(0, 1);
                 }
               } else {
