@@ -31,8 +31,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
         for (var i = 0; i < SEGMENTS_TO_KEEP; i++) {
           var segmentNumber = calculateSegmentNumber(i);
-          var alreadyLoaded = segments.some(function (fragment) {
-            return fragment.segmentNumber === segmentNumber;
+          var alreadyLoaded = segments.some(function (segment) {
+            return segment.number === segmentNumber;
           });
 
           if (!alreadyLoaded) {
@@ -68,26 +68,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
                 xml: xml,
                 times: times,
                 previousSubtitleIndex: null,
-                segmentNumber: segmentNumber
+                number: segmentNumber
               });
 
-              var direction;
-              if (segments.length > SEGMENTS_TO_KEEP && (segments[SEGMENTS_TO_KEEP].segmentNumber < segments[SEGMENTS_TO_KEEP - 1].segmentNumber)) {
-                direction = 'backwards';
-              } else {
-                direction = 'forwards';
-              }
-
-              segments.sort(function (a, b) {
-                return a.segmentNumber - b.segmentNumber;
-              });
-
-              if (direction === 'forwards') {
-                if (segments.length > SEGMENTS_TO_KEEP) {
-                  segments.splice(0, 1);
-                }
-              } else {
-                segments.pop();
+              if (segments.length > SEGMENTS_TO_KEEP) {
+                pruneSegments();
               }
 
               if (autoStart) {
@@ -103,6 +88,21 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             Plugins.interface.onSubtitlesLoadError();
           }
         });
+      }
+
+      function pruneSegments () {
+        // Before sorting, check if we've gone back in time, so we know whether to prune from front or back of array
+        var seekedBack = segments[SEGMENTS_TO_KEEP].number < segments[SEGMENTS_TO_KEEP - 1].number;
+
+        segments.sort(function (a, b) {
+          return a.number - b.number;
+        });
+
+        if (seekedBack) {
+          segments.pop();
+        } else {
+          segments.splice(0, 1);
+        }
       }
 
       // Opts: { backgroundColour: string (css colour, hex), fontFamily: string , size: number, lineHeight: number }
