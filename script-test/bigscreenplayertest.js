@@ -334,28 +334,28 @@ require(
           expect(listener3).toHaveBeenCalledTimes(2);
         });
 
-        it('should remove callback from timeUpdateCallbacks when a callback removes itself', function () {
-          initialiseBigscreenPlayer();
-
+        it('should remove callback from stateChangeCallbacks when a callback removes itself', function () {
           var listener1 = jasmine.createSpy('listener1');
           var listener2 = jasmine.createSpy('listener2').and.callFake(function () {
-            bigscreenPlayer.unregisterForTimeUpdates(listener2);
+            bigscreenPlayer.unregisterForStateChanges(listener2);
           });
           var listener3 = jasmine.createSpy('listener3');
+          var listener4 = jasmine.createSpy('listener4');
 
-          bigscreenPlayer.registerForTimeUpdates(listener1);
-          bigscreenPlayer.registerForTimeUpdates(listener2);
-          bigscreenPlayer.registerForTimeUpdates(listener3);
+          initialiseBigscreenPlayer();
 
-          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
+          bigscreenPlayer.registerForStateChanges(listener1);
+          bigscreenPlayer.registerForStateChanges(listener2);
+          bigscreenPlayer.registerForStateChanges(listener3);
+          bigscreenPlayer.registerForStateChanges(listener4);
 
-          bigscreenPlayer.unregisterForTimeUpdates(listener2);
-
-          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
+          mockEventHook({ data: { state: MediaState.PLAYING } });
+          mockEventHook({ data: { state: MediaState.PLAYING } });
 
           expect(listener1).toHaveBeenCalledTimes(2);
           expect(listener2).toHaveBeenCalledTimes(1);
           expect(listener3).toHaveBeenCalledTimes(2);
+          expect(listener4).toHaveBeenCalledTimes(2);
         });
 
         it('should only remove existing callbacks from stateChangeCallbacks', function () {
@@ -559,28 +559,28 @@ require(
           expect(listener3).toHaveBeenCalledTimes(2);
         });
 
-        it('should remove callback from stateChangeCallbacks when a callback removes itself', function () {
-          var listener1 = jasmine.createSpy('listener1');
-          var listener2 = jasmine.createSpy('listener2').and.callFake(function () {
-            bigscreenPlayer.unregisterForStateChanges(listener2);
-          });
-          var listener3 = jasmine.createSpy('listener3');
-          var listener4 = jasmine.createSpy('listener4');
-
+        it('should remove callback from timeUpdateCallbacks when a callback removes itself', function () {
           initialiseBigscreenPlayer();
 
-          bigscreenPlayer.registerForStateChanges(listener1);
-          bigscreenPlayer.registerForStateChanges(listener2);
-          bigscreenPlayer.registerForStateChanges(listener3);
-          bigscreenPlayer.registerForStateChanges(listener4);
+          var listener1 = jasmine.createSpy('listener1');
+          var listener2 = jasmine.createSpy('listener2').and.callFake(function () {
+            bigscreenPlayer.unregisterForTimeUpdates(listener2);
+          });
+          var listener3 = jasmine.createSpy('listener3');
 
-          mockEventHook({ data: { state: MediaState.PLAYING } });
-          mockEventHook({ data: { state: MediaState.PLAYING } });
+          bigscreenPlayer.registerForTimeUpdates(listener1);
+          bigscreenPlayer.registerForTimeUpdates(listener2);
+          bigscreenPlayer.registerForTimeUpdates(listener3);
+
+          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
+
+          bigscreenPlayer.unregisterForTimeUpdates(listener2);
+
+          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
           expect(listener1).toHaveBeenCalledTimes(2);
           expect(listener2).toHaveBeenCalledTimes(1);
           expect(listener3).toHaveBeenCalledTimes(2);
-          expect(listener4).toHaveBeenCalledTimes(2);
         });
 
         it('should only remove existing callbacks from timeUpdateCallbacks', function () {
