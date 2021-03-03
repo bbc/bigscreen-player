@@ -14,24 +14,24 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var exampleSubtitlesElement;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
-      var fragmentInterval;
-      var FRAGMENTS_TO_KEEP = 3;
-      var fragments = [];
+      var segmentInterval;
+      var SEGMENTS_TO_KEEP = 3;
+      var segments = [];
 
       if (captions.captionsUrl && !captions.segmentLength) {
         loadSegment(captions.captionsUrl);
       } else if (captions.captionsUrl && captions.segmentLength) {
         loadAllRequiredSegments();
 
-        fragmentInterval = setInterval(loadAllRequiredSegments, captions.segmentLength * 1000);
+        segmentInterval = setInterval(loadAllRequiredSegments, captions.segmentLength * 1000);
       }
 
       function loadAllRequiredSegments () {
         var segmentsToLoad = [];
 
-        for (var i = 0; i < FRAGMENTS_TO_KEEP; i++) {
+        for (var i = 0; i < SEGMENTS_TO_KEEP; i++) {
           var segmentNumber = calculateSegmentNumber(i);
-          var alreadyLoaded = fragments.some(function (fragment) {
+          var alreadyLoaded = segments.some(function (fragment) {
             return fragment.segmentNumber === segmentNumber;
           });
 
@@ -64,7 +64,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               var xml = IMSC.fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1]);
               var times = xml.getMediaTimeEvents();
 
-              fragments.push({
+              segments.push({
                 xml: xml,
                 times: times,
                 previousSubtitleIndex: null,
@@ -72,22 +72,22 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               });
 
               var direction;
-              if (fragments.length > 3 && (fragments[3].segmentNumber < fragments[2].segmentNumber)) {
+              if (segments.length > SEGMENTS_TO_KEEP && (segments[SEGMENTS_TO_KEEP].segmentNumber < segments[SEGMENTS_TO_KEEP - 1].segmentNumber)) {
                 direction = 'backwards';
               } else {
                 direction = 'forwards';
               }
 
-              fragments.sort(function (a, b) {
+              segments.sort(function (a, b) {
                 return a.segmentNumber - b.segmentNumber;
               });
 
               if (direction === 'forwards') {
-                if (fragments.length > FRAGMENTS_TO_KEEP) {
-                  fragments.splice(0, 1);
+                if (segments.length > SEGMENTS_TO_KEEP) {
+                  segments.splice(0, 1);
                 }
               } else {
-                fragments.pop();
+                segments.pop();
               }
 
               if (autoStart) {
@@ -131,7 +131,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function getSubtitleIndex (currentTime) {
-        var times = fragments[0].times;
+        var times = segments[0].times;
         if (currentTime === undefined || currentTime < times[0]) {
           return null;
         }
@@ -163,11 +163,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function update (currentTime) {
         var subtitleIndex = getSubtitleIndex(currentTime);
-        var generateAndRender = subtitleIndex !== fragments[0].previousSubtitleIndex;
+        var generateAndRender = subtitleIndex !== segments[0].previousSubtitleIndex;
 
         if (generateAndRender) {
           render(currentTime);
-          fragments[0].previousSubtitleIndex = subtitleIndex;
+          segments[0].previousSubtitleIndex = subtitleIndex;
         }
       }
 
@@ -179,7 +179,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         currentSubtitlesElement.style.position = 'absolute';
         parentElement.appendChild(currentSubtitlesElement);
 
-        renderHTML(fragments[0].xml, currentTime, currentSubtitlesElement, imscRenderOpts, parentElement.clientHeight, parentElement.clientWidth);
+        renderHTML(segments[0].xml, currentTime, currentSubtitlesElement, imscRenderOpts, parentElement.clientHeight, parentElement.clientWidth);
       }
 
       function renderExample (exampleXmlString, styleOpts, safePosition) {
@@ -217,7 +217,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function start () {
-        if (fragments.length > 0) {
+        if (segments.length > 0) {
           updateInterval = setInterval(function () {
             update(mediaPlayer.getCurrentTime());
           }, 750);
@@ -226,7 +226,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function stop () {
         clearInterval(updateInterval);
-        clearInterval(fragmentInterval);
+        clearInterval(segmentInterval);
         removeCurrentSubtitlesElement();
       }
 
@@ -247,7 +247,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         clearExample: removeExampleSubtitlesElement,
         tearDown: function () {
           stop();
-          fragments = undefined;
+          segments = undefined;
         }
       };
     };
