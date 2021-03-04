@@ -18,12 +18,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var SEGMENTS_TO_KEEP = 3;
       var segments = [];
 
-      if (captions.captionsUrl && !captions.segmentLength) {
-        loadSegment(captions.captionsUrl);
-      } else if (captions.captionsUrl && captions.segmentLength) {
-        loadAllRequiredSegments();
-
-        segmentInterval = setInterval(loadAllRequiredSegments, captions.segmentLength * 1000);
+      if (autoStart) {
+        start();
       }
 
       function loadAllRequiredSegments () {
@@ -57,6 +53,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             if (!responseXML) {
               DebugTool.info('Error: responseXML is invalid.');
               Plugins.interface.onSubtitlesTransformError();
+              stop();
               return;
             }
 
@@ -74,18 +71,16 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               if (segments.length > SEGMENTS_TO_KEEP) {
                 pruneSegments();
               }
-
-              if (autoStart) {
-                start();
-              }
             } catch (e) {
               DebugTool.info('Error transforming captions : ' + e);
               Plugins.interface.onSubtitlesTransformError();
+              stop();
             }
           },
           onError: function (error) {
             DebugTool.info('Error loading subtitles data: ' + error);
             Plugins.interface.onSubtitlesLoadError();
+            stop();
           }
         });
       }
@@ -162,6 +157,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function update (currentTime) {
+        if (segments.length < 1) {
+          return;
+        }
+
         var subtitleIndex = getSubtitleIndex(currentTime);
         var generateAndRender = subtitleIndex !== segments[0].previousSubtitleIndex;
 
@@ -217,11 +216,16 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function start () {
-        if (segments.length > 0) {
-          updateInterval = setInterval(function () {
-            update(mediaPlayer.getCurrentTime());
-          }, 750);
+        if (captions.captionsUrl && !captions.segmentLength) {
+          loadSegment(captions.captionsUrl);
+        } else if (captions.captionsUrl && captions.segmentLength) {
+          segmentInterval = setInterval(loadAllRequiredSegments, captions.segmentLength * 1000);
+          loadAllRequiredSegments();
         }
+
+        updateInterval = setInterval(function () {
+          update(mediaPlayer.getCurrentTime());
+        }, 750);
       }
 
       function stop () {
