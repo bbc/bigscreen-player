@@ -26,7 +26,6 @@ jobs:
           node-version: 12
           registry-url: https://registry.npmjs.org/
       - run: npm ci
-      - run: npm test
       - run: npm run build:dist --if-present
       - run: npm publish dist/
         env:
