@@ -135,7 +135,8 @@ define('bigscreenplayer/bigscreenplayer',
           bigscreenPlayerData.media.captions || { captionsUrl: bigscreenPlayerData.media.captionsUrl },
           enableSubtitles,
           playbackElement,
-          bigscreenPlayerData.media.subtitleCustomisation
+          bigscreenPlayerData.media.subtitleCustomisation,
+          getWindowStartTime()
         );
 
         if (enableSubtitles) {

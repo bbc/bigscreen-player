@@ -108,10 +108,11 @@ require(
             var autoStart = true;
             var mockPlaybackElement = document.createElement('div');
             var customDefaultStyle = {};
+            var windowStartTime = '123456';
 
-            Subtitles(mockMediaPlayer, stubCaptions, autoStart, mockPlaybackElement, customDefaultStyle);
+            Subtitles(mockMediaPlayer, stubCaptions, autoStart, mockPlaybackElement, customDefaultStyle, windowStartTime);
 
-            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, stubCaptions, autoStart, mockPlaybackElement, customDefaultStyle);
+            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, stubCaptions, autoStart, mockPlaybackElement, customDefaultStyle, windowStartTime);
           });
         });
 
