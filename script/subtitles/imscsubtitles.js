@@ -42,11 +42,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function calculateSegmentNumber (offset) {
-        var currentTime = mediaPlayer.getCurrentTime();
-        if (currentTime > 0) {
-          var epochSeconds = (windowStartTime / 1000) + mediaPlayer.getCurrentTime();
-          return Math.floor(epochSeconds / captions.segmentLength) + offset;
-        }
+        var epochSeconds = (windowStartTime / 1000) + mediaPlayer.getCurrentTime();
+        return Math.floor(epochSeconds / captions.segmentLength) + offset;
       }
 
       function loadSegment (url, segmentNumber) {
@@ -69,7 +66,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
               segments.push({
                 xml: xml,
-                times: times,
+                times: times || [0],
                 previousSubtitleIndex: null,
                 number: segmentNumber
               });
@@ -218,13 +215,13 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       function start () {
         if (captions.captionsUrl && !captions.segmentLength) {
           loadSegment(captions.captionsUrl, 123456); // TODO - fix so random segment number isn't required for VOD.
-        } else if (captions.captionsUrl && captions.segmentLength) {
-          segmentInterval = setInterval(loadAllRequiredSegments, captions.segmentLength * 1000);
-          loadAllRequiredSegments(); // TODO - address concerns with currentTime not being ready on startup of live subs.
         }
 
         updateInterval = setInterval(function () {
           var time = captions.segmentLength ? (windowStartTime / 1000) + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
+          if (captions.segmentLength) {
+            loadAllRequiredSegments();
+          }
           update(time);
         }, 750);
       }

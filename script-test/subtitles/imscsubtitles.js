@@ -19,8 +19,6 @@ require(
       var loadUrlStubResponseXml = '<?xml>';
       var loadUrlStubResponseText;
 
-      var counter = 0;
-
       beforeEach(function (done) {
         injector = new Squire();
 
@@ -67,7 +65,6 @@ require(
         jasmine.clock().uninstall();
         imscMock.generateISD.calls.reset();
         imscMock.renderHTML.calls.reset();
-        counter = 0;
       });
 
       function progressTime (mediaPlayerTime) {
@@ -352,24 +349,28 @@ require(
         });
 
         describe('Loading fragments', function () {
-          it('should load the first three segments with correct urls on instantiation', function () {
-            mediaPlayer.getCurrentTime.and.returnValue(10);
+          it('should load the first three segments with correct urls on the first update interval', function () {
             // 1614769200000 = Wednesday, 3 March 2021 11:00:00
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512815.test', jasmine.any(Object));
             expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512816.test', jasmine.any(Object));
             expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512817.test', jasmine.any(Object));
           });
 
-          it('should load the fragment two segments ahead of current time at a frequency of segmentLength', function () {
-            mediaPlayer.getCurrentTime.and.returnValue(10);
+          it('should load the fragment two segments ahead of current time', function () {
             // 1614769200000 = Wednesday, 3 March 2021 11:00:00
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
 
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
+
             loadUrlMock.calls.reset();
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
-            jasmine.clock().tick(3.84 * 1000);
+            jasmine.clock().tick(750);
 
             // At 13.84 seconds, we should be loading the segment correseponding to 21.52 seconds
             // 1614769221520 = Wednesday, 3 March 2021 11:00:21.52
@@ -377,48 +378,51 @@ require(
           });
 
           it('should not load a fragment if fragments array already contains it', function () {
-            mediaPlayer.getCurrentTime.and.returnValue(10);
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
 
             loadUrlMock.calls.reset();
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
-            jasmine.clock().tick(3.84 * 1000);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).toHaveBeenCalledOnceWith('https://captions/420512818.test', jasmine.any(Object));
 
             mediaPlayer.getCurrentTime.and.returnValue(13.84); // time hasn't progressed. e.g. in paused state
-            jasmine.clock().tick(3.84 * 1000);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).toHaveBeenCalledOnceWith('https://captions/420512818.test', jasmine.any(Object));
           });
 
           it('only keeps three fragments when playing', function () {
-            mediaPlayer.getCurrentTime.and.returnValue(10);
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
 
             loadUrlMock.calls.reset();
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
-            jasmine.clock().tick(3.84 * 1000);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).toHaveBeenCalledOnceWith('https://captions/420512818.test', jasmine.any(Object));
 
             loadUrlMock.calls.reset();
             mediaPlayer.getCurrentTime.and.returnValue(10);
-            jasmine.clock().tick(3.84 * 1000);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).toHaveBeenCalledOnceWith('https://captions/420512815.test', jasmine.any(Object));
           });
 
           it('load three new fragments when seeking back to a point where none of the segments are available', function () {
-            mediaPlayer.getCurrentTime.and.returnValue(100);
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
 
             mediaPlayer.getCurrentTime.and.returnValue(113.84);
-            jasmine.clock().tick(3.84 * 1000);
+            jasmine.clock().tick(750);
 
             loadUrlMock.calls.reset();
             mediaPlayer.getCurrentTime.and.returnValue(10);
-            jasmine.clock().tick(3.84 * 1000);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512815.test', jasmine.any(Object));
             expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512816.test', jasmine.any(Object));
@@ -427,15 +431,14 @@ require(
           });
 
           it('loads three new fragments when seeking forwards to a point where none of the segments are available', function () {
-            mediaPlayer.getCurrentTime.and.returnValue(10);
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
 
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
-            jasmine.clock().tick(3.84 * 1000);
+            jasmine.clock().tick(750);
 
             loadUrlMock.calls.reset();
             mediaPlayer.getCurrentTime.and.returnValue(100);
-            jasmine.clock().tick(3.84 * 1000);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512838.test', jasmine.any(Object));
             expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512839.test', jasmine.any(Object));
@@ -450,13 +453,18 @@ require(
           });
 
           it('should load fragments when start is called and autoStart is false', function () {
-            mediaPlayer.getCurrentTime.and.returnValue(10);
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {}, 1614769200000);
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).not.toHaveBeenCalled();
 
             loadUrlMock.calls.reset();
             subtitles.start();
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512815.test', jasmine.any(Object));
           });
@@ -514,21 +522,11 @@ require(
         });
 
         describe('rendering', function () {
-          it('should generate and render the first fragment loaded', function () {
-            mediaPlayer.getCurrentTime.and.returnValue(10);
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
-
-            var epochCurrentTime = (1614769200000 / 1000) + 10;
-
-            jasmine.clock().tick(751);
-
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(fromXmlReturn, epochCurrentTime);
-            expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
-          });
-
-          it('should generate and render when when time has progressed passed a known un-rendered subtitle', function () {
-            var times = [[], [1, 3, 8], [0, 8, 11, 13], [0, 13, 15, 18]];
+          it('should generate and render when time has progressed past a known un-rendered subtitles', function () {
+            var times = [[0, 1, 2, 3.84], [0, 3.84, 4, 7.68], [0, 7.68, 9, 9.7, 11.52]];
             var epochStartTimeSeconds = (1614769200000 / 1000);
+            var counter = -1;
+
             times = times.map(function (time) {
               return time.map(function (t) {
                 return t === 0 ? t : t + epochStartTimeSeconds;
@@ -552,25 +550,112 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(2.750);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 1}), epochStartTimeSeconds + 2.750);
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 0}), epochStartTimeSeconds + 2.750);
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
             mediaPlayer.getCurrentTime.and.returnValue(3.5);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 1}), epochStartTimeSeconds + 3.5);
+            expect(imscMock.generateISD).not.toHaveBeenCalled();
+            expect(imscMock.renderHTML).not.toHaveBeenCalled();
 
             imscMock.generateISD.calls.reset();
-            mediaPlayer.getCurrentTime.and.returnValue(8.5);
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(4.25);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), epochStartTimeSeconds + 8.5);
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 1}), epochStartTimeSeconds + 4.25);
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
-            mediaPlayer.getCurrentTime.and.returnValue(17);
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(5);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 3}), epochStartTimeSeconds + 17);
+            expect(imscMock.generateISD).not.toHaveBeenCalled();
+            expect(imscMock.renderHTML).not.toHaveBeenCalled();
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(5.75);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).not.toHaveBeenCalled();
+            expect(imscMock.renderHTML).not.toHaveBeenCalled();
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(6.5);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).not.toHaveBeenCalled();
+            expect(imscMock.renderHTML).not.toHaveBeenCalled();
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(7.25);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).not.toHaveBeenCalled();
+            expect(imscMock.renderHTML).not.toHaveBeenCalled();
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(8);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), epochStartTimeSeconds + 8);
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(8.75);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).not.toHaveBeenCalled();
+            expect(imscMock.renderHTML).not.toHaveBeenCalled();
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(9.5);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), epochStartTimeSeconds + 9.5);
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(10.25);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), epochStartTimeSeconds + 10.25);
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(11);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).not.toHaveBeenCalled();
+            expect(imscMock.renderHTML).not.toHaveBeenCalled();
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(11.75);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), epochStartTimeSeconds + 11.75);
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+
+            imscMock.generateISD.calls.reset();
+            imscMock.renderHTML.calls.reset();
+            mediaPlayer.getCurrentTime.and.returnValue(11.75);
+            jasmine.clock().tick(750);
+
+            expect(imscMock.generateISD).not.toHaveBeenCalled();
+            expect(imscMock.renderHTML).not.toHaveBeenCalled();
           });
         });
 
@@ -579,6 +664,8 @@ require(
           mediaPlayer.getCurrentTime.and.returnValue(10);
 
           subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+
+          jasmine.clock().tick(750);
 
           expect(imscMock.fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>');
         });
