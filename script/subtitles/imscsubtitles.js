@@ -202,6 +202,18 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       function renderHTML (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
         try {
           var isd = IMSC.generateISD(xml, currentTime);
+          for (var i = 0; i < isd.contents.length; i++) {
+            if (isd.contents[i].kind === 'region') {
+              isd.contents[i].styleAttrs['http://www.w3.org/ns/ttml#styling displayAlign'] = 'after';
+              isd.contents[i].styleAttrs['http://www.w3.org/ns/ttml#styling overflow'] = 'visible';
+              // for (var j = 0; j < isd.contents[i].contents.length; j++) {
+              //   for (var k = 0; k < isd.contents[i].contents[j].contents.length; k++) {
+              //     isd.contents[i].contents[j].contents[k].styleAttrs['http://www.w3.org/ns/ttml#styling fontSize'] = '117%';
+              //     isd.contents[i].contents[j].contents[k].styleAttrs['http://www.w3.org/ns/ttml#styling lineHeight'] = '120%';
+              //   }
+              // }
+            }
+          }
           IMSC.renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts);
         } catch (e) {
           DebugTool.info('Exception while rendering subtitles: ' + e);
@@ -217,6 +229,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         if (!liveSubtitles && captions.captionsUrl) {
           loadSegment(captions.captionsUrl);
         }
+
+        customise({fontFamily: 'ReithSans, Arial, Roboto, proportionalSansSerif, default'});
 
         updateInterval = setInterval(function () {
           var time = liveSubtitles ? (windowStartTime / 1000) + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
@@ -235,7 +249,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       function customise (styleOpts, enabled) {
         var customStyleOptions = transformStyleOptions(styleOpts);
         imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions);
-        if (enabled) {
+        if (enabled && !liveSubtitles) {
           render(mediaPlayer.getCurrentTime());
         }
       }
