@@ -14,9 +14,9 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var exampleSubtitlesElement;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
-      var segmentInterval;
       var SEGMENTS_TO_KEEP = 3;
       var segments = [];
+      var liveSubtitles = !!captions.segmentLength;
 
       if (autoStart) {
         start();
@@ -47,13 +47,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function loadSegment (url, segmentNumber) {
-        if (!segmentNumber) {
-          return;
-        }
         url = url.replace('$segment$', segmentNumber);
         LoadURL(url, {
           onLoad: function (responseXML, responseText, status) {
-            if (!responseXML && !captions.segmentLength) {
+            if (!responseXML && !liveSubtitles) {
               DebugTool.info('Error: responseXML is invalid.');
               Plugins.interface.onSubtitlesTransformError();
               stop();
@@ -213,13 +210,13 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function start () {
-        if (captions.captionsUrl && !captions.segmentLength) {
-          loadSegment(captions.captionsUrl, 123456); // TODO - fix so random segment number isn't required for VOD.
+        if (!liveSubtitles && captions.captionsUrl) {
+          loadSegment(captions.captionsUrl);
         }
 
         updateInterval = setInterval(function () {
-          var time = captions.segmentLength ? (windowStartTime / 1000) + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
-          if (captions.segmentLength) {
+          var time = liveSubtitles ? (windowStartTime / 1000) + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
+          if (liveSubtitles) {
             loadAllRequiredSegments();
           }
           update(time);
@@ -228,7 +225,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function stop () {
         clearInterval(updateInterval);
-        clearInterval(segmentInterval);
         removeCurrentSubtitlesElement();
       }
 

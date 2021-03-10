@@ -449,6 +449,9 @@ require(
           it('should not load fragments when auto start is false', function () {
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {}, 1614769200000);
 
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
+
             expect(loadUrlMock).not.toHaveBeenCalled();
           });
 
@@ -475,7 +478,8 @@ require(
             loadUrlMock.calls.reset();
             subtitles.stop();
 
-            jasmine.clock().tick(3.84 * 1000);
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).not.toHaveBeenCalled();
           });
@@ -485,9 +489,13 @@ require(
 
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
 
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
+
             loadUrlMock.calls.reset();
 
-            jasmine.clock().tick(3.84 * 1000);
+            mediaPlayer.getCurrentTime.and.returnValue(13.84);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).not.toHaveBeenCalled();
           });
@@ -497,27 +505,35 @@ require(
               callbackObject.onError();
             });
 
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
 
             loadUrlMock.calls.reset();
 
-            jasmine.clock().tick(3.84 * 1000);
+            mediaPlayer.getCurrentTime.and.returnValue(13.84);
+            jasmine.clock().tick(750);
 
             expect(loadUrlMock).not.toHaveBeenCalled();
           });
 
-          it('should stop loading fragments when the xml response is invalid', function () {
+          it('should not stop loading fragments when the xml response is invalid', function () {
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onLoad(null, '', 200);
             });
 
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
 
             loadUrlMock.calls.reset();
 
-            jasmine.clock().tick(3.84 * 1000);
+            mediaPlayer.getCurrentTime.and.returnValue(13.84);
+            jasmine.clock().tick(750);
 
-            expect(loadUrlMock).not.toHaveBeenCalled();
+            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512818.test', jasmine.any(Object));
           });
         });
 
