@@ -79,6 +79,9 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           },
           onError: function (error) {
             DebugTool.info('Error loading subtitles data: ' + error);
+            DebugTool.info('Media player current time: ' + mediaPlayer.getCurrentTime());
+            DebugTool.info('Attempted to load url: ' + url);
+            DebugTool.info('Approx highest segment number available: ' + Math.floor(((Date.now() / 1000) - 10) / captions.segmentLength));
             Plugins.interface.onSubtitlesLoadError();
             stop();
           }
@@ -143,7 +146,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var segment = getSegmentToRender(currentTime);
 
         if (segment) {
+          DebugTool.keyValue({key: 'segmentToRender', value: 'true'});
           render(currentTime, segment.xml);
+        } else {
+          DebugTool.keyValue({key: 'segmentToRender', value: 'false'});
         }
       }
 
