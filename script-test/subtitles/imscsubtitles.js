@@ -484,6 +484,15 @@ require(
             expect(loadUrlMock).not.toHaveBeenCalled();
           });
 
+          it('should not try to load segments when the currentTime is not known by the player', function () {
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+
+            mediaPlayer.getCurrentTime.and.returnValue(-1614769200000 / 1000);
+            jasmine.clock().tick(750);
+
+            expect(loadUrlMock).not.toHaveBeenCalled();
+          });
+
           it('should stop loading fragments when xml transforming has failed', function () {
             imscMock.fromXML.and.throwError();
 

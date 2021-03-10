@@ -209,6 +209,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         }
       }
 
+      function timeIsValid (time) {
+        return time > ((windowStartTime / 1000) / captions.segmentLength);
+      }
+
       function start () {
         if (!liveSubtitles && captions.captionsUrl) {
           loadSegment(captions.captionsUrl);
@@ -216,7 +220,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
         updateInterval = setInterval(function () {
           var time = liveSubtitles ? (windowStartTime / 1000) + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
-          if (liveSubtitles) {
+          if (liveSubtitles && timeIsValid(time)) {
             loadAllRequiredSegments();
           }
           update(time);
