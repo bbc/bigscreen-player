@@ -62,7 +62,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               var times = xml.getMediaTimeEvents();
 
               segments.push({
-                xml: xml,
+                xml: modifyStyling(xml),
                 times: times || [0],
                 previousSubtitleIndex: null,
                 number: segmentNumber
@@ -207,7 +207,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function renderHTML (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
         try {
-          modifyStyling(xml);
           var isd = IMSC.generateISD(xml, currentTime);
           IMSC.renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts);
         } catch (e) {
@@ -231,6 +230,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             }
           }
         }
+        return xml;
       }
 
       function timeIsValid (time) {
