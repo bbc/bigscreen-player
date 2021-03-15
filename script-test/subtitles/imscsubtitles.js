@@ -89,10 +89,17 @@ require(
           expect(subtitles).toEqual(jasmine.objectContaining({start: jasmine.any(Function), stop: jasmine.any(Function), updatePosition: jasmine.any(Function), tearDown: jasmine.any(Function)}));
         });
 
-        it('Calls fromXML on creation with the text property of the response argument', function () {
+        it('Calls fromXML on creation with the extracted XML from the text property of the response argument', function () {
           subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
 
           expect(imscMock.fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>');
+        });
+
+        it('Calls fromXML on creation with the original text property of the response argument if expected header is not found', function () {
+          loadUrlStubResponseText = '<?xml version="1.0" encoding="utf-8" extra property="something"?><tt xmlns="http://www.w3.org/ns/ttml"></tt>';
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
+
+          expect(imscMock.fromXML).toHaveBeenCalledWith(loadUrlStubResponseText);
         });
 
         it('autoplay argument starts the update loop', function () {
