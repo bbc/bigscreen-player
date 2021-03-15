@@ -58,7 +58,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             }
 
             try {
-              var xml = IMSC.fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1]);
+              var xml = IMSC.fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1] || responseText);
               var times = xml.getMediaTimeEvents();
 
               segments.push({
@@ -207,23 +207,29 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function renderHTML (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
         try {
+          modifyStyling(xml);
           var isd = IMSC.generateISD(xml, currentTime);
-          for (var i = 0; i < isd.contents.length; i++) {
-            if (isd.contents[i].kind === 'region') {
-              isd.contents[i].styleAttrs['http://www.w3.org/ns/ttml#styling displayAlign'] = 'after';
-              isd.contents[i].styleAttrs['http://www.w3.org/ns/ttml#styling overflow'] = 'visible';
-              // for (var j = 0; j < isd.contents[i].contents.length; j++) {
-              //   for (var k = 0; k < isd.contents[i].contents[j].contents.length; k++) {
-              //     isd.contents[i].contents[j].contents[k].styleAttrs['http://www.w3.org/ns/ttml#styling fontSize'] = '117%';
-              //     isd.contents[i].contents[j].contents[k].styleAttrs['http://www.w3.org/ns/ttml#styling lineHeight'] = '120%';
-              //   }
-              // }
-            }
-          }
           IMSC.renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts);
         } catch (e) {
           DebugTool.info('Exception while rendering subtitles: ' + e);
           Plugins.interface.onSubtitlesRenderError();
+        }
+      }
+
+      function modifyStyling (xml) {
+        if (liveSubtitles) {
+          xml.head.styling.initials = {
+            'http://www.w3.org/ns/ttml#styling displayAlign': 'after',
+            'http://www.w3.org/ns/ttml#styling lineHeight': '143%',
+            'http://www.w3.org/ns/ttml#styling overflow': 'visible'
+          };
+
+          for (var i = 0; i < xml.body.contents.length; i++) {
+            for (var j = 0; j < xml.body.contents[i].contents.length; j++) {
+              xml.body.contents[i].contents[j].styleAttrs['http://www.w3.org/ns/ttml#styling fontFamily'] = ['ReithSans', 'Arial', 'Roboto', 'proportionalSansSerif', 'default'];
+              xml.body.contents[i].contents[j].styleAttrs['http://www.w3.org/ns/ttml#styling fontSize'].value = 101;
+            }
+          }
         }
       }
 
@@ -235,8 +241,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         if (!liveSubtitles && captions.captionsUrl) {
           loadSegment(captions.captionsUrl);
         }
-
-        customise({fontFamily: 'ReithSans, Arial, Roboto, proportionalSansSerif, default'});
 
         updateInterval = setInterval(function () {
           var time = liveSubtitles ? (windowStartTime / 1000) + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
