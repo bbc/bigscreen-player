@@ -6,6 +6,7 @@ define(
   ],
   function (ManifestParser, TransferFormats, LoadUrl) {
     'use strict';
+
     function retrieveDashManifest (url, dateWithOffset, callbacks) {
       LoadUrl(
         url,
