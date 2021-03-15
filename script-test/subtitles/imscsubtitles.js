@@ -34,6 +34,12 @@ require(
         fromXmlReturn = {
           getMediaTimeEvents: function () {
             return [1, 3, 8];
+          },
+          head: {
+            styling: {}
+          },
+          body: {
+            contents: []
           }
         };
 
@@ -565,7 +571,13 @@ require(
                 getMediaTimeEvents: function () {
                   return times[counter];
                 },
-                mockCallId: counter
+                mockCallId: counter,
+                head: {
+                  styling: {}
+                },
+                body: {
+                  contents: []
+                }
               };
             });
 
