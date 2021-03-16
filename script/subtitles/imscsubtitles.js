@@ -224,14 +224,14 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         if (liveSubtitles) {
           xml.head.styling.initials = {
             'http://www.w3.org/ns/ttml#styling displayAlign': 'after',
-            'http://www.w3.org/ns/ttml#styling lineHeight': '143%',
+            'http://www.w3.org/ns/ttml#styling lineHeight': '133%',
             'http://www.w3.org/ns/ttml#styling overflow': 'visible'
           };
 
           for (var i = 0; i < xml.body.contents.length; i++) {
             for (var j = 0; j < xml.body.contents[i].contents.length; j++) {
               xml.body.contents[i].contents[j].styleAttrs['http://www.w3.org/ns/ttml#styling fontFamily'] = ['ReithSans', 'Arial', 'Roboto', 'proportionalSansSerif', 'default'];
-              xml.body.contents[i].contents[j].styleAttrs['http://www.w3.org/ns/ttml#styling fontSize'].value = 101;
+              xml.body.contents[i].contents[j].styleAttrs['http://www.w3.org/ns/ttml#styling fontSize'].value = 94;
             }
           }
         }
