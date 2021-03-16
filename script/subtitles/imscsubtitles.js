@@ -237,13 +237,17 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         return time > ((windowStartTime / 1000) / captions.segmentLength);
       }
 
+      function getCurrentTime () {
+        return liveSubtitles ? (windowStartTime / 1000) + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
+      }
+
       function start () {
         if (!liveSubtitles && captions.captionsUrl) {
           loadSegment(captions.captionsUrl);
         }
 
         updateInterval = setInterval(function () {
-          var time = liveSubtitles ? (windowStartTime / 1000) + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
+          var time = getCurrentTime();
           if (liveSubtitles && timeIsValid(time)) {
             loadAllRequiredSegments();
           }
@@ -259,8 +263,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       function customise (styleOpts, enabled) {
         var customStyleOptions = transformStyleOptions(styleOpts);
         imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions);
-        if (enabled && !liveSubtitles) {
-          render(mediaPlayer.getCurrentTime());
+        if (enabled) {
+          update(getCurrentTime());
         }
       }
 

@@ -89,6 +89,92 @@ require(
           expect(subtitles).toEqual(jasmine.objectContaining({start: jasmine.any(Function), stop: jasmine.any(Function), updatePosition: jasmine.any(Function), tearDown: jasmine.any(Function)}));
         });
 
+        it('autoplay argument starts the update loop', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
+          progressTime(1.5);
+
+          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
+          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5);
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
+        });
+      });
+
+      describe('customisation', function () {
+        it('overrides the subtitles styling metadata with supplied defaults when rendering', function () {
+          var styleOpts = { backgroundColour: 'black', fontFamily: 'Arial' };
+          var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial' };
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, styleOpts);
+
+          subtitles.start();
+          progressTime(9);
+
+          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
+        });
+
+        it('overrides the subtitles styling metadata with supplied custom styles when rendering', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {});
+
+          var styleOpts = { size: 0.7, lineHeight: 0.9 };
+          var expectedOpts = { sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
+
+          mediaPlayer.getCurrentTime.and.returnValue(1);
+
+          subtitles.start();
+          subtitles.customise(styleOpts, true);
+
+          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
+        });
+
+        it('merges the current subtitles styling metadata with new supplied custom styles when rendering', function () {
+          var defaultStyleOpts = { backgroundColour: 'black', fontFamily: 'Arial' };
+          var customStyleOpts = { size: 0.7, lineHeight: 0.9 };
+          var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial', sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
+
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, defaultStyleOpts);
+
+          mediaPlayer.getCurrentTime.and.returnValue(1);
+
+          subtitles.start();
+          subtitles.customise(customStyleOpts, true);
+
+          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
+        });
+
+        it('does not render custom styles when subtitles are not enabled', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {});
+
+          var subsEnabled = false;
+          subtitles.start();
+          subtitles.customise({}, subsEnabled);
+
+          expect(imscMock.renderHTML).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('example rendering', function () {
+        it('should call fromXML, generate and render when renderExample is called', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {});
+          imscMock.fromXML.calls.reset();
+
+          subtitles.renderExample('', {}, {});
+
+          expect(imscMock.fromXML).toHaveBeenCalledTimes(1);
+          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
+        });
+      });
+
+      describe('Vod subtitles', function () {
+        afterEach(function () {
+          subtitles.stop();
+        });
+
+        it('Should load the captions url', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
+
+          expect(loadUrlMock).toHaveBeenCalledWith(stubCaptions.captionsUrl, jasmine.any(Object));
+        });
+
         it('Calls fromXML on creation with the extracted XML from the text property of the response argument', function () {
           subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
 
@@ -100,15 +186,6 @@ require(
           subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
 
           expect(imscMock.fromXML).toHaveBeenCalledWith(loadUrlStubResponseText);
-        });
-
-        it('autoplay argument starts the update loop', function () {
-          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
-          progressTime(1.5);
-
-          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledWith(fromXmlReturn, 1.5);
-          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
 
         it('fires tranformError plugin if IMSC throws an exception when parsing', function () {
@@ -142,32 +219,6 @@ require(
           expect(loadUrlMock).not.toHaveBeenCalled();
         });
 
-        it('does not try to generate and render when xml transforming has failed', function () {
-          imscMock.fromXML.and.throwError();
-          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
-
-          progressTime(1.5);
-
-          expect(imscMock.generateISD).not.toHaveBeenCalled();
-          expect(imscMock.renderHTML).not.toHaveBeenCalled();
-        });
-
-        it('Should load the captions url', function () {
-          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
-
-          expect(loadUrlMock).toHaveBeenCalledWith(stubCaptions.captionsUrl, jasmine.any(Object));
-        });
-      });
-
-      describe('update interval', function () {
-        beforeEach(function () {
-          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
-        });
-
-        afterEach(function () {
-          subtitles.stop();
-        });
-
         it('cannot start when xml transforming has failed', function () {
           imscMock.fromXML.and.throwError();
           subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
@@ -180,6 +231,8 @@ require(
         });
 
         it('does not try to generate and render when current time is undefined', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
+
           subtitles.start();
           progressTime(undefined);
 
@@ -187,49 +240,19 @@ require(
           expect(imscMock.renderHTML).not.toHaveBeenCalled();
         });
 
-        it('overrides the subtitles styling metadata with supplied defaults when rendering', function () {
-          var styleOpts = { backgroundColour: 'black', fontFamily: 'Arial' };
-          var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial' };
-          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, styleOpts);
+        it('does not try to generate and render when xml transforming has failed', function () {
+          imscMock.fromXML.and.throwError();
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
 
-          subtitles.start();
-          progressTime(9);
+          progressTime(1.5);
 
-          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
-        });
-
-        it('overrides the subtitles styling metadata with supplied custom styles when rendering', function () {
-          var styleOpts = { size: 0.7, lineHeight: 0.9 };
-          var expectedOpts = { sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
-
-          subtitles.start();
-          subtitles.customise(styleOpts, true);
-
-          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
-        });
-
-        it('merges the current subtitles styling metadata with new supplied custom styles when rendering', function () {
-          var defaultStyleOpts = { backgroundColour: 'black', fontFamily: 'Arial' };
-          var customStyleOpts = { size: 0.7, lineHeight: 0.9 };
-          var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial', sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
-
-          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, defaultStyleOpts);
-
-          subtitles.start();
-          subtitles.customise(customStyleOpts, true);
-
-          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
-        });
-
-        it('does not render custom styles when subtitles are not enabled', function () {
-          var subsEnabled = false;
-          subtitles.start();
-          subtitles.customise({}, subsEnabled);
-
+          expect(imscMock.generateISD).not.toHaveBeenCalled();
           expect(imscMock.renderHTML).not.toHaveBeenCalled();
         });
 
         it('does not try to generate and render when the initial current time is less than the first subtitle time', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
+
           subtitles.start();
 
           progressTime(0.75);
@@ -239,6 +262,8 @@ require(
         });
 
         it('does attempt to generate and render when the initial current time is greater than the final subtitle time', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
+
           subtitles.start();
           progressTime(9);
 
@@ -253,6 +278,8 @@ require(
         });
 
         it('does attempt to generate and render when the initial current time is mid way through a stream', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
+
           subtitles.start();
 
           progressTime(4);
@@ -263,6 +290,8 @@ require(
         });
 
         it('only generate and render when there are new subtitles to display', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
+
           subtitles.start();
 
           progressTime(1.5);
@@ -290,6 +319,8 @@ require(
         });
 
         it('no longer attempts any rendering if subtitles have been stopped', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
+
           subtitles.start();
           progressTime(1.5);
 
@@ -304,6 +335,8 @@ require(
         });
 
         it('no longer attempts any rendering if subtitles have been torn down', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
+
           subtitles.start();
           progressTime(1.5);
 
@@ -318,6 +351,7 @@ require(
         });
 
         it('fires onSubtitlesRenderError plugin if IMSC throws an exception when rendering', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
           imscMock.renderHTML.and.throwError();
 
           subtitles.start();
@@ -327,25 +361,13 @@ require(
         });
 
         it('fires onSubtitlesRenderError plugin if IMSC throws an exception when generating ISD', function () {
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement);
           imscMock.generateISD.and.throwError();
 
           subtitles.start();
           progressTime(1.5);
 
           expect(pluginsMock.interface.onSubtitlesRenderError).toHaveBeenCalledTimes(1);
-        });
-      });
-
-      describe('example rendering', function () {
-        it('should call fromXML, generate and render when renderExample is called', function () {
-          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {});
-          imscMock.fromXML.calls.reset();
-
-          subtitles.renderExample('', {}, {});
-
-          expect(imscMock.fromXML).toHaveBeenCalledTimes(1);
-          expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
-          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
       });
 
