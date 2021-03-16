@@ -142,7 +142,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         if (xml && times.length > 0) {
           updateInterval = setInterval(function () {
             update(mediaPlayer.getCurrentTime());
-          }, 750);
+          }, 250);
         }
       }
 
