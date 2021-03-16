@@ -207,14 +207,48 @@ require(
         });
 
         describe('available', function () {
-          it('returns true if a url exists at construction', function () {
-            var subtitles = Subtitles(null, stubCaptions, true, null);
+          it('should return true if VOD and url exists', function () {
+            var subtitles = Subtitles(null, {captionsUrl: 'http://captions.example.test'}, true, null);
 
             expect(subtitles.available()).toEqual(true);
           });
 
-          it('returns false if no url exists at construction', function () {
+          it('should return true if LIVE, url exists and no override', function () {
+            var subtitles = Subtitles(null, {captionsUrl: 'http://captions.example.test', segmentLength: 3.84}, true, null);
+
+            expect(subtitles.available()).toEqual(true);
+          });
+
+          it('should return true if VOD, url exists and legacy override exists', function () {
+            window.bigscreenPlayer = {
+              overrides: {
+                legacySubtitles: true
+              }
+            };
+            var subtitles = Subtitles(null, {captionsUrl: 'http://captions.example.test'}, true, null);
+
+            expect(subtitles.available()).toEqual(true);
+          });
+
+          it('should return false if LIVE, url exists and legacy override exists', function () {
+            window.bigscreenPlayer = {
+              overrides: {
+                legacySubtitles: true
+              }
+            };
+            var subtitles = Subtitles(null, {captionsUrl: 'http://captions.example.test', segmentLength: 3.84}, true, null);
+
+            expect(subtitles.available()).toEqual(false);
+          });
+
+          it('should return false if VOD and no url exists', function () {
             var subtitles = Subtitles(null, {captionsUrl: undefined}, true, null);
+
+            expect(subtitles.available()).toEqual(false);
+          });
+
+          it('should return false if LIVE and no url exists', function () {
+            var subtitles = Subtitles(null, {captionsUrl: undefined, segmentLength: 3.84}, true, null);
 
             expect(subtitles.available()).toEqual(false);
           });

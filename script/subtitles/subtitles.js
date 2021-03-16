@@ -6,7 +6,7 @@ define('bigscreenplayer/subtitles/subtitles',
     'use strict';
     return function (mediaPlayer, captions, autoStart, playbackElement, defaultStyleOpts, windowStartTime) {
       var subtitlesEnabled = autoStart;
-      var subtitlesAvailable = !!captions.captionsUrl;
+      var liveSubtitles = captions.segmentLength;
       var subtitlesContainer = SubtitlesContainer(mediaPlayer, captions, autoStart, playbackElement, defaultStyleOpts, windowStartTime);
 
       function enable () {
@@ -34,7 +34,11 @@ define('bigscreenplayer/subtitles/subtitles',
       }
 
       function available () {
-        return subtitlesAvailable;
+        if (liveSubtitles && (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)) {
+          return false;
+        } else {
+          return !!captions.captionsUrl;
+        }
       }
 
       function setPosition (position) {
