@@ -485,6 +485,17 @@ require(
             expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512815.test', jasmine.any(Object));
           });
 
+          it('calls fromXML with xml string where responseText contains more than a simple xml string', function () {
+            loadUrlStubResponseText = 'stuff that might exists before the xml string' + loadUrlStubResponseText;
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+
+            jasmine.clock().tick(750);
+
+            expect(imscMock.fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>');
+          });
+
           it('should stop loading fragments when stop is called', function () {
             subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
 
@@ -701,17 +712,6 @@ require(
             expect(imscMock.generateISD).not.toHaveBeenCalled();
             expect(imscMock.renderHTML).not.toHaveBeenCalled();
           });
-        });
-
-        it('calls fromXML with xml string where responseText contains more than a simple xml string', function () {
-          loadUrlStubResponseText = 'stuff that might exists before the xml string' + loadUrlStubResponseText;
-          mediaPlayer.getCurrentTime.and.returnValue(10);
-
-          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
-
-          jasmine.clock().tick(750);
-
-          expect(imscMock.fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>');
         });
       });
     });
