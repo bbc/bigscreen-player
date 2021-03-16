@@ -36,6 +36,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           }
         }
 
+        if (SEGMENTS_TO_KEEP === segmentsToLoad.length) {
+          // This is to ensure when seeking to a point with no subtitles, don't leave previous subtitle displayed.
+          removeCurrentSubtitlesElement();
+        }
+
         segmentsToLoad.forEach(function (segmentNumber) {
           loadSegment(captions.captionsUrl, segmentNumber);
         });
