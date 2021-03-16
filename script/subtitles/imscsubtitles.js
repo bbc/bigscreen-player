@@ -16,6 +16,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var updateInterval;
       var SEGMENTS_TO_KEEP = 3;
       var segments = [];
+      var currentSegmentRendered = {};
       var liveSubtitles = !!captions.segmentLength;
 
       if (autoStart) {
@@ -166,6 +167,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             var lastOne = segments[i].times.length === j + 1;
             if (currentTime >= segments[i].times[j] && (lastOne || currentTime < segments[i].times[j + 1]) && segments[i].previousSubtitleIndex !== j && segments[i].times[j] !== 0) {
               segment = segments[i];
+              currentSegmentRendered = segments[i];
               segments[i].previousSubtitleIndex = j;
               break;
             }
@@ -269,7 +271,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var customStyleOptions = transformStyleOptions(styleOpts);
         imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions);
         if (enabled) {
-          update(getCurrentTime());
+          render(getCurrentTime(), currentSegmentRendered && currentSegmentRendered.xml);
         }
       }
 
