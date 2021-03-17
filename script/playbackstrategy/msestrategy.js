@@ -391,18 +391,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return startTime === 0 ? source : source + '#t=' + parseInt(startTime);
         }
 
-        if (windowType === WindowTypes.SLIDING) {
-          DebugTool.keyValue({key: 'initial-playback-time', value: parseInt(startTime)});
-          return startTime === 0 ? source : source + '#r=' + parseInt(startTime);
-        }
+        var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
+        var srcWithTimeAnchor = source + '#t=';
 
-        if (windowType === WindowTypes.GROWING) {
-          var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
-          var srcWithTimeAnchor = source + '#t=';
-
-          startTime = parseInt(startTime);
-          return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
-        }
+        startTime = parseInt(startTime);
+        return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
       }
 
       function getSeekableRange () {
