@@ -249,17 +249,19 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function start () {
-        if (!liveSubtitles && captions.captionsUrl) {
-          loadSegment(captions.captionsUrl);
-        }
-
-        updateInterval = setInterval(function () {
-          var time = getCurrentTime();
-          if (liveSubtitles && timeIsValid(time)) {
-            loadAllRequiredSegments();
+        if (captions.captionsUrl) {
+          if (!liveSubtitles) {
+            loadSegment(captions.captionsUrl);
           }
-          update(time);
-        }, 750);
+
+          updateInterval = setInterval(function () {
+            var time = getCurrentTime();
+            if (liveSubtitles && timeIsValid(time)) {
+              loadAllRequiredSegments();
+            }
+            update(time);
+          }, 750);
+        }
       }
 
       function stop () {
