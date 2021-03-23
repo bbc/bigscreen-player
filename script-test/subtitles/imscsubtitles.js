@@ -372,6 +372,7 @@ require(
       });
 
       describe('Live subtitles', function () {
+        var epochStartTimeMilliseconds = 1614769200000; // Wednesday, 3 March 2021 11:00:00
         beforeEach(function () {
           stubCaptions = {
             captionsUrl: 'https://captions/$segment$.test',
@@ -385,8 +386,7 @@ require(
 
         describe('Loading fragments', function () {
           it('should load the first three segments with correct urls on the first update interval', function () {
-            // 1614769200000 = Wednesday, 3 March 2021 11:00:00
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -397,8 +397,8 @@ require(
           });
 
           it('should load the fragment two segments ahead of current time', function () {
-            // 1614769200000 = Wednesday, 3 March 2021 11:00:00
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            // epochStartTimeMilliseconds = Wednesday, 3 March 2021 11:00:00
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -413,7 +413,7 @@ require(
           });
 
           it('should not load a fragment if fragments array already contains it', function () {
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -431,7 +431,7 @@ require(
           });
 
           it('only keeps three fragments when playing', function () {
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -450,7 +450,7 @@ require(
           });
 
           it('load three new fragments when seeking back to a point where none of the segments are available', function () {
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(113.84);
             jasmine.clock().tick(750);
@@ -466,7 +466,7 @@ require(
           });
 
           it('loads three new fragments when seeking forwards to a point where none of the segments are available', function () {
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
             jasmine.clock().tick(750);
@@ -482,7 +482,7 @@ require(
           });
 
           it('should not load fragments when auto start is false', function () {
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -491,7 +491,7 @@ require(
           });
 
           it('should load fragments when start is called and autoStart is false', function () {
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, false, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -511,7 +511,7 @@ require(
             loadUrlStubResponseText = 'stuff that might exists before the xml string' + loadUrlStubResponseText;
             mediaPlayer.getCurrentTime.and.returnValue(10);
 
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             jasmine.clock().tick(750);
 
@@ -519,7 +519,7 @@ require(
           });
 
           it('should stop loading fragments when stop is called', function () {
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             loadUrlMock.calls.reset();
             subtitles.stop();
@@ -531,9 +531,9 @@ require(
           });
 
           it('should not try to load segments when the currentTime is not known by the player', function () {
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
-            mediaPlayer.getCurrentTime.and.returnValue(-1614769200000 / 1000);
+            mediaPlayer.getCurrentTime.and.returnValue(-1000);
             jasmine.clock().tick(750);
 
             expect(loadUrlMock).not.toHaveBeenCalled();
@@ -542,7 +542,7 @@ require(
           it('should stop loading fragments when xml transforming has failed', function () {
             imscMock.fromXML.and.throwError();
 
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -560,7 +560,7 @@ require(
               callbackObject.onError();
             });
 
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -578,7 +578,7 @@ require(
               callbackObject.onLoad(null, '', 200);
             });
 
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -595,7 +595,7 @@ require(
         describe('rendering', function () {
           it('should generate and render when time has progressed past a known un-rendered subtitles', function () {
             var times = [[0, 1, 2, 3.84], [0, 3.84, 4, 7.68], [0, 7.68, 9, 9.7, 11.52]];
-            var epochStartTimeSeconds = (1614769200000 / 1000);
+            var epochStartTimeSeconds = (epochStartTimeMilliseconds / 1000);
             var counter = -1;
 
             times = times.map(function (time) {
@@ -622,7 +622,7 @@ require(
             });
 
             mediaPlayer.getCurrentTime.and.returnValue(2);
-            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, 1614769200000);
+            subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement, {}, epochStartTimeMilliseconds);
 
             mediaPlayer.getCurrentTime.and.returnValue(2.750);
             jasmine.clock().tick(750);
