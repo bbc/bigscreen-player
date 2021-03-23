@@ -136,7 +136,7 @@ define('bigscreenplayer/bigscreenplayer',
           enableSubtitles,
           playbackElement,
           bigscreenPlayerData.media.subtitleCustomisation,
-          getWindowStartTime()
+          getWindowStartTime() / 1000
         );
 
         if (enableSubtitles) {

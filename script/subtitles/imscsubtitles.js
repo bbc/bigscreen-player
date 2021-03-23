@@ -5,11 +5,12 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins',
     'bigscreenplayer/utils/playbackutils',
-    'bigscreenplayer/utils/loadurl'
+    'bigscreenplayer/utils/loadurl',
+    'bigscreenplayer/utils/timeutils'
   ],
-  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL, TimeUtils) {
     'use strict';
-    return function (mediaPlayer, captions, autoStart, parentElement, defaultStyleOpts, windowStartTime) {
+    return function (mediaPlayer, captions, autoStart, parentElement, defaultStyleOpts, windowStartEpochSeconds) {
       var currentSubtitlesElement;
       var exampleSubtitlesElement;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
@@ -25,9 +26,9 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function loadAllRequiredSegments () {
         var segmentsToLoad = [];
-
+        var currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), captions.segmentLength);
         for (var i = 0; i < SEGMENTS_TO_KEEP; i++) {
-          var segmentNumber = calculateSegmentNumber(i);
+          var segmentNumber = currentSegment + i;
           var alreadyLoaded = segments.some(function (segment) {
             return segment.number === segmentNumber;
           });
@@ -45,11 +46,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         segmentsToLoad.forEach(function (segmentNumber) {
           loadSegment(captions.captionsUrl, segmentNumber);
         });
-      }
-
-      function calculateSegmentNumber (offset) {
-        var epochSeconds = (windowStartTime / 1000) + mediaPlayer.getCurrentTime();
-        return Math.floor(epochSeconds / captions.segmentLength) + offset;
       }
 
       function loadSegment (url, segmentNumber) {
@@ -224,11 +220,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function timeIsValid (time) {
-        return time > (windowStartTime / 1000);
+        return time > windowStartEpochSeconds;
       }
 
       function getCurrentTime () {
-        return liveSubtitles ? (windowStartTime / 1000) + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
+        return liveSubtitles ? windowStartEpochSeconds + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
       }
 
       function start () {
