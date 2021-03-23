@@ -182,7 +182,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         currentSubtitlesElement.style.position = 'absolute';
         parentElement.appendChild(currentSubtitlesElement);
 
-        return renderHTML(xml, currentTime, currentSubtitlesElement, imscRenderOpts, parentElement.clientHeight, parentElement.clientWidth);
+        renderHTML(xml, currentTime, currentSubtitlesElement, imscRenderOpts, parentElement.clientHeight, parentElement.clientWidth);
       }
 
       function renderExample (exampleXmlString, styleOpts, safePosition) {
