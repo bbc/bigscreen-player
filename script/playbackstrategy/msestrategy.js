@@ -331,6 +331,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.updateSettings({
           'debug': {
+            'dispatchEvent': true,
             'logLevel': 2
           }
         });
