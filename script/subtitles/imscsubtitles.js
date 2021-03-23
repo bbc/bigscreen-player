@@ -227,7 +227,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function timeIsValid (time) {
-        return time > ((windowStartTime / 1000) / captions.segmentLength);
+        return time > (windowStartTime / 1000);
       }
 
       function getCurrentTime () {
