@@ -338,7 +338,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         mediaPlayer.updateSettings({
           'streaming': {
-            'liveDelay': LIVE_DELAY_SECONDS,
             'bufferToKeep': 0,
             'bufferAheadToKeep': 20,
             'bufferTimeAtTopQuality': 12,
