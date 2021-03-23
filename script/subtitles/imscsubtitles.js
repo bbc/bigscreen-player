@@ -149,10 +149,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var segment = getSegmentToRender(currentTime);
 
         if (segment) {
-          DebugTool.keyValue({key: 'segmentToRender', value: 'true'});
           render(currentTime, segment.xml);
-        } else {
-          DebugTool.keyValue({key: 'segmentToRender', value: 'false'});
         }
       }
 
