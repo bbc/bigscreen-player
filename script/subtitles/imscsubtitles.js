@@ -213,7 +213,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function modifyStyling (xml) {
-        if (liveSubtitles) {
+        if (liveSubtitles && xml && xml.head && xml.head.styling) {
           xml.head.styling.initials = defaultStyleOpts.initials;
         }
         return xml;
