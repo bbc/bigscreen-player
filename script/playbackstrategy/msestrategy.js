@@ -331,13 +331,13 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.updateSettings({
           'debug': {
-            'dispatchEvent': true,
             'logLevel': 2
           }
         });
 
         mediaPlayer.updateSettings({
           'streaming': {
+            'liveDelay': LIVE_DELAY_SECONDS,
             'bufferToKeep': 0,
             'bufferAheadToKeep': 20,
             'bufferTimeAtTopQuality': 12,
