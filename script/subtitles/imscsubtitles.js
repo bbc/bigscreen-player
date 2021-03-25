@@ -4,28 +4,102 @@ define('bigscreenplayer/subtitles/imscsubtitles',
     'bigscreenplayer/domhelpers',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/plugins',
-    'bigscreenplayer/utils/playbackutils'
+    'bigscreenplayer/utils/playbackutils',
+    'bigscreenplayer/utils/loadurl',
+    'bigscreenplayer/utils/timeutils'
   ],
-  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils) {
+  function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL, TimeUtils) {
     'use strict';
-    return function (mediaPlayer, response, autoStart, parentElement, defaultStyleOpts) {
+    return function (mediaPlayer, captions, autoStart, parentElement, defaultStyleOpts, windowStartEpochSeconds) {
       var currentSubtitlesElement;
       var exampleSubtitlesElement;
-      var previousSubtitlesIndex = null;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
       var updateInterval;
-      var xml;
-      var times = [];
+      var SEGMENTS_TO_KEEP = 3;
+      var segments = [];
+      var currentSegmentRendered = {};
+      var liveSubtitles = !!captions.segmentLength;
 
-      try {
-        xml = IMSC.fromXML(response.text);
-        times = xml.getMediaTimeEvents();
-        if (autoStart) {
-          start();
+      if (autoStart) {
+        start();
+      }
+
+      function loadAllRequiredSegments () {
+        var segmentsToLoad = [];
+        var currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), captions.segmentLength);
+        for (var i = 0; i < SEGMENTS_TO_KEEP; i++) {
+          var segmentNumber = currentSegment + i;
+          var alreadyLoaded = segments.some(function (segment) {
+            return segment.number === segmentNumber;
+          });
+
+          if (!alreadyLoaded) {
+            segmentsToLoad.push(segmentNumber);
+          }
         }
-      } catch (e) {
-        DebugTool.info('Error transforming captions : ' + e);
-        Plugins.interface.onSubtitlesTransformError();
+
+        if (SEGMENTS_TO_KEEP === segmentsToLoad.length) {
+          // This is to ensure when seeking to a point with no subtitles, don't leave previous subtitle displayed.
+          removeCurrentSubtitlesElement();
+        }
+
+        segmentsToLoad.forEach(function (segmentNumber) {
+          loadSegment(captions.captionsUrl, segmentNumber);
+        });
+      }
+
+      function loadSegment (url, segmentNumber) {
+        url = url.replace('$segment$', segmentNumber);
+        LoadURL(url, {
+          onLoad: function (responseXML, responseText, status) {
+            if (!responseXML && !liveSubtitles) {
+              DebugTool.info('Error: responseXML is invalid.');
+              Plugins.interface.onSubtitlesTransformError();
+              stop();
+              return;
+            }
+
+            try {
+              var xml = IMSC.fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1] || responseText);
+              var times = xml.getMediaTimeEvents();
+
+              segments.push({
+                xml: modifyStyling(xml),
+                times: times || [0],
+                previousSubtitleIndex: null,
+                number: segmentNumber
+              });
+
+              if (segments.length > SEGMENTS_TO_KEEP) {
+                pruneSegments();
+              }
+            } catch (e) {
+              DebugTool.info('Error transforming captions : ' + e);
+              Plugins.interface.onSubtitlesTransformError();
+              stop();
+            }
+          },
+          onError: function (error) {
+            DebugTool.info('Error loading subtitles data: ' + error);
+            Plugins.interface.onSubtitlesLoadError();
+            stop();
+          }
+        });
+      }
+
+      function pruneSegments () {
+        // Before sorting, check if we've gone back in time, so we know whether to prune from front or back of array
+        var seekedBack = segments[SEGMENTS_TO_KEEP].number < segments[SEGMENTS_TO_KEEP - 1].number;
+
+        segments.sort(function (a, b) {
+          return a.number - b.number;
+        });
+
+        if (seekedBack) {
+          segments.pop();
+        } else {
+          segments.splice(0, 1);
+        }
       }
 
       // Opts: { backgroundColour: string (css colour, hex), fontFamily: string , size: number, lineHeight: number }
@@ -53,22 +127,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         return customStyles;
       }
 
-      function nextSubtitleIndex (currentTime) {
-        if (currentTime === undefined || currentTime < times[0]) {
-          return null;
-        }
-
-        if (currentTime > times[times.length - 1]) {
-          return times.length - 1;
-        }
-
-        var futureIndices = times.filter(function (time, index) {
-          return time > currentTime ? index : null;
-        });
-
-        return futureIndices[0];
-      }
-
       function removeCurrentSubtitlesElement () {
         if (currentSubtitlesElement) {
           DOMHelpers.safeRemoveElement(currentSubtitlesElement);
@@ -84,16 +142,32 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function update (currentTime) {
-        var subtitlesIndex = nextSubtitleIndex(currentTime);
-        var generateAndRender = subtitlesIndex !== previousSubtitlesIndex;
+        var segment = getSegmentToRender(currentTime);
 
-        if (generateAndRender) {
-          render(currentTime);
-          previousSubtitlesIndex = subtitlesIndex;
+        if (segment) {
+          render(currentTime, segment.xml);
         }
       }
 
-      function render (currentTime) {
+      function getSegmentToRender (currentTime) {
+        var segment;
+
+        for (var i = 0; i < segments.length; i++) {
+          for (var j = 0; j < segments[i].times.length; j++) {
+            var lastOne = segments[i].times.length === j + 1;
+            if (currentTime >= segments[i].times[j] && (lastOne || currentTime < segments[i].times[j + 1]) && segments[i].previousSubtitleIndex !== j && segments[i].times[j] !== 0) {
+              segment = segments[i];
+              currentSegmentRendered = segments[i];
+              segments[i].previousSubtitleIndex = j;
+              break;
+            }
+          }
+        }
+
+        return segment;
+      }
+
+      function render (currentTime, xml) {
         removeCurrentSubtitlesElement();
 
         currentSubtitlesElement = document.createElement('div');
@@ -138,10 +212,33 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         }
       }
 
+      function modifyStyling (xml) {
+        if (liveSubtitles && xml && xml.head && xml.head.styling) {
+          xml.head.styling.initials = defaultStyleOpts.initials;
+        }
+        return xml;
+      }
+
+      function timeIsValid (time) {
+        return time > windowStartEpochSeconds;
+      }
+
+      function getCurrentTime () {
+        return liveSubtitles ? windowStartEpochSeconds + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
+      }
+
       function start () {
-        if (xml && times.length > 0) {
+        if (captions.captionsUrl) {
+          if (!liveSubtitles) {
+            loadSegment(captions.captionsUrl);
+          }
+
           updateInterval = setInterval(function () {
-            update(mediaPlayer.getCurrentTime());
+            var time = getCurrentTime();
+            if (liveSubtitles && timeIsValid(time)) {
+              loadAllRequiredSegments();
+            }
+            update(time);
           }, 250);
         }
       }
@@ -155,7 +252,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var customStyleOptions = transformStyleOptions(styleOpts);
         imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions);
         if (enabled) {
-          render(mediaPlayer.getCurrentTime());
+          render(getCurrentTime(), currentSegmentRendered && currentSegmentRendered.xml);
         }
       }
 
@@ -168,9 +265,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         clearExample: removeExampleSubtitlesElement,
         tearDown: function () {
           stop();
-          xml = undefined;
-          times = undefined;
-          previousSubtitlesIndex = undefined;
+          segments = undefined;
         }
       };
     };

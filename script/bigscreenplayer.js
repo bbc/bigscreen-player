@@ -132,10 +132,11 @@ define('bigscreenplayer/bigscreenplayer',
 
         subtitles = Subtitles(
           playerComponent,
-          bigscreenPlayerData.media.captionsUrl,
+          bigscreenPlayerData.media.captions || { captionsUrl: bigscreenPlayerData.media.captionsUrl },
           enableSubtitles,
           playbackElement,
-          bigscreenPlayerData.media.subtitleCustomisation
+          bigscreenPlayerData.media.subtitleCustomisation,
+          getWindowStartTime() / 1000
         );
 
         if (enableSubtitles) {
