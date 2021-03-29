@@ -57,7 +57,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         BASE_URL_SELECTED: 'baseUrlSelected',
         METRIC_ADDED: 'metricAdded',
         METRIC_CHANGED: 'metricChanged',
-        STREAM_INITIALIZED: 'streamInitialized'
+        STREAM_INITIALIZED: 'streamInitialized',
+        PLAYBACK_ENDED: 'playbackEnded'
       };
 
       function onPlaying () {
@@ -360,8 +361,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaElement.addEventListener('waiting', onBuffering);
         mediaElement.addEventListener('seeking', onBuffering);
         mediaElement.addEventListener('seeked', onSeeked);
-        mediaElement.addEventListener('ended', onEnded);
         mediaElement.addEventListener('error', onError);
+        mediaPlayer.on(DashJSEvents.PLAYBACK_ENDED, onEnded);
         mediaPlayer.on(DashJSEvents.ERROR, onError);
         mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
         mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised);
