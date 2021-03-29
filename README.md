@@ -73,7 +73,17 @@ require(
             url: 'https://www.cdn2url.com/reallygoodvideo',
             cdn: 'cdn2'
           }
-        ]
+        ],
+        captions: {
+          captionsUrl: 'https://www.somelovelycaptionsurl.com/captions/$segment$', // $segment$ required for replacement
+          segmentLength: 3.84 // Required to calculate live subtitle segment to fetch & live subtitle URL.
+        },
+        subtitleCustomisation: {
+          size: 0.75,
+          lineHeight: 1.10,
+          fontFamily: 'Arial',
+          backgroundColour: 'black' // (css colour, hex)
+        }
       }
     }
 
