@@ -566,6 +566,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         play: function () {
           mediaPlayer.play();
         },
+        toggleMute: function () {
+          mediaPlayer.setMute(!mediaPlayer.isMuted());
+        },
         setCurrentTime: function (time) {
           publishedSeekEvent = false;
           isSeeking = true;

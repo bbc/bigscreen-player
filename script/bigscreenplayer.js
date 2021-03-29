@@ -319,6 +319,9 @@ define('bigscreenplayer/bigscreenplayer',
           pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
           playerComponent.pause(opts);
         },
+        toggleMute: function () {
+          playerComponent.toggleMute();
+        },
         resize: function (top, left, width, height, zIndex) {
           subtitles.hide();
           resizer.resize(playbackElement, top, left, width, height, zIndex);

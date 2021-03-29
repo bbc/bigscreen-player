@@ -44,6 +44,10 @@ define(
         playbackStrategy.play();
       }
 
+      function toggleMute () {
+        playbackStrategy.toggleMute();
+      }
+
       function isEnded () {
         return playbackStrategy.isEnded();
       }
@@ -324,6 +328,7 @@ define(
       return {
         play: play,
         pause: pause,
+        toggleMute: toggleMute,
         transitions: transitions,
         isEnded: isEnded,
         setCurrentTime: setCurrentTime,
