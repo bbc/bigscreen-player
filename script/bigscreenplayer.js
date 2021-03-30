@@ -132,11 +132,12 @@ define('bigscreenplayer/bigscreenplayer',
 
         subtitles = Subtitles(
           playerComponent,
-          bigscreenPlayerData.media.captions || { captionsUrl: bigscreenPlayerData.media.captionsUrl },
+          bigscreenPlayerData.media.captions,
           enableSubtitles,
           playbackElement,
           bigscreenPlayerData.media.subtitleCustomisation,
-          getWindowStartTime() / 1000
+          getWindowStartTime() / 1000,
+          mediaSources
         );
 
         if (enableSubtitles) {
@@ -207,7 +208,7 @@ define('bigscreenplayer/bigscreenplayer',
           };
 
           mediaSources = new MediaSources();
-          mediaSources.init(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
+          mediaSources.init(bigscreenPlayerData.media.urls, bigscreenPlayerData.media.captions, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
         },
 
         tearDown: function () {
