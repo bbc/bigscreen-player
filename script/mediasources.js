@@ -20,8 +20,9 @@ define('bigscreenplayer/mediasources',
       var serverDate;
       var time = {};
       var transferFormat;
+      var captionSources;
 
-      function init (urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
+      function init (urls, captionUrls, newServerDate, newWindowType, newLiveSupport, callbacks) {
         if (urls === undefined || urls.length === 0) {
           throw new Error('Media Sources urls are undefined');
         }
@@ -36,6 +37,7 @@ define('bigscreenplayer/mediasources',
         liveSupport = newLiveSupport;
         serverDate = newServerDate;
         mediaSources = PlaybackUtils.cloneArray(urls);
+        // captionSources = PlaybackUtils.cloneArray(captionUrls);
         updateDebugOutput();
 
         if (needToGetManifest(windowType, liveSupport)) {
@@ -158,6 +160,14 @@ define('bigscreenplayer/mediasources',
         return '';
       }
 
+      function getCurrentCaptionsUrl () {
+        if (captionSources.length > 0) {
+          return captionSources[0];
+        }
+
+        return '';
+      }
+
       function availableUrls () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.url;
@@ -214,6 +224,7 @@ define('bigscreenplayer/mediasources',
         failover: failover,
         refresh: refresh,
         currentSource: getCurrentUrl,
+        getCurrentCaptionsUrl: getCurrentCaptionsUrl,
         availableSources: availableUrls,
         time: generateTime
       };

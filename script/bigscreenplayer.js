@@ -130,9 +130,10 @@ define('bigscreenplayer/bigscreenplayer',
           mediaStateUpdateCallback
         );
 
+        var segmentLength = bigscreenPlayerData.media.captions ? bigscreenPlayerData.media.captions.segmentLength : undefined;
         subtitles = Subtitles(
           playerComponent,
-          bigscreenPlayerData.media.captions,
+          segmentLength,
           enableSubtitles,
           playbackElement,
           bigscreenPlayerData.media.subtitleCustomisation,
@@ -207,8 +208,9 @@ define('bigscreenplayer/bigscreenplayer',
             }
           };
 
+          var captionUrls = bigscreenPlayerData.media.captions ? bigscreenPlayerData.media.captions.urls : undefined;
           mediaSources = new MediaSources();
-          mediaSources.init(bigscreenPlayerData.media.urls, bigscreenPlayerData.media.captions, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
+          mediaSources.init(bigscreenPlayerData.media.urls, captionUrls, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
         },
 
         tearDown: function () {
