@@ -68,7 +68,10 @@ require(
             {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
             {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
           ];
-          testCaptionSources = ['http://source1.com/', 'http://source2.com/'];
+          testCaptionSources = [
+            {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
+            {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
+          ];
           done();
         });
       });
@@ -323,6 +326,15 @@ require(
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mediaSources.currentSource()).toBe(testSources[1].url);
+        });
+      });
+
+      describe('currentCaptionsSource', function () {
+        it('returns the first caption source url', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testSources, testCaptionSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.currentCaptionsSource()).toBe(testCaptionSources[0].url);
         });
       });
 
