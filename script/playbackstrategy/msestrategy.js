@@ -377,7 +377,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
        *
        * Anchor tags applied to the MPD source for playback:
        *
-       * #r - relative to the start of the first period defined in the DASH manifest
        * #t - time since the beginning of the first period defined in the DASH manifest
        * @param {String} source
        * @param {Number} startTime
@@ -387,13 +386,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return source;
         }
 
+        startTime = parseInt(startTime);
+
         if (windowType === WindowTypes.STATIC) {
-          return startTime === 0 ? source : source + '#t=' + parseInt(startTime);
+          return startTime === 0 ? source : source + '#t=' + startTime;
         } else {
           var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
           var srcWithTimeAnchor = source + '#t=posix:';
 
-          startTime = parseInt(startTime);
           return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
         }
       }
