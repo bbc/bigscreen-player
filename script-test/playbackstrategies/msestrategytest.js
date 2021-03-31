@@ -287,7 +287,7 @@ require(
             mseStrategy.load(null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + "#t=posix:1");
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:1');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set to 0.1', function () {
