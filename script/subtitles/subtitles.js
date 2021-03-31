@@ -1,43 +1,13 @@
 define('bigscreenplayer/subtitles/subtitles',
   [
-    'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'imscsubtitles'),
-    'bigscreenplayer/utils/loadurl',
-    'bigscreenplayer/debugger/debugtool',
-    'bigscreenplayer/plugins'
+    'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'imscsubtitles')
   ],
-  function (SubtitlesContainer, LoadURL, DebugTool, Plugins) {
+  function (SubtitlesContainer) {
     'use strict';
-    // playbackStrategy, captionsURL, isSubtitlesEnabled(), playbackElement TODO: change the ordering of this, doesn't make sense.
-    return function (mediaPlayer, url, autoStart, playbackElement, defaultStyleOpts) {
-      var subtitlesContainer;
+    return function (mediaPlayer, captions, autoStart, playbackElement, defaultStyleOpts, windowStartTime) {
       var subtitlesEnabled = autoStart;
-      var subtitlesAvailable = !!url;
-
-      if (subtitlesAvailable) {
-        DebugTool.info('Loading subtitles from: ' + url);
-        LoadURL(url, {
-          onLoad: function (responseXML, responseText, status) {
-            if (!responseXML) {
-              DebugTool.info('Error: responseXML is invalid.');
-              Plugins.interface.onSubtitlesTransformError();
-              return;
-            }
-
-            var response = {
-              text: responseText,
-              xml: responseXML
-            };
-
-            if (status === 200) {
-              subtitlesContainer = SubtitlesContainer(mediaPlayer, response, autoStart, playbackElement, defaultStyleOpts);
-            }
-          },
-          onError: function (error) {
-            DebugTool.info('Error loading subtitles data: ' + error);
-            Plugins.interface.onSubtitlesLoadError();
-          }
-        });
-      }
+      var liveSubtitles = captions.segmentLength;
+      var subtitlesContainer = SubtitlesContainer(mediaPlayer, captions, autoStart, playbackElement, defaultStyleOpts, windowStartTime);
 
       function enable () {
         subtitlesEnabled = true;
@@ -48,13 +18,13 @@ define('bigscreenplayer/subtitles/subtitles',
       }
 
       function show () {
-        if (available() && enabled() && subtitlesContainer) {
+        if (available() && enabled()) {
           subtitlesContainer.start();
         }
       }
 
       function hide () {
-        if (available() && subtitlesContainer) {
+        if (available()) {
           subtitlesContainer.stop();
         }
       }
@@ -64,37 +34,31 @@ define('bigscreenplayer/subtitles/subtitles',
       }
 
       function available () {
-        return subtitlesAvailable;
+        if (liveSubtitles && (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)) {
+          return false;
+        } else {
+          return !!captions.captionsUrl;
+        }
       }
 
       function setPosition (position) {
-        if (subtitlesContainer) {
-          subtitlesContainer.updatePosition(position);
-        }
+        subtitlesContainer.updatePosition(position);
       }
 
       function customise (styleOpts) {
-        if (subtitlesContainer) {
-          subtitlesContainer.customise(styleOpts, subtitlesEnabled);
-        }
+        subtitlesContainer.customise(styleOpts, subtitlesEnabled);
       }
 
       function renderExample (exampleXmlString, styleOpts, safePosition) {
-        if (subtitlesContainer) {
-          subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition);
-        }
+        subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition);
       }
 
       function clearExample () {
-        if (subtitlesContainer) {
-          subtitlesContainer.clearExample();
-        }
+        subtitlesContainer.clearExample();
       }
 
       function tearDown () {
-        if (subtitlesContainer) {
-          subtitlesContainer.tearDown();
-        }
+        subtitlesContainer.tearDown();
       }
 
       return {
