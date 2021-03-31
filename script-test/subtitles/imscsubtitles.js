@@ -30,7 +30,7 @@ require(
 
         mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['getCurrentTime']);
         mockMediaSources = {
-          getCurrentCaptionsUrl: function () {
+          currentCaptionsSource: function () {
             return exampleUrl;
           }
         };

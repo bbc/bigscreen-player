@@ -11,7 +11,7 @@ require(
 
     describe('Subtitles', function () {
       mediaSourcesMock = {
-        getCurrentCaptionsUrl: function () {
+        currentCaptionsSource: function () {
           if (subtitlesAvailable) {
             return 'http://captions.example.test';
           } else {

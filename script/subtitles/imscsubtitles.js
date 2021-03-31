@@ -44,7 +44,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         }
 
         segmentsToLoad.forEach(function (segmentNumber) {
-          var url = mediaSources.getCurrentCaptionsUrl();
+          var url = mediaSources.currentCaptionsSource();
           loadSegment(url, segmentNumber);
         });
       }
@@ -228,7 +228,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function start () {
-        var url = mediaSources.getCurrentCaptionsUrl();
+        var url = mediaSources.currentCaptionsSource();
         if (url && url !== '') {
           if (!liveSubtitles) {
             loadSegment(url);

@@ -37,7 +37,7 @@ define('bigscreenplayer/subtitles/subtitles',
         if (liveSubtitles && (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)) {
           return false;
         } else {
-          return !!mediaSources.getCurrentCaptionsUrl();
+          return !!mediaSources.currentCaptionsSource();
         }
       }
 

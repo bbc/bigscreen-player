@@ -224,7 +224,7 @@ define('bigscreenplayer/mediasources',
         failover: failover,
         refresh: refresh,
         currentSource: getCurrentUrl,
-        getCurrentCaptionsUrl: getCurrentCaptionsUrl,
+        currentCaptionsSource: getCurrentCaptionsUrl,
         availableSources: availableUrls,
         time: generateTime
       };
