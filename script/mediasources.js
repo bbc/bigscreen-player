@@ -168,6 +168,14 @@ define('bigscreenplayer/mediasources',
         return '';
       }
 
+      function getCurrentCaptionSegmentLength () {
+        if (captionSources.length > 0) {
+          return captionSources[0].segmentLength;
+        }
+
+        return undefined;
+      }
+
       function availableUrls () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.url;
@@ -225,6 +233,7 @@ define('bigscreenplayer/mediasources',
         refresh: refresh,
         currentSource: getCurrentUrl,
         currentCaptionsSource: getCurrentCaptionsUrl,
+        currentCaptionsSegmentLength: getCurrentCaptionSegmentLength,
         availableSources: availableUrls,
         time: generateTime
       };

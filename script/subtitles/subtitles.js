@@ -4,10 +4,10 @@ define('bigscreenplayer/subtitles/subtitles',
   ],
   function (SubtitlesContainer) {
     'use strict';
-    return function (mediaPlayer, segmentLength, autoStart, playbackElement, defaultStyleOpts, windowStartTime, mediaSources) {
+    return function (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, windowStartTime, mediaSources) {
       var subtitlesEnabled = autoStart;
-      var liveSubtitles = !!segmentLength;
-      var subtitlesContainer = SubtitlesContainer(mediaPlayer, segmentLength, autoStart, playbackElement, defaultStyleOpts, windowStartTime, mediaSources);
+      var liveSubtitles = !!mediaSources.currentCaptionsSegmentLength();
+      var subtitlesContainer = SubtitlesContainer(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, windowStartTime, mediaSources);
 
       function enable () {
         subtitlesEnabled = true;
