@@ -14,22 +14,28 @@ define(
       var container = document.createElement('div');
       var subtitlesRenderer;
 
-      if (mediaSources.currentCaptionsSource()) {
-        LoadURL(mediaSources.currentCaptionsSource(), {
-          onLoad: function (responseXML, responseText, status) {
-            if (!responseXML) {
-              DebugTool.info('Error: responseXML is invalid.');
-              Plugins.interface.onSubtitlesTransformError();
-              return;
-            } else {
-              createContainer(responseXML);
+      loadSubtitles();
+
+      function loadSubtitles () {
+        var url = mediaSources.currentCaptionsSource();
+        if (url && url !== '') {
+          LoadURL(url, {
+            onLoad: function (responseXML, responseText, status) {
+              if (!responseXML) {
+                DebugTool.info('Error: responseXML is invalid.');
+                Plugins.interface.onSubtitlesTransformError();
+                return;
+              } else {
+                createContainer(responseXML);
+              }
+            },
+            onError: function (error) {
+              DebugTool.info('Error loading subtitles data: ' + error);
+              Plugins.interface.onSubtitlesLoadError();
+              mediaSources.failoverCaptions(loadSubtitles);
             }
-          },
-          onError: function (error) {
-            DebugTool.info('Error loading subtitles data: ' + error);
-            Plugins.interface.onSubtitlesLoadError();
-          }
-        });
+          });
+        }
       }
 
       function createContainer (xml) {
