@@ -127,7 +127,7 @@ require(
 
             Subtitles(mockMediaPlayer, autoStart, mockPlaybackElement, customDefaultStyle, windowStartTime, mediaSourcesMock);
 
-            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, autoStart, mockPlaybackElement, customDefaultStyle, windowStartTime, mediaSourcesMock);
+            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, autoStart, mockPlaybackElement, mediaSourcesMock, customDefaultStyle, windowStartTime);
           });
         });
 

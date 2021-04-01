@@ -10,7 +10,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   ],
   function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL, TimeUtils) {
     'use strict';
-    return function (mediaPlayer, autoStart, parentElement, defaultStyleOpts, windowStartEpochSeconds, mediaSources) {
+    return function (mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts, windowStartEpochSeconds) {
       var currentSubtitlesElement;
       var exampleSubtitlesElement;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
