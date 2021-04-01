@@ -278,7 +278,7 @@ require(
 
         describe('for SLIDING window', function () {
           beforeEach(function () {
-            setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
+            setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100000, 200000);
             mediaSources.time.and.returnValue(mockTimeModel);
             mockDashInstance.getSource.and.returnValue('src');
           });
@@ -287,21 +287,21 @@ require(
             mseStrategy.load(null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:1');
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:101');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set to 0.1', function () {
             mseStrategy.load(null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:1');
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:101');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
-            mseStrategy.load(null, 100);
+            mseStrategy.load(null, 60);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:100');
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:160');
           });
         });
 
