@@ -392,6 +392,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return startTime === 0 ? source : source + '#t=' + startTime;
         } else {
           var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
+          // eslint-disable-next-line
           console.log('windowStartTime: ', mediaSources.time().windowStartTime);
           var srcWithTimeAnchor = source + '#t=posix:';
 
