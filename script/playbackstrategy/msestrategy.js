@@ -392,9 +392,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return startTime === 0 ? source : source + '#t=' + startTime;
         } else {
           var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
-          DebugTool.keyValue({
-            key: 'windowStartTime',
-            value: windowStartTimeSeconds});
+          console.log("Window Start Time: ", windowStartTimeSeconds);
           var srcWithTimeAnchor = source + '#t=posix:';
 
           return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
