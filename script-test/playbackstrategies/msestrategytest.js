@@ -37,8 +37,7 @@ require(
       QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
       BASE_URL_SELECTED: 'baseUrlSelected',
       METRIC_ADDED: 'metricAdded',
-      METRIC_CHANGED: 'metricChanged',
-      PLAYBACK_ENDED: 'playbackEnded'
+      METRIC_CHANGED: 'metricChanged'
     };
 
     var mockTimeModel;
@@ -345,13 +344,13 @@ require(
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('waiting', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('seeking', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('seeked', jasmine.any(Function));
+          expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('ended', jasmine.any(Function));
           expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('error', jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.ERROR, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_LOADED, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, jasmine.any(Function));
           expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.METRIC_ADDED, jasmine.any(Function));
-          expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.PLAYBACK_ENDED, jasmine.any(Function));
         });
       });
 
@@ -595,7 +594,7 @@ require(
           setUpMSE();
           mseStrategy.load(null, 0);
 
-          dashEventCallback(dashjsMediaPlayerEvents.PLAYBACK_ENDED);
+          eventCallbacks('ended');
 
           expect(mseStrategy.isEnded()).toBe(true);
         });
@@ -622,7 +621,7 @@ require(
           setUpMSE();
           mseStrategy.load(null, 0);
 
-          dashEventCallback(dashjsMediaPlayerEvents.PLAYBACK_ENDED);
+          eventCallbacks('ended');
 
           expect(mseStrategy.isEnded()).toBe(true);
 

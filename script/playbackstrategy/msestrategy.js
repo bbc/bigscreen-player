@@ -57,8 +57,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         BASE_URL_SELECTED: 'baseUrlSelected',
         METRIC_ADDED: 'metricAdded',
         METRIC_CHANGED: 'metricChanged',
-        STREAM_INITIALIZED: 'streamInitialized',
-        PLAYBACK_ENDED: 'playbackEnded'
+        STREAM_INITIALIZED: 'streamInitialized'
       };
 
       function onPlaying () {
@@ -361,8 +360,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaElement.addEventListener('waiting', onBuffering);
         mediaElement.addEventListener('seeking', onBuffering);
         mediaElement.addEventListener('seeked', onSeeked);
+        mediaElement.addEventListener('ended', onEnded);
         mediaElement.addEventListener('error', onError);
-        mediaPlayer.on(DashJSEvents.PLAYBACK_ENDED, onEnded);
         mediaPlayer.on(DashJSEvents.ERROR, onError);
         mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded);
         mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised);
@@ -393,6 +392,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return startTime === 0 ? source : source + '#t=' + startTime;
         } else {
           var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
+          // eslint-disable-next-line
+          console.log('windowStartTime: ', mediaSources.time().windowStartTime);
           var srcWithTimeAnchor = source + '#t=posix:';
 
           return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
