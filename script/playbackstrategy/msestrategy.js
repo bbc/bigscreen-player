@@ -308,7 +308,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           failoverTime = playbackTime;
           setUpMediaElement(playbackElement);
           setUpMediaPlayer(playbackTime);
-          setUpMediaListeners();
+          mediaElement.addEventListener('loadstart', setUpMediaListeners);
         } else {
           modifySource(refreshFailoverTime || failoverTime);
         }
