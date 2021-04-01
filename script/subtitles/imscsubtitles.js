@@ -10,7 +10,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   ],
   function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL, TimeUtils) {
     'use strict';
-    return function (mediaPlayer, segmentLength, autoStart, parentElement, defaultStyleOpts, windowStartEpochSeconds, mediaSources) {
+    return function (mediaPlayer, autoStart, parentElement, defaultStyleOpts, windowStartEpochSeconds, mediaSources) {
       var currentSubtitlesElement;
       var exampleSubtitlesElement;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
@@ -18,7 +18,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var SEGMENTS_TO_KEEP = 3;
       var segments = [];
       var currentSegmentRendered = {};
-      var liveSubtitles = !!segmentLength;
+      var liveSubtitles = !!mediaSources.currentCaptionsSegmentLength();
 
       if (autoStart) {
         start();
@@ -26,7 +26,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function loadAllRequiredSegments () {
         var segmentsToLoad = [];
-        var currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), segmentLength);
+        var currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), mediaSources.currentCaptionsSegmentLength());
         for (var i = 0; i < SEGMENTS_TO_KEEP; i++) {
           var segmentNumber = currentSegment + i;
           var alreadyLoaded = segments.some(function (segment) {
