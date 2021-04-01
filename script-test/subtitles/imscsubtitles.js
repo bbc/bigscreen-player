@@ -32,7 +32,8 @@ require(
         mockMediaSources = {
           currentCaptionsSource: function () {
             return exampleUrl;
-          }
+          },
+          failoverCaptions: function () {}
         };
 
         jasmine.clock().install();

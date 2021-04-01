@@ -83,6 +83,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             DebugTool.info('Error loading subtitles data: ' + error);
             Plugins.interface.onSubtitlesLoadError();
             stop();
+            mediaSources.failoverCaptions(start);
           }
         });
       }

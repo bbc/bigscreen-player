@@ -63,6 +63,15 @@ define('bigscreenplayer/mediasources',
         }
       }
 
+      function failoverCaptions (postFailoverAction, failoverErrorAction) {
+        if (captionSources.length > 1) {
+          captionSources.shift();
+          postFailoverAction();
+        } else {
+          failoverErrorAction();
+        }
+      }
+
       function shouldFailover (failoverParams) {
         if (isFirstManifest(failoverParams.serviceLocation)) {
           return false;
@@ -230,6 +239,7 @@ define('bigscreenplayer/mediasources',
       return {
         init: init,
         failover: failover,
+        failoverCaptions: failoverCaptions,
         refresh: refresh,
         currentSource: getCurrentUrl,
         currentCaptionsSource: getCurrentCaptionsUrl,
