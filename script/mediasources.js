@@ -66,6 +66,7 @@ define('bigscreenplayer/mediasources',
       function failoverCaptions (postFailoverAction, failoverErrorAction) {
         if (captionSources.length > 1) {
           captionSources.shift();
+          updateDebugOutput();
           postFailoverAction();
         } else {
           failoverErrorAction();
@@ -224,8 +225,22 @@ define('bigscreenplayer/mediasources',
         return '';
       }
 
+      function getCurrentCaptionsCdn () {
+        if (captionSources.length > 0) {
+          return captionSources[0].cdn.toString();
+        }
+
+        return '';
+      }
+
       function availableCdns () {
         return mediaSources.map(function (mediaSource) {
+          return mediaSource.cdn;
+        });
+      }
+
+      function availableCaptionsCdns () {
+        return captionSources.map(function (mediaSource) {
           return mediaSource.cdn;
         });
       }
@@ -234,6 +249,10 @@ define('bigscreenplayer/mediasources',
         DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
         DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
         DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
+
+        DebugTool.keyValue({key: 'available subtitle cdns', value: availableCaptionsCdns()});
+        DebugTool.keyValue({key: 'current subtitles cdns', value: getCurrentCaptionsCdn()});
+        DebugTool.keyValue({key: 'subtitles url', value: getCurrentCaptionsUrl()});
       }
 
       return {
