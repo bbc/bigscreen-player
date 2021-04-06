@@ -251,7 +251,7 @@ define('bigscreenplayer/mediasources',
         DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
 
         DebugTool.keyValue({key: 'available subtitle cdns', value: availableCaptionsCdns()});
-        DebugTool.keyValue({key: 'current subtitles cdns', value: getCurrentCaptionsCdn()});
+        DebugTool.keyValue({key: 'current subtitles cdn', value: getCurrentCaptionsCdn()});
         DebugTool.keyValue({key: 'subtitles url', value: getCurrentCaptionsUrl()});
       }
 

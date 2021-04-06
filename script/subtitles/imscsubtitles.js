@@ -83,9 +83,14 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             DebugTool.info('Error loading subtitles data: ' + error);
             Plugins.interface.onSubtitlesLoadError();
             stop();
-            mediaSources.failoverCaptions(start);
+            mediaSources.failoverCaptions(start, failoverError);
           }
         });
+      }
+
+      function failoverError () {
+        // what do we do when we run out of cdns
+        DebugTool.info('Used all subtitles cdns');
       }
 
       function pruneSegments () {
