@@ -15,7 +15,7 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
   let minimalData = {
     initialPlaybackTime: 30,
     media: {
-      captionsUrl: '',
+      captions: [],
         type: 'application/dash+xml',
         mimeType: 'video/mp4',
         kind: 'video',
