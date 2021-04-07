@@ -60,6 +60,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               DebugTool.info('Error: responseXML is invalid.');
               Plugins.interface.onSubtitlesTransformError();
               stop();
+              mediaSources.failoverCaptions(start);
               return;
             }
 
@@ -99,16 +100,12 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         if (liveSubtitles) {
           loadErrorCount++;
           if (loadErrorCount >= LOAD_ERROR_COUNT_MAX) {
-            mediaSources.failoverCaptions(start, failoverError);
+            resetLoadErrorCount();
+            mediaSources.failoverCaptions(start);
           }
         } else {
-          mediaSources.failoverCaptions(start, failoverError);
+          mediaSources.failoverCaptions(start);
         }
-      }
-
-      function failoverError () {
-        // what do we do when we run out of cdns
-        DebugTool.info('Used all subtitles cdns');
       }
 
       function pruneSegments () {
