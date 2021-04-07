@@ -19,6 +19,8 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var segments = [];
       var currentSegmentRendered = {};
       var liveSubtitles = !!mediaSources.currentCaptionsSegmentLength();
+      var loadErrorCount = 0;
+      var LOAD_ERROR_COUNT_MAX = 3;
 
       if (autoStart) {
         start();
@@ -53,6 +55,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         url = url.replace('$segment$', segmentNumber);
         LoadURL(url, {
           onLoad: function (responseXML, responseText, status) {
+            resetLoadErrorCount();
             if (!responseXML && !liveSubtitles) {
               DebugTool.info('Error: responseXML is invalid.');
               Plugins.interface.onSubtitlesTransformError();
@@ -83,9 +86,24 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             DebugTool.info('Error loading subtitles data: ' + error);
             Plugins.interface.onSubtitlesLoadError();
             stop();
-            mediaSources.failoverCaptions(start, failoverError);
+            loadErrorFailover();
           }
         });
+      }
+
+      function resetLoadErrorCount () {
+        loadErrorCount = 0;
+      }
+
+      function loadErrorFailover () {
+        if (liveSubtitles) {
+          loadErrorCount++;
+          if (loadErrorCount >= LOAD_ERROR_COUNT_MAX) {
+            mediaSources.failoverCaptions(start, failoverError);
+          }
+        } else {
+          mediaSources.failoverCaptions(start, failoverError);
+        }
       }
 
       function failoverError () {
