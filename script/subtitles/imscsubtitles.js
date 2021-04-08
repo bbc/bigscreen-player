@@ -55,6 +55,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       function loadSegment (url, segmentNumber) {
         url = url.replace('$segment$', segmentNumber);
         LoadURL(url, {
+          timeout: 5000,
           onLoad: function (responseXML, responseText, status) {
             resetLoadErrorCount();
             if (!responseXML && !liveSubtitles) {

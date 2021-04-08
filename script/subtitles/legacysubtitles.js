@@ -20,6 +20,7 @@ define(
         var url = mediaSources.currentSubtitlesSource();
         if (url && url !== '') {
           LoadURL(url, {
+            timeout: 5000,
             onLoad: function (responseXML, responseText, status) {
               if (!responseXML) {
                 DebugTool.info('Error: responseXML is invalid.');
