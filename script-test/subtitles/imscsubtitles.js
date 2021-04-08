@@ -16,10 +16,15 @@ require(
       var mockMediaSources;
       var exampleUrl;
       var segmentLength;
+      var epochStartTimeMilliseconds;
 
       var loadUrlMock;
       var loadUrlStubResponseXml = '<?xml>';
       var loadUrlStubResponseText;
+
+      function msToS (timeMs) {
+        return timeMs / 1000;
+      }
 
       beforeEach(function (done) {
         injector = new Squire();
@@ -27,6 +32,7 @@ require(
         exampleUrl = 'http://stub-captions.test';
         loadUrlStubResponseText = '<?xml version="1.0" encoding="utf-8"?><tt xmlns="http://www.w3.org/ns/ttml"></tt>';
         segmentLength = undefined;
+        epochStartTimeMilliseconds = undefined;
 
         mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['getCurrentTime']);
         mockMediaSources = {
@@ -36,6 +42,11 @@ require(
           failoverCaptions: function () {},
           currentCaptionsSegmentLength: function () {
             return segmentLength;
+          },
+          time: function () {
+            return {
+              windowStartTime: epochStartTimeMilliseconds
+            };
           }
         };
 
@@ -94,13 +105,13 @@ require(
         });
 
         it('is constructed with the correct interface', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           expect(subtitles).toEqual(jasmine.objectContaining({start: jasmine.any(Function), stop: jasmine.any(Function), updatePosition: jasmine.any(Function), tearDown: jasmine.any(Function)}));
         });
 
         it('autoplay argument starts the update loop', function () {
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
           progressTime(1.5);
 
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
@@ -113,7 +124,7 @@ require(
         it('overrides the subtitles styling metadata with supplied defaults when rendering', function () {
           var styleOpts = { backgroundColour: 'black', fontFamily: 'Arial' };
           var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial' };
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, styleOpts, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, styleOpts);
 
           subtitles.start();
           progressTime(9);
@@ -122,7 +133,7 @@ require(
         });
 
         it('overrides the subtitles styling metadata with supplied custom styles when rendering', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           var styleOpts = { size: 0.7, lineHeight: 0.9 };
           var expectedOpts = { sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
@@ -140,7 +151,7 @@ require(
           var customStyleOpts = { size: 0.7, lineHeight: 0.9 };
           var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial', sizeAdjust: 0.7, lineHeightAdjust: 0.9 };
 
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, defaultStyleOpts, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, defaultStyleOpts);
 
           mediaPlayer.getCurrentTime.and.returnValue(1);
 
@@ -151,7 +162,7 @@ require(
         });
 
         it('does not render custom styles when subtitles are not enabled', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           var subsEnabled = false;
           subtitles.start();
@@ -163,7 +174,7 @@ require(
 
       describe('example rendering', function () {
         it('should call fromXML, generate and render when renderExample is called', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
           imscMock.fromXML.calls.reset();
 
           subtitles.renderExample('', {}, {});
@@ -180,27 +191,27 @@ require(
         });
 
         it('Should load the captions url', function () {
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(loadUrlMock).toHaveBeenCalledWith(exampleUrl, jasmine.any(Object));
         });
 
         it('Calls fromXML on creation with the extracted XML from the text property of the response argument', function () {
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(imscMock.fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>');
         });
 
         it('Calls fromXML on creation with the original text property of the response argument if expected header is not found', function () {
           loadUrlStubResponseText = '<?xml version="1.0" encoding="utf-8" extra property="something"?><tt xmlns="http://www.w3.org/ns/ttml"></tt>';
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(imscMock.fromXML).toHaveBeenCalledWith(loadUrlStubResponseText);
         });
 
         it('fires tranformError plugin if IMSC throws an exception when parsing', function () {
           imscMock.fromXML.and.throwError();
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
         });
@@ -209,7 +220,7 @@ require(
           loadUrlMock.and.callFake(function (url, callbackObject) {
             callbackObject.onError();
           });
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
         });
@@ -218,21 +229,21 @@ require(
           loadUrlMock.and.callFake(function (url, callbackObject) {
             callbackObject.onLoad(null, '', 200);
           });
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
         });
 
         it('does not attempt to load subtitles if there is no captions url', function () {
           exampleUrl = undefined;
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(loadUrlMock).not.toHaveBeenCalled();
         });
 
         it('cannot start when xml transforming has failed', function () {
           imscMock.fromXML.and.throwError();
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           progressTime(1.5);
 
@@ -241,7 +252,7 @@ require(
         });
 
         it('does not try to generate and render when current time is undefined', function () {
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           progressTime(undefined);
 
@@ -251,7 +262,7 @@ require(
 
         it('does not try to generate and render when xml transforming has failed', function () {
           imscMock.fromXML.and.throwError();
-          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           progressTime(1.5);
 
@@ -260,7 +271,7 @@ require(
         });
 
         it('does not try to generate and render when the initial current time is less than the first subtitle time', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           subtitles.start();
 
@@ -271,7 +282,7 @@ require(
         });
 
         it('does attempt to generate and render when the initial current time is greater than the final subtitle time', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           subtitles.start();
           progressTime(9);
@@ -287,7 +298,7 @@ require(
         });
 
         it('does attempt to generate and render when the initial current time is mid way through a stream', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           subtitles.start();
 
@@ -299,7 +310,7 @@ require(
         });
 
         it('only generate and render when there are new subtitles to display', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           subtitles.start();
 
@@ -328,7 +339,7 @@ require(
         });
 
         it('no longer attempts any rendering if subtitles have been stopped', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           subtitles.start();
           progressTime(1.5);
@@ -344,7 +355,7 @@ require(
         });
 
         it('no longer attempts any rendering if subtitles have been torn down', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           subtitles.start();
           progressTime(1.5);
@@ -360,7 +371,7 @@ require(
         });
 
         it('fires onSubtitlesRenderError plugin if IMSC throws an exception when rendering', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
           imscMock.renderHTML.and.throwError();
 
           subtitles.start();
@@ -370,7 +381,7 @@ require(
         });
 
         it('fires onSubtitlesRenderError plugin if IMSC throws an exception when generating ISD', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, null);
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
           imscMock.generateISD.and.throwError();
 
           subtitles.start();
@@ -381,10 +392,10 @@ require(
       });
 
       describe('Live subtitles', function () {
-        var epochStartTimeSeconds = 1614769200; // Wednesday, 3 March 2021 11:00:00
         beforeEach(function () {
           exampleUrl = 'https://captions/$segment$.test';
           segmentLength = 3.84;
+          epochStartTimeMilliseconds = 1614769200000; // Wednesday, 3 March 2021 11:00:00
         });
 
         afterEach(function () {
@@ -393,7 +404,7 @@ require(
 
         describe('Loading fragments', function () {
           it('should load the first three segments with correct urls on the first update interval', function () {
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -405,7 +416,7 @@ require(
 
           it('should load the fragment two segments ahead of current time', function () {
             // epochStartTimeSeconds = Wednesday, 3 March 2021 11:00:00
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -420,7 +431,7 @@ require(
           });
 
           it('should not load a fragment if fragments array already contains it', function () {
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -438,7 +449,7 @@ require(
           });
 
           it('only keeps three fragments when playing', function () {
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -457,7 +468,7 @@ require(
           });
 
           it('load three new fragments when seeking back to a point where none of the segments are available', function () {
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(113.84);
             jasmine.clock().tick(750);
@@ -473,7 +484,7 @@ require(
           });
 
           it('loads three new fragments when seeking forwards to a point where none of the segments are available', function () {
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
             jasmine.clock().tick(750);
@@ -489,7 +500,7 @@ require(
           });
 
           it('should not load fragments when auto start is false', function () {
-            subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -498,7 +509,7 @@ require(
           });
 
           it('should load fragments when start is called and autoStart is false', function () {
-            subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -518,7 +529,7 @@ require(
             loadUrlStubResponseText = 'stuff that might exists before the xml string' + loadUrlStubResponseText;
             mediaPlayer.getCurrentTime.and.returnValue(10);
 
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             jasmine.clock().tick(750);
 
@@ -526,7 +537,7 @@ require(
           });
 
           it('should stop loading fragments when stop is called', function () {
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             loadUrlMock.calls.reset();
             subtitles.stop();
@@ -538,7 +549,7 @@ require(
           });
 
           it('should not try to load segments when the currentTime is not known by the player', function () {
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(-1000);
             jasmine.clock().tick(750);
@@ -549,7 +560,7 @@ require(
           it('should stop loading fragments when xml transforming has failed', function () {
             imscMock.fromXML.and.throwError();
 
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -567,7 +578,7 @@ require(
               callbackObject.onError();
             });
 
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -585,7 +596,7 @@ require(
               callbackObject.onLoad(null, '', 200);
             });
 
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
@@ -606,7 +617,7 @@ require(
 
             times = times.map(function (time) {
               return time.map(function (t) {
-                return t === 0 ? t : t + epochStartTimeSeconds;
+                return t === 0 ? t : t + msToS(epochStartTimeMilliseconds);
               });
             });
 
@@ -628,12 +639,12 @@ require(
             });
 
             mediaPlayer.getCurrentTime.and.returnValue(2);
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {}, epochStartTimeSeconds);
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(2.750);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 0}), epochStartTimeSeconds + 2.750);
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 0}), msToS(epochStartTimeMilliseconds) + 2.750);
             expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
@@ -649,7 +660,7 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(4.25);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 1}), epochStartTimeSeconds + 4.25);
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 1}), msToS(epochStartTimeMilliseconds) + 4.25);
             expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
@@ -689,7 +700,7 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(8);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), epochStartTimeSeconds + 8);
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 8);
             expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
@@ -705,7 +716,7 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(9.5);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), epochStartTimeSeconds + 9.5);
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 9.5);
             expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
@@ -713,7 +724,7 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(10.25);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), epochStartTimeSeconds + 10.25);
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 10.25);
             expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
@@ -729,7 +740,7 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(11.75);
             jasmine.clock().tick(750);
 
-            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), epochStartTimeSeconds + 11.75);
+            expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 11.75);
             expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();

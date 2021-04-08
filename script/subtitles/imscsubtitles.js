@@ -10,7 +10,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   ],
   function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL, TimeUtils) {
     'use strict';
-    return function (mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts, windowStartEpochSeconds) {
+    return function (mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
       var currentSubtitlesElement;
       var exampleSubtitlesElement;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
@@ -21,6 +21,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var liveSubtitles = !!mediaSources.currentCaptionsSegmentLength();
       var loadErrorCount = 0;
       var LOAD_ERROR_COUNT_MAX = 3;
+      var windowStartEpochSeconds = getWindowStartTime() / 1000;
 
       if (autoStart) {
         start();
@@ -246,6 +247,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function getCurrentTime () {
         return liveSubtitles ? windowStartEpochSeconds + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
+      }
+
+      function getWindowStartTime () {
+        return mediaSources && mediaSources.time().windowStartTime;
       }
 
       function start () {
