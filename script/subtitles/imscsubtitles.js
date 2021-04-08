@@ -87,7 +87,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           },
           onError: function (error) {
             DebugTool.info('Error loading subtitles data: ' + error);
-            Plugins.interface.onSubtitlesLoadError();
             stop();
             loadErrorFailover();
           }
@@ -103,10 +102,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           loadErrorCount++;
           if (loadErrorCount >= LOAD_ERROR_COUNT_MAX) {
             resetLoadErrorCount();
-            mediaSources.failoverSubtitles(start);
+            mediaSources.failoverSubtitles(start, Plugins.interface.onSubtitlesLoadError);
           }
         } else {
-          mediaSources.failoverSubtitles(start);
+          mediaSources.failoverSubtitles(start, Plugins.interface.onSubtitlesLoadError);
         }
       }
 
