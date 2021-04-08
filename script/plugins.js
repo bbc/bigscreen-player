@@ -57,6 +57,9 @@ define('bigscreenplayer/plugins',
         onSubtitlesLoadError: function (evt) {
           callOnAllPlugins('onSubtitlesLoadError', evt);
         },
+        onSubtitlesXMLError: function (evt) {
+          callOnAllPlugins('onSubtitlesXMLError', evt);
+        },
         onSubtitlesTransformError: function (evt) {
           callOnAllPlugins('onSubtitlesTransformError', evt);
         },

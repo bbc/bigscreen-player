@@ -34,7 +34,7 @@ require(
           callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200);
         });
 
-        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesLoadError']);
+        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesXMLError', 'onSubtitlesLoadError']);
         pluginsMock = { interface: pluginInterfaceMock };
 
         injector.mock({
@@ -76,13 +76,13 @@ require(
         expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
       });
 
-      it('Should fire subtitleTransformError if responseXML from the loader is invalid', function () {
+      it('Should fire onSubtitlesXMLError if responseXML from the loader is invalid', function () {
         loadUrlMock.and.callFake(function (url, callbackObject) {
           callbackObject.onLoad(null, '', 200);
         });
         legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
 
-        expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
+        expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1);
       });
 
       describe('Start', function () {

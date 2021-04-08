@@ -19,7 +19,7 @@ define(
           onLoad: function (responseXML, responseText, status) {
             if (!responseXML) {
               DebugTool.info('Error: responseXML is invalid.');
-              Plugins.interface.onSubtitlesTransformError();
+              Plugins.interface.onSubtitlesXMLError();
               return;
             } else {
               createContainer(responseXML);

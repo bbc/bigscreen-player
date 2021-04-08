@@ -54,7 +54,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           onLoad: function (responseXML, responseText, status) {
             if (!responseXML && !liveSubtitles) {
               DebugTool.info('Error: responseXML is invalid.');
-              Plugins.interface.onSubtitlesTransformError();
+              Plugins.interface.onSubtitlesXMLError();
               stop();
               return;
             }
