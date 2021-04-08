@@ -240,8 +240,8 @@ define('bigscreenplayer/mediasources',
       }
 
       function availableSubtitlesCdns () {
-        return subtitlesSources.map(function (mediaSource) {
-          return subtitlesSources.cdn;
+        return subtitlesSources.map(function (subtitleSource) {
+          return subtitleSource.cdn;
         });
       }
 
