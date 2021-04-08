@@ -62,7 +62,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               DebugTool.info('Error: responseXML is invalid.');
               Plugins.interface.onSubtitlesTransformError();
               stop();
-              mediaSources.failoverSubtitles(start);
               return;
             }
 
