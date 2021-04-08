@@ -35,10 +35,10 @@ require(
 
         exampleUrl = 'http://stub-captions.test';
         mockMediaSources = {
-          currentCaptionsSource: function () {
+          currentSubtitlesSource: function () {
             return exampleUrl;
           },
-          failoverCaptions: function () {}
+          failoverSubtitles: function () {}
         };
 
         pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesLoadError']);
@@ -62,7 +62,7 @@ require(
         mockRendererSpy.render.calls.reset();
       });
 
-      it('Should load the captions url', function () {
+      it('Should load the subtitles url', function () {
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
         expect(loadUrlMock).toHaveBeenCalledWith(exampleUrl, jasmine.any(Object));

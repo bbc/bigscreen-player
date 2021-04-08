@@ -18,7 +18,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var SEGMENTS_TO_KEEP = 3;
       var segments = [];
       var currentSegmentRendered = {};
-      var liveSubtitles = !!mediaSources.currentCaptionsSegmentLength();
+      var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength();
       var loadErrorCount = 0;
       var LOAD_ERROR_COUNT_MAX = 3;
       var windowStartEpochSeconds = getWindowStartTime() / 1000;
@@ -29,7 +29,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function loadAllRequiredSegments () {
         var segmentsToLoad = [];
-        var currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), mediaSources.currentCaptionsSegmentLength());
+        var currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), mediaSources.currentSubtitlesSegmentLength());
         for (var i = 0; i < SEGMENTS_TO_KEEP; i++) {
           var segmentNumber = currentSegment + i;
           var alreadyLoaded = segments.some(function (segment) {
@@ -47,7 +47,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         }
 
         segmentsToLoad.forEach(function (segmentNumber) {
-          var url = mediaSources.currentCaptionsSource();
+          var url = mediaSources.currentSubtitlesSource();
           loadSegment(url, segmentNumber);
         });
       }
@@ -61,7 +61,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               DebugTool.info('Error: responseXML is invalid.');
               Plugins.interface.onSubtitlesTransformError();
               stop();
-              mediaSources.failoverCaptions(start);
+              mediaSources.failoverSubtitles(start);
               return;
             }
 
@@ -79,7 +79,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
                 pruneSegments();
               }
             } catch (e) {
-              DebugTool.info('Error transforming captions : ' + e);
+              DebugTool.info('Error transforming subtitles : ' + e);
               Plugins.interface.onSubtitlesTransformError();
               stop();
             }
@@ -102,10 +102,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           loadErrorCount++;
           if (loadErrorCount >= LOAD_ERROR_COUNT_MAX) {
             resetLoadErrorCount();
-            mediaSources.failoverCaptions(start);
+            mediaSources.failoverSubtitles(start);
           }
         } else {
-          mediaSources.failoverCaptions(start);
+          mediaSources.failoverSubtitles(start);
         }
       }
 
@@ -254,7 +254,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function start () {
-        var url = mediaSources.currentCaptionsSource();
+        var url = mediaSources.currentSubtitlesSource();
         if (url && url !== '') {
           if (!liveSubtitles) {
             loadSegment(url);

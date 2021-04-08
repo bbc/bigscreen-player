@@ -11,14 +11,14 @@ require(
 
     describe('Subtitles', function () {
       mediaSourcesMock = {
-        currentCaptionsSource: function () {
+        currentSubtitlesSource: function () {
           if (subtitlesAvailable) {
-            return 'http://captions.example.test';
+            return 'http://subtitles.example.test';
           } else {
             return '';
           }
         },
-        currentCaptionsSegmentLength: function () {
+        currentSubtitlesSegmentLength: function () {
           return live ? 3.84 : undefined;
         }
       };

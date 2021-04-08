@@ -29,18 +29,18 @@ require(
       beforeEach(function (done) {
         injector = new Squire();
 
-        exampleUrl = 'http://stub-captions.test';
+        exampleUrl = 'http://stub-subtitles.test';
         loadUrlStubResponseText = '<?xml version="1.0" encoding="utf-8"?><tt xmlns="http://www.w3.org/ns/ttml"></tt>';
         segmentLength = undefined;
         epochStartTimeMilliseconds = undefined;
 
         mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['getCurrentTime']);
         mockMediaSources = {
-          currentCaptionsSource: function () {
+          currentSubtitlesSource: function () {
             return exampleUrl;
           },
-          failoverCaptions: function () {},
-          currentCaptionsSegmentLength: function () {
+          failoverSubtitles: function () {},
+          currentSubtitlesSegmentLength: function () {
             return segmentLength;
           },
           time: function () {
@@ -190,7 +190,7 @@ require(
           subtitles.stop();
         });
 
-        it('Should load the captions url', function () {
+        it('Should load the subtitles url', function () {
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(loadUrlMock).toHaveBeenCalledWith(exampleUrl, jasmine.any(Object));
@@ -234,7 +234,7 @@ require(
           expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
         });
 
-        it('does not attempt to load subtitles if there is no captions url', function () {
+        it('does not attempt to load subtitles if there is no subtitles url', function () {
           exampleUrl = undefined;
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
@@ -393,7 +393,7 @@ require(
 
       describe('Live subtitles', function () {
         beforeEach(function () {
-          exampleUrl = 'https://captions/$segment$.test';
+          exampleUrl = 'https://subtitles/$segment$.test';
           segmentLength = 3.84;
           epochStartTimeMilliseconds = 1614769200000; // Wednesday, 3 March 2021 11:00:00
         });
@@ -409,9 +409,9 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
 
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512815.test', jasmine.any(Object));
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512816.test', jasmine.any(Object));
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512817.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512815.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512816.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512817.test', jasmine.any(Object));
           });
 
           it('should load the fragment two segments ahead of current time', function () {
@@ -427,7 +427,7 @@ require(
 
             // At 13.84 seconds, we should be loading the segment correseponding to 21.52 seconds
             // 1614769221520 = Wednesday, 3 March 2021 11:00:21.52
-            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://captions/420512818.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://subtitles/420512818.test', jasmine.any(Object));
           });
 
           it('should not load a fragment if fragments array already contains it', function () {
@@ -440,12 +440,12 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
             jasmine.clock().tick(750);
 
-            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://captions/420512818.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://subtitles/420512818.test', jasmine.any(Object));
 
             mediaPlayer.getCurrentTime.and.returnValue(13.84); // time hasn't progressed. e.g. in paused state
             jasmine.clock().tick(750);
 
-            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://captions/420512818.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://subtitles/420512818.test', jasmine.any(Object));
           });
 
           it('only keeps three fragments when playing', function () {
@@ -458,13 +458,13 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
             jasmine.clock().tick(750);
 
-            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://captions/420512818.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://subtitles/420512818.test', jasmine.any(Object));
 
             loadUrlMock.calls.reset();
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
 
-            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://captions/420512815.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledOnceWith('https://subtitles/420512815.test', jasmine.any(Object));
           });
 
           it('load three new fragments when seeking back to a point where none of the segments are available', function () {
@@ -477,9 +477,9 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
 
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512815.test', jasmine.any(Object));
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512816.test', jasmine.any(Object));
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512817.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512815.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512816.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512817.test', jasmine.any(Object));
             expect(loadUrlMock).toHaveBeenCalledTimes(3);
           });
 
@@ -493,9 +493,9 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(100);
             jasmine.clock().tick(750);
 
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512838.test', jasmine.any(Object));
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512839.test', jasmine.any(Object));
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512840.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512838.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512839.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512840.test', jasmine.any(Object));
             expect(loadUrlMock).toHaveBeenCalledTimes(3);
           });
 
@@ -522,7 +522,7 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
 
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512815.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512815.test', jasmine.any(Object));
           });
 
           it('calls fromXML with xml string where responseText contains more than a simple xml string', function () {
@@ -606,7 +606,7 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
             jasmine.clock().tick(750);
 
-            expect(loadUrlMock).toHaveBeenCalledWith('https://captions/420512818.test', jasmine.any(Object));
+            expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512818.test', jasmine.any(Object));
           });
         });
 

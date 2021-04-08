@@ -17,7 +17,7 @@ define(
       loadSubtitles();
 
       function loadSubtitles () {
-        var url = mediaSources.currentCaptionsSource();
+        var url = mediaSources.currentSubtitlesSource();
         if (url && url !== '') {
           LoadURL(url, {
             onLoad: function (responseXML, responseText, status) {
@@ -32,7 +32,7 @@ define(
             onError: function (error) {
               DebugTool.info('Error loading subtitles data: ' + error);
               Plugins.interface.onSubtitlesLoadError();
-              mediaSources.failoverCaptions(loadSubtitles, failoverError);
+              mediaSources.failoverSubtitles(loadSubtitles, failoverError);
             }
           });
         }

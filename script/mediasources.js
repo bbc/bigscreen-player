@@ -20,9 +20,9 @@ define('bigscreenplayer/mediasources',
       var serverDate;
       var time = {};
       var transferFormat;
-      var captionSources;
+      var subtitlesSources;
 
-      function init (urls, captions, newServerDate, newWindowType, newLiveSupport, callbacks) {
+      function init (urls, subtitles, newServerDate, newWindowType, newLiveSupport, callbacks) {
         if (urls === undefined || urls.length === 0) {
           throw new Error('Media Sources urls are undefined');
         }
@@ -37,7 +37,7 @@ define('bigscreenplayer/mediasources',
         liveSupport = newLiveSupport;
         serverDate = newServerDate;
         mediaSources = PlaybackUtils.cloneArray(urls);
-        captionSources = PlaybackUtils.cloneArray(captions);
+        subtitlesSources = PlaybackUtils.cloneArray(subtitles);
         updateDebugOutput();
 
         if (needToGetManifest(windowType, liveSupport)) {
@@ -63,9 +63,9 @@ define('bigscreenplayer/mediasources',
         }
       }
 
-      function failoverCaptions (postFailoverAction, failoverErrorAction) {
-        if (captionSources.length > 1) {
-          captionSources.shift();
+      function failoverSubtitles (postFailoverAction, failoverErrorAction) {
+        if (subtitlesSources.length > 1) {
+          subtitlesSources.shift();
           updateDebugOutput();
           postFailoverAction();
         } else {
@@ -170,17 +170,17 @@ define('bigscreenplayer/mediasources',
         return '';
       }
 
-      function getCurrentCaptionsUrl () {
-        if (captionSources.length > 0) {
-          return captionSources[0].url.toString();
+      function getCurrentSubtitlesUrl () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].url.toString();
         }
 
         return '';
       }
 
-      function getCurrentCaptionSegmentLength () {
-        if (captionSources.length > 0) {
-          return captionSources[0].segmentLength;
+      function getCurrentSubtitlesSegmentLength () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].segmentLength;
         }
 
         return undefined;
@@ -225,9 +225,9 @@ define('bigscreenplayer/mediasources',
         return '';
       }
 
-      function getCurrentCaptionsCdn () {
-        if (captionSources.length > 0) {
-          return captionSources[0].cdn.toString();
+      function getCurrentSubtitlesCdn () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].cdn.toString();
         }
 
         return '';
@@ -239,9 +239,9 @@ define('bigscreenplayer/mediasources',
         });
       }
 
-      function availableCaptionsCdns () {
-        return captionSources.map(function (mediaSource) {
-          return mediaSource.cdn;
+      function availableSubtitlesCdns () {
+        return subtitlesSources.map(function (mediaSource) {
+          return subtitlesSources.cdn;
         });
       }
 
@@ -250,19 +250,19 @@ define('bigscreenplayer/mediasources',
         DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
         DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
 
-        DebugTool.keyValue({key: 'available subtitle cdns', value: availableCaptionsCdns()});
-        DebugTool.keyValue({key: 'current subtitles cdn', value: getCurrentCaptionsCdn()});
-        DebugTool.keyValue({key: 'subtitles url', value: getCurrentCaptionsUrl()});
+        DebugTool.keyValue({key: 'available subtitle cdns', value: availableSubtitlesCdns()});
+        DebugTool.keyValue({key: 'current subtitles cdn', value: getCurrentSubtitlesCdn()});
+        DebugTool.keyValue({key: 'subtitles url', value: getCurrentSubtitlesUrl()});
       }
 
       return {
         init: init,
         failover: failover,
-        failoverCaptions: failoverCaptions,
+        failoverSubtitles: failoverSubtitles,
         refresh: refresh,
         currentSource: getCurrentUrl,
-        currentCaptionsSource: getCurrentCaptionsUrl,
-        currentCaptionsSegmentLength: getCurrentCaptionSegmentLength,
+        currentSubtitlesSource: getCurrentSubtitlesUrl,
+        currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,
         availableSources: availableUrls,
         time: generateTime
       };

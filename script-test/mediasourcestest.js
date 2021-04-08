@@ -334,7 +334,7 @@ require(
           var mediaSources = new MediaSources();
           mediaSources.init(testSources, testCaptionSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
-          expect(mediaSources.currentCaptionsSource()).toBe(testCaptionSources[0].url);
+          expect(mediaSources.currentSubtitlesSource()).toBe(testCaptionSources[0].url);
         });
       });
 
