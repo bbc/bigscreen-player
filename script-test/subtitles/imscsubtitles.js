@@ -197,11 +197,11 @@ require(
 
         it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
           loadUrlMock.and.callFake(function (url, callbackObject) {
-            callbackObject.onError();
+            callbackObject.onError(404);
           });
           subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
 
-          expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
+          expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404});
         });
 
         it('fires subtitlesXMLError if responseXML from the loader is invalid', function () {
