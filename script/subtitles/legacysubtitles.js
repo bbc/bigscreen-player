@@ -32,16 +32,11 @@ define(
             },
             onError: function (error) {
               DebugTool.info('Error loading subtitles data: ' + error);
-              Plugins.interface.onSubtitlesLoadError();
-              mediaSources.failoverSubtitles(loadSubtitles, failoverError);
+              autoStart = true;
+              mediaSources.failoverSubtitles(loadSubtitles, Plugins.interface.onSubtitlesLoadError);
             }
           });
         }
-      }
-
-      function failoverError () {
-        // what do we do when we run out of cdns
-        DebugTool.info('Used all subtitles cdns');
       }
 
       function createContainer (xml) {

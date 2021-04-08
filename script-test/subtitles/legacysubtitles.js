@@ -74,15 +74,6 @@ require(
         expect(parentElement.firstChild.className).toContain('playerCaptions');
       });
 
-      it('Should fire onSubtitlesLoadError plugin if loading of XML fails', function () {
-        loadUrlMock.and.callFake(function (url, callbackObject) {
-          callbackObject.onError();
-        });
-        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
-
-        expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
-      });
-
       it('Should fire subtitleTransformError if responseXML from the loader is invalid', function () {
         loadUrlMock.and.callFake(function (url, callbackObject) {
           callbackObject.onLoad(null, '', 200);
