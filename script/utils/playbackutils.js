@@ -38,8 +38,10 @@ define(
       cloneArray: function (arr) {
         var clone = [];
 
-        for (var i = 0, n = arr.length; i < n; i++) {
-          clone.push(this.clone(arr[i]));
+        if (arr) {
+          for (var i = 0, n = arr.length; i < n; i++) {
+            clone.push(this.clone(arr[i]));
+          }
         }
 
         return clone;
