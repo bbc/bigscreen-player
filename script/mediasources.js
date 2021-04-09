@@ -217,22 +217,6 @@ define('bigscreenplayer/mediasources',
         Plugins.interface.onErrorHandled(evt);
       }
 
-      function getCurrentCdn () {
-        if (mediaSources.length > 0) {
-          return mediaSources[0].cdn.toString();
-        }
-
-        return '';
-      }
-
-      function getCurrentSubtitlesCdn () {
-        if (subtitlesSources.length > 0) {
-          return subtitlesSources[0].cdn.toString();
-        }
-
-        return '';
-      }
-
       function availableCdns () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.cdn;
@@ -247,11 +231,9 @@ define('bigscreenplayer/mediasources',
 
       function updateDebugOutput () {
         DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
-        DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
         DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
 
         DebugTool.keyValue({key: 'available subtitle cdns', value: availableSubtitlesCdns()});
-        DebugTool.keyValue({key: 'current subtitles cdn', value: getCurrentSubtitlesCdn()});
         DebugTool.keyValue({key: 'subtitles url', value: getCurrentSubtitlesUrl()});
       }
 
