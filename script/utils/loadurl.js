@@ -17,7 +17,7 @@ define(
             }
           } else {
             if (opts.onError) {
-              opts.onError(xhr.status + ' recieved');
+              opts.onError(xhr.status);
             }
           }
         }
@@ -36,7 +36,7 @@ define(
         xhr.send(opts.data || null);
       } catch (ex) {
         if (opts.onError) {
-          opts.onError(ex);
+          opts.onError(xhr.status);
         }
       }
     };
