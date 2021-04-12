@@ -25,9 +25,9 @@ define(
               createContainer(responseXML);
             }
           },
-          onError: function (error) {
-            DebugTool.info('Error loading subtitles data: ' + error);
-            Plugins.interface.onSubtitlesLoadError();
+          onError: function (statusCode) {
+            DebugTool.info('Error loading subtitles data: ' + statusCode);
+            Plugins.interface.onSubtitlesLoadError({status: statusCode});
           }
         });
       }

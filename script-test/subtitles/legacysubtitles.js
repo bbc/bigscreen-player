@@ -69,11 +69,11 @@ require(
 
       it('Should fire onSubtitlesLoadError plugin if loading of XML fails', function () {
         loadUrlMock.and.callFake(function (url, callbackObject) {
-          callbackObject.onError();
+          callbackObject.onError(404);
         });
         legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
 
-        expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
+        expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404});
       });
 
       it('Should fire onSubtitlesXMLError if responseXML from the loader is invalid', function () {
