@@ -86,7 +86,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           },
           onError: function (error) {
             DebugTool.info('Error loading subtitles data: ' + error);
-            stop();
             loadErrorFailover();
           }
         });
@@ -97,14 +96,19 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function loadErrorFailover () {
+        var errorCase = function () {
+          stop();
+          Plugins.interface.onSubtitlesLoadError();
+        };
+
         if (liveSubtitles) {
           loadErrorCount++;
           if (loadErrorCount >= LOAD_ERROR_COUNT_MAX) {
             resetLoadErrorCount();
-            mediaSources.failoverSubtitles(start, Plugins.interface.onSubtitlesLoadError);
+            mediaSources.failoverSubtitles(start, errorCase);
           }
         } else {
-          mediaSources.failoverSubtitles(start, Plugins.interface.onSubtitlesLoadError);
+          mediaSources.failoverSubtitles(start, errorCase);
         }
       }
 
