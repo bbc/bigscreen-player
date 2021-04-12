@@ -564,24 +564,6 @@ require(
             expect(loadUrlMock).not.toHaveBeenCalled();
           });
 
-          // it('should stop loading fragments when the XML fails to load', function () {
-          //   loadUrlMock.and.callFake(function (url, callbackObject) {
-          //     callbackObject.onError();
-          //   });
-
-          //   subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
-
-          //   mediaPlayer.getCurrentTime.and.returnValue(10);
-          //   jasmine.clock().tick(750);
-
-          //   loadUrlMock.calls.reset();
-
-          //   mediaPlayer.getCurrentTime.and.returnValue(13.84);
-          //   jasmine.clock().tick(750);
-
-          //   expect(loadUrlMock).not.toHaveBeenCalled();
-          // });
-
           it('should not stop loading fragments when the xml response is invalid', function () {
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onLoad(null, '', 200);
