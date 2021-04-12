@@ -47,7 +47,7 @@ require(
         imscMock.generateISD.and.returnValue({ contents: ['mockContents'] });
         imscMock.fromXML.and.returnValue(fromXmlReturn);
 
-        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesXMLError', 'onSubtitlesLoadError']);
+        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesTimeout', 'onSubtitlesXMLError', 'onSubtitlesLoadError']);
         pluginsMock = { interface: pluginInterfaceMock };
 
         loadUrlMock = jasmine.createSpy();
@@ -211,6 +211,15 @@ require(
           subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
 
           expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1);
+        });
+
+        it('fires onSubtitlesTimeout if the xhr times out', function () {
+          loadUrlMock.and.callFake(function (url, callbackObject) {
+            callbackObject.onTimeout();
+          });
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
+
+          expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1);
         });
 
         it('does not attempt to load subtitles if there is no captions url', function () {
