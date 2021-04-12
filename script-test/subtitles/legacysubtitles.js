@@ -34,7 +34,7 @@ require(
           callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200);
         });
 
-        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesXMLError', 'onSubtitlesLoadError']);
+        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTimeout', 'onSubtitlesXMLError', 'onSubtitlesLoadError']);
         pluginsMock = { interface: pluginInterfaceMock };
 
         injector.mock({
@@ -83,6 +83,15 @@ require(
         legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
 
         expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1);
+      });
+
+      it('Should fire onSubtitlesTimeout if the XHR times out', function () {
+        loadUrlMock.and.callFake(function (url, callbackObject) {
+          callbackObject.onTimeout();
+        });
+        legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
+
+        expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1);
       });
 
       describe('Start', function () {

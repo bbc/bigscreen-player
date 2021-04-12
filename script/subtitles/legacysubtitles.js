@@ -28,6 +28,9 @@ define(
           onError: function (statusCode) {
             DebugTool.info('Error loading subtitles data: ' + statusCode);
             Plugins.interface.onSubtitlesLoadError({status: statusCode});
+          },
+          onTimeout: function () {
+            Plugins.interface.onSubtitlesTimeout();
           }
         });
       }
