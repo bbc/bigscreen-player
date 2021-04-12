@@ -96,6 +96,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function loadErrorFailover () {
+        var successCase = function () {};
         var errorCase = function () {
           stop();
           Plugins.interface.onSubtitlesLoadError();
@@ -105,10 +106,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           loadErrorCount++;
           if (loadErrorCount >= LOAD_ERROR_COUNT_MAX) {
             resetLoadErrorCount();
-            mediaSources.failoverSubtitles(start, errorCase);
+            mediaSources.failoverSubtitles(successCase, errorCase);
           }
         } else {
-          mediaSources.failoverSubtitles(start, errorCase);
+          mediaSources.failoverSubtitles(successCase, errorCase);
         }
       }
 
