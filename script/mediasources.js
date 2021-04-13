@@ -67,9 +67,9 @@ define('bigscreenplayer/mediasources',
         if (subtitlesSources.length > 1) {
           subtitlesSources.shift();
           updateDebugOutput();
-          postFailoverAction();
+          if (postFailoverAction) { postFailoverAction(); }
         } else {
-          failoverErrorAction();
+          if (failoverErrorAction) { failoverErrorAction(); }
         }
       }
 
