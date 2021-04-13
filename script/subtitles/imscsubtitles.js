@@ -95,26 +95,23 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         loadErrorCount = 0;
       }
 
+      function loadErrorLimit () {
+        loadErrorCount++;
+        if (loadErrorCount >= LOAD_ERROR_COUNT_MAX) {
+          resetLoadErrorCount();
+          return true;
+        }
+      }
+
       function loadErrorFailover () {
         var errorCase = function () {
           stop();
           Plugins.interface.onSubtitlesLoadError();
         };
 
-        if (liveSubtitles) {
-          if (loadErrorLimit) {
-            mediaSources.failoverSubtitles(undefined, errorCase);
-          }
-        } else {
+        if ((liveSubtitles && loadErrorLimit()) || !liveSubtitles) {
+          stop();
           mediaSources.failoverSubtitles(start, errorCase);
-        }
-      }
-
-      function loadErrorLimit () {
-        loadErrorCount++;
-        if (loadErrorCount >= LOAD_ERROR_COUNT_MAX) {
-          resetLoadErrorCount();
-          return true;
         }
       }
 
