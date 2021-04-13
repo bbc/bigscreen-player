@@ -206,6 +206,14 @@ define('bigscreenplayer/bigscreenplayer',
           };
 
           mediaSources = new MediaSources();
+
+          // Backwards compatibility with Old API; to be removed on Major Version Update
+          if(bigscreenPlayerData.media && !!bigscreenPlayerData.media.captions && bigscreenPlayerData.media.captionsUrl) { 
+            bigscreenPlayerData.media.captions = [{
+              url: bigscreenPlayerData.media.captionsUrl
+            }]
+          }
+
           mediaSources.init(bigscreenPlayerData.media.urls, bigscreenPlayerData.media.captions, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
         },
 
