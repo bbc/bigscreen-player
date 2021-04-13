@@ -34,12 +34,8 @@ require(
         });
 
         exampleUrl = 'http://stub-captions.test';
-        mockMediaSources = {
-          currentSubtitlesSource: function () {
-            return exampleUrl;
-          },
-          failoverSubtitles: function () {}
-        };
+        mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles']);
+        mockMediaSources.currentSubtitlesSource.and.returnValue(exampleUrl);
 
         pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesLoadError']);
         pluginsMock = { interface: pluginInterfaceMock };
@@ -81,6 +77,15 @@ require(
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
         expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
+      });
+
+      it('Should try to failover to the next url if responseXML from the loader is invalid', function () {
+        loadUrlMock.and.callFake(function (url, callbackObject) {
+          callbackObject.onError();
+        });
+        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
+
+        expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1);
       });
 
       describe('Start', function () {
