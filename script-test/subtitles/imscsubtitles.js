@@ -17,6 +17,7 @@ require(
       var exampleUrl;
       var segmentLength;
       var epochStartTimeMilliseconds;
+      var avalailableSourceCount;
 
       var loadUrlMock;
       var loadUrlStubResponseXml = '<?xml>';
@@ -39,7 +40,14 @@ require(
           currentSubtitlesSource: function () {
             return exampleUrl;
           },
-          failoverSubtitles: function () {},
+          failoverSubtitles: function (postFailoverAction, failoverErrorAction) {
+            if (avalailableSourceCount > 1) {
+              avalailableSourceCount--;
+              postFailoverAction();
+            } else {
+              failoverErrorAction();
+            }
+          },
           currentSubtitlesSegmentLength: function () {
             return segmentLength;
           },
@@ -194,6 +202,26 @@ require(
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(loadUrlMock).toHaveBeenCalledWith(exampleUrl, jasmine.any(Object));
+        });
+
+        it('Should load the next available url if loading of first XML fails', function () {
+          avalailableSourceCount = 2;
+          loadUrlMock.and.callFake(function (url, callbackObject) {
+            callbackObject.onError();
+          });
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
+
+          expect(loadUrlMock).toHaveBeenCalledTimes(2);
+        });
+
+        it('fires onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
+          avalailableSourceCount = 1;
+          loadUrlMock.and.callFake(function (url, callbackObject) {
+            callbackObject.onError();
+          });
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
+
+          expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
         });
 
         it('Calls fromXML on creation with the extracted XML from the text property of the response argument', function () {
