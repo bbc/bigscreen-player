@@ -18,6 +18,7 @@ require(
 
       var testSources;
       var testSubtitlesSources;
+      var SEGMENT_LENGTH = 3.84;
       var testCallbacks;
       var triggerManifestLoadError = false;
 
@@ -69,8 +70,8 @@ require(
             {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
           ];
           testSubtitlesSources = [
-            {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
-            {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
+            {url: 'http://subtitlessource1.com/', cdn: 'http://supplier1.com/', segmentLength: SEGMENT_LENGTH},
+            {url: 'http://subtitlessource2.com/', cdn: 'http://supplier2.com/', segmentLength: SEGMENT_LENGTH}
           ];
           done();
         });
@@ -335,6 +336,51 @@ require(
           mediaSources.init(testSources, testSubtitlesSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
           expect(mediaSources.currentSubtitlesSource()).toBe(testSubtitlesSources[0].url);
+        });
+
+        it('returns the second subtitle source following a failover', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testSources, testSubtitlesSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles();
+
+          expect(mediaSources.currentSubtitlesSource()).toBe(testSubtitlesSources[1].url);
+        });
+      });
+
+      describe('currentSubtitlesSegmentLength', function () {
+        it('returns the first subtitles segment length', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testSources, testSubtitlesSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.currentSubtitlesSegmentLength()).toBe(SEGMENT_LENGTH);
+        });
+      });
+
+      describe('failoverSubtitles', function () {
+        var postFailoverAction;
+        var onFailureAction;
+
+        beforeEach(function () {
+          postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
+          onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+        });
+
+        it('When there are subtitles sources to failover to, it calls the post failover callback', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testSources, testSubtitlesSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles(postFailoverAction, onFailureAction);
+
+          expect(postFailoverAction).toHaveBeenCalledWith();
+          expect(onFailureAction).not.toHaveBeenCalledWith();
+        });
+
+        it('When there are no more subtitles sources to failover to, it calls failure action callback', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testSources, [{url: 'http://subtitlessource1.com/', cdn: 'http://supplier1.com/'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles(postFailoverAction, onFailureAction);
+
+          expect(onFailureAction).toHaveBeenCalledWith();
+          expect(postFailoverAction).not.toHaveBeenCalledWith();
         });
       });
 
