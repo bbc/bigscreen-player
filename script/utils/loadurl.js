@@ -9,11 +9,9 @@ define(
         xhr.timeout = opts.timeout;
       }
 
-      xhr.ontimeout = function () {
-        if (opts.onTimeout) {
-          opts.onTimeout();
-        }
-      };
+      if (opts.onTimeout) {
+        xhr.ontimeout = opts.onTimeout;
+      }
 
       xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
