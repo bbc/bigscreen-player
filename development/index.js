@@ -10,7 +10,7 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
   playbackElement.style.width = '1280px';
 
   let windowType = 'staticWindow';
-  let enableSubtitles = true;
+  let enableSubtitles = false;
   
   let minimalData = {
     initialPlaybackTime: 30,
