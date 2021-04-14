@@ -24,17 +24,21 @@ define(
             onLoad: function (responseXML, responseText, status) {
               if (!responseXML) {
                 DebugTool.info('Error: responseXML is invalid.');
-                Plugins.interface.onSubtitlesTransformError();
+                Plugins.interface.onSubtitlesXMLError();
                 return;
               } else {
                 createContainer(responseXML);
               }
             },
-            onError: function (error) {
-              DebugTool.info('Error loading subtitles data: ' + error);
+            onError: function (statusCode) {
+              var errorCase = function () { Plugins.interface.onSubtitlesLoadError({status: statusCode}); };
+              DebugTool.info('Error loading subtitles data: ' + statusCode);
               tearDown();
               autoStart = true;
-              mediaSources.failoverSubtitles(loadSubtitles, Plugins.interface.onSubtitlesLoadError);
+              mediaSources.failoverSubtitles(loadSubtitles, errorCase);
+            },
+            onTimeout: function () {
+              Plugins.interface.onSubtitlesTimeout();
             }
           });
         }

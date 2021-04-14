@@ -8,6 +8,11 @@ define(
       if (opts.timeout) {
         xhr.timeout = opts.timeout;
       }
+
+      if (opts.onTimeout) {
+        xhr.ontimeout = opts.onTimeout;
+      }
+
       xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
           xhr.onreadystatechange = null;
@@ -17,7 +22,7 @@ define(
             }
           } else {
             if (opts.onError) {
-              opts.onError(xhr.status + ' recieved');
+              opts.onError(xhr.status);
             }
           }
         }
@@ -36,7 +41,7 @@ define(
         xhr.send(opts.data || null);
       } catch (ex) {
         if (opts.onError) {
-          opts.onError(ex);
+          opts.onError(xhr.status);
         }
       }
     };

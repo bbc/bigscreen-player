@@ -46,7 +46,7 @@ require(
           }
         });
 
-        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesLoadError']);
+        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTimeout', 'onSubtitlesXMLError', 'onSubtitlesLoadError']);
         pluginsMock = { interface: pluginInterfaceMock };
 
         injector.mock({
@@ -79,19 +79,19 @@ require(
         expect(parentElement.firstChild.className).toContain('playerCaptions');
       });
 
-      it('Should fire subtitleTransformError if responseXML from the loader is invalid', function () {
+      it('Should fire subtitlesXMLError if responseXML from the loader is invalid', function () {
         loadUrlMock.and.callFake(function (url, callbackObject) {
           callbackObject.onLoad(null, '', 200);
         });
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
-        expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
+        expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1);
       });
 
       it('Should try to failover to the next url if responseXML from the loader is invalid', function () {
         avalailableSourceCount = 1;
         loadUrlMock.and.callFake(function (url, callbackObject) {
-          callbackObject.onError();
+          callbackObject.onError(404);
         });
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
@@ -106,6 +106,15 @@ require(
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
         expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
+      });
+
+      it('Should fire onSubtitlesTimeout if the XHR times out', function () {
+        loadUrlMock.and.callFake(function (url, callbackObject) {
+          callbackObject.onTimeout();
+        });
+        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
+
+        expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1);
       });
 
       describe('Start', function () {

@@ -71,7 +71,7 @@ require(
         imscMock.generateISD.and.returnValue({ contents: ['mockContents'] });
         imscMock.fromXML.and.returnValue(fromXmlReturn);
 
-        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesLoadError']);
+        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesTimeout', 'onSubtitlesXMLError', 'onSubtitlesLoadError']);
         pluginsMock = { interface: pluginInterfaceMock };
 
         loadUrlMock = jasmine.createSpy();
@@ -212,11 +212,11 @@ require(
         it('fires onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
           avalailableSourceCount = 1;
           loadUrlMock.and.callFake(function (url, callbackObject) {
-            callbackObject.onError();
+            callbackObject.onError(404);
           });
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
-          expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
+          expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404});
         });
 
         it('Calls fromXML on creation with the extracted XML from the text property of the response argument', function () {
@@ -245,7 +245,16 @@ require(
           });
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
-          expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
+          expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1);
+        });
+
+        it('fires onSubtitlesTimeout if the xhr times out', function () {
+          loadUrlMock.and.callFake(function (url, callbackObject) {
+            callbackObject.onTimeout();
+          });
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
+
+          expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1);
         });
 
         it('does not attempt to load subtitles if there is no subtitles url', function () {
@@ -659,7 +668,7 @@ require(
           it('Should fire onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
             avalailableSourceCount = 1;
             loadUrlMock.and.callFake(function (url, callbackObject) {
-              callbackObject.onError();
+              callbackObject.onError(404);
             });
 
             subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
@@ -667,7 +676,7 @@ require(
             mediaPlayer.getCurrentTime.and.returnValue(10);
             jasmine.clock().tick(750);
 
-            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
+            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404});
           });
         });
 
