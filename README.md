@@ -74,15 +74,16 @@ require(
           }
         ],
         captions: [{
-            captionsUrl: 'https://www.somelovelycaptionsurl.com/captions/$segment$', // $segment$ required for replacement for live
+            url: 'https://www.somelovelycaptionsurl.com/captions/$segment$', // $segment$ required for replacement for live
             segmentLength: 3.84 // Required to calculate live subtitle segment to fetch & live subtitle URL.
             cdn: 'cdn1' // Displayed by Debug Tool
           }, {
-            captionsUrl: 'https://www.somelovelycaptionsurl2.com/captions/$segment$',
+            url: 'https://www.somelovelycaptionsurl2.com/captions/$segment$',
             segmentLength: 3.84 
             cdn: 'cdn1' 
           },
         ],
+        captionsUrl: 'https://www.somelovelycaptionsurl.com/captions/' // NB This paramater is being depreciated in favour of the captions array shown above. 
         subtitleCustomisation: {
           size: 0.75,
           lineHeight: 1.10,
