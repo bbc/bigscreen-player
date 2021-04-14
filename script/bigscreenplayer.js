@@ -218,14 +218,14 @@ define('bigscreenplayer/bigscreenplayer',
         },
 
         tearDown: function () {
-          if (playerComponent) {
-            playerComponent.tearDown();
-            playerComponent = undefined;
-          }
-
           if (subtitles) {
             subtitles.tearDown();
             subtitles = undefined;
+          }
+
+          if (playerComponent) {
+            playerComponent.tearDown();
+            playerComponent = undefined;
           }
 
           stateChangeCallbacks = [];

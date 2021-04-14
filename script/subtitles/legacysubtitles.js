@@ -32,6 +32,7 @@ define(
             },
             onError: function (error) {
               DebugTool.info('Error loading subtitles data: ' + error);
+              tearDown();
               autoStart = true;
               mediaSources.failoverSubtitles(loadSubtitles, Plugins.interface.onSubtitlesLoadError);
             }
@@ -83,6 +84,7 @@ define(
       }
 
       function tearDown () {
+        stop();
         DOMHelpers.safeRemoveElement(container);
       }
 
