@@ -19,15 +19,18 @@ define(
           onLoad: function (responseXML, responseText, status) {
             if (!responseXML) {
               DebugTool.info('Error: responseXML is invalid.');
-              Plugins.interface.onSubtitlesTransformError();
+              Plugins.interface.onSubtitlesXMLError();
               return;
             } else {
               createContainer(responseXML);
             }
           },
-          onError: function (error) {
-            DebugTool.info('Error loading subtitles data: ' + error);
-            Plugins.interface.onSubtitlesLoadError();
+          onError: function (statusCode) {
+            DebugTool.info('Error loading subtitles data: ' + statusCode);
+            Plugins.interface.onSubtitlesLoadError({status: statusCode});
+          },
+          onTimeout: function () {
+            Plugins.interface.onSubtitlesTimeout();
           }
         });
       }

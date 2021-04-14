@@ -47,7 +47,7 @@ require(
         imscMock.generateISD.and.returnValue({ contents: ['mockContents'] });
         imscMock.fromXML.and.returnValue(fromXmlReturn);
 
-        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesLoadError']);
+        pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesTimeout', 'onSubtitlesXMLError', 'onSubtitlesLoadError']);
         pluginsMock = { interface: pluginInterfaceMock };
 
         loadUrlMock = jasmine.createSpy();
@@ -197,20 +197,29 @@ require(
 
         it('fires onSubtitlesLoadError plugin if loading of XML fails', function () {
           loadUrlMock.and.callFake(function (url, callbackObject) {
-            callbackObject.onError();
+            callbackObject.onError(404);
           });
           subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
 
-          expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
+          expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404});
         });
 
-        it('fires subtitleTransformError if responseXML from the loader is invalid', function () {
+        it('fires subtitlesXMLError if responseXML from the loader is invalid', function () {
           loadUrlMock.and.callFake(function (url, callbackObject) {
             callbackObject.onLoad(null, '', 200);
           });
           subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
 
-          expect(pluginsMock.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1);
+          expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1);
+        });
+
+        it('fires onSubtitlesTimeout if the xhr times out', function () {
+          loadUrlMock.and.callFake(function (url, callbackObject) {
+            callbackObject.onTimeout();
+          });
+          subtitles = ImscSubtitles(mediaPlayer, stubCaptions, true, mockParentElement);
+
+          expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1);
         });
 
         it('does not attempt to load subtitles if there is no captions url', function () {

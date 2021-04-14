@@ -54,7 +54,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
           onLoad: function (responseXML, responseText, status) {
             if (!responseXML && !liveSubtitles) {
               DebugTool.info('Error: responseXML is invalid.');
-              Plugins.interface.onSubtitlesTransformError();
+              Plugins.interface.onSubtitlesXMLError();
               stop();
               return;
             }
@@ -79,10 +79,13 @@ define('bigscreenplayer/subtitles/imscsubtitles',
               stop();
             }
           },
-          onError: function (error) {
-            DebugTool.info('Error loading subtitles data: ' + error);
-            Plugins.interface.onSubtitlesLoadError();
+          onError: function (statusCode) {
+            DebugTool.info('Error loading subtitles data: ' + statusCode);
+            Plugins.interface.onSubtitlesLoadError({status: statusCode});
             stop();
+          },
+          onTimeout: function () {
+            Plugins.interface.onSubtitlesTimeout();
           }
         });
       }
