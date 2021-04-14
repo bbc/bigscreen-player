@@ -18,6 +18,7 @@ require(
     var pluginsMock;
     var exampleUrl;
     var mockMediaSources;
+    var avalailableSourceCount;
 
     describe('Legacy Subtitles', function () {
       beforeEach(function (done) {
@@ -36,6 +37,14 @@ require(
         exampleUrl = 'http://stub-captions.test';
         mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles']);
         mockMediaSources.currentSubtitlesSource.and.returnValue(exampleUrl);
+        mockMediaSources.failoverSubtitles.and.callFake(function (postFailoverAction, failoverErrorAction) {
+          if (avalailableSourceCount > 1) {
+            avalailableSourceCount--;
+            postFailoverAction();
+          } else {
+            failoverErrorAction();
+          }
+        });
 
         pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTransformError', 'onSubtitlesLoadError']);
         pluginsMock = { interface: pluginInterfaceMock };
@@ -80,12 +89,23 @@ require(
       });
 
       it('Should try to failover to the next url if responseXML from the loader is invalid', function () {
+        avalailableSourceCount = 1;
         loadUrlMock.and.callFake(function (url, callbackObject) {
           callbackObject.onError();
         });
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
         expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1);
+      });
+
+      it('Should fire onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
+        avalailableSourceCount = 1;
+        loadUrlMock.and.callFake(function (url, callbackObject) {
+          callbackObject.onError();
+        });
+        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
+
+        expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
       });
 
       describe('Start', function () {

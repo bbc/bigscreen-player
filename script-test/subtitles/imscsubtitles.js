@@ -36,27 +36,22 @@ require(
         epochStartTimeMilliseconds = undefined;
 
         mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['getCurrentTime']);
-        mockMediaSources = {
-          currentSubtitlesSource: function () {
-            return exampleUrl;
-          },
-          failoverSubtitles: function (postFailoverAction, failoverErrorAction) {
-            if (avalailableSourceCount > 1) {
-              avalailableSourceCount--;
-              postFailoverAction();
-            } else {
-              failoverErrorAction();
-            }
-          },
-          currentSubtitlesSegmentLength: function () {
-            return segmentLength;
-          },
-          time: function () {
-            return {
-              windowStartTime: epochStartTimeMilliseconds
-            };
+        mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles', 'currentSubtitlesSegmentLength', 'time']);
+        mockMediaSources.currentSubtitlesSource.and.callFake(function () { return exampleUrl; });
+        mockMediaSources.failoverSubtitles.and.callFake(function (postFailoverAction, failoverErrorAction) {
+          if (avalailableSourceCount > 1) {
+            avalailableSourceCount--;
+            postFailoverAction();
+          } else {
+            failoverErrorAction();
           }
-        };
+        });
+        mockMediaSources.currentSubtitlesSegmentLength.and.callFake(function () { return segmentLength; });
+        mockMediaSources.time.and.callFake(function () {
+          return {
+            windowStartTime: epochStartTimeMilliseconds
+          };
+        });
 
         jasmine.clock().install();
 
@@ -608,6 +603,71 @@ require(
             jasmine.clock().tick(750);
 
             expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512818.test', jasmine.any(Object));
+          });
+
+          it('should not failover to the next url if loading of XML is successful after failed loading of XML', function () {
+            var loadAttempts = 0;
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              loadAttempts++;
+              if (loadAttempts > 2) {
+                callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200);
+              } else {
+                callbackObject.onError();
+              }
+            });
+
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
+
+            expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(0);
+          });
+
+          it('should failover to the next url if loading of XML fails 3 times in a row', function () {
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
+
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
+
+            expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1);
+          });
+
+          it('Should continue loading fragments from next available url if loading of first XML fails', function () {
+            avalailableSourceCount = 2;
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
+
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
+
+            loadUrlMock.calls.reset();
+
+            mediaPlayer.getCurrentTime.and.returnValue(13.84);
+            jasmine.clock().tick(750);
+
+            expect(loadUrlMock).toHaveBeenCalledTimes(3);
+          });
+
+          it('Should fire onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
+            avalailableSourceCount = 1;
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
+
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
+
+            expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
           });
         });
 
