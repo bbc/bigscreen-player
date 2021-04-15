@@ -79,7 +79,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
                 pruneSegments();
               }
             } catch (e) {
-              DebugTool.info('Error transforming subtitles : ' + e);
+              DebugTool.info('Error transforming subtitles: ' + e);
               Plugins.interface.onSubtitlesTransformError();
               stop();
             }
