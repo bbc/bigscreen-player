@@ -84,10 +84,16 @@ require(
       }
 
       if (options.subtitlesAvailable) {
-        bigscreenPlayerData.media.captions = {
-          segmentLength: 1,
-          urls: ['captions1', 'captions2']
-        };
+        bigscreenPlayerData.media.captions = [
+          {
+            url: 'captions1',
+            segmentLength: 3.84
+          },
+          {
+            url: 'captions2',
+            segmentLength: 3.84
+          }
+        ];
       }
 
       var callbacks;
