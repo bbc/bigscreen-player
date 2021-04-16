@@ -16,7 +16,7 @@ require(
     var loadUrlStubResponseText = 'loadUrlStubResponseText';
     var pluginInterfaceMock;
     var pluginsMock;
-    var exampleUrl;
+    var subtitlesUrl;
     var mockMediaSources;
     var avalailableSourceCount;
 
@@ -34,9 +34,9 @@ require(
           callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200);
         });
 
-        exampleUrl = 'http://stub-captions.test';
+        subtitlesUrl = 'http://stub-captions.test';
         mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles']);
-        mockMediaSources.currentSubtitlesSource.and.returnValue(exampleUrl);
+        mockMediaSources.currentSubtitlesSource.and.returnValue(subtitlesUrl);
         mockMediaSources.failoverSubtitles.and.callFake(function (postFailoverAction, failoverErrorAction) {
           if (avalailableSourceCount > 1) {
             avalailableSourceCount--;
@@ -70,7 +70,7 @@ require(
       it('Should load the subtitles url', function () {
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
-        expect(loadUrlMock).toHaveBeenCalledWith(exampleUrl, jasmine.any(Object));
+        expect(loadUrlMock).toHaveBeenCalledWith(subtitlesUrl, jasmine.any(Object));
       });
 
       it('Has a player subtitles class', function () {
