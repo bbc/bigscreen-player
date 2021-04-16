@@ -14,7 +14,7 @@ require(
       var mediaPlayer;
       var subtitles;
       var mockMediaSources;
-      var exampleUrl;
+      var subtitlesUrl;
       var segmentLength;
       var epochStartTimeMilliseconds;
       var avalailableSourceCount;
@@ -30,14 +30,14 @@ require(
       beforeEach(function (done) {
         injector = new Squire();
 
-        exampleUrl = 'http://stub-subtitles.test';
+        subtitlesUrl = 'http://stub-subtitles.test';
         loadUrlStubResponseText = '<?xml version="1.0" encoding="utf-8"?><tt xmlns="http://www.w3.org/ns/ttml"></tt>';
         segmentLength = undefined;
         epochStartTimeMilliseconds = undefined;
 
         mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['getCurrentTime']);
         mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles', 'currentSubtitlesSegmentLength', 'time']);
-        mockMediaSources.currentSubtitlesSource.and.callFake(function () { return exampleUrl; });
+        mockMediaSources.currentSubtitlesSource.and.callFake(function () { return subtitlesUrl; });
         mockMediaSources.failoverSubtitles.and.callFake(function (postFailoverAction, failoverErrorAction) {
           if (avalailableSourceCount > 1) {
             avalailableSourceCount--;
@@ -196,7 +196,7 @@ require(
         it('Should load the subtitles url', function () {
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
-          expect(loadUrlMock).toHaveBeenCalledWith(exampleUrl, jasmine.any(Object));
+          expect(loadUrlMock).toHaveBeenCalledWith(subtitlesUrl, jasmine.any(Object));
         });
 
         it('Should load the next available url if loading of first XML fails', function () {
@@ -258,7 +258,7 @@ require(
         });
 
         it('does not attempt to load subtitles if there is no subtitles url', function () {
-          exampleUrl = undefined;
+          subtitlesUrl = undefined;
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
           expect(loadUrlMock).not.toHaveBeenCalled();
@@ -416,7 +416,7 @@ require(
 
       describe('Live subtitles', function () {
         beforeEach(function () {
-          exampleUrl = 'https://subtitles/$segment$.test';
+          subtitlesUrl = 'https://subtitles/$segment$.test';
           segmentLength = 3.84;
           epochStartTimeMilliseconds = 1614769200000; // Wednesday, 3 March 2021 11:00:00
         });
