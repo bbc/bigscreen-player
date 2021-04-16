@@ -370,8 +370,8 @@ require(
           mediaSources.init(testSources, testSubtitlesSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failoverSubtitles(postFailoverAction, onFailureAction);
 
-          expect(postFailoverAction).toHaveBeenCalledWith();
-          expect(onFailureAction).not.toHaveBeenCalledWith();
+          expect(postFailoverAction).toHaveBeenCalledTimes(1);
+          expect(onFailureAction).not.toHaveBeenCalled();
         });
 
         it('When there are no more subtitles sources to failover to, it calls failure action callback', function () {
@@ -379,8 +379,8 @@ require(
           mediaSources.init(testSources, [{url: 'http://subtitlessource1.com/', cdn: 'http://supplier1.com/'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failoverSubtitles(postFailoverAction, onFailureAction);
 
-          expect(onFailureAction).toHaveBeenCalledWith();
-          expect(postFailoverAction).not.toHaveBeenCalledWith();
+          expect(onFailureAction).toHaveBeenCalledTimes(1);
+          expect(postFailoverAction).not.toHaveBeenCalled();
         });
       });
 
