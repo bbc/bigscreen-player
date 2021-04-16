@@ -209,7 +209,7 @@ require(
           expect(loadUrlMock).toHaveBeenCalledTimes(2);
         });
 
-        it('fires onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
+        it('fires onSubtitlesLoadError plugin if loading of subtitles fails on last available source', function () {
           avalailableSourceCount = 1;
           loadUrlMock.and.callFake(function (url, callbackObject) {
             callbackObject.onError(404);
@@ -614,10 +614,25 @@ require(
             expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512818.test', jasmine.any(Object));
           });
 
-          it('should not failover to the next url if loading of XML is successful after failed loading of XML', function () {
+          it('should failover to the next url if loading of subtitles segments fails 3 times in a row', function () {
+            loadUrlMock.and.callFake(function (url, callbackObject) {
+              callbackObject.onError();
+            });
+
+            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
+
+            mediaPlayer.getCurrentTime.and.returnValue(10);
+            jasmine.clock().tick(750);
+            // will attempt to load three segments after this tick
+
+            expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1);
+          });
+
+          it('should not failover if loading subtitles segments fails less than three times in a row', function () {
             var loadAttempts = 0;
             loadUrlMock.and.callFake(function (url, callbackObject) {
               loadAttempts++;
+              // fail first two segments, load third succesfully
               if (loadAttempts > 2) {
                 callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200);
               } else {
@@ -633,20 +648,7 @@ require(
             expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(0);
           });
 
-          it('should failover to the next url if loading of XML fails 3 times in a row', function () {
-            loadUrlMock.and.callFake(function (url, callbackObject) {
-              callbackObject.onError();
-            });
-
-            subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
-
-            mediaPlayer.getCurrentTime.and.returnValue(10);
-            jasmine.clock().tick(750);
-
-            expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1);
-          });
-
-          it('Should continue loading fragments from next available url if loading of first XML fails', function () {
+          it('Should continue loading segments from next available url if loading from first subtitles url fails', function () {
             avalailableSourceCount = 2;
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError();
@@ -665,7 +667,7 @@ require(
             expect(loadUrlMock).toHaveBeenCalledTimes(3);
           });
 
-          it('Should fire onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
+          it('Should fire onSubtitlesLoadError plugin if loading of segments fails on last available source', function () {
             avalailableSourceCount = 1;
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onError(404);
