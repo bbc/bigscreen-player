@@ -425,7 +425,7 @@ require(
           subtitles.stop();
         });
 
-        describe('Loading fragments', function () {
+        describe('Loading segments', function () {
           it('should load the first three segments with correct urls on the first update interval', function () {
             subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
@@ -437,7 +437,7 @@ require(
             expect(loadUrlMock).toHaveBeenCalledWith('https://subtitles/420512817.test', jasmine.any(Object));
           });
 
-          it('should load the fragment two segments ahead of current time', function () {
+          it('should load the segment two segments ahead of current time', function () {
             // epochStartTimeSeconds = Wednesday, 3 March 2021 11:00:00
             subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
@@ -453,7 +453,7 @@ require(
             expect(loadUrlMock).toHaveBeenCalledOnceWith('https://subtitles/420512818.test', jasmine.any(Object));
           });
 
-          it('should not load a fragment if fragments array already contains it', function () {
+          it('should not load a segment if segments array already contains it', function () {
             subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
@@ -471,7 +471,7 @@ require(
             expect(loadUrlMock).toHaveBeenCalledOnceWith('https://subtitles/420512818.test', jasmine.any(Object));
           });
 
-          it('only keeps three fragments when playing', function () {
+          it('only keeps three segments when playing', function () {
             subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
@@ -490,7 +490,7 @@ require(
             expect(loadUrlMock).toHaveBeenCalledOnceWith('https://subtitles/420512815.test', jasmine.any(Object));
           });
 
-          it('load three new fragments when seeking back to a point where none of the segments are available', function () {
+          it('load three new segments when seeking back to a point where none of the segments are available', function () {
             subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(113.84);
@@ -506,7 +506,7 @@ require(
             expect(loadUrlMock).toHaveBeenCalledTimes(3);
           });
 
-          it('loads three new fragments when seeking forwards to a point where none of the segments are available', function () {
+          it('loads three new segments when seeking forwards to a point where none of the segments are available', function () {
             subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(13.84);
@@ -522,7 +522,7 @@ require(
             expect(loadUrlMock).toHaveBeenCalledTimes(3);
           });
 
-          it('should not load fragments when auto start is false', function () {
+          it('should not load segments when auto start is false', function () {
             subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
@@ -531,7 +531,7 @@ require(
             expect(loadUrlMock).not.toHaveBeenCalled();
           });
 
-          it('should load fragments when start is called and autoStart is false', function () {
+          it('should load segments when start is called and autoStart is false', function () {
             subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
             mediaPlayer.getCurrentTime.and.returnValue(10);
@@ -559,7 +559,7 @@ require(
             expect(imscMock.fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>');
           });
 
-          it('should stop loading fragments when stop is called', function () {
+          it('should stop loading segments when stop is called', function () {
             subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
             loadUrlMock.calls.reset();
@@ -580,7 +580,7 @@ require(
             expect(loadUrlMock).not.toHaveBeenCalled();
           });
 
-          it('should stop loading fragments when xml transforming has failed', function () {
+          it('should stop loading segments when xml transforming has failed', function () {
             imscMock.fromXML.and.throwError();
 
             subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
@@ -596,7 +596,7 @@ require(
             expect(loadUrlMock).not.toHaveBeenCalled();
           });
 
-          it('should not stop loading fragments when the xml response is invalid', function () {
+          it('should not stop loading segments when the xml response is invalid', function () {
             loadUrlMock.and.callFake(function (url, callbackObject) {
               callbackObject.onLoad(null, '', 200);
             });
