@@ -33,8 +33,6 @@ define(
             onError: function (statusCode) {
               var errorCase = function () { Plugins.interface.onSubtitlesLoadError({status: statusCode}); };
               DebugTool.info('Error loading subtitles data: ' + statusCode);
-              tearDown();
-              autoStart = true;
               mediaSources.failoverSubtitles(loadSubtitles, errorCase);
             },
             onTimeout: function () {
