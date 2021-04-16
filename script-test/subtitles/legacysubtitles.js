@@ -16,9 +16,9 @@ require(
     var loadUrlStubResponseText = 'loadUrlStubResponseText';
     var pluginInterfaceMock;
     var pluginsMock;
-    var stubCaptions = {
-      captionsUrl: 'http://stub-captions.test'
-    };
+    var subtitlesUrl;
+    var mockMediaSources;
+    var avalailableSourceCount;
 
     describe('Legacy Subtitles', function () {
       beforeEach(function (done) {
@@ -32,6 +32,18 @@ require(
         loadUrlMock = jasmine.createSpy();
         loadUrlMock.and.callFake(function (url, callbackObject) {
           callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200);
+        });
+
+        subtitlesUrl = 'http://stub-captions.test';
+        mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles']);
+        mockMediaSources.currentSubtitlesSource.and.returnValue(subtitlesUrl);
+        mockMediaSources.failoverSubtitles.and.callFake(function (postFailoverAction, failoverErrorAction) {
+          if (avalailableSourceCount > 1) {
+            avalailableSourceCount--;
+            postFailoverAction();
+          } else {
+            failoverErrorAction();
+          }
         });
 
         pluginInterfaceMock = jasmine.createSpyObj('interfaceMock', ['onSubtitlesRenderError', 'onSubtitlesTimeout', 'onSubtitlesXMLError', 'onSubtitlesLoadError']);
@@ -55,48 +67,59 @@ require(
         mockRendererSpy.render.calls.reset();
       });
 
-      it('Should load the captions url', function () {
-        legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
+      it('Should load the subtitles url', function () {
+        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
-        expect(loadUrlMock).toHaveBeenCalledWith(stubCaptions.captionsUrl, jasmine.any(Object));
+        expect(loadUrlMock).toHaveBeenCalledWith(subtitlesUrl, jasmine.any(Object));
       });
 
       it('Has a player subtitles class', function () {
-        legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
+        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
         expect(parentElement.firstChild.className).toContain('playerCaptions');
       });
 
-      it('Should fire onSubtitlesLoadError plugin if loading of XML fails', function () {
-        loadUrlMock.and.callFake(function (url, callbackObject) {
-          callbackObject.onError(404);
-        });
-        legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
-
-        expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404});
-      });
-
-      it('Should fire onSubtitlesXMLError if responseXML from the loader is invalid', function () {
+      it('Should fire subtitlesXMLError if responseXML from the loader is invalid', function () {
         loadUrlMock.and.callFake(function (url, callbackObject) {
           callbackObject.onLoad(null, '', 200);
         });
-        legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
+        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
         expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1);
+      });
+
+      it('Should try to failover to the next url if responseXML from the loader is invalid', function () {
+        avalailableSourceCount = 1;
+        loadUrlMock.and.callFake(function (url, callbackObject) {
+          callbackObject.onError(404);
+        });
+        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
+
+        expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1);
+      });
+
+      it('Should fire onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
+        avalailableSourceCount = 1;
+        loadUrlMock.and.callFake(function (url, callbackObject) {
+          callbackObject.onError();
+        });
+        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
+
+        expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
       });
 
       it('Should fire onSubtitlesTimeout if the XHR times out', function () {
         loadUrlMock.and.callFake(function (url, callbackObject) {
           callbackObject.onTimeout();
         });
-        legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
+        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
         expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1);
       });
 
       describe('Start', function () {
         it('Starts if there is valid xml in the response object', function () {
-          legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
+          legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
           legacySubtitles.start();
 
           expect(mockRendererSpy.start).toHaveBeenCalledWith();
@@ -106,7 +129,7 @@ require(
           loadUrlMock.and.callFake(function (url, callbackObject) {
             callbackObject.onError();
           });
-          legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
+          legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
           legacySubtitles.start();
 
           expect(mockRendererSpy.start).not.toHaveBeenCalledWith();
@@ -115,7 +138,7 @@ require(
 
       describe('Stop', function () {
         it('Stops the subtitles if there is valid xml in the response object', function () {
-          legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
+          legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
           legacySubtitles.stop();
 
           expect(mockRendererSpy.stop).toHaveBeenCalledWith();
@@ -126,7 +149,7 @@ require(
             callbackObject.onError();
           });
 
-          legacySubtitles = new LegacySubtitlesWithMocks(null, stubCaptions, false, parentElement);
+          legacySubtitles = new LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
           legacySubtitles.stop();
 
           expect(mockRendererSpy.stop).not.toHaveBeenCalledWith();
@@ -135,7 +158,7 @@ require(
 
       describe('Updating position', function () {
         beforeEach(function () {
-          legacySubtitles = LegacySubtitlesWithMocks(null, stubCaptions, true, parentElement);
+          legacySubtitles = LegacySubtitlesWithMocks(null, true, parentElement, mockMediaSources);
         });
 
         [

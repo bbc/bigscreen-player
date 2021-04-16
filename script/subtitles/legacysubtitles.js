@@ -10,29 +10,36 @@ define(
   function (Renderer, TransportControlPosition, DOMHelpers, LoadURL, DebugTool, Plugins) {
     'use strict';
 
-    return function (mediaPlayer, captions, autoStart, parentElement) {
+    return function (mediaPlayer, autoStart, parentElement, mediaSources) {
       var container = document.createElement('div');
       var subtitlesRenderer;
 
-      if (captions.captionsUrl) {
-        LoadURL(captions.captionsUrl, {
-          onLoad: function (responseXML, responseText, status) {
-            if (!responseXML) {
-              DebugTool.info('Error: responseXML is invalid.');
-              Plugins.interface.onSubtitlesXMLError();
-              return;
-            } else {
-              createContainer(responseXML);
+      loadSubtitles();
+
+      function loadSubtitles () {
+        var url = mediaSources.currentSubtitlesSource();
+        if (url && url !== '') {
+          LoadURL(url, {
+            timeout: 5000,
+            onLoad: function (responseXML, responseText, status) {
+              if (!responseXML) {
+                DebugTool.info('Error: responseXML is invalid.');
+                Plugins.interface.onSubtitlesXMLError();
+                return;
+              } else {
+                createContainer(responseXML);
+              }
+            },
+            onError: function (statusCode) {
+              var errorCase = function () { Plugins.interface.onSubtitlesLoadError({status: statusCode}); };
+              DebugTool.info('Error loading subtitles data: ' + statusCode);
+              mediaSources.failoverSubtitles(loadSubtitles, errorCase);
+            },
+            onTimeout: function () {
+              Plugins.interface.onSubtitlesTimeout();
             }
-          },
-          onError: function (statusCode) {
-            DebugTool.info('Error loading subtitles data: ' + statusCode);
-            Plugins.interface.onSubtitlesLoadError({status: statusCode});
-          },
-          onTimeout: function () {
-            Plugins.interface.onSubtitlesTimeout();
-          }
-        });
+          });
+        }
       }
 
       function createContainer (xml) {
@@ -79,6 +86,7 @@ define(
       }
 
       function tearDown () {
+        stop();
         DOMHelpers.safeRemoveElement(container);
       }
 

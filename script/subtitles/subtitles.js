@@ -4,10 +4,10 @@ define('bigscreenplayer/subtitles/subtitles',
   ],
   function (SubtitlesContainer) {
     'use strict';
-    return function (mediaPlayer, captions, autoStart, playbackElement, defaultStyleOpts, windowStartTime) {
+    return function (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources) {
       var subtitlesEnabled = autoStart;
-      var liveSubtitles = captions.segmentLength;
-      var subtitlesContainer = SubtitlesContainer(mediaPlayer, captions, autoStart, playbackElement, defaultStyleOpts, windowStartTime);
+      var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength();
+      var subtitlesContainer = SubtitlesContainer(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts);
 
       function enable () {
         subtitlesEnabled = true;
@@ -37,7 +37,7 @@ define('bigscreenplayer/subtitles/subtitles',
         if (liveSubtitles && (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)) {
           return false;
         } else {
-          return !!captions.captionsUrl;
+          return !!mediaSources.currentSubtitlesSource();
         }
       }
 

@@ -20,8 +20,9 @@ define('bigscreenplayer/mediasources',
       var serverDate;
       var time = {};
       var transferFormat;
+      var subtitlesSources;
 
-      function init (urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
+      function init (urls, subtitlesUrls, newServerDate, newWindowType, newLiveSupport, callbacks) {
         if (urls === undefined || urls.length === 0) {
           throw new Error('Media Sources urls are undefined');
         }
@@ -35,7 +36,8 @@ define('bigscreenplayer/mediasources',
         windowType = newWindowType;
         liveSupport = newLiveSupport;
         serverDate = newServerDate;
-        mediaSources = PlaybackUtils.cloneArray(urls);
+        mediaSources = urls ? PlaybackUtils.cloneArray(urls) : [];
+        subtitlesSources = subtitlesUrls ? PlaybackUtils.cloneArray(subtitlesUrls) : [];
         updateDebugOutput();
 
         if (needToGetManifest(windowType, liveSupport)) {
@@ -58,6 +60,16 @@ define('bigscreenplayer/mediasources',
           }
         } else {
           failoverErrorAction();
+        }
+      }
+
+      function failoverSubtitles (postFailoverAction, failoverErrorAction) {
+        if (subtitlesSources.length > 1) {
+          subtitlesSources.shift();
+          updateDebugOutput();
+          if (postFailoverAction) { postFailoverAction(); }
+        } else {
+          if (failoverErrorAction) { failoverErrorAction(); }
         }
       }
 
@@ -158,6 +170,22 @@ define('bigscreenplayer/mediasources',
         return '';
       }
 
+      function getCurrentSubtitlesUrl () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].url.toString();
+        }
+
+        return '';
+      }
+
+      function getCurrentSubtitlesSegmentLength () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].segmentLength;
+        }
+
+        return undefined;
+      }
+
       function availableUrls () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.url;
@@ -189,31 +217,34 @@ define('bigscreenplayer/mediasources',
         Plugins.interface.onErrorHandled(evt);
       }
 
-      function getCurrentCdn () {
-        if (mediaSources.length > 0) {
-          return mediaSources[0].cdn.toString();
-        }
-
-        return '';
-      }
-
       function availableCdns () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.cdn;
         });
       }
 
+      function availableSubtitlesCdns () {
+        return subtitlesSources.map(function (subtitleSource) {
+          return subtitleSource.cdn;
+        });
+      }
+
       function updateDebugOutput () {
         DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
-        DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
         DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
+
+        DebugTool.keyValue({key: 'available subtitle cdns', value: availableSubtitlesCdns()});
+        DebugTool.keyValue({key: 'subtitles url', value: getCurrentSubtitlesUrl()});
       }
 
       return {
         init: init,
         failover: failover,
+        failoverSubtitles: failoverSubtitles,
         refresh: refresh,
         currentSource: getCurrentUrl,
+        currentSubtitlesSource: getCurrentSubtitlesUrl,
+        currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,
         availableSources: availableUrls,
         time: generateTime
       };

@@ -5,13 +5,28 @@ require(
     var Subtitles;
     var subtitlesMock;
     var injector;
-    var stubCaptions = {
-      captionsUrl: 'http://captions.example.test'
-    };
+    var mediaSourcesMock;
+    var subtitlesAvailable;
+    var live;
 
     describe('Subtitles', function () {
+      mediaSourcesMock = {
+        currentSubtitlesSource: function () {
+          if (subtitlesAvailable) {
+            return 'http://subtitles.example.test';
+          } else {
+            return '';
+          }
+        },
+        currentSubtitlesSegmentLength: function () {
+          return live ? 3.84 : undefined;
+        }
+      };
+
       beforeEach(function () {
         injector = new Squire();
+        subtitlesAvailable = true;
+        live = false;
       });
 
       afterEach(function () {
@@ -42,7 +57,7 @@ require(
             var mockMediaPlayer = {};
             var autoStart = true;
             var mockPlaybackElement = document.createElement('div');
-            Subtitles(mockMediaPlayer, stubCaptions, autoStart, mockPlaybackElement);
+            Subtitles(mockMediaPlayer, autoStart, mockPlaybackElement, null, mediaSourcesMock);
 
             expect(subtitlesMock).toHaveBeenCalledTimes(1);
           });
@@ -67,7 +82,7 @@ require(
             var autoStart = true;
             var mockPlaybackElement = document.createElement('div');
 
-            Subtitles(mockMediaPlayer, stubCaptions, autoStart, mockPlaybackElement);
+            Subtitles(mockMediaPlayer, autoStart, mockPlaybackElement, null, mediaSourcesMock);
 
             expect(subtitlesMock).toHaveBeenCalledTimes(1);
           });
@@ -108,17 +123,16 @@ require(
             var autoStart = true;
             var mockPlaybackElement = document.createElement('div');
             var customDefaultStyle = {};
-            var windowStartTime = '123456';
 
-            Subtitles(mockMediaPlayer, stubCaptions, autoStart, mockPlaybackElement, customDefaultStyle, windowStartTime);
+            Subtitles(mockMediaPlayer, autoStart, mockPlaybackElement, customDefaultStyle, mediaSourcesMock);
 
-            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, stubCaptions, autoStart, mockPlaybackElement, customDefaultStyle, windowStartTime);
+            expect(subtitlesContainer).toHaveBeenCalledWith(mockMediaPlayer, autoStart, mockPlaybackElement, mediaSourcesMock, customDefaultStyle);
           });
         });
 
         describe('show', function () {
           it('should start subtitles when enabled and available', function () {
-            var subtitles = Subtitles(null, stubCaptions, null, null);
+            var subtitles = Subtitles(null, null, null, null, mediaSourcesMock);
             subtitles.enable();
             subtitles.show();
 
@@ -126,7 +140,7 @@ require(
           });
 
           it('should not start subtitles when disabled and available', function () {
-            var subtitles = Subtitles(null, stubCaptions, null, null);
+            var subtitles = Subtitles(null, null, null, null, mediaSourcesMock);
             subtitles.disable();
             subtitles.show();
 
@@ -134,7 +148,8 @@ require(
           });
 
           it('should not start subtitles when enabled and unavailable', function () {
-            var subtitles = Subtitles(null, {captionsUrl: undefined}, null, null);
+            subtitlesAvailable = false;
+            var subtitles = Subtitles(null, null, null, null, mediaSourcesMock);
             subtitles.enable();
             subtitles.show();
 
@@ -142,7 +157,8 @@ require(
           });
 
           it('should not start subtitles when disabled and unavailable', function () {
-            var subtitles = Subtitles(null, {captionsUrl: undefined}, null, null);
+            subtitlesAvailable = false;
+            var subtitles = Subtitles(null, null, null, null, mediaSourcesMock);
             subtitles.disable();
             subtitles.show();
 
@@ -152,7 +168,7 @@ require(
 
         describe('hide', function () {
           it('should stop subtitles when available', function () {
-            var subtitles = Subtitles(null, stubCaptions, null, null);
+            var subtitles = Subtitles(null, null, null, null, mediaSourcesMock);
             subtitles.hide();
 
             expect(subtitlesContainerSpies.stop).toHaveBeenCalledWith();
@@ -161,7 +177,7 @@ require(
 
         describe('enable', function () {
           it('should set enabled state to true', function () {
-            var subtitles = Subtitles(null, stubCaptions, null, null);
+            var subtitles = Subtitles(null, null, null, null, mediaSourcesMock);
             subtitles.enable();
 
             expect(subtitles.enabled()).toEqual(true);
@@ -170,7 +186,7 @@ require(
 
         describe('disable', function () {
           it('should set enabled state to false', function () {
-            var subtitles = Subtitles(null, stubCaptions, null, null);
+            var subtitles = Subtitles(null, null, null, null, mediaSourcesMock);
             subtitles.disable();
 
             expect(subtitlesContainerSpies.stop).not.toHaveBeenCalled();
@@ -180,26 +196,26 @@ require(
 
         describe('enabled', function () {
           it('should return true if subtitles are enabled at construction', function () {
-            var subtitles = Subtitles(null, {captionsUrl: undefined}, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
 
             expect(subtitles.enabled()).toEqual(true);
           });
 
           it('should return true if subtitles are enabled by an api call', function () {
-            var subtitles = Subtitles(null, {captionsUrl: undefined}, false, null);
+            var subtitles = Subtitles(null, false, null, null, mediaSourcesMock);
             subtitles.enable();
 
             expect(subtitles.enabled()).toEqual(true);
           });
 
           it('should return false if subtitles are disabled at construction', function () {
-            var subtitles = Subtitles(null, {captionsUrl: undefined}, false, null);
+            var subtitles = Subtitles(null, false, null, null, mediaSourcesMock);
 
             expect(subtitles.enabled()).toEqual(false);
           });
 
           it('should return true if subtitles are disabled by an api call', function () {
-            var subtitles = Subtitles(null, {captionsUrl: undefined}, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
             subtitles.disable();
 
             expect(subtitles.enabled()).toEqual(false);
@@ -208,13 +224,13 @@ require(
 
         describe('available', function () {
           it('should return true if VOD and url exists', function () {
-            var subtitles = Subtitles(null, {captionsUrl: 'http://captions.example.test'}, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
 
             expect(subtitles.available()).toEqual(true);
           });
 
           it('should return true if LIVE, url exists and no override', function () {
-            var subtitles = Subtitles(null, {captionsUrl: 'http://captions.example.test', segmentLength: 3.84}, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
 
             expect(subtitles.available()).toEqual(true);
           });
@@ -225,30 +241,34 @@ require(
                 legacySubtitles: true
               }
             };
-            var subtitles = Subtitles(null, {captionsUrl: 'http://captions.example.test'}, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
 
             expect(subtitles.available()).toEqual(true);
           });
 
           it('should return false if LIVE, url exists and legacy override exists', function () {
+            live = true;
             window.bigscreenPlayer = {
               overrides: {
                 legacySubtitles: true
               }
             };
-            var subtitles = Subtitles(null, {captionsUrl: 'http://captions.example.test', segmentLength: 3.84}, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
 
             expect(subtitles.available()).toEqual(false);
           });
 
           it('should return false if VOD and no url exists', function () {
-            var subtitles = Subtitles(null, {captionsUrl: undefined}, true, null);
+            subtitlesAvailable = false;
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
 
             expect(subtitles.available()).toEqual(false);
           });
 
           it('should return false if LIVE and no url exists', function () {
-            var subtitles = Subtitles(null, {captionsUrl: undefined, segmentLength: 3.84}, true, null);
+            subtitlesAvailable = false;
+            live = true;
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
 
             expect(subtitles.available()).toEqual(false);
           });
@@ -256,7 +276,7 @@ require(
 
         describe('setPosition', function () {
           it('calls through to subtitlesContainer updatePosition', function () {
-            var subtitles = Subtitles(null, stubCaptions, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
             subtitles.setPosition('pos');
 
             expect(subtitlesContainerSpies.updatePosition).toHaveBeenCalledWith('pos');
@@ -265,7 +285,7 @@ require(
 
         describe('customise', function () {
           it('passes through custom style object and enabled state to subtitlesContainer customise function', function () {
-            var subtitles = Subtitles(null, stubCaptions, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
             var customStyleObj = { size: 0.7 };
             subtitles.customise(customStyleObj);
 
@@ -275,7 +295,7 @@ require(
 
         describe('renderExample', function () {
           it('calls subtitlesContainer renderExample function with correct values', function () {
-            var subtitles = Subtitles(null, stubCaptions, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
             var exampleUrl = '';
             var customStyleObj = { size: 0.7 };
             var safePosition = { left: 30, top: 0 };
@@ -287,7 +307,7 @@ require(
 
         describe('clearExample', function () {
           it('calls subtitlesContainer clearExample function ', function () {
-            var subtitles = Subtitles(null, stubCaptions, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
             subtitles.clearExample();
 
             expect(subtitlesContainerSpies.clearExample).toHaveBeenCalledTimes(1);
@@ -296,7 +316,7 @@ require(
 
         describe('tearDown', function () {
           it('calls through to subtitlesContainer tearDown', function () {
-            var subtitles = Subtitles(null, stubCaptions, true, null);
+            var subtitles = Subtitles(null, true, null, null, mediaSourcesMock);
             subtitles.tearDown();
 
             expect(subtitlesContainerSpies.tearDown).toHaveBeenCalledTimes(1);

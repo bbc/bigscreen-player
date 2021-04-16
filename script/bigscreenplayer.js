@@ -132,11 +132,10 @@ define('bigscreenplayer/bigscreenplayer',
 
         subtitles = Subtitles(
           playerComponent,
-          bigscreenPlayerData.media.captions || { captionsUrl: bigscreenPlayerData.media.captionsUrl },
           enableSubtitles,
           playbackElement,
           bigscreenPlayerData.media.subtitleCustomisation,
-          getWindowStartTime() / 1000
+          mediaSources
         );
 
         if (enableSubtitles) {
@@ -207,18 +206,26 @@ define('bigscreenplayer/bigscreenplayer',
           };
 
           mediaSources = new MediaSources();
-          mediaSources.init(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
+
+          // Backwards compatibility with Old API; to be removed on Major Version Update
+          if (bigscreenPlayerData.media && !bigscreenPlayerData.media.captions && bigscreenPlayerData.media.captionsUrl) {
+            bigscreenPlayerData.media.captions = [{
+              url: bigscreenPlayerData.media.captionsUrl
+            }];
+          }
+
+          mediaSources.init(bigscreenPlayerData.media.urls, bigscreenPlayerData.media.captions, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
         },
 
         tearDown: function () {
-          if (playerComponent) {
-            playerComponent.tearDown();
-            playerComponent = undefined;
-          }
-
           if (subtitles) {
             subtitles.tearDown();
             subtitles = undefined;
+          }
+
+          if (playerComponent) {
+            playerComponent.tearDown();
+            playerComponent = undefined;
           }
 
           stateChangeCallbacks = [];
