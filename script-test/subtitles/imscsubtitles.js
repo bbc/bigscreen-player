@@ -36,7 +36,7 @@ require(
         epochStartTimeMilliseconds = undefined;
 
         mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['getCurrentTime']);
-        mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles', 'currentSubtitlesSegmentLength', 'time']);
+        mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles', 'currentSubtitlesSegmentLength', 'subtitlesRequestTimeout', 'time']);
         mockMediaSources.currentSubtitlesSource.and.callFake(function () { return subtitlesUrl; });
         mockMediaSources.failoverSubtitles.and.callFake(function (postFailoverAction, failoverErrorAction) {
           if (avalailableSourceCount > 1) {

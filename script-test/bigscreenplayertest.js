@@ -107,7 +107,7 @@ require(
       beforeEach(function (done) {
         mediaSourcesMock = function () {
           return {
-            init: function (urls, captionUrls, serverDate, windowType, liveSupport, callbacks) {
+            init: function (media, serverDate, windowType, liveSupport, callbacks) {
               mediaSourcesCallbackSuccessSpy = spyOn(callbacks, 'onSuccess').and.callThrough();
               mediaSourcesCallbackErrorSpy = spyOn(callbacks, 'onError').and.callThrough();
               if (forceMediaSourcesConstructionFailure) {

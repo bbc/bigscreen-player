@@ -214,7 +214,7 @@ define('bigscreenplayer/bigscreenplayer',
             }];
           }
 
-          mediaSources.init(bigscreenPlayerData.media.urls, bigscreenPlayerData.media.captions, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
+          mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
         },
 
         tearDown: function () {
