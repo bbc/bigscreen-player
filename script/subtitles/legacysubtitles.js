@@ -20,7 +20,7 @@ define(
         var url = mediaSources.currentSubtitlesSource();
         if (url && url !== '') {
           LoadURL(url, {
-            timeout: 5000,
+            timeout: mediaSources.subtitlesRequestTimeout(),
             onLoad: function (responseXML, responseText, status) {
               if (!responseXML) {
                 DebugTool.info('Error: responseXML is invalid.');
@@ -36,6 +36,7 @@ define(
               mediaSources.failoverSubtitles(loadSubtitles, errorCase);
             },
             onTimeout: function () {
+              DebugTool.info('Request timeout loading subtitles');
               Plugins.interface.onSubtitlesTimeout();
             }
           });

@@ -35,7 +35,7 @@ require(
         });
 
         subtitlesUrl = 'http://stub-captions.test';
-        mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles']);
+        mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles', 'subtitlesRequestTimeout']);
         mockMediaSources.currentSubtitlesSource.and.returnValue(subtitlesUrl);
         mockMediaSources.failoverSubtitles.and.callFake(function (postFailoverAction, failoverErrorAction) {
           if (avalailableSourceCount > 1) {
