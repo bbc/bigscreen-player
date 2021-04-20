@@ -173,6 +173,16 @@ require(
 
           expect(mediaSources.time()).toEqual(mockTimeObject);
         });
+
+        it('overrides the subtitlesRequestTimeout when set in media object', function () {
+          var mediaSources = new MediaSources();
+          var overriddenTimeout = 60000;
+
+          testMedia.subtitlesRequestTimeout = overriddenTimeout;
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.subtitlesRequestTimeout()).toEqual(overriddenTimeout);
+        });
       });
 
       describe('failover', function () {
@@ -291,7 +301,7 @@ require(
 
           testMedia.urls = [
             {url: 'http://source1.com', cdn: 'http://cdn1.com'},
-            {url: 'http://source2.com', cdn: 'http://cdn2.com'}],
+            {url: 'http://source2.com', cdn: 'http://cdn2.com'}];
 
           mediaSources.init(
             testMedia,

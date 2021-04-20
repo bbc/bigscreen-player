@@ -21,6 +21,8 @@ define('bigscreenplayer/mediasources',
       var time = {};
       var transferFormat;
       var subtitlesSources;
+      // Default 5000 can be overridden with media.subtitlesRequestTimeout
+      var subtitlesRequestTimeout = 5000;
 
       function init (media, newServerDate, newWindowType, newLiveSupport, callbacks) {
         if (media.urls === undefined || media.urls.length === 0) {
@@ -28,9 +30,13 @@ define('bigscreenplayer/mediasources',
         }
 
         if (callbacks === undefined ||
-      callbacks.onSuccess === undefined ||
-      callbacks.onError === undefined) {
+          callbacks.onSuccess === undefined ||
+          callbacks.onError === undefined) {
           throw new Error('Media Sources callbacks are undefined');
+        }
+
+        if (media.subtitlesRequestTimeout) {
+          subtitlesRequestTimeout = media.subtitlesRequestTimeout;
         }
 
         windowType = newWindowType;
@@ -38,6 +44,7 @@ define('bigscreenplayer/mediasources',
         serverDate = newServerDate;
         mediaSources = media.urls ? PlaybackUtils.cloneArray(media.urls) : [];
         subtitlesSources = media.captions ? PlaybackUtils.cloneArray(media.captions) : [];
+
         updateDebugOutput();
 
         if (needToGetManifest(windowType, liveSupport)) {
@@ -186,6 +193,10 @@ define('bigscreenplayer/mediasources',
         return undefined;
       }
 
+      function getSubtitlesRequestTimeout () {
+        return subtitlesRequestTimeout;
+      }
+
       function availableUrls () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.url;
@@ -245,6 +256,7 @@ define('bigscreenplayer/mediasources',
         currentSource: getCurrentUrl,
         currentSubtitlesSource: getCurrentSubtitlesUrl,
         currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,
+        subtitlesRequestTimeout: getSubtitlesRequestTimeout,
         availableSources: availableUrls,
         time: generateTime
       };
