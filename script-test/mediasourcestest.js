@@ -379,6 +379,15 @@ require(
         });
       });
 
+      describe('currentSubtitlesCdn', function () {
+        it('returns the first subtitles cdn', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testSources, testSubtitlesSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.currentSubtitlesCdn()).toBe(testSources[0].cdn);
+        });
+      });
+
       describe('failoverSubtitles', function () {
         var postFailoverAction;
         var onFailureAction;

@@ -197,6 +197,14 @@ define('bigscreenplayer/mediasources',
         return subtitlesRequestTimeout;
       }
 
+      function getCurrentSubtitlesCdn () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].cdn;
+        }
+
+        return undefined;
+      }
+
       function availableUrls () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.url;
@@ -256,6 +264,7 @@ define('bigscreenplayer/mediasources',
         currentSource: getCurrentUrl,
         currentSubtitlesSource: getCurrentSubtitlesUrl,
         currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,
+        currentSubtitlesCdn: getCurrentSubtitlesCdn,
         subtitlesRequestTimeout: getSubtitlesRequestTimeout,
         availableSources: availableUrls,
         time: generateTime
