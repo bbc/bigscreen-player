@@ -83,7 +83,7 @@ require(
             cdn: 'cdn1' 
           },
         ],
-        captionsUrl: 'https://www.somelovelycaptionsurl.com/captions/', // NB This paramater is being depreciated in favour of the captions array shown above. 
+        captionsUrl: 'https://www.somelovelycaptionsurl.com/captions/', // NB This parameter is being deprecated in favour of the captions array shown above. 
         subtitlesRequestTimeout: 5000, // Optional override for the XHR timeout on sidecar loaded subtitles
         subtitleCustomisation: {
           size: 0.75,
