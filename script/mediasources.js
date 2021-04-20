@@ -22,8 +22,8 @@ define('bigscreenplayer/mediasources',
       var transferFormat;
       var subtitlesSources;
 
-      function init (urls, subtitlesUrls, newServerDate, newWindowType, newLiveSupport, callbacks) {
-        if (urls === undefined || urls.length === 0) {
+      function init (media, newServerDate, newWindowType, newLiveSupport, callbacks) {
+        if (media.urls === undefined || media.urls.length === 0) {
           throw new Error('Media Sources urls are undefined');
         }
 
@@ -36,8 +36,8 @@ define('bigscreenplayer/mediasources',
         windowType = newWindowType;
         liveSupport = newLiveSupport;
         serverDate = newServerDate;
-        mediaSources = urls ? PlaybackUtils.cloneArray(urls) : [];
-        subtitlesSources = subtitlesUrls ? PlaybackUtils.cloneArray(subtitlesUrls) : [];
+        mediaSources = media.urls ? PlaybackUtils.cloneArray(media.urls) : [];
+        subtitlesSources = media.captions ? PlaybackUtils.cloneArray(media.captions) : [];
         updateDebugOutput();
 
         if (needToGetManifest(windowType, liveSupport)) {
