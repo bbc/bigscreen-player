@@ -15,6 +15,7 @@ require(
       var subtitles;
       var mockMediaSources;
       var subtitlesUrl;
+      var subtitlesCdn;
       var segmentLength;
       var epochStartTimeMilliseconds;
       var avalailableSourceCount;
@@ -31,6 +32,7 @@ require(
         injector = new Squire();
 
         subtitlesUrl = 'http://stub-subtitles.test';
+        subtitlesCdn = 'supplier1';
         loadUrlStubResponseText = '<?xml version="1.0" encoding="utf-8"?><tt xmlns="http://www.w3.org/ns/ttml"></tt>';
         segmentLength = undefined;
         epochStartTimeMilliseconds = undefined;
@@ -47,6 +49,7 @@ require(
           }
         });
         mockMediaSources.currentSubtitlesSegmentLength.and.callFake(function () { return segmentLength; });
+        mockMediaSources.currentSubtitlesCdn.and.callFake(function () { return subtitlesCdn; });
         mockMediaSources.time.and.callFake(function () {
           return {
             windowStartTime: epochStartTimeMilliseconds
@@ -235,6 +238,7 @@ require(
           });
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
+          expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledWith({cdn: subtitlesCdn});
           expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1);
         });
 
@@ -244,6 +248,7 @@ require(
           });
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
 
+          expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledWith({cdn: subtitlesCdn});
           expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1);
         });
 
