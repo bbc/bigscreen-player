@@ -70,12 +70,14 @@ define('bigscreenplayer/mediasources',
         }
       }
 
-      function failoverSubtitles (postFailoverAction, failoverErrorAction) {
+      function failoverSubtitles (postFailoverAction, failoverErrorAction, statusCode) {
         if (subtitlesSources.length > 1) {
+          Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn()});
           subtitlesSources.shift();
           updateDebugOutput();
           if (postFailoverAction) { postFailoverAction(); }
         } else {
+          Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FATAL, cdn: getCurrentSubtitlesCdn()});
           if (failoverErrorAction) { failoverErrorAction(); }
         }
       }
