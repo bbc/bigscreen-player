@@ -31,7 +31,7 @@ define(
               }
             },
             onError: function (statusCode) {
-              var errorCase = function () { Plugins.interface.onSubtitlesLoadError({status: statusCode}); };
+              var errorCase = function () { DebugTool.info('Failed to load from subtitles file from all available CDNs'); };
               DebugTool.info('Error loading subtitles data: ' + statusCode);
               mediaSources.failoverSubtitles(loadSubtitles, errorCase, statusCode);
             },
