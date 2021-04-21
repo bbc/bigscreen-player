@@ -109,9 +109,11 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function loadErrorFailover (statusCode) {
+        var errorCase = function () { DebugTool.info('No more CDNs available for subtitle failover'); };
+
         if ((liveSubtitles && loadErrorLimit()) || !liveSubtitles) {
           stop();
-          mediaSources.failoverSubtitles(start, stop, statusCode);
+          mediaSources.failoverSubtitles(start, errorCase, statusCode);
         }
       }
 
