@@ -186,6 +186,39 @@ require(
           expect(imscMock.generateISD).toHaveBeenCalledTimes(1);
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
         });
+
+        it('should call renderHTML with a preview element with the correct structure when no position info', function () {
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
+
+          var exampleHtml = null;
+          imscMock.renderHTML.and.callFake(function (isd, subsElement) {
+            exampleHtml = subsElement.outerHTML;
+          });
+
+          subtitles.renderExample('', {}, {});
+
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
+          expect(exampleHtml).toBe('<div id="subtitlesPreview" style="position: absolute; top: 0%; right: 0%; bottom: 0%; left: 0%;"></div>');
+        });
+
+        it('should call renderHTML with a preview element with the correct structure when there is position info', function () {
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
+
+          var exampleHtml = null;
+          imscMock.renderHTML.and.callFake(function (isd, subsElement) {
+            exampleHtml = subsElement.outerHTML;
+          });
+
+          subtitles.renderExample('', {}, {
+            top: 1,
+            right: 2,
+            bottom: 3,
+            left: 4
+          });
+
+          expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
+          expect(exampleHtml).toBe('<div id="subtitlesPreview" style="position: absolute; top: 1%; right: 2%; bottom: 3%; left: 4%;"></div>');
+        });
       });
 
       describe('Vod subtitles', function () {
