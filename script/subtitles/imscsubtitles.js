@@ -109,13 +109,9 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function loadErrorFailover (statusCode) {
-        var errorCase = function () {
-          stop();
-        };
-
         if ((liveSubtitles && loadErrorLimit()) || !liveSubtitles) {
           stop();
-          mediaSources.failoverSubtitles(start, errorCase, statusCode);
+          mediaSources.failoverSubtitles(start, stop, statusCode);
         }
       }
 
