@@ -221,17 +221,15 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         exampleSubtitlesElement.id = 'subtitlesPreview';
         exampleSubtitlesElement.style.position = 'absolute';
 
-        var renderWidth = parentElement.clientWidth;
-        if (safePosition) {
-          exampleSubtitlesElement.style.left = safePosition.left + '%';
-
-          var leftPixels = parentElement.clientWidth * (safePosition.left / 100);
-          renderWidth = parentElement.clientWidth - leftPixels;
-        }
+        safePosition = safePosition || {};
+        exampleSubtitlesElement.style.top = (safePosition.top || 0) + '%';
+        exampleSubtitlesElement.style.right = (safePosition.right || 0) + '%';
+        exampleSubtitlesElement.style.bottom = (safePosition.bottom || 0) + '%';
+        exampleSubtitlesElement.style.left = (safePosition.left || 0) + '%';
 
         parentElement.appendChild(exampleSubtitlesElement);
 
-        renderHTML(exampleXml, 1, exampleSubtitlesElement, exampleStyle, parentElement.clientHeight, renderWidth);
+        renderHTML(exampleXml, 1, exampleSubtitlesElement, exampleStyle, parentElement.clientHeight, parentElement.clientWidth);
       }
 
       function renderHTML (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
