@@ -103,16 +103,6 @@ require(
         expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1);
       });
 
-      it('Should fire onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
-        avalailableSourceCount = 1;
-        loadUrlMock.and.callFake(function (url, callbackObject) {
-          callbackObject.onError();
-        });
-        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
-
-        expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
-      });
-
       it('Should fire onSubtitlesTimeout if the XHR times out', function () {
         loadUrlMock.and.callFake(function (url, callbackObject) {
           callbackObject.onTimeout();
