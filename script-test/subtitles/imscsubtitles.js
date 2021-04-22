@@ -194,7 +194,7 @@ require(
         });
 
         it('should call renderHTML with a preview element with the correct structure when no position info', function () {
-          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
+          subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, undefined);
 
           var exampleHtml = null;
           var height = null;
