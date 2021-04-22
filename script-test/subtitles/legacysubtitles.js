@@ -17,6 +17,7 @@ require(
     var pluginInterfaceMock;
     var pluginsMock;
     var subtitlesUrl;
+    var subtitlesCdn;
     var mockMediaSources;
     var avalailableSourceCount;
 
@@ -35,8 +36,10 @@ require(
         });
 
         subtitlesUrl = 'http://stub-captions.test';
-        mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles', 'subtitlesRequestTimeout']);
+        subtitlesCdn = 'supplier1';
+        mockMediaSources = jasmine.createSpyObj('mockMediaSources', ['currentSubtitlesSource', 'failoverSubtitles', 'subtitlesRequestTimeout', 'currentSubtitlesCdn']);
         mockMediaSources.currentSubtitlesSource.and.returnValue(subtitlesUrl);
+        mockMediaSources.currentSubtitlesCdn.and.returnValue(subtitlesCdn);
         mockMediaSources.failoverSubtitles.and.callFake(function (postFailoverAction, failoverErrorAction) {
           if (avalailableSourceCount > 1) {
             avalailableSourceCount--;
@@ -85,6 +88,7 @@ require(
         });
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
+        expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledWith({cdn: subtitlesCdn});
         expect(pluginsMock.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1);
       });
 
@@ -95,17 +99,8 @@ require(
         });
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
+        expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledWith(jasmine.any(Function), jasmine.any(Function), 404);
         expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1);
-      });
-
-      it('Should fire onSubtitlesLoadError plugin if loading of XML fails on last available source', function () {
-        avalailableSourceCount = 1;
-        loadUrlMock.and.callFake(function (url, callbackObject) {
-          callbackObject.onError();
-        });
-        legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
-
-        expect(pluginsMock.interface.onSubtitlesLoadError).toHaveBeenCalledTimes(1);
       });
 
       it('Should fire onSubtitlesTimeout if the XHR times out', function () {
@@ -114,6 +109,7 @@ require(
         });
         legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
+        expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledWith({cdn: subtitlesCdn});
         expect(pluginsMock.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1);
       });
 

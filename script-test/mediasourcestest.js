@@ -32,7 +32,7 @@ require(
       beforeEach(function (done) {
         injector = new Squire();
         testCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
+        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onSubtitlesLoadError']);
 
         mockPlugins = {
           interface: mockPluginsInterface
@@ -379,6 +379,15 @@ require(
         });
       });
 
+      describe('currentSubtitlesCdn', function () {
+        it('returns the first subtitles cdn', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.currentSubtitlesCdn()).toBe(testSources[0].cdn);
+        });
+      });
+
       describe('failoverSubtitles', function () {
         var postFailoverAction;
         var onFailureAction;
@@ -406,6 +415,24 @@ require(
 
           expect(onFailureAction).toHaveBeenCalledTimes(1);
           expect(postFailoverAction).not.toHaveBeenCalled();
+        });
+
+        it('fires onSubtitlesLoadError plugin with a correct parameters when there are sources available to failover to', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, 404);
+
+          expect(mockPluginsInterface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404, severity: PluginEnums.STATUS.FAILOVER, cdn: 'http://supplier1.com/'});
+        });
+
+        it('fires onSubtitlesLoadError plugin with a correct parameters when there are no sources available to failover to', function () {
+          testMedia.captions.pop();
+
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, 404);
+
+          expect(mockPluginsInterface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404, severity: PluginEnums.STATUS.FATAL, cdn: 'http://supplier1.com/'});
         });
       });
 

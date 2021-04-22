@@ -24,20 +24,20 @@ define(
             onLoad: function (responseXML, responseText, status) {
               if (!responseXML) {
                 DebugTool.info('Error: responseXML is invalid.');
-                Plugins.interface.onSubtitlesXMLError();
+                Plugins.interface.onSubtitlesXMLError({cdn: mediaSources.currentSubtitlesCdn()});
                 return;
               } else {
                 createContainer(responseXML);
               }
             },
             onError: function (statusCode) {
-              var errorCase = function () { Plugins.interface.onSubtitlesLoadError({status: statusCode}); };
+              var errorCase = function () { DebugTool.info('Failed to load from subtitles file from all available CDNs'); };
               DebugTool.info('Error loading subtitles data: ' + statusCode);
-              mediaSources.failoverSubtitles(loadSubtitles, errorCase);
+              mediaSources.failoverSubtitles(loadSubtitles, errorCase, statusCode);
             },
             onTimeout: function () {
               DebugTool.info('Request timeout loading subtitles');
-              Plugins.interface.onSubtitlesTimeout();
+              Plugins.interface.onSubtitlesTimeout({cdn: mediaSources.currentSubtitlesCdn()});
             }
           });
         }
