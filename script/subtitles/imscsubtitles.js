@@ -221,15 +221,24 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         exampleSubtitlesElement.id = 'subtitlesPreview';
         exampleSubtitlesElement.style.position = 'absolute';
 
-        safePosition = safePosition || {};
-        exampleSubtitlesElement.style.top = (safePosition.top || 0) + '%';
-        exampleSubtitlesElement.style.right = (safePosition.right || 0) + '%';
-        exampleSubtitlesElement.style.bottom = (safePosition.bottom || 0) + '%';
-        exampleSubtitlesElement.style.left = (safePosition.left || 0) + '%';
+        var elementWidth = parentElement.clientWidth;
+        var elementHeight = parentElement.clientHeight;
+        var topPixels = ((safePosition.top || 0) / 100) * elementHeight;
+        var rightPixels = ((safePosition.right || 0) / 100) * elementWidth;
+        var bottomPixels = ((safePosition.bottom || 0) / 100) * elementHeight;
+        var leftPixels = ((safePosition.left || 0) / 100) * elementWidth;
 
+        var renderWidth = elementWidth - leftPixels - rightPixels;
+        var renderHeight = elementHeight - topPixels - bottomPixels;
+
+        safePosition = safePosition || {};
+        exampleSubtitlesElement.style.top = (topPixels) + 'px';
+        exampleSubtitlesElement.style.right = (rightPixels) + 'px';
+        exampleSubtitlesElement.style.bottom = (bottomPixels) + 'px';
+        exampleSubtitlesElement.style.left = (leftPixels) + 'px';
         parentElement.appendChild(exampleSubtitlesElement);
 
-        renderHTML(exampleXml, 1, exampleSubtitlesElement, exampleStyle, parentElement.clientHeight, parentElement.clientWidth);
+        renderHTML(exampleXml, 1, exampleSubtitlesElement, exampleStyle, renderHeight, renderWidth);
       }
 
       function renderHTML (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {

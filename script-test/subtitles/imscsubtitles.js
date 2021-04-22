@@ -9,7 +9,7 @@ require(
       var imscMock;
       var pluginInterfaceMock;
       var pluginsMock;
-      var mockParentElement = document.createElement('div');
+      var mockParentElement;
       var fromXmlReturn;
       var mediaPlayer;
       var subtitles;
@@ -79,6 +79,11 @@ require(
           callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200);
         });
 
+        mockParentElement = document.createElement('div');
+        mockParentElement.style.height = '100px';
+        mockParentElement.style.width = '200px';
+        document.body.appendChild(mockParentElement);
+
         injector.mock({
           'bigscreenplayer/external/smp-imsc': imscMock,
           'bigscreenplayer/plugins': pluginsMock,
@@ -95,6 +100,7 @@ require(
         jasmine.clock().uninstall();
         imscMock.generateISD.calls.reset();
         imscMock.renderHTML.calls.reset();
+        document.body.removeChild(mockParentElement);
       });
 
       function progressTime (mediaPlayerTime) {
@@ -132,7 +138,7 @@ require(
           subtitles.start();
           progressTime(9);
 
-          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
+          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 100, 200, false, null, null, false, expectedOpts);
         });
 
         it('overrides the subtitles styling metadata with supplied custom styles when rendering', function () {
@@ -146,7 +152,7 @@ require(
           subtitles.start();
           subtitles.customise(styleOpts, true);
 
-          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
+          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 100, 200, false, null, null, false, expectedOpts);
         });
 
         it('merges the current subtitles styling metadata with new supplied custom styles when rendering', function () {
@@ -161,7 +167,7 @@ require(
           subtitles.start();
           subtitles.customise(customStyleOpts, true);
 
-          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, expectedOpts);
+          expect(imscMock.renderHTML).toHaveBeenCalledWith(jasmine.any(Object), jasmine.any(HTMLDivElement), null, 100, 200, false, null, null, false, expectedOpts);
         });
 
         it('does not render custom styles when subtitles are not enabled', function () {
@@ -191,22 +197,32 @@ require(
           subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           var exampleHtml = null;
-          imscMock.renderHTML.and.callFake(function (isd, subsElement) {
+          var height = null;
+          var width = null;
+          imscMock.renderHTML.and.callFake(function (isd, subsElement, _, renderHeight, renderWidth) {
             exampleHtml = subsElement.outerHTML;
+            height = renderHeight;
+            width = renderWidth;
           });
 
           subtitles.renderExample('', {}, {});
 
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
-          expect(exampleHtml).toBe('<div id="subtitlesPreview" style="position: absolute; top: 0%; right: 0%; bottom: 0%; left: 0%;"></div>');
+          expect(exampleHtml).toBe('<div id="subtitlesPreview" style="position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;"></div>');
+          expect(height).toBe(100);
+          expect(width).toBe(200);
         });
 
         it('should call renderHTML with a preview element with the correct structure when there is position info', function () {
           subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
           var exampleHtml = null;
-          imscMock.renderHTML.and.callFake(function (isd, subsElement) {
+          var height = null;
+          var width = null;
+          imscMock.renderHTML.and.callFake(function (isd, subsElement, _, renderHeight, renderWidth) {
             exampleHtml = subsElement.outerHTML;
+            height = renderHeight;
+            width = renderWidth;
           });
 
           subtitles.renderExample('', {}, {
@@ -217,7 +233,9 @@ require(
           });
 
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
-          expect(exampleHtml).toBe('<div id="subtitlesPreview" style="position: absolute; top: 1%; right: 2%; bottom: 3%; left: 4%;"></div>');
+          expect(exampleHtml).toBe('<div id="subtitlesPreview" style="position: absolute; top: 1px; right: 4px; bottom: 3px; left: 8px;"></div>');
+          expect(height).toBe(96);
+          expect(width).toBe(188);
         });
       });
 
@@ -750,7 +768,7 @@ require(
             jasmine.clock().tick(750);
 
             expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 0}), msToS(epochStartTimeMilliseconds) + 2.750);
-            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 100, 200, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
             imscMock.renderHTML.calls.reset();
@@ -766,7 +784,7 @@ require(
             jasmine.clock().tick(750);
 
             expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 1}), msToS(epochStartTimeMilliseconds) + 4.25);
-            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 100, 200, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
             imscMock.renderHTML.calls.reset();
@@ -806,7 +824,7 @@ require(
             jasmine.clock().tick(750);
 
             expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 8);
-            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 100, 200, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
             imscMock.renderHTML.calls.reset();
@@ -822,7 +840,7 @@ require(
             jasmine.clock().tick(750);
 
             expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 9.5);
-            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 100, 200, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
             imscMock.renderHTML.calls.reset();
@@ -830,7 +848,7 @@ require(
             jasmine.clock().tick(750);
 
             expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 10.25);
-            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 100, 200, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
             imscMock.renderHTML.calls.reset();
@@ -846,7 +864,7 @@ require(
             jasmine.clock().tick(750);
 
             expect(imscMock.generateISD).toHaveBeenCalledOnceWith(jasmine.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 11.75);
-            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 0, 0, false, null, null, false, {});
+            expect(imscMock.renderHTML).toHaveBeenCalledOnceWith(jasmine.objectContaining({ contents: ['mockContents'] }), jasmine.any(HTMLDivElement), null, 100, 200, false, null, null, false, {});
 
             imscMock.generateISD.calls.reset();
             imscMock.renderHTML.calls.reset();
