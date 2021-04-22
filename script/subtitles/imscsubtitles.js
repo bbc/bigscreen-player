@@ -211,6 +211,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function renderExample (exampleXmlString, styleOpts, safePosition) {
+        safePosition = safePosition || {};
         var exampleXml = IMSC.fromXML(exampleXmlString);
         removeExampleSubtitlesElement();
 
@@ -231,7 +232,6 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var renderWidth = elementWidth - leftPixels - rightPixels;
         var renderHeight = elementHeight - topPixels - bottomPixels;
 
-        safePosition = safePosition || {};
         exampleSubtitlesElement.style.top = (topPixels) + 'px';
         exampleSubtitlesElement.style.right = (rightPixels) + 'px';
         exampleSubtitlesElement.style.bottom = (bottomPixels) + 'px';
