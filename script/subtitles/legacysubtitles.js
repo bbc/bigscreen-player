@@ -14,9 +14,13 @@ define(
       var container = document.createElement('div');
       var subtitlesRenderer;
 
-      loadSubtitles();
+      if (autoStart) {
+        start(autoStart);
+      }
 
-      function loadSubtitles () {
+      // loadSubtitles(autoStart);
+
+      function loadSubtitles (autoStartRenderer) {
         var url = mediaSources.currentSubtitlesSource();
         if (url && url !== '') {
           LoadURL(url, {
@@ -27,7 +31,7 @@ define(
                 Plugins.interface.onSubtitlesXMLError({cdn: mediaSources.currentSubtitlesCdn()});
                 return;
               } else {
-                createContainer(responseXML);
+                createContainer(responseXML, autoStartRenderer);
               }
             },
             onError: function (statusCode) {
@@ -43,12 +47,12 @@ define(
         }
       }
 
-      function createContainer (xml) {
+      function createContainer (xml, autoStartRenderer) {
         container.id = 'playerCaptionsContainer';
         DOMHelpers.addClass(container, 'playerCaptions');
 
         // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
-        subtitlesRenderer = new Renderer('playerCaptions', xml, mediaPlayer, autoStart);
+        subtitlesRenderer = new Renderer('playerCaptions', xml, mediaPlayer, autoStartRenderer);
         container.appendChild(subtitlesRenderer.render());
 
         parentElement.appendChild(container);
@@ -57,6 +61,8 @@ define(
       function start () {
         if (subtitlesRenderer) {
           subtitlesRenderer.start();
+        } else {
+          loadSubtitles(true);
         }
       }
 
