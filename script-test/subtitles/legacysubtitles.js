@@ -143,11 +143,11 @@ require(
           loadUrlMock.and.callFake(function (url, callbackObject) {
             callbackObject.onError();
           });
-          legacySubtitles = LegacySubtitlesWithMocks(null, true, parentElement, mockMediaSources);
+          legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
           legacySubtitles.start();
 
-          expect(mockRendererSpy.start).not.toHaveBeenCalledWith();
+          expect(mockRendererConstructor).not.toHaveBeenCalled();
         });
       });
 
