@@ -129,14 +129,13 @@ require(
           expect(mockRendererSpy.start).toHaveBeenCalledWith();
         });
 
-        it('Should load the subtitle url and auto start the renderer when the renderer doesnt exist', function () {
-          var rendererAutoStart = true;
+        it('Should load the subtitle url and create the renderer when the renderer doesnt exist', function () {
           legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
           legacySubtitles.start();
 
           expect(loadUrlMock).toHaveBeenCalledWith(subtitlesUrl, jasmine.any(Object));
-          expect(mockRendererConstructor).toHaveBeenCalledWith('playerCaptions', jasmine.any(String), null, rendererAutoStart);
+          expect(mockRendererConstructor).toHaveBeenCalledWith('playerCaptions', jasmine.any(String), null);
         });
 
         it('Should not start subtitles if there is invalid xml in the response object', function () {
