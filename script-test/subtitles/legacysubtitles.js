@@ -129,7 +129,7 @@ require(
           expect(mockRendererSpy.start).toHaveBeenCalledWith();
         });
 
-        it('Should load and auto start the renderer when the renderer doesnt exist', function () {
+        it('Should load the subtitle url and auto start the renderer when the renderer doesnt exist', function () {
           var rendererAutoStart = true;
           legacySubtitles = LegacySubtitlesWithMocks(null, false, parentElement, mockMediaSources);
 
