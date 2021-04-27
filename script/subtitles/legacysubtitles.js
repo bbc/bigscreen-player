@@ -18,8 +18,6 @@ define(
         start(autoStart);
       }
 
-      // loadSubtitles(autoStart);
-
       function loadSubtitles (autoStartRenderer) {
         var url = mediaSources.currentSubtitlesSource();
         if (url && url !== '') {
