@@ -183,8 +183,13 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         var segment;
 
         for (var i = 0; i < segments.length; i++) {
+          if (currentTime < segments[i].times[currentSegmentRendered.previousSubtitleIndex]) {
+            removeCurrentSubtitlesElement();
+          }
+
           for (var j = 0; j < segments[i].times.length; j++) {
             var lastOne = segments[i].times.length === j + 1;
+
             if (currentTime >= segments[i].times[j] && (lastOne || currentTime < segments[i].times[j + 1]) && segments[i].previousSubtitleIndex !== j && segments[i].times[j] !== 0) {
               segment = segments[i];
               currentSegmentRendered = segments[i];
