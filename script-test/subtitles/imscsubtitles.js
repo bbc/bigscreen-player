@@ -310,6 +310,18 @@ require(
           expect(loadUrlMock).not.toHaveBeenCalled();
         });
 
+        it('should not load subtitles everytime we start if it is already loaded', function () {
+          subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
+
+          expect(loadUrlMock).toHaveBeenCalledWith(subtitlesUrl, jasmine.any(Object));
+
+          loadUrlMock.calls.reset();
+          subtitles.stop();
+          subtitles.start();
+
+          expect(loadUrlMock).not.toHaveBeenCalled();
+        });
+
         it('cannot start when xml transforming has failed', function () {
           imscMock.fromXML.and.throwError();
           subtitles = ImscSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {});
