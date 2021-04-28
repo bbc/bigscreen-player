@@ -75,6 +75,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
                 previousSubtitleIndex: null,
                 number: segmentNumber
               });
+
               if (segments.length > SEGMENTS_TO_KEEP) {
                 pruneSegments();
               }
@@ -113,6 +114,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
         if ((liveSubtitles && loadErrorLimit()) || !liveSubtitles) {
           stop();
+          segments = [];
           mediaSources.failoverSubtitles(start, errorCase, statusCode);
         }
       }
@@ -271,7 +273,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       function start () {
         var url = mediaSources.currentSubtitlesSource();
         if (url && url !== '') {
-          if (!liveSubtitles) {
+          if (!liveSubtitles && segments.length === 0) {
             loadSegment(url);
           }
 
