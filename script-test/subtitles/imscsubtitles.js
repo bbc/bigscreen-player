@@ -199,11 +199,11 @@ require(
         it('should call renderHTML with a preview element with the correct structure when no position info', function () {
           subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, undefined);
 
-          var exampleHtml = null;
+          var exampleSubsElement = null;
           var height = null;
           var width = null;
           imscMock.renderHTML.and.callFake(function (isd, subsElement, _, renderHeight, renderWidth) {
-            exampleHtml = subsElement.outerHTML;
+            exampleSubsElement = subsElement;
             height = renderHeight;
             width = renderWidth;
           });
@@ -211,7 +211,12 @@ require(
           subtitles.renderExample('', {}, {});
 
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
-          expect(exampleHtml).toBe('<div id="subtitlesPreview" style="position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;"></div>');
+
+          expect(exampleSubsElement.style.top).toBe('0px');
+          expect(exampleSubsElement.style.right).toBe('0px');
+          expect(exampleSubsElement.style.bottom).toBe('0px');
+          expect(exampleSubsElement.style.left).toBe('0px');
+
           expect(height).toBe(100);
           expect(width).toBe(200);
         });
@@ -219,11 +224,11 @@ require(
         it('should call renderHTML with a preview element with the correct structure when there is position info', function () {
           subtitles = ImscSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {});
 
-          var exampleHtml = null;
+          var exampleSubsElement = null;
           var height = null;
           var width = null;
           imscMock.renderHTML.and.callFake(function (isd, subsElement, _, renderHeight, renderWidth) {
-            exampleHtml = subsElement.outerHTML;
+            exampleSubsElement = subsElement;
             height = renderHeight;
             width = renderWidth;
           });
@@ -236,7 +241,12 @@ require(
           });
 
           expect(imscMock.renderHTML).toHaveBeenCalledTimes(1);
-          expect(exampleHtml).toBe('<div id="subtitlesPreview" style="position: absolute; top: 1px; right: 4px; bottom: 3px; left: 8px;"></div>');
+
+          expect(exampleSubsElement.style.top).toBe('1px');
+          expect(exampleSubsElement.style.right).toBe('4px');
+          expect(exampleSubsElement.style.bottom).toBe('3px');
+          expect(exampleSubsElement.style.left).toBe('8px');
+
           expect(height).toBe(96);
           expect(width).toBe(188);
         });
