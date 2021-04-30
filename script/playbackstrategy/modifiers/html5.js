@@ -666,6 +666,10 @@ define(
           }
         },
 
+        setPlaybackRate: function (rate) {
+          mediaElement.playbackRate = rate;
+        },
+
         playFrom: function (seconds) {
           postBufferingState = MediaPlayerBase.STATE.PLAYING;
           targetSeekTime = seconds;

@@ -94,6 +94,10 @@ define(
         }
       }
 
+      function setPlaybackRate (rate) {
+        playbackStrategy.setPlaybackRate(rate);
+      }
+
       function isNativeHLSRestartable () {
         return window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
                transferFormat === TransferFormats.HLS &&
@@ -326,6 +330,7 @@ define(
         pause: pause,
         transitions: transitions,
         isEnded: isEnded,
+        setPlaybackRate: setPlaybackRate,
         setCurrentTime: setCurrentTime,
         getCurrentTime: getCurrentTime,
         getDuration: getDuration,

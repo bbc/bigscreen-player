@@ -273,6 +273,11 @@ define('bigscreenplayer/bigscreenplayer',
             subtitleCallbacks.splice(indexOf, 1);
           }
         },
+        setPlaybackRate: function (rate) {
+          if (playerComponent) {
+            playerComponent.setPlaybackRate(rate);
+          }
+        },
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
           if (playerComponent) {

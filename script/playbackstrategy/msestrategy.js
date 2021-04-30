@@ -566,6 +566,9 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         play: function () {
           mediaPlayer.play();
         },
+        setPlaybackRate: function (rate) {
+          mediaPlayer.setPlaybackRate(rate);
+        },
         setCurrentTime: function (time) {
           publishedSeekEvent = false;
           isSeeking = true;
