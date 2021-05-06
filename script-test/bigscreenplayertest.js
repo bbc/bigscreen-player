@@ -84,7 +84,16 @@ require(
       }
 
       if (options.subtitlesAvailable) {
-        bigscreenPlayerData.media.captionsUrl = 'captions';
+        bigscreenPlayerData.media.captions = [
+          {
+            url: 'captions1',
+            segmentLength: 3.84
+          },
+          {
+            url: 'captions2',
+            segmentLength: 3.84
+          }
+        ];
       }
 
       var callbacks;
@@ -98,7 +107,7 @@ require(
       beforeEach(function (done) {
         mediaSourcesMock = function () {
           return {
-            init: function (urls, serverDate, windowType, liveSupport, callbacks) {
+            init: function (media, serverDate, windowType, liveSupport, callbacks) {
               mediaSourcesCallbackSuccessSpy = spyOn(callbacks, 'onSuccess').and.callThrough();
               mediaSourcesCallbackErrorSpy = spyOn(callbacks, 'onError').and.callThrough();
               if (forceMediaSourcesConstructionFailure) {

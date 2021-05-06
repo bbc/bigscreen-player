@@ -10,7 +10,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
   ],
   function (IMSC, DOMHelpers, DebugTool, Plugins, Utils, LoadURL, TimeUtils) {
     'use strict';
-    return function (mediaPlayer, captions, autoStart, parentElement, defaultStyleOpts, windowStartEpochSeconds) {
+    return function (mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
       var currentSubtitlesElement;
       var exampleSubtitlesElement;
       var imscRenderOpts = transformStyleOptions(defaultStyleOpts);
@@ -18,7 +18,10 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       var SEGMENTS_TO_KEEP = 3;
       var segments = [];
       var currentSegmentRendered = {};
-      var liveSubtitles = !!captions.segmentLength;
+      var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength();
+      var loadErrorCount = 0;
+      var LOAD_ERROR_COUNT_MAX = 3;
+      var windowStartEpochSeconds = getWindowStartTime() / 1000;
 
       if (autoStart) {
         start();
@@ -26,7 +29,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
 
       function loadAllRequiredSegments () {
         var segmentsToLoad = [];
-        var currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), captions.segmentLength);
+        var currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), mediaSources.currentSubtitlesSegmentLength());
         for (var i = 0; i < SEGMENTS_TO_KEEP; i++) {
           var segmentNumber = currentSegment + i;
           var alreadyLoaded = segments.some(function (segment) {
@@ -44,17 +47,20 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         }
 
         segmentsToLoad.forEach(function (segmentNumber) {
-          loadSegment(captions.captionsUrl, segmentNumber);
+          var url = mediaSources.currentSubtitlesSource();
+          loadSegment(url, segmentNumber);
         });
       }
 
       function loadSegment (url, segmentNumber) {
         url = url.replace('$segment$', segmentNumber);
         LoadURL(url, {
+          timeout: mediaSources.subtitlesRequestTimeout(),
           onLoad: function (responseXML, responseText, status) {
+            resetLoadErrorCount();
             if (!responseXML && !liveSubtitles) {
               DebugTool.info('Error: responseXML is invalid.');
-              Plugins.interface.onSubtitlesTransformError();
+              Plugins.interface.onSubtitlesXMLError({cdn: mediaSources.currentSubtitlesCdn()});
               stop();
               return;
             }
@@ -74,17 +80,43 @@ define('bigscreenplayer/subtitles/imscsubtitles',
                 pruneSegments();
               }
             } catch (e) {
-              DebugTool.info('Error transforming captions : ' + e);
+              DebugTool.info('Error transforming subtitles: ' + e);
               Plugins.interface.onSubtitlesTransformError();
               stop();
             }
           },
-          onError: function (error) {
-            DebugTool.info('Error loading subtitles data: ' + error);
-            Plugins.interface.onSubtitlesLoadError();
+          onError: function (statusCode) {
+            DebugTool.info('Error loading subtitles data: ' + statusCode);
+            loadErrorFailover(statusCode);
+          },
+          onTimeout: function () {
+            DebugTool.info('Request timeout loading subtitles');
+            Plugins.interface.onSubtitlesTimeout({cdn: mediaSources.currentSubtitlesCdn()});
             stop();
           }
         });
+      }
+
+      function resetLoadErrorCount () {
+        loadErrorCount = 0;
+      }
+
+      function loadErrorLimit () {
+        loadErrorCount++;
+        if (loadErrorCount >= LOAD_ERROR_COUNT_MAX) {
+          resetLoadErrorCount();
+          return true;
+        }
+      }
+
+      function loadErrorFailover (statusCode) {
+        var errorCase = function () { DebugTool.info('No more CDNs available for subtitle failover'); };
+
+        if ((liveSubtitles && loadErrorLimit()) || !liveSubtitles) {
+          stop();
+          segments = [];
+          mediaSources.failoverSubtitles(start, errorCase, statusCode);
+        }
       }
 
       function pruneSegments () {
@@ -179,6 +211,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
       }
 
       function renderExample (exampleXmlString, styleOpts, safePosition) {
+        safePosition = safePosition || {};
         var exampleXml = IMSC.fromXML(exampleXmlString);
         removeExampleSubtitlesElement();
 
@@ -189,17 +222,23 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         exampleSubtitlesElement.id = 'subtitlesPreview';
         exampleSubtitlesElement.style.position = 'absolute';
 
-        var renderWidth = parentElement.clientWidth;
-        if (safePosition) {
-          exampleSubtitlesElement.style.left = safePosition.left + '%';
+        var elementWidth = parentElement.clientWidth;
+        var elementHeight = parentElement.clientHeight;
+        var topPixels = ((safePosition.top || 0) / 100) * elementHeight;
+        var rightPixels = ((safePosition.right || 0) / 100) * elementWidth;
+        var bottomPixels = ((safePosition.bottom || 0) / 100) * elementHeight;
+        var leftPixels = ((safePosition.left || 0) / 100) * elementWidth;
 
-          var leftPixels = parentElement.clientWidth * (safePosition.left / 100);
-          renderWidth = parentElement.clientWidth - leftPixels;
-        }
+        var renderWidth = elementWidth - leftPixels - rightPixels;
+        var renderHeight = elementHeight - topPixels - bottomPixels;
 
+        exampleSubtitlesElement.style.top = (topPixels) + 'px';
+        exampleSubtitlesElement.style.right = (rightPixels) + 'px';
+        exampleSubtitlesElement.style.bottom = (bottomPixels) + 'px';
+        exampleSubtitlesElement.style.left = (leftPixels) + 'px';
         parentElement.appendChild(exampleSubtitlesElement);
 
-        renderHTML(exampleXml, 1, exampleSubtitlesElement, exampleStyle, parentElement.clientHeight, renderWidth);
+        renderHTML(exampleXml, 1, exampleSubtitlesElement, exampleStyle, renderHeight, renderWidth);
       }
 
       function renderHTML (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
@@ -227,10 +266,15 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         return liveSubtitles ? windowStartEpochSeconds + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime();
       }
 
+      function getWindowStartTime () {
+        return mediaSources && mediaSources.time().windowStartTime;
+      }
+
       function start () {
-        if (captions.captionsUrl) {
-          if (!liveSubtitles) {
-            loadSegment(captions.captionsUrl);
+        var url = mediaSources.currentSubtitlesSource();
+        if (url && url !== '') {
+          if (!liveSubtitles && segments.length === 0) {
+            loadSegment(url);
           }
 
           updateInterval = setInterval(function () {
@@ -265,6 +309,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
         clearExample: removeExampleSubtitlesElement,
         tearDown: function () {
           stop();
+          resetLoadErrorCount();
           segments = undefined;
         }
       };

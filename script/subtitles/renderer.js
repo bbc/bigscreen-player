@@ -7,7 +7,7 @@ define('bigscreenplayer/subtitles/renderer',
   function (DebugTool, Transformer, Plugins) {
     'use strict';
 
-    var Renderer = function (id, captionsXML, mediaPlayer, autoStart) {
+    var Renderer = function (id, captionsXML, mediaPlayer) {
       var transformedSubtitles;
       var liveItems = [];
       var interval = 0;
@@ -16,9 +16,8 @@ define('bigscreenplayer/subtitles/renderer',
       outputElement.id = id;
 
       transformedSubtitles = Transformer().transformXML(captionsXML);
-      if (autoStart) {
-        start();
-      }
+
+      start();
 
       function render () {
         return outputElement;

@@ -30,27 +30,19 @@ require(
         });
       });
 
-      it('should initialise with a id, xml object, media player and autoStart value', function () {
+      it('should initialise with a id, xml object, media player', function () {
         var mockMediaPlayer = jasmine.createSpy();
-        var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer, true);
+        var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer);
 
         expect(renderer).toEqual(jasmine.objectContaining({render: jasmine.any(Function), start: jasmine.any(Function), stop: jasmine.any(Function)}));
       });
 
-      it('should set the output elements display style if autoStart is true', function () {
+      it('should set the output elements display style on initialisation', function () {
         var mockMediaPlayer = jasmine.createSpy();
-        var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer, true);
+        var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer);
         var outputElement = renderer.render();
 
         expect(outputElement.style.display).toBe('block');
-      });
-
-      it('should not set the output elements display style if autoStart is false', function () {
-        var mockMediaPlayer = jasmine.createSpy();
-        var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer, false);
-        var outputElement = renderer.render();
-
-        expect(outputElement.style.display).toBe('');
       });
     });
   }

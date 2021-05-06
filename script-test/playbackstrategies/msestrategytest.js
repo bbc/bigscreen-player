@@ -132,7 +132,7 @@ require(
         mediaSourcesTimeSpy = spyOn(mediaSources, 'time');
         mediaSourcesTimeSpy.and.callThrough();
         spyOn(mediaSources, 'failover').and.callThrough();
-        mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
+        mediaSources.init({urls: cdnArray, captions: []}, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         testManifestObject = {
           type: 'manifestLoaded',
