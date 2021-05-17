@@ -126,7 +126,7 @@ require(
         var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'keyValue', 'tearDown', 'setRootElement']);
         mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-          'getPlayerElement', 'tearDown', 'getWindowStartTime', 'getWindowEndTime']);
+          'getPlayerElement', 'tearDown', 'getWindowStartTime', 'getWindowEndTime', 'setPlaybackRate']);
         mockSubtitlesInstance = jasmine.createSpyObj('mockSubtitlesInstance', ['enable', 'disable', 'show', 'hide', 'enabled', 'available', 'setPosition', 'customise', 'renderExample', 'clearExample', 'tearDown']);
         mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
@@ -705,6 +705,22 @@ require(
           mockEventHook({data: {currentTime: middleOfStreamWindow}, timeUpdate: true});
 
           expect(callback).toHaveBeenCalledWith({currentTime: middleOfStreamWindow, endOfStream: false});
+        });
+      });
+
+      describe('setPlaybackRate', function () {
+        it('should setPlaybackRate on the strategy/playerComponent', function () {
+          initialiseBigscreenPlayer();
+
+          bigscreenPlayer.setPlaybackRate(2);
+
+          expect(mockPlayerComponentInstance.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+
+        it('should not set playback rate on the strategy/playerComponent if bigscreen player is not initialised', function () {
+          bigscreenPlayer.setCurrentTime(2);
+
+          expect(mockPlayerComponentInstance.setPlaybackRate).not.toHaveBeenCalled();
         });
       });
 
