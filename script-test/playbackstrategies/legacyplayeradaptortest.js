@@ -51,7 +51,7 @@ require(
         mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['addEventCallback', 'initialiseMedia', 'beginPlayback',
           'getState', 'resume', 'getPlayerElement', 'getSeekableRange',
           'reset', 'stop', 'removeAllEventCallbacks', 'getSource',
-          'getMimeType', 'beginPlaybackFrom', 'playFrom', 'pause']);
+          'getMimeType', 'beginPlaybackFrom', 'playFrom', 'pause', 'setPlaybackRate']);
 
         injector.mock({
           'bigscreenplayer/playbackstrategy/liveglitchcurtain': mockGlitchCurtainConstructorInstance
@@ -505,6 +505,16 @@ require(
           expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
 
           expect(mediaPlayer.pause).not.toHaveBeenCalledWith();
+        });
+      });
+
+      describe('setPlaybackRate', function () {
+        it('calls through to the mediaPlayers setPlaybackRate function', function () {
+          setUpLegacyAdaptor();
+
+          legacyAdaptor.setPlaybackRate(2);
+
+          expect(mediaPlayer.setPlaybackRate).toHaveBeenCalledWith(2);
         });
       });
 
