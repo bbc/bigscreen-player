@@ -281,6 +281,17 @@ require(
         });
       });
 
+      describe('setPlaybackRate', function () {
+        it('calls into the strategy to set the playback rate', function () {
+          spyOn(mockStrategy, 'setPlaybackRate');
+          setUpPlayerComponent();
+
+          playerComponent.setPlaybackRate(2);
+
+          expect(mockStrategy.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+      });
+
       describe('events', function () {
         describe('on playing', function () {
           it('should fire error cleared on the plugins', function () {

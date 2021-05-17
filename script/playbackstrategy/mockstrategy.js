@@ -59,6 +59,9 @@ define('bigscreenplayer/playbackstrategy/mockstrategy',
       setCurrentTime: function () {
         return;
       },
+      setPlaybackRate: function () {
+        return;
+      },
       isPaused: function () {
         return;
       },
