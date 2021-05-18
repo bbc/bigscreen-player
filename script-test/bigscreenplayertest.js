@@ -725,10 +725,12 @@ require(
 
         it('should call through to get the playback rate when requested', function () {
           initialiseBigscreenPlayer();
+          mockPlayerComponentInstance.getPlaybackRate.and.returnValue(1.5);
 
-          bigscreenPlayer.getPlaybackRate();
+          var rate = bigscreenPlayer.getPlaybackRate();
 
           expect(mockPlayerComponentInstance.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
         });
 
         it('should not get playback rate if playerComponent is not initialised', function () {

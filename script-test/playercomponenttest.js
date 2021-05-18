@@ -294,10 +294,12 @@ require(
         it('calls into the strategy to get the playback rate', function () {
           spyOn(mockStrategy, 'getPlaybackRate');
           setUpPlayerComponent();
+          mockStrategy.getPlaybackRate.and.returnValue(1.5);
 
-          playerComponent.getPlaybackRate();
+          var rate = playerComponent.getPlaybackRate();
 
           expect(mockStrategy.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
         });
       });
 

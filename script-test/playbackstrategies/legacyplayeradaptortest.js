@@ -517,12 +517,14 @@ require(
           expect(mediaPlayer.setPlaybackRate).toHaveBeenCalledWith(2);
         });
 
-        it('calls through to the mediaPlayers getPlaybackRate function', function () {
+        it('calls through to the mediaPlayers getPlaybackRate function and returns correct value', function () {
           setUpLegacyAdaptor();
+          mediaPlayer.getPlaybackRate.and.returnValue(1.5);
 
-          legacyAdaptor.getPlaybackRate();
+          var rate = legacyAdaptor.getPlaybackRate();
 
           expect(mediaPlayer.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
         });
 
         it('getPlaybackRate returns 1.0 if mediaPlayer does not have getPlaybackRate function', function () {

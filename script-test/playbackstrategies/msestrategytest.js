@@ -825,13 +825,15 @@ require(
           expect(mockDashInstance.setPlaybackRate).toHaveBeenCalledWith(2);
         });
 
-        it('should call through to MediaPlayer\'s getPlaybackRate function', function () {
+        it('should call through to MediaPlayer\'s getPlaybackRate function and returns correct value', function () {
           setUpMSE();
           mseStrategy.load(null, 0);
+          mockDashInstance.getPlaybackRate.and.returnValue(1.5);
 
-          mseStrategy.getPlaybackRate();
+          var rate = mseStrategy.getPlaybackRate();
 
           expect(mockDashInstance.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
         });
       });
 
