@@ -476,6 +476,16 @@ require(
         });
       });
 
+      describe('setPlaybackRate', function () {
+        it('sets the playback rate on the media element', function () {
+          setUpStrategy();
+          basicStrategy.load(null, 0);
+          basicStrategy.setPlaybackRate(2);
+
+          expect(mockVideoElement.playbackRate).toEqual(2);
+        });
+      });
+
       describe('isPaused', function () {
         it('should return false when the media element is not paused', function () {
           setUpStrategy();
