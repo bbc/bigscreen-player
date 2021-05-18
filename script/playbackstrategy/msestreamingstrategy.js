@@ -7,11 +7,31 @@ define('bigscreenplayer/playbackstrategy/msestreamingstrategy', [], function () 
     isUHD
   ) {
     var audio = document.createElement('audio');
+    audio.volume = 0.1;
     var mediaSource = new MediaSource();
+    var buffer = [];
     var sourceBuffer;
+    var bufferedDuration = 0;
 
     mediaSource.addEventListener('sourceopen', function () {
       sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+      sourceBuffer.addEventListener('updateend', function (evt) {
+        bufferedDuration = sourceBuffer.buffered.length > 0 ? (sourceBuffer.buffered.end(0) - sourceBuffer.buffered.start(0)) : 0;
+
+        if (bufferedDuration > 20 && !sourceBuffer.updating) {
+          sourceBuffer.remove(audio.seekable.start(0), audio.currentTime);
+        }
+      });
+
+      setInterval(function () {
+        if (!sourceBuffer.updating && bufferedDuration < 20) {
+          sourceBuffer.appendBuffer(buffer.shift());
+        }
+      }, 500);
+
+      setInterval(function () {
+        console.log('bufferedDuration duration ' + bufferedDuration);
+      }, 1000);
     });
 
     function streamFetcher (stream) {
@@ -27,7 +47,7 @@ define('bigscreenplayer/playbackstrategy/msestreamingstrategy', [], function () 
               }
 
               console.log(result.value.length);
-              sourceBuffer.appendBuffer(result.value);
+              buffer.push(result.value);
 
               return reader.read().then(process);
             });
