@@ -51,19 +51,12 @@ define('bigscreenplayer/playbackstrategy/msestreamingstrategy', [], function () 
 
               return reader.read().then(process);
             });
-          // emitter.trigger('responseLoaded', response.body);
         }
       });
     }
 
     audio.src = URL.createObjectURL(mediaSource);
     audio.play();
-
-    // function MediaSourceController () {
-    //   emitter.on('responseLoaded', function (chunk) {
-    //     sourceBuffer.appendBuffer(chunk);
-    //   });
-    // }
 
     return {
       load: function () {
