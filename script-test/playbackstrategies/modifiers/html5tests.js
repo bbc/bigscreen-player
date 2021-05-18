@@ -1808,6 +1808,15 @@ require(
         });
       });
 
+      describe('setPlaybackRate', function () {
+        it('sets the playback rate on the media element', function () {
+          player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
+          player.setPlaybackRate(2);
+
+          expect(mockVideoMediaElement.playbackRate).toEqual(2);
+        });
+      });
+
       describe('Media Element Stop', function () {
         it(' Stop When In Buffering State', function () {
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
