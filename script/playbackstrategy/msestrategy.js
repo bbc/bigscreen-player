@@ -339,7 +339,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           'streaming': {
             'liveDelay': LIVE_DELAY_SECONDS,
             'bufferToKeep': 0,
-            'bufferAheadToKeep': 20,
             'bufferTimeAtTopQuality': 12,
             'bufferTimeAtTopQualityLongForm': 12
           }
@@ -377,7 +376,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
        *
        * Anchor tags applied to the MPD source for playback:
        *
-       * #r - relative to the start of the first period defined in the DASH manifest
        * #t - time since the beginning of the first period defined in the DASH manifest
        * @param {String} source
        * @param {Number} startTime
@@ -387,20 +385,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           return source;
         }
 
+        startTime = parseInt(startTime);
+
         if (windowType === WindowTypes.STATIC) {
-          return startTime === 0 ? source : source + '#t=' + parseInt(startTime);
-        }
-
-        if (windowType === WindowTypes.SLIDING) {
-          DebugTool.keyValue({key: 'initial-playback-time', value: parseInt(startTime)});
-          return startTime === 0 ? source : source + '#r=' + parseInt(startTime);
-        }
-
-        if (windowType === WindowTypes.GROWING) {
+          return startTime === 0 ? source : source + '#t=' + startTime;
+        } else {
           var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000);
-          var srcWithTimeAnchor = source + '#t=';
+          var srcWithTimeAnchor = source + '#t=posix:';
 
-          startTime = parseInt(startTime);
           return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime);
         }
       }
