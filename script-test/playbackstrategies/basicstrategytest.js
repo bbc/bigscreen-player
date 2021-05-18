@@ -476,13 +476,24 @@ require(
         });
       });
 
-      describe('setPlaybackRate', function () {
+      describe('Playback Rate', function () {
         it('sets the playback rate on the media element', function () {
           setUpStrategy();
           basicStrategy.load(null, 0);
           basicStrategy.setPlaybackRate(2);
 
           expect(mockVideoElement.playbackRate).toEqual(2);
+        });
+
+        it('gets the playback rate on the media element', function () {
+          setUpStrategy();
+          basicStrategy.load(null, 0);
+          var testRate = 1.5;
+          basicStrategy.setPlaybackRate(testRate);
+
+          var rate = basicStrategy.getPlaybackRate();
+
+          expect(rate).toEqual(testRate);
         });
       });
 

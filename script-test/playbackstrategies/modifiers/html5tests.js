@@ -1808,12 +1808,23 @@ require(
         });
       });
 
-      describe('setPlaybackRate', function () {
+      describe('Playback Rate', function () {
         it('sets the playback rate on the media element', function () {
           player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
           player.setPlaybackRate(2);
 
           expect(mockVideoMediaElement.playbackRate).toEqual(2);
+        });
+
+        it('gets the playback rate on the media element', function () {
+          player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {});
+
+          var testRate = 1.5;
+          player.setPlaybackRate(testRate);
+
+          var rate = player.getPlaybackRate();
+
+          expect(rate).toEqual(testRate);
         });
       });
 

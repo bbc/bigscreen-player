@@ -199,6 +199,10 @@ define('bigscreenplayer/playbackstrategy/basicstrategy',
         mediaElement.playbackRate = rate;
       }
 
+      function getPlaybackRate () {
+        return mediaElement.playbackRate;
+      }
+
       function getClampedTime (time, range) {
         return Math.min(Math.max(time, range.start), range.end - CLAMP_OFFSET_SECONDS);
       }
@@ -281,6 +285,7 @@ define('bigscreenplayer/playbackstrategy/basicstrategy',
         play: play,
         setCurrentTime: setCurrentTime,
         setPlaybackRate: setPlaybackRate,
+        getPlaybackRate: getPlaybackRate,
         getPlayerElement: getPlayerElement
       };
     };

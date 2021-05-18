@@ -281,7 +281,7 @@ require(
         });
       });
 
-      describe('setPlaybackRate', function () {
+      describe('Playback Rate', function () {
         it('calls into the strategy to set the playback rate', function () {
           spyOn(mockStrategy, 'setPlaybackRate');
           setUpPlayerComponent();
@@ -289,6 +289,15 @@ require(
           playerComponent.setPlaybackRate(2);
 
           expect(mockStrategy.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+
+        it('calls into the strategy to get the playback rate', function () {
+          spyOn(mockStrategy, 'getPlaybackRate');
+          setUpPlayerComponent();
+
+          playerComponent.getPlaybackRate();
+
+          expect(mockStrategy.getPlaybackRate).toHaveBeenCalled();
         });
       });
 

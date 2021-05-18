@@ -49,7 +49,7 @@ require(
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'retrieveManifest', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
             'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getDashAdapter',
-            'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'updateSettings', 'setDuration', 'setPlaybackRate']);
+            'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'updateSettings', 'setDuration', 'setPlaybackRate', 'getPlaybackRate']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
         mockPlugins = {
           interface: mockPluginsInterface
@@ -815,7 +815,7 @@ require(
         });
       });
 
-      describe('setPlaybackRate()', function () {
+      describe('Playback Rate', function () {
         it('should call through to MediaPlayer\'s setPlaybackRate function', function () {
           setUpMSE();
           mseStrategy.load(null, 0);
@@ -823,6 +823,15 @@ require(
           mseStrategy.setPlaybackRate(2);
 
           expect(mockDashInstance.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+
+        it('should call through to MediaPlayer\'s getPlaybackRate function', function () {
+          setUpMSE();
+          mseStrategy.load(null, 0);
+
+          mseStrategy.getPlaybackRate();
+
+          expect(mockDashInstance.getPlaybackRate).toHaveBeenCalled();
         });
       });
 

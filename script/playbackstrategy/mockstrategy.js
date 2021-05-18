@@ -62,6 +62,9 @@ define('bigscreenplayer/playbackstrategy/mockstrategy',
       setPlaybackRate: function () {
         return;
       },
+      getPlaybackRate: function () {
+        return;
+      },
       isPaused: function () {
         return;
       },

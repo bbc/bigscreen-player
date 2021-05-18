@@ -273,11 +273,6 @@ define('bigscreenplayer/bigscreenplayer',
             subtitleCallbacks.splice(indexOf, 1);
           }
         },
-        setPlaybackRate: function (rate) {
-          if (playerComponent) {
-            playerComponent.setPlaybackRate(rate);
-          }
-        },
         setCurrentTime: function (time) {
           DebugTool.apicall('setCurrentTime');
           if (playerComponent) {
@@ -285,6 +280,14 @@ define('bigscreenplayer/bigscreenplayer',
             playerComponent.setCurrentTime(time);
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
           }
+        },
+        setPlaybackRate: function (rate) {
+          if (playerComponent) {
+            playerComponent.setPlaybackRate(rate);
+          }
+        },
+        getPlaybackRate: function () {
+          return playerComponent && playerComponent.getPlaybackRate();
         },
         getCurrentTime: function () {
           return playerComponent && playerComponent.getCurrentTime() || 0;

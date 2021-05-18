@@ -566,9 +566,6 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         play: function () {
           mediaPlayer.play();
         },
-        setPlaybackRate: function (rate) {
-          mediaPlayer.setPlaybackRate(rate);
-        },
         setCurrentTime: function (time) {
           publishedSeekEvent = false;
           isSeeking = true;
@@ -579,6 +576,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             var seekTime = calculateSeekOffset(time);
             mediaPlayer.seek(seekTime);
           }
+        },
+        setPlaybackRate: function (rate) {
+          mediaPlayer.setPlaybackRate(rate);
+        },
+        getPlaybackRate: function () {
+          return mediaPlayer.getPlaybackRate();
         }
       };
     };
