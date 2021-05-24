@@ -303,6 +303,17 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             return seekableRange;
           }
         },
+        setPlaybackRate: function (rate) {
+          if (typeof mediaPlayer.setPlaybackRate === 'function') {
+            mediaPlayer.setPlaybackRate(rate);
+          }
+        },
+        getPlaybackRate: function () {
+          if (typeof mediaPlayer.getPlaybackRate === 'function') {
+            return mediaPlayer.getPlaybackRate();
+          }
+          return 1.0;
+        },
         getCurrentTime: function () {
           return currentTime;
         },

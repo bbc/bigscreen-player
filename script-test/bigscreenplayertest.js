@@ -126,7 +126,7 @@ require(
         var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'keyValue', 'tearDown', 'setRootElement']);
         mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-          'getPlayerElement', 'tearDown', 'getWindowStartTime', 'getWindowEndTime']);
+          'getPlayerElement', 'tearDown', 'getWindowStartTime', 'getWindowEndTime', 'setPlaybackRate', 'getPlaybackRate']);
         mockSubtitlesInstance = jasmine.createSpyObj('mockSubtitlesInstance', ['enable', 'disable', 'show', 'hide', 'enabled', 'available', 'setPosition', 'customise', 'renderExample', 'clearExample', 'tearDown']);
         mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
@@ -705,6 +705,38 @@ require(
           mockEventHook({data: {currentTime: middleOfStreamWindow}, timeUpdate: true});
 
           expect(callback).toHaveBeenCalledWith({currentTime: middleOfStreamWindow, endOfStream: false});
+        });
+      });
+
+      describe('Playback Rate', function () {
+        it('should setPlaybackRate on the strategy/playerComponent', function () {
+          initialiseBigscreenPlayer();
+
+          bigscreenPlayer.setPlaybackRate(2);
+
+          expect(mockPlayerComponentInstance.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+
+        it('should not set playback rate if playerComponent is not initialised', function () {
+          bigscreenPlayer.setPlaybackRate(2);
+
+          expect(mockPlayerComponentInstance.setPlaybackRate).not.toHaveBeenCalled();
+        });
+
+        it('should call through to get the playback rate when requested', function () {
+          initialiseBigscreenPlayer();
+          mockPlayerComponentInstance.getPlaybackRate.and.returnValue(1.5);
+
+          var rate = bigscreenPlayer.getPlaybackRate();
+
+          expect(mockPlayerComponentInstance.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
+        });
+
+        it('should not get playback rate if playerComponent is not initialised', function () {
+          bigscreenPlayer.getPlaybackRate();
+
+          expect(mockPlayerComponentInstance.getPlaybackRate).not.toHaveBeenCalled();
         });
       });
 

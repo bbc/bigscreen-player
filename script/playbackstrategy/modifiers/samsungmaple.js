@@ -598,37 +598,21 @@ define(
         },
 
         initialiseMedia: initialiseMedia,
-
         playFrom: playFrom,
-
         beginPlayback: beginPlayback,
-
         beginPlaybackFrom: beginPlaybackFrom,
-
         resume: resume,
-
         pause: pause,
-
         stop: stop,
-
         reset: reset,
-
         getSeekableRange: getSeekableRange,
-
         getState: getState,
-
         getPlayerElement: getPlayerElement,
-
         getSource: getSource,
-
         getMimeType: getMimeType,
-
         getCurrentTime: getCurrentTime,
-
         getDuration: getDuration,
-
         toPaused: toPaused,
-
         toPlaying: toPlaying
       };
     }

@@ -281,6 +281,28 @@ require(
         });
       });
 
+      describe('Playback Rate', function () {
+        it('calls into the strategy to set the playback rate', function () {
+          spyOn(mockStrategy, 'setPlaybackRate');
+          setUpPlayerComponent();
+
+          playerComponent.setPlaybackRate(2);
+
+          expect(mockStrategy.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+
+        it('calls into the strategy to get the playback rate', function () {
+          spyOn(mockStrategy, 'getPlaybackRate');
+          setUpPlayerComponent();
+          mockStrategy.getPlaybackRate.and.returnValue(1.5);
+
+          var rate = playerComponent.getPlaybackRate();
+
+          expect(mockStrategy.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
+        });
+      });
+
       describe('events', function () {
         describe('on playing', function () {
           it('should fire error cleared on the plugins', function () {

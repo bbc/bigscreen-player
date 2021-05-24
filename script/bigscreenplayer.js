@@ -281,6 +281,14 @@ define('bigscreenplayer/bigscreenplayer',
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
           }
         },
+        setPlaybackRate: function (rate) {
+          if (playerComponent) {
+            playerComponent.setPlaybackRate(rate);
+          }
+        },
+        getPlaybackRate: function () {
+          return playerComponent && playerComponent.getPlaybackRate();
+        },
         getCurrentTime: function () {
           return playerComponent && playerComponent.getCurrentTime() || 0;
         },

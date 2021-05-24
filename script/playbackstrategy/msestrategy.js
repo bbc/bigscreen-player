@@ -568,6 +568,12 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
             var seekTime = calculateSeekOffset(time);
             mediaPlayer.seek(seekTime);
           }
+        },
+        setPlaybackRate: function (rate) {
+          mediaPlayer.setPlaybackRate(rate);
+        },
+        getPlaybackRate: function () {
+          return mediaPlayer.getPlaybackRate();
         }
       };
     };
