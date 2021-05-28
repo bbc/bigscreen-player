@@ -5,7 +5,7 @@ define('bigscreenplayer/manifest/manifestmodifier',
   function (DebugTool) {
     'use strict';
 
-    function filter (manifest, representationOptions, oldDashCodecRequired) {
+    function filter (manifest, representationOptions) {
       var constantFps = representationOptions.constantFps;
       var maxFps = representationOptions.maxFps;
 
@@ -25,13 +25,6 @@ define('bigscreenplayer/manifest/manifestmodifier',
           }
           return adaptationSet;
         });
-      }
-
-      if (oldDashCodecRequired) {
-        DebugTool.keyValue({ key: 'Video Container', value: 'avc1' });
-        manifest = rewriteDashCodec(manifest);
-      } else {
-        DebugTool.keyValue({ key: 'Video Container', value: 'avc3' });
       }
 
       return manifest;
@@ -56,9 +49,20 @@ define('bigscreenplayer/manifest/manifestmodifier',
     }
 
     function generateBaseUrls (manifest, sources) {
+      if (!manifest) return;
       var baseUrl = extractBaseUrl(manifest);
-      var baseUrls = [];
-      if (!baseUrl) return;
+
+      if (isBaseUrlAbsolute(baseUrl)) {
+        setAbsoluteBaseUrl(baseUrl);
+      } else {
+        if (baseUrl) {
+          setBaseUrlsFromBaseUrl(baseUrl);
+        } else {
+          setBaseUrlsFromSource();
+        }
+      }
+
+      removeUnusedPeriodAttributes();
 
       function generateBaseUrl (source, priority, serviceLocation) {
         return {
@@ -68,46 +72,36 @@ define('bigscreenplayer/manifest/manifestmodifier',
         };
       }
 
-      if (baseUrl.match(/^https?:\/\//)) {
-        var newBaseUrl = generateBaseUrl(baseUrl, 0, sources[0]);
-        baseUrls = [newBaseUrl];
+      function removeUnusedPeriodAttributes () {
+        if (manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
+        if (manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
+      }
 
-        if (manifest && (manifest.BaseURL || manifest.Period && manifest.Period.BaseURL)) {
+      function isBaseUrlAbsolute (baseUrl) {
+        return baseUrl && baseUrl.match(/^https?:\/\//);
+      }
+
+      function setAbsoluteBaseUrl (baseUrl) {
+        var newBaseUrl = generateBaseUrl(baseUrl, 0, sources[0]);
+        manifest.BaseURL_asArray = [newBaseUrl];
+
+        if (manifest.BaseURL || manifest.Period && manifest.Period.BaseURL) {
           manifest.BaseURL = newBaseUrl;
         }
-      } else {
-        baseUrls = sources.map(function (source, priority) {
+      }
+
+      function setBaseUrlsFromBaseUrl (baseUrl) {
+        manifest.BaseURL_asArray = sources.map(function (source, priority) {
           var sourceUrl = new URL(baseUrl, source);
           return generateBaseUrl(sourceUrl.href, priority, source);
         });
       }
 
-      manifest.BaseURL_asArray = baseUrls;
-      if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
-      if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
-    }
-
-    function rewriteDashCodec (manifest) {
-      var periods = manifest.Period_asArray || [manifest.Period];
-      if (periods) {
-        for (var i = 0; i < periods.length; i++) {
-          var sets = periods[i].AdaptationSet_asArray || periods[i].AdaptationSet;
-          if (sets) {
-            for (var j = 0; j < sets.length; j++) {
-              var representations = sets[j].Representation_asArray || [sets[j].Representation];
-              if (representations) {
-                for (var k = 0; k < representations.length; k++) {
-                  var rep = representations[k];
-                  if (rep.mimeType === 'video/mp4') {
-                    rep.codecs = rep.codecs.replace('avc3', 'avc1');
-                  }
-                }
-              }
-            }
-          }
-        }
+      function setBaseUrlsFromSource () {
+        manifest.BaseURL_asArray = sources.map(function (source, priority) {
+          return generateBaseUrl(source, priority, source);
+        });
       }
-      return manifest;
     }
 
     return {

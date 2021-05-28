@@ -17,6 +17,9 @@ require(
       var MediaSources;
 
       var testSources;
+      var testSubtitlesSources;
+      var testMedia;
+      var SEGMENT_LENGTH = 3.84;
       var testCallbacks;
       var triggerManifestLoadError = false;
 
@@ -29,7 +32,7 @@ require(
       beforeEach(function (done) {
         injector = new Squire();
         testCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
+        mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onSubtitlesLoadError']);
 
         mockPlugins = {
           interface: mockPluginsInterface
@@ -64,9 +67,17 @@ require(
           MediaSources = SquiredMediaSources;
 
           testSources = [
-            {url: 'source1', cdn: 'supplier1'},
-            {url: 'source2', cdn: 'supplier2'}
+            {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
+            {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
           ];
+          testSubtitlesSources = [
+            {url: 'http://subtitlessource1.com/', cdn: 'http://supplier1.com/', segmentLength: SEGMENT_LENGTH},
+            {url: 'http://subtitlessource2.com/', cdn: 'http://supplier2.com/', segmentLength: SEGMENT_LENGTH}
+          ];
+          testMedia = {
+            urls: testSources,
+            captions: testSubtitlesSources
+          };
           done();
         });
       });
@@ -86,53 +97,54 @@ require(
         it('throws an error when initialised with no sources', function () {
           expect(function () {
             var mediaSources = new MediaSources();
-            mediaSources.init([], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+            testMedia.urls = [];
+            mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
             mediaSources.currentSource();
           }).toThrow(new Error('Media Sources urls are undefined'));
         });
 
         it('clones the urls', function () {
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           testSources[0].url = 'clonetest';
 
-          expect(mediaSources.currentSource()).toEqual('source1');
+          expect(mediaSources.currentSource()).toEqual('http://source1.com/');
         });
 
         it('throws an error when callbacks are undefined', function () {
           expect(function () {
             var mediaSources = new MediaSources();
-            mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {});
+            mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {});
           }).toThrow(new Error('Media Sources callbacks are undefined'));
 
           expect(function () {
             var mediaSources = new MediaSources();
-            mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {onSuccess: function () {}});
+            mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {onSuccess: function () {}});
           }).toThrow(new Error('Media Sources callbacks are undefined'));
 
           expect(function () {
             var mediaSources = new MediaSources();
-            mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {onError: function () {}});
+            mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {onError: function () {}});
           }).toThrow(new Error('Media Sources callbacks are undefined'));
         });
 
         it('calls onSuccess callback immediately for STATIC window content', function () {
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
           expect(testCallbacks.onSuccess).toHaveBeenCalledWith();
         });
 
         it('calls onSuccess callback immediately for LIVE content on a PLAYABLE device', function () {
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.PLAYABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.PLAYABLE, testCallbacks);
 
           expect(testCallbacks.onSuccess).toHaveBeenCalledWith();
         });
 
         it('calls onSuccess callback when manifest loader returns on success for SLIDING window content', function () {
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
 
           expect(testCallbacks.onSuccess).toHaveBeenCalledWith();
         });
@@ -142,7 +154,7 @@ require(
           triggerFailOnce = true;
           var mediaSources = new MediaSources();
 
-          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
 
           expect(testCallbacks.onSuccess).toHaveBeenCalledTimes(1);
         });
@@ -150,16 +162,26 @@ require(
         it('calls onError callback when manifest loader fails and there are insufficent sources to failover to', function () {
           triggerManifestLoadError = true;
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
 
           expect(testCallbacks.onError).toHaveBeenCalledWith({error: 'manifest'});
         });
 
         it('sets time data correcly when manifest loader successfully returns', function () {
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
 
           expect(mediaSources.time()).toEqual(mockTimeObject);
+        });
+
+        it('overrides the subtitlesRequestTimeout when set in media object', function () {
+          var mediaSources = new MediaSources();
+          var overriddenTimeout = 60000;
+
+          testMedia.subtitlesRequestTimeout = overriddenTimeout;
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.subtitlesRequestTimeout()).toEqual(overriddenTimeout);
         });
       });
 
@@ -179,7 +201,7 @@ require(
 
           var serverDate = new Date();
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, serverDate, WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, serverDate, WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
 
           mockManifestLoader.load.calls.reset();
 
@@ -192,7 +214,7 @@ require(
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(postFailoverAction).toHaveBeenCalledWith();
@@ -201,9 +223,10 @@ require(
 
         it('When there are no more sources to failover to, it calls failure action callback', function () {
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
+          testMedia.urls.pop();
 
           var mediaSources = new MediaSources();
-          mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(onFailureAction).toHaveBeenCalledWith();
@@ -214,15 +237,15 @@ require(
           var failoverInfo = {errorMessage: 'test error', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           var pluginData = {
             status: PluginEnums.STATUS.FAILOVER,
             stateType: PluginEnums.TYPE.ERROR,
             isBufferingTimeoutError: true,
-            cdn: 'supplier1',
-            newCdn: 'supplier2',
+            cdn: 'http://supplier1.com/',
+            newCdn: 'http://supplier2.com/',
             isInitialPlay: undefined,
             timeStamp: jasmine.any(Object)
           };
@@ -232,26 +255,87 @@ require(
 
         it('Plugin event not emitted when there are no sources to failover to', function () {
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
+          testMedia.urls.pop();
 
           var mediaSources = new MediaSources();
-          mediaSources.init([{url: 'source1', cdn: 'supplier1'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
         });
       });
 
+      describe('isFirstManifest', function () {
+        it('does not failover if service location is identical to current source cdn besides path', function () {
+          var mediaSources = new MediaSources();
+
+          testMedia.urls = [
+            { url: 'http://source1.com/path/to/thing.extension', cdn: 'http://cdn1.com' },
+            { url: 'http://source2.com', cdn: 'http://cdn2.com' }];
+
+          mediaSources.init(
+            testMedia,
+            new Date(),
+            WindowTypes.STATIC,
+            LiveSupport.SEEKABLE,
+            testCallbacks);
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com/path/to/thing.extension');
+
+          mediaSources.failover(
+            function () { }, function () { },
+            {
+              duration: 999,
+              currentTime: 1,
+              errorMessage: '',
+              isBufferingTimeoutError: false,
+              serviceLocation: 'http://source1.com/path/to/different/thing.extension'
+            });
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com/path/to/thing.extension');
+        });
+
+        it('does not failover if service location is identical to current source cdn besides hash and query', function () {
+          var mediaSources = new MediaSources();
+
+          testMedia.urls = [
+            {url: 'http://source1.com', cdn: 'http://cdn1.com'},
+            {url: 'http://source2.com', cdn: 'http://cdn2.com'}];
+
+          mediaSources.init(
+            testMedia,
+            new Date(),
+            WindowTypes.STATIC,
+            LiveSupport.SEEKABLE,
+            testCallbacks);
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com');
+
+          mediaSources.failover(
+            function () {}, function () {},
+            {
+              duration: 999,
+              currentTime: 1,
+              errorMessage: '',
+              isBufferingTimeoutError: false,
+              serviceLocation: 'http://source1.com?key=value#hash'});
+
+          expect(mediaSources.currentSource()).toBe('http://source1.com');
+        });
+      });
+
       describe('currentSource', function () {
         beforeEach(function () {
           testSources = [
-            {url: 'source1', cdn: 'supplier1'},
-            {url: 'source2', cdn: 'supplier2'}
+            {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
+            {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
           ];
         });
 
         it('returns the first media source url', function () {
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
           expect(mediaSources.currentSource()).toBe(testSources[0].url);
         });
@@ -262,19 +346,102 @@ require(
           var failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true};
 
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
 
           expect(mediaSources.currentSource()).toBe(testSources[1].url);
         });
       });
 
+      describe('currentSubtitlesSource', function () {
+        it('returns the first subtitles source url', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.currentSubtitlesSource()).toBe(testSubtitlesSources[0].url);
+        });
+
+        it('returns the second subtitle source following a failover', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles();
+
+          expect(mediaSources.currentSubtitlesSource()).toBe(testSubtitlesSources[1].url);
+        });
+      });
+
+      describe('currentSubtitlesSegmentLength', function () {
+        it('returns the first subtitles segment length', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.currentSubtitlesSegmentLength()).toBe(SEGMENT_LENGTH);
+        });
+      });
+
+      describe('currentSubtitlesCdn', function () {
+        it('returns the first subtitles cdn', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          expect(mediaSources.currentSubtitlesCdn()).toBe(testSources[0].cdn);
+        });
+      });
+
+      describe('failoverSubtitles', function () {
+        var postFailoverAction;
+        var onFailureAction;
+
+        beforeEach(function () {
+          postFailoverAction = jasmine.createSpy('postFailoverAction', function () {});
+          onFailureAction = jasmine.createSpy('onFailureAction', function () {});
+        });
+
+        it('When there are subtitles sources to failover to, it calls the post failover callback', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles(postFailoverAction, onFailureAction);
+
+          expect(postFailoverAction).toHaveBeenCalledTimes(1);
+          expect(onFailureAction).not.toHaveBeenCalled();
+        });
+
+        it('When there are no more subtitles sources to failover to, it calls failure action callback', function () {
+          testMedia.captions.pop();
+
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles(postFailoverAction, onFailureAction);
+
+          expect(onFailureAction).toHaveBeenCalledTimes(1);
+          expect(postFailoverAction).not.toHaveBeenCalled();
+        });
+
+        it('fires onSubtitlesLoadError plugin with a correct parameters when there are sources available to failover to', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, 404);
+
+          expect(mockPluginsInterface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404, severity: PluginEnums.STATUS.FAILOVER, cdn: 'http://supplier1.com/'});
+        });
+
+        it('fires onSubtitlesLoadError plugin with a correct parameters when there are no sources available to failover to', function () {
+          testMedia.captions.pop();
+
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, 404);
+
+          expect(mockPluginsInterface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404, severity: PluginEnums.STATUS.FATAL, cdn: 'http://supplier1.com/'});
+        });
+      });
+
       describe('availableSources', function () {
         it('returns an array of media source urls', function () {
           var mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
-          expect(mediaSources.availableSources()).toEqual(['source1', 'source2']);
+          expect(mediaSources.availableSources()).toEqual(['http://source1.com/', 'http://source2.com/']);
         });
       });
 
@@ -283,7 +450,7 @@ require(
         describe('when window type is STATIC', function () {
           beforeEach(function () {
             mediaSources = new MediaSources();
-            mediaSources.init(testSources, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+            mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
           });
 
           it('should failover if current time is greater than 5 seconds from duration', function () {
@@ -330,54 +497,6 @@ require(
 
             expect(mediaSourceCallbacks.onSuccess).toHaveBeenCalledTimes(1);
           });
-
-          it('should not failover for live playback where strategy is TAL and Restartable', function () {
-            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-
-            var failoverParams = {
-              errorMessage: 'test error',
-              isBufferingTimeoutError: false
-            };
-
-            window.bigscreenPlayer.playbackStrategy = PlaybackStrategy.TAL;
-
-            mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.RESTARTABLE, testCallbacks);
-            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
-
-            expect(mediaSourceCallbacks.onError).toHaveBeenCalledTimes(1);
-          });
-
-          it('should failover for live playback where strategy is TAL and Seekable', function () {
-            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-
-            var failoverParams = {
-              errorMessage: 'test error',
-              isBufferingTimeoutError: false
-            };
-
-            window.bigscreenPlayer.playbackStrategy = PlaybackStrategy.TAL;
-
-            mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
-            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
-
-            expect(mediaSourceCallbacks.onSuccess).toHaveBeenCalledTimes(1);
-          });
-
-          it('should failover for live playback where strategy is TAL and Playable', function () {
-            var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-
-            var failoverParams = {
-              errorMessage: 'test error',
-              isBufferingTimeoutError: false
-            };
-
-            window.bigscreenPlayer.playbackStrategy = PlaybackStrategy.TAL;
-
-            mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.PLAYABLE, testCallbacks);
-            mediaSources.failover(mediaSourceCallbacks.onSuccess, mediaSourceCallbacks.onError, failoverParams);
-
-            expect(mediaSourceCallbacks.onSuccess).toHaveBeenCalledTimes(1);
-          });
         });
 
         describe('when window type is not STATIC', function () {
@@ -385,7 +504,7 @@ require(
             it('should not reload the manifest', function () {
               mediaSources = new MediaSources();
               mockTransferFormat = TransferFormats.DASH;
-              mediaSources.init(testSources, new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
+              mediaSources.init(testMedia, new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
 
               var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
 
@@ -406,7 +525,7 @@ require(
             it('should reload the manifest', function () {
               mediaSources = new MediaSources();
               mockTransferFormat = TransferFormats.HLS;
-              mediaSources.init(testSources, new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
+              mediaSources.init(testMedia, new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks);
 
               var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
 
@@ -429,7 +548,7 @@ require(
         var mediaSources;
         beforeEach(function () {
           mediaSources = new MediaSources();
-          mediaSources.init(testSources, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
         });
 
         it('updates the mediasources time data', function () {

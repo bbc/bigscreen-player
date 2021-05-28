@@ -2,12 +2,13 @@ define(
   'bigscreenplayer/playbackstrategy/modifiers/html5',
   [
     'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
+    'bigscreenplayer/domhelpers',
     'bigscreenplayer/debugger/debugtool'
   ],
-  function (MediaPlayerBase, DebugTool) {
+  function (MediaPlayerBase, DOMHelpers, DebugTool) {
     'use strict';
 
-    function Player (deviceConfig) {
+    function Player () {
       var eventCallback;
       var eventCallbacks = [];
       var state = MediaPlayerBase.STATE.EMPTY;
@@ -135,12 +136,6 @@ define(
           to.insertBefore(el, to.childNodes[0]);
         } else {
           to.appendChild(el);
-        }
-      }
-
-      function removeElement (el) {
-        if (el.parentNode) {
-          el.parentNode.removeChild(el);
         }
       }
 
@@ -408,10 +403,10 @@ define(
 
         count = 0;
         timeoutHappened = false;
-        if (deviceConfig.restartTimeout) {
+        if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.restartTimeout) {
           setTimeout(function () {
             timeoutHappened = true;
-          }, deviceConfig.restartTimeout);
+          }, window.bigscreenPlayer.overrides.restartTimeout);
         } else {
           timeoutHappened = true;
         }
@@ -479,8 +474,14 @@ define(
       }
 
       function deferredPlayFrom () {
-        seekTo(targetSeekTime);
-        mediaElement.play();
+        if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.deferredPlayback) {
+          mediaElement.play();
+          seekTo(targetSeekTime);
+        } else {
+          seekTo(targetSeekTime);
+          mediaElement.play();
+        }
+
         if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
           pauseMediaElement();
         }
@@ -529,36 +530,15 @@ define(
         * @protected
       */
       function getClampedTime (seconds) {
+        var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
         var range = getSeekableRange();
-        var offsetFromEnd = getClampOffsetFromConfig();
-        var nearToEnd = Math.max(range.end - offsetFromEnd, range.start);
+        var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start);
         if (seconds < range.start) {
           return range.start;
         } else if (seconds > nearToEnd) {
           return nearToEnd;
         } else {
           return seconds;
-        }
-      }
-
-      /**
-        * Offset used when attempting to playFrom() the end of media. This allows the media to play briefly before completing.
-        * @constant {Number}
-      */
-      var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
-
-      function getClampOffsetFromConfig () {
-        var clampOffsetFromEndOfRange;
-
-        // TODO: can we tidy this, is it needed any more? If so we can combine it into bigscreen-player configs
-        // if (config && config.streaming && config.streaming.overrides) {
-        //   clampOffsetFromEndOfRange = config.streaming.overrides.clampOffsetFromEndOfRange;
-        // }
-
-        if (clampOffsetFromEndOfRange !== undefined) {
-          return clampOffsetFromEndOfRange;
-        } else {
-          return CLAMP_OFFSET_FROM_END_OF_RANGE;
         }
       }
 
@@ -590,9 +570,9 @@ define(
           mediaElement.removeEventListener('pause', onPause, false);
           sourceElement.removeEventListener('error', onSourceError, false);
 
-          removeElement(sourceElement);
+          DOMHelpers.safeRemoveElement(sourceElement);
           unloadMediaSrc();
-          removeElement(mediaElement);
+          DOMHelpers.safeRemoveElement(mediaElement);
 
           mediaElement = null;
           sourceElement = null;
@@ -600,6 +580,9 @@ define(
       }
 
       function unloadMediaSrc () {
+        if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableMediaSourceUnload) {
+          return;
+        }
         // Reset source as advised by HTML5 video spec, section 4.8.10.15:
         // http://www.w3.org/TR/2011/WD-html5-20110405/video.html#best-practices-for-authors-using-media-elements
         mediaElement.removeAttribute('src');
@@ -687,6 +670,14 @@ define(
           } else {
             toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state');
           }
+        },
+
+        setPlaybackRate: function (rate) {
+          mediaElement.playbackRate = rate;
+        },
+
+        getPlaybackRate: function () {
+          return mediaElement.playbackRate;
         },
 
         playFrom: function (seconds) {

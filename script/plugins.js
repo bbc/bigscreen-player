@@ -53,6 +53,21 @@ define('bigscreenplayer/plugins',
         },
         onPlayerInfoUpdated: function (evt) {
           callOnAllPlugins('onPlayerInfoUpdated', evt);
+        },
+        onSubtitlesLoadError: function (evt) {
+          callOnAllPlugins('onSubtitlesLoadError', evt);
+        },
+        onSubtitlesTimeout: function (evt) {
+          callOnAllPlugins('onSubtitlesTimeout', evt);
+        },
+        onSubtitlesXMLError: function (evt) {
+          callOnAllPlugins('onSubtitlesXMLError', evt);
+        },
+        onSubtitlesTransformError: function (evt) {
+          callOnAllPlugins('onSubtitlesTransformError', evt);
+        },
+        onSubtitlesRenderError: function (evt) {
+          callOnAllPlugins('onSubtitlesRenderError', evt);
         }
       }
     };

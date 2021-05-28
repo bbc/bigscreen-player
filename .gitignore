@@ -8,6 +8,12 @@
 # https://docs.npmjs.com/misc/faq#should-i-check-my-node-modules-folder-into-git
 node_modules
 
+# Packaging dir
+dist
+
+# Externals
+script/external/
+
 # Testing files
 WebRunner.html
 

@@ -192,108 +192,6 @@ require(
 
           expect(actualManifest).toEqual(expectedManifest);
         });
-
-        it('should convert all avc3 codec representations to avc1 when the flag is enabled', function () {
-          var expectedManifest = {
-            Period: {
-              AdaptationSet: [
-                {
-                  contentType: 'video',
-                  mimeType: 'video/mp4',
-                  Representation_asArray: [
-                    {
-                      bandwidth: 438000,
-                      frameRate: 25,
-                      codecs: 'avc1.4D401E',
-                      mimeType: 'video/mp4'
-                    },
-                    {
-                      bandwidth: 827000,
-                      frameRate: 30,
-                      codecs: 'avc1.4D401E',
-                      mimeType: 'video/mp4'
-                    },
-                    {
-                      bandwidth: 1570000,
-                      frameRate: 50,
-                      codecs: 'avc1.4D401E',
-                      mimeType: 'video/mp4'
-                    },
-                    {
-                      bandwidth: 2812000,
-                      frameRate: 50,
-                      codecs: 'avc1.4D401E',
-                      mimeType: 'video/mp4'
-                    }
-                  ]
-                },
-                {
-                  contentType: 'audio',
-                  Representation_asArray: [
-                    {
-                      bandwidth: 128000
-                    }
-                  ]
-                }
-              ]
-            }
-          };
-
-          var actualManifest = ManifestModifier.filter(manifest, {}, true);
-
-          expect(actualManifest).toEqual(expectedManifest);
-        });
-
-        it('should not affect avc3 codec representations the old codec flag is not present', function () {
-          var expectedManifest = {
-            Period: {
-              AdaptationSet: [
-                {
-                  contentType: 'video',
-                  mimeType: 'video/mp4',
-                  Representation_asArray: [
-                    {
-                      bandwidth: 438000,
-                      frameRate: 25,
-                      codecs: 'avc3.4D401E',
-                      mimeType: 'video/mp4'
-                    },
-                    {
-                      bandwidth: 827000,
-                      frameRate: 30,
-                      codecs: 'avc3.4D401E',
-                      mimeType: 'video/mp4'
-                    },
-                    {
-                      bandwidth: 1570000,
-                      frameRate: 50,
-                      codecs: 'avc3.4D401E',
-                      mimeType: 'video/mp4'
-                    },
-                    {
-                      bandwidth: 2812000,
-                      frameRate: 50,
-                      codecs: 'avc3.4D401E',
-                      mimeType: 'video/mp4'
-                    }
-                  ]
-                },
-                {
-                  contentType: 'audio',
-                  Representation_asArray: [
-                    {
-                      bandwidth: 128000
-                    }
-                  ]
-                }
-              ]
-            }
-          };
-
-          var actualManifest = ManifestModifier.filter(manifest, {}, undefined);
-
-          expect(actualManifest).toEqual(expectedManifest);
-        });
       });
 
       describe('extractBaseUrl()', function () {
@@ -404,18 +302,24 @@ require(
           });
         },
 
-        it('should leave the manifest unchanged if there is no base url', function () {
-          var manifest = {
-            Period: {}
-          };
+        describe('no base url on manifest', function () {
+          it('should return base url objects', function () {
+            var manifest = {
+              Period: {}
+            };
 
-          var expectedManifest = {
-            Period: {}
-          };
+            var expectedManifest = {
+              Period: {},
+              BaseURL_asArray: [
+                { __text: 'https://cdn-a.com/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' },
+                { __text: 'https://cdn-b.com/', 'dvb:priority': 1, serviceLocation: 'https://cdn-b.com/' }
+              ]
+            };
 
-          ManifestModifier.generateBaseUrls(manifest, sources);
+            ManifestModifier.generateBaseUrls(manifest, sources);
 
-          expect(manifest).toEqual(expectedManifest);
+            expect(manifest).toEqual(expectedManifest);
+          });
         }));
       });
     });
