@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "dashjs": "github:bbc/dash.js#smp-v3.2.0-4",
-    "smp-imsc": "github:bbc/imscJS#v1.0.5"
+    "smp-imsc": "github:bbc/imscJS#v1.0.6"
   },
   "repository": {
     "type": "git",
