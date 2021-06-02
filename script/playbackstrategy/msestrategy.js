@@ -15,8 +15,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'dashjs'
   ],
   function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
-    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD) {
-      var LIVE_DELAY_SECONDS = 1.1;
+    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, playerSettings) {
+      var LIVE_DELAY_SECONDS = playerSettings && playerSettings.streaming && playerSettings.streaming.liveDelay || 1.1;
       var mediaPlayer;
       var mediaElement;
 
@@ -329,21 +329,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
-        mediaPlayer.updateSettings({
-          'debug': {
-            'logLevel': 2
-          }
-        });
-
-        mediaPlayer.updateSettings({
-          'streaming': {
-            'liveDelay': LIVE_DELAY_SECONDS,
-            'bufferToKeep': 0,
-            'bufferTimeAtTopQuality': 12,
-            'bufferTimeAtTopQualityLongForm': 12
-          }
-        });
-
+        mediaPlayer.updateSettings(playerSettings);
         mediaPlayer.initialize(mediaElement, null, true);
         modifySource(playbackTime);
       }

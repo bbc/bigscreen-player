@@ -24,7 +24,18 @@ require (['bigscreenplayer/bigscreenplayer'], function(BigscreenPlayer){
         // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
         url: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd',
         cdn: 'dash.akamaized.net'
-      }]
+      }],
+      mseCustomisation: {
+        debug: {
+          logLevel: 2
+        },
+        streaming: {
+          liveDelay: 1.1,
+          bufferToKeep: 0,
+          bufferTimeAtTopQuality: 12,
+          bufferTimeAtTopQualityLongForm: 12
+        }
+      }
     }
   };
 
