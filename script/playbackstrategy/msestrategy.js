@@ -10,13 +10,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/dynamicwindowutils',
     'bigscreenplayer/utils/timeutils',
     'bigscreenplayer/domhelpers',
+    'bigscreenplayer/utils/playbackutils',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
-    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, playerSettings) {
-      var LIVE_DELAY_SECONDS = playerSettings && playerSettings.streaming && playerSettings.streaming.liveDelay || 1.1;
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers, Utils) {
+    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
+      var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
       var mediaElement;
 
@@ -329,6 +330,17 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
+        var playerSettings = Utils.merge({
+          debug: {
+            logLevel: 2
+          },
+          streaming: {
+            liveDelay: LIVE_DELAY_SECONDS,
+            bufferToKeep: 0,
+            bufferTimeAtTopQuality: 12,
+            bufferTimeAtTopQualityLongForm: 15
+          }
+        }, customPlayerSettings);
         mediaPlayer.updateSettings(playerSettings);
         mediaPlayer.initialize(mediaElement, null, true);
         modifySource(playbackTime);

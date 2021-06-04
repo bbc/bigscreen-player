@@ -66,6 +66,31 @@ require(
             obj3b: 'b'
           });
         });
+
+        it('Should merge deep objects and overwrite with the latest argument', function () {
+          var obj1 = {
+            data: {
+              test1: 'test1',
+              propToBeChanged: 'test2'
+            }
+          };
+          var obj2 = {
+            data: {
+              propToBeChanged: 'PropHasBeenChanged',
+              test2: 'test2'
+            }
+          };
+
+          var merged = PlaybackUtils.merge(obj1, obj2);
+
+          expect(merged).toEqual({
+            data: {
+              test1: 'test1',
+              propToBeChanged: 'PropHasBeenChanged',
+              test2: 'test2'
+            }
+          });
+        });
       });
 
       describe('Array start with', function () {
