@@ -336,7 +336,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           },
           streaming: {
             liveDelay: LIVE_DELAY_SECONDS,
-            bufferToKeep: 10,
+            bufferToKeep: 4,
             bufferTimeAtTopQuality: 12,
             bufferTimeAtTopQualityLongForm: 15
           }
