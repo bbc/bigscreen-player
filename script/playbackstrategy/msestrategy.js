@@ -274,7 +274,10 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onDebugLog (e) {
-        DebugTool.verbose(e.message);
+        // log warn level log events
+        if (e.level === 3) {
+          DebugTool.verbose(e.message);
+        }
       }
 
       function publishMediaState (mediaState) {
@@ -331,7 +334,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer = dashjs.MediaPlayer().create();
         mediaPlayer.updateSettings({
           'debug': {
-            'logLevel': 2
+            'logLevel': 4,
+            'dispatchEvent': true
           }
         });
 
