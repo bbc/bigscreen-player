@@ -274,8 +274,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onDebugLog (e) {
-        // log info level log events
-        if (e.level <= 4) {
+        // log debug level log events
+        if (e.level <= 5) {
           DebugTool.verbose(e.message);
         }
       }
