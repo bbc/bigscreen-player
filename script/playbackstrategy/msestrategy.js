@@ -275,10 +275,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onDebugLog (e) {
-        // log warn level log events
-        if (e.level === 3) {
-          DebugTool.verbose(e.message);
-        }
+        DebugTool.verbose(e.message);
       }
 
       function publishMediaState (mediaState) {
