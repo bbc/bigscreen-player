@@ -30,7 +30,7 @@ define(
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        bigscreenPlayerData.media.mseCustomisation
+        bigscreenPlayerData.media.playerSettings
       );
 
       playbackStrategy.addEventCallback(this, eventCallback);
