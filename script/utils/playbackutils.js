@@ -50,8 +50,14 @@ define(
 
         for (var i = 0; i < arguments.length; i++) {
           var obj = arguments[i];
-          for (var param in obj) {
-            merged[param] = obj[param];
+          for (var prop in obj) {
+            if (obj.hasOwnProperty(prop)) {
+              if (Object.prototype.toString.call(obj[prop]) === '[object Object]') {
+                merged[prop] = this.merge(merged[prop], obj[prop]);
+              } else {
+                merged[prop] = obj[prop];
+              }
+            }
           }
         }
 
