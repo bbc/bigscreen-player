@@ -10,13 +10,14 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/utils/timeutils',
+    'bigscreenplayer/utils/callcallbacks',
     'bigscreenplayer/mediasources',
     'bigscreenplayer/version',
     'bigscreenplayer/resizer',
     'bigscreenplayer/readyhelper',
     'bigscreenplayer/subtitles/subtitles'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version, Resizer, ReadyHelper, Subtitles) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, callCallbacks, MediaSources, Version, Resizer, ReadyHelper, Subtitles) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
@@ -42,11 +43,9 @@ define('bigscreenplayer/bigscreenplayer',
       function mediaStateUpdateCallback (evt) {
         if (evt.timeUpdate) {
           DebugTool.time(evt.data.currentTime);
-          timeUpdateCallbacks.forEach(function (callback) {
-            callback({
-              currentTime: evt.data.currentTime,
-              endOfStream: endOfStream
-            });
+          callCallbacks(timeUpdateCallbacks, {
+            currentTime: evt.data.currentTime,
+            endOfStream: endOfStream
           });
         } else {
           var stateObject = {state: evt.data.state};
@@ -71,9 +70,7 @@ define('bigscreenplayer/bigscreenplayer',
           stateObject.endOfStream = endOfStream;
           DebugTool.event(stateObject);
 
-          stateChangeCallbacks.forEach(function (callback) {
-            callback(stateObject);
-          });
+          callCallbacks(stateChangeCallbacks, stateObject);
         }
 
         if (evt.data.seekableRange) {
@@ -158,9 +155,7 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function callSubtitlesCallbacks (enabled) {
-        subtitleCallbacks.forEach(function (callback) {
-          callback({ enabled: enabled });
-        });
+        callCallbacks(subtitleCallbacks, { enabled: enabled });
       }
 
       function setSubtitlesEnabled (enabled) {
