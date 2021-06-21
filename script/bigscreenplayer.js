@@ -331,7 +331,16 @@ define('bigscreenplayer/bigscreenplayer',
         },
         pause: function (opts) {
           DebugTool.apicall('pause');
-          pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
+          // pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
+
+          if (opts && opts.userPause === false) {
+            pauseTrigger = PauseTriggers.APP;
+          } else if (opts && opts.seeking === true) {
+            pauseTrigger = PauseTriggers.SEEK;
+          } else {
+            pauseTrigger = PauseTriggers.USER;
+          }
+
           playerComponent.pause(opts);
         },
         resize: function (top, left, width, height, zIndex) {
