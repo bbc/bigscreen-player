@@ -90,6 +90,12 @@ require(
           lineHeight: 1.10,
           fontFamily: 'Arial',
           backgroundColour: 'black' // (css colour, hex)
+        },
+        playerSettings: { // This is currently can be used to customise settings for the msestrategy. It is a pass through of all the dash.js player settings.
+          streaming: {
+            bufferToKeep: 8,
+            ...
+          }
         }
       }
     }
