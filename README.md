@@ -8,8 +8,6 @@
 
 The *Bigscreen Player* is an open source project developed by the BBC to simplify video and audio playback on a wide range of 'bigscreen' devices (TVs, set-top boxes, games consoles, and streaming devices).
 
-This project should be considered **Work in Progress**. A full roadmap will be released soon.
-
 ## Getting Started
 
 `$ npm install`
