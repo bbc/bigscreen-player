@@ -1,6 +1,6 @@
 # Bigscreen Player
 
-[![Build Status](https://travis-ci.com/bbc/bigscreen-player.svg?branch=master)](https://travis-ci.com/bbc/bigscreen-player/branches)
+[![Build Status](https://travis-ci.com/bbc/bigscreen-player.svg?branch=master)](https://travis-ci.com/bbc/bigscreen-player/branches) ![npm](https://img.shields.io/npm/v/bigscreen-player) ![GitHub](https://img.shields.io/github/license/bbc/bigscreen-player)
 
 > Simplified media playback for bigscreen devices.
 
