@@ -10,6 +10,14 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
+*Is the bug device specific?*
+
+*Is this happening on Chrome?*
+
+*Is the bug consistenly reproducible?*
+
+*Have you seen this journey working before?*
+
 **To Reproduce**
 Steps to reproduce the behavior:
 1. Go to '...'
