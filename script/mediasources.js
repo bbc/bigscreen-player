@@ -20,22 +20,31 @@ define('bigscreenplayer/mediasources',
       var serverDate;
       var time = {};
       var transferFormat;
+      var subtitlesSources;
+      // Default 5000 can be overridden with media.subtitlesRequestTimeout
+      var subtitlesRequestTimeout = 5000;
 
-      function init (urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
-        if (urls === undefined || urls.length === 0) {
+      function init (media, newServerDate, newWindowType, newLiveSupport, callbacks) {
+        if (media.urls === undefined || media.urls.length === 0) {
           throw new Error('Media Sources urls are undefined');
         }
 
         if (callbacks === undefined ||
-      callbacks.onSuccess === undefined ||
-      callbacks.onError === undefined) {
+          callbacks.onSuccess === undefined ||
+          callbacks.onError === undefined) {
           throw new Error('Media Sources callbacks are undefined');
+        }
+
+        if (media.subtitlesRequestTimeout) {
+          subtitlesRequestTimeout = media.subtitlesRequestTimeout;
         }
 
         windowType = newWindowType;
         liveSupport = newLiveSupport;
         serverDate = newServerDate;
-        mediaSources = PlaybackUtils.cloneArray(urls);
+        mediaSources = media.urls ? PlaybackUtils.cloneArray(media.urls) : [];
+        subtitlesSources = media.captions ? PlaybackUtils.cloneArray(media.captions) : [];
+
         updateDebugOutput();
 
         if (needToGetManifest(windowType, liveSupport)) {
@@ -58,6 +67,18 @@ define('bigscreenplayer/mediasources',
           }
         } else {
           failoverErrorAction();
+        }
+      }
+
+      function failoverSubtitles (postFailoverAction, failoverErrorAction, statusCode) {
+        if (subtitlesSources.length > 1) {
+          Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn()});
+          subtitlesSources.shift();
+          updateDebugOutput();
+          if (postFailoverAction) { postFailoverAction(); }
+        } else {
+          Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FATAL, cdn: getCurrentSubtitlesCdn()});
+          if (failoverErrorAction) { failoverErrorAction(); }
         }
       }
 
@@ -158,6 +179,34 @@ define('bigscreenplayer/mediasources',
         return '';
       }
 
+      function getCurrentSubtitlesUrl () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].url.toString();
+        }
+
+        return '';
+      }
+
+      function getCurrentSubtitlesSegmentLength () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].segmentLength;
+        }
+
+        return undefined;
+      }
+
+      function getSubtitlesRequestTimeout () {
+        return subtitlesRequestTimeout;
+      }
+
+      function getCurrentSubtitlesCdn () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].cdn;
+        }
+
+        return undefined;
+      }
+
       function availableUrls () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.url;
@@ -189,31 +238,36 @@ define('bigscreenplayer/mediasources',
         Plugins.interface.onErrorHandled(evt);
       }
 
-      function getCurrentCdn () {
-        if (mediaSources.length > 0) {
-          return mediaSources[0].cdn.toString();
-        }
-
-        return '';
-      }
-
       function availableCdns () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.cdn;
         });
       }
 
+      function availableSubtitlesCdns () {
+        return subtitlesSources.map(function (subtitleSource) {
+          return subtitleSource.cdn;
+        });
+      }
+
       function updateDebugOutput () {
         DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
-        DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
         DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
+
+        DebugTool.keyValue({key: 'available subtitle cdns', value: availableSubtitlesCdns()});
+        DebugTool.keyValue({key: 'subtitles url', value: getCurrentSubtitlesUrl()});
       }
 
       return {
         init: init,
         failover: failover,
+        failoverSubtitles: failoverSubtitles,
         refresh: refresh,
         currentSource: getCurrentUrl,
+        currentSubtitlesSource: getCurrentSubtitlesUrl,
+        currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,
+        currentSubtitlesCdn: getCurrentSubtitlesCdn,
+        subtitlesRequestTimeout: getSubtitlesRequestTimeout,
         availableSources: availableUrls,
         time: generateTime
       };

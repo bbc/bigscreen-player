@@ -2,29 +2,65 @@ define(
   'bigscreenplayer/subtitles/legacysubtitles', [
     'bigscreenplayer/subtitles/renderer',
     'bigscreenplayer/models/transportcontrolposition',
-    'bigscreenplayer/domhelpers'
+    'bigscreenplayer/domhelpers',
+    'bigscreenplayer/utils/loadurl',
+    'bigscreenplayer/debugger/debugtool',
+    'bigscreenplayer/plugins'
   ],
-  function (Renderer, TransportControlPosition, DOMHelpers) {
+  function (Renderer, TransportControlPosition, DOMHelpers, LoadURL, DebugTool, Plugins) {
     'use strict';
 
-    return function (mediaPlayer, response, autoStart, parentElement) {
+    return function (mediaPlayer, autoStart, parentElement, mediaSources) {
       var container = document.createElement('div');
       var subtitlesRenderer;
 
-      container.id = 'playerCaptionsContainer';
-      DOMHelpers.addClass(container, 'playerCaptions');
-
-      // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
-      if (response.xml) {
-        subtitlesRenderer = new Renderer('playerCaptions', response.xml, mediaPlayer, autoStart);
-        container.appendChild(subtitlesRenderer.render());
+      if (autoStart) {
+        start();
       }
 
-      parentElement.appendChild(container);
+      function loadSubtitles () {
+        var url = mediaSources.currentSubtitlesSource();
+        if (url && url !== '') {
+          LoadURL(url, {
+            timeout: mediaSources.subtitlesRequestTimeout(),
+            onLoad: function (responseXML, responseText, status) {
+              if (!responseXML) {
+                DebugTool.info('Error: responseXML is invalid.');
+                Plugins.interface.onSubtitlesXMLError({cdn: mediaSources.currentSubtitlesCdn()});
+                return;
+              } else {
+                createContainer(responseXML);
+              }
+            },
+            onError: function (statusCode) {
+              var errorCase = function () { DebugTool.info('Failed to load from subtitles file from all available CDNs'); };
+              DebugTool.info('Error loading subtitles data: ' + statusCode);
+              mediaSources.failoverSubtitles(loadSubtitles, errorCase, statusCode);
+            },
+            onTimeout: function () {
+              DebugTool.info('Request timeout loading subtitles');
+              Plugins.interface.onSubtitlesTimeout({cdn: mediaSources.currentSubtitlesCdn()});
+            }
+          });
+        }
+      }
+
+      function createContainer (xml) {
+        container.id = 'playerCaptionsContainer';
+        DOMHelpers.addClass(container, 'playerCaptions');
+
+        // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
+        subtitlesRenderer = new Renderer('playerCaptions', xml, mediaPlayer);
+        container.appendChild(subtitlesRenderer.render());
+
+        parentElement.appendChild(container);
+      }
 
       function start () {
         if (subtitlesRenderer) {
           subtitlesRenderer.start();
+        } else {
+          loadSubtitles();
         }
       }
 
@@ -55,6 +91,7 @@ define(
       }
 
       function tearDown () {
+        stop();
         DOMHelpers.safeRemoveElement(container);
       }
 
@@ -62,6 +99,9 @@ define(
         start: start,
         stop: stop,
         updatePosition: updatePosition,
+        customise: function () {},
+        renderExample: function () {},
+        clearExample: function () {},
         tearDown: tearDown
       };
     };
