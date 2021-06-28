@@ -76,7 +76,7 @@ define('bigscreenplayer/debugger/debugview',
 
       var staticLogString = '';
       logData.static.forEach(function (log) {
-        staticLogString = staticLogString + log.key + ': ' + log.value + '\n\n';
+        staticLogString = staticLogString + log.key + ': ' + log.value + '\n';
       });
 
       staticContainer.innerHTML = staticLogString;
