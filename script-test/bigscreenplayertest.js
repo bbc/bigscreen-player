@@ -105,6 +105,7 @@ require(
 
     describe('Bigscreen Player', function () {
       beforeEach(function (done) {
+        setupManifestData();
         mediaSourcesMock = function () {
           return {
             init: function (media, serverDate, windowType, liveSupport, callbacks) {
@@ -119,7 +120,8 @@ require(
 
             time: function () {
               return manifestData.time;
-            }
+            },
+            tearDown: function () {}
           };
         };
 
@@ -131,7 +133,6 @@ require(
         mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
         errorCallback = jasmine.createSpy('errorCallback');
-        setupManifestData();
         liveSupport = LiveSupport.SEEKABLE;
         noCallbacks = false;
 

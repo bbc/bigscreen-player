@@ -330,6 +330,11 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
+
+        if (customPlayerSettings && customPlayerSettings.failoverResetTime) {
+          mediaPlayer.setBlackListExpiryTime(customPlayerSettings.failoverResetTime);
+        }
+
         var playerSettings = Utils.merge({
           debug: {
             logLevel: 2
