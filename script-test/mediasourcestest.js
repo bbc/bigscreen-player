@@ -4,10 +4,9 @@ require(
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/models/transferformats',
     'bigscreenplayer/pluginenums',
-    'squire',
-    'bigscreenplayer/models/playbackstrategy'
+    'squire'
   ],
-  function (WindowTypes, LiveSupport, TransferFormats, PluginEnums, Squire, PlaybackStrategy) {
+  function (WindowTypes, LiveSupport, TransferFormats, PluginEnums, Squire) {
     describe('Media Sources', function () {
       var injector;
       var mockPlugins;
@@ -30,6 +29,7 @@ require(
       var hasFailedOnce;
 
       beforeEach(function (done) {
+        jasmine.clock().install();
         injector = new Squire();
         testCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onSubtitlesLoadError']);
@@ -57,6 +57,19 @@ require(
           }
         };
 
+        testSources = [
+          {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
+          {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
+        ];
+        testSubtitlesSources = [
+          {url: 'http://subtitlessource1.com/', cdn: 'http://supplier1.com/', segmentLength: SEGMENT_LENGTH},
+          {url: 'http://subtitlessource2.com/', cdn: 'http://supplier2.com/', segmentLength: SEGMENT_LENGTH}
+        ];
+        testMedia = {
+          urls: testSources,
+          captions: testSubtitlesSources
+        };
+
         spyOn(mockManifestLoader, 'load').and.callThrough();
         injector.mock({
           'bigscreenplayer/plugins': mockPlugins,
@@ -65,19 +78,6 @@ require(
 
         injector.require(['bigscreenplayer/mediasources'], function (SquiredMediaSources) {
           MediaSources = SquiredMediaSources;
-
-          testSources = [
-            {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
-            {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
-          ];
-          testSubtitlesSources = [
-            {url: 'http://subtitlessource1.com/', cdn: 'http://supplier1.com/', segmentLength: SEGMENT_LENGTH},
-            {url: 'http://subtitlessource2.com/', cdn: 'http://supplier2.com/', segmentLength: SEGMENT_LENGTH}
-          ];
-          testMedia = {
-            urls: testSources,
-            captions: testSubtitlesSources
-          };
           done();
         });
       });
@@ -91,6 +91,7 @@ require(
         mockManifestLoader.load.calls.reset();
 
         window.bigscreenPlayer.playbackStrategy = currentStrategy;
+        jasmine.clock().uninstall();
       });
 
       describe('init', function () {
@@ -578,13 +579,15 @@ require(
           var mediaSources = new MediaSources();
           mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
 
-          var expectedCdn = mediaSources.currentSource();
+          var expectedCdns = mediaSources.availableSources().reverse();
 
           var noop = function () {};
 
           mediaSources.failover(noop, noop, {errorMessage: 'oops', isBufferingTimeoutError: false});
 
-          expect(mediaSources.currentSource()).toEqual(expectedCdn);
+          jasmine.clock().tick(120000);
+
+          expect(mediaSources.availableSources()).toEqual(expectedCdns);
         });
       });
     });
