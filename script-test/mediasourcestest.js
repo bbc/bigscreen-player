@@ -602,6 +602,21 @@ require(
 
           expect(mediaSources.availableSources()).not.toContain(excludedCdn);
         });
+
+        it('should not preserve timers over teardown boundaries', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          var noop = function () {};
+
+          mediaSources.failover(noop, noop, {errorMessage: 'oops', isBufferingTimeoutError: false});
+
+          mediaSources.tearDown();
+
+          jasmine.clock().tick(120000);
+
+          expect(mediaSources.availableSources()).toEqual([]);
+        });
       });
     });
   }

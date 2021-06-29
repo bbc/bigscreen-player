@@ -286,10 +286,10 @@ define('bigscreenplayer/mediasources',
         serverDate = undefined;
         time = {};
         transferFormat = undefined;
-        mediaSources = undefined;
-        failedOverSources = undefined;
-        failoverResetTokens = undefined;
-        subtitlesSources = undefined;
+        mediaSources = [];
+        failedOverSources = [];
+        failoverResetTokens = [];
+        subtitlesSources = [];
       }
 
       return {
