@@ -572,6 +572,21 @@ require(
           expect(mediaSources.currentSource()).toEqual(existingSource);
         });
       });
+
+      describe('failoverTimeout', function () {
+        it('should add the cdn that failed back in to available cdns after a timeout', function () {
+          var mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+
+          var expectedCdn = mediaSources.currentSource();
+
+          var noop = function () {};
+
+          mediaSources.failover(noop, noop, {errorMessage: 'oops', isBufferingTimeoutError: false});
+
+          expect(mediaSources.currentSource()).toEqual(expectedCdn);
+        });
+      });
     });
   }
 );
