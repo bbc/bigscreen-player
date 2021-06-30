@@ -25,7 +25,7 @@ define('bigscreenplayer/mediasources',
       var subtitlesRequestTimeout = 5000;
       var failoverResetTime = 120000;
 
-      function init (media, newServerDate, newWindowType, newLiveSupport, callbacks, configuration) {
+      function init (media, newServerDate, newWindowType, newLiveSupport, callbacks) {
         if (media.urls === undefined || media.urls.length === 0) {
           throw new Error('Media Sources urls are undefined');
         }
@@ -40,8 +40,8 @@ define('bigscreenplayer/mediasources',
           subtitlesRequestTimeout = media.subtitlesRequestTimeout;
         }
 
-        if (configuration && configuration.failoverResetTime) {
-          failoverResetTime = configuration.failoverResetTime;
+        if (media && media.playerSettings && media.playerSettings.failoverResetTime) {
+          failoverResetTime = media.failoverResetTime;
         }
 
         windowType = newWindowType;
