@@ -18,15 +18,23 @@ require(
         });
       });
 
+      // Note: Forgive the time hack, async deferred errors can be flakey in other tests if not caught!
       it('calls later callbacks if an earlier one errors', function () {
+        jasmine.clock().install();
         var callback = jasmine.createSpy('callback');
 
-        callCallbacks([
-          function () { throw new Error('oops'); },
-          callback
-        ]);
+        var failingCallCallbacks = function () {
+          callCallbacks([
+            function () { throw new Error('oops'); },
+            callback
+          ]);
+          jasmine.clock().tick(1);
+        };
+
+        expect(failingCallCallbacks).toThrowError();
 
         expect(callback).toHaveBeenCalledTimes(1);
+        jasmine.clock().uninstall();
       });
     });
   }
