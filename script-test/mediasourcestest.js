@@ -575,15 +575,19 @@ require(
       });
 
       describe('failoverTimeout', function () {
-        it('should add the cdn that failed back in to available cdns after a timeout', function () {
-          var mediaSources = new MediaSources();
-          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+        var noop = function () {};
+        var error = {errorMessage: 'oops', isBufferingTimeoutError: false};
+        var mediaSources;
 
+        beforeEach(function () {
+          mediaSources = new MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+        });
+
+        it('should add the cdn that failed back in to available cdns after a timeout', function () {
           var expectedCdns = mediaSources.availableSources().reverse();
 
-          var noop = function () {};
-
-          mediaSources.failover(noop, noop, {errorMessage: 'oops', isBufferingTimeoutError: false});
+          mediaSources.failover(noop, noop, error);
 
           jasmine.clock().tick(120000);
 
@@ -591,25 +595,15 @@ require(
         });
 
         it('should not contain the cdn that failed before the timeout has occured', function () {
-          var mediaSources = new MediaSources();
-          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
-
           var excludedCdn = mediaSources.availableSources()[0];
 
-          var noop = function () {};
-
-          mediaSources.failover(noop, noop, {errorMessage: 'oops', isBufferingTimeoutError: false});
+          mediaSources.failover(noop, noop, error);
 
           expect(mediaSources.availableSources()).not.toContain(excludedCdn);
         });
 
         it('should not preserve timers over teardown boundaries', function () {
-          var mediaSources = new MediaSources();
-          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
-
-          var noop = function () {};
-
-          mediaSources.failover(noop, noop, {errorMessage: 'oops', isBufferingTimeoutError: false});
+          mediaSources.failover(noop, noop, error);
 
           mediaSources.tearDown();
 
