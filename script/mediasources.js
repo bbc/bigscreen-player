@@ -41,7 +41,7 @@ define('bigscreenplayer/mediasources',
         }
 
         if (media && media.playerSettings && media.playerSettings.failoverResetTime) {
-          failoverResetTime = media.failoverResetTime;
+          failoverResetTime = media.playerSettings.failoverResetTime;
         }
 
         windowType = newWindowType;
@@ -62,7 +62,7 @@ define('bigscreenplayer/mediasources',
       function failover (postFailoverAction, failoverErrorAction, failoverParams) {
         if (shouldFailover(failoverParams)) {
           emitCdnFailover(failoverParams);
-          updateCdns();
+          updateCdns(failoverParams.serviceLocation);
           updateDebugOutput();
 
           if (needToGetManifest(windowType, liveSupport)) {
@@ -105,11 +105,15 @@ define('bigscreenplayer/mediasources',
       // the serviceLocation is set to our first cdn url
       // see manifest modifier - generateBaseUrls
       function isFirstManifest (serviceLocation) {
+        return doHostsMatch(serviceLocation, getCurrentUrl());
+      }
+
+      function doHostsMatch (firstUrl, secondUrl) {
         // Matches anything between *:// and / or the end of the line
         var hostRegex = /\w+?:\/\/(.*?)(?:\/|$)/;
 
-        var serviceLocNoQueryHash = stripQueryParamsAndHash(serviceLocation);
-        var currUrlNoQueryHash = stripQueryParamsAndHash(getCurrentUrl());
+        var serviceLocNoQueryHash = stripQueryParamsAndHash(firstUrl);
+        var currUrlNoQueryHash = stripQueryParamsAndHash(secondUrl);
 
         var serviceLocationHost = hostRegex.exec(serviceLocNoQueryHash);
         var currentUrlHost = hostRegex.exec(currUrlNoQueryHash);
@@ -236,9 +240,17 @@ define('bigscreenplayer/mediasources',
         failoverResetTokens.push(failoverResetToken);
       }
 
-      function updateCdns () {
+      function updateCdns (serviceLocation) {
         if (hasSourcesToFailoverTo()) {
           updateFailedOverSources(mediaSources.shift());
+
+          if (serviceLocation) {
+            var serviceLocationIdx = mediaSources.map(function (mediaSource) {
+              return stripQueryParamsAndHash(mediaSource.url);
+            }).indexOf(stripQueryParamsAndHash(serviceLocation));
+
+            mediaSources.unshift(mediaSources.splice(serviceLocationIdx, 1)[0]);
+          }
         }
       }
 
