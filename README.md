@@ -1,4 +1,4 @@
-# Bigscreen Player
+<img src="https://user-images.githubusercontent.com/6772464/124460623-7f3d9d80-dd87-11eb-9833-456c9f20bab7.png" width="300" alt="Bigscreen Player logo"/>   
 
 [![Build Status](https://travis-ci.com/bbc/bigscreen-player.svg?branch=master)](https://travis-ci.com/bbc/bigscreen-player/branches) [![npm](https://img.shields.io/npm/v/bigscreen-player)](https://www.npmjs.com/package/bigscreen-player) [![GitHub](https://img.shields.io/github/license/bbc/bigscreen-player)](https://github.com/bbc/bigscreen-player/blob/master/LICENSE)
 
