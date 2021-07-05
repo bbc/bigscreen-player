@@ -74,11 +74,11 @@ require(
         captions: [{
             url: 'https://www.somelovelycaptionsurl.com/captions/$segment$', // $segment$ required for replacement for live
             segmentLength: 3.84, // Required to calculate live subtitle segment to fetch & live subtitle URL.
-            cdn: 'cdn1', // Displayed by Debug Tool
+            cdn: 'cdn1' // Displayed by Debug Tool
           }, {
             url: 'https://www.somelovelycaptionsurl2.com/captions/$segment$',
             segmentLength: 3.84,
-            cdn: 'cdn1',
+            cdn: 'cdn1'
           },
         ],
         captionsUrl: 'https://www.somelovelycaptionsurl.com/captions/', // NB This parameter is being deprecated in favour of the captions array shown above.
@@ -182,13 +182,13 @@ bigscreenPlayer.unregisterForSubtitleChanges(subtitleChangeToken);
 Plugins can be created to extend the functionality of the Bigscreen Player by adhering to an interface which propagates non state change events from the player. For example, when an error is raised or cleared.
 
 The full interface is as follows:
-- onError
-- onFatalError
-- onErrorCleared
-- onErrorHandled
-- onBuffering
-- onBufferingCleared
-- onScreenCapabilityDetermined
+- `onError`
+- `onFatalError`
+- `onErrorCleared`
+- `onErrorHandled`
+- `onBuffering`
+- `onBufferingCleared`
+- `onScreenCapabilityDetermined`
 
 An example plugin may look like:
 
