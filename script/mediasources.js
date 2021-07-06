@@ -249,6 +249,8 @@ define('bigscreenplayer/mediasources',
               return stripQueryParamsAndHash(mediaSource.url);
             }).indexOf(stripQueryParamsAndHash(serviceLocation));
 
+            if (serviceLocationIdx < 0) serviceLocationIdx = 0;
+
             mediaSources.unshift(mediaSources.splice(serviceLocationIdx, 1)[0]);
           }
         }

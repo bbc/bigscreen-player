@@ -265,6 +265,42 @@ require(
 
           expect(mockPluginsInterface.onErrorHandled).not.toHaveBeenCalled();
         });
+
+        it('moves the specified service location to the top of the list', function () {
+          var failoverInfo = {
+            errorMessage: 'failover',
+            isBufferingTimeoutError: true,
+            serviceLocation: 'http://source3.com/?key=value#hash'
+          };
+
+          var mediaSources = MediaSources();
+
+          testMedia.urls.push({url: 'http://source3.com/', cdn: 'http://supplier3.com/'});
+          testMedia.urls.push({url: 'http://source4.com/', cdn: 'http://supplier4.com/'});
+
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
+
+          expect(mediaSources.currentSource()).toEqual('http://source3.com/');
+        });
+
+        it('selects the next CDN when the service location is not in the CDN list', function () {
+          var failoverInfo = {
+            errorMessage: 'failover',
+            isBufferingTimeoutError: true,
+            serviceLocation: 'http://sourceInfinity.com/?key=value#hash'
+          };
+
+          var mediaSources = MediaSources();
+
+          testMedia.urls.push({url: 'http://source3.com/', cdn: 'http://supplier3.com/'});
+          testMedia.urls.push({url: 'http://source4.com/', cdn: 'http://supplier4.com/'});
+
+          mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks);
+          mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo);
+
+          expect(mediaSources.currentSource()).toEqual('http://source2.com/');
+        });
       });
 
       describe('isFirstManifest', function () {
