@@ -1,4 +1,4 @@
-# Bigscreen Player
+<img src="https://user-images.githubusercontent.com/6772464/124460623-7f3d9d80-dd87-11eb-9833-456c9f20bab7.png" width="300" alt="Bigscreen Player logo"/>   
 
 [![Build Status](https://travis-ci.com/bbc/bigscreen-player.svg?branch=master)](https://travis-ci.com/bbc/bigscreen-player/branches) [![npm](https://img.shields.io/npm/v/bigscreen-player)](https://www.npmjs.com/package/bigscreen-player) [![GitHub](https://img.shields.io/github/license/bbc/bigscreen-player)](https://github.com/bbc/bigscreen-player/blob/master/LICENSE)
 
@@ -73,15 +73,15 @@ require(
         ],
         captions: [{
             url: 'https://www.somelovelycaptionsurl.com/captions/$segment$', // $segment$ required for replacement for live
-            segmentLength: 3.84 // Required to calculate live subtitle segment to fetch & live subtitle URL.
+            segmentLength: 3.84, // Required to calculate live subtitle segment to fetch & live subtitle URL.
             cdn: 'cdn1' // Displayed by Debug Tool
           }, {
             url: 'https://www.somelovelycaptionsurl2.com/captions/$segment$',
-            segmentLength: 3.84 
-            cdn: 'cdn1' 
+            segmentLength: 3.84,
+            cdn: 'cdn1'
           },
         ],
-        captionsUrl: 'https://www.somelovelycaptionsurl.com/captions/', // NB This parameter is being deprecated in favour of the captions array shown above. 
+        captionsUrl: 'https://www.somelovelycaptionsurl.com/captions/', // NB This parameter is being deprecated in favour of the captions array shown above.
         subtitlesRequestTimeout: 5000, // Optional override for the XHR timeout on sidecar loaded subtitles
         subtitleCustomisation: {
           size: 0.75,
@@ -120,12 +120,12 @@ See the [configuration](https://github.com/bbc/bigscreen-player/wiki/Playback-St
 ### Reacting to state changes
 
 State changes which are emitted from the player can be acted upon to by registering a callback. The callback will receive all of the following state changes as the `state` property of the event:
-- MediaState.STOPPED
-- MediaState.PAUSED
-- MediaState.PLAYING
-- MediaState.WAITING
-- MediaState.ENDED
-- MediaState.FATAL_ERROR
+- `MediaState.STOPPED`
+- `MediaState.PAUSED`
+- `MediaState.PLAYING`
+- `MediaState.WAITING`
+- `MediaState.ENDED`
+- `MediaState.FATAL_ERROR`
 
 State changes may be registered for before initialisation and will automatically be cleared upon `tearDown()` of the player.
 
@@ -182,13 +182,13 @@ bigscreenPlayer.unregisterForSubtitleChanges(subtitleChangeToken);
 Plugins can be created to extend the functionality of the Bigscreen Player by adhering to an interface which propagates non state change events from the player. For example, when an error is raised or cleared.
 
 The full interface is as follows:
-- onError
-- onFatalError
-- onErrorCleared
-- onErrorHandled
-- onBuffering
-- onBufferingCleared
-- onScreenCapabilityDetermined
+- `onError`
+- `onFatalError`
+- `onErrorCleared`
+- `onErrorHandled`
+- `onBuffering`
+- `onBufferingCleared`
+- `onScreenCapabilityDetermined`
 
 An example plugin may look like:
 
@@ -245,12 +245,12 @@ See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player
 ## Releasing
 
 1. Create a PR.
-2. Label the PR with one of these labels: 
-    - `semver prerelease` 
+2. Label the PR with one of these labels:
+    - `semver prerelease`
     - `semver patch`
     - `semver minor`
-    - `semver major` 
-  
+    - `semver major`
+
     along with one of the following:
     - `has a user facing change`
     - `has no user facing changes`
