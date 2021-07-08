@@ -24,6 +24,7 @@ define('bigscreenplayer/mediasources',
       // Default 5000 can be overridden with media.subtitlesRequestTimeout
       var subtitlesRequestTimeout = 5000;
       var failoverResetTime = 120000;
+      var failoverSort;
 
       function init (media, newServerDate, newWindowType, newLiveSupport, callbacks) {
         if (media.urls === undefined || media.urls.length === 0) {
@@ -40,8 +41,12 @@ define('bigscreenplayer/mediasources',
           subtitlesRequestTimeout = media.subtitlesRequestTimeout;
         }
 
-        if (media && media.playerSettings && media.playerSettings.failoverResetTime) {
+        if (media.playerSettings && media.playerSettings.failoverResetTime) {
           failoverResetTime = media.playerSettings.failoverResetTime;
+        }
+
+        if (media.playerSettings && media.playerSettings.failoverSort) {
+          failoverSort = media.playerSettings.failoverSort;
         }
 
         windowType = newWindowType;
@@ -228,6 +233,10 @@ define('bigscreenplayer/mediasources',
 
       function updateFailedOverSources (mediaSource) {
         failedOverSources.push(mediaSource);
+
+        if (failoverSort) {
+          mediaSources = failoverSort(mediaSources);
+        }
 
         var failoverResetToken = setTimeout(function () {
           if (mediaSources && mediaSources.length > 0 && failedOverSources && failedOverSources.length > 0) {

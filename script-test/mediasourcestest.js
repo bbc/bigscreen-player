@@ -648,6 +648,29 @@ require(
           expect(mediaSources.availableSources()).toEqual([]);
         });
       });
+
+      describe('failoverSort', function () {
+        it('called when provided as an override in playerSettings', function () {
+          var fakeSort = jasmine.createSpy().and.returnValue(testMedia.urls);
+          var failoverParams = {
+            duration: 500,
+            currentTime: 42,
+            errorMessage: 'buffering-time-out',
+            isBufferingTimeoutError: true
+          };
+          testMedia.playerSettings = {
+            failoverSort: fakeSort
+          };
+          var mediaSources = MediaSources();
+          mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks);
+
+          function noop () {}
+
+          mediaSources.failover(noop, noop, failoverParams);
+
+          expect(fakeSort).toHaveBeenCalledTimes(1);
+        });
+      });
     });
   }
 );
