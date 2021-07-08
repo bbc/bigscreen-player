@@ -5,3 +5,4 @@ buildVersion.js
 buildExternal.js
 webpack.config.js
 /development/index.js
+/development/
