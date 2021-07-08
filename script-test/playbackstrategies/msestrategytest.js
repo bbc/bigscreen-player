@@ -241,16 +241,19 @@ require(
             {
               __text: cdnArray[0].url + 'dash/',
               'dvb:priority': 0,
+              'dvb:weight': 0,
               serviceLocation: cdnArray[0].url
             },
             {
               __text: cdnArray[1].url + 'dash/',
               'dvb:priority': 1,
+              'dvb:weight': 0,
               serviceLocation: cdnArray[1].url
             },
             {
               __text: cdnArray[2].url + 'dash/',
               'dvb:priority': 2,
+              'dvb:weight': 0,
               serviceLocation: cdnArray[2].url
             }
           ];
