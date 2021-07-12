@@ -18,6 +18,7 @@ require(
       var testSources;
       var testSubtitlesSources;
       var testMedia;
+      var FAILOVER_RESET_TIMEOUT = 60000;
       var SEGMENT_LENGTH = 3.84;
       var testCallbacks;
       var triggerManifestLoadError = false;
@@ -67,7 +68,10 @@ require(
         ];
         testMedia = {
           urls: testSources,
-          captions: testSubtitlesSources
+          captions: testSubtitlesSources,
+          playerSettings: {
+            failoverResetTime: FAILOVER_RESET_TIMEOUT
+          }
         };
 
         spyOn(mockManifestLoader, 'load').and.callThrough();
@@ -625,7 +629,7 @@ require(
 
           mediaSources.failover(noop, noop, error);
 
-          jasmine.clock().tick(120000);
+          jasmine.clock().tick(FAILOVER_RESET_TIMEOUT);
 
           expect(mediaSources.availableSources()).toEqual(expectedCdns);
         });
@@ -643,7 +647,7 @@ require(
 
           mediaSources.tearDown();
 
-          jasmine.clock().tick(120000);
+          jasmine.clock().tick(FAILOVER_RESET_TIMEOUT);
 
           expect(mediaSources.availableSources()).toEqual([]);
         });

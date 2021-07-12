@@ -23,7 +23,7 @@ define('bigscreenplayer/mediasources',
       var subtitlesSources;
       // Default 5000 can be overridden with media.subtitlesRequestTimeout
       var subtitlesRequestTimeout = 5000;
-      var failoverResetTime = 120000;
+      var failoverResetTimeMs = 120000;
       var failoverSort;
 
       function init (media, newServerDate, newWindowType, newLiveSupport, callbacks) {
@@ -42,7 +42,7 @@ define('bigscreenplayer/mediasources',
         }
 
         if (media.playerSettings && media.playerSettings.failoverResetTime) {
-          failoverResetTime = media.playerSettings.failoverResetTime;
+          failoverResetTimeMs = media.playerSettings.failoverResetTime;
         }
 
         if (media.playerSettings && media.playerSettings.failoverSort) {
@@ -138,6 +138,10 @@ define('bigscreenplayer/mediasources',
         }
 
         return infoValid;
+      }
+
+      function failoverResetTime () {
+        return failoverResetTimeMs;
       }
 
       function needToGetManifest (windowType, liveSupport) {
@@ -244,7 +248,7 @@ define('bigscreenplayer/mediasources',
             mediaSources.push(failedOverSources.shift());
             updateDebugOutput();
           }
-        }, failoverResetTime);
+        }, failoverResetTimeMs);
 
         failoverResetTokens.push(failoverResetToken);
       }
@@ -326,6 +330,7 @@ define('bigscreenplayer/mediasources',
         currentSubtitlesCdn: getCurrentSubtitlesCdn,
         subtitlesRequestTimeout: getSubtitlesRequestTimeout,
         availableSources: availableUrls,
+        failoverResetTime: failoverResetTime,
         time: generateTime,
         tearDown: tearDown
       };

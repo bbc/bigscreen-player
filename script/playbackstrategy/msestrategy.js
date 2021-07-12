@@ -178,10 +178,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
         }
 
-        if (customPlayerSettings && customPlayerSettings.failoverResetTime) {
-          mediaPlayer.setBlacklistExpiryTime(customPlayerSettings.failoverResetTime);
-        }
-
+        mediaPlayer.setBlacklistExpiryTime(mediaSources.failoverResetTime());
         emitPlayerInfo();
       }
 
