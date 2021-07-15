@@ -334,7 +334,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer = dashjs.MediaPlayer().create();
         var playerSettings = Utils.merge({
           debug: {
-            logLevel: 2
+            logLevel: 4
           },
           streaming: {
             liveDelay: LIVE_DELAY_SECONDS,
