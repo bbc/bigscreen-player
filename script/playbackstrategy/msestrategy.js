@@ -256,7 +256,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onURLResolutionFailed (event) {
-        DebugTool.info('URL Resolution failed');
+        DebugTool.info('URL Resolution failed: ' + event.code);
       }
 
       function onMetricAdded (event) {
