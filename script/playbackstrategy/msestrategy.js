@@ -252,7 +252,7 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
       }
 
       function onServiceLocationAvailable (event) {
-        DebugTool.info('Service Location available: ' + event.baseUrl.serviceLocation);
+        DebugTool.info('Service Location available: ' + event.entry);
       }
 
       function onURLResolutionFailed (event) {
