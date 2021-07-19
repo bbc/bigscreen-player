@@ -252,10 +252,10 @@ define('bigscreenplayer/mediasources',
 
       function updateDebugOutput () {
         DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
-        DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
+        DebugTool.keyValue({key: 'url', value: stripQueryParamsAndHash(getCurrentUrl())});
 
         DebugTool.keyValue({key: 'available subtitle cdns', value: availableSubtitlesCdns()});
-        DebugTool.keyValue({key: 'subtitles url', value: getCurrentSubtitlesUrl()});
+        DebugTool.keyValue({key: 'subtitles url', value: stripQueryParamsAndHash(getCurrentSubtitlesUrl())});
       }
 
       return {
