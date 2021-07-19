@@ -256,16 +256,19 @@ define('bigscreenplayer/mediasources',
       function updateCdns (serviceLocation) {
         if (hasSourcesToFailoverTo()) {
           updateFailedOverSources(mediaSources.shift());
+          moveMediaSourceToFront(serviceLocation);
+        }
+      }
 
-          if (serviceLocation) {
-            var serviceLocationIdx = mediaSources.map(function (mediaSource) {
-              return stripQueryParamsAndHash(mediaSource.url);
-            }).indexOf(stripQueryParamsAndHash(serviceLocation));
+      function moveMediaSourceToFront (serviceLocation) {
+        if (serviceLocation) {
+          var serviceLocationIdx = mediaSources.map(function (mediaSource) {
+            return stripQueryParamsAndHash(mediaSource.url);
+          }).indexOf(stripQueryParamsAndHash(serviceLocation));
 
-            if (serviceLocationIdx < 0) serviceLocationIdx = 0;
+          if (serviceLocationIdx < 0) serviceLocationIdx = 0;
 
-            mediaSources.unshift(mediaSources.splice(serviceLocationIdx, 1)[0]);
-          }
+          mediaSources.unshift(mediaSources.splice(serviceLocationIdx, 1)[0]);
         }
       }
 
