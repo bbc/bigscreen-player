@@ -90,6 +90,8 @@ require(
           backgroundColour: 'black' // (css colour, hex)
         },
         playerSettings: { // This currently can be used to customise settings for the msestrategy. It is a pass through of all the dash.js player settings.
+          failoverSort: someSortAlgo, // Post failover custom sorting algorithm
+          failoverResetTime: 60000,
           streaming: {
             bufferToKeep: 8,
             ...
