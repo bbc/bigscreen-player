@@ -255,8 +255,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         DebugTool.info('Service Location available: ' + event.entry);
       }
 
-      function onURLResolutionFailed (event) {
-        DebugTool.info('URL Resolution failed: ' + event.code);
+      function onURLResolutionFailed () {
+        DebugTool.info('URL Resolution failed');
       }
 
       function onMetricAdded (event) {
