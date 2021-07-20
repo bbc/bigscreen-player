@@ -7,14 +7,14 @@ define('bigscreenplayer/mediasources',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/manifest/manifestloader',
-    'bigscreenplayer/models/playbackstrategy',
-    'bigscreenplayer/models/transferformats',
-    'bigscreenplayer/models/livesupport'
+    'bigscreenplayer/models/transferformats'
   ],
-  function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy, TransferFormats, LiveSupport) {
+  function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, TransferFormats) {
     'use strict';
     return function () {
       var mediaSources;
+      var failedOverSources = [];
+      var failoverResetTokens = [];
       var windowType;
       var liveSupport;
       var serverDate;
@@ -23,6 +23,8 @@ define('bigscreenplayer/mediasources',
       var subtitlesSources;
       // Default 5000 can be overridden with media.subtitlesRequestTimeout
       var subtitlesRequestTimeout = 5000;
+      var failoverResetTimeMs = 120000;
+      var failoverSort;
 
       function init (media, newServerDate, newWindowType, newLiveSupport, callbacks) {
         if (media.urls === undefined || media.urls.length === 0) {
@@ -37,6 +39,14 @@ define('bigscreenplayer/mediasources',
 
         if (media.subtitlesRequestTimeout) {
           subtitlesRequestTimeout = media.subtitlesRequestTimeout;
+        }
+
+        if (media.playerSettings && media.playerSettings.failoverResetTime) {
+          failoverResetTimeMs = media.playerSettings.failoverResetTime;
+        }
+
+        if (media.playerSettings && media.playerSettings.failoverSort) {
+          failoverSort = media.playerSettings.failoverSort;
         }
 
         windowType = newWindowType;
@@ -57,7 +67,7 @@ define('bigscreenplayer/mediasources',
       function failover (postFailoverAction, failoverErrorAction, failoverParams) {
         if (shouldFailover(failoverParams)) {
           emitCdnFailover(failoverParams);
-          updateCdns();
+          updateCdns(failoverParams.serviceLocation);
           updateDebugOutput();
 
           if (needToGetManifest(windowType, liveSupport)) {
@@ -100,11 +110,15 @@ define('bigscreenplayer/mediasources',
       // the serviceLocation is set to our first cdn url
       // see manifest modifier - generateBaseUrls
       function isFirstManifest (serviceLocation) {
+        return doHostsMatch(serviceLocation, getCurrentUrl());
+      }
+
+      function doHostsMatch (firstUrl, secondUrl) {
         // Matches anything between *:// and / or the end of the line
         var hostRegex = /\w+?:\/\/(.*?)(?:\/|$)/;
 
-        var serviceLocNoQueryHash = stripQueryParamsAndHash(serviceLocation);
-        var currUrlNoQueryHash = stripQueryParamsAndHash(getCurrentUrl());
+        var serviceLocNoQueryHash = stripQueryParamsAndHash(firstUrl);
+        var currUrlNoQueryHash = stripQueryParamsAndHash(secondUrl);
 
         var serviceLocationHost = hostRegex.exec(serviceLocNoQueryHash);
         var currentUrlHost = hostRegex.exec(currUrlNoQueryHash);
@@ -124,6 +138,10 @@ define('bigscreenplayer/mediasources',
         }
 
         return infoValid;
+      }
+
+      function failoverResetTime () {
+        return failoverResetTimeMs;
       }
 
       function needToGetManifest (windowType, liveSupport) {
@@ -217,9 +235,40 @@ define('bigscreenplayer/mediasources',
         return time;
       }
 
-      function updateCdns () {
+      function updateFailedOverSources (mediaSource) {
+        failedOverSources.push(mediaSource);
+
+        if (failoverSort) {
+          mediaSources = failoverSort(mediaSources);
+        }
+
+        var failoverResetToken = setTimeout(function () {
+          if (mediaSources && mediaSources.length > 0 && failedOverSources && failedOverSources.length > 0) {
+            DebugTool.info(mediaSource.cdn + ' has been added back in to available CDNs');
+            mediaSources.push(failedOverSources.shift());
+            updateDebugOutput();
+          }
+        }, failoverResetTimeMs);
+
+        failoverResetTokens.push(failoverResetToken);
+      }
+
+      function updateCdns (serviceLocation) {
         if (hasSourcesToFailoverTo()) {
-          mediaSources.shift();
+          updateFailedOverSources(mediaSources.shift());
+          moveMediaSourceToFront(serviceLocation);
+        }
+      }
+
+      function moveMediaSourceToFront (serviceLocation) {
+        if (serviceLocation) {
+          var serviceLocationIdx = mediaSources.map(function (mediaSource) {
+            return stripQueryParamsAndHash(mediaSource.url);
+          }).indexOf(stripQueryParamsAndHash(serviceLocation));
+
+          if (serviceLocationIdx < 0) serviceLocationIdx = 0;
+
+          mediaSources.unshift(mediaSources.splice(serviceLocationIdx, 1)[0]);
         }
       }
 
@@ -258,6 +307,21 @@ define('bigscreenplayer/mediasources',
         DebugTool.keyValue({key: 'subtitles url', value: stripQueryParamsAndHash(getCurrentSubtitlesUrl())});
       }
 
+      function tearDown () {
+        failoverResetTokens.forEach(function (token) {
+          clearTimeout(token);
+        });
+        windowType = undefined;
+        liveSupport = undefined;
+        serverDate = undefined;
+        time = {};
+        transferFormat = undefined;
+        mediaSources = [];
+        failedOverSources = [];
+        failoverResetTokens = [];
+        subtitlesSources = [];
+      }
+
       return {
         init: init,
         failover: failover,
@@ -269,7 +333,9 @@ define('bigscreenplayer/mediasources',
         currentSubtitlesCdn: getCurrentSubtitlesCdn,
         subtitlesRequestTimeout: getSubtitlesRequestTimeout,
         availableSources: availableUrls,
-        time: generateTime
+        failoverResetTime: failoverResetTime,
+        time: generateTime,
+        tearDown: tearDown
       };
     };
   });

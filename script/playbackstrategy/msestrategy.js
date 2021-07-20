@@ -56,6 +56,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
         BASE_URL_SELECTED: 'baseUrlSelected',
+        SERVICE_LOCATION_AVAILABLE: 'serviceLocationUnblacklisted',
+        URL_RESOLUTION_FAILED: 'urlResolutionFailed',
         METRIC_ADDED: 'metricAdded',
         METRIC_CHANGED: 'metricChanged',
         STREAM_INITIALIZED: 'streamInitialized'
@@ -177,6 +179,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
           mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
         }
+
+        mediaPlayer.setBlacklistExpiryTime(mediaSources.failoverResetTime());
         emitPlayerInfo();
       }
 
@@ -245,6 +249,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         failoverInfo.serviceLocation = event.baseUrl.serviceLocation;
         mediaSources.failover(log, log, failoverInfo);
+      }
+
+      function onServiceLocationAvailable (event) {
+        DebugTool.info('Service Location available: ' + event.entry);
+      }
+
+      function onURLResolutionFailed () {
+        DebugTool.info('URL Resolution failed');
       }
 
       function onMetricAdded (event) {
@@ -367,6 +379,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
         mediaPlayer.on(DashJSEvents.LOG, onDebugLog);
+        mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable);
+        mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed);
       }
 
       /**
@@ -514,6 +528,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
           mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
           mediaPlayer.off(DashJSEvents.LOG, onDebugLog);
+          mediaPlayer.off(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable);
+          mediaPlayer.off(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed);
 
           DOMHelpers.safeRemoveElement(mediaElement);
 
