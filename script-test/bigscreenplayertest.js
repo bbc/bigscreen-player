@@ -66,7 +66,7 @@ require(
       bigscreenPlayerData = {
         media: {
           codec: 'codec',
-          urls: [{url: 'videoUrl', cdn: 'cdn'}],
+          urls: [{ url: 'videoUrl', cdn: 'cdn' }],
           kind: options.mediaKind || 'video',
           type: 'mimeType',
           bitrate: 'bitrate',
@@ -98,7 +98,7 @@ require(
 
       var callbacks;
       if (!noCallbacks) {
-        callbacks = {onSuccess: successCallback, onError: errorCallback};
+        callbacks = { onSuccess: successCallback, onError: errorCallback };
       }
       bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, callbacks);
     }
@@ -185,12 +185,12 @@ require(
 
           var callback = jasmine.createSpy();
 
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
           bigscreenPlayer.registerForTimeUpdates(callback);
 
-          mockEventHook({data: {currentTime: 30}, timeUpdate: true, isBufferingTimeoutError: false});
+          mockEventHook({ data: { currentTime: 30 }, timeUpdate: true, isBufferingTimeoutError: false });
 
-          expect(callback).toHaveBeenCalledWith({currentTime: 30, endOfStream: true});
+          expect(callback).toHaveBeenCalledWith({ currentTime: 30, endOfStream: true });
         });
 
         it('should set endOfStream to false when playing live and initialPlaybackTime is 0', function () {
@@ -198,18 +198,18 @@ require(
 
           var callback = jasmine.createSpy('listenerSimulcast');
 
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING, initialPlaybackTime: 0});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING, initialPlaybackTime: 0 });
 
           bigscreenPlayer.registerForTimeUpdates(callback);
 
-          mockEventHook({data: {currentTime: 0}, timeUpdate: true, isBufferingTimeoutError: false});
+          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true, isBufferingTimeoutError: false });
 
-          expect(callback).toHaveBeenCalledWith({currentTime: 0, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ currentTime: 0, endOfStream: false });
         });
 
         it('should call the supplied error callback if manifest fails to load', function () {
           forceMediaSourcesConstructionFailure = true;
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
 
           expect(mediaSourcesCallbackErrorSpy).toHaveBeenCalledTimes(1);
           expect(errorCallback).toHaveBeenCalledTimes(1);
@@ -226,7 +226,7 @@ require(
         it('should not attempt to call onError callback if one is not provided', function () {
           noCallbacks = true;
 
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
 
           expect(errorCallback).not.toHaveBeenCalled();
         });
@@ -255,63 +255,63 @@ require(
         });
 
         it('should fire the callback when a state event comes back from the strategy', function () {
-          mockEventHook({data: {state: MediaState.PLAYING}});
+          mockEventHook({ data: { state: MediaState.PLAYING } });
 
-          expect(callback).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ state: MediaState.PLAYING, endOfStream: false });
 
           callback.calls.reset();
 
-          mockEventHook({data: {state: MediaState.WAITING}});
+          mockEventHook({ data: { state: MediaState.WAITING } });
 
-          expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: false, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ state: MediaState.WAITING, isSeeking: false, endOfStream: false });
         });
 
         it('should set the isPaused flag to true when waiting after a setCurrentTime', function () {
-          mockEventHook({data: {state: MediaState.PLAYING}});
+          mockEventHook({ data: { state: MediaState.PLAYING } });
 
-          expect(callback).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ state: MediaState.PLAYING, endOfStream: false });
 
           callback.calls.reset();
 
           bigscreenPlayer.setCurrentTime(60);
-          mockEventHook({data: {state: MediaState.WAITING}});
+          mockEventHook({ data: { state: MediaState.WAITING } });
 
-          expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: true, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ state: MediaState.WAITING, isSeeking: true, endOfStream: false });
         });
 
         it('should set clear the isPaused flag after a waiting event is fired', function () {
-          mockEventHook({data: {state: MediaState.PLAYING}});
+          mockEventHook({ data: { state: MediaState.PLAYING } });
 
           bigscreenPlayer.setCurrentTime(60);
-          mockEventHook({data: {state: MediaState.WAITING}});
+          mockEventHook({ data: { state: MediaState.WAITING } });
 
-          expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: true, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ state: MediaState.WAITING, isSeeking: true, endOfStream: false });
 
           callback.calls.reset();
 
-          mockEventHook({data: {state: MediaState.WAITING}});
+          mockEventHook({ data: { state: MediaState.WAITING } });
 
-          expect(callback).toHaveBeenCalledWith({state: MediaState.WAITING, isSeeking: false, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ state: MediaState.WAITING, isSeeking: false, endOfStream: false });
         });
 
         it('should set the pause trigger to the one set when a pause event comes back from strategy', function () {
           bigscreenPlayer.pause();
 
-          mockEventHook({data: {state: MediaState.PAUSED}});
+          mockEventHook({ data: { state: MediaState.PAUSED } });
 
-          expect(callback).toHaveBeenCalledWith({state: MediaState.PAUSED, trigger: PauseTriggers.USER, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ state: MediaState.PAUSED, trigger: PauseTriggers.USER, endOfStream: false });
         });
 
         it('should set the pause trigger to device when a pause event comes back from strategy and a trigger is not set', function () {
-          mockEventHook({data: {state: MediaState.PAUSED}});
+          mockEventHook({ data: { state: MediaState.PAUSED } });
 
-          expect(callback).toHaveBeenCalledWith({state: MediaState.PAUSED, trigger: PauseTriggers.DEVICE, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ state: MediaState.PAUSED, trigger: PauseTriggers.DEVICE, endOfStream: false });
         });
 
         it('should set isBufferingTimeoutError when a fatal error event comes back from strategy', function () {
-          mockEventHook({data: {state: MediaState.FATAL_ERROR}, isBufferingTimeoutError: false});
+          mockEventHook({ data: { state: MediaState.FATAL_ERROR }, isBufferingTimeoutError: false });
 
-          expect(callback).toHaveBeenCalledWith({state: MediaState.FATAL_ERROR, isBufferingTimeoutError: false, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ state: MediaState.FATAL_ERROR, isBufferingTimeoutError: false, endOfStream: false });
         });
 
         it('should return a reference to the callback passed in', function () {
@@ -333,15 +333,39 @@ require(
           bigscreenPlayer.registerForStateChanges(listener2);
           bigscreenPlayer.registerForStateChanges(listener3);
 
-          mockEventHook({data: {state: MediaState.PLAYING}});
+          mockEventHook({ data: { state: MediaState.PLAYING } });
 
           bigscreenPlayer.unregisterForStateChanges(listener2);
 
-          mockEventHook({data: {state: MediaState.PLAYING}});
+          mockEventHook({ data: { state: MediaState.PLAYING } });
 
           expect(listener1).toHaveBeenCalledTimes(2);
           expect(listener2).toHaveBeenCalledTimes(1);
           expect(listener3).toHaveBeenCalledTimes(2);
+        });
+
+        it('should remove callback from stateChangeCallbacks when a callback removes itself', function () {
+          var listener1 = jasmine.createSpy('listener1');
+          var listener2 = jasmine.createSpy('listener2').and.callFake(function () {
+            bigscreenPlayer.unregisterForStateChanges(listener2);
+          });
+          var listener3 = jasmine.createSpy('listener3');
+          var listener4 = jasmine.createSpy('listener4');
+
+          initialiseBigscreenPlayer();
+
+          bigscreenPlayer.registerForStateChanges(listener1);
+          bigscreenPlayer.registerForStateChanges(listener2);
+          bigscreenPlayer.registerForStateChanges(listener3);
+          bigscreenPlayer.registerForStateChanges(listener4);
+
+          mockEventHook({ data: { state: MediaState.PLAYING } });
+          mockEventHook({ data: { state: MediaState.PLAYING } });
+
+          expect(listener1).toHaveBeenCalledTimes(2);
+          expect(listener2).toHaveBeenCalledTimes(1);
+          expect(listener3).toHaveBeenCalledTimes(2);
+          expect(listener4).toHaveBeenCalledTimes(2);
         });
 
         it('should only remove existing callbacks from stateChangeCallbacks', function () {
@@ -353,9 +377,9 @@ require(
           bigscreenPlayer.registerForStateChanges(listener1);
           bigscreenPlayer.unregisterForStateChanges(listener2);
 
-          mockEventHook({data: {state: MediaState.PLAYING}});
+          mockEventHook({ data: { state: MediaState.PLAYING } });
 
-          expect(listener1).toHaveBeenCalledWith({state: MediaState.PLAYING, endOfStream: false});
+          expect(listener1).toHaveBeenCalledWith({ state: MediaState.PLAYING, endOfStream: false });
         });
       });
 
@@ -363,24 +387,24 @@ require(
         describe('on state change event', function () {
           it('should not be called when it is a fatal error', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {state: MediaState.FATAL_ERROR}});
+            mockEventHook({ data: { state: MediaState.FATAL_ERROR } });
 
             expect(successCallback).not.toHaveBeenCalled();
           });
 
           it('should be called if playing VOD and event time is valid', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
+            mockEventHook({ data: { state: MediaState.WAITING, currentTime: 0 } });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
           });
 
           it('should be called if playing VOD with an initial start time and event time is valid', function () {
-            initialiseBigscreenPlayer({initialPlaybackTime: 20});
-            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
+            initialiseBigscreenPlayer({ initialPlaybackTime: 20 });
+            mockEventHook({ data: { state: MediaState.WAITING, currentTime: 0 } });
 
             expect(successCallback).not.toHaveBeenCalled();
-            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 20}});
+            mockEventHook({ data: { state: MediaState.PLAYING, currentTime: 20 } });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
           });
@@ -394,7 +418,7 @@ require(
               }
             });
 
-            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+            initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
 
             mockEventHook({
               data:
@@ -413,22 +437,22 @@ require(
 
           it('after a valid state change should not be called on succesive valid state changes', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
+            mockEventHook({ data: { state: MediaState.WAITING, currentTime: 0 } });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
             successCallback.calls.reset();
-            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 0}});
+            mockEventHook({ data: { state: MediaState.PLAYING, currentTime: 0 } });
 
             expect(successCallback).not.toHaveBeenCalled();
           });
 
           it('after a valid state change should not be called on succesive valid time updates', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {state: MediaState.WAITING, currentTime: 0}});
+            mockEventHook({ data: { state: MediaState.WAITING, currentTime: 0 } });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
             successCallback.calls.reset();
-            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+            mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
             expect(successCallback).not.toHaveBeenCalled();
           });
@@ -437,17 +461,17 @@ require(
         describe('on time update', function () {
           it('should be called if playing VOD and current time is valid', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+            mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
           });
 
           it('should be called if playing VOD with an initial start time and current time is valid', function () {
-            initialiseBigscreenPlayer({initialPlaybackTime: 20});
-            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+            initialiseBigscreenPlayer({ initialPlaybackTime: 20 });
+            mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
             expect(successCallback).not.toHaveBeenCalled();
-            mockEventHook({data: {currentTime: 20}, timeUpdate: true});
+            mockEventHook({ data: { currentTime: 20 }, timeUpdate: true });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
           });
@@ -460,7 +484,7 @@ require(
                 windowEndTime: 100
               }
             });
-            initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+            initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
 
             mockEventHook({
               data:
@@ -479,22 +503,22 @@ require(
 
           it('after a valid time update should not be called on succesive valid time updates', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+            mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
             successCallback.calls.reset();
-            mockEventHook({data: {currentTime: 2}, timeUpdate: true});
+            mockEventHook({ data: { currentTime: 2 }, timeUpdate: true });
 
             expect(successCallback).not.toHaveBeenCalled();
           });
 
           it('after a valid time update should not be called on succesive valid state changes', function () {
             initialiseBigscreenPlayer();
-            mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+            mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
             expect(successCallback).toHaveBeenCalledTimes(1);
             successCallback.calls.reset();
-            mockEventHook({data: {state: MediaState.PLAYING, currentTime: 2}});
+            mockEventHook({ data: { state: MediaState.PLAYING, currentTime: 2 } });
 
             expect(successCallback).not.toHaveBeenCalled();
           });
@@ -509,9 +533,9 @@ require(
 
           expect(callback).not.toHaveBeenCalled();
 
-          mockEventHook({data: {currentTime: 60}, timeUpdate: true});
+          mockEventHook({ data: { currentTime: 60 }, timeUpdate: true });
 
-          expect(callback).toHaveBeenCalledWith({currentTime: 60, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ currentTime: 60, endOfStream: false });
         });
 
         it('returns a reference to the callback passed in', function () {
@@ -534,11 +558,35 @@ require(
           bigscreenPlayer.registerForTimeUpdates(listener2);
           bigscreenPlayer.registerForTimeUpdates(listener3);
 
-          mockEventHook({data: {currentTime: 0}, timeUpdate: true});
+          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
           bigscreenPlayer.unregisterForTimeUpdates(listener2);
 
-          mockEventHook({data: {currentTime: 1}, timeUpdate: true});
+          mockEventHook({ data: { currentTime: 1 }, timeUpdate: true });
+
+          expect(listener1).toHaveBeenCalledTimes(2);
+          expect(listener2).toHaveBeenCalledTimes(1);
+          expect(listener3).toHaveBeenCalledTimes(2);
+        });
+
+        it('should remove callback from timeUpdateCallbacks when a callback removes itself', function () {
+          initialiseBigscreenPlayer();
+
+          var listener1 = jasmine.createSpy('listener1');
+          var listener2 = jasmine.createSpy('listener2').and.callFake(function () {
+            bigscreenPlayer.unregisterForTimeUpdates(listener2);
+          });
+          var listener3 = jasmine.createSpy('listener3');
+
+          bigscreenPlayer.registerForTimeUpdates(listener1);
+          bigscreenPlayer.registerForTimeUpdates(listener2);
+          bigscreenPlayer.registerForTimeUpdates(listener3);
+
+          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
+
+          bigscreenPlayer.unregisterForTimeUpdates(listener2);
+
+          mockEventHook({ data: { currentTime: 0 }, timeUpdate: true });
 
           expect(listener1).toHaveBeenCalledTimes(2);
           expect(listener2).toHaveBeenCalledTimes(1);
@@ -554,9 +602,9 @@ require(
           bigscreenPlayer.registerForTimeUpdates(listener1);
           bigscreenPlayer.unregisterForTimeUpdates(listener2);
 
-          mockEventHook({data: {currentTime: 60}, timeUpdate: true});
+          mockEventHook({ data: { currentTime: 60 }, timeUpdate: true });
 
-          expect(listener1).toHaveBeenCalledWith({currentTime: 60, endOfStream: false});
+          expect(listener1).toHaveBeenCalledWith({ currentTime: 60, endOfStream: false });
         });
       });
 
@@ -570,11 +618,11 @@ require(
 
           bigscreenPlayer.setSubtitlesEnabled(true);
 
-          expect(callback).toHaveBeenCalledWith({enabled: true});
+          expect(callback).toHaveBeenCalledWith({ enabled: true });
 
           bigscreenPlayer.setSubtitlesEnabled(false);
 
-          expect(callback).toHaveBeenCalledWith({enabled: false});
+          expect(callback).toHaveBeenCalledWith({ enabled: false });
         });
 
         it('should call the callback when init() is called with subtitles enabled', function () {
@@ -583,7 +631,7 @@ require(
           bigscreenPlayer.registerForSubtitleChanges(callback);
           initialiseBigscreenPlayer({ subtitlesEnabled: true });
 
-          expect(callback).toHaveBeenCalledWith({enabled: true});
+          expect(callback).toHaveBeenCalledWith({ enabled: true });
         });
 
         it('should not call the callback when init() is called without subtitles enabled', function () {
@@ -626,6 +674,30 @@ require(
           expect(listener3).toHaveBeenCalledTimes(2);
         });
 
+        it('should remove callback from subtitleCallbacks when a callback removes itself', function () {
+          initialiseBigscreenPlayer();
+
+          var listener1 = jasmine.createSpy('listener1');
+          var listener2 = jasmine.createSpy('listener2').and.callFake(function () {
+            bigscreenPlayer.unregisterForSubtitleChanges(listener2);
+          });
+          var listener3 = jasmine.createSpy('listener3');
+          var listener4 = jasmine.createSpy('listener4');
+
+          bigscreenPlayer.registerForSubtitleChanges(listener1);
+          bigscreenPlayer.registerForSubtitleChanges(listener2);
+          bigscreenPlayer.registerForSubtitleChanges(listener3);
+          bigscreenPlayer.registerForSubtitleChanges(listener4);
+
+          bigscreenPlayer.setSubtitlesEnabled(false);
+          bigscreenPlayer.setSubtitlesEnabled(true);
+
+          expect(listener1).toHaveBeenCalledTimes(2);
+          expect(listener2).toHaveBeenCalledTimes(1);
+          expect(listener3).toHaveBeenCalledTimes(2);
+          expect(listener4).toHaveBeenCalledTimes(2);
+        });
+
         it('should only remove existing callbacks from subtitleCallbacks', function () {
           initialiseBigscreenPlayer();
 
@@ -637,7 +709,7 @@ require(
 
           bigscreenPlayer.setSubtitlesEnabled(true);
 
-          expect(listener1).toHaveBeenCalledWith({enabled: true});
+          expect(listener1).toHaveBeenCalledWith({ enabled: true });
         });
       });
 
@@ -665,21 +737,21 @@ require(
             }
           });
 
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
 
           var callback = jasmine.createSpy();
           var endOfStreamWindow = bigscreenPlayerData.time.windowEndTime - 2;
 
           bigscreenPlayer.registerForTimeUpdates(callback);
 
-          mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: bigscreenPlayerData.time.windowStartTime, end: bigscreenPlayerData.time.windowEndTime});
+          mockPlayerComponentInstance.getSeekableRange.and.returnValue({ start: bigscreenPlayerData.time.windowStartTime, end: bigscreenPlayerData.time.windowEndTime });
           mockPlayerComponentInstance.getCurrentTime.and.returnValue(endOfStreamWindow);
 
           bigscreenPlayer.setCurrentTime(endOfStreamWindow);
 
-          mockEventHook({data: {currentTime: endOfStreamWindow}, timeUpdate: true});
+          mockEventHook({ data: { currentTime: endOfStreamWindow }, timeUpdate: true });
 
-          expect(callback).toHaveBeenCalledWith({currentTime: endOfStreamWindow, endOfStream: true});
+          expect(callback).toHaveBeenCalledWith({ currentTime: endOfStreamWindow, endOfStream: true });
         });
 
         it('should set endOfStream to false when seeking into a simulcast', function () {
@@ -691,21 +763,21 @@ require(
             }
           });
 
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
 
           var callback = jasmine.createSpy();
           bigscreenPlayer.registerForTimeUpdates(callback);
 
           var middleOfStreamWindow = bigscreenPlayerData.time.windowEndTime / 2;
 
-          mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: bigscreenPlayerData.time.windowStartTime, end: bigscreenPlayerData.time.windowEndTime});
+          mockPlayerComponentInstance.getSeekableRange.and.returnValue({ start: bigscreenPlayerData.time.windowStartTime, end: bigscreenPlayerData.time.windowEndTime });
           mockPlayerComponentInstance.getCurrentTime.and.returnValue(middleOfStreamWindow);
 
           bigscreenPlayer.setCurrentTime(middleOfStreamWindow);
 
-          mockEventHook({data: {currentTime: middleOfStreamWindow}, timeUpdate: true});
+          mockEventHook({ data: { currentTime: middleOfStreamWindow }, timeUpdate: true });
 
-          expect(callback).toHaveBeenCalledWith({currentTime: middleOfStreamWindow, endOfStream: false});
+          expect(callback).toHaveBeenCalledWith({ currentTime: middleOfStreamWindow, endOfStream: false });
         });
       });
 
@@ -757,7 +829,7 @@ require(
 
       describe('getMediaKind', function () {
         it('should return the media kind', function () {
-          initialiseBigscreenPlayer({mediaKind: 'audio'});
+          initialiseBigscreenPlayer({ mediaKind: 'audio' });
 
           expect(bigscreenPlayer.getMediaKind()).toBe('audio');
         });
@@ -765,7 +837,7 @@ require(
 
       describe('getWindowType', function () {
         it('should return the window type', function () {
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
 
           expect(bigscreenPlayer.getWindowType()).toBe(WindowTypes.SLIDING);
         });
@@ -775,7 +847,7 @@ require(
         it('should return the seekable range from the strategy', function () {
           initialiseBigscreenPlayer();
 
-          mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 10});
+          mockPlayerComponentInstance.getSeekableRange.and.returnValue({ start: 0, end: 10 });
 
           expect(bigscreenPlayer.getSeekableRange().start).toEqual(0);
           expect(bigscreenPlayer.getSeekableRange().end).toEqual(10);
@@ -798,19 +870,19 @@ require(
         });
 
         it('should return true when playing live and current time is within tolerance of seekable range end', function () {
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
 
           mockPlayerComponentInstance.getCurrentTime.and.returnValue(100);
-          mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 105});
+          mockPlayerComponentInstance.getSeekableRange.and.returnValue({ start: 0, end: 105 });
 
           expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(true);
         });
 
         it('should return false when playing live and current time is outside the tolerance of seekable range end', function () {
-          initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING });
 
           mockPlayerComponentInstance.getCurrentTime.and.returnValue(95);
-          mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 105});
+          mockPlayerComponentInstance.getSeekableRange.and.returnValue({ start: 0, end: 105 });
 
           expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false);
         });
@@ -818,7 +890,7 @@ require(
 
       describe('getLiveWindowData', function () {
         it('should return undefined values when windowType is static', function () {
-          initialiseBigscreenPlayer({windowType: WindowTypes.STATIC});
+          initialiseBigscreenPlayer({ windowType: WindowTypes.STATIC });
 
           expect(bigscreenPlayer.getLiveWindowData()).toEqual({});
         });
@@ -832,17 +904,17 @@ require(
             }
           });
 
-          var initialisationData = {windowType: WindowTypes.SLIDING, serverDate: new Date(), initialPlaybackTime: new Date().getTime()};
+          var initialisationData = { windowType: WindowTypes.SLIDING, serverDate: new Date(), initialPlaybackTime: new Date().getTime() };
           initialiseBigscreenPlayer(initialisationData);
 
-          expect(bigscreenPlayer.getLiveWindowData()).toEqual({windowStartTime: 1, windowEndTime: 2, serverDate: initialisationData.serverDate, initialPlaybackTime: initialisationData.initialPlaybackTime});
+          expect(bigscreenPlayer.getLiveWindowData()).toEqual({ windowStartTime: 1, windowEndTime: 2, serverDate: initialisationData.serverDate, initialPlaybackTime: initialisationData.initialPlaybackTime });
         });
 
         it('should return a subset of liveWindowData when the windowType is sliding and time block is provided', function () {
-          var initialisationData = {windowType: WindowTypes.SLIDING, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: new Date().getTime()};
+          var initialisationData = { windowType: WindowTypes.SLIDING, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: new Date().getTime() };
           initialiseBigscreenPlayer(initialisationData);
 
-          expect(bigscreenPlayer.getLiveWindowData()).toEqual({serverDate: undefined, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: initialisationData.initialPlaybackTime});
+          expect(bigscreenPlayer.getLiveWindowData()).toEqual({ serverDate: undefined, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: initialisationData.initialPlaybackTime });
         });
       });
 
@@ -900,17 +972,17 @@ require(
 
       describe('pause', function () {
         it('should call pause on the strategy', function () {
-          var opts = {disableAutoResume: true};
+          var opts = { disableAutoResume: true };
 
           initialiseBigscreenPlayer();
 
           bigscreenPlayer.pause(opts);
 
-          expect(mockPlayerComponentInstance.pause).toHaveBeenCalledWith(jasmine.objectContaining({disableAutoResume: true}));
+          expect(mockPlayerComponentInstance.pause).toHaveBeenCalledWith(jasmine.objectContaining({ disableAutoResume: true }));
         });
 
         it('should set pauseTrigger to an app pause if user pause is false', function () {
-          var opts = {userPause: false};
+          var opts = { userPause: false };
 
           initialiseBigscreenPlayer();
 
@@ -920,13 +992,13 @@ require(
 
           bigscreenPlayer.pause(opts);
 
-          mockEventHook({data: {state: MediaState.PAUSED}});
+          mockEventHook({ data: { state: MediaState.PAUSED } });
 
-          expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({trigger: PauseTriggers.APP}));
+          expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({ trigger: PauseTriggers.APP }));
         });
 
         it('should set pauseTrigger to a user pause if user pause is true', function () {
-          var opts = {userPause: true};
+          var opts = { userPause: true };
 
           initialiseBigscreenPlayer();
 
@@ -936,9 +1008,9 @@ require(
 
           bigscreenPlayer.pause(opts);
 
-          mockEventHook({data: {state: MediaState.PAUSED}});
+          mockEventHook({ data: { state: MediaState.PAUSED } });
 
-          expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({trigger: PauseTriggers.USER}));
+          expect(callback).toHaveBeenCalledWith(jasmine.objectContaining({ trigger: PauseTriggers.USER }));
         });
       });
 
@@ -1099,7 +1171,7 @@ require(
 
         describe('live', function () {
           it('should return true when it can seek', function () {
-            mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
+            mockPlayerComponentInstance.getSeekableRange.and.returnValue({ start: 0, end: 60 });
 
             initialiseBigscreenPlayer({
               windowType: WindowTypes.SLIDING
@@ -1109,7 +1181,7 @@ require(
           });
 
           it('should return false when seekable range is infinite', function () {
-            mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: Infinity});
+            mockPlayerComponentInstance.getSeekableRange.and.returnValue({ start: 0, end: Infinity });
 
             initialiseBigscreenPlayer({
               windowType: WindowTypes.SLIDING
@@ -1127,7 +1199,7 @@ require(
                 correction: 0
               }
             });
-            mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
+            mockPlayerComponentInstance.getSeekableRange.and.returnValue({ start: 0, end: 60 });
 
             initialiseBigscreenPlayer({
               windowType: WindowTypes.SLIDING
@@ -1137,7 +1209,7 @@ require(
           });
 
           it('should return false when device does not support seeking', function () {
-            mockPlayerComponentInstance.getSeekableRange.and.returnValue({start: 0, end: 60});
+            mockPlayerComponentInstance.getSeekableRange.and.returnValue({ start: 0, end: 60 });
 
             liveSupport = LiveSupport.PLAYABLE;
 
