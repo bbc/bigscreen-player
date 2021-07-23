@@ -253,14 +253,12 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           DebugTool.keyValue({key: 'strategy', value: getStrategy()});
         },
         play: function () {
-          if (isEnded && !mediaPlayer.playFrom) return;
-
           isPaused = false;
           if (delayPauseOnExitSeek && exitingSeek) {
             pauseOnExitSeek = false;
           } else {
             if (isEnded) {
-              mediaPlayer.playFrom(0);
+              mediaPlayer.playFrom && mediaPlayer.playFrom(0);
             } else if (transitions.canResume()) {
               mediaPlayer.resume();
             } else {

@@ -219,14 +219,12 @@ require(
         describe('if the player does not support playFrom()', function () {
           beforeEach(function () { delete mediaPlayer.playFrom; });
 
-          it('should do nothing and remain paused', function () {
+          it('should not throw an error', function () {
             setUpLegacyAdaptor();
 
             eventCallbacks({type: MediaPlayerEvent.COMPLETE});
 
             legacyAdaptor.play();
-
-            expect(legacyAdaptor.isPaused()).toEqual(true);
           });
 
           it('should do nothing if we are not ended, paused or buffering', function () {
