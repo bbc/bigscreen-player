@@ -253,6 +253,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           DebugTool.keyValue({key: 'strategy', value: getStrategy()});
         },
         play: function () {
+          if (isEnded && !mediaPlayer.playFrom) return;
+
           isPaused = false;
           if (delayPauseOnExitSeek && exitingSeek) {
             pauseOnExitSeek = false;
@@ -262,7 +264,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             } else if (transitions.canResume()) {
               mediaPlayer.resume();
             } else {
-              mediaPlayer.playFrom(currentTime + timeCorrection);
+              mediaPlayer.playFrom && mediaPlayer.playFrom(currentTime + timeCorrection);
             }
           }
         },
@@ -318,6 +320,8 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           return currentTime;
         },
         setCurrentTime: function (seekToTime) {
+          if (!mediaPlayer.playFrom) return;
+
           isEnded = false;
           currentTime = seekToTime;
           seekToTime += timeCorrection;
