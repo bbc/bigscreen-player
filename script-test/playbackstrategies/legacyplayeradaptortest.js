@@ -545,13 +545,14 @@ require(
         describe('if the player does not support playFrom()', function () {
           beforeEach(function () { delete mediaPlayer.playFrom; });
 
-          it('should do nothing', function () {
+          // eslint-disable-next-line jasmine/no-spec-dupes
+          it('should not throw an error', function () {
             setUpLegacyAdaptor();
 
             legacyAdaptor.setCurrentTime(10);
           });
 
-          it('should do nothing for live', function () {
+          it('should not throw an error for live', function () {
             testTimeCorrection = 10;
             setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 

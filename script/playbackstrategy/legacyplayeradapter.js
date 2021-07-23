@@ -318,8 +318,6 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
           return currentTime;
         },
         setCurrentTime: function (seekToTime) {
-          if (!mediaPlayer.playFrom) return;
-
           isEnded = false;
           currentTime = seekToTime;
           seekToTime += timeCorrection;
@@ -330,7 +328,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             pauseOnExitSeek = isPaused;
           }
 
-          mediaPlayer.playFrom(seekToTime);
+          mediaPlayer.playFrom && mediaPlayer.playFrom(seekToTime);
           if (isPaused && !delayPauseOnExitSeek) {
             mediaPlayer.pause();
           }
