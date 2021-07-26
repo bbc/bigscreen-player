@@ -1,64 +1,56 @@
-define(
-  'bigscreenplayer/playbackstrategy/modifiers/live/playable',
-  [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
-  ],
-  function (MediaPlayerBase) {
-    'use strict';
-    function PlayableLivePlayer (mediaPlayer) {
-      return {
-        beginPlayback: function beginPlayback () {
-          mediaPlayer.beginPlayback();
-        },
+import MediaPlayerBase from '../../../../script/playbackstrategy/modifiers/mediaplayerbase';
+function PlayableLivePlayer (mediaPlayer) {
+  return {
+    beginPlayback: function beginPlayback () {
+      mediaPlayer.beginPlayback();
+    },
 
-        initialiseMedia: function initialiseMedia (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
-          if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
-            mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
-          } else {
-            mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO;
-          }
+    initialiseMedia: function initialiseMedia (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
+      if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
+        mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO;
+      } else {
+        mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO;
+      }
 
-          mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts);
-        },
+      mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts);
+    },
 
-        stop: function stop () {
-          mediaPlayer.stop();
-        },
+    stop: function stop () {
+      mediaPlayer.stop();
+    },
 
-        reset: function reset () {
-          mediaPlayer.reset();
-        },
+    reset: function reset () {
+      mediaPlayer.reset();
+    },
 
-        getState: function getState () {
-          return mediaPlayer.getState();
-        },
+    getState: function getState () {
+      return mediaPlayer.getState();
+    },
 
-        getSource: function getSource () {
-          return mediaPlayer.getSource();
-        },
+    getSource: function getSource () {
+      return mediaPlayer.getSource();
+    },
 
-        getMimeType: function getMimeType () {
-          return mediaPlayer.getMimeType();
-        },
+    getMimeType: function getMimeType () {
+      return mediaPlayer.getMimeType();
+    },
 
-        addEventCallback: function addEventCallback (thisArg, callback) {
-          mediaPlayer.addEventCallback(thisArg, callback);
-        },
+    addEventCallback: function addEventCallback (thisArg, callback) {
+      mediaPlayer.addEventCallback(thisArg, callback);
+    },
 
-        removeEventCallback: function removeEventCallback (thisArg, callback) {
-          mediaPlayer.removeEventCallback(thisArg, callback);
-        },
+    removeEventCallback: function removeEventCallback (thisArg, callback) {
+      mediaPlayer.removeEventCallback(thisArg, callback);
+    },
 
-        removeAllEventCallbacks: function removeAllEventCallbacks () {
-          mediaPlayer.removeAllEventCallbacks();
-        },
+    removeAllEventCallbacks: function removeAllEventCallbacks () {
+      mediaPlayer.removeAllEventCallbacks();
+    },
 
-        getPlayerElement: function getPlayerElement () {
-          return mediaPlayer.getPlayerElement();
-        }
-      };
+    getPlayerElement: function getPlayerElement () {
+      return mediaPlayer.getPlayerElement();
     }
+  };
+}
 
-    return PlayableLivePlayer;
-  }
-);
+export default PlayableLivePlayer;

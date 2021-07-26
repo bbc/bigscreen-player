@@ -1,9 +1,4 @@
-define(
-  'bigscreenplayer/models/transferformats', [],
-  function () {
-    'use strict';
-    return {
-      DASH: 'dash',
-      HLS: 'hls'
-    };
-  });
+export default {
+  DASH: 'dash',
+  HLS: 'hls'
+};

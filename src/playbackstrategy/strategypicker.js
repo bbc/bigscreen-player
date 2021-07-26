@@ -1,20 +1,15 @@
-define('bigscreenplayer/playbackstrategy/strategypicker',
-  [
-    'bigscreenplayer/models/playbackstrategy'
-  ],
-  function (PlaybackStrategy) {
-    return function (windowType, isUHD) {
-      var mseExceptions = window.bigscreenPlayer.mseExceptions || [];
+import PlaybackStrategy from '../../script/models/playbackstrategy';
 
-      if (mseExceptions.indexOf(windowType) !== -1) {
-        return PlaybackStrategy.NATIVE;
-      }
+export default function (windowType, isUHD) {
+  var mseExceptions = window.bigscreenPlayer.mseExceptions || [];
 
-      if (isUHD && mseExceptions.indexOf('uhd') !== -1) {
-        return PlaybackStrategy.NATIVE;
-      }
-
-      return PlaybackStrategy.MSE;
-    };
+  if (mseExceptions.indexOf(windowType) !== -1) {
+    return PlaybackStrategy.NATIVE;
   }
-);
+
+  if (isUHD && mseExceptions.indexOf('uhd') !== -1) {
+    return PlaybackStrategy.NATIVE;
+  }
+
+  return PlaybackStrategy.MSE;
+}

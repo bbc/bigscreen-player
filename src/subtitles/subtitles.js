@@ -1,79 +1,76 @@
-define('bigscreenplayer/subtitles/subtitles',
-  [
-    'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'imscsubtitles')
-  ],
-  function (SubtitlesContainer) {
-    'use strict';
-    return function (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources) {
-      var subtitlesEnabled = autoStart;
-      var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength();
-      var subtitlesContainer = SubtitlesContainer(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts);
+define([
+  'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'imscsubtitles')
+], function (SubtitlesContainer) {
+  'use strict';
+  return function (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources) {
+    var subtitlesEnabled = autoStart;
+    var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength();
+    var subtitlesContainer = SubtitlesContainer(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts);
 
-      function enable () {
-        subtitlesEnabled = true;
+    function enable () {
+      subtitlesEnabled = true;
+    }
+
+    function disable () {
+      subtitlesEnabled = false;
+    }
+
+    function show () {
+      if (available() && enabled()) {
+        subtitlesContainer.start();
       }
+    }
 
-      function disable () {
-        subtitlesEnabled = false;
+    function hide () {
+      if (available()) {
+        subtitlesContainer.stop();
       }
+    }
 
-      function show () {
-        if (available() && enabled()) {
-          subtitlesContainer.start();
-        }
+    function enabled () {
+      return subtitlesEnabled;
+    }
+
+    function available () {
+      if (liveSubtitles && (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)) {
+        return false;
+      } else {
+        return !!mediaSources.currentSubtitlesSource();
       }
+    }
 
-      function hide () {
-        if (available()) {
-          subtitlesContainer.stop();
-        }
-      }
+    function setPosition (position) {
+      subtitlesContainer.updatePosition(position);
+    }
 
-      function enabled () {
-        return subtitlesEnabled;
-      }
+    function customise (styleOpts) {
+      subtitlesContainer.customise(styleOpts, subtitlesEnabled);
+    }
 
-      function available () {
-        if (liveSubtitles && (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)) {
-          return false;
-        } else {
-          return !!mediaSources.currentSubtitlesSource();
-        }
-      }
+    function renderExample (exampleXmlString, styleOpts, safePosition) {
+      subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition);
+    }
 
-      function setPosition (position) {
-        subtitlesContainer.updatePosition(position);
-      }
+    function clearExample () {
+      subtitlesContainer.clearExample();
+    }
 
-      function customise (styleOpts) {
-        subtitlesContainer.customise(styleOpts, subtitlesEnabled);
-      }
+    function tearDown () {
+      subtitlesContainer.tearDown();
+    }
 
-      function renderExample (exampleXmlString, styleOpts, safePosition) {
-        subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition);
-      }
-
-      function clearExample () {
-        subtitlesContainer.clearExample();
-      }
-
-      function tearDown () {
-        subtitlesContainer.tearDown();
-      }
-
-      return {
-        enable: enable,
-        disable: disable,
-        show: show,
-        hide: hide,
-        enabled: enabled,
-        available: available,
-        setPosition: setPosition,
-        customise: customise,
-        renderExample: renderExample,
-        clearExample: clearExample,
-        tearDown: tearDown
-      };
+    return {
+      enable: enable,
+      disable: disable,
+      show: show,
+      hide: hide,
+      enabled: enabled,
+      available: available,
+      setPosition: setPosition,
+      customise: customise,
+      renderExample: renderExample,
+      clearExample: clearExample,
+      tearDown: tearDown
     };
-  }
-);
+  };
+});
