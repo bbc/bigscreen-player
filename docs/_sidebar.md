@@ -2,12 +2,14 @@
   
   - [Installation](getting-started/installation.md "Installation | Bigscreen Player")
   - [Usage](getting-started/usage.md "Usage | Bigscreen Player")
-  - <a href="https://bbc.github.io/bigscreen-player/api/module-bigscreenplayer_bigscreenplayer.html" target=”_blank”>API</a>
+  - [Creating a plugin](getting-started/creating-a-plugin.md "Creating a plugin | Bigscreen Player")
+  - [Events](getting-started/events.md "Events | Bigscreen Player")
 
 - Design
   
   - [Overview](design/overview.md "Design Overview | Bigscreen Player")
   - [Playback Strategies](design/playback-strategies.md "Playback Strategies | Bigscreen Player")
+  - <a href="https://bbc.github.io/bigscreen-player/api/module-bigscreenplayer_bigscreenplayer.html" target=”_blank”>API</a>
 
 - Features
   

@@ -1,6 +1,8 @@
 # Mocking Playback
 
-The Bigscreen Player includes a test mode than can be triggered by calling `mock()` or `mockJasmine()`.
+When writing tests for your application it may be useful to use the mocking functions provided. This creates a fake player with mocking hook functions to simulate real world scenarios.
+
+Bigscreen Player includes a test mode than can be triggered by calling `mock()` or `mockJasmine()`.
 
 ## `mock(opts)` and `mockJasmine(opts)`
 

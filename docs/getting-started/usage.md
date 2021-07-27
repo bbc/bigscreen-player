@@ -1,5 +1,19 @@
 # Usage
 
+## Configuration
+
+The Bigscreen Player has some global configuration that is needed before initialisation. A *playback strategy* must be configured:
+
+```javascript
+window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'talstrategy' (deprecated)
+```
+
+See the [playback strategies](design/playback-strategies.md) wiki page for further details on these strategies.
+
+
+
+## Initialisation
+
 Bigscreen Player uses requirejs for managing dependencies. Once you have required the player, a playback session can be initalised by simply calling the `init()` function with some initial data.
 
 The player will render itself into a supplied parent element, and playback will begin as soon as enough data has buffered.
