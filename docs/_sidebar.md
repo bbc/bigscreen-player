@@ -17,7 +17,7 @@
 - Testing
   
   - [Areas Impacted](testing/areas-impacted.md)
-  - [Mocking playback](testing/areas-impacted.md)
+  - [Mocking playback](testing/mocking-playback.md)
 
 - ADRs
   
