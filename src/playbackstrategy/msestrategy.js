@@ -1,15 +1,16 @@
-import MediaState from "../../script/models/mediastate";
-import WindowTypes from "../../script/models/windowtypes";
-import DebugTool from "../../script/debugger/debugtool";
-import MediaKinds from "../../script/models/mediakinds";
-import Plugins from "../../script/plugins";
-import ManifestModifier from "../../script/manifest/manifestmodifier";
-import LiveSupport from "../../script/models/livesupport";
-import DynamicWindowUtils from "../../script/dynamicwindowutils";
-import TimeUtils from "../../script/utils/timeutils";
-import DOMHelpers from "../../script/domhelpers";
-import Utils from "../../script/utils/playbackutils";
-import "dashjs";
+import MediaState from '../../script/models/mediastate';
+import WindowTypes from '../../script/models/windowtypes';
+import DebugTool from '../../script/debugger/debugtool';
+import MediaKinds from '../../script/models/mediakinds';
+import Plugins from '../../script/plugins';
+import ManifestModifier from '../../script/manifest/manifestmodifier';
+import LiveSupport from '../../script/models/livesupport';
+import DynamicWindowUtils from '../../script/dynamicwindowutils';
+import TimeUtils from '../../script/utils/timeutils';
+import DOMHelpers from '../../script/domhelpers';
+import Utils from '../../script/utils/playbackutils';
+import { MediaPlayer } from 'dashjs';
+
 var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
   var LIVE_DELAY_SECONDS = 1.1;
   var mediaPlayer;
@@ -335,7 +336,7 @@ var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement
   }
 
   function setUpMediaPlayer (playbackTime) {
-    mediaPlayer = dashjs.MediaPlayer().create();
+    mediaPlayer = MediaPlayer().create();
     var playerSettings = Utils.merge({
       debug: {
         logLevel: 2
