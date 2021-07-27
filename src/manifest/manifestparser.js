@@ -1,4 +1,4 @@
-import TimeUtils from '../../script/utils/timeutils';
+import TimeUtils from './../utils/timeutils';
 
 function parseMPD (manifest, dateWithOffset) {
   try {

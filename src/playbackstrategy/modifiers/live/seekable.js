@@ -1,6 +1,6 @@
-import MediaPlayerBase from '../../../../script/playbackstrategy/modifiers/mediaplayerbase';
-import DynamicWindowUtils from '../../../../script/dynamicwindowutils';
-import WindowTypes from '../../../../script/models/windowtypes';
+import MediaPlayerBase from '././playbackstrategy/modifiers/mediaplayerbase';
+import DynamicWindowUtils from '././dynamicwindowutils';
+import WindowTypes from '././models/windowtypes';
 function SeekableLivePlayer (mediaPlayer, windowType) {
   var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 

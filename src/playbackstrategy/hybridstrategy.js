@@ -1,8 +1,8 @@
-import Native from '../../script/playbackstrategy/nativestrategy';
-import MSE from '../../script/playbackstrategy/msestrategy';
-import StrategyPicker from '../../script/playbackstrategy/strategypicker';
-import LiveSupport from '../../script/models/livesupport';
-import PlaybackStrategy from '../../script/models/playbackstrategy';
+import Native from './playbackstrategy/nativestrategy';
+import MSE from './playbackstrategy/msestrategy';
+import StrategyPicker from './playbackstrategy/strategypicker';
+import LiveSupport from './models/livesupport';
+import PlaybackStrategy from './models/playbackstrategy';
 
 var HybridStrategy = function (mediaSources, windowType, mediaKind, videoElement, isUHD) {
   var strategy = StrategyPicker(windowType, isUHD);

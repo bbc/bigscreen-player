@@ -1,4 +1,5 @@
-import DOMHelpers from '../../script/domhelpers';
+import DOMHelpers from '../domhelpers';
+
 var appElement, logBox, logContainer, staticContainer, staticBox;
 
 function init () {

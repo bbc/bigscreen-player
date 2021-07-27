@@ -1,6 +1,6 @@
-import MediaState from '../script/models/mediastate';
-import WindowTypes from '../script/models/windowtypes';
-import LiveSupport from '../script/models/livesupport';
+import MediaState from './models/mediastate';
+import WindowTypes from './models/windowtypes';
+import LiveSupport from './models/livesupport';
 
 var ReadyHelper = function (initialPlaybackTime, windowType, liveSupport, callback) {
   var ready = false;

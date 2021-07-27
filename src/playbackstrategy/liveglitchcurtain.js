@@ -1,5 +1,5 @@
-import PlaybackSpinner from '../../script/playbackspinner';
-import DOMHelpers from '../../script/domhelpers';
+import PlaybackSpinner from './playbackspinner';
+import DOMHelpers from './domhelpers';
 
 export default function (parentElement) {
   var curtain;

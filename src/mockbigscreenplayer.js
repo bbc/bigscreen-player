@@ -1,12 +1,12 @@
-import MediaState from '../script/models/mediastate';
-import PauseTriggers from '../script/models/pausetriggers';
-import WindowTypes from '../script/models/windowtypes';
-import PlaybackUtils from '../script/utils/playbackutils';
-import callCallbacks from '../script/utils/callcallbacks';
-import Plugins from '../script/plugins';
-import PluginData from '../script/plugindata';
-import PluginEnums from '../script/pluginenums';
-import Version from '../script/version';
+import MediaState from './models/mediastate';
+import PauseTriggers from './models/pausetriggers';
+import WindowTypes from './models/windowtypes';
+import PlaybackUtils from './utils/playbackutils';
+import callCallbacks from './utils/callcallbacks';
+import Plugins from './plugins';
+import PluginData from './plugindata';
+import PluginEnums from './pluginenums';
+import Version from './version';
 
 var sourceList;
 var source;

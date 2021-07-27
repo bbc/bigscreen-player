@@ -1,4 +1,4 @@
-import MediaPlayerBase from '../../../../script/playbackstrategy/modifiers/mediaplayerbase';
+import MediaPlayerBase from '././playbackstrategy/modifiers/mediaplayerbase';
 function PlayableLivePlayer (mediaPlayer) {
   return {
     beginPlayback: function beginPlayback () {

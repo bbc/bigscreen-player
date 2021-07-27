@@ -1,4 +1,4 @@
-import PlaybackStrategy from '../../script/models/playbackstrategy';
+import PlaybackStrategy from './models/playbackstrategy';
 
 export default function (windowType, isUHD) {
   var mseExceptions = window.bigscreenPlayer.mseExceptions || [];

@@ -1,5 +1,5 @@
-import MediaState from '../../script/models/mediastate';
-import Chronicle from '../../script/debugger/chronicle';
+import MediaState from '../models/mediastate';
+import Chronicle from './chronicle';
 var view;
 
 function init (newView) {

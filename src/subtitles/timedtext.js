@@ -1,4 +1,4 @@
-import DOMHelpers from '../../script/domhelpers';
+import DOMHelpers from './domhelpers';
 
 /**
 * Safely checks if an attribute exists on an element.

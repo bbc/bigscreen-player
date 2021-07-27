@@ -1,14 +1,14 @@
-import MediaState from '../../script/models/mediastate';
-import WindowTypes from '../../script/models/windowtypes';
-import DebugTool from '../../script/debugger/debugtool';
-import MediaKinds from '../../script/models/mediakinds';
-import Plugins from '../../script/plugins';
-import ManifestModifier from '../../script/manifest/manifestmodifier';
-import LiveSupport from '../../script/models/livesupport';
-import DynamicWindowUtils from '../../script/dynamicwindowutils';
-import TimeUtils from '../../script/utils/timeutils';
-import DOMHelpers from '../../script/domhelpers';
-import Utils from '../../script/utils/playbackutils';
+import MediaState from '../models/mediastate';
+import WindowTypes from '../models/windowtypes';
+import DebugTool from '../debugger/debugtool';
+import MediaKinds from '../models/mediakinds';
+import Plugins from '../plugins';
+import ManifestModifier from '../manifest/manifestmodifier';
+import LiveSupport from '../models/livesupport';
+import DynamicWindowUtils from '../dynamicwindowutils';
+import TimeUtils from '../utils/timeutils';
+import DOMHelpers from '../domhelpers';
+import Utils from '../utils/playbackutils';
 import { MediaPlayer } from 'dashjs/index_mediaplayerOnly';
 
 var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {

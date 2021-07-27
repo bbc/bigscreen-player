@@ -1,10 +1,10 @@
 import { fromXML, generateISD, renderHTML } from 'smp-imsc';
-import DOMHelpers from '../../script/domhelpers';
-import DebugTool from '../../script/debugger/debugtool';
-import Plugins from '../../script/plugins';
-import Utils from '../../script/utils/playbackutils';
-import LoadURL from '../../script/utils/loadurl';
-import TimeUtils from '../../script/utils/timeutils';
+import DOMHelpers from '../domhelpers';
+import DebugTool from '../debugger/debugtool';
+import Plugins from '../plugins';
+import Utils from '../utils/playbackutils';
+import LoadURL from '../utils/loadurl';
+import TimeUtils from '../utils/timeutils';
 
 export default function (mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
   var currentSubtitlesElement;

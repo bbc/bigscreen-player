@@ -1,6 +1,6 @@
-import ManifestParser from '../../script/manifest/manifestparser';
-import TransferFormats from '../../script/models/transferformats';
-import LoadUrl from '../../script/utils/loadurl';
+import ManifestParser from './manifestparser';
+import TransferFormats from '../models/transferformats';
+import LoadUrl from '../utils/loadurl';
 
 function retrieveDashManifest (url, dateWithOffset, callbacks) {
   LoadUrl(

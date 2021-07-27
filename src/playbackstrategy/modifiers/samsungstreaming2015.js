@@ -2,9 +2,9 @@
  * @preserve Copyright (c) 2017-present British Broadcasting Corporation. All rights reserved.
  * @license See https://github.com/fmtvp/tal/blob/master/LICENSE for full licence
  */
-import MediaPlayerBase from '../../../script/playbackstrategy/modifiers/mediaplayerbase';
+import MediaPlayerBase from '././playbackstrategy/modifiers/mediaplayerbase';
 
-import DebugTool from '../../../script/debugger/debugtool';
+import DebugTool from '././debugger/debugtool';
 
 function Player () {
   var state = MediaPlayerBase.STATE.EMPTY;

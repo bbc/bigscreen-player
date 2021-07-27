@@ -1,5 +1,5 @@
-import LiveSupport from '../script/models/livesupport';
-import DebugTool from '../script/debugger/debugtool';
+import LiveSupport from './models/livesupport';
+import DebugTool from './debugger/debugtool';
 
 var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 var FOUR_MINUTES = 4 * 60;

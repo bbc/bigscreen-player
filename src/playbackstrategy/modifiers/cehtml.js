@@ -1,6 +1,6 @@
-import MediaPlayerBase from '../../../script/playbackstrategy/modifiers/mediaplayerbase';
-import DebugTool from '../../../script/debugger/debugtool';
-import DOMHelpers from '../../../script/domhelpers';
+import MediaPlayerBase from '././playbackstrategy/modifiers/mediaplayerbase';
+import DebugTool from '././debugger/debugtool';
+import DOMHelpers from '././domhelpers';
 var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
 
 var STATE = {

@@ -1,4 +1,4 @@
-import PlaybackUtils from '../script/utils/playbackutils';
+import PlaybackUtils from './utils/playbackutils';
 var plugins = [];
 
 function callOnAllPlugins (funcKey, evt) {

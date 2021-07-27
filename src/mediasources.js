@@ -1,11 +1,11 @@
-import PlaybackUtils from '../script/utils/playbackutils';
-import WindowTypes from '../script/models/windowtypes';
-import Plugins from '../script/plugins';
-import PluginEnums from '../script/pluginenums';
-import PluginData from '../script/plugindata';
-import DebugTool from '../script/debugger/debugtool';
-import ManifestLoader from '../script/manifest/manifestloader';
-import TransferFormats from '../script/models/transferformats';
+import PlaybackUtils from './utils/playbackutils';
+import WindowTypes from './models/windowtypes';
+import Plugins from './plugins';
+import PluginEnums from './pluginenums';
+import PluginData from './plugindata';
+import DebugTool from './debugger/debugtool';
+import ManifestLoader from './manifest/manifestloader';
+import TransferFormats from './models/transferformats';
 
 export default function () {
   var mediaSources;

@@ -1,6 +1,7 @@
-import Chronicle from '../../script/debugger/chronicle';
-import DebugPresenter from '../../script/debugger/debugpresenter';
-import DebugView from '../../script/debugger/debugview';
+import Chronicle from './chronicle';
+import DebugPresenter from './debugpresenter';
+import DebugView from './debugview';
+
 function DebugTool () {
   var rootElement;
   var presenter = DebugPresenter;

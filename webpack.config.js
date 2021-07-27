@@ -18,11 +18,6 @@
         title: 'bigscreen-player'
       }),
     ],
-    resolve: {
-      alias: {
-        bigscreenplayer: path.resolve(__dirname, 'script')
-      }
-    },
     module: {
       rules: [
         {
