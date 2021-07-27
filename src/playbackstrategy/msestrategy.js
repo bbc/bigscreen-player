@@ -9,7 +9,7 @@ import DynamicWindowUtils from '../../script/dynamicwindowutils';
 import TimeUtils from '../../script/utils/timeutils';
 import DOMHelpers from '../../script/domhelpers';
 import Utils from '../../script/utils/playbackutils';
-import { MediaPlayer } from 'dashjs';
+import { MediaPlayer } from 'dashjs/index_mediaplayerOnly';
 
 var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
   var LIVE_DELAY_SECONDS = 1.1;
