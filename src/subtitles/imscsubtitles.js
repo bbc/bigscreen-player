@@ -1,4 +1,4 @@
-import IMSC from '../../script/external/smp-imsc';
+import { fromXML, generateISD, renderHTML } from 'smp-imsc';
 import DOMHelpers from '../../script/domhelpers';
 import DebugTool from '../../script/debugger/debugtool';
 import Plugins from '../../script/plugins';
@@ -62,7 +62,7 @@ export default function (mediaPlayer, autoStart, parentElement, mediaSources, de
         }
 
         try {
-          var xml = IMSC.fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1] || responseText);
+          var xml = fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1] || responseText);
           var times = xml.getMediaTimeEvents();
 
           segments.push({
@@ -203,12 +203,12 @@ export default function (mediaPlayer, autoStart, parentElement, mediaSources, de
     currentSubtitlesElement.style.position = 'absolute';
     parentElement.appendChild(currentSubtitlesElement);
 
-    renderHTML(xml, currentTime, currentSubtitlesElement, imscRenderOpts, parentElement.clientHeight, parentElement.clientWidth);
+    renderSubtitle(xml, currentTime, currentSubtitlesElement, imscRenderOpts, parentElement.clientHeight, parentElement.clientWidth);
   }
 
   function renderExample (exampleXmlString, styleOpts, safePosition) {
     safePosition = safePosition || {};
-    var exampleXml = IMSC.fromXML(exampleXmlString);
+    var exampleXml = fromXML(exampleXmlString);
     removeExampleSubtitlesElement();
 
     var customStyleOptions = transformStyleOptions(styleOpts);
@@ -234,13 +234,13 @@ export default function (mediaPlayer, autoStart, parentElement, mediaSources, de
     exampleSubtitlesElement.style.left = (leftPixels) + 'px';
     parentElement.appendChild(exampleSubtitlesElement);
 
-    renderHTML(exampleXml, 1, exampleSubtitlesElement, exampleStyle, renderHeight, renderWidth);
+    renderSubtitle(exampleXml, 1, exampleSubtitlesElement, exampleStyle, renderHeight, renderWidth);
   }
 
-  function renderHTML (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
+  function renderSubtitle (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
     try {
-      var isd = IMSC.generateISD(xml, currentTime);
-      IMSC.renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts);
+      var isd = generateISD(xml, currentTime);
+      renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts);
     } catch (e) {
       DebugTool.info('Exception while rendering subtitles: ' + e);
       Plugins.interface.onSubtitlesRenderError();
