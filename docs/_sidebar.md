@@ -2,7 +2,7 @@
   
   - [Installation](getting-started/installation.md "Installation | Bigscreen Player")
   - [Usage](getting-started/usage.md "Usage | Bigscreen Player")
-  - <a href="https://bbc.github.io/bigscreen-player/api/index.html" target=”_blank”>API</a>
+  - <a href="https://bbc.github.io/bigscreen-player/api/module-bigscreenplayer_bigscreenplayer.html" target=”_blank”>API</a>
 
 - Design
   
