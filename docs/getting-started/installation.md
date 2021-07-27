@@ -1,14 +1,14 @@
 # Installation
 
 ## NPM
-```
+```bash
 $ npm install bigscreen-player
 ```
 
 ## Manual
 
 You can use the bundle hosted on [unpkg](https://unpkg.com/) in your HTML file directly:
-```
+```html
 <!-- index.html -->
 
 <!DOCTYPE html>
@@ -19,13 +19,15 @@ You can use the bundle hosted on [unpkg](https://unpkg.com/) in your HTML file d
   <meta charset="UTF-8">
 </head>
 <body>
-  <div id="app"></div>
   <script>
-    window.$docsify = {
-      //...
-    }
+    window.bigscreenPlayer.playbackStrategy = 'msestrategy';
+
+    // Initialise BSP here
+
   </script>
-  <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="https://unpkg.com/:bigscreen-player@:latest/:bigscreen-player.js"></script>
 </body>
 </html>
 ```
+
+[→ Next - Usage](getting-started/usage.md)

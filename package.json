@@ -6,7 +6,6 @@
   "scripts": {
     "jasmine": "grunt spec",
     "docs:jsdoc": "npx jsdoc -c jsdoc.conf.json",
-    "docs:docs": "docsify init ./docs",
     "docs:serve": "docsify serve ./docs",
     "test": "npm run lint && npm run jasmine",
     "start": "webpack-dev-server --open",

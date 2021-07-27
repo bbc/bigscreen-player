@@ -6,4 +6,4 @@
 
 > Simplified media playback for bigscreen devices.
 
-[Get Started](/getting-started/installation)
+[Get Started](#installation)

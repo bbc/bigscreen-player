@@ -1,3 +1,5 @@
+<img src="https://user-images.githubusercontent.com/6772464/124475752-fbd97780-dd99-11eb-9a0c-48482bd66f8b.png" width="150" alt="Bigscreen Player logo"/>
+
 - Getting Started
   
   - [Installation](getting-started/installation.md)
