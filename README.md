@@ -8,13 +8,11 @@
 
 The *Bigscreen Player* is an open source project developed by the BBC to simplify video and audio playback on a wide range of 'bigscreen' devices (TVs, set-top boxes, games consoles, and streaming devices).
 
-## How to use
-
-Documentation on how to use this library can be found [here](https://bbc.github.io/bigscreen-player).
+For documentation on how to use this library, please see [here](https://bbc.github.io/bigscreen-player).
 
 ## Running Locally
 
-First, install dependencies:
+Install dependencies:
 ```
 $ npm install
 ```
@@ -23,6 +21,8 @@ You can run Bigscreen Player locally in a dev environment by running:
 ```
 $ npm run start
 ```
+
+This will open a web page at `localhost:8080`.
 
 ## Documentation
 
