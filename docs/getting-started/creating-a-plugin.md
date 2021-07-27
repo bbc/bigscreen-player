@@ -3,13 +3,13 @@
 Plugins can be created to extend the functionality of the Bigscreen Player by adhering to an interface which propogates non state change events from the player. For example, when an error is raised or cleared.
 
 The full interface is as follows:
-- onError
-- onFatalError
-- onErrorCleared
-- onErrorHandled
-- onBuffering
-- onBufferingCleared
-- onScreenCapabilityDetermined
+- `onError`
+- `onFatalError`
+- `onErrorCleared`
+- `onErrorHandled`
+- `onBuffering`
+- `onBufferingCleared`
+- `onScreenCapabilityDetermined`
 
 An example plugin may look like:
 

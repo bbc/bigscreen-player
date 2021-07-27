@@ -8,19 +8,36 @@
 
 The *Bigscreen Player* is an open source project developed by the BBC to simplify video and audio playback on a wide range of 'bigscreen' devices (TVs, set-top boxes, games consoles, and streaming devices).
 
-## Documentation
+## How to use
 
 Documentation on how to use this library can be found [here](https://bbc.github.io/bigscreen-player).
 
-## Getting Started
+## Running Locally
 
-`$ npm install`
+First, install dependencies:
+```
+$ npm install
+```
+
+You can run Bigscreen Player locally in a dev environment by running:
+```
+$ npm run start
+```
+
+## Documentation
+
+Bigscreen Player uses JSDocs to autogenerate API documentation. To regenerate the documentation run:
+```
+$ npm run docs:jsdoc
+```
 
 ## Testing
 
 The project is fully unit tested using the [Jasmine](https://jasmine.github.io/) framework. To run the tests:
 
-`$ npm run spec`
+```
+$ npm run spec
+```
 
 This project currently has unit test coverage but no integration test suite. This is on our Roadmap to address. Quality is ensured via extensive manual testing however.
 ## Releasing
