@@ -1,23 +1,23 @@
 - Getting Started
   
   - [Installation](getting-started/installation.md "Installation | Bigscreen Player")
-  - [Usage](getting-started/usage.md)
+  - [Usage](getting-started/usage.md "Usage | Bigscreen Player")
   - <a href="/api/index.html" target=”_blank”>API</a>
 
 - Design
   
-  - [Overview](design/overview.md)
-  - [Playback Strategies](design/playback-strategies.md)
+  - [Overview](design/overview.md "Design Overview | Bigscreen Player")
+  - [Playback Strategies](design/playback-strategies.md "Playback Strategies | Bigscreen Player")
 
 - Features
   
-  - [CDN Failover](features/cdn-failover.md)
-  - [Subtitles](features/subtitles.md)
+  - [CDN Failover](features/cdn-failover.md "CDN Failover | Bigscreen Player")
+  - [Subtitles](features/subtitles.md "Subtitles | Bigscreen Player")
 
 - Testing
   
-  - [Areas Impacted](testing/areas-impacted.md)
-  - [Mocking playback](testing/mocking-playback.md)
+  - [Areas Impacted](testing/areas-impacted.md "Areas Impacted | Bigscreen Player")
+  - [Mocking playback](testing/mocking-playback.md "Mocking Playback | Bigscreen Player")
 
 - ADRs
   
