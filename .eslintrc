@@ -1,7 +1,10 @@
 {
+    "parser": "@babel/eslint-parser",
     "parserOptions": {
       "ecmaVersion": 2015,
-      "sourceType": "module"
+      "sourceType": "module",
+      "allowImportExportEverywhere": true,
+      "requireConfigFile": false
     },
     "env": {
       "node": true,
@@ -241,7 +244,7 @@
         "single",
         "avoid-escape"
       ],
-      "semi": [ 2, "always" ],
+      "semi": [1, "never"],
       "semi-spacing": [
         "error",
         {

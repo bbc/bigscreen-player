@@ -1,4 +1,4 @@
-import BigscreenPlayer from './bigscreenplayer';
-import MediaState from './models/mediastate';
+import BigscreenPlayer from './bigscreenplayer'
+import MediaState from './models/mediastate'
 
-export { BigscreenPlayer, MediaState };
+export { BigscreenPlayer, MediaState }

@@ -1,131 +1,131 @@
-import MediaState from './models/mediastate';
-import WindowTypes from './models/windowtypes';
-import MediaKinds from './models/mediakinds';
-import LiveSupport from './models/livesupport';
-import DynamicWindowUtils from './dynamicwindowutils';
-import DOMHelpers from './domhelpers';
+import MediaState from './models/mediastate'
+import WindowTypes from './models/windowtypes'
+import MediaKinds from './models/mediakinds'
+import LiveSupport from './models/livesupport'
+import DynamicWindowUtils from './dynamicwindowutils'
+import DOMHelpers from './domhelpers'
 
 var BasicStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
-  var eventCallbacks = [];
-  var errorCallback;
-  var timeUpdateCallback;
+  var eventCallbacks = []
+  var errorCallback
+  var timeUpdateCallback
 
-  var mediaElement;
-  var metaDataLoaded;
-  var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0;
-  var CLAMP_OFFSET_SECONDS = 1.1;
+  var mediaElement
+  var metaDataLoaded
+  var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0
+  var CLAMP_OFFSET_SECONDS = 1.1
 
   function publishMediaState (mediaState) {
     for (var index = 0; index < eventCallbacks.length; index++) {
-      eventCallbacks[index](mediaState);
+      eventCallbacks[index](mediaState)
     }
   }
 
   function publishTimeUpdate () {
     if (timeUpdateCallback) {
-      timeUpdateCallback();
+      timeUpdateCallback()
     }
   }
 
   function publishError () {
     if (errorCallback) {
-      errorCallback();
+      errorCallback()
     }
   }
 
   function load (mimeType, startTime) {
     if (!mediaElement) {
-      setUpMediaElement(startTime);
-      setUpMediaListeners();
+      setUpMediaElement(startTime)
+      setUpMediaListeners()
     } else {
-      mediaElement.src = mediaSources.currentSource();
-      setStartTime(startTime);
-      mediaElement.load();
+      mediaElement.src = mediaSources.currentSource()
+      setStartTime(startTime)
+      mediaElement.load()
     }
   }
 
   function setUpMediaElement (startTime) {
     if (mediaKind === MediaKinds.AUDIO) {
-      mediaElement = document.createElement('audio');
+      mediaElement = document.createElement('audio')
     } else {
-      mediaElement = document.createElement('video');
+      mediaElement = document.createElement('video')
     }
-    mediaElement.style.position = 'absolute';
-    mediaElement.style.width = '100%';
-    mediaElement.style.height = '100%';
-    mediaElement.autoplay = true;
-    mediaElement.preload = 'auto';
-    mediaElement.src = mediaSources.currentSource();
+    mediaElement.style.position = 'absolute'
+    mediaElement.style.width = '100%'
+    mediaElement.style.height = '100%'
+    mediaElement.autoplay = true
+    mediaElement.preload = 'auto'
+    mediaElement.src = mediaSources.currentSource()
 
-    playbackElement.insertBefore(mediaElement, playbackElement.firstChild);
+    playbackElement.insertBefore(mediaElement, playbackElement.firstChild)
 
-    setStartTime(startTime);
-    mediaElement.load();
+    setStartTime(startTime)
+    mediaElement.load()
   }
 
   function setUpMediaListeners () {
-    mediaElement.addEventListener('timeupdate', onTimeUpdate);
-    mediaElement.addEventListener('playing', onPlaying);
-    mediaElement.addEventListener('pause', onPaused);
-    mediaElement.addEventListener('waiting', onWaiting);
-    mediaElement.addEventListener('seeking', onSeeking);
-    mediaElement.addEventListener('seeked', onSeeked);
-    mediaElement.addEventListener('ended', onEnded);
-    mediaElement.addEventListener('error', onError);
-    mediaElement.addEventListener('loadedmetadata', onLoadedMetadata);
+    mediaElement.addEventListener('timeupdate', onTimeUpdate)
+    mediaElement.addEventListener('playing', onPlaying)
+    mediaElement.addEventListener('pause', onPaused)
+    mediaElement.addEventListener('waiting', onWaiting)
+    mediaElement.addEventListener('seeking', onSeeking)
+    mediaElement.addEventListener('seeked', onSeeked)
+    mediaElement.addEventListener('ended', onEnded)
+    mediaElement.addEventListener('error', onError)
+    mediaElement.addEventListener('loadedmetadata', onLoadedMetadata)
   }
 
   function setStartTime (startTime) {
     if (startTime) {
-      mediaElement.currentTime = startTime + timeCorrection;
+      mediaElement.currentTime = startTime + timeCorrection
     }
   }
 
   function onPlaying () {
-    publishMediaState(MediaState.PLAYING);
+    publishMediaState(MediaState.PLAYING)
   }
 
   function onPaused () {
-    publishMediaState(MediaState.PAUSED);
+    publishMediaState(MediaState.PAUSED)
   }
 
   function onSeeking () {
-    publishMediaState(MediaState.WAITING);
+    publishMediaState(MediaState.WAITING)
   }
 
   function onWaiting () {
-    publishMediaState(MediaState.WAITING);
+    publishMediaState(MediaState.WAITING)
   }
 
   function onSeeked () {
     if (isPaused()) {
       if (windowType === WindowTypes.SLIDING) {
-        startAutoResumeTimeout();
+        startAutoResumeTimeout()
       }
-      publishMediaState(MediaState.PAUSED);
+      publishMediaState(MediaState.PAUSED)
     } else {
-      publishMediaState(MediaState.PLAYING);
+      publishMediaState(MediaState.PLAYING)
     }
   }
 
   function onEnded () {
-    publishMediaState(MediaState.ENDED);
+    publishMediaState(MediaState.ENDED)
   }
 
   function onTimeUpdate () {
-    publishTimeUpdate();
+    publishTimeUpdate()
   }
 
   function onError (event) {
-    publishError();
+    publishError()
   }
 
   function onLoadedMetadata () {
-    metaDataLoaded = true;
+    metaDataLoaded = true
   }
 
   function isPaused () {
-    return mediaElement.paused;
+    return mediaElement.paused
   }
 
   function getSeekableRange () {
@@ -133,37 +133,37 @@ var BasicStrategy = function (mediaSources, windowType, mediaKind, playbackEleme
       return {
         start: mediaElement.seekable.start(0) - timeCorrection,
         end: mediaElement.seekable.end(0) - timeCorrection
-      };
+      }
     } else {
       return {
         start: 0,
         end: 0
-      };
+      }
     }
   }
 
   function getDuration () {
     if (mediaElement && metaDataLoaded) {
-      return mediaElement.duration;
+      return mediaElement.duration
     }
-    return 0;
+    return 0
   }
 
   function getCurrentTime () {
-    return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0;
+    return (mediaElement) ? mediaElement.currentTime - timeCorrection : 0
   }
 
   function addEventCallback (thisArg, newCallback) {
     var eventCallback = function (event) {
-      newCallback.call(thisArg, event);
-    };
-    eventCallbacks.push(eventCallback);
+      newCallback.call(thisArg, event)
+    }
+    eventCallbacks.push(eventCallback)
   }
 
   function removeEventCallback (callback) {
-    var index = eventCallbacks.indexOf(callback);
+    var index = eventCallbacks.indexOf(callback)
     if (index !== -1) {
-      eventCallbacks.splice(index, 1);
+      eventCallbacks.splice(index, 1)
     }
   }
 
@@ -174,96 +174,96 @@ var BasicStrategy = function (mediaSources, windowType, mediaKind, playbackEleme
       addEventCallback,
       removeEventCallback,
       function (event) {
-        return event !== MediaState.PAUSED;
+        return event !== MediaState.PAUSED
       },
-      play);
+      play)
   }
 
   function play () {
-    mediaElement.play();
+    mediaElement.play()
   }
 
   function setCurrentTime (time) {
     if (metaDataLoaded) { // Without metadata we cannot clamp to seekableRange
-      mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection;
+      mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection
     } else {
-      mediaElement.currentTime = time + timeCorrection;
+      mediaElement.currentTime = time + timeCorrection
     }
   }
 
   function setPlaybackRate (rate) {
-    mediaElement.playbackRate = rate;
+    mediaElement.playbackRate = rate
   }
 
   function getPlaybackRate () {
-    return mediaElement.playbackRate;
+    return mediaElement.playbackRate
   }
 
   function getClampedTime (time, range) {
-    return Math.min(Math.max(time, range.start), range.end - CLAMP_OFFSET_SECONDS);
+    return Math.min(Math.max(time, range.start), range.end - CLAMP_OFFSET_SECONDS)
   }
 
   function addErrorCallback (thisArg, newErrorCallback) {
     errorCallback = function (event) {
-      newErrorCallback.call(thisArg, event);
-    };
+      newErrorCallback.call(thisArg, event)
+    }
   }
 
   function addTimeUpdateCallback (thisArg, newTimeUpdateCallback) {
     timeUpdateCallback = function () {
-      newTimeUpdateCallback.call(thisArg);
-    };
+      newTimeUpdateCallback.call(thisArg)
+    }
   }
 
   function tearDown () {
     if (mediaElement) {
-      mediaElement.removeEventListener('timeupdate', onTimeUpdate);
-      mediaElement.removeEventListener('playing', onPlaying);
-      mediaElement.removeEventListener('pause', onPaused);
-      mediaElement.removeEventListener('waiting', onWaiting);
-      mediaElement.removeEventListener('seeking', onSeeking);
-      mediaElement.removeEventListener('seeked', onSeeked);
-      mediaElement.removeEventListener('ended', onEnded);
-      mediaElement.removeEventListener('error', onError);
-      mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
-      mediaElement.removeAttribute('src');
-      mediaElement.load();
-      DOMHelpers.safeRemoveElement(mediaElement);
+      mediaElement.removeEventListener('timeupdate', onTimeUpdate)
+      mediaElement.removeEventListener('playing', onPlaying)
+      mediaElement.removeEventListener('pause', onPaused)
+      mediaElement.removeEventListener('waiting', onWaiting)
+      mediaElement.removeEventListener('seeking', onSeeking)
+      mediaElement.removeEventListener('seeked', onSeeked)
+      mediaElement.removeEventListener('ended', onEnded)
+      mediaElement.removeEventListener('error', onError)
+      mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata)
+      mediaElement.removeAttribute('src')
+      mediaElement.load()
+      DOMHelpers.safeRemoveElement(mediaElement)
     }
 
-    eventCallbacks = [];
-    errorCallback = undefined;
-    timeUpdateCallback = undefined;
+    eventCallbacks = []
+    errorCallback = undefined
+    timeUpdateCallback = undefined
 
-    mediaElement = undefined;
-    metaDataLoaded = undefined;
-    timeCorrection = undefined;
+    mediaElement = undefined
+    metaDataLoaded = undefined
+    timeCorrection = undefined
   }
 
   function reset () {
-    return;
+    return
   }
 
   function isEnded () {
-    return mediaElement.ended;
+    return mediaElement.ended
   }
 
   function pause (opts) {
-    mediaElement.pause();
-    opts = opts || {};
+    mediaElement.pause()
+    opts = opts || {}
     if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
-      startAutoResumeTimeout();
+      startAutoResumeTimeout()
     }
   }
 
   function getPlayerElement () {
-    return mediaElement || undefined;
+    return mediaElement || undefined
   }
 
   return {
     transitions: {
-      canBePaused: function () { return true; },
-      canBeginSeek: function () { return true; }
+      canBePaused: function () { return true },
+      canBeginSeek: function () { return true }
     },
     addEventCallback: addEventCallback,
     removeEventCallback: removeEventCallback,
@@ -283,11 +283,11 @@ var BasicStrategy = function (mediaSources, windowType, mediaKind, playbackEleme
     setPlaybackRate: setPlaybackRate,
     getPlaybackRate: getPlaybackRate,
     getPlayerElement: getPlayerElement
-  };
-};
+  }
+}
 
 BasicStrategy.getLiveSupport = function () {
-  return LiveSupport.SEEKABLE;
-};
+  return LiveSupport.SEEKABLE
+}
 
-export default BasicStrategy;
+export default BasicStrategy

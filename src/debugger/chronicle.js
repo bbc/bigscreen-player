@@ -1,7 +1,7 @@
-var chronicle = [];
-var firstTimeElement;
-var compressTime;
-var updateCallbacks = [];
+var chronicle = []
+var firstTimeElement
+var compressTime
+var updateCallbacks = []
 
 var TYPES = {
   INFO: 'info',
@@ -10,89 +10,89 @@ var TYPES = {
   APICALL: 'apicall',
   TIME: 'time',
   KEYVALUE: 'keyvalue'
-};
+}
 
 function init () {
-  clear();
+  clear()
 }
 
 function clear () {
-  firstTimeElement = true;
-  compressTime = false;
-  chronicle = [];
+  firstTimeElement = true
+  compressTime = false
+  chronicle = []
 }
 
 function registerForUpdates (callback) {
-  updateCallbacks.push(callback);
+  updateCallbacks.push(callback)
 }
 
 function unregisterForUpdates (callback) {
-  var indexOf = updateCallbacks.indexOf(callback);
+  var indexOf = updateCallbacks.indexOf(callback)
   if (indexOf !== -1) {
-    updateCallbacks.splice(indexOf, 1);
+    updateCallbacks.splice(indexOf, 1)
   }
 }
 
 function info (message) {
-  pushToChronicle({type: TYPES.INFO, message: message});
+  pushToChronicle({type: TYPES.INFO, message: message})
 }
 
 function error (err) {
-  pushToChronicle({type: TYPES.ERROR, error: err});
+  pushToChronicle({type: TYPES.ERROR, error: err})
 }
 
 function event (event) {
-  pushToChronicle({type: TYPES.EVENT, event: event});
+  pushToChronicle({type: TYPES.EVENT, event: event})
 }
 
 function apicall (callType) {
-  pushToChronicle({type: TYPES.APICALL, calltype: callType});
+  pushToChronicle({type: TYPES.APICALL, calltype: callType})
 }
 
 function time (time) {
   if (firstTimeElement) {
-    pushToChronicle({type: TYPES.TIME, currentTime: time});
-    firstTimeElement = false;
+    pushToChronicle({type: TYPES.TIME, currentTime: time})
+    firstTimeElement = false
   } else if (!compressTime) {
-    pushToChronicle({type: TYPES.TIME, currentTime: time});
-    compressTime = true;
+    pushToChronicle({type: TYPES.TIME, currentTime: time})
+    compressTime = true
   } else {
-    var lastElement = chronicle.pop();
-    lastElement.currentTime = time;
-    pushToChronicle(lastElement);
+    var lastElement = chronicle.pop()
+    lastElement.currentTime = time
+    pushToChronicle(lastElement)
   }
 }
 
 function keyValue (obj) {
-  pushToChronicle({type: TYPES.KEYVALUE, keyvalue: obj});
+  pushToChronicle({type: TYPES.KEYVALUE, keyvalue: obj})
 }
 
 function retrieve () {
-  return chronicle.slice();
+  return chronicle.slice()
 }
 
 function timestamp (obj) {
-  obj.timestamp = new Date().getTime();
+  obj.timestamp = new Date().getTime()
 }
 
 function pushToChronicle (obj) {
   if (obj.type !== TYPES.TIME) {
-    firstTimeElement = true;
-    compressTime = false;
+    firstTimeElement = true
+    compressTime = false
   }
-  timestamp(obj);
-  chronicle.push(obj);
-  updates();
+  timestamp(obj)
+  chronicle.push(obj)
+  updates()
 }
 
 function updates () {
   updateCallbacks.forEach(function (callback) {
-    callback(retrieve());
-  });
+    callback(retrieve())
+  })
 }
 
 function tearDown () {
-  clear();
+  clear()
 }
 
 export default {
@@ -110,4 +110,4 @@ export default {
   tearDown: tearDown,
   registerForUpdates: registerForUpdates,
   unregisterForUpdates: unregisterForUpdates
-};
+}

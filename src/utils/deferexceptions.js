@@ -1,9 +1,9 @@
 export default function deferExceptions (cb) {
   try {
-    cb();
+    cb()
   } catch (e) {
     setTimeout(function () {
-      throw e;
-    }, 0);
+      throw e
+    }, 0)
   }
-};
+}

@@ -1,7 +1,7 @@
-import MediaPlayerBase from '././playbackstrategy/modifiers/mediaplayerbase';
-import DebugTool from '././debugger/debugtool';
-import DOMHelpers from '././domhelpers';
-var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1;
+import MediaPlayerBase from '././playbackstrategy/modifiers/mediaplayerbase'
+import DebugTool from '././debugger/debugtool'
+import DOMHelpers from '././domhelpers'
+var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
 
 var STATE = {
   STOPPED: 0,
@@ -11,37 +11,37 @@ var STATE = {
   BUFFERING: 4,
   FINISHED: 5,
   ERROR: 6
-};
+}
 
 export default function () {
-  var eventCallbacks = [];
-  var state = MediaPlayerBase.STATE.EMPTY;
+  var eventCallbacks = []
+  var state = MediaPlayerBase.STATE.EMPTY
 
-  var mediaElement;
-  var updateInterval;
+  var mediaElement
+  var updateInterval
 
-  var mediaType;
-  var source;
-  var mimeType;
+  var mediaType
+  var source
+  var mimeType
 
-  var deferSeekingTo;
-  var range;
+  var deferSeekingTo
+  var range
 
-  var postBufferingState;
-  var seekFinished;
-  var count;
-  var timeoutHappened;
+  var postBufferingState
+  var seekFinished
+  var count
+  var timeoutHappened
 
-  var disableSentinels;
+  var disableSentinels
 
-  var sentinelSeekTime;
-  var seekSentinelTolerance;
-  var sentinelInterval;
-  var sentinelIntervalNumber;
-  var timeAtLastSentinelInterval;
+  var sentinelSeekTime
+  var seekSentinelTolerance
+  var sentinelInterval
+  var sentinelIntervalNumber
+  var timeAtLastSentinelInterval
 
-  var sentinelTimeIsNearEnd;
-  var timeHasAdvanced;
+  var sentinelTimeIsNearEnd
+  var timeHasAdvanced
 
   var sentinelLimits = {
     pause: {
@@ -56,24 +56,24 @@ export default function () {
       failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
       currentAttemptCount: 0
     }
-  };
+  }
 
   function addEventCallback (thisArg, callback) {
     var eventCallback = function (event) {
-      callback.call(thisArg, event);
-    };
+      callback.call(thisArg, event)
+    }
 
-    eventCallbacks.push({ from: callback, to: eventCallback });
+    eventCallbacks.push({ from: callback, to: eventCallback })
   }
 
   function removeEventCallback (thisArg, callback) {
     eventCallbacks = eventCallbacks.filter(function (cb) {
-      return cb.from !== callback;
-    });
+      return cb.from !== callback
+    })
   }
 
   function removeAllEventCallbacks () {
-    eventCallbacks = [];
+    eventCallbacks = []
   }
 
   function emitEvent (eventType, eventLabels) {
@@ -85,130 +85,130 @@ export default function () {
       url: getSource(),
       mimeType: getMimeType(),
       state: getState()
-    };
+    }
 
     if (eventLabels) {
       for (var key in eventLabels) {
         if (eventLabels.hasOwnProperty(key)) {
-          event[key] = eventLabels[key];
+          event[key] = eventLabels[key]
         }
       }
     }
 
     eventCallbacks.forEach(function (callback) {
-      callback.to(event);
-    });
+      callback.to(event)
+    })
   }
 
   function getClampedTime (seconds) {
-    var range = getSeekableRange();
-    var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start);
+    var range = getSeekableRange()
+    var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
     if (seconds < range.start) {
-      return range.start;
+      return range.start
     } else if (seconds > nearToEnd) {
-      return nearToEnd;
+      return nearToEnd
     } else {
-      return seconds;
+      return seconds
     }
   }
 
   function isLiveMedia () {
-    return (mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO) || (mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO);
+    return (mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO) || (mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO)
   }
 
   function getSource () {
-    return source;
+    return source
   }
 
   function getMimeType () {
-    return mimeType;
+    return mimeType
   }
 
   function getState () {
-    return state;
+    return state
   }
 
   function setSeekSentinelTolerance () {
-    var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15;
-    var LIVE_SEEK_SENTINEL_TOLERANCE = 30;
+    var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15
+    var LIVE_SEEK_SENTINEL_TOLERANCE = 30
 
-    seekSentinelTolerance = ON_DEMAND_SEEK_SENTINEL_TOLERANCE;
+    seekSentinelTolerance = ON_DEMAND_SEEK_SENTINEL_TOLERANCE
     if (isLiveMedia()) {
-      seekSentinelTolerance = LIVE_SEEK_SENTINEL_TOLERANCE;
+      seekSentinelTolerance = LIVE_SEEK_SENTINEL_TOLERANCE
     }
   }
 
   function initialiseMedia (type, url, mediaMimeType, sourceContainer, opts) {
-    disableSentinels = opts.disableSentinels;
-    mediaType = type;
-    source = url;
-    mimeType = mediaMimeType;
-    opts = opts || {};
+    disableSentinels = opts.disableSentinels
+    mediaType = type
+    source = url
+    mimeType = mediaMimeType
+    opts = opts || {}
 
-    emitSeekAttempted();
+    emitSeekAttempted()
 
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
-      timeAtLastSentinelInterval = 0;
-      setSeekSentinelTolerance();
-      createElement();
-      addElementToDOM();
-      mediaElement.data = source;
-      registerEventHandlers();
-      toStopped();
+      timeAtLastSentinelInterval = 0
+      setSeekSentinelTolerance()
+      createElement()
+      addElementToDOM()
+      mediaElement.data = source
+      registerEventHandlers()
+      toStopped()
     } else {
-      toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state');
+      toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state')
     }
   }
 
   function resume () {
-    postBufferingState = MediaPlayerBase.STATE.PLAYING;
+    postBufferingState = MediaPlayerBase.STATE.PLAYING
     switch (getState()) {
       case MediaPlayerBase.STATE.PLAYING:
       case MediaPlayerBase.STATE.BUFFERING:
-        break;
+        break
 
       case MediaPlayerBase.STATE.PAUSED:
-        mediaElement.play(1);
-        toPlaying();
-        break;
+        mediaElement.play(1)
+        toPlaying()
+        break
 
       default:
-        toError('Cannot resume while in the \'' + getState() + '\' state');
-        break;
+        toError('Cannot resume while in the \'' + getState() + '\' state')
+        break
     }
   }
 
   function playFrom (seconds) {
-    postBufferingState = MediaPlayerBase.STATE.PLAYING;
-    sentinelLimits.seek.currentAttemptCount = 0;
+    postBufferingState = MediaPlayerBase.STATE.PLAYING
+    sentinelLimits.seek.currentAttemptCount = 0
     switch (getState()) {
       case MediaPlayerBase.STATE.BUFFERING:
-        deferSeekingTo = seconds;
-        break;
+        deferSeekingTo = seconds
+        break
 
       case MediaPlayerBase.STATE.COMPLETE:
-        toBuffering();
-        mediaElement.stop();
-        playAndSetDeferredSeek(seconds);
-        break;
+        toBuffering()
+        mediaElement.stop()
+        playAndSetDeferredSeek(seconds)
+        break
 
       case MediaPlayerBase.STATE.PLAYING:
-        toBuffering();
-        var seekResult = seekTo(seconds);
+        toBuffering()
+        var seekResult = seekTo(seconds)
         if (seekResult === false) {
-          toPlaying();
+          toPlaying()
         }
-        break;
+        break
 
       case MediaPlayerBase.STATE.PAUSED:
-        toBuffering();
-        seekTo(seconds);
-        mediaElement.play(1);
-        break;
+        toBuffering()
+        seekTo(seconds)
+        mediaElement.play(1)
+        break
 
       default:
-        toError('Cannot playFrom while in the \'' + getState() + '\' state');
-        break;
+        toError('Cannot playFrom while in the \'' + getState() + '\' state')
+        break
     }
   }
 
@@ -216,101 +216,101 @@ export default function () {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
-        return undefined;
+        return undefined
       default:
         if (isLiveMedia()) {
-          return Infinity;
+          return Infinity
         }
-        return getMediaDuration();
+        return getMediaDuration()
     }
   }
 
   function beginPlayback () {
-    postBufferingState = MediaPlayerBase.STATE.PLAYING;
+    postBufferingState = MediaPlayerBase.STATE.PLAYING
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
-        toBuffering();
-        mediaElement.play(1);
-        break;
+        toBuffering()
+        mediaElement.play(1)
+        break
 
       default:
-        toError('Cannot beginPlayback while in the \'' + getState() + '\' state');
-        break;
+        toError('Cannot beginPlayback while in the \'' + getState() + '\' state')
+        break
     }
   }
 
   function beginPlaybackFrom (seconds) {
-    postBufferingState = MediaPlayerBase.STATE.PLAYING;
-    sentinelLimits.seek.currentAttemptCount = 0;
+    postBufferingState = MediaPlayerBase.STATE.PLAYING
+    sentinelLimits.seek.currentAttemptCount = 0
 
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
         // Seeking past 0 requires calling play first when media has not been loaded
-        toBuffering();
-        playAndSetDeferredSeek(seconds);
-        break;
+        toBuffering()
+        playAndSetDeferredSeek(seconds)
+        break
 
       default:
-        toError('Cannot beginPlayback while in the \'' + getState() + '\' state');
-        break;
+        toError('Cannot beginPlayback while in the \'' + getState() + '\' state')
+        break
     }
   }
 
   function pause () {
-    postBufferingState = MediaPlayerBase.STATE.PAUSED;
+    postBufferingState = MediaPlayerBase.STATE.PAUSED
     switch (getState()) {
       case MediaPlayerBase.STATE.BUFFERING:
       case MediaPlayerBase.STATE.PAUSED:
-        break;
+        break
 
       case MediaPlayerBase.STATE.PLAYING:
-        mediaElement.play(0);
-        toPaused();
-        break;
+        mediaElement.play(0)
+        toPaused()
+        break
 
       default:
-        toError('Cannot pause while in the \'' + getState() + '\' state');
-        break;
+        toError('Cannot pause while in the \'' + getState() + '\' state')
+        break
     }
   }
 
   function stop () {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
-        break;
+        break
 
       case MediaPlayerBase.STATE.BUFFERING:
       case MediaPlayerBase.STATE.PLAYING:
       case MediaPlayerBase.STATE.PAUSED:
       case MediaPlayerBase.STATE.COMPLETE:
-        sentinelSeekTime = undefined;
+        sentinelSeekTime = undefined
         if (mediaElement.stop) {
-          mediaElement.stop();
-          toStopped();
+          mediaElement.stop()
+          toStopped()
         } else {
-          toError('mediaElement.stop is not a function : failed to stop the media player');
+          toError('mediaElement.stop is not a function : failed to stop the media player')
         }
-        break;
+        break
 
       default:
-        toError('Cannot stop while in the \'' + getState() + '\' state');
-        break;
+        toError('Cannot stop while in the \'' + getState() + '\' state')
+        break
     }
   }
 
   function reset () {
     switch (getState()) {
       case MediaPlayerBase.STATE.EMPTY:
-        break;
+        break
 
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
-        toEmpty();
-        break;
+        toEmpty()
+        break
 
       default:
-        toError('Cannot reset while in the \'' + getState() + '\' state');
-        break;
+        toError('Cannot reset while in the \'' + getState() + '\' state')
+        break
     }
   }
 
@@ -318,171 +318,171 @@ export default function () {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
-        break;
+        break
 
       case MediaPlayerBase.STATE.COMPLETE:
         if (range) {
-          return range.end;
+          return range.end
         }
-        break;
+        break
 
       default:
         if (mediaElement) {
-          return mediaElement.playPosition / 1000;
+          return mediaElement.playPosition / 1000
         }
-        break;
+        break
     }
-    return undefined;
+    return undefined
   }
 
   function getSeekableRange () {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
-        break;
+        break
 
       default:
-        return range;
+        return range
     }
-    return undefined;
+    return undefined
   }
 
   function getMediaDuration () {
     if (range) {
-      return range.end;
+      return range.end
     }
-    return undefined;
+    return undefined
   }
 
   function getPlayerElement () {
-    return mediaElement;
+    return mediaElement
   }
 
   function onFinishedBuffering () {
-    cacheRange();
+    cacheRange()
 
     if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
-      return;
+      return
     }
 
     if (waitingToSeek()) {
-      toBuffering();
-      performDeferredSeek();
+      toBuffering()
+      performDeferredSeek()
     } else if (waitingToPause()) {
-      toPaused();
-      mediaElement.play(0);
+      toPaused()
+      mediaElement.play(0)
     } else {
-      toPlaying();
+      toPlaying()
     }
   }
 
   function onDeviceError () {
-    reportError('Media element error code: ' + mediaElement.error);
+    reportError('Media element error code: ' + mediaElement.error)
   }
 
   function onDeviceBuffering () {
     if (getState() === MediaPlayerBase.STATE.PLAYING) {
-      toBuffering();
+      toBuffering()
     }
   }
 
   function onEndOfMedia () {
     if (getState() !== MediaPlayerBase.STATE.COMPLETE) {
-      toComplete();
+      toComplete()
     }
   }
 
   function emitSeekAttempted () {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
-      emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
-      seekFinished = false;
+      emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
+      seekFinished = false
     }
 
-    count = 0;
-    timeoutHappened = false;
+    count = 0
+    timeoutHappened = false
     if (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.restartTimeout) {
       setTimeout(function () {
-        timeoutHappened = true;
-      }, window.bigscreenPlayer.overrides.restartTimeout);
+        timeoutHappened = true
+      }, window.bigscreenPlayer.overrides.restartTimeout)
     } else {
-      timeoutHappened = true;
+      timeoutHappened = true
     }
   }
 
   function emitSeekFinishedAtCorrectStartingPoint () {
-    var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance;
+    var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance
 
     if (sentinelSeekTime === undefined) {
-      isAtCorrectStartingPoint = true;
+      isAtCorrectStartingPoint = true
     }
 
-    var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint;
+    var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint
 
     if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
-      emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED);
-      seekFinished = true;
+      emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED)
+      seekFinished = true
     } else if (isPlayingAtCorrectTime) {
-      count++;
+      count++
     } else {
-      count = 0;
+      count = 0
     }
   }
 
   function onStatus () {
     if (getState() === MediaPlayerBase.STATE.PLAYING) {
-      emitEvent(MediaPlayerBase.EVENT.STATUS);
+      emitEvent(MediaPlayerBase.EVENT.STATUS)
     }
 
-    emitSeekFinishedAtCorrectStartingPoint();
+    emitSeekFinishedAtCorrectStartingPoint()
   }
 
   function createElement () {
-    mediaElement = document.createElement('object', 'mediaPlayer');
-    mediaElement.type = mimeType;
-    mediaElement.style.position = 'absolute';
-    mediaElement.style.top = '0px';
-    mediaElement.style.left = '0px';
-    mediaElement.style.width = '100%';
-    mediaElement.style.height = '100%';
+    mediaElement = document.createElement('object', 'mediaPlayer')
+    mediaElement.type = mimeType
+    mediaElement.style.position = 'absolute'
+    mediaElement.style.top = '0px'
+    mediaElement.style.left = '0px'
+    mediaElement.style.width = '100%'
+    mediaElement.style.height = '100%'
   }
 
   function registerEventHandlers () {
-    var DEVICE_UPDATE_PERIOD_MS = 500;
+    var DEVICE_UPDATE_PERIOD_MS = 500
 
     mediaElement.onPlayStateChange = function () {
       switch (mediaElement.playState) {
         case STATE.STOPPED:
-          break;
+          break
         case STATE.PLAYING:
-          onFinishedBuffering();
-          break;
+          onFinishedBuffering()
+          break
         case STATE.PAUSED:
-          break;
+          break
         case STATE.CONNECTING:
-          break;
+          break
         case STATE.BUFFERING:
-          onDeviceBuffering();
-          break;
+          onDeviceBuffering()
+          break
         case STATE.FINISHED:
-          onEndOfMedia();
-          break;
+          onEndOfMedia()
+          break
         case STATE.ERROR:
-          onDeviceError();
-          break;
+          onDeviceError()
+          break
         default:
           // do nothing
-          break;
+          break
       }
-    };
+    }
 
     updateInterval = setInterval(function () {
-      onStatus();
-    }, DEVICE_UPDATE_PERIOD_MS);
+      onStatus()
+    }, DEVICE_UPDATE_PERIOD_MS)
   }
 
   function addElementToDOM () {
-    var body = document.getElementsByTagName('body')[0];
-    body.insertBefore(mediaElement, body.firstChild);
+    var body = document.getElementsByTagName('body')[0]
+    body.insertBefore(mediaElement, body.firstChild)
   }
 
   function cacheRange () {
@@ -490,231 +490,231 @@ export default function () {
       range = {
         start: 0,
         end: mediaElement.playTime / 1000
-      };
+      }
     }
   }
 
   function playAndSetDeferredSeek (seconds) {
-    mediaElement.play(1);
+    mediaElement.play(1)
     if (seconds > 0) {
-      deferSeekingTo = seconds;
+      deferSeekingTo = seconds
     }
   }
 
   function waitingToSeek () {
-    return (deferSeekingTo !== undefined);
+    return (deferSeekingTo !== undefined)
   }
 
   function performDeferredSeek () {
-    seekTo(deferSeekingTo);
-    deferSeekingTo = undefined;
+    seekTo(deferSeekingTo)
+    deferSeekingTo = undefined
   }
 
   function seekTo (seconds) {
-    var clampedTime = getClampedTime(seconds);
+    var clampedTime = getClampedTime(seconds)
     if (clampedTime !== seconds) {
-      DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }');
+      DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }')
     }
-    sentinelSeekTime = clampedTime;
-    return mediaElement.seek(clampedTime * 1000);
+    sentinelSeekTime = clampedTime
+    return mediaElement.seek(clampedTime * 1000)
   }
 
   function waitingToPause () {
-    return (postBufferingState === MediaPlayerBase.STATE.PAUSED);
+    return (postBufferingState === MediaPlayerBase.STATE.PAUSED)
   }
 
   function wipe () {
-    mediaType = undefined;
-    source = undefined;
-    mimeType = undefined;
-    sentinelSeekTime = undefined;
-    range = undefined;
+    mediaType = undefined
+    source = undefined
+    mimeType = undefined
+    sentinelSeekTime = undefined
+    range = undefined
     if (mediaElement) {
-      clearInterval(updateInterval);
-      clearSentinels();
-      destroyMediaElement();
+      clearInterval(updateInterval)
+      clearSentinels()
+      destroyMediaElement()
     } else {
     }
   }
 
   function destroyMediaElement () {
-    delete mediaElement.onPlayStateChange;
-    DOMHelpers.safeRemoveElement(mediaElement);
-    mediaElement = undefined;
+    delete mediaElement.onPlayStateChange
+    DOMHelpers.safeRemoveElement(mediaElement)
+    mediaElement = undefined
   }
 
   function reportError (errorMessage) {
-    DebugTool.info(errorMessage);
-    emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage});
+    DebugTool.info(errorMessage)
+    emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage})
   }
 
   function toStopped () {
-    state = MediaPlayerBase.STATE.STOPPED;
-    emitEvent(MediaPlayerBase.EVENT.STOPPED);
+    state = MediaPlayerBase.STATE.STOPPED
+    emitEvent(MediaPlayerBase.EVENT.STOPPED)
     if (sentinelInterval) {
-      clearSentinels();
+      clearSentinels()
     }
   }
 
   function toBuffering () {
-    state = MediaPlayerBase.STATE.BUFFERING;
-    emitEvent(MediaPlayerBase.EVENT.BUFFERING);
-    setSentinels([exitBufferingSentinel]);
+    state = MediaPlayerBase.STATE.BUFFERING
+    emitEvent(MediaPlayerBase.EVENT.BUFFERING)
+    setSentinels([exitBufferingSentinel])
   }
 
   function toPlaying () {
-    state = MediaPlayerBase.STATE.PLAYING;
-    emitEvent(MediaPlayerBase.EVENT.PLAYING);
+    state = MediaPlayerBase.STATE.PLAYING
+    emitEvent(MediaPlayerBase.EVENT.PLAYING)
     setSentinels([
       shouldBeSeekedSentinel,
       enterCompleteSentinel,
       enterBufferingSentinel
-    ]);
+    ])
   }
 
   function toPaused () {
-    state = MediaPlayerBase.STATE.PAUSED;
-    emitEvent(MediaPlayerBase.EVENT.PAUSED);
+    state = MediaPlayerBase.STATE.PAUSED
+    emitEvent(MediaPlayerBase.EVENT.PAUSED)
     setSentinels([
       shouldBePausedSentinel,
       shouldBeSeekedSentinel
-    ]);
+    ])
   }
 
   function toComplete () {
-    state = MediaPlayerBase.STATE.COMPLETE;
-    emitEvent(MediaPlayerBase.EVENT.COMPLETE);
-    clearSentinels();
+    state = MediaPlayerBase.STATE.COMPLETE
+    emitEvent(MediaPlayerBase.EVENT.COMPLETE)
+    clearSentinels()
   }
 
   function toEmpty () {
-    wipe();
-    state = MediaPlayerBase.STATE.EMPTY;
+    wipe()
+    state = MediaPlayerBase.STATE.EMPTY
   }
 
   function toError (errorMessage) {
-    wipe();
-    state = MediaPlayerBase.STATE.ERROR;
-    reportError(errorMessage);
+    wipe()
+    state = MediaPlayerBase.STATE.ERROR
+    reportError(errorMessage)
   }
 
   function isNearToEnd (seconds) {
-    return (getDuration() - seconds <= 1);
+    return (getDuration() - seconds <= 1)
   }
 
   function setSentinels (sentinels) {
     if (disableSentinels) {
-      return;
+      return
     }
 
-    sentinelLimits.pause.currentAttemptCount = 0;
-    timeAtLastSentinelInterval = getCurrentTime();
-    clearSentinels();
-    sentinelIntervalNumber = 0;
+    sentinelLimits.pause.currentAttemptCount = 0
+    timeAtLastSentinelInterval = getCurrentTime()
+    clearSentinels()
+    sentinelIntervalNumber = 0
     sentinelInterval = setInterval(function () {
-      var newTime = getCurrentTime();
-      sentinelIntervalNumber++;
+      var newTime = getCurrentTime()
+      sentinelIntervalNumber++
 
-      timeHasAdvanced = newTime ? (newTime > (timeAtLastSentinelInterval + 0.2)) : false;
-      sentinelTimeIsNearEnd = isNearToEnd(newTime || timeAtLastSentinelInterval);
+      timeHasAdvanced = newTime ? (newTime > (timeAtLastSentinelInterval + 0.2)) : false
+      sentinelTimeIsNearEnd = isNearToEnd(newTime || timeAtLastSentinelInterval)
 
       for (var i = 0; i < sentinels.length; i++) {
-        var sentinelActionPerformed = sentinels[i].call(this);
+        var sentinelActionPerformed = sentinels[i].call(this)
         if (sentinelActionPerformed) {
-          break;
+          break
         }
       }
 
-      timeAtLastSentinelInterval = newTime;
-    }, 1100);
+      timeAtLastSentinelInterval = newTime
+    }, 1100)
   }
 
   function clearSentinels () {
-    clearInterval(sentinelInterval);
+    clearInterval(sentinelInterval)
   }
 
   function enterBufferingSentinel () {
-    var sentinelBufferingRequired = !timeHasAdvanced && !sentinelTimeIsNearEnd && (sentinelIntervalNumber > 1);
+    var sentinelBufferingRequired = !timeHasAdvanced && !sentinelTimeIsNearEnd && (sentinelIntervalNumber > 1)
     if (sentinelBufferingRequired) {
-      emitEvent(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING);
-      toBuffering();
+      emitEvent(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
+      toBuffering()
     }
-    return sentinelBufferingRequired;
+    return sentinelBufferingRequired
   }
 
   function exitBufferingSentinel () {
-    var sentinelExitBufferingRequired = timeHasAdvanced;
+    var sentinelExitBufferingRequired = timeHasAdvanced
     if (sentinelExitBufferingRequired) {
-      emitEvent(MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING);
-      onFinishedBuffering();
+      emitEvent(MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING)
+      onFinishedBuffering()
     }
-    return sentinelExitBufferingRequired;
+    return sentinelExitBufferingRequired
   }
 
   function shouldBeSeekedSentinel () {
     if (sentinelSeekTime === undefined) {
-      return false;
+      return false
     }
 
-    var currentTime = getCurrentTime();
+    var currentTime = getCurrentTime()
 
-    var clampedSentinelSeekTime = getClampedTime(sentinelSeekTime);
+    var clampedSentinelSeekTime = getClampedTime(sentinelSeekTime)
 
-    var sentinelSeekRequired = Math.abs(clampedSentinelSeekTime - currentTime) > seekSentinelTolerance;
-    var sentinelActionTaken = false;
+    var sentinelSeekRequired = Math.abs(clampedSentinelSeekTime - currentTime) > seekSentinelTolerance
+    var sentinelActionTaken = false
 
     if (sentinelSeekRequired) {
-      var mediaElement = mediaElement;
+      var mediaElement = mediaElement
       sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
-        mediaElement.seek(clampedSentinelSeekTime * 1000);
-      });
+        mediaElement.seek(clampedSentinelSeekTime * 1000)
+      })
     } else if (sentinelIntervalNumber < 3) {
-      sentinelSeekTime = currentTime;
+      sentinelSeekTime = currentTime
     } else {
-      sentinelSeekTime = undefined;
+      sentinelSeekTime = undefined
     }
-    return sentinelActionTaken;
+    return sentinelActionTaken
   }
 
   function shouldBePausedSentinel () {
-    var sentinelPauseRequired = timeHasAdvanced;
-    var sentinelActionTaken = false;
+    var sentinelPauseRequired = timeHasAdvanced
+    var sentinelActionTaken = false
     if (sentinelPauseRequired) {
-      var mediaElement = mediaElement;
+      var mediaElement = mediaElement
       sentinelActionTaken = nextSentinelAttempt(sentinelLimits.pause, function () {
-        mediaElement.play(0);
-      });
+        mediaElement.play(0)
+      })
     }
-    return sentinelActionTaken;
+    return sentinelActionTaken
   }
 
   function enterCompleteSentinel () {
-    var sentinelCompleteRequired = !timeHasAdvanced && sentinelTimeIsNearEnd;
+    var sentinelCompleteRequired = !timeHasAdvanced && sentinelTimeIsNearEnd
     if (sentinelCompleteRequired) {
-      emitEvent(MediaPlayerBase.EVENT.SENTINEL_COMPLETE);
-      onEndOfMedia();
+      emitEvent(MediaPlayerBase.EVENT.SENTINEL_COMPLETE)
+      onEndOfMedia()
     }
-    return sentinelCompleteRequired;
+    return sentinelCompleteRequired
   }
 
   function nextSentinelAttempt (sentinelInfo, attemptFn) {
-    var currentAttemptCount, maxAttemptCount;
+    var currentAttemptCount, maxAttemptCount
 
-    sentinelInfo.currentAttemptCount += 1;
-    currentAttemptCount = sentinelInfo.currentAttemptCount;
-    maxAttemptCount = sentinelInfo.maximumAttempts;
+    sentinelInfo.currentAttemptCount += 1
+    currentAttemptCount = sentinelInfo.currentAttemptCount
+    maxAttemptCount = sentinelInfo.maximumAttempts
 
     if (currentAttemptCount === maxAttemptCount + 1) {
-      emitEvent(sentinelInfo.failureEvent);
+      emitEvent(sentinelInfo.failureEvent)
     }
 
     if (currentAttemptCount <= maxAttemptCount) {
-      attemptFn();
-      emitEvent(sentinelInfo.successEvent);
-      return true;
+      attemptFn()
+      emitEvent(sentinelInfo.successEvent)
+      return true
     }
 
-    return false;
+    return false
   }
 
   return {
@@ -736,5 +736,5 @@ export default function () {
     getState: getState,
     getPlayerElement: getPlayerElement,
     getDuration: getDuration
-  };
+  }
 }

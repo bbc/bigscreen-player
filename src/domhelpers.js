@@ -1,29 +1,29 @@
 var addClass = function (el, className) {
   if (el.classList) {
-    el.classList.add(className);
+    el.classList.add(className)
   } else {
-    el.className += ' ' + className;
+    el.className += ' ' + className
   }
-};
+}
 
 var removeClass = function (el, className) {
   if (el.classList) {
-    el.classList.remove(className);
+    el.classList.remove(className)
   } else {
-    el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
+    el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ')
   }
-};
+}
 
 var hasClass = function (el, className) {
   if (el.classList) {
-    return el.classList.contains(className);
+    return el.classList.contains(className)
   } else {
-    return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className);
+    return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className)
   }
-};
+}
 
 function isRGBATuple (rgbaString) {
-  return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString);
+  return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString)
 }
 
 /**
@@ -33,9 +33,9 @@ function isRGBATuple (rgbaString) {
  */
 function rgbaToRGB (rgbaString) {
   if (isRGBATuple(rgbaString)) {
-    rgbaString = rgbaString.slice(0, 7);
+    rgbaString = rgbaString.slice(0, 7)
   }
-  return rgbaString;
+  return rgbaString
 }
 
 /**
@@ -45,9 +45,9 @@ function rgbaToRGB (rgbaString) {
  */
 var safeRemoveElement = function (el) {
   if (el.parentNode) {
-    el.parentNode.removeChild(el);
+    el.parentNode.removeChild(el)
   }
-};
+}
 
 export default {
   addClass: addClass,
@@ -56,4 +56,4 @@ export default {
   rgbaToRGB: rgbaToRGB,
   isRGBA: isRGBATuple,
   safeRemoveElement: safeRemoveElement
-};
+}

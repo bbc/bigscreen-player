@@ -1,102 +1,102 @@
-import MediaState from '../models/mediastate';
-import Chronicle from './chronicle';
-var view;
+import MediaState from '../models/mediastate'
+import Chronicle from './chronicle'
+var view
 
 function init (newView) {
-  view = newView;
+  view = newView
 }
 
 function update (logs) {
-  view.render({ static: parseStaticFields(logs), dynamic: parseDynamicFields(logs) });
+  view.render({ static: parseStaticFields(logs), dynamic: parseDynamicFields(logs) })
 }
 
 function parseStaticFields (logs) {
-  var latestStaticFields = [];
+  var latestStaticFields = []
   var staticFields = logs.filter(function (log) {
-    return isStaticLog(log);
-  });
+    return isStaticLog(log)
+  })
 
-  var uniqueKeys = findUniqueKeys(staticFields);
+  var uniqueKeys = findUniqueKeys(staticFields)
   uniqueKeys.forEach(function (key) {
     var matchingStaticLogs = staticFields.filter(function (log) {
-      return log.keyvalue.key === key;
-    });
-    latestStaticFields.push(matchingStaticLogs.pop());
-  });
+      return log.keyvalue.key === key
+    })
+    latestStaticFields.push(matchingStaticLogs.pop())
+  })
 
   return latestStaticFields.map(function (field) {
-    return {key: sanitiseKeyString(field.keyvalue.key), value: sanitiseValueString(field.keyvalue.value)};
-  });
+    return {key: sanitiseKeyString(field.keyvalue.key), value: sanitiseValueString(field.keyvalue.value)}
+  })
 }
 
 function parseDynamicFields (logs) {
-  var dynamicLogs;
+  var dynamicLogs
 
   dynamicLogs = logs.filter(function (log) {
-    return !isStaticLog(log);
+    return !isStaticLog(log)
   }).map(function (log) {
-    var dateString = new Date(log.timestamp).toISOString();
+    var dateString = new Date(log.timestamp).toISOString()
     switch (log.type) {
       case Chronicle.TYPES.INFO:
-        return dateString + ' - Info: ' + log.message;
+        return dateString + ' - Info: ' + log.message
       case Chronicle.TYPES.TIME:
-        return dateString + ' - Video time: ' + parseFloat(log.currentTime).toFixed(2);
+        return dateString + ' - Video time: ' + parseFloat(log.currentTime).toFixed(2)
       case Chronicle.TYPES.EVENT:
-        return dateString + ' - Event: ' + convertToReadableEvent(log.event.state);
+        return dateString + ' - Event: ' + convertToReadableEvent(log.event.state)
       case Chronicle.TYPES.ERROR:
-        return dateString + ' - Error: ' + log.error.errorId + ' | ' + log.error.message;
+        return dateString + ' - Error: ' + log.error.errorId + ' | ' + log.error.message
       case Chronicle.TYPES.APICALL:
-        return dateString + ' - Api call: ' + log.calltype;
+        return dateString + ' - Api call: ' + log.calltype
       default:
-        return dateString + ' - Unknown log format';
+        return dateString + ' - Unknown log format'
     }
-  });
+  })
 
-  return dynamicLogs;
+  return dynamicLogs
 }
 
 function isStaticLog (log) {
-  return log.type === Chronicle.TYPES.KEYVALUE;
+  return log.type === Chronicle.TYPES.KEYVALUE
 }
 
 function findUniqueKeys (logs) {
-  var uniqueKeys = [];
+  var uniqueKeys = []
   logs.forEach(function (log) {
     if (uniqueKeys.indexOf(log.keyvalue.key) === -1) {
-      uniqueKeys.push(log.keyvalue.key);
+      uniqueKeys.push(log.keyvalue.key)
     }
-  });
-  return uniqueKeys;
+  })
+  return uniqueKeys
 }
 
 function sanitiseKeyString (key) {
-  return key.replace(/([A-Z])/g, ' $1').toLowerCase();
+  return key.replace(/([A-Z])/g, ' $1').toLowerCase()
 }
 
 function sanitiseValueString (value) {
   if (value instanceof Date) {
-    var hours = zeroPadTimeUnits(value.getHours()) + value.getHours();
-    var mins = zeroPadTimeUnits(value.getMinutes()) + value.getMinutes();
-    var secs = zeroPadTimeUnits(value.getSeconds()) + value.getSeconds();
-    return hours + ':' + mins + ':' + secs;
+    var hours = zeroPadTimeUnits(value.getHours()) + value.getHours()
+    var mins = zeroPadTimeUnits(value.getMinutes()) + value.getMinutes()
+    var secs = zeroPadTimeUnits(value.getSeconds()) + value.getSeconds()
+    return hours + ':' + mins + ':' + secs
   }
-  return value;
+  return value
 }
 
 function zeroPadTimeUnits (unit) {
-  return (unit < 10 ? '0' : '');
+  return (unit < 10 ? '0' : '')
 }
 
 function convertToReadableEvent (type) {
   for (var key in MediaState) {
     if (MediaState[key] === type) {
-      return key;
+      return key
     }
   }
-  return type;
+  return type
 }
 
 export default {
   init: init,
   update: update
-};
+}

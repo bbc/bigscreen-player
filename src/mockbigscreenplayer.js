@@ -1,475 +1,475 @@
-import MediaState from './models/mediastate';
-import PauseTriggers from './models/pausetriggers';
-import WindowTypes from './models/windowtypes';
-import PlaybackUtils from './utils/playbackutils';
-import callCallbacks from './utils/callcallbacks';
-import Plugins from './plugins';
-import PluginData from './plugindata';
-import PluginEnums from './pluginenums';
-import Version from './version';
+import MediaState from './models/mediastate'
+import PauseTriggers from './models/pausetriggers'
+import WindowTypes from './models/windowtypes'
+import PlaybackUtils from './utils/playbackutils'
+import callCallbacks from './utils/callcallbacks'
+import Plugins from './plugins'
+import PluginData from './plugindata'
+import PluginEnums from './pluginenums'
+import Version from './version'
 
-var sourceList;
-var source;
-var cdn;
+var sourceList
+var source
+var cdn
 
-var timeUpdateCallbacks = [];
-var subtitleCallbacks = [];
-var stateChangeCallbacks = [];
+var timeUpdateCallbacks = []
+var subtitleCallbacks = []
+var stateChangeCallbacks = []
 
-var currentTime;
-var isSeeking;
-var seekableRange;
-var duration;
-var liveWindowStart;
-var pausedState = true;
-var endedState;
-var mediaKind;
-var windowType;
-var subtitlesAvailable;
-var subtitlesEnabled;
-var subtitlesHidden;
-var endOfStream;
-var canSeekState;
-var canPauseState;
-var shallowClone;
+var currentTime
+var isSeeking
+var seekableRange
+var duration
+var liveWindowStart
+var pausedState = true
+var endedState
+var mediaKind
+var windowType
+var subtitlesAvailable
+var subtitlesEnabled
+var subtitlesHidden
+var endOfStream
+var canSeekState
+var canPauseState
+var shallowClone
 var mockModes = {
   NONE: 0,
   PLAIN: 1,
   JASMINE: 2
-};
-var mockStatus = {currentlyMocked: false, mode: mockModes.NONE};
-var initialised;
-var fatalErrorBufferingTimeout;
+}
+var mockStatus = {currentlyMocked: false, mode: mockModes.NONE}
+var initialised
+var fatalErrorBufferingTimeout
 
-var autoProgress;
-var autoProgressInterval;
-var initialBuffering = false;
+var autoProgress
+var autoProgressInterval
+var initialBuffering = false
 
-var liveWindowData;
-var manifestError;
+var liveWindowData
+var manifestError
 
-var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'clearSubtitleExample', 'areSubtitlesCustomisable', 'setPlaybackRate', 'getPlaybackRate'];
+var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'clearSubtitleExample', 'areSubtitlesCustomisable', 'setPlaybackRate', 'getPlaybackRate']
 
 function startProgress (progressCause) {
   setTimeout(function () {
     if (!autoProgressInterval) {
-      mockingHooks.changeState(MediaState.PLAYING, progressCause);
+      mockingHooks.changeState(MediaState.PLAYING, progressCause)
       autoProgressInterval = setInterval(function () {
         if (windowType !== WindowTypes.STATIC && seekableRange.start && seekableRange.end) {
-          seekableRange.start += 0.5;
-          seekableRange.end += 0.5;
+          seekableRange.start += 0.5
+          seekableRange.end += 0.5
         }
-        mockingHooks.progressTime(currentTime + 0.5);
+        mockingHooks.progressTime(currentTime + 0.5)
         if (currentTime >= duration) {
-          clearInterval(autoProgressInterval);
-          mockingHooks.changeState(MediaState.ENDED);
+          clearInterval(autoProgressInterval)
+          mockingHooks.changeState(MediaState.ENDED)
         }
-      }, 500);
+      }, 500)
     }
-  }, 100);
+  }, 100)
 }
 
 function stopProgress () {
   if (autoProgressInterval) {
-    clearInterval(autoProgressInterval);
-    autoProgressInterval = null;
+    clearInterval(autoProgressInterval)
+    autoProgressInterval = null
   }
 }
 
 function mock (BigscreenPlayer, opts) {
-  autoProgress = opts && opts.autoProgress;
+  autoProgress = opts && opts.autoProgress
 
   if (opts && opts.excludedFuncs) {
-    excludedFuncs = excludedFuncs.concat(opts.excludedFuncs);
+    excludedFuncs = excludedFuncs.concat(opts.excludedFuncs)
   }
 
   if (mockStatus.currentlyMocked) {
-    throw new Error('mock() was called while BigscreenPlayer was already mocked');
+    throw new Error('mock() was called while BigscreenPlayer was already mocked')
   }
-  shallowClone = PlaybackUtils.clone(BigscreenPlayer);
+  shallowClone = PlaybackUtils.clone(BigscreenPlayer)
 
   // Divert existing functions
   for (var func in BigscreenPlayer) {
     if (BigscreenPlayer[func] && mockFunctions[func]) {
-      BigscreenPlayer[func] = mockFunctions[func];
+      BigscreenPlayer[func] = mockFunctions[func]
     } else if (!PlaybackUtils.contains(excludedFuncs, func)) {
-      throw new Error(func + ' was not mocked or included in the exclusion list');
+      throw new Error(func + ' was not mocked or included in the exclusion list')
     }
   }
   // Add extra functions
   for (var hook in mockingHooks) {
-    BigscreenPlayer[hook] = mockingHooks[hook];
+    BigscreenPlayer[hook] = mockingHooks[hook]
   }
-  mockStatus = {currentlyMocked: true, mode: mockModes.PLAIN};
+  mockStatus = {currentlyMocked: true, mode: mockModes.PLAIN}
 }
 
 function mockJasmine (BigscreenPlayer, opts) {
-  autoProgress = opts && opts.autoProgress;
+  autoProgress = opts && opts.autoProgress
 
   if (opts && opts.excludedFuncs) {
-    excludedFuncs = excludedFuncs.concat(opts.excludedFuncs);
+    excludedFuncs = excludedFuncs.concat(opts.excludedFuncs)
   }
 
   if (mockStatus.currentlyMocked) {
-    throw new Error('mockJasmine() was called while BigscreenPlayer was already mocked');
+    throw new Error('mockJasmine() was called while BigscreenPlayer was already mocked')
   }
 
   for (var fn in BigscreenPlayer) {
     if (BigscreenPlayer[fn] && mockFunctions[fn]) {
-      spyOn(BigscreenPlayer, fn).and.callFake(mockFunctions[fn]);
+      spyOn(BigscreenPlayer, fn).and.callFake(mockFunctions[fn])
     } else if (!PlaybackUtils.contains(excludedFuncs, fn)) {
-      throw new Error(fn + ' was not mocked or included in the exclusion list');
+      throw new Error(fn + ' was not mocked or included in the exclusion list')
     }
   }
 
   for (var hook in mockingHooks) {
-    BigscreenPlayer[hook] = mockingHooks[hook];
+    BigscreenPlayer[hook] = mockingHooks[hook]
   }
-  mockStatus = {currentlyMocked: true, mode: mockModes.JASMINE};
+  mockStatus = {currentlyMocked: true, mode: mockModes.JASMINE}
 }
 
 function unmock (BigscreenPlayer) {
   if (!mockStatus.currentlyMocked) {
-    throw new Error('unmock() was called before BigscreenPlayer was mocked');
+    throw new Error('unmock() was called before BigscreenPlayer was mocked')
   }
 
   // Remove extra functions
   for (var hook in mockingHooks) {
-    delete BigscreenPlayer[hook];
+    delete BigscreenPlayer[hook]
   }
   // Undo divert existing functions (plain mock only)
   if (mockStatus.mode === mockModes.PLAIN) {
     for (var func in shallowClone) {
-      BigscreenPlayer[func] = shallowClone[func];
+      BigscreenPlayer[func] = shallowClone[func]
     }
   }
 
-  timeUpdateCallbacks = [];
-  stateChangeCallbacks = [];
+  timeUpdateCallbacks = []
+  stateChangeCallbacks = []
 
-  mockStatus = {currentlyMocked: false, mode: mockModes.NONE};
+  mockStatus = {currentlyMocked: false, mode: mockModes.NONE}
 }
 
 function callSubtitlesCallbacks (enabled) {
-  callCallbacks(subtitleCallbacks, { enabled: enabled });
+  callCallbacks(subtitleCallbacks, { enabled: enabled })
 }
 
 var mockFunctions = {
   init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
-    currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0;
-    liveWindowStart = undefined;
-    pausedState = true;
-    endedState = false;
-    mediaKind = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.kind || 'video';
-    windowType = newWindowType || WindowTypes.STATIC;
-    subtitlesAvailable = true;
-    subtitlesEnabled = enableSubtitles;
-    canSeekState = true;
-    canPauseState = true;
-    sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls;
-    source = sourceList && sourceList[0].url;
-    cdn = sourceList && sourceList[0].cdn;
+    currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0
+    liveWindowStart = undefined
+    pausedState = true
+    endedState = false
+    mediaKind = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.kind || 'video'
+    windowType = newWindowType || WindowTypes.STATIC
+    subtitlesAvailable = true
+    subtitlesEnabled = enableSubtitles
+    canSeekState = true
+    canPauseState = true
+    sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls
+    source = sourceList && sourceList[0].url
+    cdn = sourceList && sourceList[0].cdn
 
-    duration = windowType === WindowTypes.STATIC ? 4808 : Infinity;
-    seekableRange = {start: 0, end: 4808};
+    duration = windowType === WindowTypes.STATIC ? 4808 : Infinity
+    seekableRange = {start: 0, end: 4808}
 
     if (manifestError) {
       if (callbacks && callbacks.onError) {
-        callbacks.onError({error: 'manifest'});
+        callbacks.onError({error: 'manifest'})
       }
-      return;
+      return
     }
 
-    mockingHooks.changeState(MediaState.WAITING);
+    mockingHooks.changeState(MediaState.WAITING)
 
     if (autoProgress && !initialBuffering) {
-      startProgress();
+      startProgress()
     }
 
-    initialised = true;
+    initialised = true
 
     if (enableSubtitles) {
-      callSubtitlesCallbacks(true);
+      callSubtitlesCallbacks(true)
     }
 
     if (callbacks && callbacks.onSuccess) {
-      callbacks.onSuccess();
+      callbacks.onSuccess()
     }
   },
   registerForTimeUpdates: function (callback) {
-    timeUpdateCallbacks.push(callback);
-    return callback;
+    timeUpdateCallbacks.push(callback)
+    return callback
   },
   unregisterForTimeUpdates: function (callback) {
-    var indexOf = timeUpdateCallbacks.indexOf(callback);
+    var indexOf = timeUpdateCallbacks.indexOf(callback)
 
     if (indexOf !== -1) {
-      timeUpdateCallbacks.splice(indexOf, 1);
+      timeUpdateCallbacks.splice(indexOf, 1)
     }
   },
   registerForSubtitleChanges: function (callback) {
-    subtitleCallbacks.push(callback);
-    return callback;
+    subtitleCallbacks.push(callback)
+    return callback
   },
   unregisterForSubtitleChanges: function (callback) {
-    var indexOf = subtitleCallbacks.indexOf(callback);
+    var indexOf = subtitleCallbacks.indexOf(callback)
 
     if (indexOf !== -1) {
-      subtitleCallbacks.splice(indexOf, 1);
+      subtitleCallbacks.splice(indexOf, 1)
     }
   },
   registerForStateChanges: function (callback) {
-    stateChangeCallbacks.push(callback);
-    return callback;
+    stateChangeCallbacks.push(callback)
+    return callback
   },
   unregisterForStateChanges: function (callback) {
-    var indexOf = stateChangeCallbacks.indexOf(callback);
+    var indexOf = stateChangeCallbacks.indexOf(callback)
 
     if (indexOf !== -1) {
-      stateChangeCallbacks.splice(indexOf, 1);
+      stateChangeCallbacks.splice(indexOf, 1)
     }
   },
   setCurrentTime: function (time) {
-    currentTime = time;
-    isSeeking = true;
+    currentTime = time
+    isSeeking = true
     if (autoProgress) {
-      mockingHooks.changeState(MediaState.WAITING, 'other');
+      mockingHooks.changeState(MediaState.WAITING, 'other')
       if (!pausedState) {
-        startProgress();
+        startProgress()
       }
     } else {
-      mockingHooks.progressTime(currentTime);
+      mockingHooks.progressTime(currentTime)
     }
   },
   getCurrentTime: function () {
-    return currentTime;
+    return currentTime
   },
   getMediaKind: function () {
-    return mediaKind;
+    return mediaKind
   },
   getWindowType: function () {
-    return windowType;
+    return windowType
   },
   getSeekableRange: function () {
-    return seekableRange;
+    return seekableRange
   },
   getDuration: function () {
-    return duration;
+    return duration
   },
   isPaused: function () {
-    return pausedState;
+    return pausedState
   },
   isEnded: function () {
-    return endedState;
+    return endedState
   },
   play: function () {
     if (autoProgress) {
-      startProgress('other');
+      startProgress('other')
     } else {
-      mockingHooks.changeState(MediaState.PLAYING, 'other');
+      mockingHooks.changeState(MediaState.PLAYING, 'other')
     }
   },
   pause: function (opts) {
-    mockingHooks.changeState(MediaState.PAUSED, 'other', opts);
+    mockingHooks.changeState(MediaState.PAUSED, 'other', opts)
   },
   setSubtitlesEnabled: function (value) {
-    subtitlesEnabled = value;
-    callSubtitlesCallbacks(value);
+    subtitlesEnabled = value
+    callSubtitlesCallbacks(value)
   },
   isSubtitlesEnabled: function () {
-    return subtitlesEnabled;
+    return subtitlesEnabled
   },
   isSubtitlesAvailable: function () {
-    return subtitlesAvailable;
+    return subtitlesAvailable
   },
   customiseSubtitles: function () {},
   renderSubtitleExample: function () {},
   setTransportControlsPosition: function (position) {},
   canSeek: function () {
-    return canSeekState;
+    return canSeekState
   },
   canPause: function () {
-    return canPauseState;
+    return canPauseState
   },
   convertVideoTimeSecondsToEpochMs: function (seconds) {
-    return liveWindowStart ? liveWindowStart + (seconds * 1000) : undefined;
+    return liveWindowStart ? liveWindowStart + (seconds * 1000) : undefined
   },
   transitions: function () {
     return {
-      canBePaused: function () { return true; },
-      canBeginSeek: function () { return true; }
-    };
+      canBePaused: function () { return true },
+      canBeginSeek: function () { return true }
+    }
   },
   isPlayingAtLiveEdge: function () {
-    return false;
+    return false
   },
   resize: function () {
-    subtitlesHidden = this.isSubtitlesEnabled();
-    this.setSubtitlesEnabled(subtitlesHidden);
+    subtitlesHidden = this.isSubtitlesEnabled()
+    this.setSubtitlesEnabled(subtitlesHidden)
   },
   clearResize: function () {
-    this.setSubtitlesEnabled(subtitlesHidden);
+    this.setSubtitlesEnabled(subtitlesHidden)
   },
   getPlayerElement: function () {
-    return;
+    return
   },
   getFrameworkVersion: function () {
-    return Version;
+    return Version
   },
   tearDown: function () {
-    manifestError = false;
+    manifestError = false
     if (!initialised) {
-      return;
+      return
     }
 
-    Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}));
-    Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}));
-    Plugins.unregisterPlugin();
+    Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}))
+    Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}))
+    Plugins.unregisterPlugin()
 
-    timeUpdateCallbacks = [];
-    stateChangeCallbacks = [];
+    timeUpdateCallbacks = []
+    stateChangeCallbacks = []
 
     if (autoProgress) {
-      stopProgress();
+      stopProgress()
     }
 
-    initialised = false;
+    initialised = false
   },
   registerPlugin: function (plugin) {
-    Plugins.registerPlugin(plugin);
+    Plugins.registerPlugin(plugin)
   },
   unregisterPlugin: function (plugin) {
-    Plugins.unregisterPlugin(plugin);
+    Plugins.unregisterPlugin(plugin)
   },
   getLiveWindowData: function () {
     if (windowType === WindowTypes.STATIC) {
-      return {};
+      return {}
     }
     return {
       windowStartTime: liveWindowData.windowStartTime,
       windowEndTime: liveWindowData.windowEndTime,
       initialPlaybackTime: liveWindowData.initialPlaybackTime,
       serverDate: liveWindowData.serverDate
-    };
+    }
   }
-};
+}
 
 var mockingHooks = {
   changeState: function (state, eventTrigger, opts) {
-    eventTrigger = eventTrigger || 'device';
-    var pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
+    eventTrigger = eventTrigger || 'device'
+    var pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
 
-    pausedState = state === MediaState.PAUSED || state === MediaState.STOPPED || state === MediaState.ENDED;
-    endedState = state === MediaState.ENDED;
+    pausedState = state === MediaState.PAUSED || state === MediaState.STOPPED || state === MediaState.ENDED
+    endedState = state === MediaState.ENDED
 
     if (state === MediaState.WAITING) {
-      fatalErrorBufferingTimeout = true;
-      Plugins.interface.onBuffering(new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING}));
+      fatalErrorBufferingTimeout = true
+      Plugins.interface.onBuffering(new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING}))
     } else {
-      Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}));
+      Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}))
     }
-    Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}));
+    Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}))
 
     if (state === MediaState.FATAL_ERROR) {
-      Plugins.interface.onFatalError(new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout}));
+      Plugins.interface.onFatalError(new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout}))
     }
 
-    var stateObject = { state: state };
+    var stateObject = { state: state }
     if (state === MediaState.PAUSED) {
-      stateObject.trigger = pauseTrigger;
-      endOfStream = false;
+      stateObject.trigger = pauseTrigger
+      endOfStream = false
     }
     if (state === MediaState.FATAL_ERROR) {
-      stateObject.errorId = opts && opts.error;
-      stateObject.isBufferingTimeoutError = opts && opts.isBufferingTimeoutError;
+      stateObject.errorId = opts && opts.error
+      stateObject.isBufferingTimeoutError = opts && opts.isBufferingTimeoutError
     }
     if (state === MediaState.WAITING) {
-      stateObject.isSeeking = isSeeking;
-      isSeeking = false;
+      stateObject.isSeeking = isSeeking
+      isSeeking = false
     }
-    stateObject.endOfStream = endOfStream;
+    stateObject.endOfStream = endOfStream
 
-    callCallbacks(stateChangeCallbacks, stateObject);
+    callCallbacks(stateChangeCallbacks, stateObject)
 
     if (autoProgress) {
       if (state !== MediaState.PLAYING) {
-        stopProgress();
+        stopProgress()
       } else {
-        startProgress();
+        startProgress()
       }
     }
   },
   progressTime: function (time) {
-    currentTime = time;
+    currentTime = time
     callCallbacks(timeUpdateCallbacks, {
       currentTime: time,
       endOfStream: endOfStream
-    });
+    })
   },
   setEndOfStream: function (isEndOfStream) {
-    endOfStream = isEndOfStream;
+    endOfStream = isEndOfStream
   },
   setDuration: function (mediaDuration) {
-    duration = mediaDuration;
+    duration = mediaDuration
   },
   setSeekableRange: function (newSeekableRange) {
-    seekableRange = newSeekableRange;
+    seekableRange = newSeekableRange
   },
   setMediaKind: function (kind) {
-    mediaKind = kind;
+    mediaKind = kind
   },
   setWindowType: function (type) {
-    windowType = type;
+    windowType = type
   },
   setCanSeek: function (value) {
-    canSeekState = value;
+    canSeekState = value
   },
   setCanPause: function (value) {
-    canPauseState = value;
+    canPauseState = value
   },
   setLiveWindowStart: function (value) {
-    liveWindowStart = value;
+    liveWindowStart = value
   },
   setSubtitlesAvailable: function (value) {
-    subtitlesAvailable = value;
+    subtitlesAvailable = value
   },
   getSource: function () {
-    return source;
+    return source
   },
   triggerError: function () {
-    fatalErrorBufferingTimeout = false;
-    Plugins.interface.onError(new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false}));
-    this.changeState(MediaState.WAITING);
-    stopProgress();
+    fatalErrorBufferingTimeout = false
+    Plugins.interface.onError(new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false}))
+    this.changeState(MediaState.WAITING)
+    stopProgress()
   },
   triggerManifestError: function () {
-    manifestError = true;
+    manifestError = true
   },
   triggerErrorHandled: function () {
     if (sourceList && sourceList.length > 1) {
-      sourceList.shift();
-      source = sourceList[0].url;
-      cdn = sourceList[0].cdn;
+      sourceList.shift()
+      source = sourceList[0].url
+      cdn = sourceList[0].cdn
     }
-    Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}));
-    Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}));
-    Plugins.interface.onErrorHandled(new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout, cdn: cdn}));
+    Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}))
+    Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}))
+    Plugins.interface.onErrorHandled(new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout, cdn: cdn}))
 
     if (autoProgress) {
-      stopProgress();
-      startProgress();
+      stopProgress()
+      startProgress()
     }
   },
   setInitialBuffering: function (value) {
-    initialBuffering = value;
+    initialBuffering = value
   },
   setLiveWindowData: function (newLiveWindowData) {
-    liveWindowData = newLiveWindowData;
+    liveWindowData = newLiveWindowData
   }
-};
+}
 
 export default {
   mock: mock,
   unmock: unmock,
   mockJasmine: mockJasmine
-};
+}

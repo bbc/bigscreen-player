@@ -1,119 +1,119 @@
-import MediaState from './models/mediastate';
-import PlayerComponent from './playercomponent';
-import PauseTriggers from './models/pausetriggers';
-import DynamicWindowUtils from './dynamicwindowutils';
-import WindowTypes from './models/windowtypes';
-import MockBigscreenPlayer from './mockbigscreenplayer';
-import Plugins from './plugins';
-import Chronicle from './debugger/chronicle';
-import DebugTool from './debugger/debugtool';
-import SlidingWindowUtils from './utils/timeutils';
-import callCallbacks from './utils/callcallbacks';
-import MediaSources from './mediasources';
-import Version from './version';
-import Resizer from './resizer';
-import ReadyHelper from './readyhelper';
-import Subtitles from './subtitles/subtitles';
+import MediaState from './models/mediastate'
+import PlayerComponent from './playercomponent'
+import PauseTriggers from './models/pausetriggers'
+import DynamicWindowUtils from './dynamicwindowutils'
+import WindowTypes from './models/windowtypes'
+import MockBigscreenPlayer from './mockbigscreenplayer'
+import Plugins from './plugins'
+import Chronicle from './debugger/chronicle'
+import DebugTool from './debugger/debugtool'
+import SlidingWindowUtils from './utils/timeutils'
+import callCallbacks from './utils/callcallbacks'
+import MediaSources from './mediasources'
+import Version from './version'
+import Resizer from './resizer'
+import ReadyHelper from './readyhelper'
+import Subtitles from './subtitles/subtitles'
 
 function BigscreenPlayer () {
-  var stateChangeCallbacks = [];
-  var timeUpdateCallbacks = [];
-  var subtitleCallbacks = [];
-  var playerReadyCallback;
-  var mediaKind;
-  var initialPlaybackTimeEpoch;
-  var serverDate;
-  var playerComponent;
-  var resizer;
-  var pauseTrigger;
-  var isSeeking = false;
-  var endOfStream;
-  var windowType;
-  var mediaSources;
-  var playbackElement;
-  var readyHelper;
-  var subtitles;
+  var stateChangeCallbacks = []
+  var timeUpdateCallbacks = []
+  var subtitleCallbacks = []
+  var playerReadyCallback
+  var mediaKind
+  var initialPlaybackTimeEpoch
+  var serverDate
+  var playerComponent
+  var resizer
+  var pauseTrigger
+  var isSeeking = false
+  var endOfStream
+  var windowType
+  var mediaSources
+  var playbackElement
+  var readyHelper
+  var subtitles
 
-  var END_OF_STREAM_TOLERANCE = 10;
+  var END_OF_STREAM_TOLERANCE = 10
 
   function mediaStateUpdateCallback (evt) {
     if (evt.timeUpdate) {
-      DebugTool.time(evt.data.currentTime);
+      DebugTool.time(evt.data.currentTime)
       callCallbacks(timeUpdateCallbacks, {
         currentTime: evt.data.currentTime,
         endOfStream: endOfStream
-      });
+      })
     } else {
-      var stateObject = {state: evt.data.state};
+      var stateObject = {state: evt.data.state}
       if (evt.data.state === MediaState.PAUSED) {
-        endOfStream = false;
-        stateObject.trigger = pauseTrigger || PauseTriggers.DEVICE;
-        pauseTrigger = undefined;
+        endOfStream = false
+        stateObject.trigger = pauseTrigger || PauseTriggers.DEVICE
+        pauseTrigger = undefined
       }
 
       if (evt.data.state === MediaState.FATAL_ERROR) {
         stateObject = {
           state: MediaState.FATAL_ERROR,
           isBufferingTimeoutError: evt.isBufferingTimeoutError
-        };
+        }
       }
 
       if (evt.data.state === MediaState.WAITING) {
-        stateObject.isSeeking = isSeeking;
-        isSeeking = false;
+        stateObject.isSeeking = isSeeking
+        isSeeking = false
       }
 
-      stateObject.endOfStream = endOfStream;
-      DebugTool.event(stateObject);
+      stateObject.endOfStream = endOfStream
+      DebugTool.event(stateObject)
 
-      callCallbacks(stateChangeCallbacks, stateObject);
+      callCallbacks(stateChangeCallbacks, stateObject)
     }
 
     if (evt.data.seekableRange) {
-      DebugTool.keyValue({key: 'seekableRangeStart', value: deviceTimeToDate(evt.data.seekableRange.start)});
-      DebugTool.keyValue({key: 'seekableRangeEnd', value: deviceTimeToDate(evt.data.seekableRange.end)});
+      DebugTool.keyValue({key: 'seekableRangeStart', value: deviceTimeToDate(evt.data.seekableRange.start)})
+      DebugTool.keyValue({key: 'seekableRangeEnd', value: deviceTimeToDate(evt.data.seekableRange.end)})
     }
 
     if (evt.data.duration) {
-      DebugTool.keyValue({key: 'duration', value: evt.data.duration});
+      DebugTool.keyValue({key: 'duration', value: evt.data.duration})
     }
 
     if (playerComponent && readyHelper) {
-      readyHelper.callbackWhenReady(evt);
+      readyHelper.callbackWhenReady(evt)
     }
   }
 
   function deviceTimeToDate (time) {
     if (getWindowStartTime()) {
-      return new Date(convertVideoTimeSecondsToEpochMs(time));
+      return new Date(convertVideoTimeSecondsToEpochMs(time))
     } else {
-      return new Date(time * 1000);
+      return new Date(time * 1000)
     }
   }
 
   function convertVideoTimeSecondsToEpochMs (seconds) {
-    return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : undefined;
+    return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : undefined
   }
 
   function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
     if (windowType !== WindowTypes.STATIC) {
-      bigscreenPlayerData.time = mediaSources.time();
-      serverDate = bigscreenPlayerData.serverDate;
+      bigscreenPlayerData.time = mediaSources.time()
+      serverDate = bigscreenPlayerData.serverDate
 
-      initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime;
+      initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
       // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
-      bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(bigscreenPlayerData.initialPlaybackTime, bigscreenPlayerData.time.windowStartTime);
+      bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(bigscreenPlayerData.initialPlaybackTime, bigscreenPlayerData.time.windowStartTime)
     }
 
-    mediaKind = bigscreenPlayerData.media.kind;
-    endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0);
+    mediaKind = bigscreenPlayerData.media.kind
+    endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0)
 
     readyHelper = new ReadyHelper(
       bigscreenPlayerData.initialPlaybackTime,
       windowType,
       PlayerComponent.getLiveSupport(),
       playerReadyCallback
-    );
+    )
 
     playerComponent = new PlayerComponent(
       playbackElement,
@@ -121,7 +121,7 @@ function BigscreenPlayer () {
       mediaSources,
       windowType,
       mediaStateUpdateCallback
-    );
+    )
 
     subtitles = Subtitles(
       playerComponent,
@@ -129,179 +129,179 @@ function BigscreenPlayer () {
       playbackElement,
       bigscreenPlayerData.media.subtitleCustomisation,
       mediaSources
-    );
+    )
 
     if (enableSubtitles) {
-      callSubtitlesCallbacks(true);
+      callSubtitlesCallbacks(true)
     }
   }
 
   function getWindowStartTime () {
-    return mediaSources && mediaSources.time().windowStartTime;
+    return mediaSources && mediaSources.time().windowStartTime
   }
 
   function getWindowEndTime () {
-    return mediaSources && mediaSources.time().windowEndTime;
+    return mediaSources && mediaSources.time().windowEndTime
   }
 
   function toggleDebug () {
     if (playerComponent) {
-      DebugTool.toggleVisibility();
+      DebugTool.toggleVisibility()
     }
   }
 
   function callSubtitlesCallbacks (enabled) {
-    callCallbacks(subtitleCallbacks, { enabled: enabled });
+    callCallbacks(subtitleCallbacks, { enabled: enabled })
   }
 
   function setSubtitlesEnabled (enabled) {
-    enabled ? subtitles.enable() : subtitles.disable();
-    callSubtitlesCallbacks(enabled);
+    enabled ? subtitles.enable() : subtitles.disable()
+    callSubtitlesCallbacks(enabled)
 
     if (!resizer.isResized()) {
-      enabled ? subtitles.show() : subtitles.hide();
+      enabled ? subtitles.show() : subtitles.hide()
     }
   }
 
   function isSubtitlesEnabled () {
-    return subtitles ? subtitles.enabled() : false;
+    return subtitles ? subtitles.enabled() : false
   }
 
   function isSubtitlesAvailable () {
-    return subtitles ? subtitles.available() : false;
+    return subtitles ? subtitles.available() : false
   }
 
   return {
     init: function (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
-      playbackElement = newPlaybackElement;
-      Chronicle.init();
-      resizer = Resizer();
-      DebugTool.setRootElement(playbackElement);
-      DebugTool.keyValue({key: 'framework-version', value: Version});
-      windowType = newWindowType;
-      serverDate = bigscreenPlayerData.serverDate;
+      playbackElement = newPlaybackElement
+      Chronicle.init()
+      resizer = Resizer()
+      DebugTool.setRootElement(playbackElement)
+      DebugTool.keyValue({key: 'framework-version', value: Version})
+      windowType = newWindowType
+      serverDate = bigscreenPlayerData.serverDate
       if (!callbacks) {
-        callbacks = {};
+        callbacks = {}
       }
-      playerReadyCallback = callbacks.onSuccess;
+      playerReadyCallback = callbacks.onSuccess
 
       var mediaSourceCallbacks = {
         onSuccess: function () {
-          bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles);
+          bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles)
         },
         onError: function (error) {
           if (callbacks.onError) {
-            callbacks.onError(error);
+            callbacks.onError(error)
           }
         }
-      };
+      }
 
-      mediaSources = MediaSources();
+      mediaSources = MediaSources()
 
       // Backwards compatibility with Old API; to be removed on Major Version Update
       if (bigscreenPlayerData.media && !bigscreenPlayerData.media.captions && bigscreenPlayerData.media.captionsUrl) {
         bigscreenPlayerData.media.captions = [{
           url: bigscreenPlayerData.media.captionsUrl
-        }];
+        }]
       }
 
-      mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
+      mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks)
     },
 
     tearDown: function () {
       if (subtitles) {
-        subtitles.tearDown();
-        subtitles = undefined;
+        subtitles.tearDown()
+        subtitles = undefined
       }
 
       if (playerComponent) {
-        playerComponent.tearDown();
-        playerComponent = undefined;
+        playerComponent.tearDown()
+        playerComponent = undefined
       }
 
       if (mediaSources) {
-        mediaSources.tearDown();
-        mediaSources = undefined;
+        mediaSources.tearDown()
+        mediaSources = undefined
       }
 
-      stateChangeCallbacks = [];
-      timeUpdateCallbacks = [];
-      subtitleCallbacks = [];
-      endOfStream = undefined;
-      mediaKind = undefined;
-      pauseTrigger = undefined;
-      windowType = undefined;
-      resizer = undefined;
-      this.unregisterPlugin();
-      DebugTool.tearDown();
-      Chronicle.tearDown();
+      stateChangeCallbacks = []
+      timeUpdateCallbacks = []
+      subtitleCallbacks = []
+      endOfStream = undefined
+      mediaKind = undefined
+      pauseTrigger = undefined
+      windowType = undefined
+      resizer = undefined
+      this.unregisterPlugin()
+      DebugTool.tearDown()
+      Chronicle.tearDown()
     },
 
     registerForStateChanges: function (callback) {
-      stateChangeCallbacks.push(callback);
-      return callback;
+      stateChangeCallbacks.push(callback)
+      return callback
     },
     unregisterForStateChanges: function (callback) {
-      var indexOf = stateChangeCallbacks.indexOf(callback);
+      var indexOf = stateChangeCallbacks.indexOf(callback)
       if (indexOf !== -1) {
-        stateChangeCallbacks.splice(indexOf, 1);
+        stateChangeCallbacks.splice(indexOf, 1)
       }
     },
     registerForTimeUpdates: function (callback) {
-      timeUpdateCallbacks.push(callback);
-      return callback;
+      timeUpdateCallbacks.push(callback)
+      return callback
     },
     unregisterForTimeUpdates: function (callback) {
-      var indexOf = timeUpdateCallbacks.indexOf(callback);
+      var indexOf = timeUpdateCallbacks.indexOf(callback)
 
       if (indexOf !== -1) {
-        timeUpdateCallbacks.splice(indexOf, 1);
+        timeUpdateCallbacks.splice(indexOf, 1)
       }
     },
     registerForSubtitleChanges: function (callback) {
-      subtitleCallbacks.push(callback);
-      return callback;
+      subtitleCallbacks.push(callback)
+      return callback
     },
     unregisterForSubtitleChanges: function (callback) {
-      var indexOf = subtitleCallbacks.indexOf(callback);
+      var indexOf = subtitleCallbacks.indexOf(callback)
       if (indexOf !== -1) {
-        subtitleCallbacks.splice(indexOf, 1);
+        subtitleCallbacks.splice(indexOf, 1)
       }
     },
     setCurrentTime: function (time) {
-      DebugTool.apicall('setCurrentTime');
+      DebugTool.apicall('setCurrentTime')
       if (playerComponent) {
-        isSeeking = true; // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
-        playerComponent.setCurrentTime(time);
-        endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
+        isSeeking = true // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
+        playerComponent.setCurrentTime(time)
+        endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
       }
     },
     setPlaybackRate: function (rate) {
       if (playerComponent) {
-        playerComponent.setPlaybackRate(rate);
+        playerComponent.setPlaybackRate(rate)
       }
     },
     getPlaybackRate: function () {
-      return playerComponent && playerComponent.getPlaybackRate();
+      return playerComponent && playerComponent.getPlaybackRate()
     },
     getCurrentTime: function () {
-      return playerComponent && playerComponent.getCurrentTime() || 0;
+      return playerComponent && playerComponent.getCurrentTime() || 0
     },
     getMediaKind: function () {
-      return mediaKind;
+      return mediaKind
     },
     getWindowType: function () {
-      return windowType;
+      return windowType
     },
     getSeekableRange: function () {
-      return playerComponent ? playerComponent.getSeekableRange() : {};
+      return playerComponent ? playerComponent.getSeekableRange() : {}
     },
     isPlayingAtLiveEdge: function () {
-      return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE;
+      return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
     },
     getLiveWindowData: function () {
       if (windowType === WindowTypes.STATIC) {
-        return {};
+        return {}
       }
 
       return {
@@ -309,112 +309,112 @@ function BigscreenPlayer () {
         windowEndTime: getWindowEndTime(),
         initialPlaybackTime: initialPlaybackTimeEpoch,
         serverDate: serverDate
-      };
+      }
     },
     getDuration: function () {
-      return playerComponent && playerComponent.getDuration();
+      return playerComponent && playerComponent.getDuration()
     },
     isPaused: function () {
-      return playerComponent ? playerComponent.isPaused() : true;
+      return playerComponent ? playerComponent.isPaused() : true
     },
     isEnded: function () {
-      return playerComponent ? playerComponent.isEnded() : false;
+      return playerComponent ? playerComponent.isEnded() : false
     },
     play: function () {
-      DebugTool.apicall('play');
-      playerComponent.play();
+      DebugTool.apicall('play')
+      playerComponent.play()
     },
     pause: function (opts) {
-      DebugTool.apicall('pause');
-      pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
-      playerComponent.pause(opts);
+      DebugTool.apicall('pause')
+      pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
+      playerComponent.pause(opts)
     },
     resize: function (top, left, width, height, zIndex) {
-      subtitles.hide();
-      resizer.resize(playbackElement, top, left, width, height, zIndex);
+      subtitles.hide()
+      resizer.resize(playbackElement, top, left, width, height, zIndex)
     },
     clearResize: function () {
       if (subtitles.enabled()) {
-        subtitles.show();
+        subtitles.show()
       } else {
-        subtitles.hide();
+        subtitles.hide()
       }
-      resizer.clear(playbackElement);
+      resizer.clear(playbackElement)
     },
     setSubtitlesEnabled: setSubtitlesEnabled,
     isSubtitlesEnabled: isSubtitlesEnabled,
     isSubtitlesAvailable: isSubtitlesAvailable,
     areSubtitlesCustomisable: function () {
-      return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles);
+      return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)
     },
     customiseSubtitles: function (styleOpts) {
       if (subtitles) {
-        subtitles.customise(styleOpts);
+        subtitles.customise(styleOpts)
       }
     },
     renderSubtitleExample: function (xmlString, styleOpts, safePosition) {
       if (subtitles) {
-        subtitles.renderExample(xmlString, styleOpts, safePosition);
+        subtitles.renderExample(xmlString, styleOpts, safePosition)
       }
     },
     clearSubtitleExample: function () {
       if (subtitles) {
-        subtitles.clearExample();
+        subtitles.clearExample()
       }
     },
     setTransportControlsPosition: function (position) {
       if (subtitles) {
-        subtitles.setPosition(position);
+        subtitles.setPosition(position)
       }
     },
     canSeek: function () {
-      return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange());
+      return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
     },
     canPause: function () {
-      return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport());
+      return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport())
     },
     mock: function (opts) {
-      MockBigscreenPlayer.mock(this, opts);
+      MockBigscreenPlayer.mock(this, opts)
     },
     unmock: function () {
-      MockBigscreenPlayer.unmock(this);
+      MockBigscreenPlayer.unmock(this)
     },
     mockJasmine: function (opts) {
-      MockBigscreenPlayer.mockJasmine(this, opts);
+      MockBigscreenPlayer.mockJasmine(this, opts)
     },
     registerPlugin: function (plugin) {
-      Plugins.registerPlugin(plugin);
+      Plugins.registerPlugin(plugin)
     },
     unregisterPlugin: function (plugin) {
-      Plugins.unregisterPlugin(plugin);
+      Plugins.unregisterPlugin(plugin)
     },
     transitions: function () {
-      return playerComponent ? playerComponent.transitions() : {};
+      return playerComponent ? playerComponent.transitions() : {}
     },
     getPlayerElement: function () {
-      return playerComponent && playerComponent.getPlayerElement();
+      return playerComponent && playerComponent.getPlayerElement()
     },
     convertEpochMsToVideoTimeSeconds: function (epochTime) {
-      return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined;
+      return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined
     },
     getFrameworkVersion: function () {
-      return Version;
+      return Version
     },
     convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
     toggleDebug: toggleDebug,
     getLogLevels: function () {
-      return DebugTool.logLevels;
+      return DebugTool.logLevels
     },
     setLogLevel: DebugTool.setLogLevel
-  };
+  }
 }
 
 function getLiveSupport () {
-  return PlayerComponent.getLiveSupport();
+  return PlayerComponent.getLiveSupport()
 }
 
-BigscreenPlayer.getLiveSupport = getLiveSupport;
+BigscreenPlayer.getLiveSupport = getLiveSupport
 
-BigscreenPlayer.version = Version;
+BigscreenPlayer.version = Version
 
-export default BigscreenPlayer;
+export default BigscreenPlayer

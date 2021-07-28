@@ -1,91 +1,91 @@
-var eventCallback;
-var errorCallback;
-var timeUpdateCallback;
+var eventCallback
+var errorCallback
+var timeUpdateCallback
 
 var instance = {
   transitions: {
-    canBePaused: function () { return true; },
-    canBeginSeek: function () { return true; }
+    canBePaused: function () { return true },
+    canBeginSeek: function () { return true }
   },
   addEventCallback: function (thisArg, callback) {
     eventCallback = function (event) {
-      callback.call(thisArg, event);
-    };
+      callback.call(thisArg, event)
+    }
   },
   addErrorCallback: function (thisArg, callback) {
     errorCallback = function (event) {
-      callback.call(thisArg, event);
-    };
+      callback.call(thisArg, event)
+    }
   },
   addTimeUpdateCallback: function (thisArg, callback) {
     timeUpdateCallback = function () {
-      callback.call(thisArg);
-    };
+      callback.call(thisArg)
+    }
   },
   getSeekableRange: function () {
     return {
       start: 0,
       end: 0
-    };
+    }
   },
   getCurrentTime: function () {
-    return;
+    return
   },
   getDuration: function () {
-    return;
+    return
   },
   load: function () {
-    return;
+    return
   },
   play: function () {
-    return;
+    return
   },
   pause: function () {
-    return;
+    return
   },
   reset: function () {
-    return;
+    return
   },
   tearDown: function () {
-    return;
+    return
   },
   isEnded: function () {
-    return;
+    return
   },
   getPlayerElement: function () {
-    return;
+    return
   },
   setCurrentTime: function () {
-    return;
+    return
   },
   setPlaybackRate: function () {
-    return;
+    return
   },
   getPlaybackRate: function () {
-    return;
+    return
   },
   isPaused: function () {
-    return;
+    return
   },
   mockingHooks: {
     fireEvent: function (event) {
-      eventCallback(event);
+      eventCallback(event)
     },
     fireErrorEvent: function (event) {
-      errorCallback(event);
+      errorCallback(event)
     },
     fireTimeUpdate: function () {
-      timeUpdateCallback();
+      timeUpdateCallback()
     }
   }
-};
+}
 
 var MockStrategy = function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD) {
-  return instance;
-};
+  return instance
+}
 
 MockStrategy.getLiveSupport = function () {
-  return 'seekable';
-};
+  return 'seekable'
+}
 
-export default MockStrategy;
+export default MockStrategy

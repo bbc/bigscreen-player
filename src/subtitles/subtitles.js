@@ -3,32 +3,30 @@
 // import IMSCSubtitles from './imscsubtitles';
 
 export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources) {
-  var subtitlesEnabled = autoStart;
-  var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength();
-  var subtitlesContainer;
+  var subtitlesEnabled = autoStart
+  var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
+  var subtitlesContainer
   // TODO: dynamic import legacy/current subtitles
 
-  var useLegacySubs = window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles || false;
+  var useLegacySubs = window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles || false
 
-// Shall we invert this now?
+  // Shall we invert this now?
 
   if (useLegacySubs) {
     import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {
-      subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts);
-      subtitlesContainer.start();
-    });
+      subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+      subtitlesContainer.start()
+    })
   } else {
     import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
-      subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts);
-      subtitlesContainer.start();
-    });
+      subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+      subtitlesContainer.start()
+    })
   }
-
 
   // subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts);
 
   // subtitlesContainerLegacy.start();
-
 
   // import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
   //   imscSubs = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts);
@@ -36,55 +34,55 @@ export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOp
   // });
 
   function enable () {
-    subtitlesEnabled = true;
+    subtitlesEnabled = true
   }
 
   function disable () {
-    subtitlesEnabled = false;
+    subtitlesEnabled = false
   }
 
   function show () {
     if (available() && enabled()) {
-      subtitlesContainer.start();
+      subtitlesContainer.start()
     }
   }
 
   function hide () {
     if (available()) {
-      subtitlesContainer.stop();
+      subtitlesContainer.stop()
     }
   }
 
   function enabled () {
-    return subtitlesEnabled;
+    return subtitlesEnabled
   }
 
   function available () {
     if (liveSubtitles && (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)) {
-      return false;
+      return false
     } else {
-      return !!mediaSources.currentSubtitlesSource();
+      return !!mediaSources.currentSubtitlesSource()
     }
   }
 
   function setPosition (position) {
-    subtitlesContainer.updatePosition(position);
+    subtitlesContainer.updatePosition(position)
   }
 
   function customise (styleOpts) {
-    subtitlesContainer.customise(styleOpts, subtitlesEnabled);
+    subtitlesContainer.customise(styleOpts, subtitlesEnabled)
   }
 
   function renderExample (exampleXmlString, styleOpts, safePosition) {
-    subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition);
+    subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition)
   }
 
   function clearExample () {
-    subtitlesContainer.clearExample();
+    subtitlesContainer.clearExample()
   }
 
   function tearDown () {
-    subtitlesContainer.tearDown();
+    subtitlesContainer.tearDown()
   }
 
   return {
@@ -99,5 +97,5 @@ export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOp
     renderExample: renderExample,
     clearExample: clearExample,
     tearDown: tearDown
-  };
+  }
 }

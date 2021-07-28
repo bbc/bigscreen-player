@@ -3,6 +3,6 @@ var LiveSupport = {
   PLAYABLE: 'playable',
   RESTARTABLE: 'restartable',
   SEEKABLE: 'seekable'
-};
+}
 
-export default LiveSupport;
+export default LiveSupport

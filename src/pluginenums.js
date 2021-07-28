@@ -9,5 +9,5 @@ export default {
     BUFFERING: 'buffering',
     ERROR: 'error'
   }
-};
+}
 

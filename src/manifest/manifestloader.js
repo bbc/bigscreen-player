@@ -1,6 +1,6 @@
-import ManifestParser from './manifestparser';
-import TransferFormats from '../models/transferformats';
-import LoadUrl from '../utils/loadurl';
+import ManifestParser from './manifestparser'
+import TransferFormats from '../models/transferformats'
+import LoadUrl from '../utils/loadurl'
 
 function retrieveDashManifest (url, dateWithOffset, callbacks) {
   LoadUrl(
@@ -15,19 +15,19 @@ function retrieveDashManifest (url, dateWithOffset, callbacks) {
             callbacks.onSuccess({
               transferFormat: TransferFormats.DASH,
               time: ManifestParser.parse(responseXML, 'mpd', dateWithOffset)
-            });
+            })
           } else {
-            callbacks.onError('Unable to retrieve DASH XML response');
+            callbacks.onError('Unable to retrieve DASH XML response')
           }
         } catch (ex) {
-          callbacks.onError('Unable to retrieve DASH XML response');
+          callbacks.onError('Unable to retrieve DASH XML response')
         }
       },
       onError: function () {
-        callbacks.onError('Network error: Unable to retrieve DASH manifest');
+        callbacks.onError('Network error: Unable to retrieve DASH manifest')
       }
     }
-  );
+  )
 }
 
 function retrieveHLSManifest (url, dateWithOffset, callbacks) {
@@ -38,27 +38,27 @@ function retrieveHLSManifest (url, dateWithOffset, callbacks) {
       headers: {},
       timeout: 10000,
       onLoad: function (responseXML, responseText) {
-        var streamUrl;
+        var streamUrl
         if (responseText) {
-          streamUrl = getStreamUrl(responseText);
+          streamUrl = getStreamUrl(responseText)
         }
         if (streamUrl) {
           if (!/^http/.test(streamUrl)) {
-            var parts = url.split('/');
-            parts.pop();
-            parts.push(streamUrl);
-            streamUrl = parts.join('/');
+            var parts = url.split('/')
+            parts.pop()
+            parts.push(streamUrl)
+            streamUrl = parts.join('/')
           }
-          loadLivePlaylist(streamUrl, dateWithOffset, callbacks);
+          loadLivePlaylist(streamUrl, dateWithOffset, callbacks)
         } else {
-          callbacks.onError('Unable to retrieve HLS master playlist');
+          callbacks.onError('Unable to retrieve HLS master playlist')
         }
       },
       onError: function () {
-        callbacks.onError('Network error: Unable to retrieve HLS master playlist');
+        callbacks.onError('Network error: Unable to retrieve HLS master playlist')
       }
     }
-  );
+  )
 }
 
 function loadLivePlaylist (url, dateWithOffset, callbacks) {
@@ -73,33 +73,33 @@ function loadLivePlaylist (url, dateWithOffset, callbacks) {
           callbacks.onSuccess({
             transferFormat: TransferFormats.HLS,
             time: ManifestParser.parse(responseText, 'm3u8', dateWithOffset)
-          });
+          })
         } else {
-          callbacks.onError('Unable to retrieve HLS live playlist');
+          callbacks.onError('Unable to retrieve HLS live playlist')
         }
       },
       onError: function () {
-        callbacks.onError('Network error: Unable to retrieve HLS live playlist');
+        callbacks.onError('Network error: Unable to retrieve HLS live playlist')
       }
     }
-  );
+  )
 }
 
 function getStreamUrl (data) {
-  var match = /#EXT-X-STREAM-INF:.*[\n\r]+(.*)[\n\r]?/.exec(data);
+  var match = /#EXT-X-STREAM-INF:.*[\n\r]+(.*)[\n\r]?/.exec(data)
   if (match) {
-    return match[1];
+    return match[1]
   }
 }
 
 export default {
   load: function (mediaUrl, serverDate, callbacks) {
     if (/\.m3u8($|\?.*$)/.test(mediaUrl)) {
-      retrieveHLSManifest(mediaUrl, serverDate, callbacks);
+      retrieveHLSManifest(mediaUrl, serverDate, callbacks)
     } else if (/\.mpd($|\?.*$)/.test(mediaUrl)) {
-      retrieveDashManifest(mediaUrl, serverDate, callbacks);
+      retrieveDashManifest(mediaUrl, serverDate, callbacks)
     } else {
-      callbacks.onError('Invalid media url');
+      callbacks.onError('Invalid media url')
     }
   }
-};
+}

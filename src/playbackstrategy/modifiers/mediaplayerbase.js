@@ -6,7 +6,7 @@ var STATE = {
   PAUSED: 'PAUSED', // Media is paused
   COMPLETE: 'COMPLETE', // Media has reached its end point
   ERROR: 'ERROR' // An error occurred
-};
+}
 
 var EVENT = {
   STOPPED: 'stopped', // Event fired when playback is stopped
@@ -26,20 +26,20 @@ var EVENT = {
   SENTINEL_SEEK_FAILURE: 'sentinel-seek-failure', // Event fired when the seek sentinel has failed twice, so it is giving up
   SEEK_ATTEMPTED: 'seek-attempted', // Event fired when a device using a seekfinishedemitevent modifier sets the source
   SEEK_FINISHED: 'seek-finished' // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
-};
+}
 
 var TYPE = {
   VIDEO: 'video',
   AUDIO: 'audio',
   LIVE_VIDEO: 'live-video',
   LIVE_AUDIO: 'live-audio'
-};
+}
 
 function unpausedEventCheck (event) {
   if (event && event.state && event.type !== 'status') {
-    return event.state !== STATE.PAUSED;
+    return event.state !== STATE.PAUSED
   } else {
-    return undefined;
+    return undefined
   }
 }
 
@@ -48,4 +48,4 @@ export default {
   EVENT: EVENT,
   TYPE: TYPE,
   unpausedEventCheck: unpausedEventCheck
-};
+}
