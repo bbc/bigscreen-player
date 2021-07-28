@@ -14,7 +14,7 @@ _Note: CDN Failover is not attempted if the error occurs in last 60 secs of stat
 
 ## Standard Failover - On all devices/playback strategies 
 
-### Buffering timeout Errors (*BBC User Facing error codes: 02110 , 03110 , 04110*)
+### Buffering timeout Errors
 Some potential causes:
 - Loss of Network
 - Internal error not reported by device browser
@@ -32,7 +32,7 @@ Some potential causes:
 
 _**This can be replicated by network throttling. We usually use very low setting of 12 kb/s to trigger buffering.**_
 
-### FATAL Errors (*BBC User Facing error codes: 02100, 03100, 04100*)
+### FATAL Errors
 Some potential causes:
 - Loss of CDN, unavailable CDN
 - Corrupted stream
