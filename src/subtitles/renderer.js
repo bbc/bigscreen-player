@@ -1,6 +1,6 @@
-import DebugTool from './debugger/debugtool';
-import Transformer from './subtitles/transformer';
-import Plugins from './plugins';
+import DebugTool from '../debugger/debugtool';
+import Transformer from './transformer';
+import Plugins from '../plugins';
 
 var Renderer = function (id, captionsXML, mediaPlayer) {
   var transformedSubtitles;

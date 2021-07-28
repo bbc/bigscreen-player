@@ -1,7 +1,7 @@
-import TimedText from './subtitles/timedtext';
-import DOMHelpers from './domhelpers';
-import Plugins from './plugins';
-import DebugTool from './debugger/debugtool';
+import TimedText from './timedtext';
+import DOMHelpers from '../domhelpers';
+import Plugins from '../plugins';
+import DebugTool from '../debugger/debugtool';
 
 export default function () {
   var _styles = {};

@@ -1,9 +1,9 @@
-import Renderer from './subtitles/renderer';
-import TransportControlPosition from './models/transportcontrolposition';
-import DOMHelpers from './domhelpers';
-import LoadURL from './utils/loadurl';
-import DebugTool from './debugger/debugtool';
-import Plugins from './plugins';
+import Renderer from './renderer';
+import TransportControlPosition from '../models/transportcontrolposition';
+import DOMHelpers from '../domhelpers';
+import LoadURL from '../utils/loadurl';
+import DebugTool from '../debugger/debugtool';
+import Plugins from '../plugins';
 
 export default function (mediaPlayer, autoStart, parentElement, mediaSources) {
   var container = document.createElement('div');

@@ -7,8 +7,6 @@ import TransferFormats from './models/transferformats';
 import LiveSupport from './models/livesupport';
 import PlaybackStrategyModel from './models/playbackstrategy';
 
-import MSEStrategy from './playbackstrategy/msestrategy';
-
 var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) {
   var isInitialPlay = true;
   var errorTimeoutID = null;
@@ -21,24 +19,27 @@ var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSourc
   var transferFormat = bigscreenPlayerData.media.transferFormat;
 
   // TODO: stopgap - dynamic import for strategies
-  var PlaybackStrategy = MSEStrategy;
+  var playbackStrategy;
 
-  playbackStrategy = PlaybackStrategy(
-    mediaSources,
-    windowType,
-    mediaKind,
-    playbackElement,
-    bigscreenPlayerData.media.isUHD,
-    bigscreenPlayerData.media.playerSettings
-  );
+  import('./playbackstrategy/msestrategy').then(({default: MSEStrategy}) => {
+    playbackStrategy = MSEStrategy(
+      mediaSources,
+      windowType,
+      mediaKind,
+      playbackElement,
+      bigscreenPlayerData.media.isUHD,
+      bigscreenPlayerData.media.playerSettings
+    );
+  
+    playbackStrategy.addEventCallback(this, eventCallback);
+    playbackStrategy.addErrorCallback(this, onError);
+    playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate);
+  
+    bubbleErrorCleared();
+  
+    initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime);
+  });
 
-  playbackStrategy.addEventCallback(this, eventCallback);
-  playbackStrategy.addErrorCallback(this, onError);
-  playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate);
-
-  bubbleErrorCleared();
-
-  initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime);
 
   function play () {
     playbackStrategy.play();
@@ -349,8 +350,7 @@ var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSourc
 };
 
 function getLiveSupport () {
-  return window.bigscreenPlayer.LiveSupport || 'seekable';
-  // return PlaybackStrategy.getLiveSupport();
+  return window.bigscreenPlayer && window.bigscreenPlayer.liveSupport || 'seekable'
 }
 
 PlayerComponent.getLiveSupport = getLiveSupport;
