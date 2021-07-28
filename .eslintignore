@@ -1,5 +1,6 @@
 /spec/lib/
 /docs/
+/dist/
 /script/external/
 buildVersion.js
 buildExternal.js
