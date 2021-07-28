@@ -59,6 +59,12 @@ define('bigscreenplayer/playbackstrategy/mockstrategy',
       setCurrentTime: function () {
         return;
       },
+      setPlaybackRate: function () {
+        return;
+      },
+      getPlaybackRate: function () {
+        return;
+      },
       isPaused: function () {
         return;
       },
@@ -75,7 +81,7 @@ define('bigscreenplayer/playbackstrategy/mockstrategy',
       }
     };
 
-    var MockStrategy = function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD, device) {
+    var MockStrategy = function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD) {
       return instance;
     };
 

@@ -8,16 +8,21 @@ define(
       if (opts.timeout) {
         xhr.timeout = opts.timeout;
       }
+
+      if (opts.onTimeout) {
+        xhr.ontimeout = opts.onTimeout;
+      }
+
       xhr.onreadystatechange = function () {
         if (xhr.readyState === 4) {
           xhr.onreadystatechange = null;
           if (xhr.status >= 200 && xhr.status < 300) {
             if (opts.onLoad) {
-              opts.onLoad(xhr.responseText, xhr.status);
+              opts.onLoad(xhr.responseXML, xhr.responseText, xhr.status);
             }
           } else {
             if (opts.onError) {
-              opts.onError(xhr.responseText, xhr.status);
+              opts.onError(xhr.status);
             }
           }
         }
@@ -36,10 +41,9 @@ define(
         xhr.send(opts.data || null);
       } catch (ex) {
         if (opts.onError) {
-          opts.onError(ex);
+          opts.onError(xhr.status);
         }
       }
-      return xhr;
     };
   }
 );

@@ -4,12 +4,13 @@ define('bigscreenplayer/mockbigscreenplayer',
     'bigscreenplayer/models/pausetriggers',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/utils/playbackutils',
+    'bigscreenplayer/utils/callcallbacks',
     'bigscreenplayer/plugins',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/version'
   ],
-  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums, Version) {
+  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, callCallbacks, Plugins, PluginData, PluginEnums, Version) {
     var sourceList;
     var source;
     var cdn;
@@ -29,6 +30,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     var windowType;
     var subtitlesAvailable;
     var subtitlesEnabled;
+    var subtitlesHidden;
     var endOfStream;
     var canSeekState;
     var canPauseState;
@@ -48,6 +50,8 @@ define('bigscreenplayer/mockbigscreenplayer',
 
     var liveWindowData;
     var manifestError;
+
+    var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'clearSubtitleExample', 'areSubtitlesCustomisable', 'setPlaybackRate', 'getPlaybackRate'];
 
     function startProgress (progressCause) {
       setTimeout(function () {
@@ -78,14 +82,22 @@ define('bigscreenplayer/mockbigscreenplayer',
     function mock (BigscreenPlayer, opts) {
       autoProgress = opts && opts.autoProgress;
 
+      if (opts && opts.excludedFuncs) {
+        excludedFuncs = excludedFuncs.concat(opts.excludedFuncs);
+      }
+
       if (mockStatus.currentlyMocked) {
         throw new Error('mock() was called while BigscreenPlayer was already mocked');
       }
       shallowClone = PlaybackUtils.clone(BigscreenPlayer);
 
       // Divert existing functions
-      for (var mock in mockFunctions) {
-        BigscreenPlayer[mock] = mockFunctions[mock];
+      for (var func in BigscreenPlayer) {
+        if (BigscreenPlayer[func] && mockFunctions[func]) {
+          BigscreenPlayer[func] = mockFunctions[func];
+        } else if (!PlaybackUtils.contains(excludedFuncs, func)) {
+          throw new Error(func + ' was not mocked or included in the exclusion list');
+        }
       }
       // Add extra functions
       for (var hook in mockingHooks) {
@@ -97,13 +109,19 @@ define('bigscreenplayer/mockbigscreenplayer',
     function mockJasmine (BigscreenPlayer, opts) {
       autoProgress = opts && opts.autoProgress;
 
+      if (opts && opts.excludedFuncs) {
+        excludedFuncs = excludedFuncs.concat(opts.excludedFuncs);
+      }
+
       if (mockStatus.currentlyMocked) {
         throw new Error('mockJasmine() was called while BigscreenPlayer was already mocked');
       }
 
-      for (var mock in mockFunctions) {
-        if (BigscreenPlayer[mock]) {
-          spyOn(BigscreenPlayer, mock).and.callFake(mockFunctions[mock]);
+      for (var fn in BigscreenPlayer) {
+        if (BigscreenPlayer[fn] && mockFunctions[fn]) {
+          spyOn(BigscreenPlayer, fn).and.callFake(mockFunctions[fn]);
+        } else if (!PlaybackUtils.contains(excludedFuncs, fn)) {
+          throw new Error(fn + ' was not mocked or included in the exclusion list');
         }
       }
 
@@ -136,13 +154,11 @@ define('bigscreenplayer/mockbigscreenplayer',
     }
 
     function callSubtitlesCallbacks (enabled) {
-      subtitleCallbacks.forEach(function (callback) {
-        callback({ enabled: enabled });
-      });
+      callCallbacks(subtitleCallbacks, { enabled: enabled });
     }
 
     var mockFunctions = {
-      init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, device, callbacks) {
+      init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
         currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0;
         liveWindowStart = undefined;
         pausedState = true;
@@ -269,6 +285,8 @@ define('bigscreenplayer/mockbigscreenplayer',
       isSubtitlesAvailable: function () {
         return subtitlesAvailable;
       },
+      customiseSubtitles: function () {},
+      renderSubtitleExample: function () {},
       setTransportControlsPosition: function (position) {},
       canSeek: function () {
         return canSeekState;
@@ -284,6 +302,16 @@ define('bigscreenplayer/mockbigscreenplayer',
           canBePaused: function () { return true; },
           canBeginSeek: function () { return true; }
         };
+      },
+      isPlayingAtLiveEdge: function () {
+        return false;
+      },
+      resize: function () {
+        subtitlesHidden = this.isSubtitlesEnabled();
+        this.setSubtitlesEnabled(subtitlesHidden);
+      },
+      clearResize: function () {
+        this.setSubtitlesEnabled(subtitlesHidden);
       },
       getPlayerElement: function () {
         return;
@@ -364,9 +392,7 @@ define('bigscreenplayer/mockbigscreenplayer',
         }
         stateObject.endOfStream = endOfStream;
 
-        stateChangeCallbacks.forEach(function (callback) {
-          callback(stateObject);
-        });
+        callCallbacks(stateChangeCallbacks, stateObject);
 
         if (autoProgress) {
           if (state !== MediaState.PLAYING) {
@@ -378,11 +404,9 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       progressTime: function (time) {
         currentTime = time;
-        timeUpdateCallbacks.forEach(function (callback) {
-          callback({
-            currentTime: time,
-            endOfStream: endOfStream
-          });
+        callCallbacks(timeUpdateCallbacks, {
+          currentTime: time,
+          endOfStream: endOfStream
         });
       },
       setEndOfStream: function (isEndOfStream) {

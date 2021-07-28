@@ -40,15 +40,6 @@ require(
 
       var cdnArray = [];
 
-      var device = {
-        getConfig: function () {
-          return {
-            brand: 'default',
-            model: 'webkit'
-          };
-        }
-      };
-
       var injector = new Squire();
 
       var mockGlitchCurtainConstructorInstance = function () {
@@ -60,7 +51,7 @@ require(
         mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['addEventCallback', 'initialiseMedia', 'beginPlayback',
           'getState', 'resume', 'getPlayerElement', 'getSeekableRange',
           'reset', 'stop', 'removeAllEventCallbacks', 'getSource',
-          'getMimeType', 'beginPlaybackFrom', 'playFrom', 'pause']);
+          'getMimeType', 'beginPlaybackFrom', 'playFrom', 'pause', 'setPlaybackRate', 'getPlaybackRate']);
 
         injector.mock({
           'bigscreenplayer/playbackstrategy/liveglitchcurtain': mockGlitchCurtainConstructorInstance
@@ -72,6 +63,7 @@ require(
       });
 
       afterEach(function () {
+        delete window.bigscreenPlayer.overrides;
         mockGlitchCurtainInstance.showCurtain.calls.reset();
         mockGlitchCurtainInstance.hideCurtain.calls.reset();
         mockGlitchCurtainInstance.tearDown.calls.reset();
@@ -93,8 +85,6 @@ require(
 
         cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'});
 
-        var config = options.config || device.getConfig();
-
         var windowType = options.windowType || WindowTypes.STATIC;
 
         mediaPlayer.addEventCallback.and.callFake(function (component, callback) {
@@ -106,7 +96,7 @@ require(
         videoContainer = document.createElement('div');
         videoContainer.id = 'app';
         document.body.appendChild(videoContainer);
-        legacyAdaptor = squiredLegacyAdaptor(mockMediaSources, windowType, videoContainer, options.isUHD, config, mediaPlayer);
+        legacyAdaptor = squiredLegacyAdaptor(mockMediaSources, windowType, videoContainer, options.isUHD, mediaPlayer);
       }
       describe('transitions', function () {
         it('should pass back possible transitions', function () {
@@ -164,15 +154,11 @@ require(
         });
 
         it('should disable sentinels if we are watching UHD and configured to do so', function () {
-          var configReplacement = {
-            brand: 'default',
-            model: 'webkit',
-            streaming: {
-              liveUhdDisableSentinels: true
-            }
+          window.bigscreenPlayer.overrides = {
+            liveUhdDisableSentinels: true
           };
 
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement, isUHD: true});
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, isUHD: true});
 
           legacyAdaptor.load('video/mp4', undefined);
 
@@ -182,7 +168,9 @@ require(
         });
 
         it('should disable seek sentinels if we are configured to do so', function () {
-          window.bigscreenPlayer.disableSeekSentinel = true;
+          window.bigscreenPlayer.overrides = {
+            disableSeekSentinel: true
+          };
 
           setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
@@ -520,6 +508,33 @@ require(
         });
       });
 
+      describe('Playback Rate', function () {
+        it('calls through to the mediaPlayers setPlaybackRate function', function () {
+          setUpLegacyAdaptor();
+
+          legacyAdaptor.setPlaybackRate(2);
+
+          expect(mediaPlayer.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+
+        it('calls through to the mediaPlayers getPlaybackRate function and returns correct value', function () {
+          setUpLegacyAdaptor();
+          mediaPlayer.getPlaybackRate.and.returnValue(1.5);
+
+          var rate = legacyAdaptor.getPlaybackRate();
+
+          expect(mediaPlayer.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
+        });
+
+        it('getPlaybackRate returns 1.0 if mediaPlayer does not have getPlaybackRate function', function () {
+          mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['addEventCallback']);
+          setUpLegacyAdaptor();
+
+          expect(legacyAdaptor.getPlaybackRate()).toEqual(1.0);
+        });
+      });
+
       describe('reset', function () {
         it('should reset the player', function () {
           setUpLegacyAdaptor();
@@ -570,11 +585,9 @@ require(
 
       describe('live glitch curtain', function () {
         beforeEach(function () {
-          window.bigscreenPlayer.showLiveCurtain = true;
-        });
-
-        afterEach(function () {
-          delete window.bigscreenPlayer.showLiveCurtain;
+          window.bigscreenPlayer.overrides = {
+            showLiveCurtain: true
+          };
         });
 
         it('should show curtain for a live restart and we get a seek-attempted event', function () {
@@ -608,17 +621,9 @@ require(
         });
 
         it('should show curtain when the forceBeginPlaybackToEndOfWindow config is set and the playback type is live', function () {
-          var configReplacement = {
-            brand: 'default',
-            model: 'webkit',
-            streaming: {
-              overrides: {
-                forceBeginPlaybackToEndOfWindow: true
-              }
-            }
-          };
+          window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow = true;
 
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, config: configReplacement});
+          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
 
           eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED});
 
@@ -730,13 +735,11 @@ require(
         });
 
         it('should pause the player if we were in a paused state for devices with known issues', function () {
-          var configReplacement = {
-            brand: 'default',
-            model: 'webkit',
-            capabilities: ['playFailsAfterPauseOnExitSeek']
+          window.bigscreenPlayer.overrides = {
+            pauseOnExitSeek: true
           };
 
-          setUpLegacyAdaptor({config: configReplacement});
+          setUpLegacyAdaptor();
 
           legacyAdaptor.load('video/mp4', undefined);
 

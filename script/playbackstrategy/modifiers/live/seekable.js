@@ -7,7 +7,7 @@ define(
   ],
   function (MediaPlayerBase, DynamicWindowUtils, WindowTypes) {
     'use strict';
-    function SeekableLivePlayer (mediaPlayer, deviceConfig, windowType) {
+    function SeekableLivePlayer (mediaPlayer, windowType) {
       var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8;
 
       function addEventCallback (thisArg, callback) {
@@ -38,8 +38,7 @@ define(
         },
 
         beginPlayback: function beginPlayback () {
-          var config = deviceConfig;
-          if (config && config.streaming && config.streaming.overrides && config.streaming.overrides.forceBeginPlaybackToEndOfWindow) {
+          if (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow) {
             mediaPlayer.beginPlaybackFrom(Infinity);
           } else {
             mediaPlayer.beginPlayback();

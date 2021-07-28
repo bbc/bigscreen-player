@@ -13,37 +13,42 @@ define('bigscreenplayer/bigscreenplayer',
     'bigscreenplayer/debugger/chronicle',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/utils/timeutils',
+    'bigscreenplayer/utils/callcallbacks',
     'bigscreenplayer/mediasources',
-    'bigscreenplayer/version'
+    'bigscreenplayer/version',
+    'bigscreenplayer/resizer',
+    'bigscreenplayer/readyhelper',
+    'bigscreenplayer/subtitles/subtitles'
   ],
-  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, MediaSources, Version) {
+  function (MediaState, PlayerComponent, PauseTriggers, DynamicWindowUtils, WindowTypes, MockBigscreenPlayer, Plugins, Chronicle, DebugTool, SlidingWindowUtils, callCallbacks, MediaSources, Version, Resizer, ReadyHelper, Subtitles) {
     'use strict';
     function BigscreenPlayer () {
       var stateChangeCallbacks = [];
       var timeUpdateCallbacks = [];
       var subtitleCallbacks = [];
-
+      var playerReadyCallback;
       var mediaKind;
       var initialPlaybackTimeEpoch;
       var serverDate;
       var playerComponent;
+      var resizer;
       var pauseTrigger;
       var isSeeking = false;
       var endOfStream;
       var windowType;
-      var device;
       var mediaSources;
+      var playbackElement;
+      var readyHelper;
+      var subtitles;
 
       var END_OF_STREAM_TOLERANCE = 10;
 
       function mediaStateUpdateCallback (evt) {
         if (evt.timeUpdate) {
           DebugTool.time(evt.data.currentTime);
-          timeUpdateCallbacks.forEach(function (callback) {
-            callback({
-              currentTime: evt.data.currentTime,
-              endOfStream: endOfStream
-            });
+          callCallbacks(timeUpdateCallbacks, {
+            currentTime: evt.data.currentTime,
+            endOfStream: endOfStream
           });
         } else {
           var stateObject = {state: evt.data.state};
@@ -68,9 +73,7 @@ define('bigscreenplayer/bigscreenplayer',
           stateObject.endOfStream = endOfStream;
           DebugTool.event(stateObject);
 
-          stateChangeCallbacks.forEach(function (callback) {
-            callback(stateObject);
-          });
+          callCallbacks(stateChangeCallbacks, stateObject);
         }
 
         if (evt.data.seekableRange) {
@@ -80,6 +83,10 @@ define('bigscreenplayer/bigscreenplayer',
 
         if (evt.data.duration) {
           DebugTool.keyValue({key: 'duration', value: evt.data.duration});
+        }
+
+        if (playerComponent && readyHelper) {
+          readyHelper.callbackWhenReady(evt);
         }
       }
 
@@ -95,7 +102,7 @@ define('bigscreenplayer/bigscreenplayer',
         return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : undefined;
       }
 
-      function bigscreenPlayerDataLoaded (playbackElement, bigscreenPlayerData, enableSubtitles, device, successCallback) {
+      function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
         if (windowType !== WindowTypes.STATIC) {
           bigscreenPlayerData.time = mediaSources.time();
           serverDate = bigscreenPlayerData.serverDate;
@@ -108,22 +115,31 @@ define('bigscreenplayer/bigscreenplayer',
         mediaKind = bigscreenPlayerData.media.kind;
         endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0);
 
+        readyHelper = new ReadyHelper(
+          bigscreenPlayerData.initialPlaybackTime,
+          windowType,
+          PlayerComponent.getLiveSupport(),
+          playerReadyCallback
+        );
+
         playerComponent = new PlayerComponent(
           playbackElement,
           bigscreenPlayerData,
           mediaSources,
           windowType,
+          mediaStateUpdateCallback
+        );
+
+        subtitles = Subtitles(
+          playerComponent,
           enableSubtitles,
-          mediaStateUpdateCallback,
-          device
+          playbackElement,
+          bigscreenPlayerData.media.subtitleCustomisation,
+          mediaSources
         );
 
         if (enableSubtitles) {
           callSubtitlesCallbacks(true);
-        }
-
-        if (successCallback) {
-          successCallback();
         }
       }
 
@@ -142,9 +158,24 @@ define('bigscreenplayer/bigscreenplayer',
       }
 
       function callSubtitlesCallbacks (enabled) {
-        subtitleCallbacks.forEach(function (callback) {
-          callback({ enabled: enabled });
-        });
+        callCallbacks(subtitleCallbacks, { enabled: enabled });
+      }
+
+      function setSubtitlesEnabled (enabled) {
+        enabled ? subtitles.enable() : subtitles.disable();
+        callSubtitlesCallbacks(enabled);
+
+        if (!resizer.isResized()) {
+          enabled ? subtitles.show() : subtitles.hide();
+        }
+      }
+
+      function isSubtitlesEnabled () {
+        return subtitles ? subtitles.enabled() : false;
+      }
+
+      function isSubtitlesAvailable () {
+        return subtitles ? subtitles.available() : false;
       }
 
       return /** @alias module:bigscreenplayer/bigscreenplayer */{
@@ -184,20 +215,22 @@ define('bigscreenplayer/bigscreenplayer',
          * @param {TALDevice} newDevice - An optional TAL device object
          * @param {InitCallbacks} callbacks
          */
-        init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, newDevice, callbacks) {
+        init: function (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
+          playbackElement = newPlaybackElement;
           Chronicle.init();
+          resizer = Resizer();
           DebugTool.setRootElement(playbackElement);
           DebugTool.keyValue({key: 'framework-version', value: Version});
-          device = newDevice;
           windowType = newWindowType;
           serverDate = bigscreenPlayerData.serverDate;
           if (!callbacks) {
             callbacks = {};
           }
+          playerReadyCallback = callbacks.onSuccess;
 
           var mediaSourceCallbacks = {
             onSuccess: function () {
-              bigscreenPlayerDataLoaded(playbackElement, bigscreenPlayerData, enableSubtitles, device, callbacks.onSuccess);
+              bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles);
             },
             onError: function (error) {
               if (callbacks.onError) {
@@ -206,8 +239,16 @@ define('bigscreenplayer/bigscreenplayer',
             }
           };
 
-          mediaSources = new MediaSources();
-          mediaSources.init(bigscreenPlayerData.media.urls, serverDate, windowType, getLiveSupport(device), mediaSourceCallbacks);
+          mediaSources = MediaSources();
+
+          // Backwards compatibility with Old API; to be removed on Major Version Update
+          if (bigscreenPlayerData.media && !bigscreenPlayerData.media.captions && bigscreenPlayerData.media.captionsUrl) {
+            bigscreenPlayerData.media.captions = [{
+              url: bigscreenPlayerData.media.captionsUrl
+            }];
+          }
+
+          mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks);
         },
 
         /**
@@ -216,10 +257,21 @@ define('bigscreenplayer/bigscreenplayer',
          * @name tearDown
          */
         tearDown: function () {
+          if (subtitles) {
+            subtitles.tearDown();
+            subtitles = undefined;
+          }
+
           if (playerComponent) {
             playerComponent.tearDown();
             playerComponent = undefined;
           }
+
+          if (mediaSources) {
+            mediaSources.tearDown();
+            mediaSources = undefined;
+          }
+
           stateChangeCallbacks = [];
           timeUpdateCallbacks = [];
           subtitleCallbacks = [];
@@ -227,7 +279,7 @@ define('bigscreenplayer/bigscreenplayer',
           mediaKind = undefined;
           pauseTrigger = undefined;
           windowType = undefined;
-          mediaSources = undefined;
+          resizer = undefined;
           this.unregisterPlugin();
           DebugTool.tearDown();
           Chronicle.tearDown();
@@ -313,6 +365,16 @@ define('bigscreenplayer/bigscreenplayer',
             playerComponent.setCurrentTime(time);
             endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE;
           }
+        },
+
+        setPlaybackRate: function (rate) {
+          if (playerComponent) {
+            playerComponent.setPlaybackRate(rate);
+          }
+        },
+
+        getPlaybackRate: function () {
+          return playerComponent && playerComponent.getPlaybackRate();
         },
 
         /**
@@ -420,31 +482,51 @@ define('bigscreenplayer/bigscreenplayer',
           pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER;
           playerComponent.pause(opts);
         },
-
+        resize: function (top, left, width, height, zIndex) {
+          subtitles.hide();
+          resizer.resize(playbackElement, top, left, width, height, zIndex);
+        },
+        clearResize: function () {
+          if (subtitles.enabled()) {
+            subtitles.show();
+          } else {
+            subtitles.hide();
+          }
+          resizer.clear(playbackElement);
+        },
         /**
          * Set whether or not subtitles should be enabled.
          * @function
          * @param {boolean} value
          */
-        setSubtitlesEnabled: function (value) {
-          playerComponent.setSubtitlesEnabled(value);
-          callSubtitlesCallbacks(value);
-        },
-
+        setSubtitlesEnabled: setSubtitlesEnabled,
         /**
          * @function
          * @return if subtitles are currently enabled.
          */
-        isSubtitlesEnabled: function () {
-          return playerComponent ? playerComponent.isSubtitlesEnabled() : false;
-        },
-
+        isSubtitlesEnabled: isSubtitlesEnabled,
         /**
          * @function
          * @return Returns whether or not subtitles are currently enabled.
          */
-        isSubtitlesAvailable: function () {
-          return playerComponent ? playerComponent.isSubtitlesAvailable() : false;
+        isSubtitlesAvailable: isSubtitlesAvailable,
+        areSubtitlesCustomisable: function () {
+          return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles);
+        },
+        customiseSubtitles: function (styleOpts) {
+          if (subtitles) {
+            subtitles.customise(styleOpts);
+          }
+        },
+        renderSubtitleExample: function (xmlString, styleOpts, safePosition) {
+          if (subtitles) {
+            subtitles.renderExample(xmlString, styleOpts, safePosition);
+          }
+        },
+        clearSubtitleExample: function () {
+          if (subtitles) {
+            subtitles.clearExample();
+          }
         },
 
         /**
@@ -455,7 +537,9 @@ define('bigscreenplayer/bigscreenplayer',
          * @param {*} position
          */
         setTransportControlsPosition: function (position) {
-          playerComponent.setTransportControlPosition(position);
+          if (subtitles) {
+            subtitles.setPosition(position);
+          }
         },
 
         /**
@@ -463,7 +547,7 @@ define('bigscreenplayer/bigscreenplayer',
          * @return Returns whether the current media asset is seekable.
          */
         canSeek: function () {
-          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(device), this.getSeekableRange());
+          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange());
         },
 
         /**
@@ -471,7 +555,7 @@ define('bigscreenplayer/bigscreenplayer',
          * @return Returns whether the current media asset is pausable.
          */
         canPause: function () {
-          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport(device));
+          return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport());
         },
 
         /**
@@ -586,8 +670,8 @@ define('bigscreenplayer/bigscreenplayer',
      * @param {TALDevice} device
      * @return the live support of the device.
      */
-    function getLiveSupport (device) {
-      return PlayerComponent.getLiveSupport(device);
+    function getLiveSupport () {
+      return PlayerComponent.getLiveSupport();
     }
 
     BigscreenPlayer.getLiveSupport = getLiveSupport;

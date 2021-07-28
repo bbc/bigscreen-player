@@ -4,13 +4,12 @@ require(
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/models/mediakinds',
     'bigscreenplayer/playbackstrategy/mockstrategy',
-    'bigscreenplayer/models/transportcontrolposition',
     'bigscreenplayer/models/livesupport',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/models/transferformats',
     'squire'
   ],
-  function (MediaState, WindowTypes, MediaKinds, MockStrategy, TransportControlPosition, LiveSupport, PluginEnums, TransferFormats, Squire) {
+  function (MediaState, WindowTypes, MediaKinds, MockStrategy, LiveSupport, PluginEnums, TransferFormats, Squire) {
     'use strict';
 
     describe('Player Component', function () {
@@ -18,7 +17,6 @@ require(
       var playerComponent;
       var playbackElement;
       var mockStrategy;
-      var mockCaptionsContainer;
       var mockPlugins;
       var mockPluginsInterface;
       var PlayerComponentWithMocks;
@@ -30,7 +28,11 @@ require(
       var testTime;
       var updateTestTime = false;
 
-      // opts = streamType, playbackType, mediaType, subtitlesAvailable, subtitlesEnabled noStatsReporter, disableUi
+      beforeAll(function () {
+        mockStateUpdateCallback = jasmine.createSpy('mockStateUpdateCallback');
+      });
+
+      // opts = streamType, playbackType, mediaType, disableUi
       function setUpPlayerComponent (opts) {
         opts = opts || {};
 
@@ -44,8 +46,7 @@ require(
             urls: [{url: 'a.mpd', cdn: 'cdn-a'}, {url: 'b.mpd', cdn: 'cdn-b'}, {url: 'c.mpd', cdn: 'cdn-c'}],
             type: opts.type || 'application/dash+xml',
             transferFormat: opts.transferFormat || TransferFormats.DASH,
-            bitrate: undefined,
-            captionsUrl: opts.subtitlesAvailable ? 'captionsUrl' : undefined
+            bitrate: undefined
           },
           time: testTime
         };
@@ -82,14 +83,11 @@ require(
 
         var windowType = opts.windowType || WindowTypes.STATIC;
 
-        mockStateUpdateCallback = jasmine.createSpy('mockStateUpdateCallback');
-
         playerComponent = new PlayerComponentWithMocks(
           playbackElement,
           corePlaybackData,
           mockMediaSources,
           windowType,
-          opts.subtitlesEnabled || false,
           mockStateUpdateCallback,
           null
         );
@@ -97,7 +95,6 @@ require(
 
       beforeEach(function (done) {
         injector = new Squire();
-        mockCaptionsContainer = jasmine.createSpyObj('CaptionsContainer', ['start', 'stop', 'updatePosition', 'tearDown']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled']);
 
         mockPlugins = {
@@ -105,10 +102,6 @@ require(
         };
 
         mockStrategy = MockStrategy();
-
-        function mockCaptionsContainerConstructor () {
-          return mockCaptionsContainer;
-        }
 
         function mockStrategyConstructor () {
           return mockStrategy;
@@ -120,7 +113,6 @@ require(
         };
 
         injector.mock({
-          'bigscreenplayer/captionscontainer': mockCaptionsContainerConstructor,
           'bigscreenplayer/playbackstrategy/mockstrategy': mockStrategyConstructor,
           'bigscreenplayer/plugins': mockPlugins
         });
@@ -138,7 +130,7 @@ require(
         updateTestTime = false;
       });
 
-      describe('init', function () {
+      describe('Construction', function () {
         it('should fire error cleared on the plugins', function () {
           var pluginData = {
             status: PluginEnums.STATUS.DISMISSED,
@@ -228,68 +220,6 @@ require(
         });
       });
 
-      describe('setSubtitlesEnabled', function () {
-        describe('when available', function () {
-          it('should start subtitles', function () {
-            setUpPlayerComponent({subtitlesAvailable: true});
-
-            playerComponent.setSubtitlesEnabled(true);
-
-            expect(mockCaptionsContainer.start).toHaveBeenCalledWith();
-          });
-
-          it('should stop subtitles', function () {
-            setUpPlayerComponent({subtitlesAvailable: true});
-
-            playerComponent.setSubtitlesEnabled(false);
-
-            expect(mockCaptionsContainer.stop).toHaveBeenCalledWith();
-          });
-        });
-
-        describe('when unavailable', function () {
-          it('should not start subtitles', function () {
-            setUpPlayerComponent({subtitlesAvailable: false});
-
-            playerComponent.setSubtitlesEnabled(true);
-
-            expect(mockCaptionsContainer.start).not.toHaveBeenCalled();
-          });
-
-          it('should not stop subtitles', function () {
-            setUpPlayerComponent({subtitlesAvailable: false});
-
-            playerComponent.setSubtitlesEnabled(false);
-
-            expect(mockCaptionsContainer.stop).not.toHaveBeenCalled();
-          });
-        });
-      });
-
-      describe('isSubtitlesEnabled', function () {
-        it('should return true if subtitles are enabled', function () {
-          setUpPlayerComponent({subtitlesEnabled: true});
-
-          expect(playerComponent.isSubtitlesEnabled()).toEqual(true);
-        });
-
-        it('should return false if subtitles are disabled', function () {
-          setUpPlayerComponent({subtitlesEnabled: false});
-
-          expect(playerComponent.isSubtitlesEnabled()).toEqual(false);
-        });
-      });
-
-      describe('setTransportControlPosition', function () {
-        it('should update the postion of subtitles', function () {
-          setUpPlayerComponent();
-
-          playerComponent.setTransportControlPosition(TransportControlPosition.CONTROLS_ONLY);
-
-          expect(mockCaptionsContainer.updatePosition).toHaveBeenCalledWith(TransportControlPosition.CONTROLS_ONLY);
-        });
-      });
-
       describe('setCurrentTime', function () {
         var currentStrategy;
         beforeEach(function () {
@@ -348,6 +278,28 @@ require(
 
           expect(mockStrategy.load).toHaveBeenCalledTimes(2);
           expect(mockStrategy.load).toHaveBeenCalledWith('applesomething', undefined);
+        });
+      });
+
+      describe('Playback Rate', function () {
+        it('calls into the strategy to set the playback rate', function () {
+          spyOn(mockStrategy, 'setPlaybackRate');
+          setUpPlayerComponent();
+
+          playerComponent.setPlaybackRate(2);
+
+          expect(mockStrategy.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+
+        it('calls into the strategy to get the playback rate', function () {
+          spyOn(mockStrategy, 'getPlaybackRate');
+          setUpPlayerComponent();
+          mockStrategy.getPlaybackRate.and.returnValue(1.5);
+
+          var rate = playerComponent.getPlaybackRate();
+
+          expect(mockStrategy.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
         });
       });
 
@@ -1027,14 +979,6 @@ require(
           playerComponent.tearDown();
 
           expect(mockStrategy.tearDown).toHaveBeenCalledWith();
-        });
-
-        it('should stop the captions container', function () {
-          setUpPlayerComponent();
-
-          playerComponent.tearDown();
-
-          expect(mockCaptionsContainer.stop).toHaveBeenCalledWith();
         });
       });
     });

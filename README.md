@@ -1,6 +1,6 @@
-# Bigscreen Player
+<img src="https://user-images.githubusercontent.com/6772464/124460623-7f3d9d80-dd87-11eb-9833-456c9f20bab7.png" width="300" alt="Bigscreen Player logo"/>   
 
-[![Build Status](https://travis-ci.com/bbc/bigscreen-player.svg?branch=master)](https://travis-ci.com/bbc/bigscreen-player/branches)
+[![Build Status](https://travis-ci.com/bbc/bigscreen-player.svg?branch=master)](https://travis-ci.com/bbc/bigscreen-player/branches) [![npm](https://img.shields.io/npm/v/bigscreen-player)](https://www.npmjs.com/package/bigscreen-player) [![GitHub](https://img.shields.io/github/license/bbc/bigscreen-player)](https://github.com/bbc/bigscreen-player/blob/master/LICENSE)
 
 > Simplified media playback for bigscreen devices.
 
@@ -65,4 +65,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-The Bigscreen Player is available to everyone under the terms of the Apache 2.0 open source licence. Take a look at the LICENSE file in the code for more information.
+The Bigscreen Player is available to everyone under the terms of the Apache 2.0 open source license. Take a look at the LICENSE file in the code for more information.

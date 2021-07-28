@@ -28,8 +28,8 @@ define('bigscreenplayer/debugger/debugview',
 
       staticBox.id = 'staticBox';
       staticBox.style.position = 'absolute';
-      staticBox.style.width = '26%';
-      staticBox.style.right = '5%';
+      staticBox.style.width = '30%';
+      staticBox.style.right = '1%';
       staticBox.style.top = '15%';
       staticBox.style.bottom = '25%';
       staticBox.style.backgroundColor = '#1D1D1D';
@@ -68,24 +68,39 @@ define('bigscreenplayer/debugger/debugview',
       var dynamicLogs = logData.dynamic;
       var LINES_TO_DISPLAY = 29;
       if (dynamicLogs.length === 0) {
-        logContainer.innerHTML = '';
+        logContainer.textContent = '';
       }
 
       dynamicLogs = dynamicLogs.slice(-LINES_TO_DISPLAY);
-      logContainer.innerHTML = dynamicLogs.join('\n');
+      logContainer.textContent = dynamicLogs.join('\n');
 
-      var staticLogString = '';
-      logData.static.forEach(function (log) {
-        staticLogString = staticLogString + log.key + ': ' + log.value + '\n\n';
-      });
+      logData.static.forEach(updateStaticElements);
+    }
 
-      staticContainer.innerHTML = staticLogString;
+    function updateStaticElements (log) {
+      var existingElement = document.getElementById(log.key);
+      var text = log.key + ': ' + log.value;
+      if (existingElement) {
+        if (text !== existingElement.textContent) {
+          existingElement.textContent = text;
+        }
+      } else {
+        createNewStaticElement(log.key, log.value);
+      }
+    }
+
+    function createNewStaticElement (key, value) {
+      var staticLog = document.createElement('div');
+
+      staticLog.id = key;
+      staticLog.style.paddingBottom = '1%';
+      staticLog.style.borderBottom = '1px solid white';
+      staticLog.textContent = key + ': ' + value;
+
+      staticContainer.appendChild(staticLog);
     }
 
     function tearDown () {
-      var logBox = document.getElementById('logBox');
-      var staticBox = document.getElementById('staticBox');
-
       DOMHelpers.safeRemoveElement(logBox);
       DOMHelpers.safeRemoveElement(staticBox);
 

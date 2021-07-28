@@ -8,18 +8,18 @@ define(
     'use strict';
 
     function retrieveDashManifest (url, dateWithOffset, callbacks) {
-      var xhr = LoadUrl(
+      LoadUrl(
         url,
         {
           method: 'GET',
           headers: {},
           timeout: 10000,
-          onLoad: function () {
+          onLoad: function (responseXML, responseText, status) {
             try {
-              if (xhr.responseXML) {
+              if (responseXML) {
                 callbacks.onSuccess({
                   transferFormat: TransferFormats.DASH,
-                  time: ManifestParser.parse(xhr.responseXML, 'mpd', dateWithOffset)
+                  time: ManifestParser.parse(responseXML, 'mpd', dateWithOffset)
                 });
               } else {
                 callbacks.onError('Unable to retrieve DASH XML response');
@@ -42,7 +42,7 @@ define(
           method: 'GET',
           headers: {},
           timeout: 10000,
-          onLoad: function (responseText) {
+          onLoad: function (responseXML, responseText) {
             var streamUrl;
             if (responseText) {
               streamUrl = getStreamUrl(responseText);
@@ -73,7 +73,7 @@ define(
           method: 'GET',
           headers: {},
           timeout: 10000,
-          onLoad: function (responseText) {
+          onLoad: function (responseXML, responseText) {
             if (responseText) {
               callbacks.onSuccess({
                 transferFormat: TransferFormats.HLS,

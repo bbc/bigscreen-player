@@ -36,11 +36,16 @@ define(
       return dashRelativeTime - ((Date.now() - slidingWindowPausedTime) / 1000);
     }
 
+    function calculateSegmentNumber (epochTimeInSeconds, segmentLength) {
+      return Math.floor(epochTimeInSeconds / segmentLength);
+    }
+
     return {
       durationToSeconds: durationToSeconds,
       convertToSeekableVideoTime: convertToSeekableVideoTime,
       convertToVideoTime: convertToVideoTime,
-      calculateSlidingWindowSeekOffset: calculateSlidingWindowSeekOffset
+      calculateSlidingWindowSeekOffset: calculateSlidingWindowSeekOffset,
+      calculateSegmentNumber: calculateSegmentNumber
     };
   }
 );
