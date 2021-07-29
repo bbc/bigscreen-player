@@ -1,4 +1,3 @@
-/* eslint-disable es5/no-template-literals */
 require(
   [
     'bigscreenplayer/subtitles/transformer',
