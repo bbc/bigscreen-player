@@ -1,8 +1,8 @@
-import AllowedMediaTransitions from './allowedmediatransitions'
-import MediaState from './models/mediastate'
-import WindowTypes from './models/windowtypes'
-import DebugTool from './debugger/debugtool'
-import LiveGlitchCurtain from './playbackstrategy/liveglitchcurtain'
+import AllowedMediaTransitions from '../allowedmediatransitions'
+import MediaState from '../models/mediastate'
+import WindowTypes from '../models/windowtypes'
+import DebugTool from '../debugger/debugtool'
+import LiveGlitchCurtain from './liveglitchcurtain'
 
 export default function (mediaSources, windowType, playbackElement, isUHD, player) {
   var EVENT_HISTORY_LENGTH = 2
