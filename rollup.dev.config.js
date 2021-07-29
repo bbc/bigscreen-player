@@ -2,15 +2,15 @@ import resolve from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
 import nodePolyfills from 'rollup-plugin-polyfill-node'
 import babel from '@rollup/plugin-babel'
+import serve from 'rollup-plugin-serve'
+import liveReload from 'rollup-plugin-livereload'
 import pkg from './package.json'
-import { terser } from 'rollup-plugin-terser'
-import { visualizer } from 'rollup-plugin-visualizer'
 
-export default [{
+export default {
   input: 'src/main.js',
   output: {
-    inlineDynamicImports: true,
     name: 'bsp',
+    inlineDynamicImports: true,
     file: pkg.browser,
     sourcemap: true,
     format: 'umd'
@@ -19,15 +19,10 @@ export default [{
     resolve({ browser: true, preferBuiltins: false }),
     commonjs(),
     nodePolyfills(),
-    visualizer(),
     babel({ babelHelpers: 'bundled', presets: ['@babel/preset-env'] }),
-    terser({format: {comments: 'all'}})
+    serve({
+      open: true
+    }),
+    liveReload('dist')
   ]
-},
-{
-  input: 'src/main.js',
-  external: ['dashjs', 'smp-imsc'],
-  output: [
-    { dir: 'dist/esm', format: 'es' }
-  ]
-}]
+}
