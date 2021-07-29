@@ -1,4 +1,4 @@
-export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources) {
+export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   var subtitlesEnabled = autoStart
   var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
   var subtitlesContainer
@@ -8,10 +8,12 @@ export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOp
   if (useLegacySubs) {
     import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {
       subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+      callback(subtitlesEnabled)
     })
   } else {
     import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
       subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+      callback(subtitlesEnabled)
     })
   }
 
@@ -25,13 +27,13 @@ export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOp
 
   function show () {
     if (available() && enabled()) {
-      subtitlesContainer.start()
+      subtitlesContainer && subtitlesContainer.start()
     }
   }
 
   function hide () {
     if (available()) {
-      subtitlesContainer.stop()
+      subtitlesContainer && subtitlesContainer.stop()
     }
   }
 
@@ -48,23 +50,23 @@ export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOp
   }
 
   function setPosition (position) {
-    subtitlesContainer.updatePosition(position)
+    subtitlesContainer && subtitlesContainer.updatePosition(position)
   }
 
   function customise (styleOpts) {
-    subtitlesContainer.customise(styleOpts, subtitlesEnabled)
+    subtitlesContainer && subtitlesContainer.customise(styleOpts, subtitlesEnabled)
   }
 
   function renderExample (exampleXmlString, styleOpts, safePosition) {
-    subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition)
+    subtitlesContainer && subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition)
   }
 
   function clearExample () {
-    subtitlesContainer.clearExample()
+    subtitlesContainer && subtitlesContainer.clearExample()
   }
 
   function tearDown () {
-    subtitlesContainer.tearDown()
+    subtitlesContainer && subtitlesContainer.tearDown()
   }
 
   return {

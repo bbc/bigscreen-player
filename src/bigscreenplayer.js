@@ -128,12 +128,9 @@ function BigscreenPlayer () {
       enableSubtitles,
       playbackElement,
       bigscreenPlayerData.media.subtitleCustomisation,
-      mediaSources
+      mediaSources,
+      callSubtitlesCallbacks
     )
-
-    if (enableSubtitles) {
-      callSubtitlesCallbacks(true)
-    }
   }
 
   function getWindowStartTime () {
