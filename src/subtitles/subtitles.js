@@ -1,37 +1,19 @@
-// 'bigscreenplayer/subtitles/' + (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles ? 'legacysubtitles' : 'imscsubtitles')
-
-// import IMSCSubtitles from './imscsubtitles';
-
 export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources) {
   var subtitlesEnabled = autoStart
   var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
   var subtitlesContainer
-  // TODO: dynamic import legacy/current subtitles
 
   var useLegacySubs = window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles || false
-
-  // Shall we invert this now?
 
   if (useLegacySubs) {
     import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {
       subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
-      subtitlesContainer.start()
     })
   } else {
     import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
       subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
-      subtitlesContainer.start()
     })
   }
-
-  // subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts);
-
-  // subtitlesContainerLegacy.start();
-
-  // import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
-  //   imscSubs = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts);
-  //   imscSubs.start();
-  // });
 
   function enable () {
     subtitlesEnabled = true
