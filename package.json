@@ -4,6 +4,7 @@
   "description": "Simplified media playback for bigscreen devices.",
   "browser": "dist/bigscreenplayer.umd.js",
   "module": "dist/esm/index.js",
+  "type": "module",
   "scripts": {
     "prepare": "rollup -c",
     "jasmine": "grunt spec",
