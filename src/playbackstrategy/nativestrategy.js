@@ -1,23 +1,59 @@
-define([
-  'bigscreenplayer/playbackstrategy/legacyplayeradapter',
-  'bigscreenplayer/models/windowtypes',
-  'bigscreenplayer/playbackstrategy/modifiers/' + (window.bigscreenPlayer.mediaPlayer || 'html5'),
-  'bigscreenplayer/playbackstrategy/modifiers/live/' + (window.bigscreenPlayer.liveSupport || 'playable')
-], function (LegacyAdapter, WindowTypes, MediaPlayer, LivePlayer) {
-  var NativeStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD) {
-    var mediaPlayer
+import LegacyAdapter from './legacyplayeradapter'
+import WindowTypes from '../models/windowtypes'
 
-    mediaPlayer = MediaPlayer()
-    if (windowType !== WindowTypes.STATIC) {
-      mediaPlayer = LivePlayer(mediaPlayer, windowType, mediaSources)
+import Cehtml from './modifiers/cehtml'
+import Html5 from './modifiers/html5'
+import SamsungMaple from './modifiers/samsungmaple'
+import SamsungStreaming from './modifiers/samsungstreaming'
+import SamsungStreaming2015 from './modifiers/samsungstreaming2015'
+
+import None from './modifiers/live/none'
+import Playable from './modifiers/live/playable'
+import Restartable from './modifiers/live/restartable'
+import Seekable from './modifiers/live/seekable'
+function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD) {
+  var mediaPlayer
+
+  switch (window.bigscreenPlayer.mediaPlayer) {
+    case 'cehtml':
+      mediaPlayer = Cehtml()
+      break
+    case 'html5':
+      mediaPlayer = Html5()
+      break
+    case 'samsungmaple':
+      mediaPlayer = SamsungMaple()
+      break
+    case 'samsungstreaming':
+      mediaPlayer = SamsungStreaming()
+      break
+    case 'samsungstreaming2015':
+      mediaPlayer = SamsungStreaming2015()
+      break
+  }
+
+  if (windowType !== WindowTypes.STATIC) {
+    switch (window.bigscreenPlayer.liveSupport) {
+      case 'none':
+        mediaPlayer = None(mediaPlayer, windowType, mediaSources)
+        break
+      case 'playable':
+        mediaPlayer = Playable(mediaPlayer, windowType, mediaSources)
+        break
+      case 'restartable':
+        mediaPlayer = Restartable(mediaPlayer, windowType, mediaSources)
+        break;
+      case 'seekable':
+        mediaPlayer = Seekable(mediaPlayer, windowType, mediaSources)
+        break
     }
-
-    return LegacyAdapter(mediaSources, windowType, playbackElement, isUHD, mediaPlayer)
   }
 
-  NativeStrategy.getLiveSupport = function () {
-    return window.bigscreenPlayer.liveSupport
-  }
+  return LegacyAdapter(mediaSources, windowType, playbackElement, isUHD, mediaPlayer)
+}
 
-  return NativeStrategy
-})
+NativeStrategy.getLiveSupport = function () {
+  return window.bigscreenPlayer.liveSupport
+}
+
+export default NativeStrategy

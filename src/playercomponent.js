@@ -6,6 +6,7 @@ import Plugins from './plugins'
 import TransferFormats from './models/transferformats'
 import LiveSupport from './models/livesupport'
 import PlaybackStrategyModel from './models/playbackstrategy'
+import StrategyPicker from './playbackstrategy/strategypicker'
 
 var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) {
   var isInitialPlay = true
@@ -19,9 +20,8 @@ var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSourc
   var transferFormat = bigscreenPlayerData.media.transferFormat
 
   // TODO: Dynamic import for strategies
-
-  import('./playbackstrategy/msestrategy').then(({default: MSEStrategy}) => {
-    playbackStrategy = MSEStrategy(
+  StrategyPicker(windowType, isUHD).then(function (strategy) {
+    playbackStrategy = strategy(
       mediaSources,
       windowType,
       mediaKind,
