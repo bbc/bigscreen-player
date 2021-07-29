@@ -11,7 +11,7 @@ import None from './modifiers/live/none'
 import Playable from './modifiers/live/playable'
 import Restartable from './modifiers/live/restartable'
 import Seekable from './modifiers/live/seekable'
-function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD) {
+function NativeStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD) {
   var mediaPlayer
 
   switch (window.bigscreenPlayer.mediaPlayer) {
@@ -30,7 +30,7 @@ function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, is
     case 'samsungstreaming2015':
       mediaPlayer = SamsungStreaming2015()
       break
-    default: 
+    default:
       mediaPlayer = Html5()
   }
 
@@ -44,7 +44,7 @@ function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, is
         break
       case 'restartable':
         mediaPlayer = Restartable(mediaPlayer, windowType, mediaSources)
-        break;
+        break
       case 'seekable':
         mediaPlayer = Seekable(mediaPlayer, windowType, mediaSources)
         break

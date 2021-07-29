@@ -22,7 +22,8 @@
     ],
     "globals": {
       "dashjs": true,
-      "define": false
+      "define": false,
+      "Promise": true
     },
     "rules": {
       "accessor-pairs": "error",
