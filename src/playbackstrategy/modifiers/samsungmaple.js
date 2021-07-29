@@ -1,5 +1,5 @@
-import MediaPlayerBase from '././playbackstrategy/modifiers/mediaplayerbase'
-import DebugTool from '././debugger/debugtool'
+import MediaPlayerBase from '../modifiers/mediaplayerbase'
+import DebugTool from '../../debugger/debugtool'
 
 function Player () {
   var state = MediaPlayerBase.STATE.EMPTY

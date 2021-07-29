@@ -1,5 +1,5 @@
-import MediaPlayerBase from '././playbackstrategy/modifiers/mediaplayerbase'
-import DOMHelpers from '././domhelpers'
+import MediaPlayerBase from '../modifiers/mediaplayerbase'
+import DOMHelpers from '../../domhelpers'
 
 function Player () {
   var eventCallback

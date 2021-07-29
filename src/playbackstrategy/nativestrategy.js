@@ -30,6 +30,8 @@ function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, is
     case 'samsungstreaming2015':
       mediaPlayer = SamsungStreaming2015()
       break
+    default: 
+      mediaPlayer = Html5()
   }
 
   if (windowType !== WindowTypes.STATIC) {
@@ -46,6 +48,8 @@ function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, is
       case 'seekable':
         mediaPlayer = Seekable(mediaPlayer, windowType, mediaSources)
         break
+      default:
+        mediaPlayer = Playable(mediaPlayer, windowType, mediaSources)
     }
   }
 

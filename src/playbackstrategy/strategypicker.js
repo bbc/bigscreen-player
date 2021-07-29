@@ -2,7 +2,7 @@ import PlaybackStrategy from '../models/playbackstrategy'
 import NativeStrategy from './nativestrategy'
 
 export default function (windowType, isUHD) {
-  return Promise(function (resolve, reject) {
+  return new Promise(function (resolve, reject) {
     var mseExceptions = window.bigscreenPlayer.mseExceptions || []
   
     if (window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.HYBRID) {

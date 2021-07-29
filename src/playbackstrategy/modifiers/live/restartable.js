@@ -1,6 +1,6 @@
-import MediaPlayerBase from '././playbackstrategy/modifiers/mediaplayerbase'
-import WindowTypes from '././models/windowtypes'
-import DynamicWindowUtils from '././dynamicwindowutils'
+import MediaPlayerBase from '../mediaplayerbase'
+import WindowTypes from '../../../models/windowtypes'
+import DynamicWindowUtils from '../../../dynamicwindowutils'
 
 function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
   var callbacksMap = []

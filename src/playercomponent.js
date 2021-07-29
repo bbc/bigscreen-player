@@ -20,7 +20,7 @@ var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSourc
   var transferFormat = bigscreenPlayerData.media.transferFormat
 
   // TODO: Dynamic import for strategies
-  StrategyPicker(windowType, isUHD).then(function (strategy) {
+  StrategyPicker(windowType, bigscreenPlayerData.media.isUHD).then(function (strategy) {
     playbackStrategy = strategy(
       mediaSources,
       windowType,
