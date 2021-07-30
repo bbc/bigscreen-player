@@ -19,3 +19,6 @@ WebRunner.html
 
 # Ignore Visual Studio Code project files
 .vscode
+
+# Rollup build information
+stats.html
