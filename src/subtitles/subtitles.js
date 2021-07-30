@@ -1,4 +1,4 @@
-export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
+function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   var subtitlesEnabled = autoStart
   var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
   var subtitlesContainer
@@ -83,3 +83,5 @@ export default function (mediaPlayer, autoStart, playbackElement, defaultStyleOp
     tearDown: tearDown
   }
 }
+
+export default Subtitles

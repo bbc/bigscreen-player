@@ -79,8 +79,7 @@ var instance = {
     }
   }
 }
-
-var MockStrategy = function (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD) {
+function MockStrategy (mediaSources, windowType, mediaKind, timeData, playbackElement, isUHD) {
   return instance
 }
 

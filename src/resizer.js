@@ -1,4 +1,4 @@
-export default function () {
+function Resizer () {
   var resized
 
   function resize (element, top, left, width, height, zIndex) {
@@ -31,4 +31,6 @@ export default function () {
     isResized: isResized
   }
 }
+
+export default Resizer
 

@@ -5,7 +5,7 @@ import LiveSupport from './models/livesupport'
 import DynamicWindowUtils from './dynamicwindowutils'
 import DOMHelpers from './domhelpers'
 
-var BasicStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
+function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
   var eventCallbacks = []
   var errorCallback
   var timeUpdateCallback

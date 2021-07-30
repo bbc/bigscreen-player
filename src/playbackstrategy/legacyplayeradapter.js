@@ -4,7 +4,7 @@ import WindowTypes from '../models/windowtypes'
 import DebugTool from '../debugger/debugtool'
 import LiveGlitchCurtain from './liveglitchcurtain'
 
-export default function (mediaSources, windowType, playbackElement, isUHD, player) {
+function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, player) {
   var EVENT_HISTORY_LENGTH = 2
 
   var mediaPlayer = player
@@ -350,3 +350,5 @@ export default function (mediaSources, windowType, playbackElement, isUHD, playe
     }
   }
 }
+
+export default LegacyPlayerAdapter

@@ -1,4 +1,4 @@
-var addClass = function (el, className) {
+function addClass (el, className) {
   if (el.classList) {
     el.classList.add(className)
   } else {
@@ -6,7 +6,7 @@ var addClass = function (el, className) {
   }
 }
 
-var removeClass = function (el, className) {
+function removeClass (el, className) {
   if (el.classList) {
     el.classList.remove(className)
   } else {
@@ -14,7 +14,7 @@ var removeClass = function (el, className) {
   }
 }
 
-var hasClass = function (el, className) {
+function hasClass (el, className) {
   if (el.classList) {
     return el.classList.contains(className)
   } else {
@@ -43,7 +43,7 @@ function rgbaToRGB (rgbaString) {
  * nothing if the node is detached (Has no parent).
  * @param {Element} el The Element to remove
  */
-var safeRemoveElement = function (el) {
+function safeRemoveElement (el) {
   if (el.parentNode) {
     el.parentNode.removeChild(el)
   }

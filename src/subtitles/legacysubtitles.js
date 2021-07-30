@@ -5,7 +5,7 @@ import LoadURL from '../utils/loadurl'
 import DebugTool from '../debugger/debugtool'
 import Plugins from '../plugins'
 
-export default function (mediaPlayer, autoStart, parentElement, mediaSources) {
+function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
   var container = document.createElement('div')
   var subtitlesRenderer
 
@@ -100,3 +100,5 @@ export default function (mediaPlayer, autoStart, parentElement, mediaSources) {
     tearDown: tearDown
   }
 }
+
+export default LegacySubtitles

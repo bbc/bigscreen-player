@@ -3,7 +3,7 @@ import DOMHelpers from '../domhelpers'
 import Plugins from '../plugins'
 import DebugTool from '../debugger/debugtool'
 
-export default function () {
+function Transformer () {
   var _styles = {}
   var elementToStyleMap = [
     {
@@ -160,3 +160,5 @@ export default function () {
     transformXML: transformXML
   }
 }
+
+export default Transformer

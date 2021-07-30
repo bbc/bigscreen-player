@@ -9,7 +9,7 @@ import DOMHelpers from '../domhelpers'
 * @param {Element} el HTML Element
 * @param {String} attribute attribute to check for
 */
-var hasAttribute = function (el, attribute) {
+function hasAttribute (el, attribute) {
   return !!el.getAttribute(attribute)
 }
 
@@ -17,7 +17,7 @@ function hasNestedTime (element) {
   return (!hasAttribute(element, 'begin') || !hasAttribute(element, 'end'))
 }
 
-export default function (timedPieceNode, toStyleFunc) {
+function TimedText (timedPieceNode, toStyleFunc) {
   var start = timeStampToSeconds(timedPieceNode.getAttribute('begin'))
   var end = timeStampToSeconds(timedPieceNode.getAttribute('end'))
   var _node = timedPieceNode
@@ -93,3 +93,5 @@ export default function (timedPieceNode, toStyleFunc) {
     addToDom: addToDom
   }
 }
+
+export default TimedText

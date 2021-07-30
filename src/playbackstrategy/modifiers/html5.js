@@ -1,7 +1,7 @@
 import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DOMHelpers from '../../domhelpers'
 
-function Player () {
+function Html5 () {
   var eventCallback
   var eventCallbacks = []
   var state = MediaPlayerBase.STATE.EMPTY
@@ -857,4 +857,4 @@ function Player () {
   }
 }
 
-export default Player
+export default Html5

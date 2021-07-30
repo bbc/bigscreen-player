@@ -1,7 +1,7 @@
 import PlaybackSpinner from '../playbackspinner'
 import DOMHelpers from '../domhelpers'
 
-export default function (parentElement) {
+function LiveGlitchCurtain (parentElement) {
   var curtain
   var spinner = new PlaybackSpinner()
 
@@ -38,3 +38,5 @@ export default function (parentElement) {
     }
   }
 }
+
+export default LiveGlitchCurtain

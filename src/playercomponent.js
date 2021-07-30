@@ -7,8 +7,7 @@ import TransferFormats from './models/transferformats'
 import LiveSupport from './models/livesupport'
 import PlaybackStrategyModel from './models/playbackstrategy'
 import StrategyPicker from './playbackstrategy/strategypicker'
-
-var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) {
+function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) {
   var isInitialPlay = true
   var errorTimeoutID = null
   var mediaKind = bigscreenPlayerData.media.kind
@@ -19,7 +18,6 @@ var PlayerComponent = function (playbackElement, bigscreenPlayerData, mediaSourc
   var fatalError
   var transferFormat = bigscreenPlayerData.media.transferFormat
 
-  // TODO: Dynamic import for strategies
   StrategyPicker(windowType, bigscreenPlayerData.media.isUHD).then(function (strategy) {
     playbackStrategy = strategy(
       mediaSources,

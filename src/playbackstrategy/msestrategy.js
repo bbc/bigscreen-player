@@ -11,7 +11,7 @@ import DOMHelpers from '../domhelpers'
 import Utils from '../utils/playbackutils'
 import { MediaPlayer } from 'dashjs/index_mediaplayerOnly'
 
-var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
+function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
   var LIVE_DELAY_SECONDS = 1.1
   var mediaPlayer
   var mediaElement

@@ -1,4 +1,4 @@
-export default function () {
+function PlaybackSpinner () {
   var spinnerContainer = document.createElement('div')
   spinnerContainer.id = 'loadingSpinner'
   spinnerContainer.className = 'loadingSpinner loadingSpinner--large '
@@ -10,3 +10,5 @@ export default function () {
 
   return spinnerContainer
 }
+
+export default PlaybackSpinner

@@ -1,4 +1,4 @@
-export default function deferExceptions (cb) {
+function DeferExceptions (cb) {
   try {
     cb()
   } catch (e) {
@@ -7,3 +7,5 @@ export default function deferExceptions (cb) {
     }, 0)
   }
 }
+
+export default DeferExceptions

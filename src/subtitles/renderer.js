@@ -2,7 +2,7 @@ import DebugTool from '../debugger/debugtool'
 import Transformer from './transformer'
 import Plugins from '../plugins'
 
-var Renderer = function (id, captionsXML, mediaPlayer) {
+function Renderer (id, captionsXML, mediaPlayer) {
   var transformedSubtitles
   var liveItems = []
   var interval = 0

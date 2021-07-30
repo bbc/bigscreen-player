@@ -6,7 +6,7 @@ import Utils from '../utils/playbackutils'
 import LoadURL from '../utils/loadurl'
 import TimeUtils from '../utils/timeutils'
 
-export default function (mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
+function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
   var currentSubtitlesElement
   var exampleSubtitlesElement
   var imscRenderOpts = transformStyleOptions(defaultStyleOpts)
@@ -310,3 +310,5 @@ export default function (mediaPlayer, autoStart, parentElement, mediaSources, de
     }
   }
 }
+
+export default IMSCSubtitles

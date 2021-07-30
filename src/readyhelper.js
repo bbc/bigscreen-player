@@ -2,7 +2,7 @@ import MediaState from './models/mediastate'
 import WindowTypes from './models/windowtypes'
 import LiveSupport from './models/livesupport'
 
-var ReadyHelper = function (initialPlaybackTime, windowType, liveSupport, callback) {
+function ReadyHelper (initialPlaybackTime, windowType, liveSupport, callback) {
   var ready = false
 
   var callbackWhenReady = function (evt) {

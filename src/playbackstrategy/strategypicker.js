@@ -1,7 +1,7 @@
 import PlaybackStrategy from '../models/playbackstrategy'
 import NativeStrategy from './nativestrategy'
 
-export default function (windowType, isUHD) {
+function StrategyPicker (windowType, isUHD) {
   return new Promise(function (resolve, reject) {
     var mseExceptions = window.bigscreenPlayer.mseExceptions || []
 
@@ -22,3 +22,5 @@ export default function (windowType, isUHD) {
     }
   })
 }
+
+export default StrategyPicker

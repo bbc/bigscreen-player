@@ -1,4 +1,4 @@
-export default function (url, opts) {
+function LoadUrl (url, opts) {
   var xhr = new XMLHttpRequest()
   if (opts.timeout) {
     xhr.timeout = opts.timeout
@@ -40,3 +40,5 @@ export default function (url, opts) {
     }
   }
 }
+
+export default LoadUrl

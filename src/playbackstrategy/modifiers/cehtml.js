@@ -1,7 +1,6 @@
 import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DebugTool from '../../debugger/debugtool'
 import DOMHelpers from '../../domhelpers'
-var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
 
 var STATE = {
   STOPPED: 0,
@@ -13,7 +12,7 @@ var STATE = {
   ERROR: 6
 }
 
-export default function () {
+function Cehtml () {
   var eventCallbacks = []
   var state = MediaPlayerBase.STATE.EMPTY
 
@@ -101,6 +100,7 @@ export default function () {
   }
 
   function getClampedTime (seconds) {
+    var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
     var range = getSeekableRange()
     var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
     if (seconds < range.start) {
@@ -738,3 +738,5 @@ export default function () {
     getDuration: getDuration
   }
 }
+
+export default Cehtml

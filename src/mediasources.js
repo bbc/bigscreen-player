@@ -7,7 +7,7 @@ import DebugTool from './debugger/debugtool'
 import ManifestLoader from './manifest/manifestloader'
 import TransferFormats from './models/transferformats'
 
-export default function () {
+function MediaSources () {
   var mediaSources
   var failedOverSources = []
   var failoverResetTokens = []
@@ -334,3 +334,5 @@ export default function () {
     tearDown: tearDown
   }
 }
+
+export default MediaSources

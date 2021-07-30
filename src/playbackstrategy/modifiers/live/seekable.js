@@ -1,6 +1,7 @@
 import MediaPlayerBase from '../mediaplayerbase'
 import WindowTypes from '../../../models/windowtypes'
 import DynamicWindowUtils from '../../../dynamicwindowutils'
+
 function SeekableLivePlayer (mediaPlayer, windowType) {
   var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
 

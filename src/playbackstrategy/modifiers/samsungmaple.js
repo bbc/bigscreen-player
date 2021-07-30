@@ -1,7 +1,7 @@
 import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DebugTool from '../../debugger/debugtool'
 
-function Player () {
+function SamsungMaple () {
   var state = MediaPlayerBase.STATE.EMPTY
   var playerPlugin = document.getElementById('playerPlugin')
   var deferSeekingTo = null
@@ -611,5 +611,5 @@ function Player () {
   }
 }
 
-export default Player
+export default SamsungMaple
 

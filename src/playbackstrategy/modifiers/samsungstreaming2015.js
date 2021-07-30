@@ -5,7 +5,7 @@
 import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DebugTool from '../../debugger/debugtool'
 
-function Player () {
+function SamsungStreaming2015 () {
   var state = MediaPlayerBase.STATE.EMPTY
   var currentPlayer
   var deferSeekingTo = null
@@ -765,4 +765,4 @@ function Player () {
   }
 }
 
-export default Player
+export default SamsungStreaming2015

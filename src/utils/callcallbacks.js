@@ -1,9 +1,11 @@
 import deferExceptions from './deferexceptions'
 
-export default function callCallbacks (callbacks, data) {
+function CallCallbacks (callbacks, data) {
   callbacks.forEach(function (callback) {
     deferExceptions(function () {
       callback(data)
     })
   })
 }
+
+export default CallCallbacks
