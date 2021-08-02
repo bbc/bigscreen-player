@@ -23,7 +23,8 @@
     "globals": {
       "dashjs": true,
       "define": false,
-      "Promise": true
+      "Promise": true,
+      "jest": true
     },
     "rules": {
       "accessor-pairs": "error",
