@@ -1,7 +1,3 @@
-/**
- * @jest-environment jsdom
- */
-
 import Resizer from './resizer'
 
 describe('Resizer', function () {
