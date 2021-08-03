@@ -1,9 +1,9 @@
-import MediaState from './models/mediastate'
-import WindowTypes from './models/windowtypes'
-import MediaKinds from './models/mediakinds'
-import LiveSupport from './models/livesupport'
-import DynamicWindowUtils from './dynamicwindowutils'
-import DOMHelpers from './domhelpers'
+import MediaState from '../models/mediastate'
+import WindowTypes from '../models/windowtypes'
+import MediaKinds from '../models/mediakinds'
+import LiveSupport from '../models/livesupport'
+import DynamicWindowUtils from '../dynamicwindowutils'
+import DOMHelpers from '../domhelpers'
 
 function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
   var eventCallbacks = []
