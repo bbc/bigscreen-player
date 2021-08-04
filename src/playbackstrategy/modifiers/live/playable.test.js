@@ -1,136 +1,136 @@
-/*
- *  playable live modfifier is just a wrapper around html5
- *  So no further logical testing is required for unit tests
- *  providing that hml5 is properly tested
- */
+import MediaPlayerBase from '../mediaplayerbase'
+import PlayableMediaPlayer from './playable'
 
-require(
-  [
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase',
-    'bigscreenplayer/playbackstrategy/modifiers/live/playable'
-  ],
-  function (MediaPlayerBase, PlayableMediaPlayer) {
-    var sourceContainer = document.createElement('div');
-    var player;
-    var playableMediaPlayer;
+var sourceContainer = document.createElement('div')
+var player
+var playableMediaPlayer
 
-    function wrapperTests (action, expectedReturn) {
-      if (expectedReturn) {
-        player[action].and.returnValue(expectedReturn);
+function wrapperTests (action, expectedReturn) {
+  if (expectedReturn) {
+    player[action].mockReturnValue(expectedReturn)
 
-        expect(playableMediaPlayer[action]()).toBe(expectedReturn);
-      } else {
-        playableMediaPlayer[action]();
+    expect(playableMediaPlayer[action]()).toBe(expectedReturn)
+  } else {
+    playableMediaPlayer[action]()
 
-        expect(player[action]).toHaveBeenCalledTimes(1);
-      }
+    expect(player[action]).toHaveBeenCalledTimes(1)
+  }
+}
+
+function isUndefined (action) {
+  expect(playableMediaPlayer[action]).not.toBeDefined()
+}
+
+describe('Playable HMTL5 Live Player', function () {
+  beforeEach(function () {
+    player = {
+      'beginPlayback': jest.fn(),
+      'initialiseMedia': jest.fn(),
+      'stop': jest.fn(),
+      'reset': jest.fn(),
+      'getState': jest.fn(),
+      'getSource': jest.fn(),
+      'getMimeType': jest.fn(),
+      'addEventCallback': jest.fn(),
+      'removeEventCallback': jest.fn(),
+      'removeAllEventCallbacks': jest.fn(),
+      'getPlayerElement': jest.fn()
     }
 
-    function isUndefined (action) {
-      expect(playableMediaPlayer[action]).not.toBeDefined();
-    }
+    playableMediaPlayer = PlayableMediaPlayer(player)
+  })
 
-    describe('Playable HMTL5 Live Player', function () {
-      beforeEach(function () {
-        player = jasmine.createSpyObj('player',
-          ['beginPlayback', 'initialiseMedia', 'stop', 'reset', 'getState', 'getSource', 'getMimeType',
-            'addEventCallback', 'removeEventCallback', 'removeAllEventCallbacks', 'getPlayerElement']);
+  it('calls beginPlayback on the media player', function () {
+    wrapperTests('beginPlayback')
+  })
 
-        playableMediaPlayer = PlayableMediaPlayer(player);
-      });
+  it('calls initialiseMedia on the media player', function () {
+    wrapperTests('initialiseMedia')
+  })
 
-      it('calls beginPlayback on the media player', function () {
-        wrapperTests('beginPlayback');
-      });
+  it('calls stop on the media player', function () {
+    wrapperTests('stop')
+  })
 
-      it('calls initialiseMedia on the media player', function () {
-        wrapperTests('initialiseMedia');
-      });
+  it('calls reset on the media player', function () {
+    wrapperTests('reset')
+  })
 
-      it('calls stop on the media player', function () {
-        wrapperTests('stop');
-      });
+  it('calls getState on the media player', function () {
+    wrapperTests('getState', 'thisState')
+  })
 
-      it('calls reset on the media player', function () {
-        wrapperTests('reset');
-      });
+  it('calls getSource on the media player', function () {
+    wrapperTests('getSource', 'thisSource')
+  })
 
-      it('calls getState on the media player', function () {
-        wrapperTests('getState', 'thisState');
-      });
+  it('calls getMimeType on the media player', function () {
+    wrapperTests('getMimeType', 'thisMimeType')
+  })
 
-      it('calls getSource on the media player', function () {
-        wrapperTests('getSource', 'thisSource');
-      });
+  it('calls addEventCallback on the media player', function () {
+    var thisArg = 'arg'
+    var callback = function () { return }
+    playableMediaPlayer.addEventCallback(thisArg, callback)
 
-      it('calls getMimeType on the media player', function () {
-        wrapperTests('getMimeType', 'thisMimeType');
-      });
+    expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, callback)
+  })
 
-      it('calls addEventCallback on the media player', function () {
-        var thisArg = 'arg';
-        var callback = function () { return; };
-        playableMediaPlayer.addEventCallback(thisArg, callback);
+  it('calls removeEventCallback on the media player', function () {
+    var thisArg = 'arg'
+    var callback = function () { return }
+    playableMediaPlayer.removeEventCallback(thisArg, callback)
 
-        expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, callback);
-      });
+    expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback)
+  })
 
-      it('calls removeEventCallback on the media player', function () {
-        var thisArg = 'arg';
-        var callback = function () { return; };
-        playableMediaPlayer.removeEventCallback(thisArg, callback);
+  it('calls removeAllEventCallbacks on the media player', function () {
+    wrapperTests('removeAllEventCallbacks')
+  })
 
-        expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback);
-      });
+  it('calls getPlayerElement on the media player', function () {
+    wrapperTests('getPlayerElement', 'thisPlayerElement')
+  })
 
-      it('calls removeAllEventCallbacks on the media player', function () {
-        wrapperTests('removeAllEventCallbacks');
-      });
+  describe('should not have methods for', function () {
+    it('beginPlaybackFrom', function () {
+      isUndefined('beginPlaybackFrom')
+    })
 
-      it('calls getPlayerElement on the media player', function () {
-        wrapperTests('getPlayerElement', 'thisPlayerElement');
-      });
+    it('playFrom', function () {
+      isUndefined('playFrom')
+    })
 
-      describe('should not have methods for', function () {
-        it('beginPlaybackFrom', function () {
-          isUndefined('beginPlaybackFrom');
-        });
+    it('pause', function () {
+      isUndefined('pause')
+    })
 
-        it('playFrom', function () {
-          isUndefined('playFrom');
-        });
+    it('resume', function () {
+      isUndefined('resume')
+    })
 
-        it('pause', function () {
-          isUndefined('pause');
-        });
+    it('getCurrentTime', function () {
+      isUndefined('getCurrentTime')
+    })
 
-        it('resume', function () {
-          isUndefined('resume');
-        });
+    it('getSeekableRange', function () {
+      isUndefined('getSeekableRange')
+    })
+  })
 
-        it('getCurrentTime', function () {
-          isUndefined('getCurrentTime');
-        });
+  describe('calls the mediaplayer with the correct media Type', function () {
+    it('when is an audio stream', function () {
+      var mediaType = MediaPlayerBase.TYPE.AUDIO
+      playableMediaPlayer.initialiseMedia(mediaType, null, null, sourceContainer, null)
 
-        it('getSeekableRange', function () {
-          isUndefined('getSeekableRange');
-        });
-      });
+      expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, null, null, sourceContainer, null)
+    })
 
-      describe('calls the mediaplayer with the correct media Type', function () {
-        it('when is an audio stream', function () {
-          var mediaType = MediaPlayerBase.TYPE.AUDIO;
-          playableMediaPlayer.initialiseMedia(mediaType, null, null, sourceContainer, null);
+    it('when is an video stream', function () {
+      var mediaType = MediaPlayerBase.TYPE.VIDEO
+      playableMediaPlayer.initialiseMedia(mediaType, null, null, sourceContainer, null)
 
-          expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, null, null, sourceContainer, null);
-        });
-
-        it('when is an video stream', function () {
-          var mediaType = MediaPlayerBase.TYPE.VIDEO;
-          playableMediaPlayer.initialiseMedia(mediaType, null, null, sourceContainer, null);
-
-          expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, null, null, sourceContainer, null);
-        });
-      });
-    });
-  });
+      expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, null, null, sourceContainer, null)
+    })
+  })
+})
