@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>Home - Bigscreen Player</title>
+    <title>Tutorial: 003-subtitles-polling-frequency - Bigscreen Player</title>
     
     
     
@@ -37,45 +37,36 @@
 
 <div id="main">
     
-
+    <h1 class="page-title">Tutorial: 003-subtitles-polling-frequency</h1>
     
 
+    <section>
 
-
+<header>
     
 
+    <h2>003-subtitles-polling-frequency</h2>
+</header>
 
-    <section class="package">
-        <h3> </h3>		
-    </section>
-
-
-
-
-
-
-
-
-
-    
-
-
-
-    <section class="readme usertext">
-        <article><h1>Bigscreen Player API</h1>
-<p>For documentation on how to get started with Bigscreen Player, or a look at the source code, use the links below.</p>
-<p>To get started with the API, take a look at the modules in the sidebar.</p>
+<article>
+    <h1>003 Subtitles Polling Frequency</h1>
+<p>Originally Added: April 7th, 2020</p>
+<h2>Context</h2>
+<p>Subtitles in Bigscreen Player are updated by checking for the next available subtitle using a set timeout of 750ms.
+This number of 750ms was originally used with no record of why it was picked, and is also potentially too infrequent to keep the subtitles perfectly in sync with the audio and visual cues.
+There was a piece of work done to increase the polling rate to 250ms, however we found that this caused some slower devices to buffer due to the increased load on the devices memory.</p>
+<h2>Decision</h2>
+<p>We will continue to use 750ms as the polling frequency.</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Consequences</h2>
 <ul>
-<li><a href="https://bbc.github.io/bigscreen-player">Getting Started</a></li>
-<li><a href="https://github.com/bbc/bigscreen-player">Source Code</a></li>
-<li><a href="https://www.npmjs.com/package/bigscreen-player">NPM package</a></li>
-</ul></article>
-    </section>
+<li>Synchronisation issues are negligible.</li>
+<li>It does not cause device performance to suffer.</li>
+</ul>
+</article>
 
-
-
-
-
+</section>
 
     
     

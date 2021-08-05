@@ -1,5 +1,3 @@
-# CDN Failover
-
 ## What is CDN failover?
 When a user is playing video/audio and an error occurs we want playback to recover using different CDN.
 

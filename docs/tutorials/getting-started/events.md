@@ -1,5 +1,3 @@
-# Events
-
 Bigscreen Player uses a variety of events to signal its current state.
 
 ## Reacting to state changes

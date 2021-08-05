@@ -1,0 +1,31 @@
+{
+    "installation": {
+        "title": "Getting Started",
+        "children": ["usage", "creating-a-plugin", "events"]
+    },
+    "design": {
+        "title": "Design Overview",
+        "children": ["playback-strategies"]
+    },
+    "features": {
+        "title": "Features",
+        "children": ["cdn-failover", "subtitles"] 
+    },
+    "testing": {
+        "title": "Testing",
+        "children": ["mocking-playback"] 
+    },
+    "adrs": {
+        "title": "ADRs",
+        "children": [] 
+    },
+
+    "usage": {"title": "Usage"},
+    "creating-a-plugin": {"title": "Creating a plugin"},
+    "events": {"title": "Events"},
+    "playback-strategies": {"title": "Playback Strategies"},
+    "mocking-playback": {"title": "Mocking Playback"},
+    "cdn-failover": {"title": "CDN Failover"},
+    "subtitles": {"title": "Subtitles"}
+
+}

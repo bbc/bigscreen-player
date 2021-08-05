@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>Home - Bigscreen Player</title>
+    <title>Tutorial: 002-sinon - Bigscreen Player</title>
     
     
     
@@ -37,45 +37,38 @@
 
 <div id="main">
     
-
+    <h1 class="page-title">Tutorial: 002-sinon</h1>
     
 
+    <section>
 
-
+<header>
     
 
+    <h2>002-sinon</h2>
+</header>
 
-    <section class="package">
-        <h3> </h3>		
-    </section>
-
-
-
-
-
-
-
-
-
-    
-
-
-
-    <section class="readme usertext">
-        <article><h1>Bigscreen Player API</h1>
-<p>For documentation on how to get started with Bigscreen Player, or a look at the source code, use the links below.</p>
-<p>To get started with the API, take a look at the modules in the sidebar.</p>
+<article>
+    <h1>002 Use of Sinon for unit testing</h1>
+<p>Originally Added: April 30th, 2019</p>
+<h2>Context</h2>
+<p>With the addition of manifest loading into <code>bigscreen-player</code>, there is a need to stub out network requests with specific responses for unit testing.</p>
+<p>It is possible, using a combination of parametrised Squire mocks and multiple asynchronous functions, to achieve this with jasmine.</p>
+<p>However, when loading HLS manifests, multiple chained calls to loadUrl are needed within one test (in order to get the final playlist following the loading of the master playlist). This is difficult to achieve with jasmine, but can be simply handled with sinon.</p>
+<h2>Decision</h2>
+<p>We will pull sinon. This is only a dev dependency.</p>
+<h2>Status</h2>
+<p>Accepted</p>
+<h2>Consequences</h2>
 <ul>
-<li><a href="https://bbc.github.io/bigscreen-player">Getting Started</a></li>
-<li><a href="https://github.com/bbc/bigscreen-player">Source Code</a></li>
-<li><a href="https://www.npmjs.com/package/bigscreen-player">NPM package</a></li>
-</ul></article>
-    </section>
+<li>Using sinon makes it simpler to provide custom responses to network requests.</li>
+<li>Another third party library is now pulled into bigscreen-player as a dev dependency.</li>
+</ul>
+<h2>Further Reading</h2>
+<p>See https://sinonjs.org/ for more information</p>
+</article>
 
-
-
-
-
+</section>
 
     
     

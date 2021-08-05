@@ -1,5 +1,3 @@
-# Areas Impacted
-
 **This page lists the areas that are to be considered for testing Bigscreen Player changes**
 
 Different Streaming types should be considered - MP4, HLS, DASH - Audio and Video

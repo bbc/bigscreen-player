@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>Home - Bigscreen Player</title>
+    <title>Tutorial: Testing - Bigscreen Player</title>
     
     
     
@@ -37,45 +37,65 @@
 
 <div id="main">
     
-
+    <h1 class="page-title">Tutorial: Testing</h1>
     
 
+    <section>
 
-
+<header>
+    
+    <ul>
+        <li><a href="tutorial-mocking-playback.html">Mocking Playback</a></li>
+    </ul>
     
 
+    <h2>Testing</h2>
+</header>
 
-    <section class="package">
-        <h3> </h3>		
-    </section>
-
-
-
-
-
-
-
-
-
-    
-
-
-
-    <section class="readme usertext">
-        <article><h1>Bigscreen Player API</h1>
-<p>For documentation on how to get started with Bigscreen Player, or a look at the source code, use the links below.</p>
-<p>To get started with the API, take a look at the modules in the sidebar.</p>
+<article>
+    <p><strong>This page lists the areas that are to be considered for testing Bigscreen Player changes</strong></p>
+<p>Different Streaming types should be considered - MP4, HLS, DASH - Audio and Video</p>
 <ul>
-<li><a href="https://bbc.github.io/bigscreen-player">Getting Started</a></li>
-<li><a href="https://github.com/bbc/bigscreen-player">Source Code</a></li>
-<li><a href="https://www.npmjs.com/package/bigscreen-player">NPM package</a></li>
-</ul></article>
-    </section>
+<li>Subtitles (currently on demand only)</li>
+<li><a href="features/cdn-failover.md">CDN Failover</a></li>
+<li>Tearing down playback and immediately starting something new (e.g 'autoplay' features)</li>
+<li>Soak testing (i.e. play for a long period of time)</li>
+<li>End of playback</li>
+<li>Seeking and related UI (e.g. scrub bar, thumbnails)</li>
+<li>Buffering UI</li>
+<li>Adaptive Bit Rate (ABR)</li>
+<li>Any other application behaviour driven by Bigscreen Player events (e.g. stats)</li>
+</ul>
+<h2>Live Playback specific areas</h2>
+<p>Different types of live playback capability should be considered - <strong>Playable, Restartable, Seekable</strong></p>
+<h3>Sliding Windows</h3>
+<ol>
+<li>Live Restart Curtain</li>
+<li>Manifest Parsing</li>
+</ol>
+<ul>
+<li>Watch form Live</li>
+<li>Start from a given point in the window (a.k.a Live restart)</li>
+<li>Watch from the start of the window</li>
+<li>Auto resume at the start of the window</li>
+<li>Seeking</li>
+</ul>
+<h3>Growing Windows</h3>
+<ol>
+<li>Live Restart Curtain</li>
+<li>Manifest Parsing</li>
+</ol>
+<ul>
+<li>Watch from Live</li>
+<li>Live restart</li>
+<li>Seeking</li>
+</ul>
+<ol start="3">
+<li>End of stream (Ended Event)</li>
+</ol>
+</article>
 
-
-
-
-
+</section>
 
     
     

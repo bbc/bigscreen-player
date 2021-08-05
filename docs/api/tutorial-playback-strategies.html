@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>Home - Bigscreen Player</title>
+    <title>Tutorial: Playback Strategies - Bigscreen Player</title>
     
     
     
@@ -37,45 +37,59 @@
 
 <div id="main">
     
-
+    <h1 class="page-title">Tutorial: Playback Strategies</h1>
     
 
+    <section>
 
-
+<header>
     
 
+    <h2>Playback Strategies</h2>
+</header>
 
-    <section class="package">
-        <h3> </h3>		
-    </section>
-
-
-
-
-
-
-
-
-
-    
-
-
-
-    <section class="readme usertext">
-        <article><h1>Bigscreen Player API</h1>
-<p>For documentation on how to get started with Bigscreen Player, or a look at the source code, use the links below.</p>
-<p>To get started with the API, take a look at the modules in the sidebar.</p>
+<article>
+    <p>As part of the configuration of Bigscreen Player, a 'playback strategy' should be provided.</p>
+<p>There are four options available:</p>
 <ul>
-<li><a href="https://bbc.github.io/bigscreen-player">Getting Started</a></li>
-<li><a href="https://github.com/bbc/bigscreen-player">Source Code</a></li>
-<li><a href="https://www.npmjs.com/package/bigscreen-player">NPM package</a></li>
-</ul></article>
-    </section>
+<li><code>msestrategy</code></li>
+<li><code>nativestrategy</code></li>
+<li><code>hybridstrategy</code></li>
+<li><code>basicstrategy</code></li>
+</ul>
+<p>Your app should write this globally to the window before initialising Bigscreen Player. This enables only the required media player code to be loaded. For example, if MSE playback is not needed, the <em>dashjs</em> library does not have to be loaded.</p>
+<pre class="prettyprint source lang-javascript"><code>window.bigscreenPayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'basicstategy'
+</code></pre>
+<p>The player will require in the correct strategy file at runtime.</p>
+<h2>MSE Strategy</h2>
+<p>The MSE strategy utilises the open source <a href="https://github.com/Dash-Industry-Forum/dash.js/wiki"><em>dashjs</em></a> library. Dashjs handles much of the playback, and the strategy interacts with this to provide a consistent interface. No other dependencies are requried.</p>
+<h2>Native Strategy</h2>
+<p>We have migrated TAL media player implementations into the Native Strategy, so that you can play media on devices that do not support Media Source Extensions without TAL. So far there is support for playback via:</p>
+<ul>
+<li><code>HTHML5</code></li>
+<li><code>CEHTML</code></li>
+<li><code>SAMSUNG_MAPLE</code></li>
+<li><code>SAMSUNG_STREAMING</code></li>
+<li><code>SAMSUNG_STREAMING_2015</code></li>
+</ul>
+<p>This requires additional config, to select which implementation to use and indicate the device's live playback capability:</p>
+<pre class="prettyprint source lang-javascript"><code>window.bigscreenPlayer.liveSupport: 'seekable', // OR 'none' OR 'playable' OR 'restartable'; defaults to 'playable'
+window.bigscreenPlayer.mediaPlayer: 'html5' // OR 'cehtml'; defaults to 'html5'
+</code></pre>
+<h2>Hybrid Strategy</h2>
+<p>In some circumstances, you may wish to use both the MSE and Native strategies. For example, using MSE for Video on Demand and Native for Live Video. In our experience, we have found this helpful for targeting certain devices that are unable to play growing or static window type content using MSE.</p>
+<p>When using hybrid, the strategy is chosen at the point of playback. It defaults to the <em>msestrategy</em> and will switch to <em>nativestrategy</em> if an exception is configured.</p>
+<h3>Configuring Exceptions</h3>
+<p>The Native strategy can be reverted to on a hybrid device by adding exceptions based on the media's window type (STATIC, SLIDING, GROWING) and whether the content is UHD.</p>
+<p>The following example would use MSE playback for STATIC and GROWING window types, and Native playback for UHD and SLIDING window content.</p>
+<pre class="prettyprint source lang-javascript"><code>window.bigscreenPlayer.playbackStrategy = 'hybridstrategy';
+window.bigscreenPlayer.mseExceptions = ['uhd', 'slidingWindow'];
+</code></pre>
+<h2>Basic Strategy</h2>
+<p>This strategy is similar to native, in that it relies on the browser's media element to handle play back of the source provided. It is intended to be a lightweight wrapper around standard HTML5 media playback. It is media element event driven, and contains none of the workarounds (such as overrides and sentinels) that the native strategy does.</p>
+</article>
 
-
-
-
-
+</section>
 
     
     

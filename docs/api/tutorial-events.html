@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>Home - Bigscreen Player</title>
+    <title>Tutorial: Events - Bigscreen Player</title>
     
     
     
@@ -37,45 +37,69 @@
 
 <div id="main">
     
-
+    <h1 class="page-title">Tutorial: Events</h1>
     
 
+    <section>
 
-
+<header>
     
 
+    <h2>Events</h2>
+</header>
 
-    <section class="package">
-        <h3> </h3>		
-    </section>
-
-
-
-
-
-
-
-
-
-    
-
-
-
-    <section class="readme usertext">
-        <article><h1>Bigscreen Player API</h1>
-<p>For documentation on how to get started with Bigscreen Player, or a look at the source code, use the links below.</p>
-<p>To get started with the API, take a look at the modules in the sidebar.</p>
+<article>
+    <p>Bigscreen Player uses a variety of events to signal its current state.</p>
+<h2>Reacting to state changes</h2>
+<p>State changes which are emitted from the player can be acted upon to by registering a callback. The callback will receive all of the following state changes as the <code>state</code> property of the event:</p>
 <ul>
-<li><a href="https://bbc.github.io/bigscreen-player">Getting Started</a></li>
-<li><a href="https://github.com/bbc/bigscreen-player">Source Code</a></li>
-<li><a href="https://www.npmjs.com/package/bigscreen-player">NPM package</a></li>
-</ul></article>
-    </section>
+<li><code>MediaState.STOPPED</code></li>
+<li><code>MediaState.PAUSED</code></li>
+<li><code>MediaState.PLAYING</code></li>
+<li><code>MediaState.WAITING</code></li>
+<li><code>MediaState.ENDED</code></li>
+<li><code>MediaState.FATAL_ERROR</code></li>
+</ul>
+<p>State changes may be registered for before initialisation and will automatically be cleared upon <code>tearDown()</code> of the player.</p>
+<pre class="prettyprint source lang-javascript"><code>var bigscreenPlayer = BigscreenPlayer();
 
+// The token is only required in the case where the function is anonymous, a reference to the function can be stored and used to unregister otherwise.
+var stateChangeToken = bigscreenPlayer.registerForStateChanges(function (event) {
+  if(event.state == MediaState.PLAYING) {
+    console.log('Playing');
+    // handle playing event
+  }
+});
 
+bigscreenPlayer.unRegisterForStateChanges(stateChangeToken);
+</code></pre>
+<h2>Reacting to time updates</h2>
+<p>Time updates are emitted multiple times a second. Your application can register to receive these updates. The emitted object contains the <code>currentTime</code> and <code>endOfStream</code> properties.</p>
+<p>Time updates may be registered for before initialisation and will automatically be cleared upon <code>tearDown()</code> of the player.</p>
+<pre class="prettyprint source lang-javascript"><code>var bigscreenPlayer = BigscreenPlayer();
 
+// The token is only required in the case where the function is anonymous, a reference to the function can be stored and used to unregister otherwise.
+var timeUpdateToken = bigscreenPlayer.registerForTimeUpdates(function (event) {
+    console.log('Current Time: ' + event.currentTime);
+});
 
+bigscreenPlayer.unRegisterForTimeUpdates(timeUpdateToken);
+</code></pre>
+<h2>Reacting to subtitles being turned on/off</h2>
+<p>This is emitted on every <code>setSubtitlesEnabled</code> call. The emitted object contains an <code>enabled</code> property.</p>
+<p>This may be registered for before initialisation and will automatically be cleared upon <code>tearDown()</code> of the player.</p>
+<pre class="prettyprint source lang-javascript"><code>var bigscreenPlayer = BigscreenPlayer();
 
+// The token is only required in the case where the function is anonymous, a reference to the function can be stored and used to unregister otherwise.
+var subtitleChangeToken = bigscreenPlayer.registerForSubtitleChanges(function (event) {
+    console.log('Subttiles enabled: ' + event.enabled);
+});
+
+bigscreenPlayer.unregisterForSubtitleChanges(subtitleChangeToken);
+</code></pre>
+</article>
+
+</section>
 
     
     

@@ -1,5 +1,3 @@
-# Design Overview
-
 This document covers the basics of the `bigscreen-player` high level architecture. It describes an overview of the internal workings that is useful to understand in order to carry out development and possibly contribute to the code base.
 
 Further setup code and specific examples can be found in the repo itself. A good place to start is the [README](https://github.com/bbc/bigscreen-player/blob/master/README.md).

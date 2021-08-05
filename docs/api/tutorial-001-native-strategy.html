@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>Home - Bigscreen Player</title>
+    <title>Tutorial: 001-native-strategy - Bigscreen Player</title>
     
     
     
@@ -37,45 +37,45 @@
 
 <div id="main">
     
-
+    <h1 class="page-title">Tutorial: 001-native-strategy</h1>
     
 
+    <section>
 
-
+<header>
     
 
+    <h2>001-native-strategy</h2>
+</header>
 
-    <section class="package">
-        <h3> </h3>		
-    </section>
-
-
-
-
-
-
-
-
-
-    
-
-
-
-    <section class="readme usertext">
-        <article><h1>Bigscreen Player API</h1>
-<p>For documentation on how to get started with Bigscreen Player, or a look at the source code, use the links below.</p>
-<p>To get started with the API, take a look at the modules in the sidebar.</p>
+<article>
+    <h1>001 Native Strategy</h1>
+<p>Originally Added: February 20th, 2019</p>
+<h1>Context</h1>
 <ul>
-<li><a href="https://bbc.github.io/bigscreen-player">Getting Started</a></li>
-<li><a href="https://github.com/bbc/bigscreen-player">Source Code</a></li>
-<li><a href="https://www.npmjs.com/package/bigscreen-player">NPM package</a></li>
-</ul></article>
-    </section>
+<li>As it stands, <code>bigscreen-player</code> requires using the <code>tal</code> device object - when in <code>talstrategy</code> - to obtain a media player for playback</li>
+<li>Since the <code>tal</code> device media player exists as a singleton, applications using <code>talstrategy</code> can only access one active media element.</li>
+<li>Unlike <code>msestrategy</code>, <code>talstrategy</code> also requires loading in the extra dependency (<code>tal</code> device) - and is therefore limited by the limitations of the <code>tal</code> device.</li>
+</ul>
+<h1>Decision</h1>
+<ul>
+<li>A new strategy type - <code>nativestrategy</code> - has been created which pulls the media player out of <code>tal</code></li>
+<li>This is a refactor of the <code>tal</code> device media player code which allows further manipulation and control i.e. multiple video playback</li>
+</ul>
+<h1>Status</h1>
+<p>Approved</p>
+<h1>Consequences</h1>
+<ul>
+<li>Multiple active video instances can be controlled
+<ul>
+<li>Preloading of content on different media elements is more achievable</li>
+</ul>
+</li>
+<li>The successful migration of all media player code from <code>tal</code> will create much greater modularity for <code>bigscreen-player</code> - therefore removing any limitations introduced by the current coupling with <code>tal</code></li>
+</ul>
+</article>
 
-
-
-
-
+</section>
 
     
     

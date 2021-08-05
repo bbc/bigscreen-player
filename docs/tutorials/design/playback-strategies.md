@@ -1,5 +1,3 @@
-# Playback Strategies
-
 As part of the configuration of Bigscreen Player, a 'playback strategy' should be provided.
 
 There are four options available:

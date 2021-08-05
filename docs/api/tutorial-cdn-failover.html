@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>Home - Bigscreen Player</title>
+    <title>Tutorial: CDN Failover - Bigscreen Player</title>
     
     
     
@@ -37,45 +37,67 @@
 
 <div id="main">
     
-
+    <h1 class="page-title">Tutorial: CDN Failover</h1>
     
 
+    <section>
 
-
+<header>
     
 
+    <h2>CDN Failover</h2>
+</header>
 
-    <section class="package">
-        <h3> </h3>		
-    </section>
-
-
-
-
-
-
-
-
-
-    
-
-
-
-    <section class="readme usertext">
-        <article><h1>Bigscreen Player API</h1>
-<p>For documentation on how to get started with Bigscreen Player, or a look at the source code, use the links below.</p>
-<p>To get started with the API, take a look at the modules in the sidebar.</p>
+<article>
+    <h2>What is CDN failover?</h2>
+<p>When a user is playing video/audio and an error occurs we want playback to recover using different CDN.</p>
+<h3>When is it triggered?</h3>
+<p>Few reasons why errors can happen when playback is attempted:</p>
 <ul>
-<li><a href="https://bbc.github.io/bigscreen-player">Getting Started</a></li>
-<li><a href="https://github.com/bbc/bigscreen-player">Source Code</a></li>
-<li><a href="https://www.npmjs.com/package/bigscreen-player">NPM package</a></li>
-</ul></article>
-    </section>
+<li>Loss of network/low network</li>
+<li>Loss of connection to a particular CDN</li>
+<li>Missing segments in manifest</li>
+<li>Device specific fatal errors</li>
+</ul>
+<p><em>Note: CDN Failover is not attempted if the error occurs in last 60 secs of static (on demand) content</em></p>
+<h2>Standard Failover - On all devices/playback strategies</h2>
+<h3>Buffering timeout Errors</h3>
+<p>Some potential causes:</p>
+<ul>
+<li>Loss of Network</li>
+<li>Internal error not reported by device browser</li>
+</ul>
+<h4>Errors at the start of the playback</h4>
+<ol>
+<li>Bigscreen Player has been initialised and is in WAITING state</li>
+<li>CDN failover is attempted after 30 secs</li>
+</ol>
+<h4>Errors during playback</h4>
+<ol>
+<li>Playback strategy reports waiting event</li>
+<li>Bigscreen Player is in WAITING state</li>
+<li>CDN failover is attempted after 20 secs</li>
+</ol>
+<p><em><strong>This can be replicated by network throttling. We usually use very low setting of 12 kb/s to trigger buffering.</strong></em></p>
+<h3>FATAL Errors</h3>
+<p>Some potential causes:</p>
+<ul>
+<li>Loss of CDN, unavailable CDN</li>
+<li>Corrupted stream</li>
+<li>Issue with the device browser</li>
+</ul>
+<ol>
+<li>Playback strategy reports error event</li>
+<li>Bigscreen Player is in WAITING state</li>
+<li>CDN failover is attempted after 5 secs</li>
+</ol>
+<p><em><strong>This can be replicated by blocking CDN in the inspect debug tool.</strong></em></p>
+<h2>Seamless Failover - Only on  MSE Strategy Devices</h2>
+<p>We provide dash.js with all the <code>urls</code> provided. dash.js will switch CDN 'seamlessly' if it detects an issue, which may not always result in a WAITING event being throw.</p>
+<p><em><strong>This can be replicated by blocking CDN in the inspect debug tool</strong></em></p>
+</article>
 
-
-
-
-
+</section>
 
     
     

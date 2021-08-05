@@ -3,7 +3,7 @@
 <head>
     
     <meta charset="utf-8">
-    <title>Home - Bigscreen Player</title>
+    <title>Tutorial: Usage - Bigscreen Player</title>
     
     
     
@@ -37,45 +37,82 @@
 
 <div id="main">
     
-
+    <h1 class="page-title">Tutorial: Usage</h1>
     
 
+    <section>
 
-
+<header>
     
 
+    <h2>Usage</h2>
+</header>
 
-    <section class="package">
-        <h3> </h3>		
-    </section>
+<article>
+    <h2>Configuration</h2>
+<p>Bigscreen Player has some global configuration that is needed before initialisation. A <em>playback strategy</em> must be configured:</p>
+<pre class="prettyprint source lang-javascript"><code>window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'talstrategy' (deprecated)
+</code></pre>
+<p>See the <a href="design/playback-strategies.md">playback strategies</a> wiki page for further details on these strategies.</p>
+<h2>Initialisation</h2>
+<p>The player will render itself into a supplied parent element, and playback will begin as soon as enough data has buffered.</p>
+<pre class="prettyprint source lang-javascript"><code>// configure the media player that will be used before loading
+// see below for further details of ths config
 
+// options are: msestrategy, nativestrategy, hybridstrategy, talstrategy (deprecated)
+window.bigscreenPlayer.playbackStrategy = 'msestrategy';
 
+var bigscreenPlayer = BigscreenPlayer();
 
+var playbackElement = document.createElement('div');
+playbackElement.id = 'BigscreenPlayback';
 
+var body = document.getElementByTagName('body')[0];
+body.appendChild(playbackElement);
 
+var minimalData = {
+  media: {
+    mimeType: 'video/mp4',
+    urls: [
+      {
+        url: 'https://www.cdn1url.com/reallygoodvideo'
+      }
+    ]
+  }
+}
 
+var optionalData = {
+  initialPlaybackTime: 0, // Time (in seconds) to begin playback from
+  media: {
+    mimeType: 'video/mp4', // Used by TAL
+    bitrate: 8940,         // Displayed by Debug Tool
+    captionsUrl: 'https://www.somelovelycaptionsurl.com/captions',
+    codec: 'h264',
+    kind: MediaKind.VIDEO, // Can be VIDEO, or AUDIO
+    urls: [
+      // Multiple urls offer the ability to fail-over to another CDN if required
+      {
+        url: 'https://www.cdn1url.com/reallygoodvideo',
+        cdn: 'cdn1' // Displayed by Debug Tool
+      }, {
+        url: 'https://www.cdn2url.com/reallygoodvideo',
+        cdn: 'cdn2'
+      }
+    ]
+  }
+}
 
+// STATIC for VOD content, GROWING/SLIDING for LIVE content
+var windowType = WindowType.STATIC;
+var enableSubtitles = false;
 
+bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles);
 
-    
+</code></pre>
+<p><a href="tutorial-installation.html">← Prev - Installation</a></p>
+</article>
 
-
-
-    <section class="readme usertext">
-        <article><h1>Bigscreen Player API</h1>
-<p>For documentation on how to get started with Bigscreen Player, or a look at the source code, use the links below.</p>
-<p>To get started with the API, take a look at the modules in the sidebar.</p>
-<ul>
-<li><a href="https://bbc.github.io/bigscreen-player">Getting Started</a></li>
-<li><a href="https://github.com/bbc/bigscreen-player">Source Code</a></li>
-<li><a href="https://www.npmjs.com/package/bigscreen-player">NPM package</a></li>
-</ul></article>
-    </section>
-
-
-
-
-
+</section>
 
     
     
