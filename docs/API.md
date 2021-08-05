@@ -1,5 +1,7 @@
 # Bigscreen Player API
 
+![BSP Logo](bsp.png "Bigscreen-player")
+
 For documentation on how to get started with Bigscreen Player, or a look at the source code, use the links below. 
 
 To get started with the API, take a look at the modules in the sidebar. 

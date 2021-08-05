@@ -15,7 +15,8 @@
         "cleverLinks": false,
         "monospaceLinks": true,
         "useLongnameInNav": true,
-        "showInheritedInNav": true
+        "showInheritedInNav": true,
+        "includeDate": false
     },
     "opts": {
         "destination": "./docs/api",
