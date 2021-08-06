@@ -1,4 +1,4 @@
-# Bigscreen Player API
+# Bigscreen Player
 
 ![BSP Logo](bsp.png "Bigscreen-player")
 
