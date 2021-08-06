@@ -1,5 +1,5 @@
 define('bigscreenplayer/version',
   function () {
-    return '3.18.4';
+    return '0.0.0';
   }
 );
