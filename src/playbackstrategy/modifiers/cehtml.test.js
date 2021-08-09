@@ -1,382 +1,386 @@
-require(
-  [
-    'bigscreenplayer/playbackstrategy/modifiers/cehtml',
-    'bigscreenplayer/playbackstrategy/modifiers/mediaplayerbase'
-  ],
-  function (CehtmlMediaPlayer, MediaPlayerBase) {
-    describe('cehtml Base', function () {
-      var player;
-      var mockMediaElement;
-      var sourceContainer;
+import CehtmlMediaPlayer from './cehtml'
+import MediaPlayerBase from './mediaplayerbase'
 
-      var recentEvents;
+describe('cehtml Base', function () {
+  var player
+  var mockMediaElement
+  var sourceContainer
 
-      function eventCallbackReporter (event) {
-        recentEvents.push(event.type);
+  var recentEvents
+
+  function eventCallbackReporter (event) {
+    recentEvents.push(event.type)
+  }
+
+  beforeEach(function () {
+    jest.useFakeTimers()
+
+    mockMediaElement = {
+      'play': jest.fn(),
+      'seek': jest.fn(),
+      'remove': jest.fn(),
+      'stop': jest.fn()
+    }
+    mockMediaElement.style = {}
+    jest.spyOn(document, 'createElement').mockReturnValue(mockMediaElement)
+    jest.spyOn(document, 'getElementsByTagName').mockReturnValue([{
+      'insertBefore': jest.fn()
+    }])
+
+    sourceContainer = document.createElement('div')
+
+    recentEvents = []
+
+    player = CehtmlMediaPlayer()
+    player.addEventCallback(this, eventCallbackReporter)
+    player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
+  })
+
+  afterEach(function () {
+    jest.useRealTimers()
+  })
+
+  describe('Seek attempted and finished events', function () {
+    afterEach(function () {
+      delete window.bigscreenPlayer
+    })
+
+    it('Seek Attempted Event Emitted On Initialise Media If The State Is Empty', function () {
+      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
+    })
+
+    it('Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing', function () {
+      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
+
+      player.beginPlaybackFrom(0)
+
+      mockMediaElement.playState = 4 // BUFFERING
+      mockMediaElement.onPlayStateChange()
+
+      mockMediaElement.playState = 1 // PLAYING
+      mockMediaElement.onPlayStateChange()
+
+      mockMediaElement.playPosition = 0
+      for (var i = 0; i < 6; i++) {
+        mockMediaElement.playPosition += 500
+        jest.advanceTimersByTime(500)
       }
 
-      beforeEach(function () {
-        jasmine.clock().install();
-        jasmine.clock().mockDate();
+      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
+    })
 
-        mockMediaElement = jasmine.createSpyObj('mediaElement', ['play', 'seek', 'remove', 'stop']);
-        mockMediaElement.style = {};
-        spyOn(document, 'createElement').and.returnValue(mockMediaElement);
-        spyOn(document, 'getElementsByTagName').and.returnValue([jasmine.createSpyObj('body', ['insertBefore'])]);
+    it('Seek Finished Event Is Emitted Only Once', function () {
+      player.beginPlaybackFrom(0)
 
-        sourceContainer = document.createElement('div');
+      mockMediaElement.playState = 4 // BUFFERING
+      mockMediaElement.onPlayStateChange()
 
-        recentEvents = [];
+      mockMediaElement.playState = 1 // PLAYING
+      mockMediaElement.onPlayStateChange()
 
-        player = CehtmlMediaPlayer();
-        player.addEventCallback(this, eventCallbackReporter);
-        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
-      });
+      mockMediaElement.playPosition = 0
+      for (var i = 0; i < 6; i++) {
+        mockMediaElement.playPosition += 500
+        jest.advanceTimersByTime(500)
+      }
 
-      afterEach(function () {
-        jasmine.clock().uninstall();
-      });
+      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
 
-      describe('Seek attempted and finished events', function () {
-        afterEach(function () {
-          delete window.bigscreenPlayer.overrides;
-        });
+      recentEvents = []
+      mockMediaElement.playPosition += 500
+      jest.advanceTimersByTime(500)
 
-        it('Seek Attempted Event Emitted On Initialise Media If The State Is Empty', function () {
-          expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
-        });
+      expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
+    })
 
-        it('Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing', function () {
-          expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+    it('Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
+      window.bigscreenPlayer = {
+        overrides: {
+          restartTimeout: 10000
+        }
+      }
 
-          player.beginPlaybackFrom(0);
+      player = CehtmlMediaPlayer()
+      player.addEventCallback(this, eventCallbackReporter)
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
-          mockMediaElement.playState = 4; // BUFFERING
-          mockMediaElement.onPlayStateChange();
+      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
 
-          mockMediaElement.playState = 1; // PLAYING
-          mockMediaElement.onPlayStateChange();
+      player.beginPlaybackFrom(0)
 
-          mockMediaElement.playPosition = 0;
-          for (var i = 0; i < 6; i++) {
-            mockMediaElement.playPosition += 500;
-            jasmine.clock().tick(500);
-          }
+      mockMediaElement.playState = 4 // BUFFERING
+      mockMediaElement.onPlayStateChange()
 
-          expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
-        });
+      mockMediaElement.playState = 1 // PLAYING
+      mockMediaElement.onPlayStateChange()
 
-        it('Seek Finished Event Is Emitted Only Once', function () {
-          player.beginPlaybackFrom(0);
+      mockMediaElement.playPosition = 0
+      var numberOfLoops = 10000 / 500
+      for (var i = 0; i < numberOfLoops - 1; i++) {
+        mockMediaElement.playPosition += 500
+        jest.advanceTimersByTime(500)
 
-          mockMediaElement.playState = 4; // BUFFERING
-          mockMediaElement.onPlayStateChange();
+        expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
+      }
 
-          mockMediaElement.playState = 1; // PLAYING
-          mockMediaElement.onPlayStateChange();
+      mockMediaElement.playPosition += 1000
+      jest.advanceTimersByTime(1000)
 
-          mockMediaElement.playPosition = 0;
-          for (var i = 0; i < 6; i++) {
-            mockMediaElement.playPosition += 500;
-            jasmine.clock().tick(500);
-          }
+      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
+    })
+  })
 
-          expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
+  describe('addEventCallback', function () {
+    it('should call the callback on update', function () {
+      var spy = jest.fn()
 
-          recentEvents = [];
-          mockMediaElement.playPosition += 500;
-          jasmine.clock().tick(500);
+      player.addEventCallback(this, spy)
+      player.beginPlayback()
 
-          expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
-        });
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'buffering' }))
+    })
+  })
 
-        it('Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
-          window.bigscreenPlayer.overrides = {
-            restartTimeout: 10000
-          };
+  describe('removeEventCallback', function () {
+    it('should remove the callback', function () {
+      var spy = jest.fn()
 
-          player = CehtmlMediaPlayer();
-          player.addEventCallback(this, eventCallbackReporter);
-          player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
+      player.addEventCallback(this, spy)
+      player.removeEventCallback(this, spy)
+      player.beginPlayback()
 
-          expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED);
+      expect(spy).not.toHaveBeenCalled()
+    })
+  })
 
-          player.beginPlaybackFrom(0);
+  describe('removeAllEventCallbacks', function () {
+    it('should remove all the callbacks', function () {
+      var spy = jest.fn()
 
-          mockMediaElement.playState = 4; // BUFFERING
-          mockMediaElement.onPlayStateChange();
+      player.addEventCallback(this, spy)
+      player.removeAllEventCallbacks()
+      player.beginPlayback()
 
-          mockMediaElement.playState = 1; // PLAYING
-          mockMediaElement.onPlayStateChange();
+      expect(spy).not.toHaveBeenCalled()
+    })
+  })
 
-          mockMediaElement.playPosition = 0;
-          var numberOfLoops = 10000 / 500;
-          for (var i = 0; i < numberOfLoops - 1; i++) {
-            mockMediaElement.playPosition += 500;
-            jasmine.clock().tick(500);
+  describe('resume', function () {
+    it('should call through to play if paused', function () {
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.onPlayStateChange()
+      player.pause()
 
-            expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
-          }
+      mockMediaElement.play.mockClear()
 
-          mockMediaElement.playPosition += 1000;
-          jasmine.clock().tick(1000);
+      expect(mockMediaElement.play).not.toHaveBeenCalled()
 
-          expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED);
-        });
-      });
+      player.resume()
 
-      describe('addEventCallback', function () {
-        it('should call the callback on update', function () {
-          var spy = jasmine.createSpy('callback');
+      expect(mockMediaElement.play).toHaveBeenCalledWith(1)
+    })
 
-          player.addEventCallback(this, spy);
-          player.beginPlayback();
+    it('should do nothing if playing', function () {
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.onPlayStateChange()
 
-          expect(spy).toHaveBeenCalledWith(jasmine.objectContaining({ type: 'buffering' }));
-        });
-      });
+      mockMediaElement.play.mockClear()
 
-      describe('removeEventCallback', function () {
-        it('should remove the callback', function () {
-          var spy = jasmine.createSpy('callback');
+      player.resume()
 
-          player.addEventCallback(this, spy);
-          player.removeEventCallback(this, spy);
-          player.beginPlayback();
+      expect(mockMediaElement.play).not.toHaveBeenCalled()
+    })
+  })
 
-          expect(spy).not.toHaveBeenCalled();
-        });
-      });
+  describe('playFrom', function () {
+    it('should seek to the required time', function () {
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.onPlayStateChange()
 
-      describe('removeAllEventCallbacks', function () {
-        it('should remove all the callbacks', function () {
-          var spy = jasmine.createSpy('callback');
+      player.playFrom(10)
 
-          player.addEventCallback(this, spy);
-          player.removeAllEventCallbacks();
-          player.beginPlayback();
+      expect(mockMediaElement.seek).toHaveBeenCalledWith(10000)
+    })
 
-          expect(spy).not.toHaveBeenCalled();
-        });
-      });
+    it('should clamp to within the seekable range', function () {
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.playTime = 10000
+      mockMediaElement.onPlayStateChange()
 
-      describe('resume', function () {
-        it('should call through to play if paused', function () {
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.onPlayStateChange();
-          player.pause();
+      player.playFrom(1000000000)
 
-          mockMediaElement.play.calls.reset();
+      expect(mockMediaElement.seek).toHaveBeenCalledWith(8900)
+    })
+  })
 
-          expect(mockMediaElement.play).not.toHaveBeenCalled();
+  describe('beginPlayback', function () {
+    it('should call play on the media element', function () {
+      player.beginPlayback()
 
-          player.resume();
+      expect(mockMediaElement.play).toHaveBeenCalledWith(1)
+    })
 
-          expect(mockMediaElement.play).toHaveBeenCalledWith(1);
-        });
+    it('should not call play if playing', function () {
+      player.beginPlayback()
 
-        it('should do nothing if playing', function () {
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.onPlayStateChange();
+      mockMediaElement.play.mockClear()
 
-          mockMediaElement.play.calls.reset();
+      player.beginPlayback()
 
-          player.resume();
+      expect(mockMediaElement.play).not.toHaveBeenCalled()
+    })
+  })
 
-          expect(mockMediaElement.play).not.toHaveBeenCalled();
-        });
-      });
+  describe('beginPlaybackFrom', function () {
+    it('should call play and then seek on the media element', function () {
+      player.beginPlaybackFrom(10)
+      mockMediaElement.playState = 1
+      mockMediaElement.onPlayStateChange()
 
-      describe('playFrom', function () {
-        it('should seek to the required time', function () {
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.onPlayStateChange();
+      expect(mockMediaElement.play).toHaveBeenCalledWith(1)
+      expect(mockMediaElement.seek).toHaveBeenCalledWith(10000)
+    })
 
-          player.playFrom(10);
+    it('should call play or seek if playing', function () {
+      player.beginPlaybackFrom(10)
+      mockMediaElement.playState = 1
+      mockMediaElement.onPlayStateChange()
 
-          expect(mockMediaElement.seek).toHaveBeenCalledWith(10000);
-        });
+      mockMediaElement.play.mockClear()
+      mockMediaElement.seek.mockClear()
 
-        it('should clamp to within the seekable range', function () {
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.playTime = 10000;
-          mockMediaElement.onPlayStateChange();
+      player.beginPlaybackFrom(10)
 
-          player.playFrom(1000000000);
+      expect(mockMediaElement.play).not.toHaveBeenCalledWith()
+      expect(mockMediaElement.seek).not.toHaveBeenCalledWith()
+    })
+  })
 
-          expect(mockMediaElement.seek).toHaveBeenCalledWith(8900);
-        });
-      });
+  describe('pause', function () {
+    it('should call pause on the media element', function () {
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.onPlayStateChange()
 
-      describe('beginPlayback', function () {
-        it('should call play on the media element', function () {
-          player.beginPlayback();
-
-          expect(mockMediaElement.play).toHaveBeenCalledWith(1);
-        });
-
-        it('should not call play if playing', function () {
-          player.beginPlayback();
-
-          mockMediaElement.play.calls.reset();
-
-          player.beginPlayback();
-
-          expect(mockMediaElement.play).not.toHaveBeenCalled();
-        });
-      });
-
-      describe('beginPlaybackFrom', function () {
-        it('should call play and then seek on the media element', function () {
-          player.beginPlaybackFrom(10);
-          mockMediaElement.playState = 1;
-          mockMediaElement.onPlayStateChange();
-
-          expect(mockMediaElement.play).toHaveBeenCalledWith(1);
-          expect(mockMediaElement.seek).toHaveBeenCalledWith(10000);
-        });
-
-        it('should call play or seek if playing', function () {
-          player.beginPlaybackFrom(10);
-          mockMediaElement.playState = 1;
-          mockMediaElement.onPlayStateChange();
-
-          mockMediaElement.play.calls.reset();
-          mockMediaElement.seek.calls.reset();
-
-          player.beginPlaybackFrom(10);
-
-          expect(mockMediaElement.play).not.toHaveBeenCalledWith();
-          expect(mockMediaElement.seek).not.toHaveBeenCalledWith();
-        });
-      });
-
-      describe('pause', function () {
-        it('should call pause on the media element', function () {
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.onPlayStateChange();
-
-          mockMediaElement.play.calls.reset();
-          player.pause();
-
-          expect(mockMediaElement.play).toHaveBeenCalledWith(0);
-        });
-
-        it('should not call pause if paused', function () {
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.onPlayStateChange();
-
-          player.pause();
-
-          mockMediaElement.play.calls.reset();
-          player.pause();
-
-          expect(mockMediaElement.play).not.toHaveBeenCalled();
-        });
-      });
-
-      describe('stop', function () {
-        it('should call stop on the media element', function () {
-          player.beginPlayback();
-          player.stop();
-
-          expect(mockMediaElement.stop).toHaveBeenCalledWith();
-        });
-
-        it('should not call stop if playback has not started', function () {
-          player.stop();
-
-          expect(mockMediaElement.stop).not.toHaveBeenCalled();
-        });
-
-        it('should not call stop if already stopped', function () {
-          player.beginPlayback();
-          player.stop();
-
-          mockMediaElement.stop.calls.reset();
-          player.stop();
-
-          expect(mockMediaElement.stop).not.toHaveBeenCalled();
-        });
-      });
-
-      describe('getSource', function () {
-        it('should return the source', function () {
-          expect(player.getSource()).toBe('testUrl');
-        });
-      });
-
-      describe('getMimeType', function () {
-        it('should return the mimeType', function () {
-          expect(player.getMimeType()).toBe('testMimeType');
-        });
-      });
-
-      describe('getSeekableRange', function () {
-        it('should return the seekable range', function () {
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.playTime = 10000;
-          mockMediaElement.onPlayStateChange();
-
-          expect(player.getSeekableRange()).toEqual({start: 0, end: 10});
-        });
-      });
-
-      describe('getMediaDuration', function () {
-        it('should return the media duration', function () {
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.playTime = 10000;
-          mockMediaElement.onPlayStateChange();
-
-          expect(player.getMediaDuration()).toEqual(10);
-        });
-      });
-
-      describe('getState', function () {
-        it('should return the state', function () {
-          expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED);
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.onPlayStateChange();
-
-          expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING);
-        });
-      });
-
-      describe('getPlayerElement', function () {
-        it('should return the media element', function () {
-          expect(player.getPlayerElement()).toBe(mockMediaElement);
-        });
-      });
-
-      describe('getDuration', function () {
-        it('should retrun the media duration for vod', function () {
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.playTime = 10000;
-          mockMediaElement.onPlayStateChange();
-
-          expect(player.getDuration()).toBe(10);
-        });
-
-        it('should retrun the inifinty for live', function () {
-          player.reset();
-          player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'testUrl', 'testMimeType', sourceContainer, {});
-          player.beginPlayback();
-          mockMediaElement.playState = 1;
-          mockMediaElement.playTime = 10000;
-          mockMediaElement.onPlayStateChange();
-
-          expect(player.getDuration()).toBe(Infinity);
-        });
-      });
-    });
-  });
+      mockMediaElement.play.mockClear()
+      player.pause()
+
+      expect(mockMediaElement.play).toHaveBeenCalledWith(0)
+    })
+
+    it('should not call pause if paused', function () {
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.onPlayStateChange()
+
+      player.pause()
+
+      mockMediaElement.play.mockClear()
+      player.pause()
+
+      expect(mockMediaElement.play).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('stop', function () {
+    it('should call stop on the media element', function () {
+      player.beginPlayback()
+      player.stop()
+
+      expect(mockMediaElement.stop).toHaveBeenCalledWith()
+    })
+
+    it('should not call stop if playback has not started', function () {
+      player.stop()
+
+      expect(mockMediaElement.stop).not.toHaveBeenCalled()
+    })
+
+    it('should not call stop if already stopped', function () {
+      player.beginPlayback()
+      player.stop()
+
+      mockMediaElement.stop.mockClear()
+      player.stop()
+
+      expect(mockMediaElement.stop).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getSource', function () {
+    it('should return the source', function () {
+      expect(player.getSource()).toBe('testUrl')
+    })
+  })
+
+  describe('getMimeType', function () {
+    it('should return the mimeType', function () {
+      expect(player.getMimeType()).toBe('testMimeType')
+    })
+  })
+
+  describe('getSeekableRange', function () {
+    it('should return the seekable range', function () {
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.playTime = 10000
+      mockMediaElement.onPlayStateChange()
+
+      expect(player.getSeekableRange()).toEqual({start: 0, end: 10})
+    })
+  })
+
+  describe('getMediaDuration', function () {
+    it('should return the media duration', function () {
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.playTime = 10000
+      mockMediaElement.onPlayStateChange()
+
+      expect(player.getMediaDuration()).toEqual(10)
+    })
+  })
+
+  describe('getState', function () {
+    it('should return the state', function () {
+      expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.onPlayStateChange()
+
+      expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
+    })
+  })
+
+  describe('getPlayerElement', function () {
+    it('should return the media element', function () {
+      expect(player.getPlayerElement()).toBe(mockMediaElement)
+    })
+  })
+
+  describe('getDuration', function () {
+    it('should retrun the media duration for vod', function () {
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.playTime = 10000
+      mockMediaElement.onPlayStateChange()
+
+      expect(player.getDuration()).toBe(10)
+    })
+
+    it('should retrun the inifinty for live', function () {
+      player.reset()
+      player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
+      player.beginPlayback()
+      mockMediaElement.playState = 1
+      mockMediaElement.playTime = 10000
+      mockMediaElement.onPlayStateChange()
+
+      expect(player.getDuration()).toBe(Infinity)
+    })
+  })
+})
