@@ -1,30 +1,30 @@
-import deferExceptions from './deferexceptions';
+import deferExceptions from './deferexceptions'
 
 describe('deferExceptions', function () {
   it('calls the callback once', function () {
-    var callback = jest.fn();
+    var callback = jest.fn()
 
-    deferExceptions(callback);
+    deferExceptions(callback)
 
-    expect(callback).toHaveBeenCalledTimes(1);
-  });
+    expect(callback).toHaveBeenCalledTimes(1)
+  })
 
   it('does not let an exception through', function () {
-    jest.useFakeTimers();
+    jest.useFakeTimers()
 
-    var error = new Error('oops');
+    var error = new Error('oops')
 
     try {
       expect(function () {
         deferExceptions(function () {
-          throw error;
-        });
-      }).not.toThrow();
-      jest.advanceTimersByTime(1);
+          throw error
+        })
+      }).not.toThrow()
+      jest.advanceTimersByTime(1)
     } catch (e) {
-      expect(e).toBe(error);
+      expect(e).toBe(error)
     }
 
-    jest.useRealTimers();
-  });
-});
+    jest.useRealTimers()
+  })
+})

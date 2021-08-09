@@ -1,35 +1,35 @@
-import callCallbacks from './callcallbacks';
+import callCallbacks from './callcallbacks'
 
 describe('callCallbacks', function () {
   it('calls all the callbacks once with the provided data', function () {
-    var callbacks = [ jest.fn(), jest.fn() ];
+    var callbacks = [ jest.fn(), jest.fn() ]
 
-    var data = 'data';
+    var data = 'data'
 
-    callCallbacks(callbacks, data);
+    callCallbacks(callbacks, data)
 
     callbacks.forEach(function (callback) {
-      expect(callback).toHaveBeenCalledTimes(1);
-      expect(callback).toHaveBeenCalledWith(data);
-    });
-  });
+      expect(callback).toHaveBeenCalledTimes(1)
+      expect(callback).toHaveBeenCalledWith(data)
+    })
+  })
 
   // Note: Forgive the time hack, async deferred errors can be flakey in other tests if not caught!
   it('calls later callbacks if an earlier one errors', function () {
-    jest.useFakeTimers();
-    var callback = jest.fn();
+    jest.useFakeTimers()
+    var callback = jest.fn()
 
     var failingCallCallbacks = () => {
       callCallbacks([
-        () => { throw new Error('oops'); },
+        () => { throw new Error('oops') },
         callback
-      ]);
-      jest.advanceTimersByTime(1);
-    };
+      ])
+      jest.advanceTimersByTime(1)
+    }
 
-    expect(failingCallCallbacks).toThrowError();
+    expect(failingCallCallbacks).toThrowError()
 
-    expect(callback).toHaveBeenCalledTimes(1);
-    jest.useRealTimers();
-  });
-});
+    expect(callback).toHaveBeenCalledTimes(1)
+    jest.useRealTimers()
+  })
+})

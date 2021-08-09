@@ -3,46 +3,46 @@ import ReadyHelper from './readyhelper'
 import WindowTypes from './models/windowtypes'
 import LiveSupport from './models/livesupport'
 
-var callback;
+var callback
 
 describe('readyHelper', function () {
-  var readyHelper;
+  var readyHelper
 
   beforeEach(function () {
-    callback = jest.fn();
-  });
+    callback = jest.fn()
+  })
 
   describe('- Initialisation -', function () {
     it('does not attempt to call callback if it is not supplied', function () {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, undefined);
+      readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, undefined)
 
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
           currentTime: 1
         }
-      });
+      })
 
-      expect(callback).not.toHaveBeenCalled();
-    });
-  });
+      expect(callback).not.toHaveBeenCalled()
+    })
+  })
 
   describe('- Basic -', function () {
     beforeEach(function () {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback);
-    });
+      readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
+    })
 
     it('does not call the supplied callback in init', function () {
-      expect(callback).not.toHaveBeenCalled();
-    });
+      expect(callback).not.toHaveBeenCalled()
+    })
 
     it('does not call the supplied callback if there is no event data', function () {
       readyHelper.callbackWhenReady({
         timeUpdate: true
-      });
+      })
 
-      expect(callback).not.toHaveBeenCalled();
-    });
+      expect(callback).not.toHaveBeenCalled()
+    })
 
     it('only calls the supplied callback once when given multiple events containing a valid time', function () {
       readyHelper.callbackWhenReady({
@@ -50,25 +50,25 @@ describe('readyHelper', function () {
         data: {
           currentTime: 0
         }
-      });
+      })
 
-      expect(callback).toHaveBeenCalledTimes(1);
+      expect(callback).toHaveBeenCalledTimes(1)
 
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
           currentTime: 1
         }
-      });
+      })
 
-      expect(callback).toHaveBeenCalledTimes(1);
-    });
-  });
+      expect(callback).toHaveBeenCalledTimes(1)
+    })
+  })
 
   describe('- VoD, No Initial Time -', function () {
     beforeEach(function () {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback);
-    });
+      readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
+    })
 
     it('calls the supplied callback when given event data containing a valid time', function () {
       readyHelper.callbackWhenReady({
@@ -76,10 +76,10 @@ describe('readyHelper', function () {
         data: {
           currentTime: 0
         }
-      });
+      })
 
-      expect(callback).toHaveBeenCalledTimes(1);
-    });
+      expect(callback).toHaveBeenCalledTimes(1)
+    })
 
     it('does not call the supplied callback when given event data containing an invalid time', function () {
       readyHelper.callbackWhenReady({
@@ -87,30 +87,30 @@ describe('readyHelper', function () {
         data: {
           currentTime: -1
         }
-      });
+      })
 
-      expect(callback).not.toHaveBeenCalled();
-    });
+      expect(callback).not.toHaveBeenCalled()
+    })
 
     it('does not call the supplied callback when media state transitions to FATAL_ERROR', function () {
       readyHelper.callbackWhenReady({
         data: {
           state: MediaState.FATAL_ERROR
         }
-      });
+      })
 
-      expect(callback).not.toHaveBeenCalled();
-    });
+      expect(callback).not.toHaveBeenCalled()
+    })
 
     it('does not call the supplied callback when media state is undefined', function () {
       readyHelper.callbackWhenReady({
         data: {
           state: undefined
         }
-      });
+      })
 
-      expect(callback).not.toHaveBeenCalled();
-    });
+      expect(callback).not.toHaveBeenCalled()
+    })
 
     it('calls the supplied callback when media state and time is valid', function () {
       readyHelper.callbackWhenReady({
@@ -118,16 +118,16 @@ describe('readyHelper', function () {
           state: MediaState.PLAYING,
           currentTime: 0
         }
-      });
+      })
 
-      expect(callback).toHaveBeenCalledTimes(1);
-    });
-  });
+      expect(callback).toHaveBeenCalledTimes(1)
+    })
+  })
 
   describe('- VoD, Initial Time -', function () {
     beforeEach(function () {
-      readyHelper = new ReadyHelper(60, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback);
-    });
+      readyHelper = new ReadyHelper(60, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
+    })
 
     it('calls the supplied callback when current time exceeds intital time', function () {
       readyHelper.callbackWhenReady({
@@ -135,10 +135,10 @@ describe('readyHelper', function () {
         data: {
           currentTime: 61
         }
-      });
+      })
 
-      expect(callback).toHaveBeenCalledTimes(1);
-    });
+      expect(callback).toHaveBeenCalledTimes(1)
+    })
 
     it('does not call the supplied callback when current time is 0', function () {
       readyHelper.callbackWhenReady({
@@ -146,16 +146,16 @@ describe('readyHelper', function () {
         data: {
           currentTime: 0
         }
-      });
+      })
 
-      expect(callback).not.toHaveBeenCalled();
-    });
-  });
+      expect(callback).not.toHaveBeenCalled()
+    })
+  })
 
   describe('- Live -', function () {
     beforeEach(function () {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.RESTARTABLE, callback);
-    });
+      readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.RESTARTABLE, callback)
+    })
 
     it('calls the supplied callback when given a valid seekable range and current time', function () {
       readyHelper.callbackWhenReady({
@@ -167,10 +167,10 @@ describe('readyHelper', function () {
             end: 61
           }
         }
-      });
+      })
 
-      expect(callback).toHaveBeenCalledTimes(1);
-    });
+      expect(callback).toHaveBeenCalledTimes(1)
+    })
 
     it('does not call the supplied callback when the seekable range is undefined', function () {
       readyHelper.callbackWhenReady({
@@ -178,10 +178,10 @@ describe('readyHelper', function () {
         data: {
           currentTime: 0
         }
-      });
+      })
 
-      expect(callback).not.toHaveBeenCalled();
-    });
+      expect(callback).not.toHaveBeenCalled()
+    })
 
     it('does not call the supplied callback when seekable range is 0 - 0', function () {
       readyHelper.callbackWhenReady({
@@ -193,16 +193,16 @@ describe('readyHelper', function () {
             end: 0
           }
         }
-      });
+      })
 
-      expect(callback).not.toHaveBeenCalled();
-    });
-  });
+      expect(callback).not.toHaveBeenCalled()
+    })
+  })
 
   describe('- Live, Playable -', function () {
     beforeEach(function () {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.PLAYABLE, callback);
-    });
+      readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.PLAYABLE, callback)
+    })
 
     it('calls the supplied callback regardless of seekable range if current time is positive', function () {
       readyHelper.callbackWhenReady({
@@ -211,9 +211,9 @@ describe('readyHelper', function () {
           currentTime: 60,
           seekableRange: {}
         }
-      });
+      })
 
-      expect(callback).toHaveBeenCalledTimes(1);
-    });
-  });
-});
+      expect(callback).toHaveBeenCalledTimes(1)
+    })
+  })
+})
