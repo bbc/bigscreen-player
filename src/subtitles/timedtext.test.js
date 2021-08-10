@@ -1,49 +1,46 @@
-require(
-  ['bigscreenplayer/subtitles/timedtext'],
-  function (TimedText) {
-    describe('TimedText', function () {
-      it('Should initialise with an Element and style callback function', function () {
-        var mockElement = document.createElement('span');
-        mockElement.setAttribute('begin', '00:00:10');
-        mockElement.setAttribute('end', '00:00:13');
-        var mockFunction = jasmine.createSpy('styleFunction');
-        var timedText = TimedText(mockElement, mockFunction);
+import TimedText from './timedtext'
 
-        expect(timedText).toEqual(jasmine.objectContaining({start: 10, end: 13, addToDom: jasmine.any(Function), removeFromDomIfExpired: jasmine.any(Function)}));
-      });
+describe('TimedText', function () {
+  it('Should initialise with an Element and style callback function', function () {
+    var mockElement = document.createElement('span')
+    mockElement.setAttribute('begin', '00:00:10')
+    mockElement.setAttribute('end', '00:00:13')
+    var mockFunction = jest.fn()
+    var timedText = TimedText(mockElement, mockFunction)
 
-      it('Should add itself to a supplied DOM element', function () {
-        var domElement = document.createElement('div');
-        var mockElement = document.createElement('span');
-        mockElement.setAttribute('begin', '00:00:10');
-        mockElement.setAttribute('end', '00:00:13');
-        var mockParentElement = document.createElement('p');
-        mockParentElement.appendChild(mockElement);
+    expect(timedText).toEqual(expect.objectContaining({start: 10, end: 13, addToDom: expect.any(Function), removeFromDomIfExpired: expect.any(Function)}))
+  })
 
-        var mockFunction = jasmine.createSpy('styleFunction');
-        var timedText = TimedText(mockElement, mockFunction);
+  it('Should add itself to a supplied DOM element', function () {
+    var domElement = document.createElement('div')
+    var mockElement = document.createElement('span')
+    mockElement.setAttribute('begin', '00:00:10')
+    mockElement.setAttribute('end', '00:00:13')
+    var mockParentElement = document.createElement('p')
+    mockParentElement.appendChild(mockElement)
 
-        timedText.addToDom(domElement);
+    var mockFunction = jest.fn()
+    var timedText = TimedText(mockElement, mockFunction)
 
-        expect(domElement.hasChildNodes()).toBeTrue();
-      });
+    timedText.addToDom(domElement)
 
-      it('Should remove itself from a parent DOM element', function () {
-        var domElement = document.createElement('div');
-        var mockElement = document.createElement('span');
-        mockElement.setAttribute('begin', '00:00:10');
-        mockElement.setAttribute('end', '00:00:13');
-        var mockParentElement = document.createElement('p');
-        mockParentElement.appendChild(mockElement);
+    expect(domElement.hasChildNodes()).toBe(true)
+  })
 
-        var mockFunction = jasmine.createSpy('styleFunction');
-        var timedText = TimedText(mockElement, mockFunction);
+  it('Should remove itself from a parent DOM element', function () {
+    var domElement = document.createElement('div')
+    var mockElement = document.createElement('span')
+    mockElement.setAttribute('begin', '00:00:10')
+    mockElement.setAttribute('end', '00:00:13')
+    var mockParentElement = document.createElement('p')
+    mockParentElement.appendChild(mockElement)
 
-        timedText.addToDom(domElement);
-        timedText.removeFromDomIfExpired(14);
+    var mockFunction = jest.fn()
+    var timedText = TimedText(mockElement, mockFunction)
 
-        expect(domElement.hasChildNodes()).toBeFalse();
-      });
-    });
-  }
-);
+    timedText.addToDom(domElement)
+    timedText.removeFromDomIfExpired(14)
+
+    expect(domElement.hasChildNodes()).toBe(false)
+  })
+})
