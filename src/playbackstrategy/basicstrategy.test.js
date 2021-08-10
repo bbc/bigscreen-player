@@ -3,7 +3,6 @@ import MediaKinds from '../models/mediakinds'
 import MediaState from '../models/mediastate'
 import BasicStrategy from './basicstrategy'
 import DynamicWindowUtils from '../dynamicwindowutils'
-import { expect, jest } from '@jest/globals'
 
 const autoResumeSpy = jest.spyOn(DynamicWindowUtils, 'autoResumeAtStartOfRange')
 
@@ -27,6 +26,11 @@ describe('HTML5 Strategy', function () {
   beforeEach(function () {
     audioElement = document.createElement('audio')
     videoElement = document.createElement('video')
+
+    jest.spyOn(videoElement, 'load').mockImplementation(() => {})
+    jest.spyOn(videoElement, 'pause').mockImplementation(() => {})
+    jest.spyOn(videoElement, 'play').mockImplementation(() => {})
+
     playbackElement = document.createElement('div')
     playbackElement.id = 'app'
     document.body.appendChild(playbackElement)
@@ -89,6 +93,8 @@ describe('HTML5 Strategy', function () {
 
       expect(playbackElement.childElementCount).toBe(0)
 
+      jest.spyOn(audioElement, 'load').mockImplementation(() => {})
+
       basicStrategy.load(null, 0)
 
       expect(playbackElement.firstChild).toBeInstanceOf(HTMLAudioElement)
@@ -138,11 +144,10 @@ describe('HTML5 Strategy', function () {
     it('should call load on the media element', function () {
       setUpStrategy()
 
-      const loadSpy = jest.spyOn(videoElement, 'load')
-
+      var videoLoadSpy = jest.spyOn(videoElement, 'load')
       basicStrategy.load(null, undefined)
 
-      expect(loadSpy).toHaveBeenCalled()
+      expect(videoLoadSpy).toHaveBeenCalled()
     })
 
     it('should update the media element source if load is when media element already exists', function () {
