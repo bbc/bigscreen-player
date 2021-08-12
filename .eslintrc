@@ -7,22 +7,16 @@
       "requireConfigFile": false
     },
     "env": {
+      "jest/globals": true,
       "node": true,
-      "browser": true,
-      "jasmine": true,
-      "phantomjs": true
+      "browser": true
     },
     "plugins": [
       "standard",
-      "jasmine",
-      "require"
-    ],
-    "extends": [
-      "plugin:jasmine/recommended"
+      "jest"
     ],
     "globals": {
       "dashjs": true,
-      "define": false,
       "Promise": true,
       "jest": true
     },
