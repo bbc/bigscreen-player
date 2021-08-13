@@ -110,8 +110,6 @@ describe('Media Source Extensions Playback Strategy', function () {
     mockAudioElement = document.createElement('audio')
     mockVideoElement = document.createElement('video')
     playbackElement = document.createElement('div')
-    // playbackElement.id = 'app'
-    // document.body.appendChild(playbackElement)
 
     jest.spyOn(document, 'createElement').mockImplementationOnce(function (elementType) {
       if (elementType === 'audio') {
