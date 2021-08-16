@@ -3,7 +3,7 @@
   "version": "4.19.0",
   "description": "Simplified media playback for bigscreen devices.",
   "browser": "dist/bigscreenplayer.umd.js",
-  "module": "dist/esm/index.js",
+  "module": "dist/esm/main.js",
   "type": "module",
   "scripts": {
     "prepare": "rm -fR ./dist && npm run build",
