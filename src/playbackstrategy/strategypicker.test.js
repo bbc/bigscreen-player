@@ -1,79 +1,97 @@
-require(
-  [
-    'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/playbackstrategy/strategypicker'
-  ],
-  function (WindowTypes, StrategyPicker) {
-    var isUHD = true;
-    var previousPlaybackConfig = window.bigscreenPlayer;
+import WindowTypes from '../models/windowtypes'
+import StrategyPicker from './strategypicker'
+import NativeStrategy from './nativestrategy'
+import MSEStrategy from './msestrategy'
 
-    function setWindowBigscreenPlayerConfig (config) {
-      window.bigscreenPlayer = config;
+jest.mock('./nativestrategy')
+jest.mock('dashjs/index_mediaplayerOnly', () => ({ MediaPlayer: jest.fn() }))
+jest.mock('./msestrategy')
+
+describe('Strategy Picker', function () {
+  var isUHD = true
+
+  beforeEach(function () {
+    window.bigscreenPlayer = {}
+  })
+
+  afterEach(function () {
+    delete window.bigscreenPlayer
+  })
+
+  it('should default to native strategy', function (done) {
+    StrategyPicker(WindowTypes.STATIC, isUHD).then(function (strategy) {
+      expect(strategy).toEqual(NativeStrategy)
+      done()
+    })
+  })
+
+  it('should use native strategy if UHD is an exception for a hybrid device', function (done) {
+    window.bigscreenPlayer = {
+      playbackStrategy: 'hybridstrategy',
+      mseExceptions: ['uhd']
     }
 
-    describe('Strategy Picker', function () {
-      beforeEach(function () {
-        window.bigscreenPlayer = {};
-        setWindowBigscreenPlayerConfig({playbackStrategy: 'hybridstrategy'});
-      });
+    StrategyPicker(WindowTypes.STATIC, isUHD).then(function (strategy) {
+      expect(strategy).toEqual(NativeStrategy)
+      done()
+    })
+  })
 
-      afterEach(function () {
-        setWindowBigscreenPlayerConfig(previousPlaybackConfig);
-      });
+  describe('WindowType Exceptions', function () {
+    it('should use native strategy if playing and an exception for a STATIC window', function (done) {
+      window.bigscreenPlayer = {
+        playbackStrategy: 'hybridstrategy',
+        mseExceptions: ['staticWindow']
+      }
 
-      it('Causes MSE Strategy to be picked if there are no configured exceptions', function () {
-        expect(StrategyPicker(WindowTypes.STATIC, !isUHD)).toBe('msestrategy');
-      });
+      StrategyPicker(WindowTypes.STATIC, !isUHD).then(function (strategy) {
+        expect(strategy).toEqual(NativeStrategy)
+        done()
+      })
+    })
 
-      it('Causes TAL Strategy to be picked if uhd is an exception', function () {
-        setWindowBigscreenPlayerConfig({mseExceptions: ['uhd']});
+    it('should use native strategy if playing and an exception for a SLIDING window', function (done) {
+      window.bigscreenPlayer = {
+        playbackStrategy: 'hybridstrategy',
+        mseExceptions: ['slidingWindow']
+      }
 
-        expect(StrategyPicker(WindowTypes.STATIC, isUHD)).toBe('nativestrategy');
-      });
+      StrategyPicker(WindowTypes.SLIDING, !isUHD).then(function (strategy) {
+        expect(strategy).toEqual(NativeStrategy)
+        done()
+      })
+    })
 
-      it('Causes MSE Strategy to be picked if uhd is an exception but asset is not UHD', function () {
-        setWindowBigscreenPlayerConfig({mseExceptions: ['uhd']});
+    it('should use native strategy if playing and an exception for a GROWING window', function (done) {
+      window.bigscreenPlayer = {
+        playbackStrategy: 'hybridstrategy',
+        mseExceptions: ['growingWindow']
+      }
 
-        expect(StrategyPicker(WindowTypes.STATIC, !isUHD)).toBe('msestrategy');
-      });
+      StrategyPicker(WindowTypes.GROWING, !isUHD).then(function (strategy) {
+        expect(strategy).toEqual(NativeStrategy)
+        done()
+      })
+    })
+  })
 
-      describe('WindowTypes', function () {
-        it('Causes MSE Strategy to be picked if asset is STATIC window and there is no exception for staticWindow', function () {
-          setWindowBigscreenPlayerConfig({mseExceptions: ['testException']});
+  it('should use mse strategy if there are no exceptions for a hybrid device', function (done) {
+    window.bigscreenPlayer = {
+      playbackStrategy: 'hybridstrategy'
+    }
 
-          expect(StrategyPicker(WindowTypes.STATIC, !isUHD)).toBe('msestrategy');
-        });
+    StrategyPicker(WindowTypes.STATIC, isUHD).then(function (strategy) {
+      expect(strategy).toEqual(MSEStrategy)
+      done()
+    })
+  })
 
-        it('Causes TAL Strategy to be picked if asset is STATIC window and there is an exception for staticWindow', function () {
-          setWindowBigscreenPlayerConfig({mseExceptions: ['staticWindow']});
+  it('should use mse strategy when configured', function (done) {
+    window.bigscreenPlayer.playbackStrategy = 'msestrategy'
 
-          expect(StrategyPicker(WindowTypes.STATIC, !isUHD)).toBe('nativestrategy');
-        });
-
-        it('Causes MSE Strategy to be picked if asset is SLIDING window and there is no exception for slidingWindow', function () {
-          setWindowBigscreenPlayerConfig({mseExceptions: ['testException']});
-
-          expect(StrategyPicker(WindowTypes.SLIDING, !isUHD)).toBe('msestrategy');
-        });
-
-        it('Causes TAL Strategy to be picked if asset is SLIDING window and there is an exception for slidingWindow', function () {
-          setWindowBigscreenPlayerConfig({mseExceptions: ['slidingWindow']});
-
-          expect(StrategyPicker(WindowTypes.SLIDING, !isUHD)).toBe('nativestrategy');
-        });
-
-        it('Causes MSE Strategy to be picked if asset is GROWING window and there is no exception for growingWindow', function () {
-          setWindowBigscreenPlayerConfig({mseExceptions: ['testException']});
-
-          expect(StrategyPicker(WindowTypes.GROWING, !isUHD)).toBe('msestrategy');
-        });
-
-        it('Causes TAL Strategy to be picked if asset is GROWING and there is an exception for growingWindow', function () {
-          setWindowBigscreenPlayerConfig({mseExceptions: ['growingWindow']});
-
-          expect(StrategyPicker(WindowTypes.GROWING, !isUHD)).toBe('nativestrategy');
-        });
-      });
-    });
-  }
-);
+    StrategyPicker(WindowTypes.STATIC, isUHD).then(function (strategy) {
+      expect(strategy).toEqual(MSEStrategy)
+      done()
+    })
+  })
+})
