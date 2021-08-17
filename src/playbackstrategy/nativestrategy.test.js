@@ -1,81 +1,205 @@
-require(
-  [
-    'bigscreenplayer/models/windowtypes',
-    'bigscreenplayer/models/livesupport',
-    'bigscreenplayer/mediasources',
-    'squire'
-  ],
-  function (WindowTypes, LiveSupport, MediaSources, Squire) {
-    describe('Native Strategy', function () {
-      var nativeStrategy;
-      var html5player;
-      var livePlayer;
-      var mediaPlayer;
+import WindowTypes from '../models/windowtypes'
+import NativeStrategy from './nativestrategy'
+import LegacyAdapter from './legacyplayeradapter'
 
-      var mockLegacyAdapter;
+import HTML5Player from './modifiers/html5'
+import CehtmlPlayer from './modifiers/cehtml'
+import SamsungMaplePlayer from './modifiers/samsungmaple'
+import SamsungStreamingPlayer from './modifiers/samsungstreaming'
+import SamsungStreaming2015Player from './modifiers/samsungstreaming2015'
 
-      var mediaKind = 'mediaKind';
-      var playbackElement = 'playbackElement';
-      var isUHD = 'isUHD';
-      var mediaSources;
+import None from './modifiers/live/none'
+import Playable from './modifiers/live/playable'
+import RestartablePlayer from './modifiers/live/restartable'
+import SeekablePlayer from './modifiers/live/seekable'
 
-      beforeEach(function (done) {
-        var mediaSourceCallbacks = jasmine.createSpyObj('mediaSourceCallbacks', ['onSuccess', 'onError']);
-        mediaSources = new MediaSources([{url: 'http://a', cdn: 'supplierA'}], new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
+jest.mock('./legacyplayeradapter')
 
-        var injector = new Squire();
+jest.mock('./modifiers/html5')
+jest.mock('./modifiers/cehtml')
+jest.mock('./modifiers/samsungmaple')
+jest.mock('./modifiers/samsungstreaming')
+jest.mock('./modifiers/samsungstreaming2015')
 
-        mockLegacyAdapter = jasmine.createSpy('LegacyAdapter');
-        mediaPlayer = jasmine.createSpy('MediaPlayer');
-        html5player = jasmine.createSpy('Html5Player');
-        livePlayer = jasmine.createSpy('LivePlayer');
+jest.mock('./modifiers/live/none')
+jest.mock('./modifiers/live/playable')
+jest.mock('./modifiers/live/restartable')
+jest.mock('./modifiers/live/seekable')
 
-        html5player.and.returnValue(mediaPlayer);
-        livePlayer.and.returnValue(mediaPlayer);
+describe('Native Strategy', function () {
+  var mediaKind = 'mediaKind'
+  var playbackElement = 'playbackElement'
+  var isUHD = 'isUHD'
+  var mediaSources = 'mockMediaSources'
+  var windowType
 
-        injector.mock({
-          'bigscreenplayer/playbackstrategy/legacyplayeradapter': mockLegacyAdapter,
-          'bigscreenplayer/playbackstrategy/modifiers/html5': html5player,
-          'bigscreenplayer/playbackstrategy/modifiers/live/playable': livePlayer
-        });
+  var html5Player = 'mockHtml5Player'
+  var cehtmlPlayer = 'mockCehtmlPlayer'
+  var samsungMaplePlayer = 'mockSamsungMaplePlayer'
+  var samsungStreamingPlayer = 'mockSamsungStreamingPlayer'
+  var samsungStreaming2015Player = 'mockSamsungStreaming2015Player'
 
-        injector.require(['bigscreenplayer/playbackstrategy/nativestrategy'], function (strategy) {
-          nativeStrategy = strategy;
-          done();
-        });
-      });
+  var nonePlayer = 'mockNonePlayer'
+  var playablePlayer = 'mockPlayablePlayer'
+  var restartablePlayer = 'mockRestartablePlayer'
+  var seekablePlayer = 'mockSeekablePlayer'
 
-      afterEach(function () {
-        window.bigscreenPlayer.liveSupport = LiveSupport.PLAYABLE;
-      });
+  beforeEach(function () {
+    windowType = WindowTypes.STATIC
+    window.bigscreenPlayer = {}
 
-      it('calls LegacyAdapter with a static media player when called for STATIC window', function () {
-        var windowType = WindowTypes.STATIC;
-        nativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD);
+    HTML5Player.mockReturnValue(html5Player)
+    CehtmlPlayer.mockReturnValue(cehtmlPlayer)
+    SamsungMaplePlayer.mockReturnValue(samsungMaplePlayer)
+    SamsungStreamingPlayer.mockReturnValue(samsungStreamingPlayer)
+    SamsungStreaming2015Player.mockReturnValue(samsungStreaming2015Player)
 
-        expect(html5player).toHaveBeenCalledWith();
+    None.mockReturnValue(nonePlayer)
+    Playable.mockReturnValue(playablePlayer)
+    RestartablePlayer.mockReturnValue(restartablePlayer)
+    SeekablePlayer.mockReturnValue(seekablePlayer)
+  })
 
-        expect(mockLegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, mediaPlayer);
-      });
+  afterEach(function () {
+    jest.clearAllMocks()
+    delete window.bigscreenPlayer
+  })
 
-      it('calls LegacyAdapter with a live media player when called for a GROWING window', function () {
-        var windowType = WindowTypes.GROWING;
-        nativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD);
+  describe('window types', function () {
+    it('calls LegacyAdapter with a static media player when called for STATIC window', function () {
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
 
-        expect(html5player).toHaveBeenCalledWith();
-        expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, WindowTypes.GROWING, mediaSources);
+      expect(HTML5Player).toHaveBeenCalledWith()
 
-        expect(mockLegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, mediaPlayer);
-      });
+      expect(LegacyAdapter).toHaveBeenCalled()
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, html5Player)
+    })
 
-      it('calls LegacyAdapter with a live media player when called for a SLIDING window', function () {
-        var windowType = WindowTypes.SLIDING;
-        nativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD);
+    it('calls LegacyAdapter with a live media player when called for a GROWING window', function () {
+      windowType = WindowTypes.GROWING
 
-        expect(html5player).toHaveBeenCalledWith();
-        expect(livePlayer).toHaveBeenCalledWith(mediaPlayer, WindowTypes.SLIDING, mediaSources);
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
 
-        expect(mockLegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, mediaPlayer);
-      });
-    });
-  });
+      expect(HTML5Player).toHaveBeenCalledWith()
+      expect(Playable).toHaveBeenCalledWith(html5Player, WindowTypes.GROWING, mediaSources)
+
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, playablePlayer)
+    })
+
+    it('calls LegacyAdapter with a live media player when called for a SLIDING window', function () {
+      windowType = WindowTypes.SLIDING
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(HTML5Player).toHaveBeenCalledWith()
+      expect(Playable).toHaveBeenCalledWith(html5Player, WindowTypes.SLIDING, mediaSources)
+
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, playablePlayer)
+    })
+  })
+
+  describe('players', function () {
+    it('should default to html5 when no configuration', function () {
+      window.bigscreenPlayer.mediaPlayer = undefined
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(HTML5Player).toHaveBeenCalledWith()
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, html5Player)
+    })
+
+    it('should use the cehtml when configured', function () {
+      window.bigscreenPlayer.mediaPlayer = 'cehtml'
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(CehtmlPlayer).toHaveBeenCalledWith()
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, cehtmlPlayer)
+    })
+
+    it('should use the html5 when configured', function () {
+      window.bigscreenPlayer.mediaPlayer = 'html5'
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(HTML5Player).toHaveBeenCalledWith()
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, html5Player)
+    })
+
+    it('should use the samsungmaple when configured', function () {
+      window.bigscreenPlayer.mediaPlayer = 'samsungmaple'
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(SamsungMaplePlayer).toHaveBeenCalledWith()
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, samsungMaplePlayer)
+    })
+
+    it('should use the samsungstreaming when configured', function () {
+      window.bigscreenPlayer.mediaPlayer = 'samsungstreaming'
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(SamsungStreamingPlayer).toHaveBeenCalledWith()
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, samsungStreamingPlayer)
+    })
+
+    it('should use the samsungstreaming2015 when configured', function () {
+      window.bigscreenPlayer.mediaPlayer = 'samsungstreaming2015'
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(SamsungStreaming2015Player).toHaveBeenCalledWith()
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, samsungStreaming2015Player)
+    })
+  })
+
+  describe('live players', function () {
+    beforeEach(function () {
+      windowType = WindowTypes.SLIDING
+    })
+
+    it('should default to playable when no configuration', function () {
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(Playable).toHaveBeenCalledWith(html5Player, WindowTypes.SLIDING, mediaSources)
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, playablePlayer)
+    })
+
+    it('should use none when configured', function () {
+      window.bigscreenPlayer.liveSupport = 'none'
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(None).toHaveBeenCalledWith(html5Player, WindowTypes.SLIDING, mediaSources)
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, nonePlayer)
+    })
+
+    it('should use playable when configured', function () {
+      window.bigscreenPlayer.liveSupport = 'playable'
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(Playable).toHaveBeenCalledWith(html5Player, WindowTypes.SLIDING, mediaSources)
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, playablePlayer)
+    })
+
+    it('should use restartable when configured', function () {
+      window.bigscreenPlayer.liveSupport = 'restartable'
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(RestartablePlayer).toHaveBeenCalledWith(html5Player, WindowTypes.SLIDING, mediaSources)
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, restartablePlayer)
+    })
+
+    it('should use seekable when configured', function () {
+      window.bigscreenPlayer.liveSupport = 'seekable'
+
+      NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
+
+      expect(SeekablePlayer).toHaveBeenCalledWith(html5Player, WindowTypes.SLIDING, mediaSources)
+      expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, seekablePlayer)
+    })
+  })
+})
