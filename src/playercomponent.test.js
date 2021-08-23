@@ -67,12 +67,8 @@ jest.mock('./playbackstrategy/strategypicker', () => () =>
   new Promise((resolve, _) => resolve(() => mockStrategy)))
 
 function waitForPlayerComponentReady (f) {
-  Plugins.interface.onErrorCleared.mockImplementationOnce(f)
+  mockStrategy.load.mockImplementationOnce(f)
 }
-
-// function createSpyObj (methodNames) {
-//   return methodNames.reduce((obj, method) => { obj[method] = jest.fn(); return obj }, {})
-// }
 
 describe('Player Component', function () {
   var playerComponent
@@ -172,7 +168,7 @@ describe('Player Component', function () {
         timeStamp: expect.any(Date)
       }
 
-      Plugins.interface.onErrorCleared.mockImplementation((data) => {
+      Plugins.interface.onErrorCleared.mockImplementationOnce((data) => {
         expect(data).toMatchObject(pluginData)
         done()
       })
@@ -272,9 +268,8 @@ describe('Player Component', function () {
       mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 100}))
       setUpPlayerComponent()
 
-      mockStrategy.load.mock.calls = []
-
       waitForPlayerComponentReady(() => {
+        mockStrategy.load.mock.calls = []
         playerComponent.setCurrentTime(10)
 
         expect(mockStrategy.setCurrentTime).toHaveBeenCalledWith(10)
@@ -284,8 +279,7 @@ describe('Player Component', function () {
       })
     })
 
-    // TODO: Broken due to export default issues
-    fit('should reload the element if restartable', function (done) {
+    it('should reload the element if restartable', function (done) {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
       window.bigscreenPlayer.liveSupport = LiveSupport.RESTARTABLE
 
@@ -308,7 +302,7 @@ describe('Player Component', function () {
       })
     })
 
-    xit('should reload the element with no time if the new time is within 30 seconds of the end of the window', function (done) {
+    it('should reload the element with no time if the new time is within 30 seconds of the end of the window', function (done) {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
       
       mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 70}))
@@ -586,7 +580,7 @@ describe('Player Component', function () {
       })
 
       // TODO: loadMedia(mediaMetaData.type, failoverTime, thenPause), L235, PlayerComponent
-      xit('should start the error timeout', function (done) {
+      it('should start the error timeout', function (done) {
         jest.useFakeTimers()
 
         var pluginData = {
@@ -605,7 +599,7 @@ describe('Player Component', function () {
           jest.advanceTimersByTime(30000)
 
           // error timeout when reached will fire a buffering cleared on the plugins.
-          expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.toMatchObject(pluginData))
+          expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
 
           jest.useRealTimers()
 
@@ -889,7 +883,7 @@ describe('Player Component', function () {
     })
 
     // TODO: Actually Broken - strategy.load() not being called
-    xit('should failover after buffering for 30 seconds on initial playback', function (done) {
+    it('should failover after buffering for 30 seconds on initial playback', function (done) {
       setUpPlayerComponent()
 
       waitForPlayerComponentReady(() =>  {
@@ -908,7 +902,7 @@ describe('Player Component', function () {
       })
     })
 
-    xit('should failover after buffering for 20 seconds on normal playback', function (done) {
+    it('should failover after buffering for 20 seconds on normal playback', function (done) {
       setUpPlayerComponent()
 
       waitForPlayerComponentReady(() => {
@@ -928,7 +922,7 @@ describe('Player Component', function () {
       })
     })
 
-    xit('should failover after 5 seconds if we have not cleared an error from the device', function (done) {
+    it('should failover after 5 seconds if we have not cleared an error from the device', function (done) {
       setUpPlayerComponent()
 
       waitForPlayerComponentReady(() => {
@@ -948,7 +942,7 @@ describe('Player Component', function () {
       })
     })
 
-    xit('should fire a fatal error on the plugins if failover is not possible', function (done) {
+    it('should fire a fatal error on the plugins if failover is not possible', function (done) {
       setUpPlayerComponent()
       forceMediaSourcesError = true
 
@@ -965,24 +959,24 @@ describe('Player Component', function () {
       })
     })
 
-    xit('should publish a media state update of fatal if failover is not possible', function (done) {
+    it('should publish a media state update of fatal if failover is not possible', function (done) {
       setUpPlayerComponent()
       forceMediaSourcesError = true
 
       waitForPlayerComponentReady(() => {
         mockStrategy.mockingHooks.fireError()
+        mockStateUpdateCallback.mock.calls = []
 
         jest.advanceTimersByTime(5000)
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-
         expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.FATAL_ERROR)
 
         done()
       })
     })
 
-    xit('should failover for with updated failover time when window time data has changed', function (done) {
+    it('should failover for with updated failover time when window time data has changed', function (done) {
       setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormats.HLS })
       updateTestTime = true
 
@@ -1024,7 +1018,7 @@ describe('Player Component', function () {
     })
 
     // TODO: loadMedia(mediaMetaData.type, failoverTime, thenPause), L235, PlayerComponent
-    xit('should clear fatal error timeout', function (done) {
+    it('should clear fatal error timeout', function (done) {
       setUpPlayerComponent()
 
       waitForPlayerComponentReady(() => {
@@ -1041,7 +1035,7 @@ describe('Player Component', function () {
       })
     })
 
-    xit('should fire error cleared on the plugins', function (done) {
+    it('should fire error cleared on the plugins', function (done) {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
@@ -1064,7 +1058,7 @@ describe('Player Component', function () {
       })
     })
 
-    xit('should fire buffering cleared on the plugins', function (done) {
+    it('should fire buffering cleared on the plugins', function (done) {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.BUFFERING,
@@ -1101,11 +1095,7 @@ describe('Player Component', function () {
       })
     })
 
-    // TODO: Seems to have interaction issues?
-
-    // TODO: Does this test even test anything?
-    // data.state always seems to be undefined
-    xit('should clear error timeout', function (done) {
+    it('should clear error timeout', function (done) {
       jest.useFakeTimers()
 
       setUpPlayerComponent()
@@ -1126,9 +1116,7 @@ describe('Player Component', function () {
       })
     })
 
-    // TODO: Does this test even test anything?
-    // data.state always seems to be undefined
-    xit('should clear fatal error timeout', function (done) {
+    it('should clear fatal error timeout', function (done) {
       jest.useFakeTimers()
 
       setUpPlayerComponent()
