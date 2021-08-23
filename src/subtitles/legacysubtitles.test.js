@@ -186,15 +186,15 @@ describe('Legacy Subtitles', function () {
       legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
     })
 
-    // each([
-    //   {className: 'controlsVisible', pos: TransportControlPosition.CONTROLS_ONLY},
-    //   {className: 'controlsWithInfoVisible', pos: TransportControlPosition.CONTROLS_WITH_INFO},
-    //   {className: 'leftCarouselVisible', pos: TransportControlPosition.LEFT_CAROUSEL},
-    //   {className: 'bottomCarouselVisible', pos: TransportControlPosition.BOTTOM_CAROUSEL}])('Has class $position.className for position $position.pos', function (position) {
-    //   legacySubtitles.updatePosition(position.pos)
+    test.each([
+      {className: 'controlsVisible', pos: TransportControlPosition.CONTROLS_ONLY},
+      {className: 'controlsWithInfoVisible', pos: TransportControlPosition.CONTROLS_WITH_INFO},
+      {className: 'leftCarouselVisible', pos: TransportControlPosition.LEFT_CAROUSEL},
+      {className: 'bottomCarouselVisible', pos: TransportControlPosition.BOTTOM_CAROUSEL}])('Has class $position.className for position $position.pos', (position) => {
+      legacySubtitles.updatePosition(position.pos)
 
-    //   expect(parentElement.firstChild.className).toContain(position.className)
-    // })
+      expect(parentElement.firstChild.className).toContain(position.className)
+    })
 
     it('Replaces classes when position changed', function () {
       legacySubtitles.updatePosition(TransportControlPosition.CONTROLS_ONLY)
