@@ -6,6 +6,7 @@ import PluginEnums from './pluginenums'
 import TransferFormats from './models/transferformats'
 import Plugins from './plugins'
 import PlayerComponent from './playercomponent'
+import StrategyPicker from './playbackstrategy/strategypicker'
 
 window.bigscreenPlayer = {}
 
@@ -65,10 +66,6 @@ const mockStrategy = (() => {
 
 jest.mock('./playbackstrategy/strategypicker', () => () =>
   new Promise((resolve, _) => resolve(() => mockStrategy)))
-
-function waitForPlayerComponentReady (f) {
-  mockStrategy.load.mockImplementationOnce(f)
-}
 
 describe('Player Component', function () {
   var playerComponent
@@ -158,7 +155,7 @@ describe('Player Component', function () {
   })
 
   describe('Construction', function () {
-    it('should fire error cleared on the plugins', function (done) {
+    it('should fire error cleared on the plugins', function () {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
@@ -170,7 +167,7 @@ describe('Player Component', function () {
 
       Plugins.interface.onErrorCleared.mockImplementationOnce((data) => {
         expect(data).toMatchObject(pluginData)
-        done()
+        
       })
 
       setUpPlayerComponent()
@@ -178,22 +175,22 @@ describe('Player Component', function () {
   })
 
   describe('Pause', function () {
-    it('should disable auto resume when playing a video webcast', function (done) {
+    it('should disable auto resume when playing a video webcast', function () {
       setUpPlayerComponent({windowType: WindowTypes.GROWING})
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.pause()
         expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: true})
-        done()
+        
       })
     })
 
-    it('should use options for disable auto resume when playing audio', function (done) {
+    it('should use options for disable auto resume when playing audio', function () {
       setUpPlayerComponent({windowType: WindowTypes.SLIDING, mediaKind: 'audio'})
 
       jest.spyOn(mockStrategy, 'pause')
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.pause()
         expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: undefined})
 
@@ -203,16 +200,16 @@ describe('Player Component', function () {
         playerComponent.pause({disableAutoResume: true})
         expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: true})
 
-        done()
+        
       })
     })
 
-    it('should use options for disable auto resume when not playing a webcast', function (done) {
+    it('should use options for disable auto resume when not playing a webcast', function () {
       setUpPlayerComponent()
 
       jest.spyOn(mockStrategy, 'pause')
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.pause()
         expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: undefined})
 
@@ -222,12 +219,12 @@ describe('Player Component', function () {
         playerComponent.pause({disableAutoResume: true})
         expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: true})
 
-        done()  
+          
       })
     })
   })
 
-  describe('getPlayerElement', function (done) {
+  describe('getPlayerElement', function () {
     // This is used within the TALStatsAPI
     it('should return the element from the strategy', function () {
       setUpPlayerComponent()
@@ -235,20 +232,20 @@ describe('Player Component', function () {
       var playerElement = document.createElement('video')
       mockStrategy.getPlayerElement = jest.fn(() => playerElement)
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         expect(playerComponent.getPlayerElement()).toEqual(playerElement)
-        done()
+        
       })
     })
 
-    it('should return null if it does not exist on the strategy', function (done) {
+    it('should return null if it does not exist on the strategy', function () {
       setUpPlayerComponent()
 
       mockStrategy.getPlayerElement = undefined
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         expect(playerComponent.getPlayerElement()).toEqual(null)
-        done()
+        
       })
     })
   })
@@ -264,22 +261,20 @@ describe('Player Component', function () {
       window.bigscreenPlayer.playbackStrategy = currentStrategy
     })
 
-    it('should setCurrentTime on the strategy when in a seekable state', function (done) {
+    it('should setCurrentTime on the strategy when in a seekable state', function () {
       mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 100}))
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         mockStrategy.load.mock.calls = []
         playerComponent.setCurrentTime(10)
 
         expect(mockStrategy.setCurrentTime).toHaveBeenCalledWith(10)
         expect(mockStrategy.load).not.toHaveBeenCalled()
-
-        done()
       })
     })
 
-    it('should reload the element if restartable', function (done) {
+    it('should reload the element if restartable', function () {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
       window.bigscreenPlayer.liveSupport = LiveSupport.RESTARTABLE
 
@@ -293,16 +288,15 @@ describe('Player Component', function () {
 
       updateTestTime = true
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.setCurrentTime(50)
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith('applesomething', 30)
-        done()
       })
     })
 
-    it('should reload the element with no time if the new time is within 30 seconds of the end of the window', function (done) {
+    it('should reload the element with no time if the new time is within 30 seconds of the end of the window', function () {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
       
       mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 70}))
@@ -321,49 +315,43 @@ describe('Player Component', function () {
         correction: 0
       }
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.setCurrentTime(50)
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-        expect(mockStrategy.load).toHaveBeenCalledWith('applesomething', undefined)
-
-        done()
+        expect(mockStrategy.load).toHaveBeenCalledWith('applesomething', undefined)    
       })
     })
   })
 
   describe('Playback Rate', function () {
-    it('calls into the strategy to set the playback rate', function (done) {
+    it('calls into the strategy to set the playback rate', function () {
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.setPlaybackRate(2)
 
-        expect(mockStrategy.setPlaybackRate).toHaveBeenCalledWith(2)
-
-        done()
+        expect(mockStrategy.setPlaybackRate).toHaveBeenCalledWith(2) 
       })
     })
 
-    it('calls into the strategy to get the playback rate', function (done) {
+    it('calls into the strategy to get the playback rate', function () {
       mockStrategy.getPlaybackRate = jest.fn(() => 1.5)
 
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         var rate = playerComponent.getPlaybackRate()
 
         expect(mockStrategy.getPlaybackRate).toHaveBeenCalled()
         expect(rate).toEqual(1.5)
-      
-        done()
       })
     })
   })
 
   describe('events', function () {
     describe('on playing', function () {
-      it('should fire error cleared on the plugins', function (done) {
+      it('should fire error cleared on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -375,22 +363,20 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {          
+        return StrategyPicker().then(() => {          
           // console.log(Plugins.interface.onErrorCleared.mock.calls)
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
 
           expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-
-          done()
         })
       })
 
-      it('should clear error timeout', function (done) {
+      it('should clear error timeout', function () {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           // trigger a buffering event to start the error timeout,
           // after 30 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
@@ -402,17 +388,15 @@ describe('Player Component', function () {
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
 
           jest.useRealTimers()
-
-          done()
         })
       })
 
-      it('should clear fatal error timeout', function (done) {
+      it('should clear fatal error timeout', function () {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           // trigger a error event to start the fatal error timeout,
           // after 5 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
@@ -425,12 +409,10 @@ describe('Player Component', function () {
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
 
           jest.useRealTimers()
-
-          done()
         })
       })
 
-      it('should fire buffering cleared on the plugins', function (done) {
+      it('should fire buffering cleared on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -443,46 +425,40 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
           expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-        
-          done()
         })
       })
 
-      it('should publish a media state update of playing', function (done) {
+      it('should publish a media state update of playing', function () {
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
 
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.PLAYING)
-
-          done()
         })
       })
     })
 
     describe('on paused', function () {
-      it('should publish a media state update event of paused', function (done) {
+      it('should publish a media state update event of paused', function () {
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.PAUSED)
 
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.PAUSED)
-
-          done()
         })
       })
 
-      it('should clear error timeout', function (done) {
+      it('should clear error timeout', function () {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           // trigger a buffering event to start the error timeout,
           // after 30 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
@@ -494,17 +470,15 @@ describe('Player Component', function () {
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
 
           jest.useRealTimers()
-
-          done()
         })
       })
 
-      it('should clear fatal error timeout', function (done) {
+      it('should clear fatal error timeout', function () {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           // trigger a error event to start the fatal error timeout,
           // after 5 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
@@ -517,12 +491,10 @@ describe('Player Component', function () {
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
 
           jest.useRealTimers()
-
-          done()
         })
       })
 
-      it('should fire error cleared on the plugins', function (done) {
+      it('should fire error cleared on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -534,17 +506,15 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.PAUSED)
 
           expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-        
-          done()
         })
       })
 
 
-      it('should fire buffering cleared on the plugins', function (done) {
+      it('should fire buffering cleared on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -556,31 +526,27 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.PAUSED)
 
           expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-        
-          done()
         })
       })
     })
 
     describe('on buffering', function () {
-      it('should publish a media state update of waiting', function (done) {
+      it('should publish a media state update of waiting', function () {
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.WAITING)
-
-          done()
         })
       })
 
       // TODO: loadMedia(mediaMetaData.type, failoverTime, thenPause), L235, PlayerComponent
-      it('should start the error timeout', function (done) {
+      it('should start the error timeout', function () {
         jest.useFakeTimers()
 
         var pluginData = {
@@ -594,7 +560,7 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
           jest.advanceTimersByTime(30000)
 
@@ -602,12 +568,10 @@ describe('Player Component', function () {
           expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
 
           jest.useRealTimers()
-
-          done()
         })
       })
 
-      it('should fire error cleared on the plugins', function (done) {
+      it('should fire error cleared on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -619,14 +583,13 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
           expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-          done()
         })
       })
 
-      it('should fire on buffering on the plugins', function (done) {
+      it('should fire on buffering on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.STARTED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -638,23 +601,21 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
           expect(Plugins.interface.onBuffering).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-        
-          done()
         })
       })
     })
 
     describe('on ended', function () {
-      it('should clear error timeout', function (done) {
+      it('should clear error timeout', function () {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           // trigger a buffering event to start the error timeout,
           // after 30 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
@@ -666,17 +627,15 @@ describe('Player Component', function () {
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
 
           jest.useRealTimers()
-
-          done()
         })
       })
 
-      it('should clear fatal error timeout', function (done) {
+      it('should clear fatal error timeout', function () {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           // trigger a error event to start the fatal error timeout,
           // after 5 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
@@ -689,12 +648,10 @@ describe('Player Component', function () {
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
 
           jest.useRealTimers()
-        
-          done()
         })
       })
 
-      it('should fire error cleared on the plugins', function (done) {
+      it('should fire error cleared on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -706,16 +663,14 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
 
           expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-        
-          done()
         })
       })
 
-      it('should fire buffering cleared on the plugins', function (done) {
+      it('should fire buffering cleared on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -727,44 +682,38 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
 
           expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-          
-          done()
         })
       })
 
-      it('should publish a media state update event of ended', function (done) {
+      it('should publish a media state update event of ended', function () {
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
 
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.ENDED)
-
-          done()
         })
       })
     })
 
     describe('on timeUpdate', function () {
-      it('should publish a media state update event', function (done) {
+      it('should publish a media state update event', function () {
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireTimeUpdate()
 
           expect(mockStateUpdateCallback.mock.calls[0][0].timeUpdate).toEqual(true)
-
-          done()
         })
       })
     })
 
     describe('on error', function () {
-      it('should fire buffering cleared on the plugins', function (done) {
+      it('should fire buffering cleared on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -776,23 +725,20 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireError()
 
           expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-        
-          done()
         })
       })
 
       // raise error
-      it('should clear error timeout', function (done) {
+      it('should clear error timeout', function () {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
-
+        return StrategyPicker().then(() => {
           // trigger a buffering event to start the error timeout,
           // after 30 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
@@ -807,26 +753,22 @@ describe('Player Component', function () {
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
 
           jest.useRealTimers()
-        
-          done()
         })
       })
 
       // raise error
-      it('should publish a media state update of waiting', function (done) {
+      it('should publish a media state update of waiting', function () {
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
           mockStrategy.mockingHooks.fireError()
 
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.WAITING)
-        
-          done()
         })
       })
 
       // raise error
-      it('should fire on error on the plugins', function (done) {
+      it('should fire on error on the plugins', function () {
         var pluginData = {
           status: PluginEnums.STATUS.STARTED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -838,13 +780,11 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        waitForPlayerComponentReady(() => {
+        return StrategyPicker().then(() => {
 
           mockStrategy.mockingHooks.fireError()
 
           expect(Plugins.interface.onError).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-      
-          done()
         })
       })
     })
@@ -883,10 +823,10 @@ describe('Player Component', function () {
     })
 
     // TODO: Actually Broken - strategy.load() not being called
-    it('should failover after buffering for 30 seconds on initial playback', function (done) {
+    it('should failover after buffering for 30 seconds on initial playback', function () {
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() =>  {
+      return StrategyPicker().then(() =>  {
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
         jest.advanceTimersByTime(29999)
@@ -897,15 +837,13 @@ describe('Player Component', function () {
   
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
-
-        done()
       })
     })
 
-    it('should failover after buffering for 20 seconds on normal playback', function (done) {
+    it('should failover after buffering for 20 seconds on normal playback', function () {
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING) // Set playback cause to normal
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
@@ -917,15 +855,13 @@ describe('Player Component', function () {
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
-
-        done()
       })
     })
 
-    it('should failover after 5 seconds if we have not cleared an error from the device', function (done) {
+    it('should failover after 5 seconds if we have not cleared an error from the device', function () {
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         mockStrategy.mockingHooks.fireError()
 
         jest.advanceTimersByTime(4999)
@@ -937,16 +873,14 @@ describe('Player Component', function () {
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
         expect(mockStrategy.reset).toHaveBeenCalledWith()
-
-        done()
       })
     })
 
-    it('should fire a fatal error on the plugins if failover is not possible', function (done) {
+    it('should fire a fatal error on the plugins if failover is not possible', function () {
       setUpPlayerComponent()
       forceMediaSourcesError = true
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         mockStrategy.mockingHooks.fireError()
 
         jest.advanceTimersByTime(5000)
@@ -954,16 +888,14 @@ describe('Player Component', function () {
         expect(mockStrategy.load).toHaveBeenCalledTimes(1)
 
         expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(expect.objectContaining(fatalErrorPluginData))
-          
-        done()
       })
     })
 
-    it('should publish a media state update of fatal if failover is not possible', function (done) {
+    it('should publish a media state update of fatal if failover is not possible', function () {
       setUpPlayerComponent()
       forceMediaSourcesError = true
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         mockStrategy.mockingHooks.fireError()
         mockStateUpdateCallback.mock.calls = []
 
@@ -971,16 +903,14 @@ describe('Player Component', function () {
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(1)
         expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.FATAL_ERROR)
-
-        done()
       })
     })
 
-    it('should failover for with updated failover time when window time data has changed', function (done) {
+    it('should failover for with updated failover time when window time data has changed', function () {
       setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormats.HLS })
       updateTestTime = true
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         // Set playback cause to normal
         mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
@@ -993,16 +923,14 @@ describe('Player Component', function () {
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime - 20)
-
-        done()
       })
     })
 
-    it('should clear buffering timeout error timeout', function (done) {
+    it('should clear buffering timeout error timeout', function () {
       setUpPlayerComponent()
       forceMediaSourcesError = true
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         // trigger a buffering event to start the error timeout,
         // after 30 seconds it should fire a media state update of FATAL
         // it is expected to be cleared
@@ -1012,16 +940,14 @@ describe('Player Component', function () {
         jest.advanceTimersByTime(30000)
 
         expect(mockStateUpdateCallback.mock.calls[0][0].isBufferingTimeoutError).toBe(false)
-
-        done()
       })
     })
 
     // TODO: loadMedia(mediaMetaData.type, failoverTime, thenPause), L235, PlayerComponent
-    it('should clear fatal error timeout', function (done) {
+    it('should clear fatal error timeout', function () {
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         // trigger a error event to start the fatal error timeout,
         // after 5 seconds it should fire a media state update of FATAL
         // it is expected to be cleared
@@ -1030,12 +956,10 @@ describe('Player Component', function () {
         jest.advanceTimersByTime(5000)
 
         expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
-          
-        done()
       })
     })
 
-    it('should fire error cleared on the plugins', function (done) {
+    it('should fire error cleared on the plugins', function () {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
@@ -1047,18 +971,16 @@ describe('Player Component', function () {
 
       setUpPlayerComponent({multiCdn: true})
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         mockStrategy.mockingHooks.fireError()
 
         jest.advanceTimersByTime(5000)
 
         expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-          
-        done()
       })
     })
 
-    it('should fire buffering cleared on the plugins', function (done) {
+    it('should fire buffering cleared on the plugins', function () {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.BUFFERING,
@@ -1070,37 +992,33 @@ describe('Player Component', function () {
 
       setUpPlayerComponent({multiCdn: true})
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         mockStrategy.mockingHooks.fireError()
 
         jest.advanceTimersByTime(5000)
 
         expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-      
-        done()
       })
     })
   })
 
   describe('teardown', function () {
-    it('should reset the strategy', function (done) {
+    it('should reset the strategy', function () {
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.tearDown()
 
         expect(mockStrategy.reset).toHaveBeenCalled()
-
-        done()
       })
     })
 
-    it('should clear error timeout', function (done) {
+    it('should clear error timeout', function () {
       jest.useFakeTimers()
 
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
         playerComponent.tearDown()
@@ -1111,22 +1029,19 @@ describe('Player Component', function () {
           .not.toBe(MediaState.FATAL_ERROR)
 
         jest.useRealTimers()
-
-        done()
       })
     })
 
-    it('should clear fatal error timeout', function (done) {
+    it('should clear fatal error timeout', function () {
       jest.useFakeTimers()
 
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         // trigger a error event to start the fatal error timeout,
         // after 5 seconds it should fire a media state update of FATAL
         // it is expected to be cleared
         mockStrategy.mockingHooks.fireError()
-
 
         playerComponent.tearDown()
 
@@ -1135,12 +1050,10 @@ describe('Player Component', function () {
         expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toBe(MediaState.FATAL_ERROR)
 
         jest.useRealTimers()
-
-        done()
       })
     })
 
-    it('teardown - should fire error cleared on the plugins', function (done) {
+    it('teardown - should fire error cleared on the plugins', function () {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
@@ -1152,16 +1065,14 @@ describe('Player Component', function () {
 
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.tearDown()
 
         expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith(pluginData)
-
-        done()
       })
     })
 
-    it('should fire buffering cleared on the plugins', function (done) {
+    it('should fire buffering cleared on the plugins', function () {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.BUFFERING,
@@ -1173,24 +1084,20 @@ describe('Player Component', function () {
 
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.tearDown()
 
         expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(pluginData)
-
-        done()
       })
     })
 
-    it('should tear down the strategy', function (done) {
+    it('should tear down the strategy', function () {
       setUpPlayerComponent()
 
-      waitForPlayerComponentReady(() => {
+      return StrategyPicker().then(() => {
         playerComponent.tearDown()
 
         expect(mockStrategy.tearDown).toHaveBeenCalledWith()
-
-        done()
       })
     })
   })
