@@ -34,9 +34,9 @@ const mockStrategy = (() => {
   var timeUpdateCallback
 
   return {
-    addEventCallback: (t, cb) => eventCallback = (ev) => cb.call(t, ev),
-    addErrorCallback: (t, cb) => errorCallback = (ev) => cb.call(t, ev),
-    addTimeUpdateCallback: (t, cb) => timeUpdateCallback = () => cb.call(t),
+    addEventCallback: (t, cb) => { eventCallback = (ev) => cb.call(t, ev) },
+    addErrorCallback: (t, cb) => { errorCallback = (ev) => cb.call(t, ev) },
+    addTimeUpdateCallback: (t, cb) => { timeUpdateCallback = () => cb.call(t) },
 
     mockingHooks: {
       fireEvent: (ev) => eventCallback(ev),
@@ -54,7 +54,6 @@ const mockStrategy = (() => {
     getSeekableRange: jest.fn(),
     getCurrentTime: jest.fn(),
     tearDown: jest.fn(),
-    reset: jest.fn(),
     transitions: {
       canBePaused: () => true,
       canBeginSeek: () => true
