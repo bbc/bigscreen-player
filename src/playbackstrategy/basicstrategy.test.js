@@ -6,24 +6,23 @@ import DynamicWindowUtils from '../dynamicwindowutils'
 
 const autoResumeSpy = jest.spyOn(DynamicWindowUtils, 'autoResumeAtStartOfRange')
 
-var basicStrategy
-var cdnArray
-var playbackElement
-var mockMediaSources
-var testTimeCorrection
-
-var audioElement
-var videoElement
-
-function setUpStrategy (windowType, mediaKind) {
-  var defaultWindowType = windowType || WindowTypes.STATIC
-  var defaultMediaKind = mediaKind || MediaKinds.VIDEO
-
-  basicStrategy = BasicStrategy(mockMediaSources, defaultWindowType, defaultMediaKind, playbackElement)
-}
-
 describe('HTML5 Strategy', () => {
-  beforeEach(function () {
+  let audioElement
+  let videoElement
+  let basicStrategy
+  let cdnArray
+  let playbackElement
+  let mockMediaSources
+  let testTimeCorrection
+
+  function setUpStrategy (windowType, mediaKind) {
+    const defaultWindowType = windowType || WindowTypes.STATIC
+    const defaultMediaKind = mediaKind || MediaKinds.VIDEO
+
+    basicStrategy = BasicStrategy(mockMediaSources, defaultWindowType, defaultMediaKind, playbackElement)
+  }
+
+  beforeEach(() => {
     audioElement = document.createElement('audio')
     videoElement = document.createElement('video')
 
@@ -50,16 +49,12 @@ describe('HTML5 Strategy', () => {
     ]
 
     mockMediaSources = {
-      time: function () {
-        return {correction: testTimeCorrection}
-      },
-      currentSource: function () {
-        return cdnArray[0].url
-      }
+      time: () => ({correction: testTimeCorrection}),
+      currentSource: () => cdnArray[0].url
     }
   })
 
-  afterEach(function () {
+  afterEach(() => {
     testTimeCorrection = 0
     basicStrategy.tearDown()
     videoElement = undefined
@@ -144,7 +139,7 @@ describe('HTML5 Strategy', () => {
     it('should call load on the media element', () => {
       setUpStrategy()
 
-      var videoLoadSpy = jest.spyOn(videoElement, 'load')
+      const videoLoadSpy = jest.spyOn(videoElement, 'load')
       basicStrategy.load(null, undefined)
 
       expect(videoLoadSpy).toHaveBeenCalled()
@@ -156,9 +151,7 @@ describe('HTML5 Strategy', () => {
 
       expect(videoElement.src).toBe('http://testcdn1/test/')
 
-      mockMediaSources.currentSource = function () {
-        return cdnArray[1].url
-      }
+      mockMediaSources.currentSource = () => cdnArray[1].url
 
       basicStrategy.load(null, undefined)
 
@@ -242,7 +235,7 @@ describe('HTML5 Strategy', () => {
     })
 
     it('should not start autoresume timeout if sliding window but disableAutoResume is set', () => {
-      var opts = {
+      const opts = {
         disableAutoResume: true
       }
 
@@ -255,26 +248,24 @@ describe('HTML5 Strategy', () => {
   })
 
   describe('getSeekableRange', () => {
-    beforeEach(function () {
-      jest.spyOn(videoElement, 'seekable', 'get').mockImplementation(() => {
-        return {
-          start: function (index) {
-            if (index === 0) {
-              return 25
-            } else {
-              return undefined
-            }
-          },
-          end: function (index) {
-            if (index === 0) {
-              return 100
-            } else {
-              return undefined
-            }
-          },
-          length: 2
-        }
-      })
+    beforeEach(() => {
+      jest.spyOn(videoElement, 'seekable', 'get').mockImplementation(() => ({
+        start: (index) => {
+          if (index === 0) {
+            return 25
+          } else {
+            return undefined
+          }
+        },
+        end: (index) => {
+          if (index === 0) {
+            return 100
+          } else {
+            return undefined
+          }
+        },
+        length: 2
+      }))
     })
 
     it('returns the correct start and end time before load has been called', () => {
@@ -309,7 +300,7 @@ describe('HTML5 Strategy', () => {
   })
 
   describe('getDuration', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       jest.spyOn(videoElement, 'duration', 'get').mockReturnValue(100)
     })
 
@@ -336,7 +327,7 @@ describe('HTML5 Strategy', () => {
   })
 
   describe('getCurrentTime', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       videoElement.currentTime = 5
     })
 
@@ -369,24 +360,18 @@ describe('HTML5 Strategy', () => {
   })
 
   describe('setCurrentTime', () => {
-    var seekableRange = {
+    const clampOffset = 1.1
+    const seekableRange = {
       start: 0,
       end: 100
     }
-    var clampOffset = 1.1
 
-    beforeEach(function () {
-      jest.spyOn(videoElement, 'seekable', 'get').mockImplementation(() => {
-        return {
-          start: function () {
-            return seekableRange.start
-          },
-          end: function () {
-            return seekableRange.end
-          },
-          length: 2
-        }
-      })
+    beforeEach(() => {
+      jest.spyOn(videoElement, 'seekable', 'get').mockImplementation(() => ({
+        start: () => seekableRange.start,
+        end: () => seekableRange.end,
+        length: 2
+      }))
     })
 
     it('sets the current time on the media element to that passed in', () => {
@@ -412,7 +397,8 @@ describe('HTML5 Strategy', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
 
-      basicStrategy.setCurrentTime(110) // this is greater than expected seekable range. although range does not exist until meta data loaded
+      // this is greater than expected seekable range. although range does not exist until meta data loaded
+      basicStrategy.setCurrentTime(110)
 
       expect(videoElement.currentTime).toEqual(110)
     })
@@ -470,10 +456,10 @@ describe('HTML5 Strategy', () => {
     it('gets the playback rate on the media element', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
-      var testRate = 1.5
+      const testRate = 1.5
       basicStrategy.setPlaybackRate(testRate)
 
-      var rate = basicStrategy.getPlaybackRate()
+      const rate = basicStrategy.getPlaybackRate()
 
       expect(rate).toEqual(testRate)
     })
@@ -549,7 +535,8 @@ describe('HTML5 Strategy', () => {
       setUpStrategy()
 
       function tearDownAndError () {
-        basicStrategy.addEventCallback(function () {}) // add event callback to prove array is emptied in tearDown
+        // add event callback to prove array is emptied in tearDown
+        basicStrategy.addEventCallback(() => {})
         basicStrategy.load(null, 0)
         basicStrategy.tearDown()
         videoElement.dispatchEvent(new Event('pause'))
@@ -559,7 +546,7 @@ describe('HTML5 Strategy', () => {
     })
 
     it('should undefine the error callback', () => {
-      var errorCallbackSpy = jest.fn()
+      const errorCallbackSpy = jest.fn()
 
       setUpStrategy()
       basicStrategy.addErrorCallback(this, errorCallbackSpy)
@@ -571,7 +558,7 @@ describe('HTML5 Strategy', () => {
     })
 
     it('should undefine the timeupdate callback', () => {
-      var timeUpdateCallbackSpy = jest.fn()
+      const timeUpdateCallbackSpy = jest.fn()
 
       setUpStrategy()
       basicStrategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy)
@@ -601,11 +588,11 @@ describe('HTML5 Strategy', () => {
   })
 
   describe('events', () => {
-    var eventCallbackSpy
-    var timeUpdateCallbackSpy
-    var errorCallbackSpy
+    let eventCallbackSpy
+    let timeUpdateCallbackSpy
+    let errorCallbackSpy
 
-    beforeEach(function () {
+    beforeEach(() => {
       setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO)
       basicStrategy.load(null, 25)
 
