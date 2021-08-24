@@ -1,11 +1,11 @@
 import DebugPresenter from './debugpresenter'
 import MediaState from '../models/mediastate'
 
-describe('Debug Presenter', function () {
-  var presenter
-  var viewMock
+describe('Debug Presenter', () => {
+  let presenter
+  let viewMock
 
-  beforeEach(function () {
+  beforeEach(() => {
     viewMock = {
       'render': jest.fn()
     }
@@ -13,9 +13,9 @@ describe('Debug Presenter', function () {
     presenter.init(viewMock)
   })
 
-  it('parses static info from an array of chronicle values', function () {
+  it('parses static info from an array of chronicle values', () => {
     presenter.update([{type: 'keyvalue', keyvalue: {key: 'bitrate', value: '1000'}, timestamp: 1518018558259}])
-    var expectedObject = {
+    const expectedObject = {
       static: [
         {
           key: 'bitrate',
@@ -29,10 +29,10 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('converts any static field Date object into human readable time string', function () {
-    var testDate = new Date(1518018558259)
+  it('converts any static field Date object into human readable time string', () => {
+    const testDate = new Date(1518018558259)
     presenter.update([{type: 'keyvalue', keyvalue: {key: 'anything', value: testDate}, timestamp: 1518018558259}])
-    var expectedObject = {
+    const expectedObject = {
       static: [
         {
           key: 'anything',
@@ -46,9 +46,9 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('parses dynamic info from an array of chronicle values', function () {
+  it('parses dynamic info from an array of chronicle values', () => {
     presenter.update([{type: 'info', message: 'A string info message', timestamp: 1518018558259}])
-    var expectedObject = {
+    const expectedObject = {
       static: [
       ],
       dynamic: [
@@ -59,12 +59,12 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('parses multiple dynamic events from an array of chronicle values', function () {
+  it('parses multiple dynamic events from an array of chronicle values', () => {
     presenter.update([
       {type: 'info', message: 'A string info message', timestamp: 1518018558259},
       {type: 'info', message: 'Another info message', timestamp: 1518018558259}
     ])
-    var expectedObject = {
+    const expectedObject = {
       static: [
       ],
       dynamic: [
@@ -76,7 +76,7 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('parses error events to simple string representation', function () {
+  it('parses error events to simple string representation', () => {
     presenter.update([
       {type: 'error',
         error: {
@@ -85,7 +85,7 @@ describe('Debug Presenter', function () {
         },
         timestamp: 1518018558259}
     ])
-    var expectedObject = {
+    const expectedObject = {
       static: [
       ],
       dynamic: [
@@ -96,11 +96,11 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('parses events to readable representation', function () {
+  it('parses events to readable representation', () => {
     presenter.update([
       {type: 'event', event: {state: MediaState.PLAYING}, timestamp: 1518018558259}
     ])
-    var expectedObject = {
+    const expectedObject = {
       static: [
       ],
       dynamic: [
@@ -111,11 +111,11 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('parses time to formatted string representation', function () {
+  it('parses time to formatted string representation', () => {
     presenter.update([
       {type: 'time', currentTime: 12.3433, timestamp: 1518018558259}
     ])
-    var expectedObject = {
+    const expectedObject = {
       static: [
       ],
       dynamic: [
@@ -126,11 +126,11 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('parses long time to formatted string representation', function () {
+  it('parses long time to formatted string representation', () => {
     presenter.update([
       {type: 'time', currentTime: 788.9999, timestamp: 1518018558259}
     ])
-    var expectedObject = {
+    const expectedObject = {
       static: [
       ],
       dynamic: [
@@ -141,11 +141,11 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('parses apicall to a formatted string representation', function () {
+  it('parses apicall to a formatted string representation', () => {
     presenter.update([
       {type: 'apicall', calltype: 'Play', timestamp: 1518018558259}
     ])
-    var expectedObject = {
+    const expectedObject = {
       static: [
       ],
       dynamic: [
@@ -156,11 +156,11 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('When the log object does not contain a valid type', function () {
+  it('When the log object does not contain a valid type', () => {
     presenter.update([
       {type: 'blah', someobject: {thing: ''}, timestamp: 1518018558259}
     ])
-    var expectedObject = {
+    const expectedObject = {
       static: [
       ],
       dynamic: [
@@ -171,12 +171,12 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('Only uses the the latest value when updating static fields', function () {
+  it('Only uses the the latest value when updating static fields', () => {
     presenter.update([
       {type: 'keyvalue', keyvalue: {key: 'bitrate', value: '1000'}, timestamp: 1518018558259},
       {type: 'keyvalue', keyvalue: {key: 'bitrate', value: '2000'}, timestamp: 1518018558259}
     ])
-    var expectedObject = {
+    const expectedObject = {
       static: [
         {
           key: 'bitrate',
@@ -190,7 +190,7 @@ describe('Debug Presenter', function () {
     expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
   })
 
-  it('Only uses the the latest value when updating static fields with multiple fields', function () {
+  it('Only uses the the latest value when updating static fields with multiple fields', () => {
     presenter.update([
       {type: 'keyvalue', keyvalue: {key: 'bitrate', value: '1000'}, timestamp: 1518018558259},
       {type: 'keyvalue', keyvalue: {key: 'duration', value: '12345'}, timestamp: 1518018558259},
@@ -199,7 +199,7 @@ describe('Debug Presenter', function () {
       {type: 'keyvalue', keyvalue: {key: 'seekableRangeStart', value: '0'}, timestamp: 1518018558259},
       {type: 'keyvalue', keyvalue: {key: 'seekableRangeEnd', value: '12346'}, timestamp: 1518018558259}
     ])
-    var expectedObject = {
+    const expectedObject = {
       static: [
         {
           key: 'bitrate',

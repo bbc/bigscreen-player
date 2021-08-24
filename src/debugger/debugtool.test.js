@@ -1,25 +1,25 @@
 import Chronicle from './chronicle'
 import DebugTool from './debugtool'
 
-describe('Debug Tool, when intercepting keyValue calls,', function () {
-  beforeEach(function () {
-    jest.spyOn(global, 'Date').mockImplementation(function () {
-      return {getTime: function () { return 1234 }}
+describe('Debug Tool, when intercepting keyValue calls,', () => {
+  beforeEach(() => {
+    jest.spyOn(global, 'Date').mockImplementation(() => {
+      return {getTime: () => { return 1234 }}
     })
     Chronicle.init()
   })
 
-  afterEach(function () {
+  afterEach(() => {
     DebugTool.tearDown()
     Chronicle.tearDown()
   })
 
-  it('should always add entry to chronicle if the key does not match one of the defined static keys', function () {
-    var testObj1 = {key: 'bitrate', value: '1000'}
-    var testObj2 = {key: 'imNotSpecial', value: 'nobodylovesme'}
-    var testObj3 = {key: 'idontmatch', value: 'pleaseaddme'}
+  it('should always add entry to chronicle if the key does not match one of the defined static keys', () => {
+    const testObj1 = {key: 'bitrate', value: '1000'}
+    const testObj2 = {key: 'imNotSpecial', value: 'nobodylovesme'}
+    const testObj3 = {key: 'idontmatch', value: 'pleaseaddme'}
 
-    var expectedArray = [
+    const expectedArray = [
       {type: 'keyvalue', keyvalue: testObj1, timestamp: 1234},
       {type: 'keyvalue', keyvalue: testObj2, timestamp: 1234},
       {type: 'keyvalue', keyvalue: testObj3, timestamp: 1234}
@@ -29,17 +29,17 @@ describe('Debug Tool, when intercepting keyValue calls,', function () {
     DebugTool.keyValue(testObj2)
     DebugTool.keyValue(testObj3)
 
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle).toEqual(expectedArray)
   })
 
-  it('overwrites a keyvalue entry to the chronicle if that keyvalue already exists', function () {
-    var testObj = {key: 'akey', value: 'something'}
-    var testObj1 = {key: 'bitrate', value: '1000'}
-    var testObj2 = {key: 'bitrate', value: '1001'}
+  it('overwrites a keyvalue entry to the chronicle if that keyvalue already exists', () => {
+    const testObj = {key: 'akey', value: 'something'}
+    const testObj1 = {key: 'bitrate', value: '1000'}
+    const testObj2 = {key: 'bitrate', value: '1001'}
 
-    var expectedArray = [
+    const expectedArray = [
       {type: 'keyvalue', keyvalue: {key: 'akey', value: 'something'}, timestamp: 1234},
       {type: 'keyvalue', keyvalue: {key: 'bitrate', value: '1001'}, timestamp: 1234}
     ]
@@ -48,7 +48,7 @@ describe('Debug Tool, when intercepting keyValue calls,', function () {
     DebugTool.keyValue(testObj1)
     DebugTool.keyValue(testObj2)
 
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle).toEqual(expectedArray)
   })

@@ -1,118 +1,116 @@
 import Chronicle from './chronicle'
 
-describe('Chronicle', function () {
-  beforeEach(function () {
-    jest.spyOn(global, 'Date').mockImplementation(function () {
-      return {getTime: function () { return 1234 }}
-    })
+describe('Chronicle', () => {
+  beforeEach(() => {
+    jest.spyOn(global, 'Date').mockImplementation(() => ({ getTime: () => 1234 }))
     Chronicle.init()
   })
 
-  afterEach(function () {
+  afterEach(() => {
     Chronicle.clear()
   })
 
-  it('stores an info message with type and message', function () {
-    var testInfoMessage = 'A test info message'
-    var expectedObject = {
+  it('stores an info message with type and message', () => {
+    const testInfoMessage = 'A test info message'
+    const expectedObject = {
       type: 'info',
       message: testInfoMessage,
       timestamp: 1234
     }
     Chronicle.info(testInfoMessage)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
-  it('pushes subsequent info message to array', function () {
-    var firstMessage = 'A test info message'
-    var secondMessage = 'A second test message'
-    var expectedObject = {
+  it('pushes subsequent info message to array', () => {
+    const firstMessage = 'A test info message'
+    const secondMessage = 'A second test message'
+    const expectedObject = {
       type: 'info',
       message: secondMessage,
       timestamp: 1234
     }
     Chronicle.info(firstMessage)
     Chronicle.info(secondMessage)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
-  it('stores an error with type and error', function () {
-    var testErrorObject = {
+  it('stores an error with type and error', () => {
+    const testErrorObject = {
       message: 'an error message',
       code: 1
     }
-    var expectedObject = {
+    const expectedObject = {
       type: 'error',
       error: testErrorObject,
       timestamp: 1234
     }
     Chronicle.error(testErrorObject)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
-  it('stores an event with type and event', function () {
-    var testEventObject = {
+  it('stores an event with type and event', () => {
+    const testEventObject = {
       state: 'eg PLAYING',
       data: 'some data'
     }
-    var expectedObject = {
+    const expectedObject = {
       type: 'event',
       event: testEventObject,
       timestamp: 1234
     }
     Chronicle.event(testEventObject)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
-  it('stores an apicall with type and the call type', function () {
-    var testApiCallType = 'play'
-    var expectedObject = {
+  it('stores an apicall with type and the call type', () => {
+    const testApiCallType = 'play'
+    const expectedObject = {
       type: 'apicall',
       calltype: testApiCallType,
       timestamp: 1234
     }
     Chronicle.apicall(testApiCallType)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
-  it('pushes the first time event to the array', function () {
-    var expectedObject = {
+  it('pushes the first time event to the array', () => {
+    const expectedObject = {
       type: 'time',
       currentTime: 1,
       timestamp: 1234
     }
     Chronicle.time(1)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
-  it('subsequenty time event overwrites the previous in the array', function () {
-    var expectedObject = {
+  it('subsequenty time event overwrites the previous in the array', () => {
+    const expectedObject = {
       type: 'time',
       currentTime: 2,
       timestamp: 1234
     }
     Chronicle.time(1)
     Chronicle.time(2)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.length).toEqual(2)
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
-  it('time followed by info followed by time doesnt compress second time event', function () {
-    var expectedObject = {
+  it('time followed by info followed by time doesnt compress second time event', () => {
+    const expectedObject = {
       type: 'time',
       currentTime: 3,
       timestamp: 1234
@@ -121,14 +119,14 @@ describe('Chronicle', function () {
     Chronicle.time(2)
     Chronicle.info('An info message')
     Chronicle.time(3)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.length).toEqual(4)
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
-  it('stores compressed time info and error events', function () {
-    var expectedArray = [
+  it('stores compressed time info and error events', () => {
+    const expectedArray = [
       {type: 'time', currentTime: 1, timestamp: 1234},
       {type: 'time', currentTime: 2, timestamp: 1234},
       {type: 'info', message: 'An info message', timestamp: 1234},
@@ -146,14 +144,14 @@ describe('Chronicle', function () {
     Chronicle.time(4)
     Chronicle.time(5)
     Chronicle.time(6)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.length).toEqual(7)
     expect(chronicle).toEqual(expectedArray)
   })
 
-  it('stores first and last time events', function () {
-    var expectedArray = [
+  it('stores first and last time events', () => {
+    const expectedArray = [
       {type: 'time', currentTime: 1, timestamp: 1234},
       {type: 'time', currentTime: 3, timestamp: 1234}
     ]
@@ -161,14 +159,14 @@ describe('Chronicle', function () {
     Chronicle.time(1)
     Chronicle.time(2)
     Chronicle.time(3)
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.length).toEqual(2)
     expect(chronicle).toEqual(expectedArray)
   })
 
-  it('stores key value events', function () {
-    var expectedArray = [
+  it('stores key value events', () => {
+    const expectedArray = [
       {type: 'keyvalue', keyvalue: {Bitrate: '1000'}, timestamp: 1234},
       {type: 'keyvalue', keyvalue: {Duration: '1345'}, timestamp: 1234}
     ]
@@ -176,7 +174,7 @@ describe('Chronicle', function () {
     Chronicle.keyValue({Bitrate: '1000'})
     Chronicle.keyValue({Duration: '1345'})
 
-    var chronicle = Chronicle.retrieve()
+    const chronicle = Chronicle.retrieve()
 
     expect(chronicle.length).toEqual(2)
     expect(chronicle).toEqual(expectedArray)
