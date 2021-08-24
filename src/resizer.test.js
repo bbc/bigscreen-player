@@ -1,6 +1,6 @@
 import Resizer from './resizer'
 
-describe('Resizer', function () {
+describe('Resizer', () => {
   var resizer, element
 
   beforeEach(function () {
@@ -12,8 +12,8 @@ describe('Resizer', function () {
     resizer = Resizer()
   })
 
-  describe('resize', function () {
-    it('Resizes and positions the element with the correct values', function () {
+  describe('resize', () => {
+    it('Resizes and positions the element with the correct values', () => {
       resizer.resize(element, 10, 20, 3, 4, 5)
 
       expect(element.style.top).toEqual('10px')
@@ -25,8 +25,8 @@ describe('Resizer', function () {
     })
   })
 
-  describe('clear', function () {
-    it('resets the css properties', function () {
+  describe('clear', () => {
+    it('resets the css properties', () => {
       resizer.resize(element, 1, 2, 3, 4, 5)
       resizer.clear(element)
 
@@ -39,19 +39,19 @@ describe('Resizer', function () {
     })
   })
 
-  describe('isResized', function () {
-    it('should return false if no call to resize or clear has been made', function () {
+  describe('isResized', () => {
+    it('should return false if no call to resize or clear has been made', () => {
       expect(resizer.isResized()).toBe(false)
     })
 
-    it('should return true if the last call was to resized', function () {
+    it('should return true if the last call was to resized', () => {
       resizer.clear(element)
       resizer.resize(element, 1, 2, 3, 4, 5)
 
       expect(resizer.isResized()).toBe(true)
     })
 
-    it('should return true if the last call was to clear', function () {
+    it('should return true if the last call was to clear', () => {
       resizer.resize(element, 1, 2, 3, 4, 5)
       resizer.clear(element)
 

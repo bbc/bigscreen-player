@@ -22,7 +22,7 @@ function setUpStrategy (windowType, mediaKind) {
   basicStrategy = BasicStrategy(mockMediaSources, defaultWindowType, defaultMediaKind, playbackElement)
 }
 
-describe('HTML5 Strategy', function () {
+describe('HTML5 Strategy', () => {
   beforeEach(function () {
     audioElement = document.createElement('audio')
     videoElement = document.createElement('video')
@@ -67,8 +67,8 @@ describe('HTML5 Strategy', function () {
     autoResumeSpy.mockReset()
   })
 
-  describe('transitions', function () {
-    it('canBePaused() and canBeginSeek transitions are true', function () {
+  describe('transitions', () => {
+    it('canBePaused() and canBeginSeek transitions are true', () => {
       setUpStrategy()
 
       expect(basicStrategy.transitions.canBePaused()).toBe(true)
@@ -76,8 +76,8 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('load', function () {
-    it('should create a video element and add it to the playback element', function () {
+  describe('load', () => {
+    it('should create a video element and add it to the playback element', () => {
       setUpStrategy(null, MediaKinds.VIDEO)
 
       expect(playbackElement.childElementCount).toBe(0)
@@ -88,7 +88,7 @@ describe('HTML5 Strategy', function () {
       expect(playbackElement.childElementCount).toBe(1)
     })
 
-    it('should create an audio element and add it to the playback element', function () {
+    it('should create an audio element and add it to the playback element', () => {
       setUpStrategy(null, MediaKinds.AUDIO)
 
       expect(playbackElement.childElementCount).toBe(0)
@@ -101,7 +101,7 @@ describe('HTML5 Strategy', function () {
       expect(playbackElement.childElementCount).toBe(1)
     })
 
-    it('should set the style properties correctly on the media element', function () {
+    it('should set the style properties correctly on the media element', () => {
       setUpStrategy(null, MediaKinds.VIDEO)
       basicStrategy.load(null, 0)
 
@@ -110,7 +110,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.style.height).toBe('100%')
     })
 
-    it('should set the autoplay and preload properties correctly on the media element', function () {
+    it('should set the autoplay and preload properties correctly on the media element', () => {
       setUpStrategy(null, MediaKinds.VIDEO)
       basicStrategy.load(null, 0)
 
@@ -120,28 +120,28 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.preload).toBe('auto')
     })
 
-    it('should set the source url correctly on the media element', function () {
+    it('should set the source url correctly on the media element', () => {
       setUpStrategy(null, MediaKinds.VIDEO)
       basicStrategy.load(null, 0)
 
       expect(videoElement.src).toBe('http://testcdn1/test/')
     })
 
-    it('should set the currentTime to start time if one is provided', function () {
+    it('should set the currentTime to start time if one is provided', () => {
       setUpStrategy(null, MediaKinds.VIDEO)
       basicStrategy.load(null, 25)
 
       expect(videoElement.currentTime).toEqual(25)
     })
 
-    it('should not set the currentTime to start time if one is not provided', function () {
+    it('should not set the currentTime to start time if one is not provided', () => {
       setUpStrategy(null, MediaKinds.VIDEO)
       basicStrategy.load(null, undefined)
 
       expect(videoElement.currentTime).toEqual(0)
     })
 
-    it('should call load on the media element', function () {
+    it('should call load on the media element', () => {
       setUpStrategy()
 
       var videoLoadSpy = jest.spyOn(videoElement, 'load')
@@ -150,7 +150,7 @@ describe('HTML5 Strategy', function () {
       expect(videoLoadSpy).toHaveBeenCalled()
     })
 
-    it('should update the media element source if load is when media element already exists', function () {
+    it('should update the media element source if load is when media element already exists', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
 
@@ -165,7 +165,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.src).toBe('http://testcdn2/test/')
     })
 
-    it('should update the media element currentTime if load is called with a start time when media element already exists', function () {
+    it('should update the media element currentTime if load is called with a start time when media element already exists', () => {
       setUpStrategy()
       basicStrategy.load(null, 25)
 
@@ -176,7 +176,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.currentTime).toEqual(35)
     })
 
-    it('should not update the media element currentTime if load is called without a start time when media element already exists', function () {
+    it('should not update the media element currentTime if load is called without a start time when media element already exists', () => {
       setUpStrategy()
       basicStrategy.load(null, 25)
 
@@ -187,7 +187,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.currentTime).toEqual(25)
     })
 
-    it('should set up bindings to media element events correctly', function () {
+    it('should set up bindings to media element events correctly', () => {
       setUpStrategy()
       const addEventListenerSpy = jest.spyOn(videoElement, 'addEventListener')
       basicStrategy.load(null, undefined)
@@ -204,8 +204,8 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('play', function () {
-    it('should call through to the media elements play function', function () {
+  describe('play', () => {
+    it('should call through to the media elements play function', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
       const playSpy = jest.spyOn(videoElement, 'play')
@@ -215,8 +215,8 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('pause', function () {
-    it('should call through to the media elements pause function', function () {
+  describe('pause', () => {
+    it('should call through to the media elements pause function', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
       const pauseSpy = jest.spyOn(videoElement, 'pause')
@@ -225,7 +225,7 @@ describe('HTML5 Strategy', function () {
       expect(pauseSpy).toHaveBeenCalled()
     })
 
-    it('should start autoresume timeout if sliding window', function () {
+    it('should start autoresume timeout if sliding window', () => {
       setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO)
       basicStrategy.load(null, 0)
       basicStrategy.pause()
@@ -241,7 +241,7 @@ describe('HTML5 Strategy', function () {
       )
     })
 
-    it('should not start autoresume timeout if sliding window but disableAutoResume is set', function () {
+    it('should not start autoresume timeout if sliding window but disableAutoResume is set', () => {
       var opts = {
         disableAutoResume: true
       }
@@ -254,7 +254,7 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('getSeekableRange', function () {
+  describe('getSeekableRange', () => {
     beforeEach(function () {
       jest.spyOn(videoElement, 'seekable', 'get').mockImplementation(() => {
         return {
@@ -277,20 +277,20 @@ describe('HTML5 Strategy', function () {
       })
     })
 
-    it('returns the correct start and end time before load has been called', function () {
+    it('returns the correct start and end time before load has been called', () => {
       setUpStrategy()
 
       expect(basicStrategy.getSeekableRange()).toEqual({ start: 0, end: 0 })
     })
 
-    it('returns the correct start and end time before meta data has loaded', function () {
+    it('returns the correct start and end time before meta data has loaded', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
 
       expect(basicStrategy.getSeekableRange()).toEqual({ start: 0, end: 0 })
     })
 
-    it('returns the correct start and end time once meta data has loaded', function () {
+    it('returns the correct start and end time once meta data has loaded', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
       videoElement.dispatchEvent(new Event('loadedmetadata'))
@@ -298,7 +298,7 @@ describe('HTML5 Strategy', function () {
       expect(basicStrategy.getSeekableRange()).toEqual({ start: 25, end: 100 })
     })
 
-    it('returns the correct start and end time minus any time correction', function () {
+    it('returns the correct start and end time minus any time correction', () => {
       testTimeCorrection = 20
       setUpStrategy()
       basicStrategy.load(null, undefined)
@@ -308,25 +308,25 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('getDuration', function () {
+  describe('getDuration', () => {
     beforeEach(function () {
       jest.spyOn(videoElement, 'duration', 'get').mockReturnValue(100)
     })
 
-    it('returns duration of zero before load has been called', function () {
+    it('returns duration of zero before load has been called', () => {
       setUpStrategy()
 
       expect(basicStrategy.getDuration()).toEqual(0)
     })
 
-    it('returns duration of zero before meta data has loaded', function () {
+    it('returns duration of zero before meta data has loaded', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
 
       expect(basicStrategy.getDuration()).toEqual(0)
     })
 
-    it('returns the correct duration once meta data has loaded', function () {
+    it('returns the correct duration once meta data has loaded', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
       videoElement.dispatchEvent(new Event('loadedmetadata'))
@@ -335,18 +335,18 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('getCurrentTime', function () {
+  describe('getCurrentTime', () => {
     beforeEach(function () {
       videoElement.currentTime = 5
     })
 
-    it('returns currentTime of zero before load has been called', function () {
+    it('returns currentTime of zero before load has been called', () => {
       setUpStrategy()
 
       expect(basicStrategy.getCurrentTime()).toEqual(0)
     })
 
-    it('returns the correct currentTime once load has been called', function () {
+    it('returns the correct currentTime once load has been called', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
 
@@ -357,7 +357,7 @@ describe('HTML5 Strategy', function () {
       expect(basicStrategy.getCurrentTime()).toEqual(10)
     })
 
-    it('subtracts any time correction from the media elements current time', function () {
+    it('subtracts any time correction from the media elements current time', () => {
       testTimeCorrection = 20
       setUpStrategy()
       basicStrategy.load(null, undefined)
@@ -368,7 +368,7 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('setCurrentTime', function () {
+  describe('setCurrentTime', () => {
     var seekableRange = {
       start: 0,
       end: 100
@@ -389,7 +389,7 @@ describe('HTML5 Strategy', function () {
       })
     })
 
-    it('sets the current time on the media element to that passed in', function () {
+    it('sets the current time on the media element to that passed in', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
 
@@ -398,7 +398,7 @@ describe('HTML5 Strategy', function () {
       expect(basicStrategy.getCurrentTime()).toEqual(10)
     })
 
-    it('adds time correction from the media source onto the passed in seek time', function () {
+    it('adds time correction from the media source onto the passed in seek time', () => {
       testTimeCorrection = 20
       setUpStrategy()
       basicStrategy.load(null, undefined)
@@ -408,7 +408,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.currentTime).toEqual(70)
     })
 
-    it('does not attempt to clamp time if meta data is not loaded', function () {
+    it('does not attempt to clamp time if meta data is not loaded', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
 
@@ -417,7 +417,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.currentTime).toEqual(110)
     })
 
-    it('clamps to 1.1 seconds before seekable range end when seeking to end', function () {
+    it('clamps to 1.1 seconds before seekable range end when seeking to end', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
       videoElement.dispatchEvent(new Event('loadedmetadata'))
@@ -427,7 +427,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.currentTime).toEqual(seekableRange.end - clampOffset)
     })
 
-    it('clamps to 1.1 seconds before seekable range end when seeking past end', function () {
+    it('clamps to 1.1 seconds before seekable range end when seeking past end', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
       videoElement.dispatchEvent(new Event('loadedmetadata'))
@@ -437,7 +437,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.currentTime).toEqual(seekableRange.end - clampOffset)
     })
 
-    it('clamps to 1.1 seconds before seekable range end when seeking prior to end', function () {
+    it('clamps to 1.1 seconds before seekable range end when seeking prior to end', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
       videoElement.dispatchEvent(new Event('loadedmetadata'))
@@ -447,7 +447,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.currentTime).toEqual(seekableRange.end - clampOffset)
     })
 
-    it('clamps to the start of seekable range when seeking before start of range', function () {
+    it('clamps to the start of seekable range when seeking before start of range', () => {
       setUpStrategy()
       basicStrategy.load(null, undefined)
       videoElement.dispatchEvent(new Event('loadedmetadata'))
@@ -458,8 +458,8 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('Playback Rate', function () {
-    it('sets the playback rate on the media element', function () {
+  describe('Playback Rate', () => {
+    it('sets the playback rate on the media element', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
       basicStrategy.setPlaybackRate(2)
@@ -467,7 +467,7 @@ describe('HTML5 Strategy', function () {
       expect(videoElement.playbackRate).toEqual(2)
     })
 
-    it('gets the playback rate on the media element', function () {
+    it('gets the playback rate on the media element', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
       var testRate = 1.5
@@ -479,8 +479,8 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('isPaused', function () {
-    it('should return false when the media element is not paused', function () {
+  describe('isPaused', () => {
+    it('should return false when the media element is not paused', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
       jest.spyOn(videoElement, 'paused', 'get').mockReturnValueOnce(false)
@@ -488,7 +488,7 @@ describe('HTML5 Strategy', function () {
       expect(basicStrategy.isPaused()).toBe(false)
     })
 
-    it('should return true when the media element is paused', function () {
+    it('should return true when the media element is paused', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
       jest.spyOn(videoElement, 'paused', 'get').mockReturnValueOnce(true)
@@ -497,8 +497,8 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('isEnded', function () {
-    it('should return false when the media element is not ended', function () {
+  describe('isEnded', () => {
+    it('should return false when the media element is not ended', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
       jest.spyOn(videoElement, 'ended', 'get').mockReturnValueOnce(false)
@@ -506,7 +506,7 @@ describe('HTML5 Strategy', function () {
       expect(basicStrategy.isEnded()).toBe(false)
     })
 
-    it('should return true when the media element is ended', function () {
+    it('should return true when the media element is ended', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
       jest.spyOn(videoElement, 'ended', 'get').mockReturnValueOnce(true)
@@ -515,8 +515,8 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('tearDown', function () {
-    it('should remove all event listener bindings', function () {
+  describe('tearDown', () => {
+    it('should remove all event listener bindings', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
 
@@ -534,7 +534,7 @@ describe('HTML5 Strategy', function () {
       expect(removeEventListenerSpy).toHaveBeenCalledWith('loadedmetadata', expect.any(Function))
     })
 
-    it('should remove the video element', function () {
+    it('should remove the video element', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
 
@@ -545,7 +545,7 @@ describe('HTML5 Strategy', function () {
       expect(playbackElement.childElementCount).toBe(0)
     })
 
-    it('should empty the eventCallbacks ', function () {
+    it('should empty the eventCallbacks ', () => {
       setUpStrategy()
 
       function tearDownAndError () {
@@ -558,7 +558,7 @@ describe('HTML5 Strategy', function () {
       expect(tearDownAndError).not.toThrowError()
     })
 
-    it('should undefine the error callback', function () {
+    it('should undefine the error callback', () => {
       var errorCallbackSpy = jest.fn()
 
       setUpStrategy()
@@ -570,7 +570,7 @@ describe('HTML5 Strategy', function () {
       expect(errorCallbackSpy).not.toHaveBeenCalled()
     })
 
-    it('should undefine the timeupdate callback', function () {
+    it('should undefine the timeupdate callback', () => {
       var timeUpdateCallbackSpy = jest.fn()
 
       setUpStrategy()
@@ -582,7 +582,7 @@ describe('HTML5 Strategy', function () {
       expect(timeUpdateCallbackSpy).not.toHaveBeenCalled()
     })
 
-    it('should undefine the mediaPlayer element', function () {
+    it('should undefine the mediaPlayer element', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
       basicStrategy.tearDown()
@@ -591,8 +591,8 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('getPlayerElement', function () {
-    it('should return the mediaPlayer element', function () {
+  describe('getPlayerElement', () => {
+    it('should return the mediaPlayer element', () => {
       setUpStrategy()
       basicStrategy.load(null, 0)
 
@@ -600,7 +600,7 @@ describe('HTML5 Strategy', function () {
     })
   })
 
-  describe('events', function () {
+  describe('events', () => {
     var eventCallbackSpy
     var timeUpdateCallbackSpy
     var errorCallbackSpy
@@ -619,56 +619,56 @@ describe('HTML5 Strategy', function () {
       basicStrategy.addErrorCallback(this, errorCallbackSpy)
     })
 
-    it('should publish a state change to PLAYING on playing event', function () {
+    it('should publish a state change to PLAYING on playing event', () => {
       videoElement.dispatchEvent(new Event('playing'))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PLAYING)
       expect(eventCallbackSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('should publish a state change to PAUSED on pause event', function () {
+    it('should publish a state change to PAUSED on pause event', () => {
       videoElement.dispatchEvent(new Event('pause'))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PAUSED)
       expect(eventCallbackSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('should publish a state change to WAITING on seeking event', function () {
+    it('should publish a state change to WAITING on seeking event', () => {
       videoElement.dispatchEvent(new Event('seeking'))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.WAITING)
       expect(eventCallbackSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('should publish a state change to WAITING on waiting event', function () {
+    it('should publish a state change to WAITING on waiting event', () => {
       videoElement.dispatchEvent(new Event('waiting'))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.WAITING)
       expect(eventCallbackSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('should publish a state change to ENDED on ended event', function () {
+    it('should publish a state change to ENDED on ended event', () => {
       videoElement.dispatchEvent(new Event('ended'))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.ENDED)
       expect(eventCallbackSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('should start auto-resume timeout on seeked event if media element is paused and SLIDING window', function () {
+    it('should start auto-resume timeout on seeked event if media element is paused and SLIDING window', () => {
       jest.spyOn(videoElement, 'paused', 'get').mockReturnValueOnce(true)
       videoElement.dispatchEvent(new Event('seeked'))
 
       expect(autoResumeSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('should publish a time update event on time update', function () {
+    it('should publish a time update event on time update', () => {
       videoElement.dispatchEvent(new Event('timeupdate'))
 
       expect(timeUpdateCallbackSpy).toHaveBeenCalled()
       expect(timeUpdateCallbackSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('should publish a error event on error', function () {
+    it('should publish a error event on error', () => {
       videoElement.dispatchEvent(new Event('error'))
 
       expect(errorCallbackSpy).toHaveBeenCalled()

@@ -1,8 +1,8 @@
 import PlaybackUtils from './playbackutils'
 
-describe('Playback utils', function () {
-  describe('Clone', function () {
-    it('Makes a shallow clone of an object', function () {
+describe('Playback utils', () => {
+  describe('Clone', () => {
+    it('Makes a shallow clone of an object', () => {
       var input = {
         foo: 1,
         bar: 'foo bar'
@@ -18,8 +18,8 @@ describe('Playback utils', function () {
     })
   })
 
-  describe('Clone array', function () {
-    it('Makes a shallow clone of an array', function () {
+  describe('Clone array', () => {
+    it('Makes a shallow clone of an array', () => {
       var input = [
         {
           foo: 1,
@@ -47,8 +47,8 @@ describe('Playback utils', function () {
     })
   })
 
-  describe('Merge', function () {
-    it('Creates a new object with properties merged from all supplied objects', function () {
+  describe('Merge', () => {
+    it('Creates a new object with properties merged from all supplied objects', () => {
       var obj1 = { obj1a: 'a', obj1b: 'b' }
       var obj2 = { obj2a: 'a', obj2b: 'b' }
       var obj3 = { obj3a: 'a', obj3b: 'b' }
@@ -65,7 +65,7 @@ describe('Playback utils', function () {
       })
     })
 
-    it('Should merge deep objects and overwrite with the latest argument', function () {
+    it('Should merge deep objects and overwrite with the latest argument', () => {
       var obj1 = {
         data: {
           test1: 'test1',
@@ -91,15 +91,15 @@ describe('Playback utils', function () {
     })
   })
 
-  describe('Array start with', function () {
-    it('Returns true if the supplied array starts with the items in the partial array', function () {
+  describe('Array start with', () => {
+    it('Returns true if the supplied array starts with the items in the partial array', () => {
       expect(PlaybackUtils.arrayStartsWith(['x', 'y', 'z'], ['x', 'y', 'z'])).toBe(true)
       expect(PlaybackUtils.arrayStartsWith(['x', 'y', 'z'], ['x', 'y'])).toBe(true)
       expect(PlaybackUtils.arrayStartsWith(['x', 'y', 'z'], ['x'])).toBe(true)
       expect(PlaybackUtils.arrayStartsWith(['x', 'y', 'z'], [])).toBe(true)
     })
 
-    it('Returns false if the supplied array does not start with the items in the partial array', function () {
+    it('Returns false if the supplied array does not start with the items in the partial array', () => {
       expect(PlaybackUtils.arrayStartsWith(['x', 'y', 'z'], ['x', 'z'])).toBe(false)
       expect(PlaybackUtils.arrayStartsWith(['x', 'y'], ['x', 'y', 'z'])).toBe(false)
       expect(PlaybackUtils.arrayStartsWith(['x', 'y'], ['x', 'z'])).toBe(false)
@@ -107,8 +107,8 @@ describe('Playback utils', function () {
     })
   })
 
-  describe('Pluck', function () {
-    it('Returns an array of attribute values requested', function () {
+  describe('Pluck', () => {
+    it('Returns an array of attribute values requested', () => {
       var array = [
         {
           foo: 1,
@@ -132,26 +132,26 @@ describe('Playback utils', function () {
     })
   })
 
-  describe('Flatten', function () {
-    it('Returns the new flattened array', function () {
+  describe('Flatten', () => {
+    it('Returns the new flattened array', () => {
       expect(PlaybackUtils.flatten([1, [2, [3, [4]], 5]])).toEqual([1, 2, [3, [4]], 5])
     })
   })
 
-  describe('Without', function () {
-    it('Returns new array excluding all occurrences of given value', function () {
+  describe('Without', () => {
+    it('Returns new array excluding all occurrences of given value', () => {
       expect(PlaybackUtils.without(['a', '', 'b', '', 'c'], '')).toEqual(['a', 'b', 'c'])
       expect(PlaybackUtils.without(['a', 'b', 'c', 'd'], 'c')).toEqual(['a', 'b', 'd'])
       expect(PlaybackUtils.without(['a', 'b', 'c'], 'd')).toEqual(['a', 'b', 'c'])
     })
   })
 
-  describe('Swap', function () {
-    it('should swap two items', function () {
+  describe('Swap', () => {
+    it('should swap two items', () => {
       expect(PlaybackUtils.swap([1, 2, 3, 4], 1, 2)).toEqual([1, 3, 2, 4])
     })
 
-    it('should not modify the original array', function () {
+    it('should not modify the original array', () => {
       var orig = [1, 2, 3, 4]
       PlaybackUtils.swap(orig, 1, 2)
 

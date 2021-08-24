@@ -66,7 +66,7 @@ const mockStrategy = (() => {
 jest.mock('./playbackstrategy/strategypicker', () => () =>
   new Promise((resolve, _) => resolve(() => mockStrategy)))
 
-describe('Player Component', function () {
+describe('Player Component', () => {
   var playerComponent
   var mockStateUpdateCallback
   var corePlaybackData
@@ -153,8 +153,8 @@ describe('Player Component', function () {
     playerComponent = undefined
   })
 
-  describe('Construction', function () {
-    it('should fire error cleared on the plugins', function () {
+  describe('Construction', () => {
+    it('should fire error cleared on the plugins', () => {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
@@ -172,8 +172,8 @@ describe('Player Component', function () {
     })
   })
 
-  describe('Pause', function () {
-    it('should disable auto resume when playing a video webcast', function () {
+  describe('Pause', () => {
+    it('should disable auto resume when playing a video webcast', () => {
       setUpPlayerComponent({windowType: WindowTypes.GROWING})
 
       return StrategyPicker().then(() => {
@@ -182,7 +182,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should use options for disable auto resume when playing audio', function () {
+    it('should use options for disable auto resume when playing audio', () => {
       setUpPlayerComponent({windowType: WindowTypes.SLIDING, mediaKind: 'audio'})
 
       jest.spyOn(mockStrategy, 'pause')
@@ -199,7 +199,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should use options for disable auto resume when not playing a webcast', function () {
+    it('should use options for disable auto resume when not playing a webcast', () => {
       setUpPlayerComponent()
 
       jest.spyOn(mockStrategy, 'pause')
@@ -217,9 +217,9 @@ describe('Player Component', function () {
     })
   })
 
-  describe('getPlayerElement', function () {
+  describe('getPlayerElement', () => {
     // This is used within the TALStatsAPI
-    it('should return the element from the strategy', function () {
+    it('should return the element from the strategy', () => {
       setUpPlayerComponent()
 
       var playerElement = document.createElement('video')
@@ -230,7 +230,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should return null if it does not exist on the strategy', function () {
+    it('should return null if it does not exist on the strategy', () => {
       setUpPlayerComponent()
 
       mockStrategy.getPlayerElement = undefined
@@ -241,7 +241,7 @@ describe('Player Component', function () {
     })
   })
 
-  describe('setCurrentTime', function () {
+  describe('setCurrentTime', () => {
     var currentStrategy
 
     beforeEach(function () {
@@ -252,7 +252,7 @@ describe('Player Component', function () {
       window.bigscreenPlayer.playbackStrategy = currentStrategy
     })
 
-    it('should setCurrentTime on the strategy when in a seekable state', function () {
+    it('should setCurrentTime on the strategy when in a seekable state', () => {
       mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 100}))
       setUpPlayerComponent()
 
@@ -265,7 +265,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should reload the element if restartable', function () {
+    it('should reload the element if restartable', () => {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
       window.bigscreenPlayer.liveSupport = LiveSupport.RESTARTABLE
 
@@ -287,7 +287,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should reload the element with no time if the new time is within 30 seconds of the end of the window', function () {
+    it('should reload the element with no time if the new time is within 30 seconds of the end of the window', () => {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
 
       mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 70}))
@@ -315,8 +315,8 @@ describe('Player Component', function () {
     })
   })
 
-  describe('Playback Rate', function () {
-    it('calls into the strategy to set the playback rate', function () {
+  describe('Playback Rate', () => {
+    it('calls into the strategy to set the playback rate', () => {
       setUpPlayerComponent()
 
       return StrategyPicker().then(() => {
@@ -326,7 +326,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('calls into the strategy to get the playback rate', function () {
+    it('calls into the strategy to get the playback rate', () => {
       mockStrategy.getPlaybackRate = jest.fn(() => 1.5)
 
       setUpPlayerComponent()
@@ -340,9 +340,9 @@ describe('Player Component', function () {
     })
   })
 
-  describe('events', function () {
-    describe('on playing', function () {
-      it('should fire error cleared on the plugins', function () {
+  describe('events', () => {
+    describe('on playing', () => {
+      it('should fire error cleared on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -362,7 +362,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should clear error timeout', function () {
+      it('should clear error timeout', () => {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
@@ -382,7 +382,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should clear fatal error timeout', function () {
+      it('should clear fatal error timeout', () => {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
@@ -403,7 +403,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should fire buffering cleared on the plugins', function () {
+      it('should fire buffering cleared on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -422,7 +422,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should publish a media state update of playing', function () {
+      it('should publish a media state update of playing', () => {
         setUpPlayerComponent()
 
         return StrategyPicker().then(() => {
@@ -433,8 +433,8 @@ describe('Player Component', function () {
       })
     })
 
-    describe('on paused', function () {
-      it('should publish a media state update event of paused', function () {
+    describe('on paused', () => {
+      it('should publish a media state update event of paused', () => {
         setUpPlayerComponent()
 
         return StrategyPicker().then(() => {
@@ -444,7 +444,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should clear error timeout', function () {
+      it('should clear error timeout', () => {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
@@ -464,7 +464,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should clear fatal error timeout', function () {
+      it('should clear fatal error timeout', () => {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
@@ -485,7 +485,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should fire error cleared on the plugins', function () {
+      it('should fire error cleared on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -504,7 +504,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should fire buffering cleared on the plugins', function () {
+      it('should fire buffering cleared on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -524,8 +524,8 @@ describe('Player Component', function () {
       })
     })
 
-    describe('on buffering', function () {
-      it('should publish a media state update of waiting', function () {
+    describe('on buffering', () => {
+      it('should publish a media state update of waiting', () => {
         setUpPlayerComponent()
 
         return StrategyPicker().then(() => {
@@ -535,7 +535,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should start the error timeout', function () {
+      it('should start the error timeout', () => {
         jest.useFakeTimers()
 
         var pluginData = {
@@ -560,7 +560,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should fire error cleared on the plugins', function () {
+      it('should fire error cleared on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -578,7 +578,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should fire on buffering on the plugins', function () {
+      it('should fire on buffering on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.STARTED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -598,8 +598,8 @@ describe('Player Component', function () {
       })
     })
 
-    describe('on ended', function () {
-      it('should clear error timeout', function () {
+    describe('on ended', () => {
+      it('should clear error timeout', () => {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
@@ -619,7 +619,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should clear fatal error timeout', function () {
+      it('should clear fatal error timeout', () => {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
@@ -640,7 +640,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should fire error cleared on the plugins', function () {
+      it('should fire error cleared on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -659,7 +659,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should fire buffering cleared on the plugins', function () {
+      it('should fire buffering cleared on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -678,7 +678,7 @@ describe('Player Component', function () {
         })
       })
 
-      it('should publish a media state update event of ended', function () {
+      it('should publish a media state update event of ended', () => {
         setUpPlayerComponent()
 
         return StrategyPicker().then(() => {
@@ -689,8 +689,8 @@ describe('Player Component', function () {
       })
     })
 
-    describe('on timeUpdate', function () {
-      it('should publish a media state update event', function () {
+    describe('on timeUpdate', () => {
+      it('should publish a media state update event', () => {
         setUpPlayerComponent()
 
         return StrategyPicker().then(() => {
@@ -701,8 +701,8 @@ describe('Player Component', function () {
       })
     })
 
-    describe('on error', function () {
-      it('should fire buffering cleared on the plugins', function () {
+    describe('on error', () => {
+      it('should fire buffering cleared on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
@@ -722,7 +722,7 @@ describe('Player Component', function () {
       })
 
       // raise error
-      it('should clear error timeout', function () {
+      it('should clear error timeout', () => {
         jest.useFakeTimers()
 
         setUpPlayerComponent()
@@ -746,7 +746,7 @@ describe('Player Component', function () {
       })
 
       // raise error
-      it('should publish a media state update of waiting', function () {
+      it('should publish a media state update of waiting', () => {
         setUpPlayerComponent()
 
         return StrategyPicker().then(() => {
@@ -757,7 +757,7 @@ describe('Player Component', function () {
       })
 
       // raise error
-      it('should fire on error on the plugins', function () {
+      it('should fire on error on the plugins', () => {
         var pluginData = {
           status: PluginEnums.STATUS.STARTED,
           stateType: PluginEnums.TYPE.ERROR,
@@ -778,7 +778,7 @@ describe('Player Component', function () {
     })
   })
 
-  describe('cdn failover', function () {
+  describe('cdn failover', () => {
     var fatalErrorPluginData
     var currentTime
     var type
@@ -810,7 +810,7 @@ describe('Player Component', function () {
       jest.useRealTimers()
     })
 
-    it('should failover after buffering for 30 seconds on initial playback', function () {
+    it('should failover after buffering for 30 seconds on initial playback', () => {
       setUpPlayerComponent()
 
       return StrategyPicker().then(() => {
@@ -827,7 +827,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should failover after buffering for 20 seconds on normal playback', function () {
+    it('should failover after buffering for 20 seconds on normal playback', () => {
       setUpPlayerComponent()
 
       return StrategyPicker().then(() => {
@@ -845,7 +845,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should failover after 5 seconds if we have not cleared an error from the device', function () {
+    it('should failover after 5 seconds if we have not cleared an error from the device', () => {
       setUpPlayerComponent()
 
       return StrategyPicker().then(() => {
@@ -863,7 +863,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should fire a fatal error on the plugins if failover is not possible', function () {
+    it('should fire a fatal error on the plugins if failover is not possible', () => {
       setUpPlayerComponent()
       forceMediaSourcesError = true
 
@@ -878,7 +878,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should publish a media state update of fatal if failover is not possible', function () {
+    it('should publish a media state update of fatal if failover is not possible', () => {
       setUpPlayerComponent()
       forceMediaSourcesError = true
 
@@ -893,7 +893,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should failover for with updated failover time when window time data has changed', function () {
+    it('should failover for with updated failover time when window time data has changed', () => {
       setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormats.HLS })
       updateTestTime = true
 
@@ -913,7 +913,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should clear buffering timeout error timeout', function () {
+    it('should clear buffering timeout error timeout', () => {
       setUpPlayerComponent()
       forceMediaSourcesError = true
 
@@ -930,7 +930,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should clear fatal error timeout', function () {
+    it('should clear fatal error timeout', () => {
       setUpPlayerComponent()
 
       return StrategyPicker().then(() => {
@@ -945,7 +945,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should fire error cleared on the plugins', function () {
+    it('should fire error cleared on the plugins', () => {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
@@ -966,7 +966,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should fire buffering cleared on the plugins', function () {
+    it('should fire buffering cleared on the plugins', () => {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.BUFFERING,
@@ -988,8 +988,8 @@ describe('Player Component', function () {
     })
   })
 
-  describe('teardown', function () {
-    it('should reset the strategy', function () {
+  describe('teardown', () => {
+    it('should reset the strategy', () => {
       setUpPlayerComponent()
 
       return StrategyPicker().then(() => {
@@ -999,7 +999,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should clear error timeout', function () {
+    it('should clear error timeout', () => {
       jest.useFakeTimers()
 
       setUpPlayerComponent()
@@ -1018,7 +1018,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should clear fatal error timeout', function () {
+    it('should clear fatal error timeout', () => {
       jest.useFakeTimers()
 
       setUpPlayerComponent()
@@ -1039,7 +1039,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('teardown - should fire error cleared on the plugins', function () {
+    it('teardown - should fire error cleared on the plugins', () => {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
@@ -1058,7 +1058,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should fire buffering cleared on the plugins', function () {
+    it('should fire buffering cleared on the plugins', () => {
       var pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.BUFFERING,
@@ -1077,7 +1077,7 @@ describe('Player Component', function () {
       })
     })
 
-    it('should tear down the strategy', function () {
+    it('should tear down the strategy', () => {
       setUpPlayerComponent()
 
       return StrategyPicker().then(() => {

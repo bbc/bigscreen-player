@@ -1,7 +1,7 @@
 import TimeUtils from './timeutils'
 
-describe('Time utils', function () {
-  describe('Duration to seconds', function () {
+describe('Time utils', () => {
+  describe('Duration to seconds', () => {
     var testCases = {
       'PT2H': 7200,
       'PT2H30S': 7230,
@@ -15,7 +15,7 @@ describe('Time utils', function () {
       'foobar': undefined
     }
     function testDurationToSeconds (duration) {
-      it('Converts duration of ' + duration + ' to ' + testCases[duration] + ' seconds', function () {
+      it('Converts duration of ' + duration + ' to ' + testCases[duration] + ' seconds', () => {
         expect(TimeUtils.durationToSeconds(duration)).toBe(testCases[duration])
       })
     }
@@ -24,7 +24,7 @@ describe('Time utils', function () {
     }
   })
 
-  describe('Calculate Sliding Window Seek Offset', function () {
+  describe('Calculate Sliding Window Seek Offset', () => {
     const realDateNow = global.Date.now
 
     beforeEach(function () {
@@ -35,7 +35,7 @@ describe('Time utils', function () {
       global.Date.now = realDateNow
     })
 
-    it('should return the relative time in seconds including the time a user spent seeking', function () {
+    it('should return the relative time in seconds including the time a user spent seeking', () => {
       var time = 4000
 
       // Note the 5 minute (300 second difference)
@@ -48,7 +48,7 @@ describe('Time utils', function () {
       expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(3680)
     })
 
-    it('should return the relative time in seconds if paused time is 0', function () {
+    it('should return the relative time in seconds if paused time is 0', () => {
       var time = 4000
 
       // Note the 5 minute (300 second difference)

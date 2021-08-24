@@ -32,7 +32,7 @@ var MediaPlayerState = {
   ERROR: 'ERROR' // An error occurred
 }
 
-describe('Legacy Playback Adapter', function () {
+describe('Legacy Playback Adapter', () => {
   var legacyAdaptor
   var mediaPlayer
   var videoContainer
@@ -101,8 +101,8 @@ describe('Legacy Playback Adapter', function () {
     document.body.appendChild(videoContainer)
     legacyAdaptor = LegacyAdaptor(mockMediaSources, windowType, videoContainer, options.isUHD, mediaPlayer)
   }
-  describe('transitions', function () {
-    it('should pass back possible transitions', function () {
+  describe('transitions', () => {
+    it('should pass back possible transitions', () => {
       setUpLegacyAdaptor()
 
       expect(legacyAdaptor.transitions).toEqual(expect.objectContaining({
@@ -114,8 +114,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('load', function () {
-    it('should initialise the media player', function () {
+  describe('load', () => {
+    it('should initialise the media player', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.load('video/mp4', 0)
@@ -123,7 +123,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.initialiseMedia).toHaveBeenCalledWith('video', cdnArray[0].url, 'video/mp4', videoContainer, expect.any(Object))
     })
 
-    it('should begin playback from the passed in start time + time correction if we are watching live on a restartable device', function () {
+    it('should begin playback from the passed in start time + time correction if we are watching live on a restartable device', () => {
       testTimeCorrection = 10
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
@@ -132,7 +132,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(60)
     })
 
-    it('should begin playback at the live point if no start time is passed in and we are watching live on a playable device', function () {
+    it('should begin playback at the live point if no start time is passed in and we are watching live on a playable device', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, playableDevice: true})
 
       legacyAdaptor.load('video/mp4', undefined)
@@ -140,7 +140,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.beginPlayback).toHaveBeenCalledWith()
     })
 
-    it('should begin playback from the passed in start time if we are watching vod', function () {
+    it('should begin playback from the passed in start time if we are watching vod', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.load('video/mp4', 50)
@@ -148,7 +148,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(50)
     })
 
-    it('should begin playback from if no start time is passed in when watching vod', function () {
+    it('should begin playback from if no start time is passed in when watching vod', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.load('video/mp4', undefined)
@@ -156,7 +156,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0)
     })
 
-    it('should disable sentinels if we are watching UHD and configured to do so', function () {
+    it('should disable sentinels if we are watching UHD and configured to do so', () => {
       window.bigscreenPlayer.overrides = {
         liveUhdDisableSentinels: true
       }
@@ -170,7 +170,7 @@ describe('Legacy Playback Adapter', function () {
       expect(properties.disableSentinels).toEqual(true)
     })
 
-    it('should disable seek sentinels if we are configured to do so', function () {
+    it('should disable seek sentinels if we are configured to do so', () => {
       window.bigscreenPlayer.overrides = {
         disableSeekSentinel: true
       }
@@ -185,8 +185,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('play', function () {
-    it('should play from 0 if the stream has ended', function () {
+  describe('play', () => {
+    it('should play from 0 if the stream has ended', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.COMPLETE})
@@ -196,7 +196,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(0)
     })
 
-    it('should resume if the player is in a paused or buffering state', function () {
+    it('should resume if the player is in a paused or buffering state', () => {
       setUpLegacyAdaptor()
 
       mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
@@ -206,7 +206,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.resume).toHaveBeenCalledWith()
     })
 
-    it('should play from the current time if we are not ended, paused or buffering', function () {
+    it('should play from the current time if we are not ended, paused or buffering', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10})
@@ -216,7 +216,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
     })
 
-    it('should play from the current time on live if we are not ended, paused or buffering', function () {
+    it('should play from the current time on live if we are not ended, paused or buffering', () => {
       testTimeCorrection = 10
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
@@ -228,8 +228,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('pause', function () {
-    it('should pause when we don\'t need to delay a call to pause', function () {
+  describe('pause', () => {
+    it('should pause when we don\'t need to delay a call to pause', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.pause({disableAutoResume: false})
@@ -237,7 +237,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.pause).toHaveBeenCalledWith({disableAutoResume: false})
     })
 
-    it('should not pause when we need to delay a call to pause', function () {
+    it('should not pause when we need to delay a call to pause', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('application/dash+xml', undefined)
@@ -252,8 +252,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('isPaused', function () {
-    it('should be set to false once we have loaded', function () {
+  describe('isPaused', () => {
+    it('should be set to false once we have loaded', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.load('video/mp4', undefined)
@@ -261,7 +261,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.isPaused()).toEqual(false)
     })
 
-    it('should be set to false when we call play', function () {
+    it('should be set to false when we call play', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.play()
@@ -269,7 +269,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.isPaused()).toEqual(false)
     })
 
-    it('should be set to false when we get a playing event', function () {
+    it('should be set to false when we get a playing event', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.PLAYING})
@@ -277,7 +277,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.isPaused()).toEqual(false)
     })
 
-    it('should be set to false when we get a time update event', function () {
+    it('should be set to false when we get a time update event', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.STATUS})
@@ -285,7 +285,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.isPaused()).toEqual(false)
     })
 
-    it('should be set to true when we get a paused event', function () {
+    it('should be set to true when we get a paused event', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.PAUSED})
@@ -293,7 +293,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.isPaused()).toEqual(true)
     })
 
-    it('should be set to true when we get a ended event', function () {
+    it('should be set to true when we get a ended event', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.COMPLETE})
@@ -302,14 +302,14 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('isEnded', function () {
-    it('should be set to false on initialisation of the strategy', function () {
+  describe('isEnded', () => {
+    it('should be set to false on initialisation of the strategy', () => {
       setUpLegacyAdaptor()
 
       expect(legacyAdaptor.isEnded()).toEqual(false)
     })
 
-    it('should be set to true when we get an ended event', function () {
+    it('should be set to true when we get an ended event', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.COMPLETE})
@@ -317,7 +317,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.isEnded()).toEqual(true)
     })
 
-    it('should be set to false when we a playing event is recieved', function () {
+    it('should be set to false when we a playing event is recieved', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.PLAYING})
@@ -325,7 +325,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.isEnded()).toEqual(false)
     })
 
-    it('should be set to false when we get a waiting event', function () {
+    it('should be set to false when we get a waiting event', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.BUFFERING})
@@ -333,7 +333,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.isEnded()).toEqual(false)
     })
 
-    it('should be set to true when we get a completed event then false when we start initial buffering from playing', function () {
+    it('should be set to true when we get a completed event then false when we start initial buffering from playing', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.COMPLETE})
@@ -346,14 +346,14 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('getDuration', function () {
-    it('should be set to 0 on initialisation', function () {
+  describe('getDuration', () => {
+    it('should be set to 0 on initialisation', () => {
       setUpLegacyAdaptor()
 
       expect(legacyAdaptor.getDuration()).toEqual(0)
     })
 
-    it('should be updated by the playing event duration when the duration is undefined or 0', function () {
+    it('should be updated by the playing event duration when the duration is undefined or 0', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.PLAYING, duration: 10})
@@ -361,7 +361,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.getDuration()).toEqual(10)
     })
 
-    it('should use the local duration when the value is not undefined or 0', function () {
+    it('should use the local duration when the value is not undefined or 0', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.PLAYING, duration: 10})
@@ -374,8 +374,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('getPlayerElement', function () {
-    it('should return the mediaPlayer element', function () {
+  describe('getPlayerElement', () => {
+    it('should return the mediaPlayer element', () => {
       setUpLegacyAdaptor()
 
       var videoElement = document.createElement('video')
@@ -386,8 +386,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('getSeekableRange', function () {
-    it('should return the start as 0 and the end as the duration for vod', function () {
+  describe('getSeekableRange', () => {
+    it('should return the start as 0 and the end as the duration for vod', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.PLAYING, duration: 10})
@@ -395,7 +395,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.getSeekableRange()).toEqual({start: 0, end: 10})
     })
 
-    it('should return the start/end from the player - time correction', function () {
+    it('should return the start/end from the player - time correction', () => {
       testTimeCorrection = 10
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, playableDevice: false})
 
@@ -404,7 +404,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.getSeekableRange()).toEqual({start: 100, end: 1000})
     })
 
-    it('should return the start/end from the player when the time correction is 0', function () {
+    it('should return the start/end from the player when the time correction is 0', () => {
       testTimeCorrection = 0
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING, playableDevice: false})
 
@@ -414,8 +414,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('getCurrentTime', function () {
-    it('should be set when we get a playing event', function () {
+  describe('getCurrentTime', () => {
+    it('should be set when we get a playing event', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.PLAYING, currentTime: 10})
@@ -423,7 +423,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.getCurrentTime()).toEqual(10)
     })
 
-    it('should be set with time correction when we get a playing event', function () {
+    it('should be set with time correction when we get a playing event', () => {
       testTimeCorrection = 5
       setUpLegacyAdaptor({windowType: WindowTypes.STATIC})
 
@@ -432,7 +432,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.getCurrentTime()).toEqual(5)
     })
 
-    it('should be set when we get a time update event', function () {
+    it('should be set when we get a time update event', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10})
@@ -440,7 +440,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.getCurrentTime()).toEqual(10)
     })
 
-    it('should be set with time correction when we get a time update event', function () {
+    it('should be set with time correction when we get a time update event', () => {
       testTimeCorrection = 5
       setUpLegacyAdaptor({windowType: WindowTypes.STATIC})
 
@@ -450,8 +450,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('setCurrentTime', function () {
-    it('should set isEnded to false', function () {
+  describe('setCurrentTime', () => {
+    it('should set isEnded to false', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.setCurrentTime(10)
@@ -459,7 +459,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.isEnded()).toEqual(false)
     })
 
-    it('should update currentTime to the time value passed in', function () {
+    it('should update currentTime to the time value passed in', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.setCurrentTime(10)
@@ -467,7 +467,7 @@ describe('Legacy Playback Adapter', function () {
       expect(legacyAdaptor.getCurrentTime()).toEqual(10)
     })
 
-    it('should seek to the time value passed in', function () {
+    it('should seek to the time value passed in', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.setCurrentTime(10)
@@ -475,7 +475,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
     })
 
-    it('should seek to the time value passed in + time correction', function () {
+    it('should seek to the time value passed in + time correction', () => {
       testTimeCorrection = 10
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
@@ -484,7 +484,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(20)
     })
 
-    it('should pause after a seek if we were in a paused state, not watching dash and on a capable device', function () {
+    it('should pause after a seek if we were in a paused state, not watching dash and on a capable device', () => {
       setUpLegacyAdaptor()
 
       eventCallbacks({type: MediaPlayerEvent.PAUSED})
@@ -496,7 +496,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.pause).toHaveBeenCalledWith()
     })
 
-    it('should not pause after a seek if we are not on capable device and watching a dash stream', function () {
+    it('should not pause after a seek if we are not on capable device and watching a dash stream', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('application/dash+xml', undefined)
@@ -511,8 +511,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('Playback Rate', function () {
-    it('calls through to the mediaPlayers setPlaybackRate function', function () {
+  describe('Playback Rate', () => {
+    it('calls through to the mediaPlayers setPlaybackRate function', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.setPlaybackRate(2)
@@ -520,7 +520,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.setPlaybackRate).toHaveBeenCalledWith(2)
     })
 
-    it('calls through to the mediaPlayers getPlaybackRate function and returns correct value', function () {
+    it('calls through to the mediaPlayers getPlaybackRate function and returns correct value', () => {
       setUpLegacyAdaptor()
       mediaPlayer.getPlaybackRate.mockReturnValue(1.5)
 
@@ -530,7 +530,7 @@ describe('Legacy Playback Adapter', function () {
       expect(rate).toEqual(1.5)
     })
 
-    it('getPlaybackRate returns 1.0 if mediaPlayer does not have getPlaybackRate function', function () {
+    it('getPlaybackRate returns 1.0 if mediaPlayer does not have getPlaybackRate function', () => {
       mediaPlayer = {
         addEventCallback: jest.fn()
       }
@@ -540,8 +540,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('reset', function () {
-    it('should reset the player', function () {
+  describe('reset', () => {
+    it('should reset the player', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.reset()
@@ -549,7 +549,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.reset).toHaveBeenCalledWith()
     })
 
-    it('should stop the player if we are not in an unstoppable state', function () {
+    it('should stop the player if we are not in an unstoppable state', () => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.reset()
@@ -557,7 +557,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.stop).toHaveBeenCalledWith()
     })
 
-    it('should not stop the player if we in an unstoppable state', function () {
+    it('should not stop the player if we in an unstoppable state', () => {
       setUpLegacyAdaptor()
 
       mediaPlayer.getState.mockReturnValue(MediaPlayerState.EMPTY)
@@ -568,34 +568,34 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('tearDown', function () {
+  describe('tearDown', () => {
     beforeEach(function () {
       setUpLegacyAdaptor()
 
       legacyAdaptor.tearDown()
     })
 
-    it('should remove all event callbacks', function () {
+    it('should remove all event callbacks', () => {
       expect(mediaPlayer.removeAllEventCallbacks).toHaveBeenCalledWith()
     })
 
-    it('should set isPaused to true', function () {
+    it('should set isPaused to true', () => {
       expect(legacyAdaptor.isPaused()).toEqual(true)
     })
 
-    it('should return isEnded as false', function () {
+    it('should return isEnded as false', () => {
       expect(legacyAdaptor.isEnded()).toEqual(false)
     })
   })
 
-  describe('live glitch curtain', function () {
+  describe('live glitch curtain', () => {
     beforeEach(function () {
       window.bigscreenPlayer.overrides = {
         showLiveCurtain: true
       }
     })
 
-    it('should show curtain for a live restart and we get a seek-attempted event', function () {
+    it('should show curtain for a live restart and we get a seek-attempted event', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('video/mp4', 10)
@@ -605,7 +605,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mockGlitchCurtain.showCurtain).toHaveBeenCalledWith()
     })
 
-    it('should show curtain for a live restart to 0 and we get a seek-attempted event', function () {
+    it('should show curtain for a live restart to 0 and we get a seek-attempted event', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('video/mp4', 0)
@@ -615,7 +615,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mockGlitchCurtain.showCurtain).toHaveBeenCalledWith()
     })
 
-    it('should not show curtain when playing from the live point and we get a seek-attempted event', function () {
+    it('should not show curtain when playing from the live point and we get a seek-attempted event', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('video/mp4')
@@ -625,7 +625,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mockGlitchCurtain.showCurtain).not.toHaveBeenCalledWith()
     })
 
-    it('should show curtain when the forceBeginPlaybackToEndOfWindow config is set and the playback type is live', function () {
+    it('should show curtain when the forceBeginPlaybackToEndOfWindow config is set and the playback type is live', () => {
       window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow = true
 
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
@@ -635,7 +635,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mockGlitchCurtain.showCurtain).toHaveBeenCalledWith()
     })
 
-    it('should not show curtain when the config overide is not set and we are playing live', function () {
+    it('should not show curtain when the config overide is not set and we are playing live', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       eventCallbacks({type: MediaPlayerEvent.SEEK_ATTEMPTED})
@@ -643,7 +643,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mockGlitchCurtain.showCurtain).not.toHaveBeenCalledWith()
     })
 
-    it('should hide the curtain when we get a seek-finished event', function () {
+    it('should hide the curtain when we get a seek-finished event', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('video/mp4', 0)
@@ -657,7 +657,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mockGlitchCurtain.hideCurtain).toHaveBeenCalledWith()
     })
 
-    it('should tear down the curtain on strategy tearDown if it has been shown', function () {
+    it('should tear down the curtain on strategy tearDown if it has been shown', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('video/mp4', 0)
@@ -670,8 +670,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('dash live on error after exiting seek', function () {
-    it('should have called reset on the player', function () {
+  describe('dash live on error after exiting seek', () => {
+    it('should have called reset on the player', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       // set up the values handleErrorOnExitingSeek && exitingSeek so they are truthy then fire an error event so we restart.
@@ -684,7 +684,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.reset).toHaveBeenCalledWith()
     })
 
-    it('should initialise the player', function () {
+    it('should initialise the player', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('application/dash+xml', undefined)
@@ -696,7 +696,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.initialiseMedia).toHaveBeenCalledWith('video', cdnArray[0].url, 'application/dash+xml', videoContainer, expect.any(Object))
     })
 
-    it('should begin playback from the currentTime', function () {
+    it('should begin playback from the currentTime', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('application/dash+xml', undefined)
@@ -708,7 +708,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(10)
     })
 
-    it('should begin playback from the currentTime + time correction', function () {
+    it('should begin playback from the currentTime + time correction', () => {
       testTimeCorrection = 10
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
@@ -722,8 +722,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('delay pause until after seek', function () {
-    it('should pause the player if we were in a paused state on dash live', function () {
+  describe('delay pause until after seek', () => {
+    it('should pause the player if we were in a paused state on dash live', () => {
       setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
       legacyAdaptor.load('application/dash+xml', undefined)
@@ -739,7 +739,7 @@ describe('Legacy Playback Adapter', function () {
       expect(mediaPlayer.pause).toHaveBeenCalledWith()
     })
 
-    it('should pause the player if we were in a paused state for devices with known issues', function () {
+    it('should pause the player if we were in a paused state for devices with known issues', () => {
       window.bigscreenPlayer.overrides = {
         pauseOnExitSeek: true
       }
@@ -760,8 +760,8 @@ describe('Legacy Playback Adapter', function () {
     })
   })
 
-  describe('events', function () {
-    it('should publish a playing event', function () {
+  describe('events', () => {
+    it('should publish a playing event', () => {
       setUpLegacyAdaptor()
 
       var eventCallbackSpy = jest.fn()
@@ -772,7 +772,7 @@ describe('Legacy Playback Adapter', function () {
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PLAYING)
     })
 
-    it('should publish a paused event', function () {
+    it('should publish a paused event', () => {
       setUpLegacyAdaptor()
 
       var eventCallbackSpy = jest.fn()
@@ -783,7 +783,7 @@ describe('Legacy Playback Adapter', function () {
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PAUSED)
     })
 
-    it('should publish a buffering event', function () {
+    it('should publish a buffering event', () => {
       setUpLegacyAdaptor()
 
       var eventCallbackSpy = jest.fn()
@@ -794,7 +794,7 @@ describe('Legacy Playback Adapter', function () {
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.WAITING)
     })
 
-    it('should publish an ended event', function () {
+    it('should publish an ended event', () => {
       setUpLegacyAdaptor()
 
       var eventCallbackSpy = jest.fn()
@@ -805,7 +805,7 @@ describe('Legacy Playback Adapter', function () {
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.ENDED)
     })
 
-    it('should publish a time update event', function () {
+    it('should publish a time update event', () => {
       setUpLegacyAdaptor()
 
       var timeUpdateCallbackSpy = jest.fn()

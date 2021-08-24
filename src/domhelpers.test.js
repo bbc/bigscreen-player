@@ -1,19 +1,19 @@
 import DOMHelpers from './domhelpers'
 
-describe('DOMHelpers', function () {
-  it('Converts an RGBA tuple string to RGB tripple string', function () {
+describe('DOMHelpers', () => {
+  it('Converts an RGBA tuple string to RGB tripple string', () => {
     expect(DOMHelpers.rgbaToRGB('#FFAAFFAA')).toBe('#FFAAFF')
   })
 
-  it('Will return a RGB as it is', function () {
+  it('Will return a RGB as it is', () => {
     expect(DOMHelpers.rgbaToRGB('#FFAAFF')).toBe('#FFAAFF')
   })
 
-  it('Will return a non-RGBA as it is', function () {
+  it('Will return a non-RGBA as it is', () => {
     expect(DOMHelpers.rgbaToRGB('black')).toBe('black')
   })
 
-  it('Will delete a node which has a parent', function () {
+  it('Will delete a node which has a parent', () => {
     var body = document.createElement('body')
     var child = document.createElement('p')
     body.appendChild(child)
@@ -23,7 +23,7 @@ describe('DOMHelpers', function () {
     expect(body.hasChildNodes()).toBe(false)
   })
 
-  it('Will do nothing when the node is detatched', function () {
+  it('Will do nothing when the node is detatched', () => {
     var node = document.createElement('p')
 
     expect(function () {

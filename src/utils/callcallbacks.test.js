@@ -1,7 +1,7 @@
 import callCallbacks from './callcallbacks'
 
-describe('callCallbacks', function () {
-  it('calls all the callbacks once with the provided data', function () {
+describe('callCallbacks', () => {
+  it('calls all the callbacks once with the provided data', () => {
     var callbacks = [ jest.fn(), jest.fn() ]
 
     var data = 'data'
@@ -15,7 +15,7 @@ describe('callCallbacks', function () {
   })
 
   // Note: Forgive the time hack, async deferred errors can be flakey in other tests if not caught!
-  it('calls later callbacks if an earlier one errors', function () {
+  it('calls later callbacks if an earlier one errors', () => {
     jest.useFakeTimers()
     var callback = jest.fn()
 

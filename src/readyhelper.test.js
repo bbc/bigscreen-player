@@ -5,15 +5,15 @@ import LiveSupport from './models/livesupport'
 
 var callback
 
-describe('readyHelper', function () {
+describe('readyHelper', () => {
   var readyHelper
 
   beforeEach(function () {
     callback = jest.fn()
   })
 
-  describe('- Initialisation -', function () {
-    it('does not attempt to call callback if it is not supplied', function () {
+  describe('- Initialisation -', () => {
+    it('does not attempt to call callback if it is not supplied', () => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, undefined)
 
       readyHelper.callbackWhenReady({
@@ -27,16 +27,16 @@ describe('readyHelper', function () {
     })
   })
 
-  describe('- Basic -', function () {
+  describe('- Basic -', () => {
     beforeEach(function () {
       readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
-    it('does not call the supplied callback in init', function () {
+    it('does not call the supplied callback in init', () => {
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('does not call the supplied callback if there is no event data', function () {
+    it('does not call the supplied callback if there is no event data', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true
       })
@@ -44,7 +44,7 @@ describe('readyHelper', function () {
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('only calls the supplied callback once when given multiple events containing a valid time', function () {
+    it('only calls the supplied callback once when given multiple events containing a valid time', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
@@ -65,12 +65,12 @@ describe('readyHelper', function () {
     })
   })
 
-  describe('- VoD, No Initial Time -', function () {
+  describe('- VoD, No Initial Time -', () => {
     beforeEach(function () {
       readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
-    it('calls the supplied callback when given event data containing a valid time', function () {
+    it('calls the supplied callback when given event data containing a valid time', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
@@ -81,7 +81,7 @@ describe('readyHelper', function () {
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
-    it('does not call the supplied callback when given event data containing an invalid time', function () {
+    it('does not call the supplied callback when given event data containing an invalid time', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
@@ -92,7 +92,7 @@ describe('readyHelper', function () {
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('does not call the supplied callback when media state transitions to FATAL_ERROR', function () {
+    it('does not call the supplied callback when media state transitions to FATAL_ERROR', () => {
       readyHelper.callbackWhenReady({
         data: {
           state: MediaState.FATAL_ERROR
@@ -102,7 +102,7 @@ describe('readyHelper', function () {
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('does not call the supplied callback when media state is undefined', function () {
+    it('does not call the supplied callback when media state is undefined', () => {
       readyHelper.callbackWhenReady({
         data: {
           state: undefined
@@ -112,7 +112,7 @@ describe('readyHelper', function () {
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('calls the supplied callback when media state and time is valid', function () {
+    it('calls the supplied callback when media state and time is valid', () => {
       readyHelper.callbackWhenReady({
         data: {
           state: MediaState.PLAYING,
@@ -124,12 +124,12 @@ describe('readyHelper', function () {
     })
   })
 
-  describe('- VoD, Initial Time -', function () {
+  describe('- VoD, Initial Time -', () => {
     beforeEach(function () {
       readyHelper = new ReadyHelper(60, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
-    it('calls the supplied callback when current time exceeds intital time', function () {
+    it('calls the supplied callback when current time exceeds intital time', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
@@ -140,7 +140,7 @@ describe('readyHelper', function () {
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
-    it('does not call the supplied callback when current time is 0', function () {
+    it('does not call the supplied callback when current time is 0', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
@@ -152,12 +152,12 @@ describe('readyHelper', function () {
     })
   })
 
-  describe('- Live -', function () {
+  describe('- Live -', () => {
     beforeEach(function () {
       readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.RESTARTABLE, callback)
     })
 
-    it('calls the supplied callback when given a valid seekable range and current time', function () {
+    it('calls the supplied callback when given a valid seekable range and current time', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
@@ -172,7 +172,7 @@ describe('readyHelper', function () {
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
-    it('does not call the supplied callback when the seekable range is undefined', function () {
+    it('does not call the supplied callback when the seekable range is undefined', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
@@ -183,7 +183,7 @@ describe('readyHelper', function () {
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('does not call the supplied callback when seekable range is 0 - 0', function () {
+    it('does not call the supplied callback when seekable range is 0 - 0', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
@@ -199,12 +199,12 @@ describe('readyHelper', function () {
     })
   })
 
-  describe('- Live, Playable -', function () {
+  describe('- Live, Playable -', () => {
     beforeEach(function () {
       readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.PLAYABLE, callback)
     })
 
-    it('calls the supplied callback regardless of seekable range if current time is positive', function () {
+    it('calls the supplied callback regardless of seekable range if current time is positive', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {

@@ -26,7 +26,7 @@ jest.mock('./modifiers/live/playable')
 jest.mock('./modifiers/live/restartable')
 jest.mock('./modifiers/live/seekable')
 
-describe('Native Strategy', function () {
+describe('Native Strategy', () => {
   var mediaKind = 'mediaKind'
   var playbackElement = 'playbackElement'
   var isUHD = 'isUHD'
@@ -65,8 +65,8 @@ describe('Native Strategy', function () {
     delete window.bigscreenPlayer
   })
 
-  describe('window types', function () {
-    it('calls LegacyAdapter with a static media player when called for STATIC window', function () {
+  describe('window types', () => {
+    it('calls LegacyAdapter with a static media player when called for STATIC window', () => {
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
 
       expect(HTML5Player).toHaveBeenCalledWith()
@@ -75,7 +75,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, html5Player)
     })
 
-    it('calls LegacyAdapter with a live media player when called for a GROWING window', function () {
+    it('calls LegacyAdapter with a live media player when called for a GROWING window', () => {
       windowType = WindowTypes.GROWING
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -86,7 +86,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, playablePlayer)
     })
 
-    it('calls LegacyAdapter with a live media player when called for a SLIDING window', function () {
+    it('calls LegacyAdapter with a live media player when called for a SLIDING window', () => {
       windowType = WindowTypes.SLIDING
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -98,8 +98,8 @@ describe('Native Strategy', function () {
     })
   })
 
-  describe('players', function () {
-    it('should default to html5 when no configuration', function () {
+  describe('players', () => {
+    it('should default to html5 when no configuration', () => {
       window.bigscreenPlayer.mediaPlayer = undefined
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -108,7 +108,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, html5Player)
     })
 
-    it('should use the cehtml when configured', function () {
+    it('should use the cehtml when configured', () => {
       window.bigscreenPlayer.mediaPlayer = 'cehtml'
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -117,7 +117,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, cehtmlPlayer)
     })
 
-    it('should use the html5 when configured', function () {
+    it('should use the html5 when configured', () => {
       window.bigscreenPlayer.mediaPlayer = 'html5'
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -126,7 +126,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, html5Player)
     })
 
-    it('should use the samsungmaple when configured', function () {
+    it('should use the samsungmaple when configured', () => {
       window.bigscreenPlayer.mediaPlayer = 'samsungmaple'
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -135,7 +135,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, samsungMaplePlayer)
     })
 
-    it('should use the samsungstreaming when configured', function () {
+    it('should use the samsungstreaming when configured', () => {
       window.bigscreenPlayer.mediaPlayer = 'samsungstreaming'
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -144,7 +144,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, samsungStreamingPlayer)
     })
 
-    it('should use the samsungstreaming2015 when configured', function () {
+    it('should use the samsungstreaming2015 when configured', () => {
       window.bigscreenPlayer.mediaPlayer = 'samsungstreaming2015'
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -154,19 +154,19 @@ describe('Native Strategy', function () {
     })
   })
 
-  describe('live players', function () {
+  describe('live players', () => {
     beforeEach(function () {
       windowType = WindowTypes.SLIDING
     })
 
-    it('should default to playable when no configuration', function () {
+    it('should default to playable when no configuration', () => {
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
 
       expect(Playable).toHaveBeenCalledWith(html5Player, WindowTypes.SLIDING, mediaSources)
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, playablePlayer)
     })
 
-    it('should use none when configured', function () {
+    it('should use none when configured', () => {
       window.bigscreenPlayer.liveSupport = 'none'
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -175,7 +175,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, nonePlayer)
     })
 
-    it('should use playable when configured', function () {
+    it('should use playable when configured', () => {
       window.bigscreenPlayer.liveSupport = 'playable'
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -184,7 +184,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, playablePlayer)
     })
 
-    it('should use restartable when configured', function () {
+    it('should use restartable when configured', () => {
       window.bigscreenPlayer.liveSupport = 'restartable'
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)
@@ -193,7 +193,7 @@ describe('Native Strategy', function () {
       expect(LegacyAdapter).toHaveBeenCalledWith(mediaSources, windowType, playbackElement, isUHD, restartablePlayer)
     })
 
-    it('should use seekable when configured', function () {
+    it('should use seekable when configured', () => {
       window.bigscreenPlayer.liveSupport = 'seekable'
 
       NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD)

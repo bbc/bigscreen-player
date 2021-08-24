@@ -1,6 +1,6 @@
 import DynamicWindowUtils from './dynamicwindowutils'
 
-describe('autoResumeAtStartOfRange', function () {
+describe('autoResumeAtStartOfRange', () => {
   var resume
   var addEventCallback
   var removeEventCallback
@@ -23,7 +23,7 @@ describe('autoResumeAtStartOfRange', function () {
     jest.useRealTimers()
   })
 
-  it('resumes play when the current time is equal to the start of the seekable range', function () {
+  it('resumes play when the current time is equal to the start of the seekable range', () => {
     DynamicWindowUtils.autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(20000)
@@ -33,7 +33,7 @@ describe('autoResumeAtStartOfRange', function () {
     expect(resume).toHaveBeenCalledTimes(1)
   })
 
-  it('resumes play when the current time at the start of the seekable range within a threshold', function () {
+  it('resumes play when the current time at the start of the seekable range within a threshold', () => {
     DynamicWindowUtils.autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(15000)
@@ -43,7 +43,7 @@ describe('autoResumeAtStartOfRange', function () {
     expect(resume).toHaveBeenCalledTimes(1)
   })
 
-  it('resumes play when the current time at the start of the seekable range at the threshold', function () {
+  it('resumes play when the current time at the start of the seekable range at the threshold', () => {
     DynamicWindowUtils.autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(12000)
@@ -53,7 +53,7 @@ describe('autoResumeAtStartOfRange', function () {
     expect(resume).toHaveBeenCalledTimes(1)
   })
 
-  it('does not resume play when the current time is past the start of the seekable range plus the threshold', function () {
+  it('does not resume play when the current time is past the start of the seekable range plus the threshold', () => {
     DynamicWindowUtils.autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(10000)
@@ -63,7 +63,7 @@ describe('autoResumeAtStartOfRange', function () {
     expect(resume).toHaveBeenCalledTimes(0)
   })
 
-  it('non pause event stops autoresume', function () {
+  it('non pause event stops autoresume', () => {
     checkNotPauseEvent.mockImplementation(() => true)
 
     addEventCallback.mockImplementation((_, callback) => callback())
@@ -76,7 +76,7 @@ describe('autoResumeAtStartOfRange', function () {
     expect(resume).toHaveBeenCalledTimes(0)
   })
 
-  it('pause event does not stop autoresume', function () {
+  it('pause event does not stop autoresume', () => {
     checkNotPauseEvent.mockImplementation(() => false)
 
     addEventCallback.mockImplementation((_, callback) => callback())
