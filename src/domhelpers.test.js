@@ -14,8 +14,8 @@ describe('DOMHelpers', () => {
   })
 
   it('Will delete a node which has a parent', () => {
-    var body = document.createElement('body')
-    var child = document.createElement('p')
+    const body = document.createElement('body')
+    const child = document.createElement('p')
     body.appendChild(child)
 
     DOMHelpers.safeRemoveElement(child)
@@ -24,9 +24,9 @@ describe('DOMHelpers', () => {
   })
 
   it('Will do nothing when the node is detatched', () => {
-    var node = document.createElement('p')
+    const node = document.createElement('p')
 
-    expect(function () {
+    expect(() => {
       DOMHelpers.safeRemoveElement(node)
     }).not.toThrow()
   })

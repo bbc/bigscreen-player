@@ -1,9 +1,9 @@
 import Resizer from './resizer'
 
 describe('Resizer', () => {
-  var resizer, element
+  let resizer, element
 
-  beforeEach(function () {
+  beforeEach(() => {
     element = document.createElement('div')
     element.style.top = '0px'
     element.style.left = '0px'

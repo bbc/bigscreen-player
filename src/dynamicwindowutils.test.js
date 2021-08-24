@@ -1,16 +1,17 @@
 import DynamicWindowUtils from './dynamicwindowutils'
 
 describe('autoResumeAtStartOfRange', () => {
-  var resume
-  var addEventCallback
-  var removeEventCallback
-  var checkNotPauseEvent
-  var currentTime = 20
-  var seekableRange = {
+  const currentTime = 20
+  const seekableRange = {
     start: 0
   }
 
-  beforeEach(function () {
+  let resume
+  let addEventCallback
+  let removeEventCallback
+  let checkNotPauseEvent
+
+  beforeEach(() => {
     jest.useFakeTimers()
 
     resume = jest.fn()
@@ -19,7 +20,7 @@ describe('autoResumeAtStartOfRange', () => {
     checkNotPauseEvent = jest.fn()
   })
 
-  afterEach(function () {
+  afterEach(() => {
     jest.useRealTimers()
   })
 

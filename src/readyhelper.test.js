@@ -3,12 +3,11 @@ import ReadyHelper from './readyhelper'
 import WindowTypes from './models/windowtypes'
 import LiveSupport from './models/livesupport'
 
-var callback
-
 describe('readyHelper', () => {
-  var readyHelper
+  let callback
+  let readyHelper
 
-  beforeEach(function () {
+  beforeEach(() => {
     callback = jest.fn()
   })
 
@@ -28,7 +27,7 @@ describe('readyHelper', () => {
   })
 
   describe('- Basic -', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
@@ -66,7 +65,7 @@ describe('readyHelper', () => {
   })
 
   describe('- VoD, No Initial Time -', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
@@ -125,7 +124,7 @@ describe('readyHelper', () => {
   })
 
   describe('- VoD, Initial Time -', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       readyHelper = new ReadyHelper(60, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
@@ -153,7 +152,7 @@ describe('readyHelper', () => {
   })
 
   describe('- Live -', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.RESTARTABLE, callback)
     })
 
@@ -200,7 +199,7 @@ describe('readyHelper', () => {
   })
 
   describe('- Live, Playable -', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.PLAYABLE, callback)
     })
 
