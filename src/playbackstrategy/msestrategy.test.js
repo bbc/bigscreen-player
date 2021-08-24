@@ -7,11 +7,7 @@ import TimeUtils from '../utils/timeutils'
 import DynamicWindowUtils from '../dynamicwindowutils'
 import Plugins from '../plugins'
 
-var mockDashMediaPlayer = {
-  create: jest.fn(() => mockDashInstance)
-}
-
-var mockDashInstance = {
+const mockDashInstance = {
   initialize: jest.fn(),
   retrieveManifest: jest.fn(),
   getDebug: jest.fn(),
@@ -40,22 +36,15 @@ var mockDashInstance = {
   setBlacklistExpiryTime: jest.fn()
 }
 
+const mockDashMediaPlayer = {
+  create: jest.fn(() => mockDashInstance)
+}
+
 jest.mock('dashjs/index_mediaplayerOnly', () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
 jest.mock('../dynamicwindowutils')
 
 describe('Media Source Extensions Playback Strategy', () => {
-  var mseStrategy
-  var eventCallbacks
-  var dashEventCallback
-  var eventHandlers = {}
-  var playbackElement
-  var cdnArray = []
-  var mediaSources
-  var mockAudioElement
-  var mockVideoElement
-  var testManifestObject
-  var mockTimeModel
-  var dashjsMediaPlayerEvents = {
+  const dashjsMediaPlayerEvents = {
     ERROR: 'error',
     MANIFEST_LOADED: 'manifestLoaded',
     MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
@@ -65,7 +54,19 @@ describe('Media Source Extensions Playback Strategy', () => {
     METRIC_CHANGED: 'metricChanged'
   }
 
-  beforeEach(function () {
+  let mseStrategy
+  let eventCallbacks
+  let dashEventCallback
+  let eventHandlers = {}
+  let playbackElement
+  let cdnArray = []
+  let mediaSources
+  let mockAudioElement
+  let mockVideoElement
+  let testManifestObject
+  let mockTimeModel
+
+  beforeEach(() => {
     window.bigscreenPlayer = {}
 
     // For DVRInfo Based Seekable Range
@@ -73,45 +74,27 @@ describe('Media Source Extensions Playback Strategy', () => {
     mockDashInstance.isReady.mockReturnValue(true)
     mockDashInstance.getDVRWindowSize.mockReturnValue(101)
 
-    mockDashInstance.on.mockImplementation(function (eventType, handler) {
+    mockDashInstance.on.mockImplementation((eventType, handler) => {
       eventHandlers[eventType] = handler
-
-      dashEventCallback = function (eventType, event) {
-        eventHandlers[eventType].call(eventType, event)
-      }
+      dashEventCallback = (eventType, event) => eventHandlers[eventType].call(eventType, event)
     })
 
     mockDashInstance.getDashMetrics.mockReturnValue({
-      getCurrentDVRInfo: function () {
-        return {
-          range: {
-            start: 0,
-            end: 101
-          }
-        }
-      },
-      getCurrentBufferLevel: function () {
-        return 'buffer'
-      },
-      getCurrentRepresentationSwitch: function () {
-        return 0
-      },
-      getCurrentIndexForRepresentation: function () {
-        return 1
-      }
+      getCurrentDVRInfo: () =>  ({ range: { start: 0, end: 101 } }),
+      getCurrentBufferLevel: () => 'buffer',
+      getCurrentRepresentationSwitch: () => 0,
+      getCurrentIndexForRepresentation: () => 1
     })
 
     mockDashInstance.getDashAdapter.mockReturnValue({
-      getIndexForRepresentation: function () {
-        return 0
-      }
+      getIndexForRepresentation: () => 0
     })
 
     mockAudioElement = document.createElement('audio')
     mockVideoElement = document.createElement('video')
     playbackElement = document.createElement('div')
 
-    jest.spyOn(document, 'createElement').mockImplementationOnce(function (elementType) {
+    jest.spyOn(document, 'createElement').mockImplementationOnce((elementType) => {
       if (elementType === 'audio') {
         return mockAudioElement
       } else if (elementType === 'video') {
@@ -119,13 +102,11 @@ describe('Media Source Extensions Playback Strategy', () => {
       }
     })
 
-    jest.spyOn(mockVideoElement, 'addEventListener').mockImplementation(function (eventType, handler) {
+    jest.spyOn(mockVideoElement, 'addEventListener').mockImplementation((eventType, handler) => {
       eventHandlers[eventType] = handler
-
-      eventCallbacks = function (event) {
-        eventHandlers[event].call(event)
-      }
+      eventCallbacks = (event) => eventHandlers[event].call(event)
     })
+
     jest.spyOn(mockVideoElement, 'removeEventListener')
 
     cdnArray = [
@@ -134,10 +115,11 @@ describe('Media Source Extensions Playback Strategy', () => {
       { url: 'http://testcdn3/test/', cdn: 'http://testcdn3/test/' }
     ]
 
-    var mediaSourceCallbacks = {
+    const mediaSourceCallbacks = {
       onSuccess: jest.fn(),
       onError: jest.fn()
     }
+
     mediaSources = new MediaSources()
     jest.spyOn(mediaSources, 'time')
     jest.spyOn(mediaSources, 'failover')
@@ -153,7 +135,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     }
   })
 
-  afterEach(function () {
+  afterEach(() => {
     jest.clearAllMocks()
     delete window.bigscreenPlayer
     mockVideoElement = undefined
@@ -161,8 +143,8 @@ describe('Media Source Extensions Playback Strategy', () => {
   })
 
   function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
-    var defaultWindowType = windowType || WindowTypes.STATIC
-    var defaultMediaKind = mediaKind || MediaKinds.VIDEO
+    const defaultWindowType = windowType || WindowTypes.STATIC
+    const defaultMediaKind = mediaKind || MediaKinds.VIDEO
 
     mockTimeModel = {
       correction: timeCorrection || 0,
@@ -224,7 +206,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
 
-      var baseUrlArray = [
+      const baseUrlArray = [
         {
           __text: cdnArray[0].url + 'dash/',
           'dvb:priority': 0,
@@ -267,7 +249,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     describe('for SLIDING window', () => {
-      beforeEach(function () {
+      beforeEach(() => {
         setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100000, 200000)
         mediaSources.time.mockReturnValue(mockTimeModel)
         mockDashInstance.getSource.mockReturnValue('src')
@@ -296,7 +278,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     describe('for GROWING window', () => {
-      beforeEach(function () {
+      beforeEach(() => {
         setUpMSE(0, WindowTypes.GROWING, MediaKinds.VIDEO, 100000, 200000)
         mediaSources.time.mockReturnValue(mockTimeModel)
         mockDashInstance.getSource.mockReturnValue('src')
@@ -345,10 +327,10 @@ describe('Media Source Extensions Playback Strategy', () => {
   })
 
   describe('Load when a mediaPlayer exists (e.g. CDN failover)', () => {
-    var noop
-    var failoverInfo
-    beforeEach(function () {
-      noop = function () { }
+    const noop = () => {}
+    let failoverInfo
+
+    beforeEach(() => {
       failoverInfo = { errorMessage: 'failover', isBufferingTimeoutError: false }
     })
 
@@ -425,11 +407,11 @@ describe('Media Source Extensions Playback Strategy', () => {
 
     it('should call plugin handler on dash download manifest error', () => {
       setUpMSE()
-      var mockErrorCallback = jest.fn()
+      const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
       mseStrategy.load(cdnArray, WindowTypes.GROWING, 3)
 
-      var testError = {
+      const testError = {
         error: {
           event: {
             id: 'manifest'
@@ -562,12 +544,13 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should empty the eventCallbacks array and stop emitting events', () => {
-      setUpMSE()
-      function tearDownAndError () {
+      function tearDownAndError() {
         mseStrategy.load(null, 0)
         mseStrategy.tearDown()
         dashEventCallback('pause')
       }
+
+      setUpMSE()
 
       expect(tearDownAndError).not.toThrowError()
     })
@@ -693,7 +676,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     describe('sliding window', () => {
-      beforeEach(function () {
+      beforeEach(() => {
         setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000)
         mseStrategy.load(null, 0)
         mockDashInstance.play.mockReset()
@@ -724,7 +707,7 @@ describe('Media Source Extensions Playback Strategy', () => {
       })
 
       it('should not start autoresume timeout when paused and disableAutoResume is set', () => {
-        var opts = {
+        const opts = {
           disableAutoResume: true
         }
 
@@ -763,7 +746,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     describe('growing window', () => {
-      beforeEach(function () {
+      beforeEach(() => {
         setUpMSE(0, WindowTypes.GROWING)
         mseStrategy.load(null, 0)
         mockVideoElement.currentTime = 50
@@ -779,9 +762,7 @@ describe('Media Source Extensions Playback Strategy', () => {
       })
 
       it('should call seek on media player with the original user requested seek time when manifest refreshes but doesnt have a duration', () => {
-        mockDashInstance.refreshManifest.mockImplementation(function (callback) {
-          callback({})
-        })
+        mockDashInstance.refreshManifest.mockImplementation((callback) => callback({}))
 
         mseStrategy.setCurrentTime(60)
 
@@ -789,9 +770,8 @@ describe('Media Source Extensions Playback Strategy', () => {
       })
 
       it('should call seek on media player with the time clamped to new end when manifest refreshes and contains a duration', () => {
-        mockDashInstance.refreshManifest.mockImplementation(function (callback) {
-          callback({mediaPresentationDuration: 80})
-        })
+        mockDashInstance.refreshManifest.mockImplementation((callback) =>
+          callback({mediaPresentationDuration: 80}))
 
         mseStrategy.setCurrentTime(90)
 
@@ -815,7 +795,7 @@ describe('Media Source Extensions Playback Strategy', () => {
       mseStrategy.load(null, 0)
       mockDashInstance.getPlaybackRate.mockReturnValue(1.5)
 
-      var rate = mseStrategy.getPlaybackRate()
+      const rate = mseStrategy.getPlaybackRate()
 
       expect(mockDashInstance.getPlaybackRate).toHaveBeenCalled()
       expect(rate).toEqual(1.5)
@@ -823,12 +803,16 @@ describe('Media Source Extensions Playback Strategy', () => {
   })
 
   describe('mseDurationOverride', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       // due to interaction with emitPlayerInfo()
-      mockDashInstance.getBitrateInfoListFor.mockReturnValue([{ bitrate: 1024000 }, { bitrate: 200000 }, { bitrate: 3000000 }])
+      mockDashInstance.getBitrateInfoListFor.mockReturnValue([
+        { bitrate: 1024000 },
+        { bitrate: 200000 },
+        { bitrate: 3000000 }
+      ])
     })
 
-    afterEach(function () {
+    afterEach(() => {
       mockDashInstance.setDuration.mockReset()
     })
 
@@ -916,16 +900,16 @@ describe('Media Source Extensions Playback Strategy', () => {
   })
 
   describe('onMetricAdded and onQualityChangeRendered', () => {
-    var mockEvent = {
+    const mockEvent = {
       mediaType: 'video',
       oldQuality: 0,
       newQuality: 1,
       type: 'qualityChangeRendered'
     }
 
-    var mockOnPlayerInfoUpdated = jest.fn()
+    const mockOnPlayerInfoUpdated = jest.fn()
 
-    beforeEach(function () {
+    beforeEach(() => {
       jest.spyOn(Plugins.interface, 'onPlayerInfoUpdated').mockReturnValue(mockOnPlayerInfoUpdated)
       jest.spyOn(Plugins.interface, 'onErrorHandled')
       mockOnPlayerInfoUpdated.mockReset()
@@ -945,7 +929,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should call plugins with video playback buffer length', () => {
-      var mockBufferEvent = {
+      const mockBufferEvent = {
         mediaType: 'video',
         metric: 'BufferLevel'
       }
@@ -962,7 +946,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should not call plugins with audio playback buffer length when mediaKind is video', () => {
-      var mockBufferEvent = {
+      const mockBufferEvent = {
         mediaType: 'audio',
         metric: 'BufferLevel'
       }
@@ -978,7 +962,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
   describe('dashJS BASE_URL_SELECTED event', () => {
     it('should not fire error handled event on initial load', () => {
-      var mockEvent = {
+      const mockEvent = {
         mediaType: 'video',
         type: 'baseUrlSelected',
         baseUrl: {
@@ -995,7 +979,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should not publish error event on initial segment download error', () => {
-      var mockEvent = {
+      const mockEvent = {
         error: {
           message: 'initial segment download error',
           code: 28
@@ -1004,7 +988,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       setUpMSE()
 
-      var mockErrorCallback = jest.fn()
+      const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
@@ -1015,7 +999,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should not publish error event on segment index download error', () => {
-      var mockEvent = {
+      const mockEvent = {
         error: {
           message: 'segment index download error',
           code: 26
@@ -1024,7 +1008,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       setUpMSE()
 
-      var mockErrorCallback = jest.fn()
+      const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
@@ -1035,7 +1019,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should not publish error event on content download error', () => {
-      var mockEvent = {
+      const mockEvent = {
         error: {
           message: 'content download error',
           code: 27
@@ -1044,7 +1028,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       setUpMSE()
 
-      var mockErrorCallback = jest.fn()
+      const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
@@ -1055,7 +1039,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should not publish error event on manifest download error', () => {
-      var mockEvent = {
+      const mockEvent = {
         error: {
           message: 'manifest download error',
           code: 25
@@ -1064,7 +1048,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       setUpMSE()
 
-      var mockErrorCallback = jest.fn()
+      const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
@@ -1075,7 +1059,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should initiate a failover with correct parameters on manifest download error', () => {
-      var mockEvent = {
+      const mockEvent = {
         error: {
           message: 'manifest download error',
           code: 25
@@ -1089,7 +1073,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
 
-      var failoverParams = {
+      const failoverParams = {
         errorMessage: 'manifest-refresh',
         isBufferingTimeoutError: false,
         currentTime: mseStrategy.getCurrentTime(),
@@ -1100,20 +1084,20 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should publish an error event on manifest download error but there are no more sources to CDN failover to', () => {
-      var mockEvent = {
+      const mockEvent = {
         error: {
           message: 'manifest download error',
           code: 25
         }
       }
 
-      var noop = function () {}
+      const noop = () => {}
       mediaSources.failover(noop, noop, { errorMessage: 'failover', isBufferingTimeoutError: false })
       mediaSources.failover(noop, noop, { errorMessage: 'failover', isBufferingTimeoutError: false })
 
       setUpMSE()
 
-      var mockErrorCallback = jest.fn()
+      const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
@@ -1126,9 +1110,9 @@ describe('Media Source Extensions Playback Strategy', () => {
   })
 
   describe('seeking and waiting events', () => {
-    var eventCallbackSpy
+    let eventCallbackSpy
 
-    beforeEach(function () {
+    beforeEach(() => {
       setUpMSE()
       eventCallbackSpy = jest.fn()
       mseStrategy.addEventCallback(this, eventCallbackSpy)
