@@ -2,7 +2,7 @@ import WindowTypes from '../models/windowtypes'
 import MediaState from '../models/mediastate'
 import LegacyAdaptor from './legacyplayeradapter'
 
-var mockGlitchCurtain = {
+const mockGlitchCurtain = {
   showCurtain: jest.fn(),
   hideCurtain: jest.fn(),
   tearDown: jest.fn()
@@ -10,7 +10,7 @@ var mockGlitchCurtain = {
 
 jest.mock('../playbackstrategy/liveglitchcurtain', () => jest.fn(() => mockGlitchCurtain))
 
-var MediaPlayerEvent = {
+const MediaPlayerEvent = {
   STOPPED: 'stopped', // Event fired when playback is stopped
   BUFFERING: 'buffering', // Event fired when playback has to suspend due to buffering
   PLAYING: 'playing', // Event fired when starting (or resuming) playing of the media
@@ -22,7 +22,7 @@ var MediaPlayerEvent = {
   SEEK_FINISHED: 'seek-finished' // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
 }
 
-var MediaPlayerState = {
+const MediaPlayerState = {
   EMPTY: 'EMPTY', // No source set
   STOPPED: 'STOPPED', // Source set but no playback
   BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
@@ -33,14 +33,14 @@ var MediaPlayerState = {
 }
 
 describe('Legacy Playback Adapter', () => {
-  var legacyAdaptor
-  var mediaPlayer
-  var videoContainer
-  var eventCallbacks
-  var testTimeCorrection = 0
-  var cdnArray = []
+  let legacyAdaptor
+  let mediaPlayer
+  let videoContainer
+  let eventCallbacks
+  let testTimeCorrection = 0
+  let cdnArray = []
 
-  beforeEach(function () {
+  beforeEach(() => {
     window.bigscreenPlayer = {
       playbackStrategy: 'stubstrategy'
     }
@@ -63,11 +63,10 @@ describe('Legacy Playback Adapter', () => {
       pause: jest.fn(),
       setPlaybackRate: jest.fn(),
       getPlaybackRate: jest.fn()
-
     }
   })
 
-  afterEach(function () {
+  afterEach(() => {
     jest.clearAllMocks()
     delete window.bigscreenPlayer
     testTimeCorrection = 0
@@ -75,25 +74,19 @@ describe('Legacy Playback Adapter', () => {
 
   // Options = windowType, playableDevice, timeCorrection, deviceReplacement, isUHD
   function setUpLegacyAdaptor (opts) {
-    var mockMediaSources = {
-      time: function () {
-        return {correction: testTimeCorrection}
-      },
-      currentSource: function () {
-        return cdnArray[0].url
-      }
+    const mockMediaSources = {
+      time: () => ({correction: testTimeCorrection}),
+      currentSource: () => cdnArray[0].url
     }
 
-    var options = opts || {}
+    const options = opts || {}
 
     cdnArray.push({url: 'testcdn1/test/', cdn: 'cdn1'})
 
-    var windowType = options.windowType || WindowTypes.STATIC
+    const windowType = options.windowType || WindowTypes.STATIC
 
-    mediaPlayer.addEventCallback.mockImplementation(function (component, callback) {
-      eventCallbacks = function (event) {
-        callback.call(component, event)
-      }
+    mediaPlayer.addEventCallback.mockImplementation((component, callback) => {
+      eventCallbacks = (event) => callback.call(component, event)
     })
 
     videoContainer = document.createElement('div')
@@ -101,6 +94,7 @@ describe('Legacy Playback Adapter', () => {
     document.body.appendChild(videoContainer)
     legacyAdaptor = LegacyAdaptor(mockMediaSources, windowType, videoContainer, options.isUHD, mediaPlayer)
   }
+
   describe('transitions', () => {
     it('should pass back possible transitions', () => {
       setUpLegacyAdaptor()
@@ -165,7 +159,7 @@ describe('Legacy Playback Adapter', () => {
 
       legacyAdaptor.load('video/mp4', undefined)
 
-      var properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
+      const properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
 
       expect(properties.disableSentinels).toEqual(true)
     })
@@ -179,7 +173,7 @@ describe('Legacy Playback Adapter', () => {
 
       legacyAdaptor.load(cdnArray, 'video/mp4', undefined)
 
-      var properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
+      const properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
 
       expect(properties.disableSeekSentinel).toEqual(true)
     })
@@ -378,7 +372,7 @@ describe('Legacy Playback Adapter', () => {
     it('should return the mediaPlayer element', () => {
       setUpLegacyAdaptor()
 
-      var videoElement = document.createElement('video')
+      const videoElement = document.createElement('video')
 
       mediaPlayer.getPlayerElement.mockReturnValue(videoElement)
 
@@ -524,7 +518,7 @@ describe('Legacy Playback Adapter', () => {
       setUpLegacyAdaptor()
       mediaPlayer.getPlaybackRate.mockReturnValue(1.5)
 
-      var rate = legacyAdaptor.getPlaybackRate()
+      const rate = legacyAdaptor.getPlaybackRate()
 
       expect(mediaPlayer.getPlaybackRate).toHaveBeenCalledWith()
       expect(rate).toEqual(1.5)
@@ -569,7 +563,7 @@ describe('Legacy Playback Adapter', () => {
   })
 
   describe('tearDown', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       setUpLegacyAdaptor()
 
       legacyAdaptor.tearDown()
@@ -589,7 +583,7 @@ describe('Legacy Playback Adapter', () => {
   })
 
   describe('live glitch curtain', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       window.bigscreenPlayer.overrides = {
         showLiveCurtain: true
       }
@@ -764,7 +758,7 @@ describe('Legacy Playback Adapter', () => {
     it('should publish a playing event', () => {
       setUpLegacyAdaptor()
 
-      var eventCallbackSpy = jest.fn()
+      const eventCallbackSpy = jest.fn()
       legacyAdaptor.addEventCallback(this, eventCallbackSpy)
 
       eventCallbacks({type: MediaPlayerEvent.PLAYING})
@@ -775,7 +769,7 @@ describe('Legacy Playback Adapter', () => {
     it('should publish a paused event', () => {
       setUpLegacyAdaptor()
 
-      var eventCallbackSpy = jest.fn()
+      const eventCallbackSpy = jest.fn()
       legacyAdaptor.addEventCallback(this, eventCallbackSpy)
 
       eventCallbacks({type: MediaPlayerEvent.PAUSED})
@@ -786,7 +780,7 @@ describe('Legacy Playback Adapter', () => {
     it('should publish a buffering event', () => {
       setUpLegacyAdaptor()
 
-      var eventCallbackSpy = jest.fn()
+      const eventCallbackSpy = jest.fn()
       legacyAdaptor.addEventCallback(this, eventCallbackSpy)
 
       eventCallbacks({type: MediaPlayerEvent.BUFFERING})
@@ -797,7 +791,7 @@ describe('Legacy Playback Adapter', () => {
     it('should publish an ended event', () => {
       setUpLegacyAdaptor()
 
-      var eventCallbackSpy = jest.fn()
+      const eventCallbackSpy = jest.fn()
       legacyAdaptor.addEventCallback(this, eventCallbackSpy)
 
       eventCallbacks({type: MediaPlayerEvent.COMPLETE})
@@ -808,7 +802,7 @@ describe('Legacy Playback Adapter', () => {
     it('should publish a time update event', () => {
       setUpLegacyAdaptor()
 
-      var timeUpdateCallbackSpy = jest.fn()
+      const timeUpdateCallbackSpy = jest.fn()
       legacyAdaptor.addTimeUpdateCallback(this, timeUpdateCallbackSpy)
 
       eventCallbacks({type: MediaPlayerEvent.STATUS})
