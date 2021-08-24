@@ -4,94 +4,87 @@ import NativeStrategy from './nativestrategy'
 import MSEStrategy from './msestrategy'
 
 jest.mock('./nativestrategy')
-jest.mock('dashjs/index_mediaplayerOnly', () => ({ MediaPlayer: jest.fn() }))
+jest.mock('dashjs/index_mediaplayerOnly', () => ({ MediaPlayer: () => {} }))
 jest.mock('./msestrategy')
 
 describe('Strategy Picker', () => {
-  var isUHD = true
+  const isUHD = true
 
-  beforeEach(function () {
+  beforeEach(() => {
     window.bigscreenPlayer = {}
   })
 
-  afterEach(function () {
+  afterEach(() => {
     delete window.bigscreenPlayer
   })
 
-  it('should default to native strategy', (done) => {
-    StrategyPicker(WindowTypes.STATIC, isUHD).then(function (strategy) {
+  it('should default to native strategy', () => {
+    return StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
       expect(strategy).toEqual(NativeStrategy)
-      done()
     })
   })
 
-  it('should use native strategy if UHD is an exception for a hybrid device', (done) => {
+  it('should use native strategy if UHD is an exception for a hybrid device', () => {
     window.bigscreenPlayer = {
       playbackStrategy: 'hybridstrategy',
       mseExceptions: ['uhd']
     }
 
-    StrategyPicker(WindowTypes.STATIC, isUHD).then(function (strategy) {
+    return StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
       expect(strategy).toEqual(NativeStrategy)
-      done()
     })
   })
 
   describe('WindowType Exceptions', () => {
-    it('should use native strategy if playing and an exception for a STATIC window', (done) => {
+    it('should use native strategy if playing and an exception for a STATIC window', () => {
       window.bigscreenPlayer = {
         playbackStrategy: 'hybridstrategy',
         mseExceptions: ['staticWindow']
       }
 
-      StrategyPicker(WindowTypes.STATIC, !isUHD).then(function (strategy) {
+      return StrategyPicker(WindowTypes.STATIC, !isUHD).then((strategy) => {
         expect(strategy).toEqual(NativeStrategy)
-        done()
       })
     })
 
-    it('should use native strategy if playing and an exception for a SLIDING window', (done) => {
+    it('should use native strategy if playing and an exception for a SLIDING window', () => {
       window.bigscreenPlayer = {
         playbackStrategy: 'hybridstrategy',
         mseExceptions: ['slidingWindow']
       }
 
-      StrategyPicker(WindowTypes.SLIDING, !isUHD).then(function (strategy) {
+      return StrategyPicker(WindowTypes.SLIDING, !isUHD).then((strategy) => {
         expect(strategy).toEqual(NativeStrategy)
-        done()
       })
     })
 
-    it('should use native strategy if playing and an exception for a GROWING window', (done) => {
+    it('should use native strategy if playing and an exception for a GROWING window', () => {
       window.bigscreenPlayer = {
         playbackStrategy: 'hybridstrategy',
         mseExceptions: ['growingWindow']
       }
 
-      StrategyPicker(WindowTypes.GROWING, !isUHD).then(function (strategy) {
+      StrategyPicker(WindowTypes.GROWING, !isUHD).then((strategy) => {
         expect(strategy).toEqual(NativeStrategy)
-        done()
       })
     })
   })
 
-  it('should use mse strategy if there are no exceptions for a hybrid device', (done) => {
+  it('should use mse strategy if there are no exceptions for a hybrid device', () => {
     window.bigscreenPlayer = {
       playbackStrategy: 'hybridstrategy'
     }
 
-    StrategyPicker(WindowTypes.STATIC, isUHD).then(function (strategy) {
+    StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
       expect(strategy).toEqual(MSEStrategy)
-      done()
     })
   })
 
-  it('should use mse strategy when configured', (done) => {
+  it('should use mse strategy when configured', () => {
     window.bigscreenPlayer.playbackStrategy = 'msestrategy'
 
-    StrategyPicker(WindowTypes.STATIC, isUHD).then(function (strategy) {
+    StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
       expect(strategy).toEqual(MSEStrategy)
-      done()
     })
   })
 })

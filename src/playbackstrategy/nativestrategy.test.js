@@ -27,22 +27,23 @@ jest.mock('./modifiers/live/restartable')
 jest.mock('./modifiers/live/seekable')
 
 describe('Native Strategy', () => {
-  var mediaKind = 'mediaKind'
-  var playbackElement = 'playbackElement'
-  var isUHD = 'isUHD'
-  var mediaSources = 'mockMediaSources'
-  var windowType
+  const mediaKind = 'mediaKind'
+  const playbackElement = 'playbackElement'
+  const isUHD = 'isUHD'
+  const mediaSources = 'mockMediaSources'
 
-  var html5Player = 'mockHtml5Player'
-  var cehtmlPlayer = 'mockCehtmlPlayer'
-  var samsungMaplePlayer = 'mockSamsungMaplePlayer'
-  var samsungStreamingPlayer = 'mockSamsungStreamingPlayer'
-  var samsungStreaming2015Player = 'mockSamsungStreaming2015Player'
+  const html5Player = 'mockHtml5Player'
+  const cehtmlPlayer = 'mockCehtmlPlayer'
+  const samsungMaplePlayer = 'mockSamsungMaplePlayer'
+  const samsungStreamingPlayer = 'mockSamsungStreamingPlayer'
+  const samsungStreaming2015Player = 'mockSamsungStreaming2015Player'
 
-  var nonePlayer = 'mockNonePlayer'
-  var playablePlayer = 'mockPlayablePlayer'
-  var restartablePlayer = 'mockRestartablePlayer'
-  var seekablePlayer = 'mockSeekablePlayer'
+  const nonePlayer = 'mockNonePlayer'
+  const playablePlayer = 'mockPlayablePlayer'
+  const restartablePlayer = 'mockRestartablePlayer'
+  const seekablePlayer = 'mockSeekablePlayer'
+
+  let windowType
 
   beforeEach(function () {
     windowType = WindowTypes.STATIC
@@ -60,7 +61,7 @@ describe('Native Strategy', () => {
     SeekablePlayer.mockReturnValue(seekablePlayer)
   })
 
-  afterEach(function () {
+  afterEach(() => {
     jest.clearAllMocks()
     delete window.bigscreenPlayer
   })
@@ -155,7 +156,7 @@ describe('Native Strategy', () => {
   })
 
   describe('live players', () => {
-    beforeEach(function () {
+    beforeEach(() => {
       windowType = WindowTypes.SLIDING
     })
 
