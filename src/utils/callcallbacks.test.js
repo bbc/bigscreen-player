@@ -2,13 +2,12 @@ import callCallbacks from './callcallbacks'
 
 describe('callCallbacks', () => {
   it('calls all the callbacks once with the provided data', () => {
-    var callbacks = [ jest.fn(), jest.fn() ]
-
-    var data = 'data'
+    const callbacks = [ jest.fn(), jest.fn() ]
+    const data = 'data'
 
     callCallbacks(callbacks, data)
 
-    callbacks.forEach(function (callback) {
+    callbacks.forEach((callback) => {
       expect(callback).toHaveBeenCalledTimes(1)
       expect(callback).toHaveBeenCalledWith(data)
     })
@@ -17,9 +16,9 @@ describe('callCallbacks', () => {
   // Note: Forgive the time hack, async deferred errors can be flakey in other tests if not caught!
   it('calls later callbacks if an earlier one errors', () => {
     jest.useFakeTimers()
-    var callback = jest.fn()
+    const callback = jest.fn()
 
-    var failingCallCallbacks = () => {
+    const failingCallCallbacks = () => {
       callCallbacks([
         () => { throw new Error('oops') },
         callback

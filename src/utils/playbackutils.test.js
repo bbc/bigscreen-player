@@ -3,12 +3,12 @@ import PlaybackUtils from './playbackutils'
 describe('Playback utils', () => {
   describe('Clone', () => {
     it('Makes a shallow clone of an object', () => {
-      var input = {
+      const input = {
         foo: 1,
         bar: 'foo bar'
       }
 
-      var clone = PlaybackUtils.clone(input)
+      const clone = PlaybackUtils.clone(input)
 
       input.foo = 2
       input.bar = 'boo far'
@@ -20,7 +20,7 @@ describe('Playback utils', () => {
 
   describe('Clone array', () => {
     it('Makes a shallow clone of an array', () => {
-      var input = [
+      const input = [
         {
           foo: 1,
           bar: 'foo bar'
@@ -31,7 +31,7 @@ describe('Playback utils', () => {
         }
       ]
 
-      var clone = PlaybackUtils.cloneArray(input)
+      const clone = PlaybackUtils.cloneArray(input)
 
       input[0].foo = 100
       input[0].bar = 'boo far'
@@ -49,11 +49,11 @@ describe('Playback utils', () => {
 
   describe('Merge', () => {
     it('Creates a new object with properties merged from all supplied objects', () => {
-      var obj1 = { obj1a: 'a', obj1b: 'b' }
-      var obj2 = { obj2a: 'a', obj2b: 'b' }
-      var obj3 = { obj3a: 'a', obj3b: 'b' }
+      const obj1 = { obj1a: 'a', obj1b: 'b' }
+      const obj2 = { obj2a: 'a', obj2b: 'b' }
+      const obj3 = { obj3a: 'a', obj3b: 'b' }
 
-      var merged = PlaybackUtils.merge(obj1, obj2, obj3)
+      const merged = PlaybackUtils.merge(obj1, obj2, obj3)
 
       expect(merged).toEqual({
         obj1a: 'a',
@@ -66,20 +66,20 @@ describe('Playback utils', () => {
     })
 
     it('Should merge deep objects and overwrite with the latest argument', () => {
-      var obj1 = {
+      const obj1 = {
         data: {
           test1: 'test1',
           propToBeChanged: 'test2'
         }
       }
-      var obj2 = {
+      const obj2 = {
         data: {
           propToBeChanged: 'PropHasBeenChanged',
           test2: 'test2'
         }
       }
 
-      var merged = PlaybackUtils.merge(obj1, obj2)
+      const merged = PlaybackUtils.merge(obj1, obj2)
 
       expect(merged).toEqual({
         data: {
@@ -109,7 +109,7 @@ describe('Playback utils', () => {
 
   describe('Pluck', () => {
     it('Returns an array of attribute values requested', () => {
-      var array = [
+      const array = [
         {
           foo: 1,
           bar: 2
@@ -124,8 +124,8 @@ describe('Playback utils', () => {
         }
       ]
 
-      var expectedFoo = [1, 3, 5]
-      var expectedBar = [2, 4, 6]
+      const expectedFoo = [1, 3, 5]
+      const expectedBar = [2, 4, 6]
 
       expect(PlaybackUtils.pluck(array, 'foo')).toEqual(expectedFoo)
       expect(PlaybackUtils.pluck(array, 'bar')).toEqual(expectedBar)
@@ -152,7 +152,7 @@ describe('Playback utils', () => {
     })
 
     it('should not modify the original array', () => {
-      var orig = [1, 2, 3, 4]
+      const orig = [1, 2, 3, 4]
       PlaybackUtils.swap(orig, 1, 2)
 
       expect(orig).toEqual([1, 2, 3, 4])

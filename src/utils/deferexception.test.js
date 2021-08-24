@@ -2,7 +2,7 @@ import deferExceptions from './deferexceptions'
 
 describe('deferExceptions', () => {
   it('calls the callback once', () => {
-    var callback = jest.fn()
+    const callback = jest.fn()
 
     deferExceptions(callback)
 
@@ -12,11 +12,11 @@ describe('deferExceptions', () => {
   it('does not let an exception through', () => {
     jest.useFakeTimers()
 
-    var error = new Error('oops')
+    const error = new Error('oops')
 
     try {
-      expect(function () {
-        deferExceptions(function () {
+      expect(() => {
+        deferExceptions(() => {
           throw error
         })
       }).not.toThrow()
