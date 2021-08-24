@@ -167,7 +167,6 @@ describe('Player Component', function () {
 
       Plugins.interface.onErrorCleared.mockImplementationOnce((data) => {
         expect(data).toMatchObject(pluginData)
-        
       })
 
       setUpPlayerComponent()
@@ -181,7 +180,6 @@ describe('Player Component', function () {
       return StrategyPicker().then(() => {
         playerComponent.pause()
         expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: true})
-        
       })
     })
 
@@ -199,8 +197,6 @@ describe('Player Component', function () {
 
         playerComponent.pause({disableAutoResume: true})
         expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: true})
-
-        
       })
     })
 
@@ -218,8 +214,6 @@ describe('Player Component', function () {
 
         playerComponent.pause({disableAutoResume: true})
         expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: true})
-
-          
       })
     })
   })
@@ -234,7 +228,6 @@ describe('Player Component', function () {
 
       return StrategyPicker().then(() => {
         expect(playerComponent.getPlayerElement()).toEqual(playerElement)
-        
       })
     })
 
@@ -245,7 +238,6 @@ describe('Player Component', function () {
 
       return StrategyPicker().then(() => {
         expect(playerComponent.getPlayerElement()).toEqual(null)
-        
       })
     })
   })
@@ -278,7 +270,7 @@ describe('Player Component', function () {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
       window.bigscreenPlayer.liveSupport = LiveSupport.RESTARTABLE
 
-      mockStrategy.getSeekableRange = jest.fn (() => ({start: 0, end: 100}))
+      mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 100}))
 
       setUpPlayerComponent({
         windowType: WindowTypes.SLIDING,
@@ -298,7 +290,7 @@ describe('Player Component', function () {
 
     it('should reload the element with no time if the new time is within 30 seconds of the end of the window', function () {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
-      
+
       mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 70}))
       mockStrategy.liveSupport = LiveSupport.RESTARTABLE
 
@@ -319,7 +311,7 @@ describe('Player Component', function () {
         playerComponent.setCurrentTime(50)
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-        expect(mockStrategy.load).toHaveBeenCalledWith('applesomething', undefined)    
+        expect(mockStrategy.load).toHaveBeenCalledWith('applesomething', undefined)
       })
     })
   })
@@ -331,7 +323,7 @@ describe('Player Component', function () {
       return StrategyPicker().then(() => {
         playerComponent.setPlaybackRate(2)
 
-        expect(mockStrategy.setPlaybackRate).toHaveBeenCalledWith(2) 
+        expect(mockStrategy.setPlaybackRate).toHaveBeenCalledWith(2)
       })
     })
 
@@ -363,7 +355,7 @@ describe('Player Component', function () {
 
         setUpPlayerComponent()
 
-        return StrategyPicker().then(() => {          
+        return StrategyPicker().then(() => {
           // console.log(Plugins.interface.onErrorCleared.mock.calls)
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
 
@@ -512,7 +504,6 @@ describe('Player Component', function () {
           expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
         })
       })
-
 
       it('should fire buffering cleared on the plugins', function () {
         var pluginData = {
@@ -781,7 +772,6 @@ describe('Player Component', function () {
         setUpPlayerComponent()
 
         return StrategyPicker().then(() => {
-
           mockStrategy.mockingHooks.fireError()
 
           expect(Plugins.interface.onError).toHaveBeenCalledWith(expect.objectContaining(pluginData))
@@ -826,15 +816,15 @@ describe('Player Component', function () {
     it('should failover after buffering for 30 seconds on initial playback', function () {
       setUpPlayerComponent()
 
-      return StrategyPicker().then(() =>  {
+      return StrategyPicker().then(() => {
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
         jest.advanceTimersByTime(29999)
-  
+
         expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-  
+
         jest.advanceTimersByTime(1)
-  
+
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
       })
