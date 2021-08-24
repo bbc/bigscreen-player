@@ -45,7 +45,7 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
     DOMHelpers.addClass(container, 'playerCaptions')
 
     // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
-    subtitlesRenderer = new Renderer('playerCaptions', xml, mediaPlayer)
+    subtitlesRenderer = Renderer('playerCaptions', xml, mediaPlayer)
     container.appendChild(subtitlesRenderer.render())
 
     parentElement.appendChild(container)
