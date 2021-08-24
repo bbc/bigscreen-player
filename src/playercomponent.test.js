@@ -545,7 +545,6 @@ describe('Player Component', function () {
         })
       })
 
-      // TODO: loadMedia(mediaMetaData.type, failoverTime, thenPause), L235, PlayerComponent
       it('should start the error timeout', function () {
         jest.useFakeTimers()
 
@@ -822,7 +821,6 @@ describe('Player Component', function () {
       jest.useRealTimers()
     })
 
-    // TODO: Actually Broken - strategy.load() not being called
     it('should failover after buffering for 30 seconds on initial playback', function () {
       setUpPlayerComponent()
 
@@ -943,7 +941,6 @@ describe('Player Component', function () {
       })
     })
 
-    // TODO: loadMedia(mediaMetaData.type, failoverTime, thenPause), L235, PlayerComponent
     it('should clear fatal error timeout', function () {
       setUpPlayerComponent()
 
