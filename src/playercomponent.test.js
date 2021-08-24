@@ -26,12 +26,12 @@ jest.mock('./plugins', () => {
 
 const mockLiveSupport = LiveSupport.SEEKABLE
 
-var playbackElement
+let playbackElement
 
 const mockStrategy = (() => {
-  var eventCallback
-  var errorCallback
-  var timeUpdateCallback
+  let eventCallback
+  let errorCallback
+  let timeUpdateCallback
 
   return {
     addEventCallback: (t, cb) => { eventCallback = (ev) => cb.call(t, ev) },
@@ -67,15 +67,15 @@ jest.mock('./playbackstrategy/strategypicker', () => () =>
   new Promise((resolve, _) => resolve(() => mockStrategy)))
 
 describe('Player Component', () => {
-  var playerComponent
-  var mockStateUpdateCallback
-  var corePlaybackData
-  var forceMediaSourcesError
-  var mockMediaSources
-  var testTime
-  var updateTestTime = false
+  let playerComponent
+  let mockStateUpdateCallback
+  let corePlaybackData
+  let forceMediaSourcesError
+  let mockMediaSources
+  let testTime
+  let updateTestTime = false
 
-  beforeAll(function () {
+  beforeAll(() => {
     mockStateUpdateCallback = jest.fn()
   })
 
@@ -126,7 +126,7 @@ describe('Player Component', () => {
       }
     }
 
-    var windowType = opts.windowType || WindowTypes.STATIC
+    const windowType = opts.windowType || WindowTypes.STATIC
 
     playerComponent = new PlayerComponent(
       playbackElement,
@@ -137,7 +137,7 @@ describe('Player Component', () => {
     )
   }
 
-  beforeEach(function () {
+  beforeEach(() => {
     forceMediaSourcesError = false
     testTime = {
       windowStartTime: 724000,
@@ -147,7 +147,7 @@ describe('Player Component', () => {
     updateTestTime = false
   })
 
-  afterEach(function () {
+  afterEach(() => {
     jest.clearAllMocks()
     jest.restoreAllMocks()
     playerComponent = undefined
@@ -155,7 +155,7 @@ describe('Player Component', () => {
 
   describe('Construction', () => {
     it('should fire error cleared on the plugins', () => {
-      var pluginData = {
+      const pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
         isBufferingTimeoutError: false,
@@ -222,7 +222,7 @@ describe('Player Component', () => {
     it('should return the element from the strategy', () => {
       setUpPlayerComponent()
 
-      var playerElement = document.createElement('video')
+      const playerElement = document.createElement('video')
       mockStrategy.getPlayerElement = jest.fn(() => playerElement)
 
       return StrategyPicker().then(() => {
@@ -242,13 +242,13 @@ describe('Player Component', () => {
   })
 
   describe('setCurrentTime', () => {
-    var currentStrategy
+    let currentStrategy
 
-    beforeEach(function () {
+    beforeEach(() => {
       currentStrategy = window.bigscreenPlayer.playbackStrategy
     })
 
-    afterEach(function () {
+    afterEach(() => {
       window.bigscreenPlayer.playbackStrategy = currentStrategy
     })
 
@@ -257,7 +257,7 @@ describe('Player Component', () => {
       setUpPlayerComponent()
 
       return StrategyPicker().then(() => {
-        mockStrategy.load.mock.calls = []
+        mockStrategy.load.mockReset()
         playerComponent.setCurrentTime(10)
 
         expect(mockStrategy.setCurrentTime).toHaveBeenCalledWith(10)
@@ -332,7 +332,7 @@ describe('Player Component', () => {
       setUpPlayerComponent()
 
       return StrategyPicker().then(() => {
-        var rate = playerComponent.getPlaybackRate()
+        const rate = playerComponent.getPlaybackRate()
 
         expect(mockStrategy.getPlaybackRate).toHaveBeenCalled()
         expect(rate).toEqual(1.5)
@@ -343,7 +343,7 @@ describe('Player Component', () => {
   describe('events', () => {
     describe('on playing', () => {
       it('should fire error cleared on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
           isBufferingTimeoutError: false,
@@ -355,7 +355,6 @@ describe('Player Component', () => {
         setUpPlayerComponent()
 
         return StrategyPicker().then(() => {
-          // console.log(Plugins.interface.onErrorCleared.mock.calls)
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
 
           expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
@@ -404,7 +403,7 @@ describe('Player Component', () => {
       })
 
       it('should fire buffering cleared on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
           isBufferingTimeoutError: false,
@@ -486,7 +485,7 @@ describe('Player Component', () => {
       })
 
       it('should fire error cleared on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
           isBufferingTimeoutError: false,
@@ -505,7 +504,7 @@ describe('Player Component', () => {
       })
 
       it('should fire buffering cleared on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
           isBufferingTimeoutError: false,
@@ -538,7 +537,7 @@ describe('Player Component', () => {
       it('should start the error timeout', () => {
         jest.useFakeTimers()
 
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
           isBufferingTimeoutError: false,
@@ -561,7 +560,7 @@ describe('Player Component', () => {
       })
 
       it('should fire error cleared on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
           isBufferingTimeoutError: false,
@@ -579,7 +578,7 @@ describe('Player Component', () => {
       })
 
       it('should fire on buffering on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.STARTED,
           stateType: PluginEnums.TYPE.BUFFERING,
           isBufferingTimeoutError: false,
@@ -641,7 +640,7 @@ describe('Player Component', () => {
       })
 
       it('should fire error cleared on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
           isBufferingTimeoutError: false,
@@ -660,7 +659,7 @@ describe('Player Component', () => {
       })
 
       it('should fire buffering cleared on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
           isBufferingTimeoutError: false,
@@ -703,7 +702,7 @@ describe('Player Component', () => {
 
     describe('on error', () => {
       it('should fire buffering cleared on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.BUFFERING,
           isBufferingTimeoutError: false,
@@ -758,7 +757,7 @@ describe('Player Component', () => {
 
       // raise error
       it('should fire on error on the plugins', () => {
-        var pluginData = {
+        const pluginData = {
           status: PluginEnums.STATUS.STARTED,
           stateType: PluginEnums.TYPE.ERROR,
           isBufferingTimeoutError: false,
@@ -779,12 +778,12 @@ describe('Player Component', () => {
   })
 
   describe('cdn failover', () => {
-    var fatalErrorPluginData
-    var currentTime
-    var type
-    var currentStrategy
+    let fatalErrorPluginData
+    let currentTime
+    let type
+    let currentStrategy
 
-    beforeEach(function () {
+    beforeEach(() => {
       jest.useFakeTimers()
 
       fatalErrorPluginData = {
@@ -805,7 +804,7 @@ describe('Player Component', () => {
       currentStrategy = window.bigscreenPlayer.playbackStrategy
     })
 
-    afterEach(function () {
+    afterEach(() => {
       window.bigscreenPlayer.playbackStrategy = currentStrategy
       jest.useRealTimers()
     })
@@ -884,7 +883,7 @@ describe('Player Component', () => {
 
       return StrategyPicker().then(() => {
         mockStrategy.mockingHooks.fireError()
-        mockStateUpdateCallback.mock.calls = []
+        mockStateUpdateCallback.mockReset()
 
         jest.advanceTimersByTime(5000)
 
@@ -946,7 +945,7 @@ describe('Player Component', () => {
     })
 
     it('should fire error cleared on the plugins', () => {
-      var pluginData = {
+      const pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
         isBufferingTimeoutError: false,
@@ -967,7 +966,7 @@ describe('Player Component', () => {
     })
 
     it('should fire buffering cleared on the plugins', () => {
-      var pluginData = {
+      const pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.BUFFERING,
         isBufferingTimeoutError: false,
@@ -1040,7 +1039,7 @@ describe('Player Component', () => {
     })
 
     it('teardown - should fire error cleared on the plugins', () => {
-      var pluginData = {
+      const pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.ERROR,
         isBufferingTimeoutError: false,
@@ -1059,7 +1058,7 @@ describe('Player Component', () => {
     })
 
     it('should fire buffering cleared on the plugins', () => {
-      var pluginData = {
+      const pluginData = {
         status: PluginEnums.STATUS.DISMISSED,
         stateType: PluginEnums.TYPE.BUFFERING,
         isBufferingTimeoutError: false,
