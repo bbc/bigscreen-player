@@ -8,8 +8,20 @@ import BigscreenPlayer from './bigscreenplayer'
 
 import PlayerComponent from './playercomponent'
 
-var mockMediaSources = {
-  init: function (media, serverDate, windowType, liveSupport, callbacks) {
+let bigscreenPlayer
+let bigscreenPlayerData
+let playbackElement
+let manifestData
+let successCallback
+let errorCallback
+let mockEventHook
+let mediaSourcesCallbackErrorSpy
+let mockPlayerComponentInstance
+let noCallbacks = false
+let forceMediaSourcesConstructionFailure = false
+
+const mockMediaSources = {
+  init: (_media, _serverDate, _windowType, _liveSupport, callbacks) => {
     mediaSourcesCallbackErrorSpy = jest.spyOn(callbacks, 'onError')
     if (forceMediaSourcesConstructionFailure) {
       callbacks.onError()
@@ -17,14 +29,11 @@ var mockMediaSources = {
       callbacks.onSuccess()
     }
   },
-
-  time: function () {
-    return manifestData.time
-  },
+  time: () => manifestData.time,
   tearDown: jest.fn()
 }
 
-var mockSubtitlesInstance = {
+const mockSubtitlesInstance = {
   enable: jest.fn(),
   disable: jest.fn(),
   show: jest.fn(),
@@ -38,7 +47,7 @@ var mockSubtitlesInstance = {
   tearDown: jest.fn()
 }
 
-var mockResizer = {
+const mockResizer = {
   resize: jest.fn(),
   clear: jest.fn(),
   isResized: jest.fn()
@@ -51,18 +60,6 @@ jest.mock('./debugger/debugtool')
 jest.mock('./resizer', () => jest.fn(() => mockResizer))
 jest.mock('./subtitles/subtitles', () => jest.fn(() => mockSubtitlesInstance))
 
-var bigscreenPlayer
-var bigscreenPlayerData
-var playbackElement
-var manifestData
-var successCallback
-var errorCallback
-var noCallbacks = false
-var mockEventHook
-var mediaSourcesCallbackErrorSpy
-var forceMediaSourcesConstructionFailure = false
-var mockPlayerComponentInstance
-
 function setupManifestData (options) {
   manifestData = {
     time: options && options.time || {
@@ -73,12 +70,12 @@ function setupManifestData (options) {
   }
 }
 
+// options = subtitlesAvailable, windowType, windowStartTime, windowEndTime
 function initialiseBigscreenPlayer (options) {
-  // options = subtitlesAvailable, windowType, windowStartTime, windowEndTime
   options = options || {}
 
-  var windowType = options.windowType || WindowTypes.STATIC
-  var subtitlesEnabled = options.subtitlesEnabled || false
+  const windowType = options.windowType || WindowTypes.STATIC
+  const subtitlesEnabled = options.subtitlesEnabled || false
 
   playbackElement = document.createElement('div')
   playbackElement.id = 'app'
@@ -116,15 +113,17 @@ function initialiseBigscreenPlayer (options) {
     ]
   }
 
-  var callbacks
+  let callbacks
+
   if (!noCallbacks) {
     callbacks = {onSuccess: successCallback, onError: errorCallback}
   }
+
   bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, callbacks)
 }
 
 describe('Bigscreen Player', () => {
-  beforeEach(function () {
+  beforeEach(() => {
     setupManifestData()
 
     mockPlayerComponentInstance = {
@@ -146,7 +145,7 @@ describe('Bigscreen Player', () => {
 
     jest.spyOn(PlayerComponent, 'getLiveSupport').mockReturnValue(LiveSupport.SEEKABLE)
 
-    PlayerComponent.mockImplementation(function (playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) {
+    PlayerComponent.mockImplementation((_playbackElement, _bigscreenPlayerData, _mediaSources, _windowType, callback) => {
       mockEventHook = callback
       return mockPlayerComponentInstance
     })
@@ -158,7 +157,7 @@ describe('Bigscreen Player', () => {
     bigscreenPlayer = BigscreenPlayer()
   })
 
-  afterEach(function () {
+  afterEach(() => {
     jest.clearAllMocks()
     forceMediaSourcesConstructionFailure = false
     bigscreenPlayer.tearDown()
@@ -167,7 +166,7 @@ describe('Bigscreen Player', () => {
 
   describe('init', () => {
     it('should set endOfStream to true when playing live and no initial playback time is set', () => {
-      var callback = jest.fn()
+      const callback = jest.fn()
 
       initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING})
       bigscreenPlayer.registerForTimeUpdates(callback)
@@ -178,7 +177,7 @@ describe('Bigscreen Player', () => {
     })
 
     it('should set endOfStream to false when playing live and initialPlaybackTime is 0', () => {
-      var callback = jest.fn()
+      const callback = jest.fn()
 
       initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING, initialPlaybackTime: 0})
 
@@ -218,7 +217,7 @@ describe('Bigscreen Player', () => {
     it('Should call through to getPlayerElement on the playback strategy', () => {
       initialiseBigscreenPlayer()
 
-      var mockedVideo = document.createElement('video')
+      const mockedVideo = document.createElement('video')
 
       mockPlayerComponentInstance.getPlayerElement.mockReturnValue(mockedVideo)
 
@@ -227,8 +226,9 @@ describe('Bigscreen Player', () => {
   })
 
   describe('registerForStateChanges', () => {
-    var callback
-    beforeEach(function () {
+    let callback
+
+    beforeEach(() => {
       callback = jest.fn()
       initialiseBigscreenPlayer()
       bigscreenPlayer.registerForStateChanges(callback)
@@ -295,7 +295,7 @@ describe('Bigscreen Player', () => {
     })
 
     it('should return a reference to the callback passed in', () => {
-      var reference = bigscreenPlayer.registerForStateChanges(callback)
+      const reference = bigscreenPlayer.registerForStateChanges(callback)
 
       expect(reference).toBe(callback)
     })
@@ -303,9 +303,9 @@ describe('Bigscreen Player', () => {
 
   describe('unregisterForStateChanges', () => {
     it('should remove callback from stateChangeCallbacks', () => {
-      var listener1 = jest.fn()
-      var listener2 = jest.fn()
-      var listener3 = jest.fn()
+      const listener1 = jest.fn()
+      const listener2 = jest.fn()
+      const listener3 = jest.fn()
 
       initialiseBigscreenPlayer()
 
@@ -327,8 +327,8 @@ describe('Bigscreen Player', () => {
     it('should only remove existing callbacks from stateChangeCallbacks', () => {
       initialiseBigscreenPlayer()
 
-      var listener1 = jest.fn()
-      var listener2 = jest.fn()
+      const listener1 = jest.fn()
+      const listener2 = jest.fn()
 
       bigscreenPlayer.registerForStateChanges(listener1)
       bigscreenPlayer.unregisterForStateChanges(listener2)
@@ -483,7 +483,7 @@ describe('Bigscreen Player', () => {
 
   describe('registerForTimeUpdates', () => {
     it('should call the callback when we get a timeupdate event from the strategy', () => {
-      var callback = jest.fn()
+      const callback = jest.fn()
       initialiseBigscreenPlayer()
       bigscreenPlayer.registerForTimeUpdates(callback)
 
@@ -495,10 +495,10 @@ describe('Bigscreen Player', () => {
     })
 
     it('returns a reference to the callback passed in', () => {
-      var callback = jest.fn()
+      const callback = jest.fn()
       initialiseBigscreenPlayer()
 
-      var reference = bigscreenPlayer.registerForTimeUpdates(callback)
+      const reference = bigscreenPlayer.registerForTimeUpdates(callback)
 
       expect(reference).toBe(callback)
     })
@@ -508,9 +508,9 @@ describe('Bigscreen Player', () => {
     it('should remove callback from timeUpdateCallbacks', () => {
       initialiseBigscreenPlayer()
 
-      var listener1 = jest.fn()
-      var listener2 = jest.fn()
-      var listener3 = jest.fn()
+      const listener1 = jest.fn()
+      const listener2 = jest.fn()
+      const listener3 = jest.fn()
 
       bigscreenPlayer.registerForTimeUpdates(listener1)
       bigscreenPlayer.registerForTimeUpdates(listener2)
@@ -530,8 +530,8 @@ describe('Bigscreen Player', () => {
     it('should only remove existing callbacks from timeUpdateCallbacks', () => {
       initialiseBigscreenPlayer()
 
-      var listener1 = jest.fn()
-      var listener2 = jest.fn()
+      const listener1 = jest.fn()
+      const listener2 = jest.fn()
 
       bigscreenPlayer.registerForTimeUpdates(listener1)
       bigscreenPlayer.unregisterForTimeUpdates(listener2)
@@ -544,7 +544,7 @@ describe('Bigscreen Player', () => {
 
   describe('registerForSubtitleChanges', () => {
     it('should call the callback when subtitles are turned on/off', () => {
-      var callback = jest.fn()
+      const callback = jest.fn()
       initialiseBigscreenPlayer()
       bigscreenPlayer.registerForSubtitleChanges(callback)
 
@@ -560,10 +560,10 @@ describe('Bigscreen Player', () => {
     })
 
     it('returns a reference to the callback supplied', () => {
-      var callback = jest.fn()
+      const callback = jest.fn()
 
       initialiseBigscreenPlayer()
-      var reference = bigscreenPlayer.registerForSubtitleChanges(callback)
+      const reference = bigscreenPlayer.registerForSubtitleChanges(callback)
 
       expect(reference).toBe(callback)
     })
@@ -573,9 +573,9 @@ describe('Bigscreen Player', () => {
     it('should remove callback from subtitleCallbacks', () => {
       initialiseBigscreenPlayer()
 
-      var listener1 = jest.fn()
-      var listener2 = jest.fn()
-      var listener3 = jest.fn()
+      const listener1 = jest.fn()
+      const listener2 = jest.fn()
+      const listener3 = jest.fn()
 
       bigscreenPlayer.registerForSubtitleChanges(listener1)
       bigscreenPlayer.registerForSubtitleChanges(listener2)
@@ -595,8 +595,8 @@ describe('Bigscreen Player', () => {
     it('should only remove existing callbacks from subtitleCallbacks', () => {
       initialiseBigscreenPlayer()
 
-      var listener1 = jest.fn()
-      var listener2 = jest.fn()
+      const listener1 = jest.fn()
+      const listener2 = jest.fn()
 
       bigscreenPlayer.registerForSubtitleChanges(listener1)
       bigscreenPlayer.unregisterForSubtitleChanges(listener2)
@@ -633,8 +633,8 @@ describe('Bigscreen Player', () => {
 
       initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING})
 
-      var callback = jest.fn()
-      var endOfStreamWindow = bigscreenPlayerData.time.windowEndTime - 2
+      const callback = jest.fn()
+      const endOfStreamWindow = bigscreenPlayerData.time.windowEndTime - 2
 
       bigscreenPlayer.registerForTimeUpdates(callback)
 
@@ -659,10 +659,10 @@ describe('Bigscreen Player', () => {
 
       initialiseBigscreenPlayer({windowType: WindowTypes.SLIDING})
 
-      var callback = jest.fn()
+      const callback = jest.fn()
       bigscreenPlayer.registerForTimeUpdates(callback)
 
-      var middleOfStreamWindow = bigscreenPlayerData.time.windowEndTime / 2
+      const middleOfStreamWindow = bigscreenPlayerData.time.windowEndTime / 2
 
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({start: bigscreenPlayerData.time.windowStartTime, end: bigscreenPlayerData.time.windowEndTime})
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(middleOfStreamWindow)
@@ -694,7 +694,7 @@ describe('Bigscreen Player', () => {
       initialiseBigscreenPlayer()
       mockPlayerComponentInstance.getPlaybackRate.mockReturnValue(1.5)
 
-      var rate = bigscreenPlayer.getPlaybackRate()
+      const rate = bigscreenPlayer.getPlaybackRate()
 
       expect(mockPlayerComponentInstance.getPlaybackRate).toHaveBeenCalled()
       expect(rate).toEqual(1.5)
@@ -798,14 +798,14 @@ describe('Bigscreen Player', () => {
         }
       })
 
-      var initialisationData = {windowType: WindowTypes.SLIDING, serverDate: new Date(), initialPlaybackTime: new Date().getTime()}
+      const initialisationData = {windowType: WindowTypes.SLIDING, serverDate: new Date(), initialPlaybackTime: new Date().getTime()}
       initialiseBigscreenPlayer(initialisationData)
 
       expect(bigscreenPlayer.getLiveWindowData()).toEqual({windowStartTime: 1, windowEndTime: 2, serverDate: initialisationData.serverDate, initialPlaybackTime: initialisationData.initialPlaybackTime})
     })
 
     it('should return a subset of liveWindowData when the windowType is sliding and time block is provided', () => {
-      var initialisationData = {windowType: WindowTypes.SLIDING, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: new Date().getTime()}
+      const initialisationData = {windowType: WindowTypes.SLIDING, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: new Date().getTime()}
       initialiseBigscreenPlayer(initialisationData)
 
       expect(bigscreenPlayer.getLiveWindowData()).toEqual({serverDate: undefined, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: initialisationData.initialPlaybackTime})
@@ -866,7 +866,7 @@ describe('Bigscreen Player', () => {
 
   describe('pause', () => {
     it('should call pause on the strategy', () => {
-      var opts = {disableAutoResume: true}
+      const opts = {disableAutoResume: true}
 
       initialiseBigscreenPlayer()
 
@@ -876,11 +876,11 @@ describe('Bigscreen Player', () => {
     })
 
     it('should set pauseTrigger to an app pause if user pause is false', () => {
-      var opts = {userPause: false}
+      const opts = {userPause: false}
 
       initialiseBigscreenPlayer()
 
-      var callback = jest.fn()
+      const callback = jest.fn()
 
       bigscreenPlayer.registerForStateChanges(callback)
 
@@ -892,11 +892,11 @@ describe('Bigscreen Player', () => {
     })
 
     it('should set pauseTrigger to a user pause if user pause is true', () => {
-      var opts = {userPause: true}
+      const opts = {userPause: true}
 
       initialiseBigscreenPlayer()
 
-      var callback = jest.fn()
+      const callback = jest.fn()
 
       bigscreenPlayer.registerForStateChanges(callback)
 
@@ -976,7 +976,7 @@ describe('Bigscreen Player', () => {
   describe('customiseSubtitles', () => {
     it('passes through custom styles to Subtitles customise', () => {
       initialiseBigscreenPlayer()
-      var customStyleObj = { size: 0.7 }
+      const customStyleObj = { size: 0.7 }
       bigscreenPlayer.customiseSubtitles(customStyleObj)
 
       expect(mockSubtitlesInstance.customise).toHaveBeenCalledWith(customStyleObj)
@@ -986,9 +986,9 @@ describe('Bigscreen Player', () => {
   describe('renderSubtitleExample', () => {
     it('calls Subtitles renderExample with correct values', () => {
       initialiseBigscreenPlayer()
-      var exampleUrl = ''
-      var customStyleObj = { size: 0.7 }
-      var safePosititon = { left: 30, top: 0 }
+      const exampleUrl = ''
+      const customStyleObj = { size: 0.7 }
+      const safePosititon = { left: 30, top: 0 }
       bigscreenPlayer.renderSubtitleExample(exampleUrl, customStyleObj, safePosititon)
 
       expect(mockSubtitlesInstance.renderExample).toHaveBeenCalledWith(exampleUrl, customStyleObj, safePosititon)
@@ -1229,7 +1229,7 @@ describe('Bigscreen Player', () => {
 
   describe('registerPlugin', () => {
     it('should register a specific plugin', () => {
-      var mockPlugin = {
+      const mockPlugin = {
         onError: jest.fn()
       }
 
@@ -1242,7 +1242,7 @@ describe('Bigscreen Player', () => {
 
   describe('unregister plugin', () => {
     it('should remove a specific plugin', () => {
-      var mockPlugin = {
+      const mockPlugin = {
         onError: jest.fn()
       }
 
@@ -1255,16 +1255,16 @@ describe('Bigscreen Player', () => {
   })
 
   describe('mock', () => {
-    afterEach(function () {
+    afterEach(() => {
       bigscreenPlayer.unmock()
     })
 
     it('should return a mock object with jasmine spies on the same interface as the main api', () => {
       initialiseBigscreenPlayer()
 
-      var moduleKeys = Object.keys(bigscreenPlayer)
+      const moduleKeys = Object.keys(bigscreenPlayer)
       bigscreenPlayer.mockJasmine()
-      var mockKeys = Object.keys(bigscreenPlayer)
+      const mockKeys = Object.keys(bigscreenPlayer)
 
       expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
     })
@@ -1272,9 +1272,9 @@ describe('Bigscreen Player', () => {
     it('should return a mock object on the same interface as the main api', () => {
       initialiseBigscreenPlayer()
 
-      var moduleKeys = Object.keys(bigscreenPlayer)
+      const moduleKeys = Object.keys(bigscreenPlayer)
       bigscreenPlayer.mock()
-      var mockKeys = Object.keys(bigscreenPlayer)
+      const mockKeys = Object.keys(bigscreenPlayer)
 
       expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
     })
