@@ -2,7 +2,7 @@ import ManifestModifier from './manifestmodifier'
 
 describe('ManifestModifier', () => {
   describe('filter', () => {
-    var manifest
+    let manifest
 
     beforeEach(() => {
       manifest = {

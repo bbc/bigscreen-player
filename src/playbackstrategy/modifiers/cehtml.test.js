@@ -61,7 +61,7 @@ describe('cehtml Base', () => {
       mockMediaElement.onPlayStateChange()
 
       mockMediaElement.playPosition = 0
-      for (var i = 0; i < 6; i++) {
+      for (let i = 0; i < 6; i++) {
         mockMediaElement.playPosition += 500
         jest.advanceTimersByTime(500)
       }
@@ -79,7 +79,7 @@ describe('cehtml Base', () => {
       mockMediaElement.onPlayStateChange()
 
       mockMediaElement.playPosition = 0
-      for (var i = 0; i < 6; i++) {
+      for (let i = 0; i < 6; i++) {
         mockMediaElement.playPosition += 500
         jest.advanceTimersByTime(500)
       }
