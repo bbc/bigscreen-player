@@ -42,13 +42,26 @@ define('bigscreenplayer/bigscreenplayer',
 
       function mediaStateUpdateCallback (evt) {
         if (evt.timeUpdate) {
-          DebugTool.time(evt.data.currentTime);
+          // DebugTool.time(evt.data.currentTime);
           callCallbacks(timeUpdateCallbacks, {
             currentTime: evt.data.currentTime,
             endOfStream: endOfStream
           });
         } else {
           var stateObject = {state: evt.data.state};
+          if (evt.data.state === MediaState.PLAYING) {
+            DebugTool.info('** getCurrentTime' + getCurrentTime());
+            var currentTimeCounter = 0;
+            var currentTimeInterval = setInterval(function () {
+              currentTimeCounter++;
+              if (currentTimeCounter < 12) {
+                DebugTool.info('** getCurrentTime: ' + currentTimeCounter + ' - ' + getCurrentTime());
+              } else {
+                clearInterval(currentTimeInterval);
+              }
+            }, 200);
+          }
+
           if (evt.data.state === MediaState.PAUSED) {
             endOfStream = false;
             stateObject.trigger = pauseTrigger || PauseTriggers.DEVICE;
@@ -175,6 +188,10 @@ define('bigscreenplayer/bigscreenplayer',
         return subtitles ? subtitles.available() : false;
       }
 
+      function getCurrentTime () {
+        return playerComponent && playerComponent.getCurrentTime() || 0;
+      }
+
       return {
         init: function (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
           playbackElement = newPlaybackElement;
@@ -288,9 +305,7 @@ define('bigscreenplayer/bigscreenplayer',
         getPlaybackRate: function () {
           return playerComponent && playerComponent.getPlaybackRate();
         },
-        getCurrentTime: function () {
-          return playerComponent && playerComponent.getCurrentTime() || 0;
-        },
+        getCurrentTime: getCurrentTime,
         getMediaKind: function () {
           return mediaKind;
         },
