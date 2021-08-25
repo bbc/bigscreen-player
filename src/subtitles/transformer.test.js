@@ -1,7 +1,7 @@
 import Transformer from './transformer'
 import Plugins from '../plugins'
 
-var ttml = `
+const ttml = `
         <tt xmlns="http://www.w3.org/2006/10/ttaf1" xmlns:ttp="http://www.w3.org/2006/10/ttaf1#parameter" ttp:timeBase="media" xmlns:tts="http://www.w3.org/2006/10/ttaf1#style" xml:lang="en" xmlns:ttm="http://www.w3.org/2006/10/ttaf1#metadata">
           <head>
             <styling>
@@ -18,7 +18,7 @@ var ttml = `
           </body>
         </tt>`
 
-var ebuttd = `
+const ebuttd = `
           <tt:tt xmlns:tt="http://www.w3.org/ns/ttml" xmlns:tts="http://www.w3.org/ns/ttml#styling" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:ebuttdt="urn:ebu:tt:datatypes" xmlns:ebuttm="urn:ebu:tt:metadata" xmlns:ebutts="urn:ebu:tt:style" xmlns:ebuttExt="urn:ebu:tt:extension" ttp:timeBase="media" ttp:cellResolution="32 15" xml:lang="en-GB" xmlns="http://www.w3.org/ns/ttml">
               <tt:head>
                   <tt:metadata>
@@ -39,16 +39,16 @@ var ebuttd = `
               </tt:body>
           </tt:tt>`
 
-describe('Subtitle transformer', function () {
-  it('Should load a TTML document', function () {
-    var docparser = new DOMParser()
+describe('Subtitle transformer', () => {
+  it('Should load a TTML document', () => {
+    const docparser = new DOMParser()
 
-    var xmldoc = docparser.parseFromString(ttml, 'text/xml')
-    var doc = Transformer().transformXML(xmldoc)
+    const xmldoc = docparser.parseFromString(ttml, 'text/xml')
+    const doc = Transformer().transformXML(xmldoc)
 
-    var subtitlesForZero = doc.subtitlesForTime(0)
-    var singleSubtitle = doc.subtitlesForTime(14.1)
-    var outOfRangeSubtitles = doc.subtitlesForTime(NaN)
+    const subtitlesForZero = doc.subtitlesForTime(0)
+    const singleSubtitle = doc.subtitlesForTime(14.1)
+    const outOfRangeSubtitles = doc.subtitlesForTime(NaN)
 
     expect(doc.baseStyle).toEqual(expect.any(String))
 
@@ -60,15 +60,15 @@ describe('Subtitle transformer', function () {
     expect(outOfRangeSubtitles.length).toBe(0)
   })
 
-  it('Should load an EBU-TT-D document', function () {
-    var docparser = new DOMParser()
+  it('Should load an EBU-TT-D document', () => {
+    const docparser = new DOMParser()
 
-    var xmldoc = docparser.parseFromString(ebuttd, 'text/xml')
-    var doc = Transformer().transformXML(xmldoc)
-    var subtitlesForZero = doc.subtitlesForTime(0)
-    var singleSubtitle = doc.subtitlesForTime(33.6)
-    var cumulativeSubtitles = doc.subtitlesForTime(35.5)
-    var outOfRangeSubtitles = doc.subtitlesForTime(NaN)
+    const xmldoc = docparser.parseFromString(ebuttd, 'text/xml')
+    const doc = Transformer().transformXML(xmldoc)
+    const subtitlesForZero = doc.subtitlesForTime(0)
+    const singleSubtitle = doc.subtitlesForTime(33.6)
+    const cumulativeSubtitles = doc.subtitlesForTime(35.5)
+    const outOfRangeSubtitles = doc.subtitlesForTime(NaN)
 
     expect(doc.baseStyle).toEqual(expect.any(String))
 
@@ -84,7 +84,7 @@ describe('Subtitle transformer', function () {
     expect(outOfRangeSubtitles.length).toBe(0)
   })
 
-  it('Should fire a onSubtitlesTransformError on transform failure', function () {
+  it('Should fire a onSubtitlesTransformError on transform failure', () => {
     jest.spyOn(Plugins.interface, 'onSubtitlesTransformError')
     Transformer().transformXML('')
 

@@ -7,37 +7,37 @@ jest.mock('./legacysubtitles', () => { return mockLegacySubtitles })
 const mockImscSubtitles = jest.fn()
 jest.mock('./imscsubtitles', () => { return mockImscSubtitles })
 
-describe('Subtitles', function () {
-  var mediaSourcesMock
-  var subtitlesAvailable
-  var live
+describe('Subtitles', () => {
+  let mediaSourcesMock
+  let subtitlesAvailable
+  let live
 
   mediaSourcesMock = {
     subtitlesRequestTimeout: jest.fn(),
-    currentSubtitlesSource: function () {
+    currentSubtitlesSource: () => {
       if (subtitlesAvailable) {
         return 'http://subtitles.example.test'
       } else {
         return ''
       }
     },
-    currentSubtitlesSegmentLength: function () {
+    currentSubtitlesSegmentLength: () => {
       return live ? 3.84 : undefined
     }
   }
 
-  beforeEach(function () {
+  beforeEach(() => {
     subtitlesAvailable = true
     live = false
   })
 
-  afterEach(function () {
+  afterEach(() => {
     window.bigscreenPlayer = {}
   })
 
-  describe('strategy construction', function () {
-    describe('legacy', function () {
-      beforeEach(function () {
+  describe('strategy construction', () => {
+    describe('legacy', () => {
+      beforeEach(() => {
         window.bigscreenPlayer = {
           overrides: {
             legacySubtitles: true
@@ -46,9 +46,9 @@ describe('Subtitles', function () {
       })
 
       it('implementation is available when legacy subtitles override is true', function (done) {
-        var mockMediaPlayer = {}
-        var autoStart = true
-        var mockPlaybackElement = document.createElement('div')
+        const mockMediaPlayer = {}
+        const autoStart = true
+        const mockPlaybackElement = document.createElement('div')
         const mockCallback = (result) => {
           expect(result).toBe(true)
           expect(mockLegacySubtitles).toHaveBeenCalledTimes(1)
@@ -59,11 +59,11 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('imscjs', function () {
+    describe('imscjs', () => {
       it('implementation is available when legacy subtitles override is false', function (done) {
-        var mockMediaPlayer = {}
-        var autoStart = true
-        var mockPlaybackElement = document.createElement('div')
+        const mockMediaPlayer = {}
+        const autoStart = true
+        const mockPlaybackElement = document.createElement('div')
         const mockCallback = (result) => {
           expect(result).toBe(true)
           expect(mockImscSubtitles).toHaveBeenCalledTimes(1)
@@ -75,16 +75,16 @@ describe('Subtitles', function () {
     })
   })
 
-  describe('generic calls', function () {
-    var subtitlesContainerSpies
-    var subtitlesContainer
+  describe('generic calls', () => {
+    let subtitlesContainerSpies
+    let subtitlesContainer
 
     const mockMediaPlayer = {}
     const autoStart = true
     const mockPlaybackElement = document.createElement('div')
     const customDefaultStyle = {}
 
-    beforeEach(function () {
+    beforeEach(() => {
       subtitlesContainerSpies = {
         'start': jest.fn(),
         'stop': jest.fn(),
@@ -95,19 +95,19 @@ describe('Subtitles', function () {
         'tearDown': jest.fn()
       }
       subtitlesContainer = mockImscSubtitles
-      subtitlesContainer.mockImplementation(function () {
+      subtitlesContainer.mockImplementation(() => {
         return subtitlesContainerSpies
       })
     })
 
-    afterEach(function () {
+    afterEach(() => {
       subtitlesContainerSpies.start.mockReset()
       subtitlesContainerSpies.stop.mockReset()
       subtitlesContainerSpies.updatePosition.mockReset()
       subtitlesContainerSpies.tearDown.mockReset()
     })
 
-    describe('construction', function () {
+    describe('construction', () => {
       it('calls subtitles strategy with the correct arguments', function (done) {
         const mockCallback = (result) => {
           expect(result).toBe(true)
@@ -119,7 +119,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('show', function () {
+    describe('show', () => {
       it('should start subtitles when enabled and available', function (done) {
         const mockCallback = () => {
           subtitles.enable()
@@ -170,7 +170,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('hide', function () {
+    describe('hide', () => {
       it('should stop subtitles when available', function (done) {
         const mockCallback = () => {
           subtitles.hide()
@@ -184,7 +184,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('enable', function () {
+    describe('enable', () => {
       it('should set enabled state to true', function (done) {
         const mockCallback = () => {
           subtitles.enable()
@@ -198,7 +198,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('disable', function () {
+    describe('disable', () => {
       it('should set enabled state to false', function (done) {
         const mockCallback = () => {
           subtitles.disable()
@@ -213,7 +213,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('enabled', function () {
+    describe('enabled', () => {
       it('should return true if subtitles are enabled at construction', function (done) {
         const mockCallback = () => {
           expect(subtitles.enabled()).toEqual(true)
@@ -259,7 +259,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('available', function () {
+    describe('available', () => {
       it('should return true if VOD and url exists', function (done) {
         const mockCallback = () => {
           subtitles.enable()
@@ -336,7 +336,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('setPosition', function () {
+    describe('setPosition', () => {
       it('calls through to subtitlesContainer updatePosition', function (done) {
         const mockCallback = () => {
           subtitles.setPosition('center')
@@ -349,7 +349,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('customise', function () {
+    describe('customise', () => {
       it('passes through custom style object and enabled state to subtitlesContainer customise function', function (done) {
         const customStyleObj = { size: 0.7 }
 
@@ -364,7 +364,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('renderExample', function () {
+    describe('renderExample', () => {
       it('calls subtitlesContainer renderExample function with correct values', function (done) {
         const mockCallback = () => {
           const exampleXMLString = '<tt></tt>'
@@ -380,7 +380,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('clearExample', function () {
+    describe('clearExample', () => {
       it('calls subtitlesContainer clearExample function ', function (done) {
         const mockCallback = () => {
           subtitles.clearExample()
@@ -393,7 +393,7 @@ describe('Subtitles', function () {
       })
     })
 
-    describe('tearDown', function () {
+    describe('tearDown', () => {
       it('calls through to subtitlesContainer tearDown', function (done) {
         const mockCallback = () => {
           subtitles.tearDown()

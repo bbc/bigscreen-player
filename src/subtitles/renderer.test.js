@@ -13,10 +13,10 @@ jest.mock('./transformer', () => {
   }
 })
 
-describe('Renderer', function () {
-  it('should initialise with a id, xml object, media player', function () {
-    var mockMediaPlayer = jest.fn()
-    var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer)
+describe('Renderer', () => {
+  it('should initialise with a id, xml object, media player', () => {
+    const mockMediaPlayer = jest.fn()
+    const renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer)
 
     expect(renderer).toEqual(expect.objectContaining({
       render: expect.any(Function),
@@ -25,10 +25,10 @@ describe('Renderer', function () {
     }))
   })
 
-  it('should set the output elements display style on initialisation', function () {
-    var mockMediaPlayer = jest.fn()
-    var renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer)
-    var outputElement = renderer.render()
+  it('should set the output elements display style on initialisation', () => {
+    const mockMediaPlayer = jest.fn()
+    const renderer = Renderer('subtitlesOutputId', '', mockMediaPlayer)
+    const outputElement = renderer.render()
 
     expect(outputElement.style.display).toBe('block')
   })
