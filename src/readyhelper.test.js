@@ -4,11 +4,11 @@ import WindowTypes from './models/windowtypes'
 import LiveSupport from './models/livesupport'
 
 describe('readyHelper', () => {
-  let callback
+  const callback = jest.fn()
   let readyHelper
 
   beforeEach(() => {
-    callback = jest.fn()
+    callback.mockReset()
   })
 
   describe('- Initialisation -', () => {

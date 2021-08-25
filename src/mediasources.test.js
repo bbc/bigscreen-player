@@ -99,12 +99,10 @@ describe('Media Sources', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
-    jest.restoreAllMocks()
+    jest.resetAllMocks()
+    jest.useRealTimers()
 
     window.bigscreenPlayer.playbackStrategy = currentStrategy
-
-    jest.useRealTimers()
   })
 
   describe('init', () => {

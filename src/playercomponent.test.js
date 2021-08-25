@@ -29,9 +29,7 @@ const mockLiveSupport = LiveSupport.SEEKABLE
 let playbackElement
 
 const mockStrategy = (() => {
-  let eventCallback
-  let errorCallback
-  let timeUpdateCallback
+  let eventCallback, errorCallback, timeUpdateCallback
 
   return {
     addEventCallback: (t, cb) => { eventCallback = (ev) => cb.call(t, ev) },
@@ -39,9 +37,9 @@ const mockStrategy = (() => {
     addTimeUpdateCallback: (t, cb) => { timeUpdateCallback = () => cb.call(t) },
 
     mockingHooks: {
-      fireEvent: (ev) => eventCallback(ev),
-      fireError: (ev) => errorCallback(ev),
-      fireTimeUpdate: () => timeUpdateCallback()
+      fireEvent: (ev) => eventCallback ? eventCallback(ev) : undefined,
+      fireError: (ev) => errorCallback ? errorCallback(ev) : undefined,
+      fireTimeUpdate: () => errorCallback ? timeUpdateCallback() : undefined
     },
 
     pause: jest.fn(),
@@ -148,8 +146,7 @@ describe('Player Component', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
-    jest.restoreAllMocks()
+    jest.resetAllMocks()
     playerComponent = undefined
   })
 
