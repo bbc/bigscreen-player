@@ -1,35 +1,34 @@
 import samsungStreamingMediaPlayer from './samsungstreaming'
 import MediaPlayerBase from './mediaplayerbase'
-import { jest } from '@jest/globals'
 
-describe('Samsung Streaming', function () {
-  var PlayerEventCodes = {
+describe('Samsung Streaming', () => {
+  const PlayerEventCodes = {
     RENDERING_COMPLETE: 8,
     BUFFERING_COMPLETE: 12,
     CURRENT_PLAYBACK_TIME: 14
   }
 
-  var mockPlayerPlugin = {
-    Execute: function () {},
-    OnEvent: function () {},
-    Open: function () {},
-    Close: function () {}
+  const mockPlayerPlugin = {
+    Execute: () => {},
+    OnEvent: () => {},
+    Open: () => {},
+    Close: () => {}
   }
 
-  var player
-  var recentEvents
+  let player
+  let recentEvents
 
   function eventCallbackReporter (event) {
     recentEvents.push(event.type)
   }
 
-  beforeEach(function () {
-    jest.spyOn(document, 'getElementById').mockImplementation(function (id) {
+  beforeEach(() => {
+    jest.spyOn(document, 'getElementById').mockImplementation((id) => {
       if (id === 'sefPlayer') {
         return mockPlayerPlugin
       }
     })
-    jest.spyOn(mockPlayerPlugin, 'Execute').mockImplementation(function (command) {
+    jest.spyOn(mockPlayerPlugin, 'Execute').mockImplementation((command) => {
       if (command === 'GetDuration') {
         return 100000
       } else {
@@ -44,12 +43,12 @@ describe('Samsung Streaming', function () {
     player.addEventCallback(this, eventCallbackReporter)
   })
 
-  afterEach(function () {
+  afterEach(() => {
     jest.clearAllMocks()
   })
 
-  describe('initialiseMedia', function () {
-    it('should set the source and mimeType and emit a stopped event', function () {
+  describe('initialiseMedia', () => {
+    it('should set the source and mimeType and emit a stopped event', () => {
       recentEvents = []
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
 
@@ -58,39 +57,39 @@ describe('Samsung Streaming', function () {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.STOPPED)
     })
 
-    it('should call InitPlayer on the player plugin', function () {
+    it('should call InitPlayer on the player plugin', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
 
       expect(mockPlayerPlugin.Execute).toHaveBeenCalledWith('InitPlayer', 'testUrl')
     })
 
-    it('should modify the source if mimeType is HLS', function () {
+    it('should modify the source if mimeType is HLS', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'application/vnd.apple.mpegurl')
 
       expect(player.getSource()).toEqual('testUrl|COMPONENT=HLS')
     })
 
-    it('should modify the source if mimeType is HLS and is live media', function () {
+    it('should modify the source if mimeType is HLS and is live media', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'testUrl', 'application/vnd.apple.mpegurl')
 
       expect(player.getSource()).toEqual('testUrl|HLSSLIDING|COMPONENT=HLS')
     })
 
-    it('should open the streaming player plugin if mimeType is HLS', function () {
+    it('should open the streaming player plugin if mimeType is HLS', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'application/vnd.apple.mpegurl')
 
       expect(mockPlayerPlugin.Open).toHaveBeenCalledWith('StreamingPlayer', '1.0', 'StreamingPlayer')
     })
 
-    it('should open the player plugin if mimeType is not HLS', function () {
+    it('should open the player plugin if mimeType is not HLS', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
 
       expect(mockPlayerPlugin.Open).toHaveBeenCalledWith('Player', '1.010', 'Player')
     })
   })
 
-  describe('beginPlaybackFrom', function () {
-    it('should call StartPlayback with start time on the player plugin if in a stopped state', function () {
+  describe('beginPlaybackFrom', () => {
+    it('should call StartPlayback with start time on the player plugin if in a stopped state', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
       recentEvents = []
       mockPlayerPlugin.Execute.mockClear()
@@ -101,8 +100,8 @@ describe('Samsung Streaming', function () {
     })
   })
 
-  describe('beginPlayback', function () {
-    it('should call StartPlayback on the player plugin if in a stopped state', function () {
+  describe('beginPlayback', () => {
+    it('should call StartPlayback on the player plugin if in a stopped state', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
       recentEvents = []
       mockPlayerPlugin.Execute.mockClear()
@@ -113,8 +112,8 @@ describe('Samsung Streaming', function () {
     })
   })
 
-  describe('pause', function () {
-    it('should call Pause on the player plugin if in a playing state', function () {
+  describe('pause', () => {
+    it('should call Pause on the player plugin if in a playing state', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
       player.beginPlayback()
       player.toPlaying()
@@ -127,8 +126,8 @@ describe('Samsung Streaming', function () {
     })
   })
 
-  describe('stop', function () {
-    it('should emit a stopped event if in a playing state', function () {
+  describe('stop', () => {
+    it('should emit a stopped event if in a playing state', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
       player.beginPlayback()
       player.toPlaying()
@@ -141,8 +140,8 @@ describe('Samsung Streaming', function () {
     })
   })
 
-  describe('reset', function () {
-    it('should call Stop and Close on the player plugin if in a stopped state', function () {
+  describe('reset', () => {
+    it('should call Stop and Close on the player plugin if in a stopped state', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
       mockPlayerPlugin.Execute.mockClear()
       player.reset()
@@ -152,8 +151,8 @@ describe('Samsung Streaming', function () {
     })
   })
 
-  describe('resume', function () {
-    it('should call Resume on the player plugin and emit a playing event if in a paused state', function () {
+  describe('resume', () => {
+    it('should call Resume on the player plugin and emit a playing event if in a paused state', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
       player.beginPlayback()
       player.toPaused()
@@ -166,9 +165,9 @@ describe('Samsung Streaming', function () {
     })
   })
 
-  describe('playFrom', function () {
-    describe('in a playing state', function () {
-      it('should call JumpForward on the player plugin if seeking forwards', function () {
+  describe('playFrom', () => {
+    describe('in a playing state', () => {
+      it('should call JumpForward on the player plugin if seeking forwards', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
         player.beginPlayback()
         mockPlayerPlugin.OnEvent(PlayerEventCodes.CURRENT_PLAYBACK_TIME, 0)
@@ -182,7 +181,7 @@ describe('Samsung Streaming', function () {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
 
-      it('should call JumpBackward on the player plugin if seeking backwards', function () {
+      it('should call JumpBackward on the player plugin if seeking backwards', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
         player.beginPlaybackFrom(20)
         mockPlayerPlugin.OnEvent(PlayerEventCodes.CURRENT_PLAYBACK_TIME, 20000)
@@ -196,7 +195,7 @@ describe('Samsung Streaming', function () {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
 
-      it('should not attempt to seek if seeking close to current time', function () {
+      it('should not attempt to seek if seeking close to current time', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
         player.beginPlayback()
         mockPlayerPlugin.OnEvent(PlayerEventCodes.CURRENT_PLAYBACK_TIME, 0)
@@ -213,8 +212,8 @@ describe('Samsung Streaming', function () {
       })
     })
 
-    describe('in a paused state', function () {
-      it('should call JumpForward and Resume on the player plugin if seeking forwards', function () {
+    describe('in a paused state', () => {
+      it('should call JumpForward and Resume on the player plugin if seeking forwards', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
         player.beginPlayback()
         mockPlayerPlugin.OnEvent(PlayerEventCodes.CURRENT_PLAYBACK_TIME, 0)
@@ -229,7 +228,7 @@ describe('Samsung Streaming', function () {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
 
-      it('should call JumpBackward and Resume on the player plugin if seeking backwards', function () {
+      it('should call JumpBackward and Resume on the player plugin if seeking backwards', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
         player.beginPlaybackFrom(20)
         mockPlayerPlugin.OnEvent(PlayerEventCodes.CURRENT_PLAYBACK_TIME, 20000)
@@ -243,7 +242,7 @@ describe('Samsung Streaming', function () {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
 
-      it('should not attempt to seek and call Resume on the player plugin if seeking close to current time', function () {
+      it('should not attempt to seek and call Resume on the player plugin if seeking close to current time', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
         player.beginPlayback()
         mockPlayerPlugin.OnEvent(PlayerEventCodes.CURRENT_PLAYBACK_TIME, 0)
@@ -261,8 +260,8 @@ describe('Samsung Streaming', function () {
       })
     })
 
-    describe('in a complete state', function () {
-      it('calls Stop and StartPlayback on the player plugin, and emits a buffering event', function () {
+    describe('in a complete state', () => {
+      it('calls Stop and StartPlayback on the player plugin, and emits a buffering event', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
         player.beginPlayback()
         mockPlayerPlugin.OnEvent(PlayerEventCodes.CURRENT_PLAYBACK_TIME, 0)

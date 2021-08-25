@@ -50,7 +50,7 @@ describe('Legacy Subtitles', () => {
   let avalailableSourceCount
 
   beforeEach(() => {
-    LoadUrl.mockImplementation(function (url, callbackObject) {
+    LoadUrl.mockImplementation((url, callbackObject) => {
       callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200)
     })
 
@@ -64,7 +64,7 @@ describe('Legacy Subtitles', () => {
     }
     mockMediaSources.currentSubtitlesSource.mockReturnValue(subtitlesUrl)
     mockMediaSources.currentSubtitlesCdn.mockReturnValue(subtitlesCdn)
-    mockMediaSources.failoverSubtitles.mockImplementation(function (postFailoverAction, failoverErrorAction) {
+    mockMediaSources.failoverSubtitles.mockImplementation((postFailoverAction, failoverErrorAction) => {
       if (avalailableSourceCount > 1) {
         avalailableSourceCount--
         postFailoverAction()
@@ -103,7 +103,7 @@ describe('Legacy Subtitles', () => {
   })
 
   it('Should fire subtitlesXMLError if responseXML from the loader is invalid', () => {
-    LoadUrl.mockImplementation(function (url, callbackObject) {
+    LoadUrl.mockImplementation((url, callbackObject) => {
       callbackObject.onLoad(null, '', 200)
     })
     legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
@@ -114,7 +114,7 @@ describe('Legacy Subtitles', () => {
 
   it('Should try to failover to the next url if responseXML from the loader is invalid', () => {
     avalailableSourceCount = 1
-    LoadUrl.mockImplementation(function (url, callbackObject) {
+    LoadUrl.mockImplementation((url, callbackObject) => {
       callbackObject.onError(404)
     })
     legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
@@ -124,7 +124,7 @@ describe('Legacy Subtitles', () => {
   })
 
   it('Should fire onSubtitlesTimeout if the XHR times out', () => {
-    LoadUrl.mockImplementation(function (url, callbackObject) {
+    LoadUrl.mockImplementation((url, callbackObject) => {
       callbackObject.onTimeout()
     })
     legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
@@ -152,7 +152,7 @@ describe('Legacy Subtitles', () => {
     })
 
     it('Should not start subtitles if there is invalid xml in the response object', () => {
-      LoadUrl.mockImplementation(function (url, callbackObject) {
+      LoadUrl.mockImplementation((url, callbackObject) => {
         callbackObject.onError()
       })
       legacySubtitles = LegacySubtitles(mockMediaPlayer, false, parentElement, mockMediaSources)
@@ -172,7 +172,7 @@ describe('Legacy Subtitles', () => {
     })
 
     it('Does not stop the subtitles if there is is invalid xml in the response object', () => {
-      LoadUrl.mockImplementation(function (url, callbackObject) {
+      LoadUrl.mockImplementation((url, callbackObject) => {
         callbackObject.onError()
       })
 

@@ -80,7 +80,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     mockDashInstance.getDashMetrics.mockReturnValue({
-      getCurrentDVRInfo: () =>  ({ range: { start: 0, end: 101 } }),
+      getCurrentDVRInfo: () => ({ range: { start: 0, end: 101 } }),
       getCurrentBufferLevel: () => 'buffer',
       getCurrentRepresentationSwitch: () => 0,
       getCurrentIndexForRepresentation: () => 1
@@ -544,7 +544,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should empty the eventCallbacks array and stop emitting events', () => {
-      function tearDownAndError() {
+      function tearDownAndError () {
         mseStrategy.load(null, 0)
         mseStrategy.tearDown()
         dashEventCallback('pause')

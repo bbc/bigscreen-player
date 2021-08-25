@@ -1,22 +1,20 @@
-import { jest } from '@jest/globals'
 import Html5MediaPlayer from './html5'
 import MediaPlayerBase from './mediaplayerbase'
 
-describe('HTML5 Base', function () {
-  var sourceContainer
-  var player
-  var mockSourceElement
-  var mockVideoMediaElement
-  var mockAudioMediaElement
-  var metaDataCallback
-  var finishedBufferingCallback
-  var errorCallback
-  var endedCallback
-  var timeupdateCallback
-  var waitingCallback
-  var playingCallback
-
-  var recentEvents
+describe('HTML5 Base', () => {
+  let sourceContainer
+  let player
+  let mockSourceElement
+  let mockVideoMediaElement
+  let mockAudioMediaElement
+  let metaDataCallback
+  let finishedBufferingCallback
+  let errorCallback
+  let endedCallback
+  let timeupdateCallback
+  let waitingCallback
+  let playingCallback
+  let recentEvents
 
   function eventCallbackReporter (event) {
     recentEvents.push(event.type)
@@ -26,20 +24,20 @@ describe('HTML5 Base', function () {
     try {
       jest.spyOn(mediaElement, 'seekable', 'get').mockReturnValue(
         {
-          start: function () {
+          start: () => {
             return metadata.start
           },
-          end: function () {
+          end: () => {
             return metadata.end
           },
           length: 2
         })
     } catch (ex) {
       mediaElement.seekable = {
-        start: function () {
+        start: () => {
           return metadata.start
         },
-        end: function () {
+        end: () => {
           return metadata.end
         },
         length: 2
@@ -54,7 +52,7 @@ describe('HTML5 Base', function () {
     player.addEventCallback(this, eventCallbackReporter)
   }
 
-  beforeEach(function () {
+  beforeEach(() => {
     window.bigscreenPlayer = {}
     recentEvents = []
 
@@ -63,7 +61,7 @@ describe('HTML5 Base', function () {
     mockAudioMediaElement = document.createElement('audio')
     sourceContainer = document.createElement('div')
 
-    jest.spyOn(document, 'createElement').mockImplementation(function (type) {
+    jest.spyOn(document, 'createElement').mockImplementation((type) => {
       if (type === 'source') {
         return mockSourceElement
       } else if (type === 'video') {
@@ -75,7 +73,7 @@ describe('HTML5 Base', function () {
       }
     })
 
-    jest.spyOn(mockVideoMediaElement, 'addEventListener').mockImplementation(function (name, methodCall) {
+    jest.spyOn(mockVideoMediaElement, 'addEventListener').mockImplementation((name, methodCall) => {
       if (name === 'loadedmetadata') {
         metaDataCallback = methodCall
       } else if (name === 'canplay') {
@@ -93,7 +91,7 @@ describe('HTML5 Base', function () {
       }
     })
 
-    jest.spyOn(mockAudioMediaElement, 'addEventListener').mockImplementation(function (name, methodCall) {
+    jest.spyOn(mockAudioMediaElement, 'addEventListener').mockImplementation((name, methodCall) => {
       if (name === 'loadedmetadata') {
         metaDataCallback = methodCall
       } else if (name === 'canplay') {
@@ -119,35 +117,35 @@ describe('HTML5 Base', function () {
     createPlayer()
   })
 
-  afterEach(function () {
+  afterEach(() => {
     jest.clearAllMocks()
     player = null
     delete window.bigscreenPlayer
   })
 
-  describe('Media Player Common Tests', function () {
-    describe('Empty State Tests', function () {
-      it('Get Source Returns Undefined In Empty State', function () {
+  describe('Media Player Common Tests', () => {
+    describe('Empty State Tests', () => {
+      it('Get Source Returns Undefined In Empty State', () => {
         expect(player.getSource()).toBe(undefined)
       })
 
-      it('Get Mime Type Returns Undefined In Empty State', function () {
+      it('Get Mime Type Returns Undefined In Empty State', () => {
         expect(player.getMimeType()).toBe(undefined)
       })
 
-      it('Get Current Time Returns Undefined In Empty State', function () {
+      it('Get Current Time Returns Undefined In Empty State', () => {
         expect(player.getCurrentTime()).toBe(undefined)
       })
 
-      it('Get Seekable Range Returns Undefined In Empty State', function () {
+      it('Get Seekable Range Returns Undefined In Empty State', () => {
         expect(player.getSeekableRange()).toBe(undefined)
       })
 
-      it('Get Duration Returns Undefined In Empty State', function () {
+      it('Get Duration Returns Undefined In Empty State', () => {
         expect(player.getDuration()).toBe(undefined)
       })
 
-      it('Get Source Returns Undefined In Empty State After Reset', function () {
+      it('Get Source Returns Undefined In Empty State After Reset', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
         metaDataCallback()
         finishedBufferingCallback()
@@ -157,7 +155,7 @@ describe('HTML5 Base', function () {
         expect(player.getSource()).toBe(undefined)
       })
 
-      it('Get Mime Type Returns Undefined In Empty State After Reset', function () {
+      it('Get Mime Type Returns Undefined In Empty State After Reset', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
         metaDataCallback()
         finishedBufferingCallback()
@@ -167,7 +165,7 @@ describe('HTML5 Base', function () {
         expect(player.getMimeType()).toBe(undefined)
       })
 
-      it('Get Current Time Returns Undefined In Empty State After Reset', function () {
+      it('Get Current Time Returns Undefined In Empty State After Reset', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
         metaDataCallback()
         finishedBufferingCallback()
@@ -177,7 +175,7 @@ describe('HTML5 Base', function () {
         expect(player.getCurrentTime()).toBe(undefined)
       })
 
-      it('Get Seekable Range Returns Undefined In Empty State After Reset', function () {
+      it('Get Seekable Range Returns Undefined In Empty State After Reset', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
         metaDataCallback()
         finishedBufferingCallback()
@@ -187,7 +185,7 @@ describe('HTML5 Base', function () {
         expect(player.getSeekableRange()).toBe(undefined)
       })
 
-      it('Get Duration Returns Undefined In Empty State After Reset', function () {
+      it('Get Duration Returns Undefined In Empty State After Reset', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
         metaDataCallback()
         finishedBufferingCallback()
@@ -197,118 +195,118 @@ describe('HTML5 Base', function () {
         expect(player.getDuration()).toBe(undefined)
       })
 
-      it('Calling Begin Playback In Empty State Is An Error', function () {
+      it('Calling Begin Playback In Empty State Is An Error', () => {
         player.beginPlayback()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Begin Playback From In Empty State Is An Error', function () {
+      it('Calling Begin Playback From In Empty State Is An Error', () => {
         player.beginPlaybackFrom()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Pause In Empty State Is An Error', function () {
+      it('Calling Pause In Empty State Is An Error', () => {
         player.pause()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Resume In Empty State Is An Error', function () {
+      it('Calling Resume In Empty State Is An Error', () => {
         player.resume()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Stop In Empty State Is An Error', function () {
+      it('Calling Stop In Empty State Is An Error', () => {
         player.stop()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Initialise Media In Empty State Goes To Stopped State', function () {
+      it('Calling Initialise Media In Empty State Goes To Stopped State', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
       })
 
-      it('Calling Reset In Empty State Stays In Empty State', function () {
+      it('Calling Reset In Empty State Stays In Empty State', () => {
         player.reset()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.EMPTY)
       })
     })
 
-    describe('Stopped state tests', function () {
-      beforeEach(function () {
+    describe('Stopped state tests', () => {
+      beforeEach(() => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
         recentEvents = []
       })
 
-      it('Get Source Returns Correct Value In Stopped State', function () {
+      it('Get Source Returns Correct Value In Stopped State', () => {
         expect(player.getSource()).toEqual('testUrl')
       })
 
-      it('Get Mime Type Returns Correct Value In Stopped State', function () {
+      it('Get Mime Type Returns Correct Value In Stopped State', () => {
         expect(player.getMimeType()).toEqual('testMimeType')
       })
 
-      it('Get Current Time Returns Undefined In Stopped State', function () {
+      it('Get Current Time Returns Undefined In Stopped State', () => {
         expect(player.getCurrentTime()).toEqual(undefined)
       })
 
-      it('Get Seekable Range Returns Undefined In Stopped State', function () {
+      it('Get Seekable Range Returns Undefined In Stopped State', () => {
         expect(player.getSeekableRange()).toEqual(undefined)
       })
 
-      it('Get Duration Returns Undefined In Stopped State', function () {
+      it('Get Duration Returns Undefined In Stopped State', () => {
         expect(player.getDuration()).toEqual(undefined)
       })
 
-      it('Calling Initialise Media In Stopped State Is An Error', function () {
+      it('Calling Initialise Media In Stopped State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Play From In Stopped State Is An Error', function () {
+      it('Calling Play From In Stopped State Is An Error', () => {
         player.playFrom()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Pause In Stopped State Is An Error', function () {
+      it('Calling Pause In Stopped State Is An Error', () => {
         player.pause()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Resume In Stopped State Is An Error', function () {
+      it('Calling Resume In Stopped State Is An Error', () => {
         player.resume()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Send Meta Data In Stopped State Stays In Stopped State', function () {
+      it('Send Meta Data In Stopped State Stays In Stopped State', () => {
         metaDataCallback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
       })
 
-      it('Finish Buffering In Stopped State Stays In Stopped State', function () {
+      it('Finish Buffering In Stopped State Stays In Stopped State', () => {
         finishedBufferingCallback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
       })
 
-      it('Start Buffering In Stopped State Stays In Stopped State', function () {
+      it('Start Buffering In Stopped State Stays In Stopped State', () => {
         waitingCallback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
       })
 
-      it('Player Error In Stopped State Gets Reported', function () {
+      it('Player Error In Stopped State Gets Reported', () => {
         mockVideoMediaElement.error = {
           code: 'test'
         }
@@ -318,25 +316,25 @@ describe('HTML5 Base', function () {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Time Passing Does Not Cause Status Event To Be Sent In Stopped State', function () {
+      it('Time Passing Does Not Cause Status Event To Be Sent In Stopped State', () => {
         mockVideoMediaElement.currentTime += 1
 
         expect(recentEvents).toEqual([])
       })
 
-      it('Calling Reset In Stopped State Goes To Empty State', function () {
+      it('Calling Reset In Stopped State Goes To Empty State', () => {
         player.reset()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.EMPTY)
       })
 
-      it('Calling Begin Playback From In Stopped State Goes To Buffering State', function () {
+      it('Calling Begin Playback From In Stopped State Goes To Buffering State', () => {
         player.beginPlaybackFrom()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
       })
 
-      it('Finish Buffering Then Begin Playback From In Stopped State Goes To Buffering', function () {
+      it('Finish Buffering Then Begin Playback From In Stopped State Goes To Buffering', () => {
         finishedBufferingCallback()
 
         player.beginPlaybackFrom()
@@ -344,76 +342,76 @@ describe('HTML5 Base', function () {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
       })
 
-      it('Calling Begin Playback In Stopped State Goes To Buffering State', function () {
+      it('Calling Begin Playback In Stopped State Goes To Buffering State', () => {
         player.beginPlayback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
       })
 
-      it('Calling Stop In Stopped State Stays In Stopped State', function () {
+      it('Calling Stop In Stopped State Stays In Stopped State', () => {
         player.stop()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
       })
     })
 
-    describe('Buffering state tests', function () {
-      beforeEach(function () {
+    describe('Buffering state tests', () => {
+      beforeEach(() => {
         jest.useFakeTimers()
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
         player.beginPlaybackFrom(0)
         recentEvents = []
       })
 
-      afterEach(function () {
+      afterEach(() => {
         jest.useRealTimers()
       })
 
-      it('Get Source Returns Expected Value In Buffering State', function () {
+      it('Get Source Returns Expected Value In Buffering State', () => {
         expect(player.getSource()).toEqual('testUrl')
       })
 
-      it('Get Mime Type Returns Expected Value In Buffering State', function () {
+      it('Get Mime Type Returns Expected Value In Buffering State', () => {
         expect(player.getMimeType()).toEqual('testMimeType')
       })
 
-      it('Calling Initialise Media In Buffering State Is An Error', function () {
+      it('Calling Initialise Media In Buffering State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Begin Playback In Buffering State Is An Error', function () {
+      it('Calling Begin Playback In Buffering State Is An Error', () => {
         player.beginPlayback()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Begin Playback From In Buffering State Is An Error', function () {
+      it('Calling Begin Playback From In Buffering State Is An Error', () => {
         player.beginPlaybackFrom()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Reset In Buffering State Is An Error', function () {
+      it('Calling Reset In Buffering State Is An Error', () => {
         player.reset()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Send Meta Data In Buffering State Stays In Buffering State', function () {
+      it('Send Meta Data In Buffering State Stays In Buffering State', () => {
         metaDataCallback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
       })
 
-      it('Start Buffering In Buffering State Stays In Buffering State', function () {
+      it('Start Buffering In Buffering State Stays In Buffering State', () => {
         waitingCallback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
       })
 
-      it('Device Error In Buffering State Gets Reported', function () {
+      it('Device Error In Buffering State Gets Reported', () => {
         mockVideoMediaElement.error = {
           code: 'test'
         }
@@ -423,7 +421,7 @@ describe('HTML5 Base', function () {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Time Passing Does Not Cause Status Event To Be Sent In Buffering State', function () {
+      it('Time Passing Does Not Cause Status Event To Be Sent In Buffering State', () => {
         mockVideoMediaElement.currentTime += 1
         jest.advanceTimersByTime(1200)
 
@@ -431,13 +429,13 @@ describe('HTML5 Base', function () {
         expect(recentEvents).toEqual([MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING, MediaPlayerBase.EVENT.PLAYING])
       })
 
-      it('When Buffering Finishes And No Further Api Calls Then We Go To Playing State', function () {
+      it('When Buffering Finishes And No Further Api Calls Then We Go To Playing State', () => {
         finishedBufferingCallback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
       })
 
-      it('When Pause Called And Buffering Finishes Then We Go To Paused State', function () {
+      it('When Pause Called And Buffering Finishes Then We Go To Paused State', () => {
         player.pause()
 
         finishedBufferingCallback()
@@ -445,7 +443,7 @@ describe('HTML5 Base', function () {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       })
 
-      it('When Pause Then Resume Called Before Buffering Finishes Then We Go To Playing State', function () {
+      it('When Pause Then Resume Called Before Buffering Finishes Then We Go To Playing State', () => {
         player.pause()
         player.resume()
 
@@ -454,7 +452,7 @@ describe('HTML5 Base', function () {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
       })
 
-      it('When Begin Playback From Middle Of Media And Buffering Finishes Then We Go To Playing From Specified Point', function () {
+      it('When Begin Playback From Middle Of Media And Buffering Finishes Then We Go To Playing From Specified Point', () => {
         player.stop()
         player.beginPlaybackFrom(20)
 
@@ -464,21 +462,21 @@ describe('HTML5 Base', function () {
         expect(mockVideoMediaElement.currentTime).toEqual(20)
       })
 
-      it('Calling Stop In Buffering State Goes To Stopped State', function () {
+      it('Calling Stop In Buffering State Goes To Stopped State', () => {
         player.stop()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
       })
 
-      it('Device Buffering Notification In Buffering State Does Not Emit Second Buffering Event', function () {
+      it('Device Buffering Notification In Buffering State Does Not Emit Second Buffering Event', () => {
         waitingCallback()
 
         expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
     })
 
-    describe('Playing State Tests', function () {
-      beforeEach(function () {
+    describe('Playing State Tests', () => {
+      beforeEach(() => {
         jest.spyOn(mockVideoMediaElement, 'duration', 'get').mockReturnValue(100)
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
         player.beginPlaybackFrom(0)
@@ -488,55 +486,55 @@ describe('HTML5 Base', function () {
         jest.useFakeTimers()
       })
 
-      afterEach(function () {
+      afterEach(() => {
         jest.useRealTimers()
       })
 
-      it('Get Source Returns Expected Value In Playing State', function () {
+      it('Get Source Returns Expected Value In Playing State', () => {
         expect(player.getSource()).toEqual('testUrl')
       })
 
-      it('Get Mime Type Returns Expected Value In Playing State', function () {
+      it('Get Mime Type Returns Expected Value In Playing State', () => {
         expect(player.getMimeType()).toEqual('testMimeType')
       })
 
-      it('Get Current Time Returns Expected Value In Playing State', function () {
+      it('Get Current Time Returns Expected Value In Playing State', () => {
         expect(player.getCurrentTime()).toEqual(0)
       })
 
-      it('Get Seekable Range Returns Expected Value In Playing State', function () {
+      it('Get Seekable Range Returns Expected Value In Playing State', () => {
         expect(player.getSeekableRange()).toEqual({ start: 0, end: 100 })
       })
 
-      it('Get Duration Returns Expected Value In Playing State', function () {
+      it('Get Duration Returns Expected Value In Playing State', () => {
         expect(player.getDuration()).toEqual(100)
       })
 
-      it('Calling Begin Playback In Playing State Is An Error', function () {
+      it('Calling Begin Playback In Playing State Is An Error', () => {
         player.beginPlayback()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Begin Playback From In Playing State Is An Error', function () {
+      it('Calling Begin Playback From In Playing State Is An Error', () => {
         player.beginPlaybackFrom()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Initialise Media In Playing State Is An Error', function () {
+      it('Calling Initialise Media In Playing State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Reset In Playing State Is An Error', function () {
+      it('Calling Reset In Playing State Is An Error', () => {
         player.reset()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Send Meta Data In Playing State Stays In Playing State', function () {
+      it('Send Meta Data In Playing State Stays In Playing State', () => {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
 
         metaDataCallback()
@@ -544,7 +542,7 @@ describe('HTML5 Base', function () {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
       })
 
-      it('Finish Buffering In Playing State Stays In Playing State', function () {
+      it('Finish Buffering In Playing State Stays In Playing State', () => {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
 
         finishedBufferingCallback()
@@ -552,7 +550,7 @@ describe('HTML5 Base', function () {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
       })
 
-      it('Device Error In Playing State Gets Reported', function () {
+      it('Device Error In Playing State Gets Reported', () => {
         mockVideoMediaElement.error = {
           code: 'test'
         }
@@ -562,7 +560,7 @@ describe('HTML5 Base', function () {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('When Call Resume While Already Playing Then Remain In Play State', function () {
+      it('When Call Resume While Already Playing Then Remain In Play State', () => {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
 
         player.resume()
@@ -570,13 +568,13 @@ describe('HTML5 Base', function () {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
       })
 
-      it('When Call Play From While Playing Goes To Buffering State', function () {
+      it('When Call Play From While Playing Goes To Buffering State', () => {
         player.playFrom(90)
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
       })
 
-      it('When Calling Pause While Playing Goes To Paused State', function () {
+      it('When Calling Pause While Playing Goes To Paused State', () => {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
 
         player.pause()
@@ -584,7 +582,7 @@ describe('HTML5 Base', function () {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       })
 
-      it('When Media Finishes When Playing Then Goes To Complete State', function () {
+      it('When Media Finishes When Playing Then Goes To Complete State', () => {
         giveMediaElementMetaData(mockVideoMediaElement, {start: 1, end: 99})
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
@@ -595,7 +593,7 @@ describe('HTML5 Base', function () {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.COMPLETE)
       })
 
-      it('When Buffering Starts While Playing Goes To Buffering State', function () {
+      it('When Buffering Starts While Playing Goes To Buffering State', () => {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
 
         waitingCallback()
@@ -603,7 +601,7 @@ describe('HTML5 Base', function () {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
       })
 
-      it('Get Regular Status Event When Playing', function () {
+      it('Get Regular Status Event When Playing', () => {
         timeupdateCallback()
         jest.advanceTimersByTime(1000)
 
@@ -622,7 +620,7 @@ describe('HTML5 Base', function () {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.STATUS)
       })
 
-      it('Get Duration Returns Infinity With A Live Video Stream', function () {
+      it('Get Duration Returns Infinity With A Live Video Stream', () => {
         player.stop()
         player.reset()
         player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
@@ -630,15 +628,15 @@ describe('HTML5 Base', function () {
         finishedBufferingCallback()
         metaDataCallback()
 
-        var actualDurations = [0, 'foo', undefined, null, Infinity, 360]
-        for (var i = 0; i < actualDurations.length; i++) {
+        const actualDurations = [0, 'foo', undefined, null, Infinity, 360]
+        for (let i = 0; i < actualDurations.length; i++) {
           giveMediaElementMetaData(mockVideoMediaElement, { start: 0, end: actualDurations[i] })
 
           expect(player.getDuration()).toEqual(Infinity)
         }
       })
 
-      it('Get Duration Returns Infinity With A Live Audio Stream', function () {
+      it('Get Duration Returns Infinity With A Live Audio Stream', () => {
         player.stop()
         player.reset()
         player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_AUDIO, 'testUrl', 'testMimeType', sourceContainer, {})
@@ -646,8 +644,8 @@ describe('HTML5 Base', function () {
         finishedBufferingCallback()
         metaDataCallback()
 
-        var actualDurations = [0, 'foo', undefined, null, Infinity, 360]
-        for (var i = 0; i < actualDurations.length; i++) {
+        const actualDurations = [0, 'foo', undefined, null, Infinity, 360]
+        for (let i = 0; i < actualDurations.length; i++) {
           giveMediaElementMetaData(mockAudioMediaElement, { start: 0, end: actualDurations[i] })
 
           expect(player.getDuration()).toEqual(Infinity)
@@ -655,12 +653,12 @@ describe('HTML5 Base', function () {
       })
     })
 
-    describe('Paused state tests', function () {
-      beforeEach(function () {
+    describe('Paused state tests', () => {
+      beforeEach(() => {
         jest.spyOn(mockVideoMediaElement, 'duration', 'get').mockReturnValue(100)
         jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-          start: function () { return 0 },
-          end: function () { return 100 },
+          start: () => { return 0 },
+          end: () => { return 100 },
           length: 2
         })
 
@@ -673,74 +671,74 @@ describe('HTML5 Base', function () {
         jest.useFakeTimers()
       })
 
-      afterEach(function () {
+      afterEach(() => {
         jest.useRealTimers()
         recentEvents = []
       })
 
-      it('Get Source Returns Expected Value In Paused State', function () {
+      it('Get Source Returns Expected Value In Paused State', () => {
         expect(player.getSource()).toEqual('testUrl')
       })
 
-      it('Get Mime Type Returns Expected Value In Paused State', function () {
+      it('Get Mime Type Returns Expected Value In Paused State', () => {
         expect(player.getMimeType()).toEqual('testMimeType')
       })
 
-      it('Get Current Time Returns Expected Value In Paused State', function () {
+      it('Get Current Time Returns Expected Value In Paused State', () => {
         expect(player.getCurrentTime()).toEqual(0)
       })
 
-      it('Get Seekable Range Returns Expected Value In Paused State', function () {
+      it('Get Seekable Range Returns Expected Value In Paused State', () => {
         expect(player.getSeekableRange()).toEqual({start: 0, end: 100})
       })
 
-      it('Get Duration Returns Expected Value In Paused State', function () {
+      it('Get Duration Returns Expected Value In Paused State', () => {
         expect(player.getDuration()).toEqual(100)
       })
 
-      it('Calling Begin Playback In Paused State Is An Error', function () {
+      it('Calling Begin Playback In Paused State Is An Error', () => {
         player.beginPlayback()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Begin Playback From In Paused State Is An Error', function () {
+      it('Calling Begin Playback From In Paused State Is An Error', () => {
         player.beginPlaybackFrom()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Initialise Media In Paused State Is An Error', function () {
+      it('Calling Initialise Media In Paused State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Calling Reset In Paused State Is An Error', function () {
+      it('Calling Reset In Paused State Is An Error', () => {
         player.reset()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Send Meta Data In Paused State Stays In Paused State', function () {
+      it('Send Meta Data In Paused State Stays In Paused State', () => {
         metaDataCallback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       })
 
-      it('Finish Buffering In Paused State Stays In Paused State', function () {
+      it('Finish Buffering In Paused State Stays In Paused State', () => {
         finishedBufferingCallback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       })
 
-      it('Start Buffering In Paused State Stays In Paused State', function () {
+      it('Start Buffering In Paused State Stays In Paused State', () => {
         waitingCallback()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       })
 
-      it('Device Error In Paused State Gets Reported', function () {
+      it('Device Error In Paused State Gets Reported', () => {
         mockVideoMediaElement.error = {
           code: 'test'
         }
@@ -750,25 +748,25 @@ describe('HTML5 Base', function () {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
-      it('Time Passing Does Not Cause Status Event To Be Sent In Paused State', function () {
+      it('Time Passing Does Not Cause Status Event To Be Sent In Paused State', () => {
         jest.advanceTimersByTime(10000)
 
         expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.STATUS)
       })
 
-      it('When Calling Resume While Paused Goes To Playing State', function () {
+      it('When Calling Resume While Paused Goes To Playing State', () => {
         player.resume()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
       })
 
-      it('When Call Play From While Paused Goes To Buffering State', function () {
+      it('When Call Play From While Paused Goes To Buffering State', () => {
         player.playFrom(90)
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
       })
 
-      it('When Call Pause While Already Paused Then Remain In Paused State', function () {
+      it('When Call Pause While Already Paused Then Remain In Paused State', () => {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
 
         player.pause()
@@ -777,19 +775,19 @@ describe('HTML5 Base', function () {
       }
       )
 
-      it('When Calling Stop While Paused Goes To Stopped State', function () {
+      it('When Calling Stop While Paused Goes To Stopped State', () => {
         player.stop()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
       })
     })
 
-    describe('Complete state tests', function () {
-      beforeEach(function () {
+    describe('Complete state tests', () => {
+      beforeEach(() => {
         jest.spyOn(mockVideoMediaElement, 'duration', 'get').mockReturnValue(100)
         jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-          start: function () { return 0 },
-          end: function () { return 100 },
+          start: () => { return 0 },
+          end: () => { return 100 },
           length: 2
         })
 
@@ -803,66 +801,66 @@ describe('HTML5 Base', function () {
         jest.useFakeTimers()
       })
 
-      afterEach(function () {
+      afterEach(() => {
         jest.useRealTimers()
       })
 
-      it('Get Source Returns Expected Value In Complete State', function () {
+      it('Get Source Returns Expected Value In Complete State', () => {
         expect(player.getSource()).toEqual('testUrl')
       })
 
-      it('Get Mime Type Returns Expected Value In Complete State', function () {
+      it('Get Mime Type Returns Expected Value In Complete State', () => {
         expect(player.getMimeType()).toEqual('testMimeType')
       })
 
-      it('Get Seekable Range Returns Expected Value In Complete State', function () {
+      it('Get Seekable Range Returns Expected Value In Complete State', () => {
         expect(player.getSeekableRange()).toEqual({ start: 0, end: 100 })
       })
 
-      it('Get Duration Returns Expected Value In Complete State', function () {
+      it('Get Duration Returns Expected Value In Complete State', () => {
         expect(player.getDuration()).toEqual(100)
       })
 
-      it('Get Current Time Returns Expected Value In Complete State', function () {
+      it('Get Current Time Returns Expected Value In Complete State', () => {
         expect(player.getCurrentTime()).toEqual(100)
       })
 
-      it('Calling Begin Playback In Complete State Is An Error', function () {
+      it('Calling Begin Playback In Complete State Is An Error', () => {
         player.beginPlayback()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Begin Playback From In Complete State Is An Error', function () {
+      it('Calling Begin Playback From In Complete State Is An Error', () => {
         player.beginPlaybackFrom()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Initialise Media From In Complete State Is An Error', function () {
+      it('Calling Initialise Media From In Complete State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Pause From In Complete State Is An Error', function () {
+      it('Calling Pause From In Complete State Is An Error', () => {
         player.pause()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Resume From In Complete State Is An Error', function () {
+      it('Calling Resume From In Complete State Is An Error', () => {
         player.resume()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Reset From In Complete State Is An Error', function () {
+      it('Calling Reset From In Complete State Is An Error', () => {
         player.reset()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
@@ -870,56 +868,56 @@ describe('HTML5 Base', function () {
       }
       )
 
-      it('Send Meta Data In Complete State Stays In Complete State', function () {
-        var previousState = player.getState()
+      it('Send Meta Data In Complete State Stays In Complete State', () => {
+        const previousState = player.getState()
 
         metaDataCallback()
 
         expect(player.getState()).toEqual(previousState)
       })
 
-      it('Finish Buffering In Complete State Stays In Complete State', function () {
-        var previousState = player.getState()
+      it('Finish Buffering In Complete State Stays In Complete State', () => {
+        const previousState = player.getState()
 
         finishedBufferingCallback()
 
         expect(player.getState()).toEqual(previousState)
       })
 
-      it('Start Buffering In Complete State Stays In Complete State', function () {
-        var previousState = player.getState()
+      it('Start Buffering In Complete State Stays In Complete State', () => {
+        const previousState = player.getState()
 
         waitingCallback()
 
         expect(player.getState()).toEqual(previousState)
       })
 
-      it('Time Passing Does Not Cause Status Event To Be Sent In Complete State', function () {
+      it('Time Passing Does Not Cause Status Event To Be Sent In Complete State', () => {
         timeupdateCallback()
         jest.advanceTimersByTime()
 
         expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.STATUS)
       })
 
-      it('When Call Play From While Complete Goes To Buffering State', function () {
+      it('When Call Play From While Complete Goes To Buffering State', () => {
         player.playFrom(90)
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
       })
 
-      it('Calling Stop In Complete State Goes To Stopped State', function () {
+      it('Calling Stop In Complete State Goes To Stopped State', () => {
         player.stop()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
       })
     })
 
-    describe('Error state tests', function () {
-      beforeEach(function () {
+    describe('Error state tests', () => {
+      beforeEach(() => {
         jest.spyOn(mockVideoMediaElement, 'duration', 'get').mockReturnValue(100)
         jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-          start: function () { return 0 },
-          end: function () { return 100 },
+          start: () => { return 0 },
+          end: () => { return 100 },
           length: 2
         })
         mockVideoMediaElement.error = {
@@ -937,86 +935,86 @@ describe('HTML5 Base', function () {
         jest.useFakeTimers()
       })
 
-      afterEach(function () {
+      afterEach(() => {
         jest.useRealTimers()
       })
 
-      it('Get Source Returns Undefined In Error State', function () {
+      it('Get Source Returns Undefined In Error State', () => {
         expect(player.getSource()).toBe(undefined)
       })
 
-      it('Get Mime Type Returns Undefined In Error State', function () {
+      it('Get Mime Type Returns Undefined In Error State', () => {
         expect(player.getMimeType()).toBe(undefined)
       })
 
-      it('Get Seekable Range Returns Undefined In Error State', function () {
+      it('Get Seekable Range Returns Undefined In Error State', () => {
         expect(player.getSeekableRange()).toBe(undefined)
       })
 
-      it('Get Duration Returns Undefined In Error State', function () {
+      it('Get Duration Returns Undefined In Error State', () => {
         expect(player.getDuration()).toBe(undefined)
       })
 
-      it('Get Current Time Returns Undefined In Error State', function () {
+      it('Get Current Time Returns Undefined In Error State', () => {
         expect(player.getCurrentTime()).toBe(undefined)
       })
 
-      it('Calling Begin Playback In Error State Is An Error', function () {
+      it('Calling Begin Playback In Error State Is An Error', () => {
         player.beginPlayback()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Begin Playback From In Error State Is An Error', function () {
+      it('Calling Begin Playback From In Error State Is An Error', () => {
         player.beginPlaybackFrom()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Initialise Media In Error State Is An Error', function () {
+      it('Calling Initialise Media In Error State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Play From In Error State Is An Error', function () {
+      it('Calling Play From In Error State Is An Error', () => {
         player.playFrom()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Pause In Error State Is An Error', function () {
+      it('Calling Pause In Error State Is An Error', () => {
         player.pause()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Resume In Error State Is An Error', function () {
+      it('Calling Resume In Error State Is An Error', () => {
         player.resume()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Stop From In Error State Is An Error', function () {
+      it('Calling Stop From In Error State Is An Error', () => {
         player.stop()
 
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
-      it('Calling Reset In Error State Goes To Empty State', function () {
+      it('Calling Reset In Error State Goes To Empty State', () => {
         player.reset()
 
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.EMPTY)
       })
 
-      it('When Buffering Finishes During Error We Continue To Be In Error', function () {
+      it('When Buffering Finishes During Error We Continue To Be In Error', () => {
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
 
         metaDataCallback()
@@ -1027,8 +1025,8 @@ describe('HTML5 Base', function () {
     })
   })
 
-  describe('Initialise Media', function () {
-    it('Creates a video element when called with type VIDEO', function () {
+  describe('Initialise Media', () => {
+    it('Creates a video element when called with type VIDEO', () => {
       jest.clearAllMocks()
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, null, null, sourceContainer, {})
 
@@ -1036,7 +1034,7 @@ describe('HTML5 Base', function () {
       expect(document.createElement).toHaveBeenCalledWith('video', 'mediaPlayerVideo')
     })
 
-    it('Creates an audio element when called with type AUDIO', function () {
+    it('Creates an audio element when called with type AUDIO', () => {
       jest.clearAllMocks()
       player.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, null, null, sourceContainer, {})
 
@@ -1044,7 +1042,7 @@ describe('HTML5 Base', function () {
       expect(document.createElement).toHaveBeenCalledWith('audio', 'mediaPlayerAudio')
     })
 
-    it('Creates a video element when called with type LIVE_VIDEO', function () {
+    it('Creates a video element when called with type LIVE_VIDEO', () => {
       jest.clearAllMocks()
       player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, null, null, sourceContainer, {})
 
@@ -1052,7 +1050,7 @@ describe('HTML5 Base', function () {
       expect(document.createElement).toHaveBeenCalledWith('video', 'mediaPlayerVideo')
     })
 
-    it('Creates an audio element when called with type LIVE_AUDIO', function () {
+    it('Creates an audio element when called with type LIVE_AUDIO', () => {
       jest.clearAllMocks()
       player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_AUDIO, null, null, sourceContainer, {})
 
@@ -1060,20 +1058,20 @@ describe('HTML5 Base', function () {
       expect(document.createElement).toHaveBeenCalledWith('audio', 'mediaPlayerAudio')
     })
 
-    it('The created video element is passed into the source container', function () {
+    it('The created video element is passed into the source container', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, null, null, sourceContainer, {})
 
       expect(sourceContainer.firstChild).toBe(mockVideoMediaElement)
     })
 
-    it('The Audio element is passed into the source container', function () {
+    it('The Audio element is passed into the source container', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, null, null, sourceContainer, {})
 
       expect(sourceContainer.firstChild).toBe(mockAudioMediaElement)
     })
 
-    it('Source url is present on the source element', function () {
-      var url = 'http://url/'
+    it('Source url is present on the source element', () => {
+      const url = 'http://url/'
 
       jest.spyOn(mockVideoMediaElement, 'appendChild')
 
@@ -1084,12 +1082,12 @@ describe('HTML5 Base', function () {
     })
   })
 
-  describe('Reset and Stop', function () {
-    afterEach(function () {
+  describe('Reset and Stop', () => {
+    afterEach(() => {
       delete window.bigscreenPlayer.overrides
     })
 
-    it('Video is removed from the DOM', function () {
+    it('Video is removed from the DOM', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, null, null, sourceContainer, {})
 
       expect(sourceContainer.firstChild).toBe(mockVideoMediaElement)
@@ -1099,7 +1097,7 @@ describe('HTML5 Base', function () {
       expect(sourceContainer.firstChild).not.toBe(mockVideoMediaElement)
     })
 
-    it('Audio is removed from the DOM', function () {
+    it('Audio is removed from the DOM', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, null, null, sourceContainer, {})
 
       expect(sourceContainer.firstChild).toBe(mockAudioMediaElement)
@@ -1109,7 +1107,7 @@ describe('HTML5 Base', function () {
       expect(sourceContainer.firstChild).not.toBe(mockAudioMediaElement)
     })
 
-    it('Source element is removed from the media element', function () {
+    it('Source element is removed from the media element', () => {
       jest.spyOn(mockVideoMediaElement, 'removeChild')
 
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, null, null, sourceContainer, {})
@@ -1119,7 +1117,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.removeChild).toHaveBeenCalledWith(mockSourceElement)
     })
 
-    it(' Reset Unloads Media Element Source As Per Guidelines', function () {
+    it(' Reset Unloads Media Element Source As Per Guidelines', () => {
       // Guidelines in HTML5 video spec, section 4.8.10.15:
       // http://www.w3.org/TR/2011/WD-html5-20110405/video.html#best-practices-for-authors-using-media-elements
 
@@ -1134,7 +1132,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.load).toHaveBeenCalledTimes(1)
     })
 
-    it('should not Unload Media Element Source if disabled', function () {
+    it('should not Unload Media Element Source if disabled', () => {
       window.bigscreenPlayer.overrides = {
         disableMediaSourceUnload: true
       }
@@ -1149,7 +1147,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.load).toHaveBeenCalledTimes(0)
     })
 
-    it(' Calling Stop In Stopped State Does Not Call Pause On The Device', function () {
+    it(' Calling Stop In Stopped State Does Not Call Pause On The Device', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.stop()
@@ -1158,8 +1156,8 @@ describe('HTML5 Base', function () {
     })
   })
 
-  describe('seekable range', function () {
-    it('If duration and seekable range is missing get seekable range returns undefined and logs a warning', function () {
+  describe('seekable range', () => {
+    it('If duration and seekable range is missing get seekable range returns undefined and logs a warning', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       metaDataCallback()
@@ -1171,7 +1169,7 @@ describe('HTML5 Base', function () {
       expect(player.getSeekableRange()).toBe(undefined)
     })
 
-    it('Seekable Range Takes Precedence Over Duration On Media Element', function () {
+    it('Seekable Range Takes Precedence Over Duration On Media Element', () => {
       jest.spyOn(mockVideoMediaElement, 'duration', 'get').mockReturnValue(60)
 
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
@@ -1179,10 +1177,10 @@ describe('HTML5 Base', function () {
       finishedBufferingCallback()
 
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 10
         },
-        end: function () {
+        end: () => {
           return 30
         },
         length: 2
@@ -1194,7 +1192,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.duration).toBe(60)
     })
 
-    it('Seekable Is Not Used Until Metadata Is Set', function () {
+    it('Seekable Is Not Used Until Metadata Is Set', () => {
       jest.spyOn(mockVideoMediaElement, 'duration', 'get').mockReturnValue(undefined)
 
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
@@ -1203,10 +1201,10 @@ describe('HTML5 Base', function () {
       expect(player.getSeekableRange()).toEqual(undefined)
 
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 10
         },
-        end: function () {
+        end: () => {
           return 30
         },
         length: 2
@@ -1217,7 +1215,7 @@ describe('HTML5 Base', function () {
       expect(player.getSeekableRange()).toEqual({ start: 10, end: 30 })
     })
 
-    it(' Get Seekable Range Gets End Time From Duration When No Seekable Property', function () {
+    it(' Get Seekable Range Gets End Time From Duration When No Seekable Property', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue(undefined)
       jest.spyOn(mockVideoMediaElement, 'duration', 'get').mockReturnValue(60)
 
@@ -1228,15 +1226,15 @@ describe('HTML5 Base', function () {
       expect(player.getSeekableRange()).toEqual({start: 0, end: 60})
     })
 
-    it(' Get Seekable Range Gets End Time From First Time Range In Seekable Property', function () {
+    it(' Get Seekable Range Gets End Time From First Time Range In Seekable Property', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 10
         },
-        end: function () {
+        end: () => {
           return 30
         },
         length: 2
@@ -1247,8 +1245,8 @@ describe('HTML5 Base', function () {
     })
   })
 
-  describe('Media Element', function () {
-    it('Video Element Is Full Screen', function () {
+  describe('Media Element', () => {
+    it('Video Element Is Full Screen', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       expect(mockVideoMediaElement.style.position).toEqual('absolute')
@@ -1259,13 +1257,13 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.style.zIndex).toEqual('')
     })
 
-    it(' Autoplay Is Turned Off On Media Element Creation', function () {
+    it(' Autoplay Is Turned Off On Media Element Creation', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       expect(mockVideoMediaElement.autoplay).toEqual(false)
     })
 
-    it(' Error Event From Media Element Causes Error Log With Code And Error Message In Event', function () {
+    it(' Error Event From Media Element Causes Error Log With Code And Error Message In Event', () => {
       mockVideoMediaElement.error = {
         code: 'This is a test error'
       }
@@ -1277,9 +1275,10 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
     })
 
-    it(' Error Event From Source Element Causes Error Log And Error Message In Event', function () {
-      var sourceError
-      jest.spyOn(mockSourceElement, 'addEventListener').mockImplementation(function (name, methodCall) {
+    it(' Error Event From Source Element Causes Error Log And Error Message In Event', () => {
+      let sourceError
+
+      jest.spyOn(mockSourceElement, 'addEventListener').mockImplementation((name, methodCall) => {
         if (name === 'error') {
           sourceError = methodCall
         }
@@ -1292,7 +1291,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
     })
 
-    it(' Pause Passed Through To Media Element When In Playing State', function () {
+    it(' Pause Passed Through To Media Element When In Playing State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       metaDataCallback({})
@@ -1303,7 +1302,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
 
-    it(' Pause Not Passed From Media Element To Media Player On User Pause From Buffering', function () {
+    it(' Pause Not Passed From Media Element To Media Player On User Pause From Buffering', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       // We dont fire the metadata ready callback so it stays in the buffering state
@@ -1314,7 +1313,7 @@ describe('HTML5 Base', function () {
       expect(player.toPaused).toHaveBeenCalledTimes(0)
     })
 
-    it(' Pause Not Passed From Media Element To Media Player On User Pause From Playing', function () {
+    it(' Pause Not Passed From Media Element To Media Player On User Pause From Playing', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       metaDataCallback({})
@@ -1326,7 +1325,7 @@ describe('HTML5 Base', function () {
       expect(player.toPaused).toHaveBeenCalledTimes(0)
     })
 
-    it(' Pause Not Passed From Media Element To Media Player On Stop', function () {
+    it(' Pause Not Passed From Media Element To Media Player On Stop', () => {
       // Initialise media terminates in the stopped state
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
@@ -1335,7 +1334,7 @@ describe('HTML5 Base', function () {
       expect(player.toPaused).toHaveBeenCalledTimes(0)
     })
 
-    it(' Play Called On Media Element When Resume In Paused State', function () {
+    it(' Play Called On Media Element When Resume In Paused State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
       player.pause()
@@ -1351,7 +1350,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.play).toHaveBeenCalledTimes(1)
     })
 
-    it(' Play Called On Media Element When Resume In Buffering State', function () {
+    it(' Play Called On Media Element When Resume In Buffering State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
       player.pause()
@@ -1365,7 +1364,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.play).toHaveBeenCalledTimes(1)
     })
 
-    it(' Play Not Called On Media Element When Resume In Buffering State Before Metadata', function () {
+    it(' Play Not Called On Media Element When Resume In Buffering State Before Metadata', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
       player.pause()
@@ -1377,7 +1376,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.play).not.toHaveBeenCalled()
     })
 
-    it(' Pause Passed Through To Media Element When In Buffered State', function () {
+    it(' Pause Passed Through To Media Element When In Buffered State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
       player.pause()
@@ -1387,19 +1386,19 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
 
-    it(' Load Called On Media Element When Initialise Media Is Called', function () {
+    it(' Load Called On Media Element When Initialise Media Is Called', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       expect(mockVideoMediaElement.load).toHaveBeenCalledTimes(1)
     })
 
-    it(' Media Element Preload Attribute Is Set To Auto', function () {
+    it(' Media Element Preload Attribute Is Set To Auto', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       expect(mockVideoMediaElement.preload).toEqual('auto')
     })
 
-    it('Play From Sets Current Time And Calls Play On Media Element When In Playing State', function () {
+    it('Play From Sets Current Time And Calls Play On Media Element When In Playing State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -1417,26 +1416,26 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(10)
     })
 
-    it(' Get Player Element Returns Video Element For Video', function () {
+    it(' Get Player Element Returns Video Element For Video', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       expect(player.getPlayerElement()).toEqual(mockVideoMediaElement)
     })
 
-    it(' Get Player Element Returns Audio Element For Audio', function () {
+    it(' Get Player Element Returns Audio Element For Audio', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       expect(player.getPlayerElement()).toEqual(mockAudioMediaElement)
     })
   })
 
-  describe('Time features', function () {
-    beforeEach(function () {
+  describe('Time features', () => {
+    beforeEach(() => {
       jest.spyOn(mockVideoMediaElement, 'duration', 'get').mockReturnValue(100)
       mockVideoMediaElement.play.mockClear()
     })
 
-    it(' Play From Clamps When Called In Playing State', function () {
+    it(' Play From Clamps When Called In Playing State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -1448,7 +1447,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(98.9)
     })
 
-    it(' Play From Sets Current Time And Calls Play On Media Element When In Complete State', function () {
+    it(' Play From Sets Current Time And Calls Play On Media Element When In Complete State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -1463,7 +1462,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(10)
     })
 
-    it(' Play From Sets Current Time And Calls Play On Media Element When In Paused State', function () {
+    it(' Play From Sets Current Time And Calls Play On Media Element When In Paused State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -1480,7 +1479,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(10)
     })
 
-    it(' Begin Playback From After Metadata', function () {
+    it(' Begin Playback From After Metadata', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       metaDataCallback()
 
@@ -1492,7 +1491,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.play).toHaveBeenCalledTimes(1)
     })
 
-    it(' Get Duration Returns Undefined Before Metadata Is Set', function () {
+    it(' Get Duration Returns Undefined Before Metadata Is Set', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -1503,7 +1502,7 @@ describe('HTML5 Base', function () {
       expect(player.getDuration()).toEqual(100)
     })
 
-    it(' Get Duration Returns Device Duration With An On Demand Audio Stream', function () {
+    it(' Get Duration Returns Device Duration With An On Demand Audio Stream', () => {
       jest.spyOn(mockAudioMediaElement, 'duration', 'get').mockReturnValue(100)
 
       player.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, 'http://url/', 'video/mp4', sourceContainer, {})
@@ -1515,8 +1514,8 @@ describe('HTML5 Base', function () {
     })
   })
 
-  describe('Current Time', function () {
-    it(' Play From Sets Current Time And Calls Play On Media Element When In Stopped State', function () {
+  describe('Current Time', () => {
+    it(' Play From Sets Current Time And Calls Play On Media Element When In Stopped State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(50)
@@ -1536,7 +1535,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it(' Begin Playback From Sets Current Time And Calls Play On Media Element When In Stopped State', function () {
+    it(' Begin Playback From Sets Current Time And Calls Play On Media Element When In Stopped State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(10)
       metaDataCallback({start: 0, end: 100})
@@ -1546,15 +1545,15 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(10)
     })
 
-    it(' Play From Clamps When Called In Stopped State', function () {
+    it(' Play From Clamps When Called In Stopped State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(110)
 
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 10
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -1564,7 +1563,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(98.9)
     })
 
-    it(' Play From Then Pause Sets Current Time And Calls Pause On Media Element When In Stopped State', function () {
+    it(' Play From Then Pause Sets Current Time And Calls Pause On Media Element When In Stopped State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(50)
       player.pause()
@@ -1575,10 +1574,10 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
 
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 10
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -1595,7 +1594,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
     })
 
-    it(' Play From Zero Then Pause Defers Call To Pause On Media Element When In Stopped State', function () {
+    it(' Play From Zero Then Pause Defers Call To Pause On Media Element When In Stopped State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(0)
@@ -1604,7 +1603,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).not.toHaveBeenCalled()
     })
 
-    it(' Play From Defers Setting Current Time And Calling Play On Media Element Until We Have Metadata', function () {
+    it(' Play From Defers Setting Current Time And Calling Play On Media Element Until We Have Metadata', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(0)
@@ -1613,10 +1612,10 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.play).not.toHaveBeenCalled()
 
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 10
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -1628,17 +1627,17 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(10)
     })
 
-    it(' Play From Clamps When Called In Buffering State And Dont Have Metadata', function () {
+    it(' Play From Clamps When Called In Buffering State And Dont Have Metadata', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(0)
       player.playFrom(110)
 
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 10
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -1650,16 +1649,16 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(98.9)
     })
 
-    it(' Play From Sets Current Time And Calls Play On Media Element When In Buffering State And Has Metadata', function () {
+    it(' Play From Sets Current Time And Calls Play On Media Element When In Buffering State And Has Metadata', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(0)
 
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 10
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -1674,16 +1673,16 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(10)
     })
 
-    it(' Play From Clamps When Called In Buffering State And Has Metadata', function () {
+    it(' Play From Clamps When Called In Buffering State And Has Metadata', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(0)
 
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 10
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -1696,7 +1695,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(98.9)
     })
 
-    it(' Play From Current Time When Playing Goes To Buffering Then To Playing', function () {
+    it(' Play From Current Time When Playing Goes To Buffering Then To Playing', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(0)
@@ -1717,7 +1716,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it(' Play From Just Before Current Time When Playing Goes To Buffering Then To Playing', function () {
+    it(' Play From Just Before Current Time When Playing Goes To Buffering Then To Playing', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(0)
@@ -1738,7 +1737,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it(' Begin Playback From Current Time When Played Then Stopped Goes To Buffering Then To Playing', function () {
+    it(' Begin Playback From Current Time When Played Then Stopped Goes To Buffering Then To Playing', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       metaDataCallback()
 
@@ -1761,7 +1760,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it(' Play From Current Time When Paused Goes To Buffering Then To Playing', function () {
+    it(' Play From Current Time When Paused Goes To Buffering Then To Playing', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -1786,7 +1785,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.EVENT.PLAYING.toUpperCase())
     })
 
-    it(' Begin Playback From Sets Current Time After Finish Buffering But No Metadata', function () {
+    it(' Begin Playback From Sets Current Time After Finish Buffering But No Metadata', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(50)
 
@@ -1796,12 +1795,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
-    it(' Play From Near Current Time Will Not Cause Finish Buffering To Perform Seek Later', function () {
+    it(' Play From Near Current Time Will Not Cause Finish Buffering To Perform Seek Later', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -1823,28 +1822,28 @@ describe('HTML5 Base', function () {
     })
   })
 
-  describe('Playback Rate', function () {
-    it('sets the playback rate on the media element', function () {
+  describe('Playback Rate', () => {
+    it('sets the playback rate on the media element', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.setPlaybackRate(2)
 
       expect(mockVideoMediaElement.playbackRate).toEqual(2)
     })
 
-    it('gets the playback rate on the media element', function () {
+    it('gets the playback rate on the media element', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
-      var testRate = 1.5
+      const testRate = 1.5
       player.setPlaybackRate(testRate)
 
-      var rate = player.getPlaybackRate()
+      const rate = player.getPlaybackRate()
 
       expect(rate).toEqual(testRate)
     })
   })
 
-  describe('Media Element Stop', function () {
-    it(' Stop When In Buffering State', function () {
+  describe('Media Element Stop', () => {
+    it(' Stop When In Buffering State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(0)
@@ -1853,7 +1852,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
 
-    it(' Stop When In Playing State', function () {
+    it(' Stop When In Playing State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -1865,7 +1864,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
 
-    it(' Stop When In Complete State', function () {
+    it(' Stop When In Complete State', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -1878,8 +1877,8 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
 
-    it(' Reset Remove All Event Listeners From The Media Element', function () {
-      var listeners = ['canplay', 'seeked', 'playing', 'error', 'ended', 'waiting',
+    it(' Reset Remove All Event Listeners From The Media Element', () => {
+      const listeners = ['canplay', 'seeked', 'playing', 'error', 'ended', 'waiting',
         'timeupdate', 'loadedMetaData', 'pause']
 
       jest.spyOn(mockVideoMediaElement, 'removeEventListener').mockImplementation(() => {})
@@ -1889,7 +1888,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.removeEventListener).toHaveBeenCalledTimes(listeners.length)
     })
 
-    it('Remove all event callbacks works correctly', function () {
+    it('Remove all event callbacks works correctly', () => {
       function playAndEmitAfterRemoveAllCallbacks () {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
         player.beginPlaybackFrom(0)
@@ -1901,17 +1900,17 @@ describe('HTML5 Base', function () {
     })
   })
 
-  describe('Events', function () {
-    beforeEach(function () {
+  describe('Events', () => {
+    beforeEach(() => {
       jest.useFakeTimers()
     })
 
-    afterEach(function () {
+    afterEach(() => {
       jest.useRealTimers()
       delete window.bigscreenPlayer.overrides
     })
 
-    it(' Waiting Html5 Event While Buffering Only Gives Single Buffering Event', function () {
+    it(' Waiting Html5 Event While Buffering Only Gives Single Buffering Event', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       player.beginPlaybackFrom(0)
@@ -1920,13 +1919,13 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
     })
 
-    it(' Seek Attempted Event Emitted On Initialise Media If The State Is Empty', function () {
+    it(' Seek Attempted Event Emitted On Initialise Media If The State Is Empty', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
     })
 
-    it('Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing', function () {
+    it('Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
@@ -1945,7 +1944,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
     })
 
-    it('Seek Finished Event Is Emitted Only Once', function () {
+    it('Seek Finished Event Is Emitted Only Once', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
@@ -1968,7 +1967,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
     })
 
-    it('Seek Finished Event Is Emitted After restartTimeout When Enabled', function () {
+    it('Seek Finished Event Is Emitted After restartTimeout When Enabled', () => {
       window.bigscreenPlayer.overrides = {
         restartTimeout: 10000
       }
@@ -2002,20 +2001,20 @@ describe('HTML5 Base', function () {
     })
   })
 
-  describe('Sentinels', function () {
+  describe('Sentinels', () => {
     function waitForSentinels () {
       jest.advanceTimersByTime(1100)
     }
 
-    beforeEach(function () {
+    beforeEach(() => {
       jest.useFakeTimers()
     })
 
-    afterEach(function () {
+    afterEach(() => {
       jest.useRealTimers()
     })
 
-    it(' Enter Buffering Sentinel Causes Transition To Buffering When Playback Halts For More Than One Sentinel Iteration Since State Changed', function () {
+    it(' Enter Buffering Sentinel Causes Transition To Buffering When Playback Halts For More Than One Sentinel Iteration Since State Changed', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -2035,7 +2034,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
     })
 
-    it(' Enter Buffering Sentinel Not Fired When Sentinels Disabled', function () {
+    it(' Enter Buffering Sentinel Not Fired When Sentinels Disabled', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true})
       player.beginPlaybackFrom(0)
 
@@ -2054,10 +2053,10 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it(' No Sentinels Activate When Current Time Runs Normally Then Jumps Backwards', function () {
-      var INITIAL_TIME = 30
-      var SEEK_SENTINEL_TOLERANCE = 15
-      var AFTER_JUMP_TIME = INITIAL_TIME - (SEEK_SENTINEL_TOLERANCE + 5)
+    it(' No Sentinels Activate When Current Time Runs Normally Then Jumps Backwards', () => {
+      const INITIAL_TIME = 30
+      const SEEK_SENTINEL_TOLERANCE = 15
+      const AFTER_JUMP_TIME = INITIAL_TIME - (SEEK_SENTINEL_TOLERANCE + 5)
 
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true})
       player.beginPlaybackFrom(INITIAL_TIME)
@@ -2083,7 +2082,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it(' No Sentinels Activate When Current Time Runs Normally Then Jumps Backwards Near End Of Media', function () {
+    it(' No Sentinels Activate When Current Time Runs Normally Then Jumps Backwards Near End Of Media', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(95)
 
@@ -2102,7 +2101,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it(' Pause Sentinel Activates When Current Time Runs Normally Then Jumps Backwards When Paused', function () {
+    it(' Pause Sentinel Activates When Current Time Runs Normally Then Jumps Backwards When Paused', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(10)
 
@@ -2121,7 +2120,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
     })
 
-    it(' Enter Buffering Sentinel Does Not Activate When Playback Halts When Only One Sentinel Iteration Since State Changed', function () {
+    it(' Enter Buffering Sentinel Does Not Activate When Playback Halts When Only One Sentinel Iteration Since State Changed', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(10)
 
@@ -2136,7 +2135,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toEqual([])
     })
 
-    it(' Enter Buffering Sentinel Does Nothing When Playback Is Working', function () {
+    it(' Enter Buffering Sentinel Does Nothing When Playback Is Working', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(10)
 
@@ -2151,7 +2150,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it(' Enter Buffering Sentinel Does Nothing When Device Reports Buffering Correctly', function () {
+    it(' Enter Buffering Sentinel Does Nothing When Device Reports Buffering Correctly', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(10)
 
@@ -2163,7 +2162,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toEqual([])
     })
 
-    it(' Enter Buffering Sentinel Does Nothing When Device Is Paused', function () {
+    it(' Enter Buffering Sentinel Does Nothing When Device Is Paused', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(10)
 
@@ -2180,13 +2179,12 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toEqual([])
     })
     function ensureEnterBufferingSentinelIsNotCalledWhenZeroesCannotBeTrusted () {
-      var i
-      for (i = 0; i < 3; i++) {
+      for (let i = 0; i < 3; i++) {
         mockVideoMediaElement.currentTime += 1
         waitForSentinels()
       }
 
-      for (i = 0; i < 2; i++) {
+      for (let i = 0; i < 2; i++) {
         mockVideoMediaElement.currentTime = 0
         waitForSentinels()
       }
@@ -2196,7 +2194,7 @@ describe('HTML5 Base', function () {
     }
 
     function ensureEnterBufferingSentinelIsCalledWhenZeroesCanBeTrusted () {
-      for (var i = 0; i < 2; i++) {
+      for (let i = 0; i < 2; i++) {
         mockVideoMediaElement.currentTime = 0
         waitForSentinels()
       }
@@ -2206,14 +2204,12 @@ describe('HTML5 Base', function () {
     }
 
     function ForThreeIntervalsOfNormalPlaybackTwoIntervalsOfZeroesAndOneIntervalOfTimeIncreaseBelowSentinelTolerance () {
-      var i
-
-      for (i = 0; i < 3; i++) {
+      for (let i = 0; i < 3; i++) {
         mockVideoMediaElement.currentTime += 1
         waitForSentinels()
       }
 
-      for (i = 0; i < 2; i++) {
+      for (let i = 0; i < 2; i++) {
         mockVideoMediaElement.currentTime = 0
         waitForSentinels()
       }
@@ -2226,7 +2222,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
     }
 
-    it(' Enter Buffering Sentinel Does Nothing When Device Time Is Reported As Zero During Playback', function () {
+    it(' Enter Buffering Sentinel Does Nothing When Device Time Is Reported As Zero During Playback', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(10)
 
@@ -2237,7 +2233,7 @@ describe('HTML5 Base', function () {
       ensureEnterBufferingSentinelIsNotCalledWhenZeroesCannotBeTrusted()
     })
 
-    it(' Enter Buffering Sentinel Does Nothing When Begin Playback Is Called And Device Time Is Reported As Zero For At Least Two Intervals', function () {
+    it(' Enter Buffering Sentinel Does Nothing When Begin Playback Is Called And Device Time Is Reported As Zero For At Least Two Intervals', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(20)
 
@@ -2248,7 +2244,7 @@ describe('HTML5 Base', function () {
       ensureEnterBufferingSentinelIsNotCalledWhenZeroesCannotBeTrusted()
     })
 
-    it(' Enter Buffering Sentinel Fires When Begin Playback From Zero Is Called And Device Time Does Not Advance', function () {
+    it(' Enter Buffering Sentinel Fires When Begin Playback From Zero Is Called And Device Time Does Not Advance', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -2259,7 +2255,7 @@ describe('HTML5 Base', function () {
       ensureEnterBufferingSentinelIsCalledWhenZeroesCanBeTrusted()
     })
 
-    it(' Enter Buffering Sentinel Fires When Begin Playback Is Called And Device Time Does Not Advance', function () {
+    it(' Enter Buffering Sentinel Fires When Begin Playback Is Called And Device Time Does Not Advance', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -2270,7 +2266,7 @@ describe('HTML5 Base', function () {
       ensureEnterBufferingSentinelIsCalledWhenZeroesCanBeTrusted()
     })
 
-    it(' Enter Buffering Sentinel Fires When Seeked To Zero And Device Time Is Reported As Zero For At Least Two Intervals', function () {
+    it(' Enter Buffering Sentinel Fires When Seeked To Zero And Device Time Is Reported As Zero For At Least Two Intervals', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(20)
 
@@ -2287,7 +2283,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
     })
 
-    it(' Enter Buffering Sentinel Only Fires On Second Attempt When Device Reports Time As Not Changing Within Tolerance', function () {
+    it(' Enter Buffering Sentinel Only Fires On Second Attempt When Device Reports Time As Not Changing Within Tolerance', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -2308,7 +2304,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
     })
 
-    it(' Enter Buffering Sentinel Does Not Fire On Two Non Consecutive Occurrences Of Device Reporting Time As Not Changing Within Tolerance', function () {
+    it(' Enter Buffering Sentinel Does Not Fire On Two Non Consecutive Occurrences Of Device Reporting Time As Not Changing Within Tolerance', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -2320,7 +2316,7 @@ describe('HTML5 Base', function () {
       ForThreeIntervalsOfNormalPlaybackTwoIntervalsOfZeroesAndOneIntervalOfTimeIncreaseBelowSentinelTolerance()
     })
 
-    it(' Exit Buffering Sentinel Causes Transition To Playing When Playback Starts', function () {
+    it(' Exit Buffering Sentinel Causes Transition To Playing When Playback Starts', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -2334,7 +2330,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it(' Exit Buffering Sentinel Not Fired When Sentinels Disabled', function () {
+    it(' Exit Buffering Sentinel Not Fired When Sentinels Disabled', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true})
       player.beginPlaybackFrom(0)
 
@@ -2352,7 +2348,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
     })
 
-    it(' Exit Buffering Sentinel Causes Transition To Paused When Device Reports Paused', function () {
+    it(' Exit Buffering Sentinel Causes Transition To Paused When Device Reports Paused', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -2368,7 +2364,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
     })
 
-    it(' Exit Buffering Sentinel Is Not Fired When Device Is Paused And Metadata Has Been Not Been Loaded', function () {
+    it(' Exit Buffering Sentinel Is Not Fired When Device Is Paused And Metadata Has Been Not Been Loaded', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(0)
 
@@ -2379,7 +2375,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING)
     })
 
-    it('Seek Sentinel Sets Current Time', function () {
+    it('Seek Sentinel Sets Current Time', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(50)
 
@@ -2395,7 +2391,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
-    it(' Seek Sentinel Sets Current Time Not Fired When Sentinels Disabled', function () {
+    it(' Seek Sentinel Sets Current Time Not Fired When Sentinels Disabled', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true})
       player.beginPlaybackFrom(50)
 
@@ -2411,14 +2407,14 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(0)
     })
 
-    it(' Seek Sentinel Clamps Target Seek Time When Required', function () {
+    it(' Seek Sentinel Clamps Target Seek Time When Required', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback({start: 0, end: 100})
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2435,7 +2431,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(98.9)
     })
 
-    it(' Seek Sentinel Does Not Reseek To Initial Seek Time After 15s', function () {
+    it(' Seek Sentinel Does Not Reseek To Initial Seek Time After 15s', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback({start: 0, end: 100})
 
@@ -2443,7 +2439,7 @@ describe('HTML5 Base', function () {
       finishedBufferingCallback()
 
       recentEvents = []
-      for (var i = 0; i < 20; i++) {
+      for (let i = 0; i < 20; i++) {
         mockVideoMediaElement.currentTime += 1
         waitForSentinels()
       }
@@ -2452,12 +2448,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(30)
     })
 
-    it(' Seek Sentinel Does Not Reseek To Initial Seek Time After15s When Playback Leaves Seekable Range', function () {
+    it(' Seek Sentinel Does Not Reseek To Initial Seek Time After15s When Playback Leaves Seekable Range', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2470,7 +2466,7 @@ describe('HTML5 Base', function () {
       finishedBufferingCallback()
 
       recentEvents = []
-      for (var i = 0; i < 20; i++) {
+      for (let i = 0; i < 20; i++) {
         mockVideoMediaElement.currentTime += 1
         waitForSentinels()
       }
@@ -2479,7 +2475,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(115)
     })
 
-    it(' Seek Sentinel Sets Current Time When Paused', function () {
+    it(' Seek Sentinel Sets Current Time When Paused', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback({start: 0, end: 100})
 
@@ -2496,7 +2492,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
-    it(' Seek Sentinel Does Not Seek When Begin Playback Called', function () {
+    it(' Seek Sentinel Does Not Seek When Begin Playback Called', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback({start: 0, end: 100})
 
@@ -2511,7 +2507,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(1)
     })
 
-    it(' Seek Sentinel Does Not Seek When Begin Playback Starts Playing Half Way Through Media', function () {
+    it(' Seek Sentinel Does Not Seek When Begin Playback Starts Playing Half Way Through Media', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback({start: 0, end: 100})
 
@@ -2526,7 +2522,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(51)
     })
 
-    it(' Seek Sentinel Does Not Seek When Begin Playback After Previously Seeking', function () {
+    it(' Seek Sentinel Does Not Seek When Begin Playback After Previously Seeking', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback({start: 0, end: 100})
 
@@ -2546,7 +2542,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(1)
     })
 
-    it(' Seek Sentinel Activates When Device Reports New Position Then Reverts To Old Position', function () {
+    it(' Seek Sentinel Activates When Device Reports New Position Then Reverts To Old Position', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback({start: 0, end: 100})
 
@@ -2563,7 +2559,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
-    it(' Seek Sentinel Does Not Fire In Live When Device Jumps Back Less Than Thirty Seconds', function () {
+    it(' Seek Sentinel Does Not Fire In Live When Device Jumps Back Less Than Thirty Seconds', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback({start: 0, end: 100})
 
@@ -2578,7 +2574,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
     })
 
-    it(' Seek Sentinel Fires In Live When Device Jumps Back More Than Thirty Seconds', function () {
+    it(' Seek Sentinel Fires In Live When Device Jumps Back More Than Thirty Seconds', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback({start: 0, end: 100})
 
@@ -2593,7 +2589,7 @@ describe('HTML5 Base', function () {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
     })
 
-    it(' Pause Sentinel Retries Pause If Pause Fails', function () {
+    it(' Pause Sentinel Retries Pause If Pause Fails', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback()
 
@@ -2611,7 +2607,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
     })
 
-    it(' Pause Sentinel Not Fired When Sentinels Disabled', function () {
+    it(' Pause Sentinel Not Fired When Sentinels Disabled', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: true})
       metaDataCallback()
 
@@ -2629,7 +2625,7 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
     })
 
-    it(' Pause Sentinel Does Not Retry Pause If Pause Succeeds', function () {
+    it(' Pause Sentinel Does Not Retry Pause If Pause Succeeds', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {disableSentinels: false})
       metaDataCallback()
 
@@ -2644,12 +2640,12 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
     })
 
-    it(' End Of Media Sentinel Goes To Complete If Time Is Not Advancing And No Complete Event Fired', function () {
+    it(' End Of Media Sentinel Goes To Complete If Time Is Not Advancing And No Complete Event Fired', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2675,12 +2671,12 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.COMPLETE)
     })
 
-    it(' End Of Media Sentinel Not Fired When Sentinels Disabled', function () {
+    it(' End Of Media Sentinel Not Fired When Sentinels Disabled', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2706,12 +2702,12 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
-    it('EndOf Media Sentinel Does Not Activate If Time Is Not Advancing When Outside A Second Of End And No Complete Event Fired', function () {
+    it('EndOf Media Sentinel Does Not Activate If Time Is Not Advancing When Outside A Second Of End And No Complete Event Fired', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2731,12 +2727,12 @@ describe('HTML5 Base', function () {
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.COMPLETE)
     })
 
-    it(' End Of Media Sentinel Does Not Activate If Time Is Not Advancing When Outside Seekable Range But Within Duration', function () {
+    it(' End Of Media Sentinel Does Not Activate If Time Is Not Advancing When Outside Seekable Range But Within Duration', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2757,12 +2753,12 @@ describe('HTML5 Base', function () {
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.COMPLETE)
     })
 
-    it(' End Of Media Sentinel Does Not Activate If Reach End Of Media Normally', function () {
+    it(' End Of Media Sentinel Does Not Activate If Reach End Of Media Normally', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2783,12 +2779,12 @@ describe('HTML5 Base', function () {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.COMPLETE)
     })
 
-    it(' End Of Media Sentinel Does Not Activate If Time Is Advancing Near End Of Media And No Complete Event Fired', function () {
+    it(' End Of Media Sentinel Does Not Activate If Time Is Advancing Near End Of Media And No Complete Event Fired', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2809,12 +2805,12 @@ describe('HTML5 Base', function () {
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.COMPLETE)
     })
 
-    it(' Only One Sentinel Fired At A Time When Both Seek And Pause Sentinels Are Needed', function () {
+    it(' Only One Sentinel Fired At A Time When Both Seek And Pause Sentinels Are Needed', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2855,12 +2851,12 @@ describe('HTML5 Base', function () {
       waitForSentinels()
     }
 
-    it(' Pause Sentinel Retries Pause Twice', function () {
+    it(' Pause Sentinel Retries Pause Twice', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2887,12 +2883,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
 
-    it(' Pause Sentinel Emits Failure Event And Gives Up On Third Attempt', function () {
+    it(' Pause Sentinel Emits Failure Event And Gives Up On Third Attempt', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2921,12 +2917,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).not.toHaveBeenCalled()
     })
 
-    it(' Pause Sentinel Attempt Count Is Not Reset By Calling Pause When Already Paused', function () {
+    it(' Pause Sentinel Attempt Count Is Not Reset By Calling Pause When Already Paused', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2951,12 +2947,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).not.toHaveBeenCalled()
     })
 
-    it(' Pause Sentinel Attempt Count Is Reset By Calling Pause When Not Paused', function () {
+    it(' Pause Sentinel Attempt Count Is Reset By Calling Pause When Not Paused', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -2984,12 +2980,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
 
-    it(' Seek Sentinel Retries Seek Twice', function () {
+    it(' Seek Sentinel Retries Seek Twice', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -3015,12 +3011,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
-    it(' Seek Sentinel Emits Failure Event And Gives Up On Third Attempt When Device Does Not Enter Buffering Upon Seek', function () {
+    it(' Seek Sentinel Emits Failure Event And Gives Up On Third Attempt When Device Does Not Enter Buffering Upon Seek', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -3052,12 +3048,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(2)
     })
 
-    it(' Seek Sentinel Giving Up Does Not Prevent Pause Sentinel Activation', function () {
+    it(' Seek Sentinel Giving Up Does Not Prevent Pause Sentinel Activation', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -3097,12 +3093,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
 
-    it(' Seek Sentinel Attempt Count Is Reset By Calling Play From', function () {
+    it(' Seek Sentinel Attempt Count Is Reset By Calling Play From', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -3132,12 +3128,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
-    it(' Seek Sentinel Attempt Count Is Reset By Calling Begin Playback From', function () {
+    it(' Seek Sentinel Attempt Count Is Reset By Calling Begin Playback From', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2
@@ -3168,7 +3164,7 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
-    it(' Exit Buffering Sentinel Performs Deferred Seek If No Loaded Metadata Event', function () {
+    it(' Exit Buffering Sentinel Performs Deferred Seek If No Loaded Metadata Event', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
       player.beginPlaybackFrom(50)
 
@@ -3178,12 +3174,12 @@ describe('HTML5 Base', function () {
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
-    it(' Pause Sentinel Does Not Fire When Device Time Advances By Less Than Sentinel Tolerance', function () {
+    it(' Pause Sentinel Does Not Fire When Device Time Advances By Less Than Sentinel Tolerance', () => {
       jest.spyOn(mockVideoMediaElement, 'seekable', 'get').mockReturnValue({
-        start: function () {
+        start: () => {
           return 0
         },
-        end: function () {
+        end: () => {
           return 100
         },
         length: 2

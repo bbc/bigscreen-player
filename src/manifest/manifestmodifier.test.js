@@ -1,10 +1,10 @@
 import ManifestModifier from './manifestmodifier'
 
-describe('ManifestModifier', function () {
-  describe('filter', function () {
+describe('ManifestModifier', () => {
+  describe('filter', () => {
     var manifest
 
-    beforeEach(function () {
+    beforeEach(() => {
       manifest = {
         Period: {
           AdaptationSet: [
@@ -51,12 +51,12 @@ describe('ManifestModifier', function () {
       }
     })
 
-    it('should leave the manifest unchanged when the config is empty', function () {
+    it('should leave the manifest unchanged when the config is empty', () => {
       expect(ManifestModifier.filter(manifest, {})).toEqual(manifest)
     })
 
-    it('should remove representations with a higher frame rate than the max', function () {
-      var expectedManifest = {
+    it('should remove representations with a higher frame rate than the max', () => {
+      const expectedManifest = {
         Period: {
           AdaptationSet: [
             {
@@ -92,8 +92,8 @@ describe('ManifestModifier', function () {
       expect(ManifestModifier.filter(manifest, { maxFps: 30 })).toEqual(expectedManifest)
     })
 
-    it('should remove representations that are lower than the highest if constantFps is set', function () {
-      var expectedManifest = {
+    it('should remove representations that are lower than the highest if constantFps is set', () => {
+      const expectedManifest = {
         Period: {
           AdaptationSet: [
             {
@@ -125,13 +125,13 @@ describe('ManifestModifier', function () {
           ]
         }
       }
-      var actualManifest = ManifestModifier.filter(manifest, { constantFps: true })
+      const actualManifest = ManifestModifier.filter(manifest, { constantFps: true })
 
       expect(actualManifest).toEqual(expectedManifest)
     })
 
-    it('should only keep the highest framerate that is not higher than max', function () {
-      var expectedManifest = {
+    it('should only keep the highest framerate that is not higher than max', () => {
+      const expectedManifest = {
         Period: {
           AdaptationSet: [
             {
@@ -157,13 +157,14 @@ describe('ManifestModifier', function () {
           ]
         }
       }
-      var actualManifest = ManifestModifier.filter(manifest, { constantFps: true, maxFps: 30 })
+
+      const actualManifest = ManifestModifier.filter(manifest, { constantFps: true, maxFps: 30 })
 
       expect(actualManifest).toEqual(expectedManifest)
     })
 
-    it('should filter all representations out if none are smaller than the max', function () {
-      var expectedManifest = {
+    it('should filter all representations out if none are smaller than the max', () => {
+      const expectedManifest = {
         Period: {
           AdaptationSet: [
             {
@@ -187,9 +188,9 @@ describe('ManifestModifier', function () {
     })
   })
 
-  describe('extractBaseUrl()', function () {
-    it('should return the base url from the period', function () {
-      var manifest = {
+  describe('extractBaseUrl()', () => {
+    it('should return the base url from the period', () => {
+      const manifest = {
         Period: {
           BaseURL: 'dash/'
         }
@@ -198,8 +199,8 @@ describe('ManifestModifier', function () {
       expect(ManifestModifier.extractBaseUrl(manifest)).toBe('dash/')
     })
 
-    it('should return the base url from the root', function () {
-      var manifest = {
+    it('should return the base url from the root', () => {
+      const manifest = {
         BaseURL: {
           __text: 'https://cdn/dash/'
         }
@@ -209,20 +210,20 @@ describe('ManifestModifier', function () {
     })
   })
 
-  describe('generateBaseUrls()', function () {
-    var sources = [
+  describe('generateBaseUrls()', () => {
+    const sources = [
       'https://cdn-a.com/',
       'https://cdn-b.com/'
     ]
 
-    it('should convert the sources into base urls', function () {
-      var manifest = {
+    it('should convert the sources into base urls', () => {
+      const manifest = {
         Period: {
           BaseURL: 'dash/'
         }
       }
 
-      var expectedManifest = {
+      const expectedManifest = {
         BaseURL_asArray: [
           { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' },
           { __text: 'https://cdn-b.com/dash/', 'dvb:priority': 1, 'dvb:weight': 0, serviceLocation: 'https://cdn-b.com/' }
@@ -235,8 +236,8 @@ describe('ManifestModifier', function () {
       expect(manifest).toEqual(expectedManifest)
     })
 
-    describe('should return a single base url object for absolute base urls', function () {
-      var expectedManifest = {
+    describe('should return a single base url object for absolute base urls', () => {
+      const expectedManifest = {
         Period: {},
         BaseURL: { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' },
         BaseURL_asArray: [
@@ -244,8 +245,8 @@ describe('ManifestModifier', function () {
         ]
       }
 
-      it('the url is on the manifest as a string', function () {
-        var manifest = {
+      it('the url is on the manifest as a string', () => {
+        const manifest = {
           Period: {},
           BaseURL: 'https://cdn-a.com/dash/'
         }
@@ -255,8 +256,8 @@ describe('ManifestModifier', function () {
         expect(manifest).toEqual(expectedManifest)
       })
 
-      it('the url is on the manifest as an object', function () {
-        var manifest = {
+      it('the url is on the manifest as an object', () => {
+        const manifest = {
           Period: {},
           BaseURL: {
             __text: 'https://cdn-a.com/dash/'
@@ -268,8 +269,8 @@ describe('ManifestModifier', function () {
         expect(manifest).toEqual(expectedManifest)
       })
 
-      it('the url is on the manifest in the period as a string', function () {
-        var manifest = {
+      it('the url is on the manifest in the period as a string', () => {
+        const manifest = {
           Period: {
             BaseURL: 'https://cdn-a.com/dash/'
           }
@@ -280,8 +281,8 @@ describe('ManifestModifier', function () {
         expect(manifest).toEqual(expectedManifest)
       })
 
-      it('the url is on the manifest in the period as an object', function () {
-        var manifest = {
+      it('the url is on the manifest in the period as an object', () => {
+        const manifest = {
           Period: {
             BaseURL: {
               __text: 'https://cdn-a.com/dash/'
@@ -294,13 +295,13 @@ describe('ManifestModifier', function () {
         expect(manifest).toEqual(expectedManifest)
       })
 
-      describe('no base url on manifest', function () {
-        it('should return base url objects', function () {
-          var manifest = {
+      describe('no base url on manifest', () => {
+        it('should return base url objects', () => {
+          const manifest = {
             Period: {}
           }
 
-          var expectedManifest = {
+          const expectedManifest = {
             Period: {},
             BaseURL_asArray: [
               { __text: 'https://cdn-a.com/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' },

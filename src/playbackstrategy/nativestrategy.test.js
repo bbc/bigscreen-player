@@ -45,7 +45,7 @@ describe('Native Strategy', () => {
 
   let windowType
 
-  beforeEach(function () {
+  beforeEach(() => {
     windowType = WindowTypes.STATIC
     window.bigscreenPlayer = {}
 

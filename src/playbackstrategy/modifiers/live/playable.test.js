@@ -1,28 +1,30 @@
 import MediaPlayerBase from '../mediaplayerbase'
 import PlayableMediaPlayer from './playable'
 
-var sourceContainer = document.createElement('div')
-var player
-var playableMediaPlayer
+describe('Playable HMTL5 Live Player', () => {
+  const callback = () => { }
+  const sourceContainer = document.createElement('div')
 
-function wrapperTests (action, expectedReturn) {
-  if (expectedReturn) {
-    player[action].mockReturnValue(expectedReturn)
+  let player
+  let playableMediaPlayer
 
-    expect(playableMediaPlayer[action]()).toBe(expectedReturn)
-  } else {
-    playableMediaPlayer[action]()
+  function wrapperTests (action, expectedReturn) {
+    if (expectedReturn) {
+      player[action].mockReturnValue(expectedReturn)
 
-    expect(player[action]).toHaveBeenCalledTimes(1)
+      expect(playableMediaPlayer[action]()).toBe(expectedReturn)
+    } else {
+      playableMediaPlayer[action]()
+
+      expect(player[action]).toHaveBeenCalledTimes(1)
+    }
   }
-}
 
-function isUndefined (action) {
-  expect(playableMediaPlayer[action]).not.toBeDefined()
-}
+  function isUndefined (action) {
+    expect(playableMediaPlayer[action]).not.toBeDefined()
+  }
 
-describe('Playable HMTL5 Live Player', function () {
-  beforeEach(function () {
+  beforeEach(() => {
     player = {
       'beginPlayback': jest.fn(),
       'initialiseMedia': jest.fn(),
@@ -40,94 +42,94 @@ describe('Playable HMTL5 Live Player', function () {
     playableMediaPlayer = PlayableMediaPlayer(player)
   })
 
-  it('calls beginPlayback on the media player', function () {
+  it('calls beginPlayback on the media player', () => {
     wrapperTests('beginPlayback')
   })
 
-  it('calls initialiseMedia on the media player', function () {
+  it('calls initialiseMedia on the media player', () => {
     wrapperTests('initialiseMedia')
   })
 
-  it('calls stop on the media player', function () {
+  it('calls stop on the media player', () => {
     wrapperTests('stop')
   })
 
-  it('calls reset on the media player', function () {
+  it('calls reset on the media player', () => {
     wrapperTests('reset')
   })
 
-  it('calls getState on the media player', function () {
+  it('calls getState on the media player', () => {
     wrapperTests('getState', 'thisState')
   })
 
-  it('calls getSource on the media player', function () {
+  it('calls getSource on the media player', () => {
     wrapperTests('getSource', 'thisSource')
   })
 
-  it('calls getMimeType on the media player', function () {
+  it('calls getMimeType on the media player', () => {
     wrapperTests('getMimeType', 'thisMimeType')
   })
 
-  it('calls addEventCallback on the media player', function () {
-    var thisArg = 'arg'
-    var callback = function () { return }
+  it('calls addEventCallback on the media player', () => {
+    const thisArg = 'arg'
+
     playableMediaPlayer.addEventCallback(thisArg, callback)
 
     expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, callback)
   })
 
-  it('calls removeEventCallback on the media player', function () {
-    var thisArg = 'arg'
-    var callback = function () { return }
+  it('calls removeEventCallback on the media player', () => {
+    const thisArg = 'arg'
+
     playableMediaPlayer.removeEventCallback(thisArg, callback)
 
     expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback)
   })
 
-  it('calls removeAllEventCallbacks on the media player', function () {
+  it('calls removeAllEventCallbacks on the media player', () => {
     wrapperTests('removeAllEventCallbacks')
   })
 
-  it('calls getPlayerElement on the media player', function () {
+  it('calls getPlayerElement on the media player', () => {
     wrapperTests('getPlayerElement', 'thisPlayerElement')
   })
 
-  describe('should not have methods for', function () {
-    it('beginPlaybackFrom', function () {
+  describe('should not have methods for', () => {
+    it('beginPlaybackFrom', () => {
       isUndefined('beginPlaybackFrom')
     })
 
-    it('playFrom', function () {
+    it('playFrom', () => {
       isUndefined('playFrom')
     })
 
-    it('pause', function () {
+    it('pause', () => {
       isUndefined('pause')
     })
 
-    it('resume', function () {
+    it('resume', () => {
       isUndefined('resume')
     })
 
-    it('getCurrentTime', function () {
+    it('getCurrentTime', () => {
       isUndefined('getCurrentTime')
     })
 
-    it('getSeekableRange', function () {
+    it('getSeekableRange', () => {
       isUndefined('getSeekableRange')
     })
   })
 
-  describe('calls the mediaplayer with the correct media Type', function () {
-    it('when is an audio stream', function () {
-      var mediaType = MediaPlayerBase.TYPE.AUDIO
+  describe('calls the mediaplayer with the correct media Type', () => {
+    it('when is an audio stream', () => {
+      const mediaType = MediaPlayerBase.TYPE.AUDIO
       playableMediaPlayer.initialiseMedia(mediaType, null, null, sourceContainer, null)
 
       expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, null, null, sourceContainer, null)
     })
 
-    it('when is an video stream', function () {
-      var mediaType = MediaPlayerBase.TYPE.VIDEO
+    it('when is an video stream', () => {
+      const mediaType = MediaPlayerBase.TYPE.VIDEO
       playableMediaPlayer.initialiseMedia(mediaType, null, null, sourceContainer, null)
 
       expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, null, null, sourceContainer, null)

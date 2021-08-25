@@ -2,30 +2,28 @@ import MediaPlayerBase from '../mediaplayerbase'
 import RestartableMediaPlayer from './restartable'
 import WindowTypes from '../../../models/windowtypes'
 
-var sourceContainer = document.createElement('div')
-var player
-var restartableMediaPlayer
-var testTime = {
-  windowStartTime: 0,
-  windowEndTime: 100000,
-  correction: 0
-}
-
-var mockMediaSources = {
-  time: function () {
-    return testTime
-  },
-  refresh: function (successCallback, errorCallback) {
-    successCallback()
+describe('restartable HMTL5 Live Player', () => {
+  const callback = () => { }
+  const sourceContainer = document.createElement('div')
+  const testTime = {
+    windowStartTime: 0,
+    windowEndTime: 100000,
+    correction: 0
   }
-}
 
-function initialiseRestartableMediaPlayer (windowType) {
-  windowType = windowType || WindowTypes.SLIDING
-  restartableMediaPlayer = RestartableMediaPlayer(player, windowType, mockMediaSources)
-}
+  const mockMediaSources = {
+    time: () => testTime,
+    refresh: (success, _error) => success()
+  }
 
-describe('restartable HMTL5 Live Player', function () {
+  let player
+  let restartableMediaPlayer
+
+  function initialiseRestartableMediaPlayer (windowType) {
+    windowType = windowType || WindowTypes.SLIDING
+    restartableMediaPlayer = RestartableMediaPlayer(player, windowType, mockMediaSources)
+  }
+
   function wrapperTests (action, expectedReturn) {
     if (expectedReturn) {
       player[action].mockReturnValue(expectedReturn)
@@ -38,7 +36,7 @@ describe('restartable HMTL5 Live Player', function () {
     }
   }
 
-  beforeEach(function () {
+  beforeEach(() => {
     player = {
       'beginPlayback': jest.fn(),
       'initialiseMedia': jest.fn(),
@@ -57,121 +55,121 @@ describe('restartable HMTL5 Live Player', function () {
     }
   })
 
-  describe('methods call the appropriate media player methods', function () {
-    beforeEach(function () {
+  describe('methods call the appropriate media player methods', () => {
+    beforeEach(() => {
       initialiseRestartableMediaPlayer()
     })
 
-    it('calls beginPlayback on the media player', function () {
+    it('calls beginPlayback on the media player', () => {
       wrapperTests('beginPlayback')
     })
 
-    it('calls initialiseMedia on the media player', function () {
+    it('calls initialiseMedia on the media player', () => {
       wrapperTests('initialiseMedia')
     })
 
-    it('calls stop on the media player', function () {
+    it('calls stop on the media player', () => {
       wrapperTests('stop')
     })
 
-    it('calls reset on the media player', function () {
+    it('calls reset on the media player', () => {
       wrapperTests('reset')
     })
 
-    it('calls getState on the media player', function () {
+    it('calls getState on the media player', () => {
       wrapperTests('getState', 'thisState')
     })
 
-    it('calls getSource on the media player', function () {
+    it('calls getSource on the media player', () => {
       wrapperTests('getSource', 'thisSource')
     })
 
-    it('calls getMimeType on the media player', function () {
+    it('calls getMimeType on the media player', () => {
       wrapperTests('getMimeType', 'thisMimeType')
     })
 
-    it('calls addEventCallback on the media player', function () {
-      var thisArg = 'arg'
-      var callback = function () { return }
+    it('calls addEventCallback on the media player', () => {
+      const thisArg = 'arg'
+
       restartableMediaPlayer.addEventCallback(thisArg, callback)
 
       expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, expect.any(Function))
     })
 
-    it('calls removeEventCallback on the media player', function () {
-      var thisArg = 'arg'
-      var callback = function () { return }
+    it('calls removeEventCallback on the media player', () => {
+      const thisArg = 'arg'
+
       restartableMediaPlayer.addEventCallback(thisArg, callback)
       restartableMediaPlayer.removeEventCallback(thisArg, callback)
 
       expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, expect.any(Function))
     })
 
-    it('calls removeAllEventCallbacks on the media player', function () {
+    it('calls removeAllEventCallbacks on the media player', () => {
       wrapperTests('removeAllEventCallbacks')
     })
 
-    it('calls getPlayerElement on the media player', function () {
+    it('calls getPlayerElement on the media player', () => {
       wrapperTests('getPlayerElement', 'thisPlayerElement')
     })
 
-    it('calls pause on the media player', function () {
+    it('calls pause on the media player', () => {
       wrapperTests('pause')
     })
   })
 
-  describe('should not have methods for', function () {
+  describe('should not have methods for', () => {
     function isUndefined (action) {
       expect(restartableMediaPlayer[action]).not.toBeDefined()
     }
 
-    beforeEach(function () {
+    beforeEach(() => {
       initialiseRestartableMediaPlayer()
     })
 
-    it('playFrom', function () {
+    it('playFrom', () => {
       isUndefined('playFrom')
     })
   })
 
-  describe('should use fake time for', function () {
-    var timeUpdates = []
+  describe('should use fake time for', () => {
+    const timeUpdates = []
     function timeUpdate (opts) {
-      timeUpdates.forEach(function (fn) { fn(opts) })
+      timeUpdates.forEach((fn) => fn(opts))
     }
 
-    beforeEach(function () {
+    beforeEach(() => {
       jest.useFakeTimers()
       // jasmine.clock().mockDate()
 
-      player.addEventCallback.mockImplementation(function (self, callback) {
+      player.addEventCallback.mockImplementation((self, callback) => {
         timeUpdates.push(callback)
       })
-      // player.addEventCallback.and.callFake(function (self, callback) {
+      // player.addEventCallback.and.callFake((self, callback) => {
       //   timeUpdates.push(callback)
       // })
 
       initialiseRestartableMediaPlayer()
     })
 
-    afterEach(function () {
+    afterEach(() => {
       jest.useRealTimers()
     })
 
-    describe('getCurrentTime', function () {
-      it('should be set on to the window length on beginPlayback', function () {
+    describe('getCurrentTime', () => {
+      it('should be set on to the window length on beginPlayback', () => {
         restartableMediaPlayer.beginPlayback()
 
         expect(restartableMediaPlayer.getCurrentTime()).toBe(100)
       })
 
-      it('should start at supplied time', function () {
+      it('should start at supplied time', () => {
         restartableMediaPlayer.beginPlaybackFrom(10)
 
         expect(restartableMediaPlayer.getCurrentTime()).toBe(10)
       })
 
-      it('should increase when playing', function () {
+      it('should increase when playing', () => {
         restartableMediaPlayer.beginPlaybackFrom(10)
 
         timeUpdate({ state: MediaPlayerBase.STATE.PLAYING })
@@ -183,7 +181,7 @@ describe('restartable HMTL5 Live Player', function () {
         expect(restartableMediaPlayer.getCurrentTime()).toBe(11)
       })
 
-      it('should not increase when paused', function () {
+      it('should not increase when paused', () => {
         restartableMediaPlayer.beginPlaybackFrom(10)
         timeUpdate({ state: MediaPlayerBase.STATE.PAUSED })
 
@@ -195,8 +193,8 @@ describe('restartable HMTL5 Live Player', function () {
       })
     })
 
-    describe('getSeekableRange', function () {
-      it('should start at the window time', function () {
+    describe('getSeekableRange', () => {
+      it('should start at the window time', () => {
         restartableMediaPlayer.beginPlaybackFrom(0)
 
         timeUpdate({ state: MediaPlayerBase.STATE.PLAYING })
@@ -204,7 +202,7 @@ describe('restartable HMTL5 Live Player', function () {
         expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 0, end: 100 })
       })
 
-      it('should increase start and end for a sliding window', function () {
+      it('should increase start and end for a sliding window', () => {
         restartableMediaPlayer.beginPlaybackFrom(0)
 
         timeUpdate({ state: MediaPlayerBase.STATE.PLAYING })
@@ -214,7 +212,7 @@ describe('restartable HMTL5 Live Player', function () {
         expect(restartableMediaPlayer.getSeekableRange()).toEqual({ start: 1, end: 101 })
       })
 
-      it('should only increase end for a growing window', function () {
+      it('should only increase end for a growing window', () => {
         initialiseRestartableMediaPlayer(WindowTypes.GROWING)
         restartableMediaPlayer.beginPlaybackFrom(0)
         timeUpdate({ state: MediaPlayerBase.STATE.PLAYING })
@@ -225,45 +223,45 @@ describe('restartable HMTL5 Live Player', function () {
     })
   })
 
-  describe('calls the mediaplayer with the correct media Type', function () {
-    beforeEach(function () {
+  describe('calls the mediaplayer with the correct media Type', () => {
+    beforeEach(() => {
       initialiseRestartableMediaPlayer()
     })
 
-    it('for static video', function () {
+    it('for static video', () => {
       restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, '', '', sourceContainer)
 
       expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined)
     })
 
-    it('for live video', function () {
+    it('for live video', () => {
       restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer)
 
       expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined)
     })
 
-    it('for static audio', function () {
+    it('for static audio', () => {
       restartableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, '', '', sourceContainer)
 
       expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer, undefined)
     })
   })
 
-  describe('Restartable features', function () {
-    afterEach(function () {
+  describe('Restartable features', () => {
+    afterEach(() => {
       delete window.bigscreenPlayer
     })
 
-    it('begins playback with the desired offset', function () {
+    it('begins playback with the desired offset', () => {
       initialiseRestartableMediaPlayer()
-      var offset = 10
+      const offset = 10
 
       restartableMediaPlayer.beginPlaybackFrom(offset)
 
       expect(player.beginPlaybackFrom).toHaveBeenCalledWith(offset)
     })
 
-    it('should respect config forcing playback from the end of the window', function () {
+    it('should respect config forcing playback from the end of the window', () => {
       window.bigscreenPlayer = {
         overrides: {
           forceBeginPlaybackToEndOfWindow: true
@@ -278,39 +276,39 @@ describe('restartable HMTL5 Live Player', function () {
     })
   })
 
-  describe('Pausing and Auto-Resume', function () {
-    var mockCallback = []
+  describe('Pausing and Auto-Resume', () => {
+    let mockCallback = []
 
     function startPlaybackAndPause (startTime, disableAutoResume, windowType) {
       initialiseRestartableMediaPlayer(windowType)
 
       restartableMediaPlayer.beginPlaybackFrom(startTime)
 
-      for (var index = 0; index < mockCallback.length; index++) {
+      for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING})
       }
 
       restartableMediaPlayer.pause({disableAutoResume: disableAutoResume})
 
-      for (index = 0; index < mockCallback.length; index++) {
+      for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index]({state: MediaPlayerBase.STATE.PAUSED})
       }
     }
 
-    beforeEach(function () {
+    beforeEach(() => {
       jest.useFakeTimers()
 
-      player.addEventCallback.mockImplementation(function (self, callback) {
+      player.addEventCallback.mockImplementation((self, callback) => {
         mockCallback.push(callback)
       })
     })
 
-    afterEach(function () {
+    afterEach(() => {
       jest.useRealTimers()
       mockCallback = []
     })
 
-    it('calls resume when approaching the start of the buffer', function () {
+    it('calls resume when approaching the start of the buffer', () => {
       startPlaybackAndPause(20, false)
 
       jest.advanceTimersByTime(12 * 1000)
@@ -318,7 +316,7 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).toHaveBeenCalledWith()
     })
 
-    it('does not call resume when approaching the start of the buffer with the disableAutoResume option', function () {
+    it('does not call resume when approaching the start of the buffer with the disableAutoResume option', () => {
       startPlaybackAndPause(20, true)
 
       jest.advanceTimersByTime(12 * 1000)
@@ -326,7 +324,7 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).not.toHaveBeenCalledWith()
     })
 
-    it('does not call resume if paused after the autoresume point', function () {
+    it('does not call resume if paused after the autoresume point', () => {
       startPlaybackAndPause(20, false)
 
       jest.advanceTimersByTime(11 * 1000)
@@ -334,10 +332,10 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).not.toHaveBeenCalledWith()
     })
 
-    it('does not auto-resume if the video is no longer paused', function () {
+    it('does not auto-resume if the video is no longer paused', () => {
       startPlaybackAndPause(20, false)
 
-      for (var index = 0; index < mockCallback.length; index++) {
+      for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING})
       }
 
@@ -346,18 +344,18 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).not.toHaveBeenCalledTimes(2)
     })
 
-    it('Calls resume when paused is called multiple times', function () {
+    it('Calls resume when paused is called multiple times', () => {
       startPlaybackAndPause(0, false)
 
-      var event = {state: MediaPlayerBase.STATE.PLAYING, currentTime: 25}
-      for (var index = 0; index < mockCallback.length; index++) {
+      const event = {state: MediaPlayerBase.STATE.PLAYING, currentTime: 25}
+      for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index](event)
       }
 
       restartableMediaPlayer.pause()
 
       event.currentTime = 30
-      for (index = 0; index < mockCallback.length; index++) {
+      for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index](event)
       }
 
@@ -369,7 +367,7 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).toHaveBeenCalledTimes(1)
     })
 
-    it('calls auto-resume immeditetly if paused after an autoresume', function () {
+    it('calls auto-resume immeditetly if paused after an autoresume', () => {
       startPlaybackAndPause(20, false)
 
       jest.advanceTimersByTime(12 * 1000)
@@ -381,10 +379,10 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).toHaveBeenCalledTimes(2)
     })
 
-    it('auto-resume is not cancelled by a paused event state', function () {
+    it('auto-resume is not cancelled by a paused event state', () => {
       startPlaybackAndPause(20, false)
 
-      for (var index = 0; index < mockCallback.length; index++) {
+      for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index]({state: MediaPlayerBase.STATE.PAUSED})
       }
 
@@ -393,7 +391,7 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).toHaveBeenCalledTimes(1)
     })
 
-    it('will fake pause if attempting to pause at the start of playback ', function () {
+    it('will fake pause if attempting to pause at the start of playback ', () => {
       startPlaybackAndPause(0, false)
 
       jest.advanceTimersByTime(1)
@@ -402,7 +400,7 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).toHaveBeenCalledTimes(1)
     })
 
-    it('does not calls autoresume immeditetly if paused after an auto-resume with disableAutoResume options', function () {
+    it('does not calls autoresume immeditetly if paused after an auto-resume with disableAutoResume options', () => {
       startPlaybackAndPause(20, true)
 
       jest.advanceTimersByTime(12 * 1000)
@@ -412,18 +410,18 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).not.toHaveBeenCalledTimes(1)
     })
 
-    it('time spend buffering is deducted when considering time to auto-resume', function () {
+    it('time spend buffering is deducted when considering time to auto-resume', () => {
       startPlaybackAndPause()
 
       restartableMediaPlayer.beginPlaybackFrom(20)
 
-      for (var index = 0; index < mockCallback.length; index++) {
+      for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index]({state: MediaPlayerBase.STATE.BUFFERING, currentTime: 20})
       }
 
       jest.advanceTimersByTime(11 * 1000)
 
-      for (index = 0; index < mockCallback.length; index++) {
+      for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING, currentTime: 20})
       }
 
@@ -434,7 +432,7 @@ describe('restartable HMTL5 Live Player', function () {
       expect(player.resume).toHaveBeenCalledTimes(1)
     })
 
-    it('Should not start auto resume timeout if window type is not SLIDING', function () {
+    it('Should not start auto resume timeout if window type is not SLIDING', () => {
       startPlaybackAndPause(20, false, WindowTypes.GROWING)
 
       jest.advanceTimersByTime(12 * 1000)
