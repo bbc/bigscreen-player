@@ -255,11 +255,11 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
         pauseOnExitSeek = false
       } else {
         if (isEnded) {
-          mediaPlayer.playFrom(0)
+          mediaPlayer.playFrom && mediaPlayer.playFrom(0);
         } else if (transitions.canResume()) {
           mediaPlayer.resume()
         } else {
-          mediaPlayer.playFrom(currentTime + timeCorrection)
+          mediaPlayer.playFrom && mediaPlayer.playFrom(currentTime + timeCorrection);
         }
       }
     },
@@ -325,7 +325,7 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
         pauseOnExitSeek = isPaused
       }
 
-      mediaPlayer.playFrom(seekToTime)
+      mediaPlayer.playFrom && mediaPlayer.playFrom(seekToTime);
       if (isPaused && !delayPauseOnExitSeek) {
         mediaPlayer.pause()
       }

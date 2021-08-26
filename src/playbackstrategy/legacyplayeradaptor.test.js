@@ -180,45 +180,69 @@ describe('Legacy Playback Adapter', () => {
   })
 
   describe('play', () => {
-    it('should play from 0 if the stream has ended', () => {
-      setUpLegacyAdaptor()
+    describe('if the player supports playFrom()', () => {
+      it('should play from 0 if the stream has ended', () => {
+        setUpLegacyAdaptor()
+  
+        eventCallbacks({type: MediaPlayerEvent.COMPLETE})
+  
+        legacyAdaptor.play()
+  
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(0)
+      })
 
-      eventCallbacks({type: MediaPlayerEvent.COMPLETE})
+      it('should play from the current time if we are not ended, paused or buffering', () => {
+        setUpLegacyAdaptor()
+  
+        eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10})
+  
+        legacyAdaptor.play()
+  
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+      })
 
-      legacyAdaptor.play()
-
-      expect(mediaPlayer.playFrom).toHaveBeenCalledWith(0)
+      it('should play from the current time on live if we are not ended, paused or buffering', () => {
+        testTimeCorrection = 10
+        setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
+  
+        eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10})
+  
+        legacyAdaptor.play()
+  
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+      })
     })
 
-    it('should resume if the player is in a paused or buffering state', () => {
-      setUpLegacyAdaptor()
+    describe('if the player does not support playFrom()', ()=> {
+      beforeEach(()=> {
+        delete mediaPlayer.playFrom
+      })
 
-      mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
+      it('should not throw an error when playback has completed', function () {
+        setUpLegacyAdaptor();
 
-      legacyAdaptor.play()
+        eventCallbacks({type: MediaPlayerEvent.COMPLETE});
 
-      expect(mediaPlayer.resume).toHaveBeenCalledWith()
-    })
+        legacyAdaptor.play();
+      });
 
-    it('should play from the current time if we are not ended, paused or buffering', () => {
-      setUpLegacyAdaptor()
+      it('should do nothing if we are not ended, paused or buffering', function () {
+        setUpLegacyAdaptor();
 
-      eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10})
+        eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10});
 
-      legacyAdaptor.play()
+        legacyAdaptor.play();
+      });
 
-      expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
-    })
-
-    it('should play from the current time on live if we are not ended, paused or buffering', () => {
-      testTimeCorrection = 10
-      setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
-
-      eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10})
-
-      legacyAdaptor.play()
-
-      expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+      it('should resume if the player is in a paused or buffering state', () => {
+        setUpLegacyAdaptor()
+  
+        mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
+  
+        legacyAdaptor.play()
+  
+        expect(mediaPlayer.resume).toHaveBeenCalledWith()
+      })
     })
   })
 
@@ -461,47 +485,90 @@ describe('Legacy Playback Adapter', () => {
       expect(legacyAdaptor.getCurrentTime()).toEqual(10)
     })
 
-    it('should seek to the time value passed in', () => {
-      setUpLegacyAdaptor()
-
-      legacyAdaptor.setCurrentTime(10)
-
-      expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+    describe('if the player supports playFrom()', () => {
+      it('should seek to the time value passed in', () => {
+        setUpLegacyAdaptor()
+  
+        legacyAdaptor.setCurrentTime(10)
+  
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+      })
+  
+      it('should seek to the time value passed in + time correction', () => {
+        testTimeCorrection = 10
+        setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
+  
+        legacyAdaptor.setCurrentTime(10)
+  
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(20)
+      })
+  
+      it('should pause after a seek if we were in a paused state, not watching dash and on a capable device', () => {
+        setUpLegacyAdaptor()
+  
+        eventCallbacks({type: MediaPlayerEvent.PAUSED})
+  
+        legacyAdaptor.setCurrentTime(10)
+  
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+  
+        expect(mediaPlayer.pause).toHaveBeenCalledWith()
+      })
+  
+      it('should not pause after a seek if we are not on capable device and watching a dash stream', () => {
+        setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
+  
+        legacyAdaptor.load('application/dash+xml', undefined)
+  
+        eventCallbacks({type: MediaPlayerEvent.PAUSED})
+  
+        legacyAdaptor.setCurrentTime(10)
+  
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+  
+        expect(mediaPlayer.pause).not.toHaveBeenCalledWith()
+      })
     })
 
-    it('should seek to the time value passed in + time correction', () => {
-      testTimeCorrection = 10
-      setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
+    describe('if the player does not support playFrom()', ()=> {
+      beforeEach(() => {
+        delete mediaPlayer.playFrom
+      })
 
-      legacyAdaptor.setCurrentTime(10)
+      it('should not throw an Error', () => {
+        setUpLegacyAdaptor()
 
-      expect(mediaPlayer.playFrom).toHaveBeenCalledWith(20)
-    })
+        legacyAdaptor.setCurrentTime(10)
+      })
 
-    it('should pause after a seek if we were in a paused state, not watching dash and on a capable device', () => {
-      setUpLegacyAdaptor()
+      it('should not throw an error for live', () => {
+        testTimeCorrection = 10
+        setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
-      eventCallbacks({type: MediaPlayerEvent.PAUSED})
+        legacyAdaptor.setCurrentTime(10)
+      })
 
-      legacyAdaptor.setCurrentTime(10)
+      it('should remain paused if we were in a paused state, not watching dash and on a capable device', () => {
+        setUpLegacyAdaptor();
 
-      expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+        eventCallbacks({type: MediaPlayerEvent.PAUSED})
 
-      expect(mediaPlayer.pause).toHaveBeenCalledWith()
-    })
+        legacyAdaptor.setCurrentTime(10)
 
-    it('should not pause after a seek if we are not on capable device and watching a dash stream', () => {
-      setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
+        expect(legacyAdaptor.isPaused()).toEqual(true)
+      })
 
-      legacyAdaptor.load('application/dash+xml', undefined)
+      it('should not pause after a no-op seek if we are not on capable device and watching a dash stream', () => {
+        setUpLegacyAdaptor({windowType: WindowTypes.SLIDING})
 
-      eventCallbacks({type: MediaPlayerEvent.PAUSED})
+        legacyAdaptor.load('application/dash+xml', undefined)
 
-      legacyAdaptor.setCurrentTime(10)
+        eventCallbacks({type: MediaPlayerEvent.PAUSED})
 
-      expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+        legacyAdaptor.setCurrentTime(10)
 
-      expect(mediaPlayer.pause).not.toHaveBeenCalledWith()
+        expect(mediaPlayer.pause).not.toHaveBeenCalledWith()
+      })
     })
   })
 
