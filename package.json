@@ -10,6 +10,7 @@
     "build": "rollup -c rollup.config.js",
     "start": "rollup -c rollup.dev.config.js -w",
     "test": "jest",
+    "coverage": "jest --coverage",
     "lint": "npx eslint .",
     "lint:code:changed": "git diff-index --name-only HEAD | egrep '.js$' | xargs eslint"
   },
