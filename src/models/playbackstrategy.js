@@ -1,4 +1,4 @@
-var PlaybackStrategy = {
+const PlaybackStrategy = {
   MSE: 'msestrategy',
   HYBRID: 'hybridstrategy',
   NATIVE: 'nativestrategy'

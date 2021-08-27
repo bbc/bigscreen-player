@@ -1,4 +1,4 @@
-var MediaState = {
+const MediaState = {
   /** Media is stopped and is not attempting to start. */
   STOPPED: 0,
   /** Media is paused. */

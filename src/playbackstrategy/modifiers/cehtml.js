@@ -2,7 +2,7 @@ import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DebugTool from '../../debugger/debugtool'
 import DOMHelpers from '../../domhelpers'
 
-var STATE = {
+const STATE = {
   STOPPED: 0,
   PLAYING: 1,
   PAUSED: 2,
@@ -13,36 +13,36 @@ var STATE = {
 }
 
 function Cehtml () {
-  var eventCallbacks = []
-  var state = MediaPlayerBase.STATE.EMPTY
+  let eventCallbacks = []
+  let state = MediaPlayerBase.STATE.EMPTY
 
-  var mediaElement
-  var updateInterval
+  let mediaElement
+  let updateInterval
 
-  var mediaType
-  var source
-  var mimeType
+  let mediaType
+  let source
+  let mimeType
 
-  var deferSeekingTo
-  var range
+  let deferSeekingTo
+  let range
 
-  var postBufferingState
-  var seekFinished
-  var count
-  var timeoutHappened
+  let postBufferingState
+  let seekFinished
+  let count
+  let timeoutHappened
 
-  var disableSentinels
+  let disableSentinels
 
-  var sentinelSeekTime
-  var seekSentinelTolerance
-  var sentinelInterval
-  var sentinelIntervalNumber
-  var timeAtLastSentinelInterval
+  let sentinelSeekTime
+  let seekSentinelTolerance
+  let sentinelInterval
+  let sentinelIntervalNumber
+  let timeAtLastSentinelInterval
 
-  var sentinelTimeIsNearEnd
-  var timeHasAdvanced
+  let sentinelTimeIsNearEnd
+  let timeHasAdvanced
 
-  var sentinelLimits = {
+  const sentinelLimits = {
     pause: {
       maximumAttempts: 2,
       successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
@@ -58,17 +58,13 @@ function Cehtml () {
   }
 
   function addEventCallback (thisArg, callback) {
-    var eventCallback = function (event) {
-      callback.call(thisArg, event)
-    }
+    const eventCallback = (event) => callback.call(thisArg, event)
 
     eventCallbacks.push({ from: callback, to: eventCallback })
   }
 
-  function removeEventCallback (thisArg, callback) {
-    eventCallbacks = eventCallbacks.filter(function (cb) {
-      return cb.from !== callback
-    })
+  function removeEventCallback (_thisArg, callback) {
+    eventCallbacks = eventCallbacks.filter((cb) => cb.from !== callback)
   }
 
   function removeAllEventCallbacks () {
@@ -76,7 +72,7 @@ function Cehtml () {
   }
 
   function emitEvent (eventType, eventLabels) {
-    var event = {
+    const event = {
       type: eventType,
       currentTime: getCurrentTime(),
       seekableRange: getSeekableRange(),
@@ -87,22 +83,21 @@ function Cehtml () {
     }
 
     if (eventLabels) {
-      for (var key in eventLabels) {
+      for (const key in eventLabels) {
         if (eventLabels.hasOwnProperty(key)) {
           event[key] = eventLabels[key]
         }
       }
     }
 
-    eventCallbacks.forEach(function (callback) {
-      callback.to(event)
-    })
+    eventCallbacks.forEach((callback) => callback.to(event))
   }
 
   function getClampedTime (seconds) {
-    var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
-    var range = getSeekableRange()
-    var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
+    const CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
+    const range = getSeekableRange()
+    const nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
+
     if (seconds < range.start) {
       return range.start
     } else if (seconds > nearToEnd) {
@@ -113,7 +108,8 @@ function Cehtml () {
   }
 
   function isLiveMedia () {
-    return (mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO) || (mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO)
+    return (mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO) ||
+      (mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO)
   }
 
   function getSource () {
@@ -129,8 +125,8 @@ function Cehtml () {
   }
 
   function setSeekSentinelTolerance () {
-    var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15
-    var LIVE_SEEK_SENTINEL_TOLERANCE = 30
+    const ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15
+    const LIVE_SEEK_SENTINEL_TOLERANCE = 30
 
     seekSentinelTolerance = ON_DEMAND_SEEK_SENTINEL_TOLERANCE
     if (isLiveMedia()) {
@@ -139,11 +135,11 @@ function Cehtml () {
   }
 
   function initialiseMedia (type, url, mediaMimeType, sourceContainer, opts) {
+    opts = opts || { }
     disableSentinels = opts.disableSentinels
     mediaType = type
     source = url
     mimeType = mediaMimeType
-    opts = opts || {}
 
     emitSeekAttempted()
 
@@ -194,7 +190,7 @@ function Cehtml () {
 
       case MediaPlayerBase.STATE.PLAYING:
         toBuffering()
-        var seekResult = seekTo(seconds)
+        const seekResult = seekTo(seconds)
         if (seekResult === false) {
           toPlaying()
         }
@@ -401,22 +397,20 @@ function Cehtml () {
     count = 0
     timeoutHappened = false
     if (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.restartTimeout) {
-      setTimeout(function () {
-        timeoutHappened = true
-      }, window.bigscreenPlayer.overrides.restartTimeout)
+      setTimeout(() => { timeoutHappened = true }, window.bigscreenPlayer.overrides.restartTimeout)
     } else {
       timeoutHappened = true
     }
   }
 
   function emitSeekFinishedAtCorrectStartingPoint () {
-    var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance
+    let isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance
 
     if (sentinelSeekTime === undefined) {
       isAtCorrectStartingPoint = true
     }
 
-    var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint
+    const isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint
 
     if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
       emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED)
@@ -447,9 +441,9 @@ function Cehtml () {
   }
 
   function registerEventHandlers () {
-    var DEVICE_UPDATE_PERIOD_MS = 500
+    const DEVICE_UPDATE_PERIOD_MS = 500
 
-    mediaElement.onPlayStateChange = function () {
+    mediaElement.onPlayStateChange = () => {
       switch (mediaElement.playState) {
         case STATE.STOPPED:
           break
@@ -475,13 +469,11 @@ function Cehtml () {
       }
     }
 
-    updateInterval = setInterval(function () {
-      onStatus()
-    }, DEVICE_UPDATE_PERIOD_MS)
+    updateInterval = setInterval(() => onStatus(), DEVICE_UPDATE_PERIOD_MS)
   }
 
   function addElementToDOM () {
-    var body = document.getElementsByTagName('body')[0]
+    const body = document.getElementsByTagName('body')[0]
     body.insertBefore(mediaElement, body.firstChild)
   }
 
@@ -511,10 +503,12 @@ function Cehtml () {
   }
 
   function seekTo (seconds) {
-    var clampedTime = getClampedTime(seconds)
+    const clampedTime = getClampedTime(seconds)
+
     if (clampedTime !== seconds) {
       DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }')
     }
+
     sentinelSeekTime = clampedTime
     return mediaElement.seek(clampedTime * 1000)
   }
@@ -529,11 +523,11 @@ function Cehtml () {
     mimeType = undefined
     sentinelSeekTime = undefined
     range = undefined
+
     if (mediaElement) {
       clearInterval(updateInterval)
       clearSentinels()
       destroyMediaElement()
-    } else {
     }
   }
 
@@ -603,26 +597,22 @@ function Cehtml () {
   }
 
   function setSentinels (sentinels) {
-    if (disableSentinels) {
-      return
-    }
+    if (disableSentinels) { return }
 
     sentinelLimits.pause.currentAttemptCount = 0
     timeAtLastSentinelInterval = getCurrentTime()
     clearSentinels()
     sentinelIntervalNumber = 0
-    sentinelInterval = setInterval(function () {
-      var newTime = getCurrentTime()
+    sentinelInterval = setInterval(() => {
+      const newTime = getCurrentTime()
       sentinelIntervalNumber++
 
       timeHasAdvanced = newTime ? (newTime > (timeAtLastSentinelInterval + 0.2)) : false
       sentinelTimeIsNearEnd = isNearToEnd(newTime || timeAtLastSentinelInterval)
 
-      for (var i = 0; i < sentinels.length; i++) {
-        var sentinelActionPerformed = sentinels[i].call(this)
-        if (sentinelActionPerformed) {
-          break
-        }
+      for (let i = 0; i < sentinels.length; i++) {
+        const sentinelActionPerformed = sentinels[i].call(this)
+        if (sentinelActionPerformed) { break }
       }
 
       timeAtLastSentinelInterval = newTime
@@ -634,20 +624,24 @@ function Cehtml () {
   }
 
   function enterBufferingSentinel () {
-    var sentinelBufferingRequired = !timeHasAdvanced && !sentinelTimeIsNearEnd && (sentinelIntervalNumber > 1)
+    const sentinelBufferingRequired = !timeHasAdvanced && !sentinelTimeIsNearEnd && (sentinelIntervalNumber > 1)
+
     if (sentinelBufferingRequired) {
       emitEvent(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
       toBuffering()
     }
+
     return sentinelBufferingRequired
   }
 
   function exitBufferingSentinel () {
-    var sentinelExitBufferingRequired = timeHasAdvanced
+    const sentinelExitBufferingRequired = timeHasAdvanced
+
     if (sentinelExitBufferingRequired) {
       emitEvent(MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING)
       onFinishedBuffering()
     }
+
     return sentinelExitBufferingRequired
   }
 
@@ -656,16 +650,16 @@ function Cehtml () {
       return false
     }
 
-    var currentTime = getCurrentTime()
+    const currentTime = getCurrentTime()
+    const clampedSentinelSeekTime = getClampedTime(sentinelSeekTime)
+    const sentinelSeekRequired = Math.abs(clampedSentinelSeekTime - currentTime) > seekSentinelTolerance
 
-    var clampedSentinelSeekTime = getClampedTime(sentinelSeekTime)
-
-    var sentinelSeekRequired = Math.abs(clampedSentinelSeekTime - currentTime) > seekSentinelTolerance
-    var sentinelActionTaken = false
+    let sentinelActionTaken = false
 
     if (sentinelSeekRequired) {
-      var mediaElement = mediaElement
-      sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
+      const mediaElement = mediaElement
+
+      sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, () => {
         mediaElement.seek(clampedSentinelSeekTime * 1000)
       })
     } else if (sentinelIntervalNumber < 3) {
@@ -677,11 +671,13 @@ function Cehtml () {
   }
 
   function shouldBePausedSentinel () {
-    var sentinelPauseRequired = timeHasAdvanced
-    var sentinelActionTaken = false
+    const sentinelPauseRequired = timeHasAdvanced
+    let sentinelActionTaken = false
+
     if (sentinelPauseRequired) {
-      var mediaElement = mediaElement
-      sentinelActionTaken = nextSentinelAttempt(sentinelLimits.pause, function () {
+      const mediaElement = mediaElement
+
+      sentinelActionTaken = nextSentinelAttempt(sentinelLimits.pause, () => {
         mediaElement.play(0)
       })
     }
@@ -689,16 +685,18 @@ function Cehtml () {
   }
 
   function enterCompleteSentinel () {
-    var sentinelCompleteRequired = !timeHasAdvanced && sentinelTimeIsNearEnd
+    const sentinelCompleteRequired = !timeHasAdvanced && sentinelTimeIsNearEnd
+
     if (sentinelCompleteRequired) {
       emitEvent(MediaPlayerBase.EVENT.SENTINEL_COMPLETE)
       onEndOfMedia()
     }
+
     return sentinelCompleteRequired
   }
 
   function nextSentinelAttempt (sentinelInfo, attemptFn) {
-    var currentAttemptCount, maxAttemptCount
+    let currentAttemptCount, maxAttemptCount
 
     sentinelInfo.currentAttemptCount += 1
     currentAttemptCount = sentinelInfo.currentAttemptCount

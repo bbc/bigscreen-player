@@ -1,5 +1,5 @@
 function DashManifests () {
-  var slidingWindowString = `<?xml version="1.0" encoding="UTF-8"?>
+  const slidingWindowString = `<?xml version="1.0" encoding="UTF-8"?>
                <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
                xmlns="urn:mpeg:dash:schema:mpd:2011" 
                xmlns:cenc="urn:mpeg:cenc:2013" 
@@ -29,7 +29,7 @@ function DashManifests () {
                  </Period>
                </MPD>`
 
-  var growingWindowString = `<?xml version="1.0" encoding="UTF-8"?>
+  const growingWindowString = `<?xml version="1.0" encoding="UTF-8"?>
                <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
                xmlns="urn:mpeg:dash:schema:mpd:2011" 
                xmlns:cenc="urn:mpeg:cenc:2013" 
@@ -58,7 +58,7 @@ function DashManifests () {
                  </Period>
                </MPD>`
 
-  var badAttributesString = `<?xml version="1.0" encoding="UTF-8"?>
+  const badAttributesString = `<?xml version="1.0" encoding="UTF-8"?>
                            <MPD 
                            type="dynamic"
                            availabilityStartTime="not-valid-iso-time">
@@ -75,16 +75,20 @@ function DashManifests () {
   function slidingWindow () {
     return getXML(slidingWindowString)
   }
+
   function growingWindow () {
     return getXML(growingWindowString)
   }
+
   function badAttributes () {
     return getXML(badAttributesString)
   }
+
   function getXML (string) {
-    var parser = new DOMParser()
+    const parser = new DOMParser()
     return parser.parseFromString(string, 'application/xml')
   }
+
   return {
     slidingWindow: slidingWindow,
     growingWindow: growingWindow,

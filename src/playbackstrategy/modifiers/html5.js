@@ -2,40 +2,7 @@ import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DOMHelpers from '../../domhelpers'
 
 function Html5 () {
-  var eventCallback
-  var eventCallbacks = []
-  var state = MediaPlayerBase.STATE.EMPTY
-
-  var mediaElement
-  var sourceElement
-
-  var trustZeroes = false
-  var ignoreNextPauseEvent = false
-  var nearEndOfMedia
-  var readyToPlayFrom
-
-  var mediaType
-  var source
-  var mimeType
-
-  var postBufferingState
-  var targetSeekTime
-  var seekFinished
-
-  var count
-  var timeoutHappened
-
-  var disableSentinels
-  var disableSeekSentinel
-  var hasSentinelTimeChangedWithinTolerance
-  var enterBufferingSentinelAttemptCount
-  var sentinelSeekTime
-  var seekSentinelTolerance
-  var sentinelInterval
-  var sentinelIntervalNumber
-  var lastSentinelTime
-
-  var sentinelLimits = {
+  const sentinelLimits = {
     pause: {
       maximumAttempts: 2,
       successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
@@ -50,8 +17,41 @@ function Html5 () {
     }
   }
 
+  let eventCallback
+  let eventCallbacks = []
+  let state = MediaPlayerBase.STATE.EMPTY
+
+  let mediaElement
+  let sourceElement
+
+  let trustZeroes = false
+  let ignoreNextPauseEvent = false
+  let nearEndOfMedia
+  let readyToPlayFrom
+
+  let mediaType
+  let source
+  let mimeType
+
+  let postBufferingState
+  let targetSeekTime
+  let seekFinished
+
+  let count
+  let timeoutHappened
+
+  let disableSentinels
+  let disableSeekSentinel
+  let hasSentinelTimeChangedWithinTolerance
+  let enterBufferingSentinelAttemptCount
+  let sentinelSeekTime
+  let seekSentinelTolerance
+  let sentinelInterval
+  let sentinelIntervalNumber
+  let lastSentinelTime
+
   function emitEvent (eventType, eventLabels) {
-    var event = {
+    const event = {
       type: eventType,
       currentTime: getCurrentTime(),
       seekableRange: getSeekableRange(),
@@ -62,14 +62,14 @@ function Html5 () {
     }
 
     if (eventLabels) {
-      for (var key in eventLabels) {
+      for (const key in eventLabels) {
         if (eventLabels.hasOwnProperty(key)) {
           event[key] = eventLabels[key]
         }
       }
     }
 
-    for (var index = 0; index < eventCallbacks.length; index++) {
+    for (let index = 0; index < eventCallbacks.length; index++) {
       eventCallbacks[index](event)
     }
   }
@@ -104,17 +104,19 @@ function Html5 () {
   }
 
   function setSeekSentinelTolerance () {
-    var ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15
-    var LIVE_SEEK_SENTINEL_TOLERANCE = 30
+    const ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15
+    const LIVE_SEEK_SENTINEL_TOLERANCE = 30
 
     seekSentinelTolerance = ON_DEMAND_SEEK_SENTINEL_TOLERANCE
+
     if (isLiveMedia()) {
       seekSentinelTolerance = LIVE_SEEK_SENTINEL_TOLERANCE
     }
   }
 
   function generateSourceElement (url, mimeType) {
-    var sourceElement = document.createElement('source')
+    const sourceElement = document.createElement('source')
+
     sourceElement.src = url
     sourceElement.type = mimeType
     return sourceElement
@@ -139,7 +141,7 @@ function Html5 () {
   }
 
   function enterBufferingSentinel () {
-    var sentinelShouldFire = !hasSentinelTimeChangedWithinTolerance && !nearEndOfMedia
+    let sentinelShouldFire = !hasSentinelTimeChangedWithinTolerance && !nearEndOfMedia
 
     if (getCurrentTime() === 0) {
       sentinelShouldFire = trustZeroes && sentinelShouldFire
@@ -189,6 +191,7 @@ function Html5 () {
     if (hasSentinelTimeChangedWithinTolerance) {
       return fireExitBufferingSentinel()
     }
+
     return false
   }
 
@@ -197,8 +200,8 @@ function Html5 () {
       return false
     }
 
-    var currentTime = getCurrentTime()
-    var sentinelActionTaken = false
+    const currentTime = getCurrentTime()
+    let sentinelActionTaken = false
 
     if (Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
       sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
@@ -214,7 +217,8 @@ function Html5 () {
   }
 
   function shouldBePausedSentinel () {
-    var sentinelActionTaken = false
+    let sentinelActionTaken = false
+
     if (hasSentinelTimeChangedWithinTolerance) {
       sentinelActionTaken = nextSentinelAttempt(sentinelLimits.pause, function () {
         pauseMediaElement()
@@ -225,7 +229,7 @@ function Html5 () {
   }
 
   function nextSentinelAttempt (sentinelInfo, attemptFn) {
-    var currentAttemptCount, maxAttemptCount
+    let currentAttemptCount, maxAttemptCount
 
     sentinelInfo.currentAttemptCount += 1
     currentAttemptCount = sentinelInfo.currentAttemptCount
@@ -258,23 +262,21 @@ function Html5 () {
   }
 
   function setSentinels (sentinels) {
-    if (disableSentinels) {
-      return
-    }
+    if (disableSentinels) { return }
 
     clearSentinels()
     sentinelIntervalNumber = 0
     lastSentinelTime = getCurrentTime()
-    sentinelInterval = setInterval(function () {
+    sentinelInterval = setInterval(() => {
       sentinelIntervalNumber += 1
-      var newTime = getCurrentTime()
+      const newTime = getCurrentTime()
 
       hasSentinelTimeChangedWithinTolerance = (Math.abs(newTime - lastSentinelTime) > 0.2)
       nearEndOfMedia = (getDuration() - (newTime || lastSentinelTime)) <= 1
       lastSentinelTime = newTime
 
-      for (var i = 0; i < sentinels.length; i++) {
-        var sentinelActivated = sentinels[i].call()
+      for (let i = 0; i < sentinels.length; i++) {
+        const sentinelActivated = sentinels[i].call()
 
         if (getCurrentTime() > 0) {
           trustZeroes = false
@@ -287,7 +289,7 @@ function Html5 () {
     }, 1100)
   }
 
-  function reportError (errorMessage) {
+  function reportError (_errorMessage) {
     emitEvent(MediaPlayerBase.EVENT.ERROR)
   }
 
@@ -325,6 +327,7 @@ function Html5 () {
     if (mediaElement && isReadyToPlayFrom()) {
       return mediaElement.duration
     }
+
     return undefined
   }
 
@@ -392,22 +395,20 @@ function Html5 () {
     count = 0
     timeoutHappened = false
     if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.restartTimeout) {
-      setTimeout(function () {
-        timeoutHappened = true
-      }, window.bigscreenPlayer.overrides.restartTimeout)
+      setTimeout(() => { timeoutHappened = true }, window.bigscreenPlayer.overrides.restartTimeout)
     } else {
       timeoutHappened = true
     }
   }
 
   function emitSeekFinishedAtCorrectStartingPoint () {
-    var isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance
+    let isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance
 
     if (sentinelSeekTime === undefined) {
       isAtCorrectStartingPoint = true
     }
 
-    var isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint
+    const isPlayingAtCorrectTime = getState() === MediaPlayerBase.STATE.PLAYING && isAtCorrectStartingPoint
 
     if (isPlayingAtCorrectTime && count >= 5 && timeoutHappened && !seekFinished) {
       emitEvent(MediaPlayerBase.EVENT.SEEK_FINISHED)
@@ -433,6 +434,7 @@ function Html5 () {
 
   function exitBuffering () {
     metadataLoaded()
+
     if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
       return
     } else if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
@@ -444,6 +446,7 @@ function Html5 () {
 
   function metadataLoaded () {
     readyToPlayFrom = true
+
     if (waitingToPlayFrom()) {
       deferredPlayFrom()
     }
@@ -477,7 +480,8 @@ function Html5 () {
   }
 
   function seekTo (seconds) {
-    var clampedTime = getClampedTimeForPlayFrom(seconds)
+    const clampedTime = getClampedTimeForPlayFrom(seconds)
+
     mediaElement.currentTime = clampedTime
     sentinelSeekTime = clampedTime
   }
@@ -498,7 +502,7 @@ function Html5 () {
     * Time (in seconds) compared to current time within which seeking has no effect.
     * @constant {Number}
   */
-  var CURRENT_TIME_TOLERANCE = 1
+  const CURRENT_TIME_TOLERANCE = 1
 
   /**
     * Check whether a time value is near to the current media play time.
@@ -506,8 +510,9 @@ function Html5 () {
     * @protected
   */
   function isNearToCurrentTime (seconds) {
-    var currentTime = getCurrentTime()
-    var targetTime = getClampedTime(seconds)
+    const currentTime = getCurrentTime()
+    const targetTime = getClampedTime(seconds)
+
     return Math.abs(currentTime - targetTime) <= CURRENT_TIME_TOLERANCE
   }
 
@@ -518,9 +523,10 @@ function Html5 () {
     * @protected
   */
   function getClampedTime (seconds) {
-    var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
-    var range = getSeekableRange()
-    var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
+    const CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
+    const range = getSeekableRange()
+    const nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
+
     if (seconds < range.start) {
       return range.start
     } else if (seconds > nearToEnd) {
@@ -540,8 +546,10 @@ function Html5 () {
     mimeType = undefined
     targetSeekTime = undefined
     sentinelSeekTime = undefined
+
     clearSentinels()
     destroyMediaElement()
+
     readyToPlayFrom = false
   }
 
@@ -590,36 +598,36 @@ function Html5 () {
   }
 
   return {
-    addEventCallback: function (thisArg, newCallback) {
-      eventCallback = function (event) {
-        newCallback.call(thisArg, event)
-      }
+    addEventCallback: (thisArg, newCallback) => {
+      eventCallback = (event) => newCallback.call(thisArg, event)
       eventCallbacks.push(eventCallback)
     },
 
-    removeEventCallback: function (callback) {
-      var index = eventCallbacks.indexOf(callback)
+    removeEventCallback: (callback) => {
+      const index = eventCallbacks.indexOf(callback)
+
       if (index !== -1) {
         eventCallbacks.splice(index, 1)
       }
     },
 
-    removeAllEventCallbacks: function () {
+    removeAllEventCallbacks: () => {
       eventCallbacks = []
     },
 
-    initialiseMedia: function (type, url, mediaMimeType, sourceContainer, opts) {
+    initialiseMedia: (type, url, mediaMimeType, sourceContainer, opts) => {
+      opts = opts || { }
       disableSentinels = opts.disableSentinels
       disableSeekSentinel = opts.disableSeekSentinel
       mediaType = type
       source = url
       mimeType = mediaMimeType
-      opts = opts || {}
 
       emitSeekAttempted()
 
       if (getState() === MediaPlayerBase.STATE.EMPTY) {
-        var idSuffix = 'Video'
+        let idSuffix = 'Video'
+
         if (mediaType === MediaPlayerBase.TYPE.AUDIO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO) {
           idSuffix = 'Audio'
         }
@@ -660,15 +668,13 @@ function Html5 () {
       }
     },
 
-    setPlaybackRate: function (rate) {
+    setPlaybackRate: (rate) => {
       mediaElement.playbackRate = rate
     },
 
-    getPlaybackRate: function () {
-      return mediaElement.playbackRate
-    },
+    getPlaybackRate: () => mediaElement.playbackRate,
 
-    playFrom: function (seconds) {
+    playFrom: (seconds) => {
       postBufferingState = MediaPlayerBase.STATE.PLAYING
       targetSeekTime = seconds
       sentinelLimits.seek.currentAttemptCount = 0
@@ -703,7 +709,7 @@ function Html5 () {
       }
     },
 
-    beginPlayback: function () {
+    beginPlayback: () => {
       postBufferingState = MediaPlayerBase.STATE.PLAYING
       sentinelSeekTime = undefined
 
@@ -720,12 +726,12 @@ function Html5 () {
       }
     },
 
-    beginPlaybackFrom: function (seconds) {
+    beginPlaybackFrom: (seconds) => {
       postBufferingState = MediaPlayerBase.STATE.PLAYING
       targetSeekTime = seconds
       sentinelLimits.seek.currentAttemptCount = 0
 
-      switch (this.getState()) {
+      switch (getState()) {
         case MediaPlayerBase.STATE.STOPPED:
           trustZeroes = true
           toBuffering()
@@ -738,7 +744,7 @@ function Html5 () {
       }
     },
 
-    pause: function () {
+    pause: () => {
       postBufferingState = MediaPlayerBase.STATE.PAUSED
       switch (getState()) {
         case MediaPlayerBase.STATE.PAUSED:
@@ -764,7 +770,7 @@ function Html5 () {
       }
     },
 
-    resume: function () {
+    resume: () => {
       postBufferingState = MediaPlayerBase.STATE.PLAYING
       switch (getState()) {
         case MediaPlayerBase.STATE.PLAYING:
@@ -788,7 +794,7 @@ function Html5 () {
       }
     },
 
-    stop: function () {
+    stop: () => {
       switch (getState()) {
         case MediaPlayerBase.STATE.STOPPED:
           break
@@ -807,7 +813,7 @@ function Html5 () {
       }
     },
 
-    reset: function () {
+    reset: () => {
       switch (getState()) {
         case MediaPlayerBase.STATE.EMPTY:
           break
@@ -823,7 +829,7 @@ function Html5 () {
       }
     },
 
-    getSeekableRange: function () {
+    getSeekableRange: () => {
       switch (getState()) {
         case MediaPlayerBase.STATE.STOPPED:
         case MediaPlayerBase.STATE.ERROR:
@@ -835,24 +841,13 @@ function Html5 () {
       return undefined
     },
 
-    getState: function () {
-      return state
-    },
-
-    getPlayerElement: function () {
-      return mediaElement
-    },
-
+    getState: () => state,
+    getPlayerElement: () => mediaElement,
     getSource: getSource,
-
     getMimeType: getMimeType,
-
     getCurrentTime: getCurrentTime,
-
     getDuration: getDuration,
-
     toPaused: toPaused,
-
     toPlaying: toPlaying
   }
 }

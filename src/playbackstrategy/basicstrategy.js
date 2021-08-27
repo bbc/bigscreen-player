@@ -6,17 +6,18 @@ import DynamicWindowUtils from '../dynamicwindowutils'
 import DOMHelpers from '../domhelpers'
 
 function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
-  var eventCallbacks = []
-  var errorCallback
-  var timeUpdateCallback
+  const CLAMP_OFFSET_SECONDS = 1.1
 
-  var mediaElement
-  var metaDataLoaded
-  var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0
-  var CLAMP_OFFSET_SECONDS = 1.1
+  let eventCallbacks = []
+  let errorCallback
+  let timeUpdateCallback
+
+  let mediaElement
+  let metaDataLoaded
+  let timeCorrection = mediaSources.time() && mediaSources.time().correction || 0
 
   function publishMediaState (mediaState) {
-    for (var index = 0; index < eventCallbacks.length; index++) {
+    for (let index = 0; index < eventCallbacks.length; index++) {
       eventCallbacks[index](mediaState)
     }
   }
@@ -33,7 +34,7 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
     }
   }
 
-  function load (mimeType, startTime) {
+  function load (_mimeType, startTime) {
     if (!mediaElement) {
       setUpMediaElement(startTime)
       setUpMediaListeners()
@@ -50,6 +51,7 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
     } else {
       mediaElement = document.createElement('video')
     }
+
     mediaElement.style.position = 'absolute'
     mediaElement.style.width = '100%'
     mediaElement.style.height = '100%'
@@ -102,6 +104,7 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
       if (windowType === WindowTypes.SLIDING) {
         startAutoResumeTimeout()
       }
+
       publishMediaState(MediaState.PAUSED)
     } else {
       publishMediaState(MediaState.PLAYING)
@@ -116,7 +119,7 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
     publishTimeUpdate()
   }
 
-  function onError (event) {
+  function onError (_event) {
     publishError()
   }
 
@@ -146,6 +149,7 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
     if (mediaElement && metaDataLoaded) {
       return mediaElement.duration
     }
+
     return 0
   }
 
@@ -154,14 +158,13 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 
   function addEventCallback (thisArg, newCallback) {
-    var eventCallback = function (event) {
-      newCallback.call(thisArg, event)
-    }
+    const eventCallback = (event) => newCallback.call(thisArg, event)
     eventCallbacks.push(eventCallback)
   }
 
   function removeEventCallback (callback) {
-    var index = eventCallbacks.indexOf(callback)
+    const index = eventCallbacks.indexOf(callback)
+
     if (index !== -1) {
       eventCallbacks.splice(index, 1)
     }
@@ -173,9 +176,7 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
       getSeekableRange(),
       addEventCallback,
       removeEventCallback,
-      function (event) {
-        return event !== MediaState.PAUSED
-      },
+      (event) => event !== MediaState.PAUSED,
       play)
   }
 
@@ -184,7 +185,8 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 
   function setCurrentTime (time) {
-    if (metaDataLoaded) { // Without metadata we cannot clamp to seekableRange
+    // Without metadata we cannot clamp to seekableRange
+    if (metaDataLoaded) {
       mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection
     } else {
       mediaElement.currentTime = time + timeCorrection
@@ -204,15 +206,11 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 
   function addErrorCallback (thisArg, newErrorCallback) {
-    errorCallback = function (event) {
-      newErrorCallback.call(thisArg, event)
-    }
+    errorCallback = (event) => newErrorCallback.call(thisArg, event)
   }
 
   function addTimeUpdateCallback (thisArg, newTimeUpdateCallback) {
-    timeUpdateCallback = function () {
-      newTimeUpdateCallback.call(thisArg)
-    }
+    timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
   }
 
   function tearDown () {
@@ -249,8 +247,9 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 
   function pause (opts) {
+    opts = opts || { }
+
     mediaElement.pause()
-    opts = opts || {}
     if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
       startAutoResumeTimeout()
     }
@@ -262,8 +261,8 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
 
   return {
     transitions: {
-      canBePaused: function () { return true },
-      canBeginSeek: function () { return true }
+      canBePaused: () => true,
+      canBeginSeek: () => true
     },
     addEventCallback: addEventCallback,
     removeEventCallback: removeEventCallback,
@@ -286,8 +285,6 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 }
 
-BasicStrategy.getLiveSupport = function () {
-  return LiveSupport.SEEKABLE
-}
+BasicStrategy.getLiveSupport = () => LiveSupport.SEEKABLE
 
 export default BasicStrategy

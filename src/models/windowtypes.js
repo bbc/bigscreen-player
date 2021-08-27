@@ -1,4 +1,4 @@
-var WindowTypes = {
+const WindowTypes = {
   STATIC: 'staticWindow',
   GROWING: 'growingWindow',
   SLIDING: 'slidingWindow'

@@ -1,6 +1,6 @@
 import DOMHelpers from '../domhelpers'
 
-var appElement, logBox, logContainer, staticContainer, staticBox
+let appElement, logBox, logContainer, staticContainer, staticBox
 
 function init () {
   logBox = document.createElement('div')
@@ -61,8 +61,9 @@ function setRootElement (root) {
 }
 
 function render (logData) {
-  var dynamicLogs = logData.dynamic
-  var LINES_TO_DISPLAY = 29
+  const LINES_TO_DISPLAY = 29
+  let dynamicLogs = logData.dynamic
+
   if (dynamicLogs.length === 0) {
     logContainer.textContent = ''
   }
@@ -74,8 +75,9 @@ function render (logData) {
 }
 
 function updateStaticElements (log) {
-  var existingElement = document.getElementById(log.key)
-  var text = log.key + ': ' + log.value
+  const existingElement = document.getElementById(log.key)
+  const text = log.key + ': ' + log.value
+
   if (existingElement) {
     if (text !== existingElement.textContent) {
       existingElement.textContent = text
@@ -86,7 +88,7 @@ function updateStaticElements (log) {
 }
 
 function createNewStaticElement (key, value) {
-  var staticLog = document.createElement('div')
+  const staticLog = document.createElement('div')
 
   staticLog.id = key
   staticLog.style.paddingBottom = '1%'

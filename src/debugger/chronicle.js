@@ -1,9 +1,8 @@
-var chronicle = []
-var firstTimeElement
-var compressTime
-var updateCallbacks = []
+let chronicle = []
+let updateCallbacks = []
+let firstTimeElement, compressTime
 
-var TYPES = {
+const TYPES = {
   INFO: 'info',
   ERROR: 'error',
   EVENT: 'event',
@@ -27,7 +26,8 @@ function registerForUpdates (callback) {
 }
 
 function unregisterForUpdates (callback) {
-  var indexOf = updateCallbacks.indexOf(callback)
+  const indexOf = updateCallbacks.indexOf(callback)
+
   if (indexOf !== -1) {
     updateCallbacks.splice(indexOf, 1)
   }
@@ -57,7 +57,8 @@ function time (time) {
     pushToChronicle({type: TYPES.TIME, currentTime: time})
     compressTime = true
   } else {
-    var lastElement = chronicle.pop()
+    const lastElement = chronicle.pop()
+
     lastElement.currentTime = time
     pushToChronicle(lastElement)
   }
@@ -80,15 +81,14 @@ function pushToChronicle (obj) {
     firstTimeElement = true
     compressTime = false
   }
+
   timestamp(obj)
   chronicle.push(obj)
   updates()
 }
 
 function updates () {
-  updateCallbacks.forEach(function (callback) {
-    callback(retrieve())
-  })
+  updateCallbacks.forEach((callback) => callback(retrieve()))
 }
 
 function tearDown () {

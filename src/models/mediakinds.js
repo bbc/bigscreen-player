@@ -1,4 +1,4 @@
-var MediaKinds = {
+const MediaKinds = {
   AUDIO: 'audio',
   VIDEO: 'video'
 }

@@ -1,4 +1,4 @@
-var TransportControlPosition = {
+const TransportControlPosition = {
   /** No transport controls are visible. */
   NONE: 0,
   /** The basic transport controls are visible. */

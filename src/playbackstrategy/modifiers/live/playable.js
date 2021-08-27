@@ -2,11 +2,7 @@ import MediaPlayerBase from '../mediaplayerbase'
 
 function PlayableLivePlayer (mediaPlayer) {
   return {
-    beginPlayback: function beginPlayback () {
-      mediaPlayer.beginPlayback()
-    },
-
-    initialiseMedia: function initialiseMedia (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
+    initialiseMedia: (mediaType, sourceUrl, mimeType, sourceContainer, opts) => {
       if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
         mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO
       } else {
@@ -16,41 +12,23 @@ function PlayableLivePlayer (mediaPlayer) {
       mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts)
     },
 
-    stop: function stop () {
-      mediaPlayer.stop()
-    },
+    beginPlayback: () => mediaPlayer.beginPlayback(),
+    stop: () => mediaPlayer.stop(),
+    reset: () => mediaPlayer.reset(),
+    getState: () => mediaPlayer.getState(),
+    getSource: () => mediaPlayer.getSource(),
+    getMimeType: () => mediaPlayer.getMimeType(),
 
-    reset: function reset () {
-      mediaPlayer.reset()
-    },
+    addEventCallback: (thisArg, callback) =>
+      mediaPlayer.addEventCallback(thisArg, callback),
 
-    getState: function getState () {
-      return mediaPlayer.getState()
-    },
+    removeEventCallback: (thisArg, callback) =>
+      mediaPlayer.removeEventCallback(thisArg, callback),
 
-    getSource: function getSource () {
-      return mediaPlayer.getSource()
-    },
+    removeAllEventCallbacks: () =>
+      mediaPlayer.removeAllEventCallbacks(),
 
-    getMimeType: function getMimeType () {
-      return mediaPlayer.getMimeType()
-    },
-
-    addEventCallback: function addEventCallback (thisArg, callback) {
-      mediaPlayer.addEventCallback(thisArg, callback)
-    },
-
-    removeEventCallback: function removeEventCallback (thisArg, callback) {
-      mediaPlayer.removeEventCallback(thisArg, callback)
-    },
-
-    removeAllEventCallbacks: function removeAllEventCallbacks () {
-      mediaPlayer.removeAllEventCallbacks()
-    },
-
-    getPlayerElement: function getPlayerElement () {
-      return mediaPlayer.getPlayerElement()
-    }
+    getPlayerElement: () => mediaPlayer.getPlayerElement()
   }
 }
 

@@ -1,5 +1,5 @@
 function HlsManifests () {
-  var slidingWindowString = '#EXTM3U\n' +
+  const slidingWindowString = '#EXTM3U\n' +
                              '#EXT-X-VERSION:2\n' +
                              '#EXT-X-MEDIA-SEQUENCE:179532414\n' +
                              '#EXT-X-TARGETDURATION:8\n' +
@@ -14,7 +14,7 @@ function HlsManifests () {
                              '#EXTINF:6.50, no desc\n' +
                              'content-audio_2=96000-video=1374000-179532414.ts\n'
 
-  var invalidDateString = '#EXTM3U\n' +
+  const invalidDateString = '#EXTM3U\n' +
                            '#EXT-X-VERSION:2\n' +
                            '#EXT-X-MEDIA-SEQUENCE:179532414\n' +
                            '#EXT-X-TARGETDURATION:8\n' +

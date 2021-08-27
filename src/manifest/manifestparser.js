@@ -2,33 +2,31 @@ import TimeUtils from './../utils/timeutils'
 
 function parseMPD (manifest, dateWithOffset) {
   try {
-    var mpd = manifest.getElementsByTagName('MPD')[0]
-
-    var availabilityStartTime = Date.parse(mpd.getAttribute('availabilityStartTime'))
-
-    var tsbdAttr = mpd.getAttribute('timeShiftBufferDepth')
-    var timeShiftBufferDepth = tsbdAttr && TimeUtils.durationToSeconds(tsbdAttr)
+    const mpd = manifest.getElementsByTagName('MPD')[0]
+    const availabilityStartTime = Date.parse(mpd.getAttribute('availabilityStartTime'))
+    const tsbdAttr = mpd.getAttribute('timeShiftBufferDepth')
+    const timeShiftBufferDepth = tsbdAttr && TimeUtils.durationToSeconds(tsbdAttr)
 
     // Getting zeroth SegmentTemplate may grab either audio or video
     // data. This shouldn't matter as we only use the factor of
     // duration/timescale, which is the same for both.
-    var segmentTemplate = manifest.getElementsByTagName('SegmentTemplate')[0]
-    var timescale = parseFloat(segmentTemplate.getAttribute('timescale'))
-    var duration = parseFloat(segmentTemplate.getAttribute('duration'))
-    var oneSegment = 1000 * duration / timescale
+    const segmentTemplate = manifest.getElementsByTagName('SegmentTemplate')[0]
+    const timescale = parseFloat(segmentTemplate.getAttribute('timescale'))
+    const duration = parseFloat(segmentTemplate.getAttribute('duration'))
+    const oneSegment = 1000 * duration / timescale
 
     if (availabilityStartTime && oneSegment) {
-      var windowEndTime = dateWithOffset - (timeShiftBufferDepth ? availabilityStartTime : 0) - oneSegment
-      var windowStartTime = timeShiftBufferDepth ? windowEndTime - (timeShiftBufferDepth * 1000) : availabilityStartTime
-      var timeCorrection = timeShiftBufferDepth ? windowStartTime / 1000 : 0
+      const windowEndTime = dateWithOffset - (timeShiftBufferDepth ? availabilityStartTime : 0) - oneSegment
+      const windowStartTime = timeShiftBufferDepth ? windowEndTime - (timeShiftBufferDepth * 1000) : availabilityStartTime
+      const timeCorrection = timeShiftBufferDepth ? windowStartTime / 1000 : 0
+
+      return {
+        windowStartTime: windowStartTime,
+        windowEndTime: windowEndTime,
+        correction: timeCorrection
+      }
     } else {
       return { error: 'Error parsing DASH manifest attributes' }
-    }
-
-    return {
-      windowStartTime: windowStartTime,
-      windowEndTime: windowEndTime,
-      correction: timeCorrection
     }
   } catch (e) {
     return { error: 'Error parsing DASH manifest' }
@@ -36,40 +34,43 @@ function parseMPD (manifest, dateWithOffset) {
 }
 
 function parseM3U8 (manifest) {
-  var windowStartTime = getM3U8ProgramDateTime(manifest)
-  var duration = getM3U8WindowSizeInSeconds(manifest)
+  const windowStartTime = getM3U8ProgramDateTime(manifest)
+  const duration = getM3U8WindowSizeInSeconds(manifest)
 
   if (windowStartTime && duration) {
-    var windowEndTime = windowStartTime + duration * 1000
+    const windowEndTime = windowStartTime + duration * 1000
+
+    return {
+      windowStartTime: windowStartTime,
+      windowEndTime: windowEndTime
+    }
   } else {
     return { error: 'Error parsing HLS manifest' }
-  }
-  return {
-    windowStartTime: windowStartTime,
-    windowEndTime: windowEndTime
   }
 }
 
 function getM3U8ProgramDateTime (data) {
-  var programDateTime
-  var match = /^#EXT-X-PROGRAM-DATE-TIME:(.*)$/m.exec(data)
+  const match = /^#EXT-X-PROGRAM-DATE-TIME:(.*)$/m.exec(data)
+
   if (match) {
-    var parsedDate = Date.parse(match[1])
+    const parsedDate = Date.parse(match[1])
+
     if (!isNaN(parsedDate)) {
-      programDateTime = parsedDate
+      return parsedDate
     }
   }
-  return programDateTime
 }
 
 function getM3U8WindowSizeInSeconds (data) {
-  var regex = /#EXTINF:(\d+(?:\.\d+)?)/g
-  var matches = regex.exec(data)
-  var result = 0
+  const regex = /#EXTINF:(\d+(?:\.\d+)?)/g
+  let matches = regex.exec(data)
+  let result = 0
+
   while (matches) {
     result += (+matches[1])
     matches = regex.exec(data)
   }
+
   return Math.floor(result)
 }
 

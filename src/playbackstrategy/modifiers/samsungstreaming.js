@@ -6,36 +6,35 @@ import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DebugTool from '../../debugger/debugtool'
 
 function SamsungStreaming () {
-  var state = MediaPlayerBase.STATE.EMPTY
-  var currentPlayer
-  var deferSeekingTo = null
-  var nextSeekingTo = null
-  var postBufferingState = null
-  var tryingToPause = false
-  var currentTimeKnown = false
-  var updatingTime = false
-  var lastWindowRanged = false
+  let state = MediaPlayerBase.STATE.EMPTY
+  let currentPlayer
+  let deferSeekingTo = null
+  let nextSeekingTo = null
+  let postBufferingState = null
+  let tryingToPause = false
+  let currentTimeKnown = false
+  let updatingTime = false
+  let lastWindowRanged = false
 
-  var mediaType
-  var source
-  var mimeType
+  let mediaType
+  let source
+  let mimeType
 
-  var range
-  var currentTime
+  let range
+  let currentTime
 
-  var eventCallbacks = []
-  var eventCallback
+  let eventCallbacks = []
+  let eventCallback
 
-  var playerPlugin
-  var tvmwPlugin
-  var originalSource
+  let playerPlugin
+  let tvmwPlugin
+  let originalSource
 
   try {
     _registerSamsungPlugins()
-  } catch (ignoreErr) {
-  }
+  } catch (ignoreErr) { }
 
-  var PlayerEventCodes = {
+  const PlayerEventCodes = {
     CONNECTION_FAILED: 1,
     AUTHENTICATION_FAILED: 2,
     STREAM_NOT_FOUND: 3,
@@ -58,7 +57,7 @@ function SamsungStreaming () {
     CUSTOM: 20
   }
 
-  var PlayerEmps = {
+  const PlayerEmps = {
     Player: 0,
     StreamingPlayer: 1
   }
@@ -68,12 +67,12 @@ function SamsungStreaming () {
   * Jumping to time lower than 3s causes error in PlayFrom60 on HLS live - player jumps to previous chunk.
   * Value set to 4s to be ahead of potential wrong player jumps.
   */
-  var CURRENT_TIME_TOLERANCE = 4
-  var CLAMP_OFFSET_FROM_END_OF_LIVE_RANGE = 10
-  var CLAMP_OFFSET_FROM_START_OF_RANGE = 1.1
-  var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
-  var RANGE_UPDATE_TOLERANCE = 8
-  var RANGE_END_TOLERANCE = 100
+  const CURRENT_TIME_TOLERANCE = 4
+  const CLAMP_OFFSET_FROM_END_OF_LIVE_RANGE = 10
+  const CLAMP_OFFSET_FROM_START_OF_RANGE = 1.1
+  const CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
+  const RANGE_UPDATE_TOLERANCE = 8
+  const RANGE_END_TOLERANCE = 100
 
   function initialiseMedia (type, url, mediaMimeType) {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
@@ -126,7 +125,7 @@ function SamsungStreaming () {
 
   function playFrom (seconds) {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
-    var seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds
+    const seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds
 
     switch (getState()) {
       case MediaPlayerBase.STATE.BUFFERING:
@@ -187,7 +186,7 @@ function SamsungStreaming () {
 
   function beginPlaybackFrom (seconds) {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
-    var seekingTo = getSeekableRange() ? _getClampedTimeForPlayFrom(seconds) : seconds
+    let seekingTo = getSeekableRange() ? _getClampedTimeForPlayFrom(seconds) : seconds
 
     // StartPlayback from near start of range causes spoiler defect
     if (seekingTo < CLAMP_OFFSET_FROM_START_OF_RANGE && _isLiveMedia()) {
@@ -280,18 +279,18 @@ function SamsungStreaming () {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
-        break
+        return undefined
 
       default:
         return range
     }
-    return undefined
   }
 
   function getDuration () {
     if (range) {
       return range.end
     }
+
     return undefined
   }
 
@@ -307,6 +306,7 @@ function SamsungStreaming () {
     if (_isHlsMimeType() && _isLiveMedia() && !updatingTime) {
       _updateRange()
     }
+
     state = MediaPlayerBase.STATE.PLAYING
     _emitEvent(MediaPlayerBase.EVENT.PLAYING)
   }
@@ -349,16 +349,17 @@ function SamsungStreaming () {
     playerPlugin = document.getElementById('sefPlayer')
     tvmwPlugin = document.getElementById('pluginObjectTVMW')
     originalSource = tvmwPlugin.GetSource()
-    window.addEventListener('hide', function () {
+    window.addEventListener('hide', () => {
       stop()
       tvmwPlugin.SetSource(originalSource)
     }, false)
   }
 
   function _getClampedTime (seconds) {
-    var range = getSeekableRange()
-    var offsetFromEnd = _getClampOffsetFromConfig()
-    var nearToEnd = Math.max(range.end - offsetFromEnd, range.start)
+    const range = getSeekableRange()
+    const offsetFromEnd = _getClampOffsetFromConfig()
+    const nearToEnd = Math.max(range.end - offsetFromEnd, range.start)
+
     if (seconds < range.start) {
       return range.start
     } else if (seconds > nearToEnd) {
@@ -372,12 +373,14 @@ function SamsungStreaming () {
     if (currentPlayer !== undefined) {
       playerPlugin.Close()
     }
+
     playerPlugin.Open('Player', '1.010', 'Player')
     currentPlayer = PlayerEmps.Player
   }
 
   function _isLiveRangeOutdated () {
-    var time = Math.floor(currentTime)
+    const time = Math.floor(currentTime)
+
     if (time % 8 === 0 && !updatingTime && lastWindowRanged !== time) {
       lastWindowRanged = time
       return true
@@ -390,6 +393,7 @@ function SamsungStreaming () {
     if (currentPlayer !== undefined) {
       playerPlugin.Close()
     }
+
     playerPlugin.Open('StreamingPlayer', '1.0', 'StreamingPlayer')
     currentPlayer = PlayerEmps.StreamingPlayer
   }
@@ -400,7 +404,7 @@ function SamsungStreaming () {
   }
 
   function _initPlayer (source) {
-    var result = playerPlugin.Execute('InitPlayer', source)
+    const result = playerPlugin.Execute('InitPlayer', source)
 
     if (result !== 1) {
       _toError('Failed to initialize video: ' + source)
@@ -446,7 +450,7 @@ function SamsungStreaming () {
   }
 
   function _tryPauseWithStateTransition () {
-    var success = playerPlugin.Execute('Pause')
+    let success = playerPlugin.Execute('Pause')
     success = success && (success !== -1)
 
     if (success) {
@@ -457,7 +461,8 @@ function SamsungStreaming () {
   }
 
   function _onStatus () {
-    var state = getState()
+    const state = getState()
+
     if (state === MediaPlayerBase.STATE.PLAYING) {
       _emitEvent(MediaPlayerBase.EVENT.STATUS)
     }
@@ -465,18 +470,18 @@ function SamsungStreaming () {
 
   function _updateRange () {
     if (_isHlsMimeType() && _isLiveMedia()) {
-      var playingRange = playerPlugin.Execute('GetPlayingRange').split('-')
+      const playingRange = playerPlugin.Execute('GetPlayingRange').split('-')
+
       range = {
         start: Math.floor(playingRange[0]),
         end: Math.floor(playingRange[1])
       }
+
       // don't call range for the next 8 seconds
       updatingTime = true
-      setTimeout(function () {
-        updatingTime = false
-      }, RANGE_UPDATE_TOLERANCE * 1000)
+      setTimeout(() => { updatingTime = false }, RANGE_UPDATE_TOLERANCE * 1000)
     } else {
-      var duration = playerPlugin.Execute('GetDuration') / 1000
+      const duration = playerPlugin.Execute('GetDuration') / 1000
       range = {
         start: 0,
         end: duration
@@ -512,14 +517,15 @@ function SamsungStreaming () {
   }
 
   function _deferredSeek () {
-    var clampedTime = _getClampedTimeForPlayFrom(deferSeekingTo)
-    var isNearCurrentTime = _isNearToCurrentTime(clampedTime)
+    const clampedTime = _getClampedTimeForPlayFrom(deferSeekingTo)
+    const isNearCurrentTime = _isNearToCurrentTime(clampedTime)
 
     if (isNearCurrentTime) {
       toPlaying()
       deferSeekingTo = null
     } else {
-      var seekResult = _seekTo(clampedTime)
+      const seekResult = _seekTo(clampedTime)
+
       if (seekResult) {
         deferSeekingTo = null
       }
@@ -530,10 +536,13 @@ function SamsungStreaming () {
     if (currentPlayer === PlayerEmps.StreamingPlayer && !updatingTime) {
       _updateRange()
     }
-    var clampedTime = _getClampedTime(seconds)
+
+    const clampedTime = _getClampedTime(seconds)
+
     if (clampedTime !== seconds) {
       DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }')
     }
+
     return clampedTime
   }
 
@@ -546,11 +555,7 @@ function SamsungStreaming () {
   }
 
   function _registerEventHandlers () {
-    playerPlugin.OnEvent = function (eventType, param1/*, param2*/) {
-      if (eventType !== PlayerEventCodes.CURRENT_PLAYBACK_TIME) {
-        // DebugTool.info('Received event ' + eventType + ' ' + param1);
-      }
-
+    playerPlugin.OnEvent = (eventType, param1) => {
       switch (eventType) {
         case PlayerEventCodes.STREAM_INFO_READY:
           _updateRange()
@@ -558,7 +563,8 @@ function SamsungStreaming () {
 
         case PlayerEventCodes.CURRENT_PLAYBACK_TIME:
           if (range && _isLiveMedia()) {
-            var seconds = Math.floor(param1 / 1000)
+            const seconds = Math.floor(param1 / 1000)
+
             // jump to previous current time if PTS out of range occurs
             if (seconds > range.end + RANGE_END_TOLERANCE) {
               playFrom(currentTime)
@@ -568,6 +574,7 @@ function SamsungStreaming () {
               _updateRange()
             }
           }
+
           _onCurrentTime(param1)
           break
 
@@ -581,6 +588,7 @@ function SamsungStreaming () {
           if (!updatingTime) {
             _updateRange()
           }
+
           // [optimisation] if Stop() is not called after RENDERING_COMPLETE then player sends periodically BUFFERING_COMPLETE and RENDERING_COMPLETE
           // ignore BUFFERING_COMPLETE if player is already in COMPLETE state
           if (getState() !== MediaPlayerBase.STATE.COMPLETE) {
@@ -636,6 +644,7 @@ function SamsungStreaming () {
     _stopPlayer()
     _closePlugin()
     _unregisterEventHandlers()
+
     mediaType = undefined
     source = undefined
     mimeType = undefined
@@ -650,8 +659,8 @@ function SamsungStreaming () {
   }
 
   function _seekTo (seconds) {
-    var offset = seconds - getCurrentTime()
-    var success = _jump(offset)
+    const offset = seconds - getCurrentTime()
+    const success = _jump(offset)
 
     if (success === 1) {
       currentTime = seconds
@@ -661,14 +670,16 @@ function SamsungStreaming () {
   }
 
   function _seekToWithFailureStateTransition (seconds) {
-    var success = _seekTo(seconds)
+    const success = _seekTo(seconds)
+
     if (success !== 1) {
       toPlaying()
     }
   }
 
   function _jump (offsetSeconds) {
-    var result
+    let result
+
     if (offsetSeconds > 0) {
       result = playerPlugin.Execute('JumpForward', offsetSeconds)
       return result
@@ -679,7 +690,7 @@ function SamsungStreaming () {
   }
 
   function _isHlsMimeType () {
-    var mime = mimeType.toLowerCase()
+    const mime = mimeType.toLowerCase()
     return mime === 'application/vnd.apple.mpegurl' || mime === 'application/x-mpegurl'
   }
 
@@ -707,8 +718,9 @@ function SamsungStreaming () {
   }
 
   function _isNearToCurrentTime (seconds) {
-    var currentTime = getCurrentTime()
-    var targetTime = _getClampedTime(seconds)
+    const currentTime = getCurrentTime()
+    const targetTime = _getClampedTime(seconds)
+
     return Math.abs(currentTime - targetTime) <= CURRENT_TIME_TOLERANCE
   }
 
@@ -717,7 +729,7 @@ function SamsungStreaming () {
   }
 
   function _emitEvent (eventType, eventLabels) {
-    var event = {
+    const event = {
       type: eventType,
       currentTime: getCurrentTime(),
       seekableRange: getSeekableRange(),
@@ -728,36 +740,33 @@ function SamsungStreaming () {
     }
 
     if (eventLabels) {
-      for (var key in eventLabels) {
+      for (const key in eventLabels) {
         if (eventLabels.hasOwnProperty(key)) {
           event[key] = eventLabels[key]
         }
       }
     }
 
-    for (var index = 0; index < eventCallbacks.length; index++) {
+    for (let index = 0; index < eventCallbacks.length; index++) {
       eventCallbacks[index](event)
     }
   }
 
   return {
-    addEventCallback: function (thisArg, newCallback) {
-      eventCallback = function (event) {
-        newCallback.call(thisArg, event)
-      }
+    addEventCallback: (thisArg, newCallback) => {
+      eventCallback = (event) => newCallback.call(thisArg, event)
       eventCallbacks.push(eventCallback)
     },
 
-    removeEventCallback: function (callback) {
-      var index = eventCallbacks.indexOf(callback)
+    removeEventCallback: (callback) => {
+      const index = eventCallbacks.indexOf(callback)
+
       if (index !== -1) {
         eventCallbacks.splice(index, 1)
       }
     },
 
-    removeAllEventCallbacks: function () {
-      eventCallbacks = []
-    },
+    removeAllEventCallbacks: () => { eventCallbacks = [] },
 
     initialiseMedia: initialiseMedia,
     playFrom: playFrom,

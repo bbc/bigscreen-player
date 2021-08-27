@@ -3,10 +3,12 @@ import WindowTypes from '../../../models/windowtypes'
 import DynamicWindowUtils from '../../../dynamicwindowutils'
 
 function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
-  var callbacksMap = []
-  var startTime
-  var fakeTimer = {}
-  var timeCorrection = mediaSources.time().correction || 0
+  const fakeTimer = {}
+  const timeCorrection = mediaSources.time().correction || 0
+
+  let callbacksMap = []
+  let startTime
+
   addEventCallback(this, updateFakeTimer)
 
   function updateFakeTimer (event) {
@@ -24,14 +26,13 @@ function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
       event.seekableRange = getSeekableRange()
       callback(event)
     }
+
     callbacksMap.push({ from: callback, to: newCallback })
     mediaPlayer.addEventCallback(thisArg, newCallback)
   }
 
   function removeEventCallback (thisArg, callback) {
-    var filteredCallbacks = callbacksMap.filter(function (cb) {
-      return cb.from === callback
-    })
+    const filteredCallbacks = callbacksMap.filter((cb) => cb.from === callback)
 
     if (filteredCallbacks.length > 0) {
       callbacksMap = callbacksMap.splice(callbacksMap.indexOf(filteredCallbacks[0]))
@@ -45,8 +46,9 @@ function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
   }
 
   function pause (opts) {
-    mediaPlayer.pause()
     opts = opts || {}
+    mediaPlayer.pause()
+
     if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
       DynamicWindowUtils.autoResumeAtStartOfRange(
         getCurrentTime(),
@@ -57,6 +59,7 @@ function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
         resume)
     }
   }
+
   function resume () {
     mediaPlayer.resume()
   }
@@ -66,8 +69,9 @@ function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
   }
 
   function getSeekableRange () {
-    var windowLength = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000
-    var delta = (Date.now() - startTime) / 1000
+    const windowLength = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000
+    const delta = (Date.now() - startTime) / 1000
+
     return {
       start: (windowType === WindowTypes.SLIDING ? delta : 0) + timeCorrection,
       end: windowLength + delta + timeCorrection
@@ -75,7 +79,7 @@ function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
   }
 
   return {
-    beginPlayback: function () {
+    beginPlayback: () => {
       startTime = Date.now()
       fakeTimer.currentTime = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000
 
@@ -86,13 +90,13 @@ function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
       }
     },
 
-    beginPlaybackFrom: function (offset) {
+    beginPlaybackFrom: (offset) => {
       startTime = Date.now()
       fakeTimer.currentTime = offset
       mediaPlayer.beginPlaybackFrom(offset)
     },
 
-    initialiseMedia: function (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
+    initialiseMedia: (mediaType, sourceUrl, mimeType, sourceContainer, opts) => {
       if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
         mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO
       } else {
@@ -103,43 +107,18 @@ function RestartableLivePlayer (mediaPlayer, windowType, mediaSources) {
     },
 
     pause: pause,
-
     resume: resume,
-
-    stop: function () {
-      mediaPlayer.stop()
-    },
-
-    reset: function () {
-      mediaPlayer.reset()
-    },
-
-    getState: function () {
-      return mediaPlayer.getState()
-    },
-
-    getSource: function () {
-      return mediaPlayer.getSource()
-    },
-
-    getMimeType: function () {
-      return mediaPlayer.getMimeType()
-    },
-
+    stop: () => mediaPlayer.stop(),
+    reset: () => mediaPlayer.reset(),
+    getState: () => mediaPlayer.getState(),
+    getSource: () => mediaPlayer.getSource(),
+    getMimeType: () => mediaPlayer.getMimeType(),
     addEventCallback: addEventCallback,
-
     removeEventCallback: removeEventCallback,
-
     removeAllEventCallbacks: removeAllEventCallbacks,
-
-    getPlayerElement: function () {
-      return mediaPlayer.getPlayerElement()
-    },
-
+    getPlayerElement: () => mediaPlayer.getPlayerElement(),
     getCurrentTime: getCurrentTime,
-
     getSeekableRange: getSeekableRange
-
   }
 }
 

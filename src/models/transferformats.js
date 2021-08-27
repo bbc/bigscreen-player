@@ -1,4 +1,4 @@
-var TransferFormat = {
+const TransferFormat = {
   DASH: 'dash',
   HLS: 'hls'
 }

@@ -1,4 +1,4 @@
-var STATE = {
+const STATE = {
   EMPTY: 'EMPTY', // No source set
   STOPPED: 'STOPPED', // Source set but no playback
   BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
@@ -8,7 +8,7 @@ var STATE = {
   ERROR: 'ERROR' // An error occurred
 }
 
-var EVENT = {
+const EVENT = {
   STOPPED: 'stopped', // Event fired when playback is stopped
   BUFFERING: 'buffering', // Event fired when playback has to suspend due to buffering
   PLAYING: 'playing', // Event fired when starting (or resuming) playing of the media
@@ -28,7 +28,7 @@ var EVENT = {
   SEEK_FINISHED: 'seek-finished' // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
 }
 
-var TYPE = {
+const TYPE = {
   VIDEO: 'video',
   AUDIO: 'audio',
   LIVE_VIDEO: 'live-video',

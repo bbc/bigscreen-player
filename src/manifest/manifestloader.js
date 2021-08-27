@@ -9,7 +9,7 @@ function retrieveDashManifest (url, dateWithOffset, callbacks) {
       method: 'GET',
       headers: {},
       timeout: 10000,
-      onLoad: function (responseXML, responseText, status) {
+      onLoad: (responseXML, _responseText, _status) => {
         try {
           if (responseXML) {
             callbacks.onSuccess({
@@ -23,7 +23,7 @@ function retrieveDashManifest (url, dateWithOffset, callbacks) {
           callbacks.onError('Unable to retrieve DASH XML response')
         }
       },
-      onError: function () {
+      onError: () => {
         callbacks.onError('Network error: Unable to retrieve DASH manifest')
       }
     }
@@ -37,14 +37,16 @@ function retrieveHLSManifest (url, dateWithOffset, callbacks) {
       method: 'GET',
       headers: {},
       timeout: 10000,
-      onLoad: function (responseXML, responseText) {
-        var streamUrl
+      onLoad: (_responseXML, responseText) => {
+        let streamUrl
+
         if (responseText) {
           streamUrl = getStreamUrl(responseText)
         }
         if (streamUrl) {
           if (!/^http/.test(streamUrl)) {
-            var parts = url.split('/')
+            const parts = url.split('/')
+
             parts.pop()
             parts.push(streamUrl)
             streamUrl = parts.join('/')
@@ -54,7 +56,7 @@ function retrieveHLSManifest (url, dateWithOffset, callbacks) {
           callbacks.onError('Unable to retrieve HLS master playlist')
         }
       },
-      onError: function () {
+      onError: () => {
         callbacks.onError('Network error: Unable to retrieve HLS master playlist')
       }
     }
@@ -68,7 +70,7 @@ function loadLivePlaylist (url, dateWithOffset, callbacks) {
       method: 'GET',
       headers: {},
       timeout: 10000,
-      onLoad: function (responseXML, responseText) {
+      onLoad: (_responseXML, responseText) => {
         if (responseText) {
           callbacks.onSuccess({
             transferFormat: TransferFormats.HLS,
@@ -78,7 +80,7 @@ function loadLivePlaylist (url, dateWithOffset, callbacks) {
           callbacks.onError('Unable to retrieve HLS live playlist')
         }
       },
-      onError: function () {
+      onError: () => {
         callbacks.onError('Network error: Unable to retrieve HLS live playlist')
       }
     }
@@ -86,14 +88,15 @@ function loadLivePlaylist (url, dateWithOffset, callbacks) {
 }
 
 function getStreamUrl (data) {
-  var match = /#EXT-X-STREAM-INF:.*[\n\r]+(.*)[\n\r]?/.exec(data)
+  const match = /#EXT-X-STREAM-INF:.*[\n\r]+(.*)[\n\r]?/.exec(data)
+
   if (match) {
     return match[1]
   }
 }
 
 export default {
-  load: function (mediaUrl, serverDate, callbacks) {
+  load: (mediaUrl, serverDate, callbacks) => {
     if (/\.m3u8($|\?.*$)/.test(mediaUrl)) {
       retrieveHLSManifest(mediaUrl, serverDate, callbacks)
     } else if (/\.mpd($|\?.*$)/.test(mediaUrl)) {

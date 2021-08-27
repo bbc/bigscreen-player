@@ -1,4 +1,4 @@
-var LiveSupport = {
+const LiveSupport = {
   NONE: 'none',
   PLAYABLE: 'playable',
   RESTARTABLE: 'restartable',

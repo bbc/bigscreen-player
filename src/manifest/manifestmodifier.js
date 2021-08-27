@@ -1,18 +1,18 @@
 function filter (manifest, representationOptions) {
-  var constantFps = representationOptions.constantFps
-  var maxFps = representationOptions.maxFps
+  const constantFps = representationOptions.constantFps
+  const maxFps = representationOptions.maxFps
 
   if (constantFps || maxFps) {
     manifest.Period.AdaptationSet = manifest.Period.AdaptationSet.map(function (adaptationSet) {
       if (adaptationSet.contentType === 'video') {
-        var frameRates = []
+        const frameRates = []
 
         adaptationSet.Representation_asArray = adaptationSet.Representation_asArray.filter(function (representation) {
           if (!maxFps || representation.frameRate <= maxFps) {
             frameRates.push(representation.frameRate)
             return true
           }
-        }).filter(function (representation) {
+        }).filter((representation) => {
           return !constantFps || representation.frameRate === Math.max.apply(null, frameRates)
         })
       }
@@ -43,7 +43,8 @@ function extractBaseUrl (manifest) {
 
 function generateBaseUrls (manifest, sources) {
   if (!manifest) return
-  var baseUrl = extractBaseUrl(manifest)
+
+  const baseUrl = extractBaseUrl(manifest)
 
   if (isBaseUrlAbsolute(baseUrl)) {
     setAbsoluteBaseUrl(baseUrl)
@@ -76,7 +77,8 @@ function generateBaseUrls (manifest, sources) {
   }
 
   function setAbsoluteBaseUrl (baseUrl) {
-    var newBaseUrl = generateBaseUrl(baseUrl, 0, sources[0])
+    const newBaseUrl = generateBaseUrl(baseUrl, 0, sources[0])
+
     manifest.BaseURL_asArray = [newBaseUrl]
 
     if (manifest.BaseURL || manifest.Period && manifest.Period.BaseURL) {
@@ -85,14 +87,15 @@ function generateBaseUrls (manifest, sources) {
   }
 
   function setBaseUrlsFromBaseUrl (baseUrl) {
-    manifest.BaseURL_asArray = sources.map(function (source, priority) {
-      var sourceUrl = new URL(baseUrl, source)
+    manifest.BaseURL_asArray = sources.map((source, priority) => {
+      const sourceUrl = new URL(baseUrl, source)
+
       return generateBaseUrl(sourceUrl.href, priority, source)
     })
   }
 
   function setBaseUrlsFromSource () {
-    manifest.BaseURL_asArray = sources.map(function (source, priority) {
+    manifest.BaseURL_asArray = sources.map((source, priority) => {
       return generateBaseUrl(source, priority, source)
     })
   }

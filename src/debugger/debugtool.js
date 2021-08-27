@@ -3,20 +3,19 @@ import DebugPresenter from './debugpresenter'
 import DebugView from './debugview'
 
 function DebugTool () {
-  var rootElement
-  var presenter = DebugPresenter
-  var view
-  var visible = false
+  const presenter = DebugPresenter
 
-  var LOG_LEVELS = {
+  const LOG_LEVELS = {
     ERROR: 0,
     INFO: 2,
     VERBOSE: 3
   }
 
-  var logLevel = LOG_LEVELS.INFO
+  let visible = false
+  let logLevel = LOG_LEVELS.INFO
+  let staticFieldValues = { }
 
-  var staticFieldValues = {}
+  let rootElement, view
 
   function toggleVisibility () {
     if (visible) {
@@ -79,10 +78,11 @@ function DebugTool () {
   }
 
   function updateKeyValue (message) {
-    var staticFieldValue = staticFieldValues[message.key]
+    const staticFieldValue = staticFieldValues[message.key]
 
     if (staticFieldValue) {
-      var entry = Chronicle.retrieve()[staticFieldValue.index]
+      const entry = Chronicle.retrieve()[staticFieldValue.index]
+
       if (entry) {
         entry.keyvalue = message
       }
@@ -119,7 +119,7 @@ function DebugTool () {
   }
 }
 
-var instance
+let instance
 
 if (instance === undefined) {
   instance = new DebugTool()

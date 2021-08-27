@@ -2,22 +2,23 @@ import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DebugTool from '../../debugger/debugtool'
 
 function SamsungMaple () {
-  var state = MediaPlayerBase.STATE.EMPTY
-  var playerPlugin = document.getElementById('playerPlugin')
-  var deferSeekingTo = null
-  var postBufferingState = null
-  var tryingToPause = false
-  var currentTimeKnown = false
+  const playerPlugin = document.getElementById('playerPlugin')
 
-  var mediaType
-  var source
-  var mimeType
+  let state = MediaPlayerBase.STATE.EMPTY
+  let deferSeekingTo = null
+  let postBufferingState = null
+  let tryingToPause = false
+  let currentTimeKnown = false
 
-  var range
-  var currentTime
+  let mediaType
+  let source
+  let mimeType
 
-  var eventCallbacks = []
-  var eventCallback
+  let range
+  let currentTime
+
+  let eventCallbacks = []
+  let eventCallback
 
   function initialiseMedia (type, url, mediaMimeType) {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
@@ -57,7 +58,8 @@ function SamsungMaple () {
 
   function playFrom (seconds) {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
-    var seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds
+
+    const seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds
 
     switch (getState()) {
       case MediaPlayerBase.STATE.BUFFERING:
@@ -118,7 +120,8 @@ function SamsungMaple () {
 
   function beginPlaybackFrom (seconds) {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
-    var seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds
+
+    const seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds
 
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
@@ -293,7 +296,7 @@ function SamsungMaple () {
   }
 
   function _tryPauseWithStateTransition () {
-    var success = _isSuccessCode(playerPlugin.Pause())
+    let success = _isSuccessCode(playerPlugin.Pause())
     if (success) {
       toPaused()
     }
@@ -302,7 +305,7 @@ function SamsungMaple () {
   }
 
   function _onStatus () {
-    var state = getState()
+    let state = getState()
     if (state === MediaPlayerBase.STATE.PLAYING) {
       _emitEvent(MediaPlayerBase.EVENT.STATUS)
     }
@@ -330,14 +333,15 @@ function SamsungMaple () {
   }
 
   function _deferredSeek () {
-    var clampedTime = _getClampedTimeForPlayFrom(deferSeekingTo)
-    var isNearCurrentTime = _isNearToCurrentTime(clampedTime)
+    const clampedTime = _getClampedTimeForPlayFrom(deferSeekingTo)
+    const isNearCurrentTime = _isNearToCurrentTime(clampedTime)
 
     if (isNearCurrentTime) {
       toPlaying()
       deferSeekingTo = null
     } else {
-      var seekResult = _seekTo(clampedTime)
+      const seekResult = _seekTo(clampedTime)
+
       if (seekResult) {
         deferSeekingTo = null
       }
@@ -345,7 +349,8 @@ function SamsungMaple () {
   }
 
   function _getClampedTimeForPlayFrom (seconds) {
-    var clampedTime = getClampedTime(seconds)
+    const clampedTime = getClampedTime(seconds)
+
     if (clampedTime !== seconds) {
       DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }')
     }
@@ -357,54 +362,39 @@ function SamsungMaple () {
   }
 
   function _registerEventHandlers () {
-    window.SamsungMapleOnRenderError = function () {
+    window.SamsungMapleOnRenderError = () =>
       _onDeviceError('Media element emitted OnRenderError')
-    }
     playerPlugin.OnRenderError = 'SamsungMapleOnRenderError'
 
-    window.SamsungMapleOnConnectionFailed = function () {
+    window.SamsungMapleOnConnectionFailed = () =>
       _onDeviceError('Media element emitted OnConnectionFailed')
-    }
     playerPlugin.OnConnectionFailed = 'SamsungMapleOnConnectionFailed'
 
-    window.SamsungMapleOnNetworkDisconnected = function () {
+    window.SamsungMapleOnNetworkDisconnected = () =>
       _onDeviceError('Media element emitted OnNetworkDisconnected')
-    }
     playerPlugin.OnNetworkDisconnected = 'SamsungMapleOnNetworkDisconnected'
 
-    window.SamsungMapleOnStreamNotFound = function () {
+    window.SamsungMapleOnStreamNotFound = () =>
       _onDeviceError('Media element emitted OnStreamNotFound')
-    }
     playerPlugin.OnStreamNotFound = 'SamsungMapleOnStreamNotFound'
 
-    window.SamsungMapleOnAuthenticationFailed = function () {
+    window.SamsungMapleOnAuthenticationFailed = () =>
       _onDeviceError('Media element emitted OnAuthenticationFailed')
-    }
     playerPlugin.OnAuthenticationFailed = 'SamsungMapleOnAuthenticationFailed'
 
-    window.SamsungMapleOnRenderingComplete = function () {
-      _onEndOfMedia()
-    }
+    window.SamsungMapleOnRenderingComplete = () => _onEndOfMedia()
     playerPlugin.OnRenderingComplete = 'SamsungMapleOnRenderingComplete'
 
-    window.SamsungMapleOnBufferingStart = function () {
-      _onDeviceBuffering()
-    }
+    window.SamsungMapleOnBufferingStart = () => _onDeviceBuffering()
     playerPlugin.OnBufferingStart = 'SamsungMapleOnBufferingStart'
 
-    window.SamsungMapleOnBufferingComplete = function () {
-      _onFinishedBuffering()
-    }
+    window.SamsungMapleOnBufferingComplete = () => _onFinishedBuffering()
     playerPlugin.OnBufferingComplete = 'SamsungMapleOnBufferingComplete'
 
-    window.SamsungMapleOnStreamInfoReady = function () {
-      _onMetadata()
-    }
+    window.SamsungMapleOnStreamInfoReady = () => _onMetadata()
     playerPlugin.OnStreamInfoReady = 'SamsungMapleOnStreamInfoReady'
 
-    window.SamsungMapleOnCurrentPlayTime = function (timeInMillis) {
-      _onCurrentTime(timeInMillis)
-    }
+    window.SamsungMapleOnCurrentPlayTime = (timeInMillis) => _onCurrentTime(timeInMillis)
     playerPlugin.OnCurrentPlayTime = 'SamsungMapleOnCurrentPlayTime'
 
     window.addEventListener('hide', _onWindowHide, false)
@@ -412,7 +402,7 @@ function SamsungMaple () {
   }
 
   function _unregisterEventHandlers () {
-    var eventHandlers = [
+    const eventHandlers = [
       'SamsungMapleOnRenderError',
       'SamsungMapleOnRenderingComplete',
       'SamsungMapleOnBufferingStart',
@@ -425,11 +415,11 @@ function SamsungMaple () {
       'SamsungMapleOnAuthenticationFailed'
     ]
 
-    for (var i = 0; i < eventHandlers.length; i++) {
-      var handler = eventHandlers[i]
-      var hook = handler.substring('SamsungMaple'.length)
-      playerPlugin[hook] = undefined
+    for (let i = 0; i < eventHandlers.length; i++) {
+      const handler = eventHandlers[i]
+      const hook = handler.substring('SamsungMaple'.length)
 
+      playerPlugin[hook] = undefined
       delete window[handler]
     }
 
@@ -451,8 +441,8 @@ function SamsungMaple () {
   }
 
   function _seekTo (seconds) {
-    var offset = seconds - getCurrentTime()
-    var success = _isSuccessCode(_jump(offset))
+    const offset = seconds - getCurrentTime()
+    const success = _isSuccessCode(_jump(offset))
 
     if (success) {
       currentTime = seconds
@@ -462,7 +452,8 @@ function SamsungMaple () {
   }
 
   function _seekToWithFailureStateTransition (seconds) {
-    var success = _seekTo(seconds)
+    const success = _seekTo(seconds)
+
     if (!success) {
       toPlaying()
     }
@@ -477,15 +468,17 @@ function SamsungMaple () {
   }
 
   function _isHlsMimeType () {
-    var mime = mimeType.toLowerCase()
+    const mime = mimeType.toLowerCase()
     return mime === 'application/vnd.apple.mpegurl' || mime === 'application/x-mpegurl'
   }
 
   function _wrappedSource () {
-    var wrappedSource = source
+    let wrappedSource = source
+
     if (_isHlsMimeType()) {
       wrappedSource += '|COMPONENT=HLS'
     }
+
     return wrappedSource
   }
 
@@ -496,21 +489,24 @@ function SamsungMaple () {
 
   function _setDisplayFullScreenForVideo () {
     if (mediaType === MediaPlayerBase.TYPE.VIDEO) {
-      var dimensions = _getScreenSize()
+      const dimensions = _getScreenSize()
       playerPlugin.SetDisplayArea(0, 0, dimensions.width, dimensions.height)
     }
   }
 
   function _getScreenSize () {
-    var w, h
+    let w, h
+
     if (typeof (window.innerWidth) === 'number') {
       w = window.innerWidth
       h = window.innerHeight
     } else {
-      var d = document.documentElement || document.body
+      const d = document.documentElement || document.body
+
       h = d.clientHeight || d.offsetHeight
       w = d.clientWidth || d.offsetWidth
     }
+
     return {
       width: w,
       height: h
@@ -518,7 +514,7 @@ function SamsungMaple () {
   }
 
   function _isSuccessCode (code) {
-    var samsung2010ErrorCode = -1
+    const samsung2010ErrorCode = -1
     return code && code !== samsung2010ErrorCode
   }
 
@@ -527,18 +523,20 @@ function SamsungMaple () {
    * On a sample device (Samsung FoxP 2013), seeking by two seconds worked 90% of the time, but seeking
    * by 2.5 seconds was always seen to work.
    */
-  var CURRENT_TIME_TOLERANCE = 2.5
+  const CURRENT_TIME_TOLERANCE = 2.5
 
   function _isNearToCurrentTime (seconds) {
-    var currentTime = getCurrentTime()
-    var targetTime = getClampedTime(seconds)
+    const currentTime = getCurrentTime()
+    const targetTime = getClampedTime(seconds)
+
     return Math.abs(currentTime - targetTime) <= CURRENT_TIME_TOLERANCE
   }
 
   function getClampedTime (seconds) {
-    var range = getSeekableRange()
-    var CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
-    var nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
+    const range = getSeekableRange()
+    const CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
+    const nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
+
     if (seconds < range.start) {
       return range.start
     } else if (seconds > nearToEnd) {
@@ -549,7 +547,7 @@ function SamsungMaple () {
   }
 
   function _emitEvent (eventType, eventLabels) {
-    var event = {
+    const event = {
       type: eventType,
       currentTime: getCurrentTime(),
       seekableRange: getSeekableRange(),
@@ -560,37 +558,36 @@ function SamsungMaple () {
     }
 
     if (eventLabels) {
-      for (var key in eventLabels) {
+      for (const key in eventLabels) {
         if (eventLabels.hasOwnProperty(key)) {
           event[key] = eventLabels[key]
         }
       }
     }
 
-    for (var index = 0; index < eventCallbacks.length; index++) {
+    for (let index = 0; index < eventCallbacks.length; index++) {
       eventCallbacks[index](event)
     }
   }
 
   return {
-    addEventCallback: function (thisArg, newCallback) {
-      eventCallback = function (event) {
+    addEventCallback: (thisArg, newCallback) => {
+      eventCallback = (event) => {
         newCallback.call(thisArg, event)
       }
+
       eventCallbacks.push(eventCallback)
     },
 
-    removeEventCallback: function (callback) {
-      var index = eventCallbacks.indexOf(callback)
+    removeEventCallback: (callback) => {
+      const index = eventCallbacks.indexOf(callback)
+
       if (index !== -1) {
         eventCallbacks.splice(index, 1)
       }
     },
 
-    removeAllEventCallbacks: function () {
-      eventCallbacks = []
-    },
-
+    removeAllEventCallbacks: () => { eventCallbacks = [] },
     initialiseMedia: initialiseMedia,
     playFrom: playFrom,
     beginPlayback: beginPlayback,

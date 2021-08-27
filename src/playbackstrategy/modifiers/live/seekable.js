@@ -3,7 +3,7 @@ import WindowTypes from '../../../models/windowtypes'
 import DynamicWindowUtils from '../../../dynamicwindowutils'
 
 function SeekableLivePlayer (mediaPlayer, windowType) {
-  var AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
+  const AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
 
   function addEventCallback (thisArg, callback) {
     mediaPlayer.addEventCallback(thisArg, callback)
@@ -49,8 +49,8 @@ function SeekableLivePlayer (mediaPlayer, windowType) {
     },
 
     pause: function pause (opts) {
+      const secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start
       opts = opts || {}
-      var secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start
 
       if (opts.disableAutoResume) {
         mediaPlayer.pause()
@@ -70,49 +70,20 @@ function SeekableLivePlayer (mediaPlayer, windowType) {
         }
       }
     },
+
     resume: resume,
-
-    stop: function stop () {
-      mediaPlayer.stop()
-    },
-
-    reset: function reset () {
-      mediaPlayer.reset()
-    },
-
-    getState: function getState () {
-      return mediaPlayer.getState()
-    },
-
-    getSource: function getSource () {
-      return mediaPlayer.getSource()
-    },
-
-    getCurrentTime: function getCurrentTime () {
-      return mediaPlayer.getCurrentTime()
-    },
-
-    getSeekableRange: function getSeekableRange () {
-      return mediaPlayer.getSeekableRange()
-    },
-
-    getMimeType: function getMimeType () {
-      return mediaPlayer.getMimeType()
-    },
-
+    stop: () => mediaPlayer.stop(),
+    reset: () => mediaPlayer.reset(),
+    getState: () => mediaPlayer.getState(),
+    getSource: () => mediaPlayer.getSource(),
+    getCurrentTime: () => mediaPlayer.getCurrentTime(),
+    getSeekableRange: () => mediaPlayer.getSeekableRange(),
+    getMimeType: () => mediaPlayer.getMimeType(),
     addEventCallback: addEventCallback,
-
     removeEventCallback: removeEventCallback,
-
     removeAllEventCallbacks: removeAllEventCallbacks,
-
-    getPlayerElement: function getPlayerElement () {
-      return mediaPlayer.getPlayerElement()
-    },
-
-    getLiveSupport: function getLiveSupport () {
-      return MediaPlayerBase.LIVE_SUPPORT.SEEKABLE
-    }
+    getPlayerElement: () => mediaPlayer.getPlayerElement(),
+    getLiveSupport: () => MediaPlayerBase.LIVE_SUPPORT.SEEKABLE
   })
 }
 
