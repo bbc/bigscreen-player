@@ -12,26 +12,27 @@ import Utils from '../utils/playbackutils'
 import { MediaPlayer } from 'dashjs/index_mediaplayerOnly'
 
 function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
-  var LIVE_DELAY_SECONDS = 1.1
-  var mediaPlayer
-  var mediaElement
+  const LIVE_DELAY_SECONDS = 1.1
 
-  var eventCallbacks = []
-  var errorCallback
-  var timeUpdateCallback
+  let mediaPlayer
+  let mediaElement
 
-  var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0
-  var failoverTime
-  var refreshFailoverTime
-  var slidingWindowPausedTime = 0
-  var isEnded = false
+  let eventCallbacks = []
+  let errorCallback
+  let timeUpdateCallback
 
-  var dashMetrics
+  let timeCorrection = mediaSources.time() && mediaSources.time().correction || 0
+  let failoverTime
+  let refreshFailoverTime
+  let slidingWindowPausedTime = 0
+  let isEnded = false
 
-  var publishedSeekEvent = false
-  var isSeeking = false
+  let dashMetrics
 
-  var playerMetadata = {
+  let publishedSeekEvent = false
+  let isSeeking = false
+
+  let playerMetadata = {
     playbackBitrate: undefined,
     bufferLength: undefined,
     fragmentInfo: {
@@ -40,7 +41,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
   }
 
-  var DashJSEvents = {
+  const DashJSEvents = {
     LOG: 'log',
     ERROR: 'error',
     MANIFEST_LOADED: 'manifestLoaded',
@@ -95,13 +96,13 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   }
 
   function onTimeUpdate () {
-    var IN_STREAM_BUFFERING_SECONDS = 20
-    var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo('video')
+    const IN_STREAM_BUFFERING_SECONDS = 20
+    const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo('video')
 
     if (dvrInfo && windowType === WindowTypes.SLIDING) {
       failoverTime = Math.max(0, parseInt(dvrInfo.time - dvrInfo.range.start) - IN_STREAM_BUFFERING_SECONDS)
     } else {
-      var time = mediaElement.currentTime
+      const time = mediaElement.currentTime
 
       // Note: Multiple consecutive CDN failover logic
       // A newly loaded video element will always report a 0 time update
@@ -138,11 +139,9 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   }
 
   function manifestDownloadError (event) {
-    var error = function () {
-      publishError()
-    }
+    const error = () => publishError()
 
-    var failoverParams = {
+    const failoverParams = {
       errorMessage: 'manifest-refresh',
       isBufferingTimeoutError: false,
       currentTime: getCurrentTime(),
@@ -156,8 +155,8 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     DebugTool.info('Manifest loaded. Duration is: ' + event.data.mediaPresentationDuration)
 
     if (event.data) {
-      var manifest = event.data
-      var representationOptions = window.bigscreenPlayer.representationOptions || {}
+      const manifest = event.data
+      const representationOptions = window.bigscreenPlayer.representationOptions || {}
 
       ManifestModifier.filter(manifest, representationOptions)
       ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources())
@@ -195,27 +194,29 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   }
 
   function currentPlaybackBitrate (mediaKind) {
-    var representationSwitch = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaKind)
-    var representation = representationSwitch ? representationSwitch.to : ''
+    const representationSwitch = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaKind)
+    const representation = representationSwitch ? representationSwitch.to : ''
     return playbackBitrateForRepresentation(representation, mediaKind)
   }
 
   function playbackBitrateForRepresentation (representation, mediaKind) {
-    var repIdx = mediaPlayer.getDashAdapter().getIndexForRepresentation(representation, 0)
+    const repIdx = mediaPlayer.getDashAdapter().getIndexForRepresentation(representation, 0)
     return playbackBitrateForRepresentationIndex(repIdx, mediaKind)
   }
 
   function playbackBitrateForRepresentationIndex (index, mediaKind) {
     if (index === -1) return ''
-    var bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind)
+
+    const bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind)
     return parseInt(bitrateInfoList[index].bitrate / 1000)
   }
 
   function onQualityChangeRendered (event) {
     function logBitrate (mediaKind, event) {
-      var oldBitrate = isNaN(event.oldQuality) ? '--' : playbackBitrateForRepresentationIndex(event.oldQuality, mediaKind)
-      var oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)'
-      var newRepresentation = event.newQuality + ' (' + playbackBitrateForRepresentationIndex(event.newQuality, mediaKind) + ' kbps)'
+      const oldBitrate = isNaN(event.oldQuality) ? '--' : playbackBitrateForRepresentationIndex(event.oldQuality, mediaKind)
+      const oldRepresentation = isNaN(event.oldQuality) ? 'Start' : event.oldQuality + ' (' + oldBitrate + ' kbps)'
+      const newRepresentation = event.newQuality + ' (' + playbackBitrateForRepresentationIndex(event.newQuality, mediaKind) + ' kbps)'
+
       DebugTool.keyValue({ key: event.mediaType + ' Representation', value: newRepresentation })
       DebugTool.info(mediaKind + ' ABR Change Rendered From Representation ' + oldRepresentation + ' To ' + newRepresentation)
     }
@@ -233,7 +234,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
    * @param {*} event
    */
   function onBaseUrlSelected (event) {
-    var failoverInfo = {
+    const failoverInfo = {
       errorMessage: 'download',
       isBufferingTimeoutError: false
     }
@@ -286,7 +287,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   }
 
   function publishMediaState (mediaState) {
-    for (var index = 0; index < eventCallbacks.length; index++) {
+    for (let index = 0; index < eventCallbacks.length; index++) {
       eventCallbacks[index](mediaState)
     }
   }
@@ -328,6 +329,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     } else {
       mediaElement = document.createElement('video')
     }
+
     mediaElement.style.position = 'absolute'
     mediaElement.style.width = '100%'
     mediaElement.style.height = '100%'
@@ -337,7 +339,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
   function setUpMediaPlayer (playbackTime) {
     mediaPlayer = MediaPlayer().create()
-    var playerSettings = Utils.merge({
+    const playerSettings = Utils.merge({
       debug: {
         logLevel: 2
       },
@@ -397,8 +399,8 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     if (windowType === WindowTypes.STATIC) {
       return startTime === 0 ? source : source + '#t=' + startTime
     } else {
-      var windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000)
-      var srcWithTimeAnchor = source + '#t=posix:'
+      const windowStartTimeSeconds = (mediaSources.time().windowStartTime / 1000)
+      const srcWithTimeAnchor = source + '#t=posix:'
 
       return startTime === 0 ? srcWithTimeAnchor + (windowStartTimeSeconds + 1) : srcWithTimeAnchor + (windowStartTimeSeconds + startTime)
     }
@@ -406,7 +408,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
   function getSeekableRange () {
     if (mediaPlayer && mediaPlayer.isReady() && windowType !== WindowTypes.STATIC) {
-      var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
       if (dvrInfo) {
         return {
           start: dvrInfo.range.start - timeCorrection,
@@ -414,6 +416,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
         }
       }
     }
+
     return {
       start: 0,
       end: getDuration()
@@ -431,8 +434,8 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   function refreshManifestBeforeSeek (seekToTime) {
     refreshFailoverTime = seekToTime
 
-    mediaPlayer.refreshManifest(function (manifest) {
-      var mediaPresentationDuration = manifest && manifest.mediaPresentationDuration
+    mediaPlayer.refreshManifest((manifest) => {
+      const mediaPresentationDuration = manifest && manifest.mediaPresentationDuration
       if (!isNaN(mediaPresentationDuration)) {
         DebugTool.info('Stream ended. Clamping seek point to end of stream')
         mediaPlayer.seek(getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration }))
@@ -448,8 +451,8 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
 
     if (windowType === WindowTypes.SLIDING) {
-      var dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
-      var offset = TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfo.range.start, timeCorrection, slidingWindowPausedTime)
+      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+      const offset = TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfo.range.start, timeCorrection, slidingWindowPausedTime)
       slidingWindowPausedTime = 0
 
       return getClampedTimeForLive(offset)
@@ -458,14 +461,12 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   }
 
   function addEventCallback (thisArg, newCallback) {
-    var eventCallback = function (event) {
-      newCallback.call(thisArg, event)
-    }
+    const eventCallback = (event) => newCallback.call(thisArg, event)
     eventCallbacks.push(eventCallback)
   }
 
   function removeEventCallback (callback) {
-    var index = eventCallbacks.indexOf(callback)
+    const index = eventCallbacks.indexOf(callback)
     if (index !== -1) {
       eventCallbacks.splice(index, 1)
     }
@@ -477,34 +478,28 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       getSeekableRange(),
       addEventCallback,
       removeEventCallback,
-      function (event) {
-        return event !== MediaState.PAUSED
-      },
+      (event) => event !== MediaState.PAUSED,
       mediaPlayer.play)
   }
 
   return {
     transitions: {
-      canBePaused: function () { return true },
-      canBeginSeek: function () { return true }
+      canBePaused: () => true,
+      canBeginSeek: () => true
     },
     addEventCallback: addEventCallback,
     removeEventCallback: removeEventCallback,
-    addErrorCallback: function (thisArg, newErrorCallback) {
-      errorCallback = function (event) {
-        newErrorCallback.call(thisArg, event)
-      }
+    addErrorCallback: (thisArg, newErrorCallback) => {
+      errorCallback = (event) => newErrorCallback.call(thisArg, event)
     },
-    addTimeUpdateCallback: function (thisArg, newTimeUpdateCallback) {
-      timeUpdateCallback = function () {
-        newTimeUpdateCallback.call(thisArg)
-      }
+    addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
+      timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
     load: load,
     getSeekableRange: getSeekableRange,
     getCurrentTime: getCurrentTime,
     getDuration: getDuration,
-    tearDown: function () {
+    tearDown: () => {
       mediaPlayer.reset()
 
       mediaElement.removeEventListener('timeupdate', onTimeUpdate)
@@ -546,14 +541,10 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
         }
       }
     },
-    reset: function () {
-      return
-    },
-    isEnded: function () {
-      return isEnded
-    },
+    reset: () => {},
+    isEnded: () => isEnded,
     isPaused: isPaused,
-    pause: function (opts) {
+    pause: (opts) => {
       if (windowType === WindowTypes.SLIDING) {
         slidingWindowPausedTime = Date.now()
       }
@@ -564,31 +555,27 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
         startAutoResumeTimeout()
       }
     },
-    play: function () {
-      mediaPlayer.play()
-    },
-    setCurrentTime: function (time) {
+    play: () => mediaPlayer.play(),
+    setCurrentTime: (time) => {
       publishedSeekEvent = false
       isSeeking = true
-      var seekToTime = getClampedTime(time, getSeekableRange())
+      const seekToTime = getClampedTime(time, getSeekableRange())
       if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
         refreshManifestBeforeSeek(seekToTime)
       } else {
-        var seekTime = calculateSeekOffset(time)
+        const seekTime = calculateSeekOffset(time)
         mediaPlayer.seek(seekTime)
       }
     },
-    setPlaybackRate: function (rate) {
+    setPlaybackRate: (rate) => {
       mediaPlayer.setPlaybackRate(rate)
     },
-    getPlaybackRate: function () {
+    getPlaybackRate: () => {
       return mediaPlayer.getPlaybackRate()
     }
   }
 }
 
-MSEStrategy.getLiveSupport = function () {
-  return LiveSupport.SEEKABLE
-}
+MSEStrategy.getLiveSupport = () => LiveSupport.SEEKABLE
 
 export default MSEStrategy

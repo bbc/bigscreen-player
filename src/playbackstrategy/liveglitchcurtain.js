@@ -2,10 +2,8 @@ import PlaybackSpinner from '../playbackspinner'
 import DOMHelpers from '../domhelpers'
 
 function LiveGlitchCurtain (parentElement) {
-  var curtain
-  var spinner = new PlaybackSpinner()
-
-  curtain = document.createElement('div')
+  let spinner = new PlaybackSpinner()
+  let curtain = document.createElement('div')
 
   curtain.id = 'liveGlitchCurtain'
   curtain.style.display = 'none'
@@ -19,17 +17,17 @@ function LiveGlitchCurtain (parentElement) {
   curtain.appendChild(spinner)
 
   return {
-    showCurtain: function () {
+    showCurtain: () => {
       curtain.style.display = 'block'
       parentElement.appendChild(curtain)
     },
 
-    hideCurtain: function () {
+    hideCurtain: () => {
       curtain.style.display = 'none'
       DOMHelpers.safeRemoveElement(spinner)
     },
 
-    tearDown: function () {
+    tearDown: () => {
       DOMHelpers.safeRemoveElement(curtain)
 
       if (spinner) {

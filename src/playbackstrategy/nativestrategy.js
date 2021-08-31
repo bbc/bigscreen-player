@@ -11,8 +11,9 @@ import None from './modifiers/live/none'
 import Playable from './modifiers/live/playable'
 import Restartable from './modifiers/live/restartable'
 import Seekable from './modifiers/live/seekable'
+
 function NativeStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD) {
-  var mediaPlayer
+  let mediaPlayer
 
   switch (window.bigscreenPlayer.mediaPlayer) {
     case 'cehtml':
@@ -56,8 +57,6 @@ function NativeStrategy (mediaSources, windowType, mediaKind, playbackElement, i
   return LegacyAdapter(mediaSources, windowType, playbackElement, isUHD, mediaPlayer)
 }
 
-NativeStrategy.getLiveSupport = function () {
-  return window.bigscreenPlayer.liveSupport
-}
+NativeStrategy.getLiveSupport = () => window.bigscreenPlayer.liveSupport
 
 export default NativeStrategy
