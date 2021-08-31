@@ -7,30 +7,30 @@ import LoadURL from '../utils/loadurl'
 import TimeUtils from '../utils/timeutils'
 
 function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
-  var currentSubtitlesElement
-  var exampleSubtitlesElement
-  var imscRenderOpts = transformStyleOptions(defaultStyleOpts)
-  var updateInterval
-  var SEGMENTS_TO_KEEP = 3
-  var segments = []
-  var currentSegmentRendered = {}
-  var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
-  var loadErrorCount = 0
-  var LOAD_ERROR_COUNT_MAX = 3
-  var windowStartEpochSeconds = getWindowStartTime() / 1000
+  const SEGMENTS_TO_KEEP = 3
+  const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
+  const LOAD_ERROR_COUNT_MAX = 3
+  const windowStartEpochSeconds = getWindowStartTime() / 1000
+
+  let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
+  let currentSegmentRendered = {}
+  let loadErrorCount = 0
+  let segments = []
+
+  let exampleSubtitlesElement
+  let currentSubtitlesElement
+  let updateInterval
 
   if (autoStart) {
     start()
   }
 
   function loadAllRequiredSegments () {
-    var segmentsToLoad = []
-    var currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), mediaSources.currentSubtitlesSegmentLength())
-    for (var i = 0; i < SEGMENTS_TO_KEEP; i++) {
-      var segmentNumber = currentSegment + i
-      var alreadyLoaded = segments.some(function (segment) {
-        return segment.number === segmentNumber
-      })
+    const segmentsToLoad = []
+    const currentSegment = TimeUtils.calculateSegmentNumber(windowStartEpochSeconds + mediaPlayer.getCurrentTime(), mediaSources.currentSubtitlesSegmentLength())
+    for (let i = 0; i < SEGMENTS_TO_KEEP; i++) {
+      const segmentNumber = currentSegment + i
+      const alreadyLoaded = segments.some((segment) => segment.number === segmentNumber)
 
       if (!alreadyLoaded) {
         segmentsToLoad.push(segmentNumber)
@@ -42,8 +42,8 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
       removeCurrentSubtitlesElement()
     }
 
-    segmentsToLoad.forEach(function (segmentNumber) {
-      var url = mediaSources.currentSubtitlesSource()
+    segmentsToLoad.forEach((segmentNumber) => {
+      const url = mediaSources.currentSubtitlesSource()
       loadSegment(url, segmentNumber)
     })
   }
@@ -52,7 +52,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
     url = url.replace('$segment$', segmentNumber)
     LoadURL(url, {
       timeout: mediaSources.subtitlesRequestTimeout(),
-      onLoad: function (responseXML, responseText, status) {
+      onLoad: (responseXML, responseText, status) => {
         resetLoadErrorCount()
         if (!responseXML && !liveSubtitles) {
           DebugTool.info('Error: responseXML is invalid.')
@@ -62,8 +62,8 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
         }
 
         try {
-          var xml = fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1] || responseText)
-          var times = xml.getMediaTimeEvents()
+          const xml = fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1] || responseText)
+          const times = xml.getMediaTimeEvents()
 
           segments.push({
             xml: modifyStyling(xml),
@@ -81,11 +81,11 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
           stop()
         }
       },
-      onError: function (statusCode) {
+      onError: (statusCode) => {
         DebugTool.info('Error loading subtitles data: ' + statusCode)
         loadErrorFailover(statusCode)
       },
-      onTimeout: function () {
+      onTimeout: () => {
         DebugTool.info('Request timeout loading subtitles')
         Plugins.interface.onSubtitlesTimeout({cdn: mediaSources.currentSubtitlesCdn()})
         stop()
@@ -106,7 +106,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
   }
 
   function loadErrorFailover (statusCode) {
-    var errorCase = function () { DebugTool.info('No more CDNs available for subtitle failover') }
+    const errorCase = () => { DebugTool.info('No more CDNs available for subtitle failover') }
 
     if ((liveSubtitles && loadErrorLimit()) || !liveSubtitles) {
       stop()
@@ -117,11 +117,9 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
 
   function pruneSegments () {
     // Before sorting, check if we've gone back in time, so we know whether to prune from front or back of array
-    var seekedBack = segments[SEGMENTS_TO_KEEP].number < segments[SEGMENTS_TO_KEEP - 1].number
+    const seekedBack = segments[SEGMENTS_TO_KEEP].number < segments[SEGMENTS_TO_KEEP - 1].number
 
-    segments.sort(function (a, b) {
-      return a.number - b.number
-    })
+    segments.sort((a, b) => a.number - b.number)
 
     if (seekedBack) {
       segments.pop()
@@ -134,7 +132,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
   function transformStyleOptions (opts) {
     if (opts === undefined) return
 
-    var customStyles = {}
+    const customStyles = {}
 
     if (opts.backgroundColour) {
       customStyles.spanBackgroundColorAdjust = {transparent: opts.backgroundColour}
@@ -170,7 +168,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
   }
 
   function update (currentTime) {
-    var segment = getSegmentToRender(currentTime)
+    const segment = getSegmentToRender(currentTime)
 
     if (segment) {
       render(currentTime, segment.xml)
@@ -178,11 +176,12 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
   }
 
   function getSegmentToRender (currentTime) {
-    var segment
+    let segment
 
-    for (var i = 0; i < segments.length; i++) {
-      for (var j = 0; j < segments[i].times.length; j++) {
-        var lastOne = segments[i].times.length === j + 1
+    for (let i = 0; i < segments.length; i++) {
+      for (let j = 0; j < segments[i].times.length; j++) {
+        const lastOne = segments[i].times.length === j + 1
+
         if (currentTime >= segments[i].times[j] && (lastOne || currentTime < segments[i].times[j + 1]) && segments[i].previousSubtitleIndex !== j && segments[i].times[j] !== 0) {
           segment = segments[i]
           currentSegmentRendered = segments[i]
@@ -208,25 +207,25 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
 
   function renderExample (exampleXmlString, styleOpts, safePosition) {
     safePosition = safePosition || {}
-    var exampleXml = fromXML(exampleXmlString)
+    const exampleXml = fromXML(exampleXmlString)
     removeExampleSubtitlesElement()
 
-    var customStyleOptions = transformStyleOptions(styleOpts)
-    var exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions)
+    const customStyleOptions = transformStyleOptions(styleOpts)
+    const exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions)
 
     exampleSubtitlesElement = document.createElement('div')
     exampleSubtitlesElement.id = 'subtitlesPreview'
     exampleSubtitlesElement.style.position = 'absolute'
 
-    var elementWidth = parentElement.clientWidth
-    var elementHeight = parentElement.clientHeight
-    var topPixels = ((safePosition.top || 0) / 100) * elementHeight
-    var rightPixels = ((safePosition.right || 0) / 100) * elementWidth
-    var bottomPixels = ((safePosition.bottom || 0) / 100) * elementHeight
-    var leftPixels = ((safePosition.left || 0) / 100) * elementWidth
+    const elementWidth = parentElement.clientWidth
+    const elementHeight = parentElement.clientHeight
+    const topPixels = ((safePosition.top || 0) / 100) * elementHeight
+    const rightPixels = ((safePosition.right || 0) / 100) * elementWidth
+    const bottomPixels = ((safePosition.bottom || 0) / 100) * elementHeight
+    const leftPixels = ((safePosition.left || 0) / 100) * elementWidth
 
-    var renderWidth = elementWidth - leftPixels - rightPixels
-    var renderHeight = elementHeight - topPixels - bottomPixels
+    const renderWidth = elementWidth - leftPixels - rightPixels
+    const renderHeight = elementHeight - topPixels - bottomPixels
 
     exampleSubtitlesElement.style.top = (topPixels) + 'px'
     exampleSubtitlesElement.style.right = (rightPixels) + 'px'
@@ -239,7 +238,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
 
   function renderSubtitle (xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
     try {
-      var isd = generateISD(xml, currentTime)
+      const isd = generateISD(xml, currentTime)
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
     } catch (e) {
       DebugTool.info('Exception while rendering subtitles: ' + e)
@@ -267,14 +266,14 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
   }
 
   function start () {
-    var url = mediaSources.currentSubtitlesSource()
+    const url = mediaSources.currentSubtitlesSource()
     if (url && url !== '') {
       if (!liveSubtitles && segments.length === 0) {
         loadSegment(url)
       }
 
-      updateInterval = setInterval(function () {
-        var time = getCurrentTime()
+      updateInterval = setInterval(() => {
+        const time = getCurrentTime()
         if (liveSubtitles && timeIsValid(time)) {
           loadAllRequiredSegments()
         }
@@ -289,7 +288,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
   }
 
   function customise (styleOpts, enabled) {
-    var customStyleOptions = transformStyleOptions(styleOpts)
+    const customStyleOptions = transformStyleOptions(styleOpts)
     imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions)
     if (enabled) {
       render(getCurrentTime(), currentSegmentRendered && currentSegmentRendered.xml)
@@ -299,11 +298,11 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
   return {
     start: start,
     stop: stop,
-    updatePosition: function () {},
+    updatePosition: () => {},
     customise: customise,
     renderExample: renderExample,
     clearExample: removeExampleSubtitlesElement,
-    tearDown: function () {
+    tearDown: () => {
       stop()
       resetLoadErrorCount()
       segments = undefined

@@ -6,19 +6,20 @@ import DebugTool from '../debugger/debugtool'
 import Plugins from '../plugins'
 
 function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
-  var container = document.createElement('div')
-  var subtitlesRenderer
+  const container = document.createElement('div')
+  let subtitlesRenderer
 
   if (autoStart) {
     start()
   }
 
   function loadSubtitles () {
-    var url = mediaSources.currentSubtitlesSource()
+    const url = mediaSources.currentSubtitlesSource()
+
     if (url && url !== '') {
       LoadURL(url, {
         timeout: mediaSources.subtitlesRequestTimeout(),
-        onLoad: function (responseXML, responseText, status) {
+        onLoad: (responseXML, responseText, status) => {
           if (!responseXML) {
             DebugTool.info('Error: responseXML is invalid.')
             Plugins.interface.onSubtitlesXMLError({cdn: mediaSources.currentSubtitlesCdn()})
@@ -27,12 +28,12 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
             createContainer(responseXML)
           }
         },
-        onError: function (statusCode) {
-          var errorCase = function () { DebugTool.info('Failed to load from subtitles file from all available CDNs') }
+        onError: (statusCode) => {
+          const errorCase = () => { DebugTool.info('Failed to load from subtitles file from all available CDNs') }
           DebugTool.info('Error loading subtitles data: ' + statusCode)
           mediaSources.failoverSubtitles(loadSubtitles, errorCase, statusCode)
         },
-        onTimeout: function () {
+        onTimeout: () => {
           DebugTool.info('Request timeout loading subtitles')
           Plugins.interface.onSubtitlesTimeout({cdn: mediaSources.currentSubtitlesCdn()})
         }
@@ -66,14 +67,14 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
   }
 
   function updatePosition (transportControlPosition) {
-    var classes = {
+    const classes = {
       controlsVisible: TransportControlPosition.CONTROLS_ONLY,
       controlsWithInfoVisible: TransportControlPosition.CONTROLS_WITH_INFO,
       leftCarouselVisible: TransportControlPosition.LEFT_CAROUSEL,
       bottomCarouselVisible: TransportControlPosition.BOTTOM_CAROUSEL
     }
 
-    for (var cssClassName in classes) {
+    for (const cssClassName in classes) {
       if (classes.hasOwnProperty(cssClassName)) {
         // Allow multiple flags to be set at once
         if ((classes[cssClassName] & transportControlPosition) === classes[cssClassName]) {
@@ -94,9 +95,9 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
     start: start,
     stop: stop,
     updatePosition: updatePosition,
-    customise: function () {},
-    renderExample: function () {},
-    clearExample: function () {},
+    customise: () => {},
+    renderExample: () => {},
+    clearExample: () => {},
     tearDown: tearDown
   }
 }

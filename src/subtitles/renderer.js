@@ -3,10 +3,11 @@ import Transformer from './transformer'
 import Plugins from '../plugins'
 
 function Renderer (id, captionsXML, mediaPlayer) {
-  var transformedSubtitles
-  var liveItems = []
-  var interval = 0
-  var outputElement
+  let transformedSubtitles
+  let liveItems = []
+  let interval = 0
+  let outputElement
+
   outputElement = document.createElement('div')
   outputElement.id = id
 
@@ -20,7 +21,7 @@ function Renderer (id, captionsXML, mediaPlayer) {
 
   function start () {
     if (transformedSubtitles) {
-      interval = setInterval(function () { update() }, 750)
+      interval = setInterval(() => update(), 750)
       if (outputElement) {
         outputElement.setAttribute('style', transformedSubtitles.baseStyle)
         outputElement.style.cssText = transformedSubtitles.baseStyle
@@ -44,7 +45,7 @@ function Renderer (id, captionsXML, mediaPlayer) {
         stop()
       }
 
-      var time = mediaPlayer.getCurrentTime()
+      const time = mediaPlayer.getCurrentTime()
       updateCaptions(time)
 
       confirmCaptionsRendered()
@@ -66,8 +67,8 @@ function Renderer (id, captionsXML, mediaPlayer) {
   }
 
   function cleanOldCaptions (time) {
-    var live = liveItems
-    for (var i = live.length - 1; i >= 0; i--) {
+    const live = liveItems
+    for (let i = live.length - 1; i >= 0; i--) {
       if (live[i].removeFromDomIfExpired(time)) {
         live.splice(i, 1)
       }
@@ -75,10 +76,10 @@ function Renderer (id, captionsXML, mediaPlayer) {
   }
 
   function addNewCaptions (time) {
-    var live = liveItems
-    var fresh = transformedSubtitles.subtitlesForTime(time)
+    const live = liveItems
+    const fresh = transformedSubtitles.subtitlesForTime(time)
     liveItems = live.concat(fresh)
-    for (var i = 0, j = fresh.length; i < j; i++) {
+    for (let i = 0, j = fresh.length; i < j; i++) {
       // TODO: Probably start adding to the DOM here rather than calling through.
       fresh[i].addToDom(outputElement)
     }

@@ -1,9 +1,9 @@
 function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
-  var subtitlesEnabled = autoStart
-  var liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
-  var subtitlesContainer
+  const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
+  const useLegacySubs = window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles || false
 
-  var useLegacySubs = window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles || false
+  let subtitlesEnabled = autoStart
+  let subtitlesContainer
 
   if (useLegacySubs) {
     import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {

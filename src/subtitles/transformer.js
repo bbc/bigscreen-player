@@ -4,8 +4,8 @@ import Plugins from '../plugins'
 import DebugTool from '../debugger/debugtool'
 
 function Transformer () {
-  var _styles = {}
-  var elementToStyleMap = [
+  const _styles = {}
+  const elementToStyleMap = [
     {
       attribute: 'tts:color',
       property: 'color'
@@ -30,9 +30,7 @@ function Transformer () {
   * @param {Element} el HTML Element
   * @param {String} attribute attribute to check for
   */
-  var hasAttribute = function (el, attribute) {
-    return !!el.getAttribute(attribute)
-  }
+  const hasAttribute = (el, attribute) => !!el.getAttribute(attribute)
 
   function hasNestedTime (element) {
     return (!hasAttribute(element, 'begin') || !hasAttribute(element, 'end'))
@@ -44,10 +42,12 @@ function Transformer () {
 
   function rgbWithOpacity (value) {
     if (DOMHelpers.isRGBA(value)) {
-      var opacity = parseInt(value.slice(7, 9), 16) / 255
+      let opacity = parseInt(value.slice(7, 9), 16) / 255
+
       if (isNaN(opacity)) {
         opacity = 1.0
       }
+
       value = DOMHelpers.rgbaToRGB(value)
       value += '; opacity: ' + opacity + ';'
     }
@@ -55,9 +55,10 @@ function Transformer () {
   }
 
   function elementToStyle (el) {
-    var stringStyle = ''
-    var styles = _styles
-    var inherit = el.getAttribute('style')
+    const styles = _styles
+    const inherit = el.getAttribute('style')
+    let stringStyle = ''
+
     if (inherit) {
       if (styles[inherit]) {
         stringStyle = styles[inherit]
@@ -65,12 +66,15 @@ function Transformer () {
         return false
       }
     }
-    for (var i = 0, j = elementToStyleMap.length; i < j; i++) {
-      var map = elementToStyleMap[i]
-      var value = el.getAttribute(map.attribute)
+
+    for (let i = 0, j = elementToStyleMap.length; i < j; i++) {
+      const map = elementToStyleMap[i]
+      let value = el.getAttribute(map.attribute)
+
       if (value === null || value === undefined) {
         continue
       }
+
       if (map.conversion) {
         value = map.conversion(value)
       }
@@ -93,12 +97,11 @@ function Transformer () {
   function transformXML (xml) {
     try {
       // Use .getElementsByTagNameNS() when parsing XML as some implementations of .getElementsByTagName() will lowercase its argument before proceding
-      var conformsToStandardElements = Array.prototype.slice.call(xml.getElementsByTagNameNS('urn:ebu:tt:metadata', 'conformsToStandard'))
-      var isEBUTTD = conformsToStandardElements && conformsToStandardElements.some(function (node) {
-        return isEBUDistribution(node.textContent)
-      })
+      const conformsToStandardElements = Array.prototype.slice.call(xml.getElementsByTagNameNS('urn:ebu:tt:metadata', 'conformsToStandard'))
+      const isEBUTTD = conformsToStandardElements &&
+        conformsToStandardElements.some((node) => isEBUDistribution(node.textContent))
 
-      var captionValues = {
+      const captionValues = {
         ttml: {
           namespace: 'http://www.w3.org/2006/10/ttaf1',
           idAttribute: 'id'
@@ -109,29 +112,29 @@ function Transformer () {
         }
       }
 
-      var captionStandard = isEBUTTD ? captionValues.ebuttd : captionValues.ttml
-      var styles = _styles
-      var styleElements = xml.getElementsByTagNameNS(captionStandard.namespace, 'style')
+      const captionStandard = isEBUTTD ? captionValues.ebuttd : captionValues.ttml
+      const styles = _styles
+      const styleElements = xml.getElementsByTagNameNS(captionStandard.namespace, 'style')
 
-      for (var i = 0; i < styleElements.length; i++) {
-        var se = styleElements[i]
-        var id = se.getAttribute(captionStandard.idAttribute)
-        var style = elementToStyle(se)
+      for (let i = 0; i < styleElements.length; i++) {
+        const se = styleElements[i]
+        const id = se.getAttribute(captionStandard.idAttribute)
+        const style = elementToStyle(se)
 
         if (style) {
           styles[id] = style
         }
       }
 
-      var body = xml.getElementsByTagNameNS(captionStandard.namespace, 'body')[0]
-      var s = elementToStyle(body)
-      var ps = xml.getElementsByTagNameNS(captionStandard.namespace, 'p')
-      var items = []
+      const body = xml.getElementsByTagNameNS(captionStandard.namespace, 'body')[0]
+      const s = elementToStyle(body)
+      const ps = xml.getElementsByTagNameNS(captionStandard.namespace, 'p')
+      const items = []
 
-      for (var k = 0, m = ps.length; k < m; k++) {
+      for (let k = 0, m = ps.length; k < m; k++) {
         if (hasNestedTime(ps[k])) {
-          var tag = ps[k]
-          for (var index = 0; index < tag.childNodes.length; index++) {
+          const tag = ps[k]
+          for (let index = 0; index < tag.childNodes.length; index++) {
             if (hasAttribute(tag.childNodes[index], 'begin') && hasAttribute(tag.childNodes[index], 'end')) {
               // TODO: rather than pass a function, can't we make timedText look after it's style from this point?
               items.push(TimedText(tag.childNodes[index], elementToStyle))
@@ -144,11 +147,8 @@ function Transformer () {
 
       return {
         baseStyle: s,
-        subtitlesForTime: function (time) {
-          return items.filter(function (subtitle) {
-            return subtitle.start < time && subtitle.end > time
-          })
-        }
+        subtitlesForTime: (time) =>
+          items.filter((subtitle) => subtitle.start < time && subtitle.end > time)
       }
     } catch (e) {
       DebugTool.info('Error transforming captions : ' + e)
