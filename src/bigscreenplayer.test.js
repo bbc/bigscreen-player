@@ -1254,29 +1254,29 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('mock', () => {
-    afterEach(() => {
-      bigscreenPlayer.unmock()
-    })
+  // describe('mock', () => {
+  //   afterEach(() => {
+  //     bigscreenPlayer.unmock()
+  //   })
 
-    it('should return a mock object with jasmine spies on the same interface as the main api', () => {
-      initialiseBigscreenPlayer()
+  //   it('should return a mock object with jasmine spies on the same interface as the main api', () => {
+  //     initialiseBigscreenPlayer()
 
-      const moduleKeys = Object.keys(bigscreenPlayer)
-      bigscreenPlayer.mockJasmine()
-      const mockKeys = Object.keys(bigscreenPlayer)
+  //     const moduleKeys = Object.keys(bigscreenPlayer)
+  //     bigscreenPlayer.mockJasmine()
+  //     const mockKeys = Object.keys(bigscreenPlayer)
 
-      expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
-    })
+  //     expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
+  //   })
 
-    it('should return a mock object on the same interface as the main api', () => {
-      initialiseBigscreenPlayer()
+  //   it('should return a mock object on the same interface as the main api', () => {
+  //     initialiseBigscreenPlayer()
 
-      const moduleKeys = Object.keys(bigscreenPlayer)
-      bigscreenPlayer.mock()
-      const mockKeys = Object.keys(bigscreenPlayer)
+  //     const moduleKeys = Object.keys(bigscreenPlayer)
+  //     bigscreenPlayer.mock()
+  //     const mockKeys = Object.keys(bigscreenPlayer)
 
-      expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
-    })
-  })
+  //     expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
+  //   })
+  // })
 })
