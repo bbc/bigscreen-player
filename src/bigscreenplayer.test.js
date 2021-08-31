@@ -21,7 +21,7 @@ let noCallbacks = false
 let forceMediaSourcesConstructionFailure = false
 
 const mockMediaSources = {
-  init: (_media, _serverDate, _windowType, _liveSupport, callbacks) => {
+  init: (media, serverDate, windowType, liveSupport, callbacks) => {
     mediaSourcesCallbackErrorSpy = jest.spyOn(callbacks, 'onError')
     if (forceMediaSourcesConstructionFailure) {
       callbacks.onError()
@@ -145,7 +145,7 @@ describe('Bigscreen Player', () => {
 
     jest.spyOn(PlayerComponent, 'getLiveSupport').mockReturnValue(LiveSupport.SEEKABLE)
 
-    PlayerComponent.mockImplementation((_playbackElement, _bigscreenPlayerData, _mediaSources, _windowType, callback) => {
+    PlayerComponent.mockImplementation((playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) => {
       mockEventHook = callback
       return mockPlayerComponentInstance
     })

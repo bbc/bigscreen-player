@@ -13,7 +13,7 @@ describe('restartable HMTL5 Live Player', () => {
 
   const mockMediaSources = {
     time: () => testTime,
-    refresh: (success, _error) => success()
+    refresh: (success, error) => success()
   }
 
   let player

@@ -29,7 +29,7 @@ let mockTimeObject = { windowStartTime: 10, windowEndTime: 100, timeCorrection: 
 const setupMockManifestLoaderSuccess = (transferFormat) => {
   transferFormat = transferFormat ?? TransferFormats.DASH
 
-  ManifestLoader.load = jest.fn((_url, _serverDate, callbacks) =>
+  ManifestLoader.load = jest.fn((url, serverDate, callbacks) =>
     callbacks.onSuccess({
       transferFormat: transferFormat,
       time: mockTimeObject
@@ -37,14 +37,14 @@ const setupMockManifestLoaderSuccess = (transferFormat) => {
 }
 
 const setupMockManifestLoaderFail = () => {
-  ManifestLoader.load = jest.fn((_url, _serverDate, callbacks) => callbacks.onError())
+  ManifestLoader.load = jest.fn((url, serverDate, callbacks) => callbacks.onError())
 }
 
 const setupMockManifestLoaderFailOnce = (transferFormat) => {
   transferFormat = transferFormat ?? TransferFormats.DASH
   let hasFailedOnce = false
 
-  ManifestLoader.load = jest.fn((_url, _serverDate, callbacks) => {
+  ManifestLoader.load = jest.fn((url, serverDate, callbacks) => {
     if (hasFailedOnce) {
       callbacks.onSuccess({
         transferFormat: transferFormat,
