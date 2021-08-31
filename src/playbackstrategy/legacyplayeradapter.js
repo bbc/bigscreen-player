@@ -5,42 +5,46 @@ import DebugTool from '../debugger/debugtool'
 import LiveGlitchCurtain from './liveglitchcurtain'
 
 function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, player) {
-  var EVENT_HISTORY_LENGTH = 2
+  const EVENT_HISTORY_LENGTH = 2
 
-  var mediaPlayer = player
-  var transitions = new AllowedMediaTransitions(mediaPlayer)
-  var eventHistory = []
-  var eventCallback
-  var errorCallback
-  var timeUpdateCallback
-  var currentTime
-  var timeCorrection = mediaSources.time() && mediaSources.time().correction || 0
-  var duration = 0
-  var isPaused
-  var isEnded = false
-  var hasStartTime
-
-  var handleErrorOnExitingSeek
-  var delayPauseOnExitSeek
-
-  var pauseOnExitSeek
-  var exitingSeek
-  var targetSeekToTime
-
-  var liveGlitchCurtain
-
-  var strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy
-  var setSourceOpts = {
+  const setSourceOpts = {
     disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.liveUhdDisableSentinels,
     disableSeekSentinel: window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableSeekSentinel
   }
+
+  const timeCorrection = mediaSources.time() && mediaSources.time().correction || 0
+  const mediaPlayer = player
+  const eventHistory = []
+
+  const transitions = new AllowedMediaTransitions(mediaPlayer)
+
+  let isEnded = false
+  let duration = 0
+
+  let eventCallback
+  let errorCallback
+  let timeUpdateCallback
+  let currentTime
+  let isPaused
+  let hasStartTime
+
+  let handleErrorOnExitingSeek
+  let delayPauseOnExitSeek
+
+  let pauseOnExitSeek
+  let exitingSeek
+  let targetSeekToTime
+
+  let liveGlitchCurtain
+
+  let strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy
 
   mediaPlayer.addEventCallback(this, eventHandler)
 
   strategy = strategy.match(/.+(?=strategy)/g)[0]
 
   function eventHandler (event) {
-    var handleEvent = {
+    const handleEvent = {
       'playing': onPlaying,
       'paused': onPaused,
       'buffering': onBuffering,
@@ -61,6 +65,7 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
       if (eventHistory.length >= EVENT_HISTORY_LENGTH) {
         eventHistory.pop()
       }
+
       eventHistory.unshift({type: event.type, time: new Date().getTime()})
     }
   }
@@ -73,12 +78,12 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
     publishMediaState(MediaState.PLAYING)
   }
 
-  function onPaused (event) {
+  function onPaused (_event) {
     isPaused = true
     publishMediaState(MediaState.PAUSED)
   }
 
-  function onBuffering (event) {
+  function onBuffering (_event) {
     isEnded = false
     publishMediaState(MediaState.WAITING)
   }
@@ -117,17 +122,16 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
 
   function onSeekAttempted () {
     if (requiresLiveCurtain()) {
-      var doNotForceBeginPlaybackToEndOfWindow = {
+      const doNotForceBeginPlaybackToEndOfWindow = {
         forceBeginPlaybackToEndOfWindow: false
       }
 
-      var streaming = window.bigscreenPlayer || {
+      const streaming = window.bigscreenPlayer || {
         overrides: doNotForceBeginPlaybackToEndOfWindow
       }
 
-      var overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow
-
-      var shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow)
+      const overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow
+      const shouldShowCurtain = windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow)
 
       if (shouldShowCurtain) {
         liveGlitchCurtain = new LiveGlitchCurtain(playbackElement)
@@ -169,15 +173,15 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
   function setupExitSeekWorkarounds (mimeType) {
     handleErrorOnExitingSeek = windowType !== WindowTypes.STATIC && mimeType === 'application/dash+xml'
 
-    var deviceFailsPlayAfterPauseOnExitSeek = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.pauseOnExitSeek
+    const deviceFailsPlayAfterPauseOnExitSeek = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.pauseOnExitSeek
     delayPauseOnExitSeek = handleErrorOnExitingSeek || deviceFailsPlayAfterPauseOnExitSeek
   }
 
   function checkSeekSucceeded (seekableRangeStart, currentTime) {
-    var SEEK_TOLERANCE = 30
+    const SEEK_TOLERANCE = 30
 
-    var clampedSeekToTime = Math.max(seekableRangeStart, targetSeekToTime)
-    var successfullySeeked = Math.abs(currentTime - clampedSeekToTime) < SEEK_TOLERANCE
+    const clampedSeekToTime = Math.max(seekableRangeStart, targetSeekToTime)
+    const successfullySeeked = Math.abs(currentTime - clampedSeekToTime) < SEEK_TOLERANCE
 
     if (successfullySeeked) {
       if (pauseOnExitSeek) {
@@ -186,6 +190,7 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
         mediaPlayer.pause()
         pauseOnExitSeek = false
       }
+
       exitingSeek = false
     }
   }
@@ -196,8 +201,9 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
   function restartMediaPlayer () {
     exitingSeek = false
     pauseOnExitSeek = false
-    var source = mediaPlayer.getSource()
-    var mimeType = mediaPlayer.getMimeType()
+
+    const source = mediaPlayer.getSource()
+    const mimeType = mediaPlayer.getMimeType()
 
     reset()
     mediaPlayer.initialiseMedia('video', source, mimeType, playbackElement, setSourceOpts)
@@ -212,32 +218,27 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
     if (transitions.canBeStopped()) {
       mediaPlayer.stop()
     }
+
     mediaPlayer.reset()
   }
 
   return {
     transitions: transitions,
-    addEventCallback: function (thisArg, newCallback) {
-      eventCallback = function (event) {
-        newCallback.call(thisArg, event)
-      }
+    addEventCallback: (thisArg, newCallback) => {
+      eventCallback = (event) => newCallback.call(thisArg, event)
     },
-    addErrorCallback: function (thisArg, newErrorCallback) {
-      errorCallback = function (event) {
-        newErrorCallback.call(thisArg, event)
-      }
+    addErrorCallback: (thisArg, newErrorCallback) => {
+      errorCallback = (event) => newErrorCallback.call(thisArg, event)
     },
-    addTimeUpdateCallback: function (thisArg, newTimeUpdateCallback) {
-      timeUpdateCallback = function () {
-        newTimeUpdateCallback.call(thisArg)
-      }
+    addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
+      timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    load: function (mimeType, startTime) {
+    load: (mimeType, startTime) => {
       setupExitSeekWorkarounds(mimeType)
       isPaused = false
 
       hasStartTime = startTime || startTime === 0
-      var isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime
+      const isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime
 
       mediaPlayer.initialiseMedia('video', mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
       if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
@@ -247,9 +248,10 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
       } else {
         mediaPlayer.beginPlayback()
       }
+
       DebugTool.keyValue({key: 'strategy', value: getStrategy()})
     },
-    play: function () {
+    play: () => {
       isPaused = false
       if (delayPauseOnExitSeek && exitingSeek) {
         pauseOnExitSeek = false
@@ -263,7 +265,7 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
         }
       }
     },
-    pause: function (options) {
+    pause: (options) => {
       // TODO - transitions is checked in playerComponent. The check can be removed here.
       if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
         pauseOnExitSeek = true
@@ -271,26 +273,18 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
         mediaPlayer.pause(options)
       }
     },
-    isPaused: function () {
-      return isPaused
-    },
-    isEnded: function () {
-      return isEnded
-    },
-    getDuration: function () {
-      return duration
-    },
-    getPlayerElement: function () {
-      return mediaPlayer.getPlayerElement && mediaPlayer.getPlayerElement()
-    },
-    getSeekableRange: function () {
+    isPaused: () => isPaused,
+    isEnded: () => isEnded,
+    getDuration: () => duration,
+    getPlayerElement: () => mediaPlayer.getPlayerElement && mediaPlayer.getPlayerElement(),
+    getSeekableRange: () => {
       if (windowType === WindowTypes.STATIC) {
         return {
           start: 0,
           end: duration
         }
       } else {
-        var seekableRange = mediaPlayer.getSeekableRange && mediaPlayer.getSeekableRange() || {}
+        const seekableRange = mediaPlayer.getSeekableRange && mediaPlayer.getSeekableRange() || {}
         if (seekableRange.hasOwnProperty('start')) {
           seekableRange.start = seekableRange.start - timeCorrection
         }
@@ -300,21 +294,21 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
         return seekableRange
       }
     },
-    setPlaybackRate: function (rate) {
+    setPlaybackRate: (rate) => {
       if (typeof mediaPlayer.setPlaybackRate === 'function') {
         mediaPlayer.setPlaybackRate(rate)
       }
     },
-    getPlaybackRate: function () {
+    getPlaybackRate: () => {
       if (typeof mediaPlayer.getPlaybackRate === 'function') {
         return mediaPlayer.getPlaybackRate()
       }
       return 1.0
     },
-    getCurrentTime: function () {
+    getCurrentTime: () => {
       return currentTime
     },
-    setCurrentTime: function (seekToTime) {
+    setCurrentTime: (seekToTime) => {
       isEnded = false
       currentTime = seekToTime
       seekToTime += timeCorrection
@@ -332,7 +326,7 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
     },
     getStrategy: getStrategy(),
     reset: reset,
-    tearDown: function () {
+    tearDown: () => {
       mediaPlayer.removeAllEventCallbacks()
       pauseOnExitSeek = false
       exitingSeek = false
