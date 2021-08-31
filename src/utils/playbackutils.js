@@ -1,7 +1,7 @@
 export default {
-  clone: function (args) {
-    var clone = {}
-    for (var prop in args) {
+  clone: (args) => {
+    const clone = {}
+    for (const prop in args) {
       if (args.hasOwnProperty(prop)) {
         clone[prop] = args[prop]
       }
@@ -9,12 +9,12 @@ export default {
     return clone
   },
 
-  deepClone: function (objectToClone) {
+  deepClone: (objectToClone) => {
     if (!objectToClone) {
       return objectToClone
     }
 
-    var clone, propValue, propName
+    let clone, propValue, propName
     clone = Array.isArray(objectToClone) ? [] : {}
     for (propName in objectToClone) {
       propValue = objectToClone[propName]
@@ -33,7 +33,7 @@ export default {
   cloneArray: function (arr) {
     var clone = []
 
-    for (var i = 0, n = arr.length; i < n; i++) {
+    for (let i = 0, n = arr.length; i < n; i++) {
       clone.push(this.clone(arr[i]))
     }
 
@@ -43,9 +43,9 @@ export default {
   merge: function () {
     var merged = {}
 
-    for (var i = 0; i < arguments.length; i++) {
-      var obj = arguments[i]
-      for (var prop in obj) {
+    for (let i = 0; i < arguments.length; i++) {
+      const obj = arguments[i]
+      for (const prop in obj) {
         if (obj.hasOwnProperty(prop)) {
           if (Object.prototype.toString.call(obj[prop]) === '[object Object]') {
             merged[prop] = this.merge(merged[prop], obj[prop])
@@ -59,8 +59,8 @@ export default {
     return merged
   },
 
-  arrayStartsWith: function (array, partial) {
-    for (var i = 0; i < partial.length; i++) {
+  arrayStartsWith: (array, partial) => {
+    for (let i = 0; i < partial.length; i++) {
       if (array[i] !== partial[i]) {
         return false
       }
@@ -69,21 +69,21 @@ export default {
     return true
   },
 
-  find: function (array, predicate) {
-    return array.reduce(function (acc, it, i) {
+  find: (array, predicate) => {
+    return array.reduce((acc, it, i) => {
       return acc !== false ? acc : predicate(it) && it
     }, false)
   },
 
-  findIndex: function (array, predicate) {
-    return array.reduce(function (acc, it, i) {
+  findIndex: (array, predicate) => {
+    return array.reduce((acc, it, i) => {
       return acc !== false ? acc : predicate(it) && i
     }, false)
   },
 
-  swap: function (array, i, j) {
-    var arr = array.slice()
-    var temp = arr[i]
+  swap: (array, i, j) => {
+    const arr = array.slice()
+    const temp = arr[i]
 
     arr[i] = arr[j]
     arr[j] = temp
@@ -91,24 +91,22 @@ export default {
     return arr
   },
 
-  pluck: function (array, property) {
-    var plucked = []
+  pluck: (array, property) => {
+    const plucked = []
 
-    for (var i = 0; i < array.length; i++) {
+    for (let i = 0; i < array.length; i++) {
       plucked.push(array[i][property])
     }
 
     return plucked
   },
 
-  flatten: function (arr) {
-    return [].concat.apply([], arr)
-  },
+  flatten: (arr) => [].concat.apply([], arr),
 
-  without: function (arr, value) {
-    var newArray = []
+  without: (arr, value) => {
+    const newArray = []
 
-    for (var i = 0; i < arr.length; i++) {
+    for (let i = 0; i < arr.length; i++) {
       if (arr[i] !== value) {
         newArray.push(arr[i])
       }
@@ -117,18 +115,18 @@ export default {
     return newArray
   },
 
-  contains: function (arr, subset) {
-    return [].concat(subset).every(function (item) { return [].concat(arr).indexOf(item) > -1 })
+  contains: (arr, subset) => {
+    return [].concat(subset).every((item) => { return [].concat(arr).indexOf(item) > -1 })
   },
 
-  pickRandomFromArray: function (arr) {
+  pickRandomFromArray: (arr) => {
     return arr[Math.floor(Math.random() * arr.length)]
   },
 
-  filter: function (arr, predicate) {
-    var filteredArray = []
+  filter: (arr, predicate) => {
+    const filteredArray = []
 
-    for (var i = 0; i < arr.length; i++) {
+    for (let i = 0; i < arr.length; i++) {
       if (predicate(arr[i])) {
         filteredArray.push(arr[i])
       }
@@ -137,20 +135,20 @@ export default {
     return filteredArray
   },
 
-  noop: function () {},
+  noop: () => {},
 
-  generateUUID: function () {
-    var d = new Date().getTime()
+  generateUUID: () => {
+    let d = new Date().getTime()
 
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      var r = (d + Math.random() * 16) % 16 | 0
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (d + Math.random() * 16) % 16 | 0
       d = Math.floor(d / 16)
       return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
     })
   },
 
-  path: function (object, keys) {
-    return (keys || []).reduce(function (accum, key) {
+  path: (object, keys) => {
+    return (keys || []).reduce((accum, key) => {
       return (accum || {})[key]
     }, object || {})
   }
