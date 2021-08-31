@@ -1,9 +1,9 @@
 function durationToSeconds (duration) {
-  var matches = duration.match(/^PT(\d+(?:[,\.]\d+)?H)?(\d+(?:[,\.]\d+)?M)?(\d+(?:[,\.]\d+)?S)?/) || []
+  const matches = duration.match(/^PT(\d+(?:[,\.]\d+)?H)?(\d+(?:[,\.]\d+)?M)?(\d+(?:[,\.]\d+)?S)?/) || []
 
-  var hours = parseFloat(matches[1] || 0) * 60 * 60
-  var mins = parseFloat(matches[2] || 0) * 60
-  var secs = parseFloat(matches[3] || 0)
+  const hours = parseFloat(matches[1] || 0) * 60 * 60
+  const mins = parseFloat(matches[2] || 0) * 60
+  const secs = parseFloat(matches[3] || 0)
 
   return (hours + mins + secs) || undefined
 }
@@ -22,7 +22,7 @@ function convertMilliSecondsToSeconds (timeInMilis) {
 }
 
 function calculateSlidingWindowSeekOffset (time, dvrInfoRangeStart, timeCorrection, slidingWindowPausedTime) {
-  var dashRelativeTime = time + timeCorrection - dvrInfoRangeStart
+  const dashRelativeTime = time + timeCorrection - dvrInfoRangeStart
 
   if (slidingWindowPausedTime === 0) {
     return dashRelativeTime
