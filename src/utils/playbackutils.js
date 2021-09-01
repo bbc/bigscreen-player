@@ -9,7 +9,7 @@ export default {
     return clone
   },
 
-  deepClone: (objectToClone) => {
+  deepClone: function (objectToClone) {
     if (!objectToClone) {
       return objectToClone
     }
