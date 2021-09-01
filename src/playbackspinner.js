@@ -1,9 +1,9 @@
 function PlaybackSpinner () {
-  var spinnerContainer = document.createElement('div')
+  const spinnerContainer = document.createElement('div')
   spinnerContainer.id = 'loadingSpinner'
   spinnerContainer.className = 'loadingSpinner loadingSpinner--large '
 
-  var spinner = document.createElement('div')
+  const spinner = document.createElement('div')
   spinner.className = 'loadingSpinner__spinner'
 
   spinnerContainer.appendChild(spinner)

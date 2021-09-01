@@ -1,7 +1,7 @@
 function AllowedMediaTransitions (mediaplayer) {
-  var player = mediaplayer
+  const player = mediaplayer
 
-  var MediaPlayerState = {
+  const MediaPlayerState = {
     EMPTY: 'EMPTY', // No source set
     STOPPED: 'STOPPED', // Source set but no playback
     BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
@@ -12,29 +12,33 @@ function AllowedMediaTransitions (mediaplayer) {
   }
 
   function canBePaused () {
-    var pausableStates = [
+    const pausableStates = [
       MediaPlayerState.BUFFERING,
       MediaPlayerState.PLAYING
     ]
+
     return pausableStates.indexOf(player.getState()) !== -1
   }
 
   function canBeStopped () {
-    var unstoppableStates = [
+    const unstoppableStates = [
       MediaPlayerState.EMPTY,
       MediaPlayerState.ERROR
     ]
-    var stoppable = unstoppableStates.indexOf(player.getState()) === -1
+
+    const stoppable = unstoppableStates.indexOf(player.getState()) === -1
     return stoppable
   }
 
   function canBeginSeek () {
-    var unseekableStates = [
+    const unseekableStates = [
       MediaPlayerState.EMPTY,
       MediaPlayerState.ERROR
     ]
-    var state = player.getState()
-    var seekable = state ? unseekableStates.indexOf(state) === -1 : false
+
+    const state = player.getState()
+    const seekable = state ? unseekableStates.indexOf(state) === -1 : false
+
     return seekable
   }
 

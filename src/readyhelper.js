@@ -3,9 +3,9 @@ import WindowTypes from './models/windowtypes'
 import LiveSupport from './models/livesupport'
 
 function ReadyHelper (initialPlaybackTime, windowType, liveSupport, callback) {
-  var ready = false
+  let ready = false
 
-  var callbackWhenReady = function (evt) {
+  const callbackWhenReady = (evt) => {
     if (ready) return
 
     if (!evt.data) {
@@ -26,7 +26,7 @@ function ReadyHelper (initialPlaybackTime, windowType, liveSupport, callback) {
   }
 
   function isValidTime (evtData) {
-    var isStatic = windowType === WindowTypes.STATIC
+    const isStatic = windowType === WindowTypes.STATIC
 
     if (isStatic) {
       return validateStaticTime(evtData.currentTime)

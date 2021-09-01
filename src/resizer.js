@@ -1,5 +1,5 @@
 function Resizer () {
-  var resized
+  let resized
 
   function resize (element, top, left, width, height, zIndex) {
     element.style.top = top + 'px'

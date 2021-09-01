@@ -16,25 +16,26 @@ import ReadyHelper from './readyhelper'
 import Subtitles from './subtitles/subtitles'
 
 function BigscreenPlayer () {
-  var stateChangeCallbacks = []
-  var timeUpdateCallbacks = []
-  var subtitleCallbacks = []
-  var playerReadyCallback
-  var mediaKind
-  var initialPlaybackTimeEpoch
-  var serverDate
-  var playerComponent
-  var resizer
-  var pauseTrigger
-  var isSeeking = false
-  var endOfStream
-  var windowType
-  var mediaSources
-  var playbackElement
-  var readyHelper
-  var subtitles
+  let stateChangeCallbacks = []
+  let timeUpdateCallbacks = []
+  let subtitleCallbacks = []
 
-  var END_OF_STREAM_TOLERANCE = 10
+  let playerReadyCallback
+  let mediaKind
+  let initialPlaybackTimeEpoch
+  let serverDate
+  let playerComponent
+  let resizer
+  let pauseTrigger
+  let isSeeking = false
+  let endOfStream
+  let windowType
+  let mediaSources
+  let playbackElement
+  let readyHelper
+  let subtitles
+
+  const END_OF_STREAM_TOLERANCE = 10
 
   function mediaStateUpdateCallback (evt) {
     if (evt.timeUpdate) {
@@ -44,7 +45,8 @@ function BigscreenPlayer () {
         endOfStream: endOfStream
       })
     } else {
-      var stateObject = {state: evt.data.state}
+      let stateObject = {state: evt.data.state}
+
       if (evt.data.state === MediaState.PAUSED) {
         endOfStream = false
         stateObject.trigger = pauseTrigger || PauseTriggers.DEVICE
@@ -169,7 +171,7 @@ function BigscreenPlayer () {
   }
 
   return {
-    init: function (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
+    init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) => {
       playbackElement = newPlaybackElement
       Chronicle.init()
       resizer = Resizer()
@@ -182,11 +184,9 @@ function BigscreenPlayer () {
       }
       playerReadyCallback = callbacks.onSuccess
 
-      var mediaSourceCallbacks = {
-        onSuccess: function () {
-          bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles)
-        },
-        onError: function (error) {
+      const mediaSourceCallbacks = {
+        onSuccess: () => bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles),
+        onError: (error) => {
           if (callbacks.onError) {
             callbacks.onError(error)
           }
@@ -234,69 +234,70 @@ function BigscreenPlayer () {
       Chronicle.tearDown()
     },
 
-    registerForStateChanges: function (callback) {
+    registerForStateChanges: (callback) => {
       stateChangeCallbacks.push(callback)
       return callback
     },
-    unregisterForStateChanges: function (callback) {
-      var indexOf = stateChangeCallbacks.indexOf(callback)
+
+    unregisterForStateChanges: (callback) => {
+      const indexOf = stateChangeCallbacks.indexOf(callback)
       if (indexOf !== -1) {
         stateChangeCallbacks.splice(indexOf, 1)
       }
     },
-    registerForTimeUpdates: function (callback) {
+
+    registerForTimeUpdates: (callback) => {
       timeUpdateCallbacks.push(callback)
       return callback
     },
-    unregisterForTimeUpdates: function (callback) {
-      var indexOf = timeUpdateCallbacks.indexOf(callback)
+
+    unregisterForTimeUpdates: (callback) => {
+      const indexOf = timeUpdateCallbacks.indexOf(callback)
 
       if (indexOf !== -1) {
         timeUpdateCallbacks.splice(indexOf, 1)
       }
     },
-    registerForSubtitleChanges: function (callback) {
+
+    registerForSubtitleChanges: (callback) => {
       subtitleCallbacks.push(callback)
       return callback
     },
-    unregisterForSubtitleChanges: function (callback) {
-      var indexOf = subtitleCallbacks.indexOf(callback)
+
+    unregisterForSubtitleChanges: (callback) => {
+      const indexOf = subtitleCallbacks.indexOf(callback)
       if (indexOf !== -1) {
         subtitleCallbacks.splice(indexOf, 1)
       }
     },
+
     setCurrentTime: function (time) {
       DebugTool.apicall('setCurrentTime')
       if (playerComponent) {
-        isSeeking = true // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
+        // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
+        isSeeking = true
         playerComponent.setCurrentTime(time)
         endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
       }
     },
-    setPlaybackRate: function (rate) {
+
+    setPlaybackRate: (rate) => {
       if (playerComponent) {
         playerComponent.setPlaybackRate(rate)
       }
     },
-    getPlaybackRate: function () {
-      return playerComponent && playerComponent.getPlaybackRate()
-    },
-    getCurrentTime: function () {
-      return playerComponent && playerComponent.getCurrentTime() || 0
-    },
-    getMediaKind: function () {
-      return mediaKind
-    },
-    getWindowType: function () {
-      return windowType
-    },
-    getSeekableRange: function () {
-      return playerComponent ? playerComponent.getSeekableRange() : {}
-    },
+
+    getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
+    getCurrentTime: () => playerComponent && playerComponent.getCurrentTime() || 0,
+    getMediaKind: () => mediaKind,
+    getWindowType: () => windowType,
+    getSeekableRange: () => playerComponent ? playerComponent.getSeekableRange() : {},
+
     isPlayingAtLiveEdge: function () {
       return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
     },
-    getLiveWindowData: function () {
+
+    getLiveWindowData: () => {
       if (windowType === WindowTypes.STATIC) {
         return {}
       }
@@ -308,29 +309,28 @@ function BigscreenPlayer () {
         serverDate: serverDate
       }
     },
-    getDuration: function () {
-      return playerComponent && playerComponent.getDuration()
-    },
-    isPaused: function () {
-      return playerComponent ? playerComponent.isPaused() : true
-    },
-    isEnded: function () {
-      return playerComponent ? playerComponent.isEnded() : false
-    },
-    play: function () {
+
+    getDuration: () => playerComponent && playerComponent.getDuration(),
+    isPaused: () => playerComponent ? playerComponent.isPaused() : true,
+    isEnded: () => playerComponent ? playerComponent.isEnded() : false,
+
+    play: () => {
       DebugTool.apicall('play')
       playerComponent.play()
     },
-    pause: function (opts) {
+
+    pause: (opts) => {
       DebugTool.apicall('pause')
       pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
       playerComponent.pause(opts)
     },
-    resize: function (top, left, width, height, zIndex) {
+
+    resize: (top, left, width, height, zIndex) => {
       subtitles.hide()
       resizer.resize(playbackElement, top, left, width, height, zIndex)
     },
-    clearResize: function () {
+
+    clearResize: () => {
       if (subtitles.enabled()) {
         subtitles.show()
       } else {
@@ -338,70 +338,67 @@ function BigscreenPlayer () {
       }
       resizer.clear(playbackElement)
     },
+
     setSubtitlesEnabled: setSubtitlesEnabled,
     isSubtitlesEnabled: isSubtitlesEnabled,
     isSubtitlesAvailable: isSubtitlesAvailable,
-    areSubtitlesCustomisable: function () {
+
+    areSubtitlesCustomisable: () => {
       return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)
     },
-    customiseSubtitles: function (styleOpts) {
+
+    customiseSubtitles: (styleOpts) => {
       if (subtitles) {
         subtitles.customise(styleOpts)
       }
     },
-    renderSubtitleExample: function (xmlString, styleOpts, safePosition) {
+
+    renderSubtitleExample: (xmlString, styleOpts, safePosition) => {
       if (subtitles) {
         subtitles.renderExample(xmlString, styleOpts, safePosition)
       }
     },
-    clearSubtitleExample: function () {
+
+    clearSubtitleExample: () => {
       if (subtitles) {
         subtitles.clearExample()
       }
     },
-    setTransportControlsPosition: function (position) {
+
+    setTransportControlsPosition: (position) => {
       if (subtitles) {
         subtitles.setPosition(position)
       }
     },
+
     canSeek: function () {
       return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
     },
-    canPause: function () {
+
+    canPause: () => {
       return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport())
     },
-    mock: function (opts) {
-      MockBigscreenPlayer.mock(this, opts)
-    },
-    unmock: function () {
-      MockBigscreenPlayer.unmock(this)
-    },
-    mockJasmine: function (opts) {
-      MockBigscreenPlayer.mockJasmine(this, opts)
-    },
-    registerPlugin: function (plugin) {
-      Plugins.registerPlugin(plugin)
-    },
-    unregisterPlugin: function (plugin) {
-      Plugins.unregisterPlugin(plugin)
-    },
-    transitions: function () {
-      return playerComponent ? playerComponent.transitions() : {}
-    },
-    getPlayerElement: function () {
-      return playerComponent && playerComponent.getPlayerElement()
-    },
-    convertEpochMsToVideoTimeSeconds: function (epochTime) {
+
+    mock: function (opts) { MockBigscreenPlayer.mock(this, opts) },
+    unmock: function () { MockBigscreenPlayer.unmock(this) },
+    mockJasmine: function (opts) { MockBigscreenPlayer.mockJasmine(this, opts) },
+
+    registerPlugin: (plugin) => Plugins.registerPlugin(plugin),
+    unregisterPlugin: (plugin) => Plugins.unregisterPlugin(plugin),
+    transitions: () => playerComponent ? playerComponent.transitions() : {},
+    getPlayerElement: () => playerComponent && playerComponent.getPlayerElement(),
+
+    convertEpochMsToVideoTimeSeconds: (epochTime) => {
       return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined
     },
-    getFrameworkVersion: function () {
+
+    getFrameworkVersion: () => {
       return Version
     },
+
     convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
     toggleDebug: toggleDebug,
-    getLogLevels: function () {
-      return DebugTool.logLevels
-    },
+    getLogLevels: () => DebugTool.logLevels,
     setLogLevel: DebugTool.setLogLevel
   }
 }
