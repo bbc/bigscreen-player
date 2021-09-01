@@ -70,3 +70,5 @@ bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles)
 ```
 
 [← Prev - Installation](tutorial-installation.html)
+
+[→ Next - Events](tutorial-events.html)

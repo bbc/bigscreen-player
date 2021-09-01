@@ -46,3 +46,5 @@ bigscreenPlayer.registerPlugin(examplePlugin);
 bigscreenPlayer.unregisterPlugin(examplePlugin);
 
 ```
+
+[← Prev - Events](tutorial-events.html)

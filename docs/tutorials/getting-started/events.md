@@ -59,3 +59,6 @@ var subtitleChangeToken = bigscreenPlayer.registerForSubtitleChanges(function (e
 
 bigscreenPlayer.unregisterForSubtitleChanges(subtitleChangeToken);
 ```
+[← Prev - Usage](tutorial-usage.html)
+
+[→ Next - Creating a plugin](tutorial-creating-a-plugin.html)
