@@ -17,26 +17,26 @@ jest.mock('../plugins', () => {
   }
 })
 
-describe('IMSC Subtitles', () =>  {
-  var mockParentElement
-  var fromXmlReturn
-  var mediaPlayer
-  var subtitles
-  var mockMediaSources
-  var subtitlesUrl
-  var subtitlesCdn
-  var segmentLength
-  var epochStartTimeMilliseconds
-  var avalailableSourceCount
+describe('IMSC Subtitles', () => {
+  let mockParentElement
+  let fromXmlReturn
+  let mediaPlayer
+  let subtitles
+  let mockMediaSources
+  let subtitlesUrl
+  let subtitlesCdn
+  let segmentLength
+  let epochStartTimeMilliseconds
+  let avalailableSourceCount
 
-  var LoadUrlStubResponseXml = '<?xml>'
-  var LoadUrlStubResponseText
+  const LoadUrlStubResponseXml = '<?xml>'
+  let LoadUrlStubResponseText
 
   function msToS (timeMs) {
     return timeMs / 1000
   }
 
-  beforeEach(() =>  {
+  beforeEach(() => {
     subtitlesUrl = 'http://stub-subtitles.test'
     subtitlesCdn = 'supplier1'
     LoadUrlStubResponseText = '<?xml version="1.0" encoding="utf-8"?><tt xmlns="http://www.w3.org/ns/ttml"></tt>'
@@ -46,6 +46,7 @@ describe('IMSC Subtitles', () =>  {
     mediaPlayer = {
       'getCurrentTime': jest.fn()
     }
+
     mockMediaSources = {
       'currentSubtitlesSource': jest.fn(),
       'failoverSubtitles': jest.fn(),
@@ -54,8 +55,9 @@ describe('IMSC Subtitles', () =>  {
       'subtitlesRequestTimeout': jest.fn(),
       'time': jest.fn()
     }
-    mockMediaSources.currentSubtitlesSource.mockImplementation(() =>  { return subtitlesUrl })
-    mockMediaSources.failoverSubtitles.mockImplementation(function (postFailoverAction, failoverErrorAction) {
+
+    mockMediaSources.currentSubtitlesSource.mockImplementation(() => { return subtitlesUrl })
+    mockMediaSources.failoverSubtitles.mockImplementation((postFailoverAction, failoverErrorAction) => {
       if (avalailableSourceCount > 1) {
         avalailableSourceCount--
         postFailoverAction()
@@ -63,9 +65,10 @@ describe('IMSC Subtitles', () =>  {
         failoverErrorAction()
       }
     })
-    mockMediaSources.currentSubtitlesSegmentLength.mockImplementation(() =>  { return segmentLength })
-    mockMediaSources.currentSubtitlesCdn.mockImplementation(() =>  { return subtitlesCdn })
-    mockMediaSources.time.mockImplementation(() =>  {
+
+    mockMediaSources.currentSubtitlesSegmentLength.mockImplementation(() => { return segmentLength })
+    mockMediaSources.currentSubtitlesCdn.mockImplementation(() => { return subtitlesCdn })
+    mockMediaSources.time.mockImplementation(() => {
       return {
         windowStartTime: epochStartTimeMilliseconds
       }
@@ -74,7 +77,7 @@ describe('IMSC Subtitles', () =>  {
     jest.useFakeTimers()
 
     fromXmlReturn = {
-      getMediaTimeEvents: () =>  {
+      getMediaTimeEvents: () => {
         return [1, 3, 8]
       },
       head: {
@@ -89,7 +92,7 @@ describe('IMSC Subtitles', () =>  {
     generateISD.mockReturnValue({ contents: ['mockContents'] })
     fromXML.mockReturnValue(fromXmlReturn)
 
-    LoadUrl.mockImplementation(function (url, callbackObject) {
+    LoadUrl.mockImplementation((url, callbackObject) => {
       callbackObject.onLoad(LoadUrlStubResponseXml, LoadUrlStubResponseText, 200)
     })
 
@@ -100,7 +103,7 @@ describe('IMSC Subtitles', () =>  {
     document.body.appendChild(mockParentElement)
   })
 
-  afterEach(() =>  {
+  afterEach(() => {
     jest.useRealTimers()
     LoadUrl.mockReset()
     fromXML.mockReset()
@@ -115,18 +118,18 @@ describe('IMSC Subtitles', () =>  {
     jest.advanceTimersByTime(751)
   }
 
-  describe('construction', () =>  {
-    afterEach(() =>  {
+  describe('construction', () => {
+    afterEach(() => {
       subtitles.stop()
     })
 
-    it('is constructed with the correct interface', () =>  {
+    it('is constructed with the correct interface', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
       expect(subtitles).toEqual(expect.objectContaining({start: expect.any(Function), stop: expect.any(Function), updatePosition: expect.any(Function), tearDown: expect.any(Function)}))
     })
 
-    it('autoplay argument starts the update loop', () =>  {
+    it('autoplay argument starts the update loop', () => {
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
       progressTime(1.5)
 
@@ -136,10 +139,10 @@ describe('IMSC Subtitles', () =>  {
     })
   })
 
-  describe('customisation', () =>  {
-    it('overrides the subtitles styling metadata with supplied defaults when rendering', () =>  {
-      var styleOpts = { backgroundColour: 'black', fontFamily: 'Arial' }
-      var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial' }
+  describe('customisation', () => {
+    it('overrides the subtitles styling metadata with supplied defaults when rendering', () => {
+      const styleOpts = { backgroundColour: 'black', fontFamily: 'Arial' }
+      const expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial' }
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, styleOpts)
 
       subtitles.start()
@@ -148,11 +151,11 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).toHaveBeenCalledWith(expect.any(Object), expect.any(HTMLDivElement), null, 100, 200, false, null, null, false, expectedOpts)
     })
 
-    it('overrides the subtitles styling metadata with supplied custom styles when rendering', () =>  {
+    it('overrides the subtitles styling metadata with supplied custom styles when rendering', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
-      var styleOpts = { size: 0.7, lineHeight: 0.9 }
-      var expectedOpts = { sizeAdjust: 0.7, lineHeightAdjust: 0.9 }
+      const styleOpts = { size: 0.7, lineHeight: 0.9 }
+      const expectedOpts = { sizeAdjust: 0.7, lineHeightAdjust: 0.9 }
 
       mediaPlayer.getCurrentTime.mockReturnValue(1)
 
@@ -162,10 +165,10 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).toHaveBeenCalledWith(expect.any(Object), expect.any(HTMLDivElement), null, 100, 200, false, null, null, false, expectedOpts)
     })
 
-    it('merges the current subtitles styling metadata with new supplied custom styles when rendering', () =>  {
-      var defaultStyleOpts = { backgroundColour: 'black', fontFamily: 'Arial' }
-      var customStyleOpts = { size: 0.7, lineHeight: 0.9 }
-      var expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial', sizeAdjust: 0.7, lineHeightAdjust: 0.9 }
+    it('merges the current subtitles styling metadata with new supplied custom styles when rendering', () => {
+      const defaultStyleOpts = { backgroundColour: 'black', fontFamily: 'Arial' }
+      const customStyleOpts = { size: 0.7, lineHeight: 0.9 }
+      const expectedOpts = { spanBackgroundColorAdjust: { transparent: 'black' }, fontFamily: 'Arial', sizeAdjust: 0.7, lineHeightAdjust: 0.9 }
 
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, defaultStyleOpts)
 
@@ -177,10 +180,10 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).toHaveBeenCalledWith(expect.any(Object), expect.any(HTMLDivElement), null, 100, 200, false, null, null, false, expectedOpts)
     })
 
-    it('does not render custom styles when subtitles are not enabled', () =>  {
+    it('does not render custom styles when subtitles are not enabled', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
-      var subsEnabled = false
+      const subsEnabled = false
       subtitles.start()
       subtitles.customise({}, subsEnabled)
 
@@ -188,8 +191,8 @@ describe('IMSC Subtitles', () =>  {
     })
   })
 
-  describe('example rendering', () =>  {
-    it('should call fromXML, generate and render when renderExample is called', () =>  {
+  describe('example rendering', () => {
+    it('should call fromXML, generate and render when renderExample is called', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
       subtitles.renderExample('', {}, {})
@@ -199,13 +202,14 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).toHaveBeenCalledTimes(1)
     })
 
-    it('should call renderHTML with a preview element with the correct structure when no position info', () =>  {
+    it('should call renderHTML with a preview element with the correct structure when no position info', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, undefined)
 
-      var exampleSubsElement = null
-      var height = null
-      var width = null
-      renderHTML.mockImplementation(function (isd, subsElement, _, renderHeight, renderWidth) {
+      let exampleSubsElement = null
+      let height = null
+      let width = null
+
+      renderHTML.mockImplementation((isd, subsElement, _, renderHeight, renderWidth) => {
         exampleSubsElement = subsElement
         height = renderHeight
         width = renderWidth
@@ -224,13 +228,14 @@ describe('IMSC Subtitles', () =>  {
       expect(width).toBe(200)
     })
 
-    it('should call renderHTML with a preview element with the correct structure when there is position info', () =>  {
+    it('should call renderHTML with a preview element with the correct structure when there is position info', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
-      var exampleSubsElement = null
-      var height = null
-      var width = null
-      renderHTML.mockImplementation(function (isd, subsElement, _, renderHeight, renderWidth) {
+      let exampleSubsElement = null
+      let height = null
+      let width = null
+
+      renderHTML.mockImplementation((isd, subsElement, _, renderHeight, renderWidth) => {
         exampleSubsElement = subsElement
         height = renderHeight
         width = renderWidth
@@ -255,20 +260,20 @@ describe('IMSC Subtitles', () =>  {
     })
   })
 
-  describe('Vod subtitles', () =>  {
-    afterEach(() =>  {
+  describe('Vod subtitles', () => {
+    afterEach(() => {
       subtitles.stop()
     })
 
-    it('Should load the subtitles url', () =>  {
+    it('Should load the subtitles url', () => {
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
       expect(LoadUrl).toHaveBeenCalledWith(subtitlesUrl, expect.any(Object))
     })
 
-    it('Should load the next available url if loading of first XML fails', () =>  {
+    it('Should load the next available url if loading of first XML fails', () => {
       avalailableSourceCount = 2
-      LoadUrl.mockImplementation(function (url, callbackObject) {
+      LoadUrl.mockImplementation((url, callbackObject) => {
         callbackObject.onError()
       })
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
@@ -276,36 +281,36 @@ describe('IMSC Subtitles', () =>  {
       expect(LoadUrl).toHaveBeenCalledTimes(2)
     })
 
-    it('Calls fromXML on creation with the extracted XML from the text property of the response argument', () =>  {
+    it('Calls fromXML on creation with the extracted XML from the text property of the response argument', () => {
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
       expect(fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>')
     })
 
-    it('Calls fromXML on creation with the original text property of the response argument if expected header is not found', () =>  {
+    it('Calls fromXML on creation with the original text property of the response argument if expected header is not found', () => {
       LoadUrlStubResponseText = '<?xml version="1.0" encoding="utf-8" extra property="something"?><tt xmlns="http://www.w3.org/ns/ttml"></tt>'
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
       expect(fromXML).toHaveBeenCalledWith(LoadUrlStubResponseText)
     })
 
-    it('fires tranformError plugin if IMSC throws an exception when parsing', () =>  {
+    it('fires tranformError plugin if IMSC throws an exception when parsing', () => {
       fromXML.mockImplementation(() => { throw new Error() })
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
       expect(Plugins.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1)
     })
 
-    it('fires subtitleTransformError if responseXML from the loader is invalid', () =>  {
-      LoadUrl.mockImplementation(function (url, callbackObject) {
+    it('fires subtitleTransformError if responseXML from the loader is invalid', () => {
+      LoadUrl.mockImplementation((url, callbackObject) => {
         callbackObject.onLoad(null, '', 200)
       })
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
       expect(Plugins.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1)
     })
 
-    it('fires onSubtitlesTimeout if the xhr times out', () =>  {
-      LoadUrl.mockImplementation(function (url, callbackObject) {
+    it('fires onSubtitlesTimeout if the xhr times out', () => {
+      LoadUrl.mockImplementation((url, callbackObject) => {
         callbackObject.onTimeout()
       })
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
@@ -314,14 +319,14 @@ describe('IMSC Subtitles', () =>  {
       expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1)
     })
 
-    it('does not attempt to load subtitles if there is no subtitles url', () =>  {
+    it('does not attempt to load subtitles if there is no subtitles url', () => {
       subtitlesUrl = undefined
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
       expect(LoadUrl).not.toHaveBeenCalled()
     })
 
-    it('should not load subtitles everytime we start if it is already loaded', () =>  {
+    it('should not load subtitles everytime we start if it is already loaded', () => {
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
       expect(LoadUrl).toHaveBeenCalledWith(subtitlesUrl, expect.any(Object))
@@ -333,7 +338,7 @@ describe('IMSC Subtitles', () =>  {
       expect(LoadUrl).not.toHaveBeenCalled()
     })
 
-    it('cannot start when xml transforming has failed', () =>  {
+    it('cannot start when xml transforming has failed', () => {
       fromXML.mockImplementation(() => { throw new Error() })
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
@@ -343,7 +348,7 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).not.toHaveBeenCalled()
     })
 
-    it('does not try to generate and render when current time is undefined', () =>  {
+    it('does not try to generate and render when current time is undefined', () => {
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
       progressTime(undefined)
@@ -352,7 +357,7 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).not.toHaveBeenCalled()
     })
 
-    it('does not try to generate and render when xml transforming has failed', () =>  {
+    it('does not try to generate and render when xml transforming has failed', () => {
       fromXML.mockImplementation(() => { throw new Error() })
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
@@ -362,7 +367,7 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).not.toHaveBeenCalled()
     })
 
-    it('does not try to generate and render when the initial current time is less than the first subtitle time', () =>  {
+    it('does not try to generate and render when the initial current time is less than the first subtitle time', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
       subtitles.start()
@@ -373,7 +378,7 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).not.toHaveBeenCalled()
     })
 
-    it('does attempt to generate and render when the initial current time is greater than the final subtitle time', () =>  {
+    it('does attempt to generate and render when the initial current time is greater than the final subtitle time', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
       subtitles.start()
@@ -389,7 +394,7 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).toHaveBeenCalledTimes(1)
     })
 
-    it('does attempt to generate and render when the initial current time is mid way through a stream', () =>  {
+    it('does attempt to generate and render when the initial current time is mid way through a stream', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
       subtitles.start()
@@ -401,7 +406,7 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).toHaveBeenCalledTimes(1)
     })
 
-    it('only generate and render when there are new subtitles to display', () =>  {
+    it('only generate and render when there are new subtitles to display', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
       subtitles.start()
@@ -430,7 +435,7 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).toHaveBeenCalledTimes(3)
     })
 
-    it('no longer attempts any rendering if subtitles have been stopped', () =>  {
+    it('no longer attempts any rendering if subtitles have been stopped', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
       subtitles.start()
@@ -446,7 +451,7 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).not.toHaveBeenCalled()
     })
 
-    it('no longer attempts any rendering if subtitles have been torn down', () =>  {
+    it('no longer attempts any rendering if subtitles have been torn down', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
       subtitles.start()
@@ -462,7 +467,7 @@ describe('IMSC Subtitles', () =>  {
       expect(renderHTML).not.toHaveBeenCalled()
     })
 
-    it('fires onSubtitlesRenderError plugin if IMSC throws an exception when rendering', () =>  {
+    it('fires onSubtitlesRenderError plugin if IMSC throws an exception when rendering', () => {
       renderHTML.mockImplementation(() => { throw new Error() })
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
@@ -472,7 +477,7 @@ describe('IMSC Subtitles', () =>  {
       expect(Plugins.interface.onSubtitlesRenderError).toHaveBeenCalledTimes(1)
     })
 
-    it('fires onSubtitlesRenderError plugin if IMSC throws an exception when generating ISD', () =>  {
+    it('fires onSubtitlesRenderError plugin if IMSC throws an exception when generating ISD', () => {
       generateISD.mockImplementation(() => { throw new Error() })
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
@@ -483,19 +488,19 @@ describe('IMSC Subtitles', () =>  {
     })
   })
 
-  describe('Live subtitles', () =>  {
-    beforeEach(() =>  {
+  describe('Live subtitles', () => {
+    beforeEach(() => {
       subtitlesUrl = 'https://subtitles/$segment$.test'
       segmentLength = 3.84
       epochStartTimeMilliseconds = 1614769200000 // Wednesday, 3 March 2021 11:00:00
     })
 
-    afterEach(() =>  {
+    afterEach(() => {
       subtitles.stop()
     })
 
-    describe('Loading segments', () =>  {
-      it('should load the first three segments with correct urls on the first update interval', () =>  {
+    describe('Loading segments', () => {
+      it('should load the first three segments with correct urls on the first update interval', () => {
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
         mediaPlayer.getCurrentTime.mockReturnValue(10)
@@ -506,7 +511,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).toHaveBeenCalledWith('https://subtitles/420512817.test', expect.any(Object))
       })
 
-      it('should load the segment two segments ahead of current time', () =>  {
+      it('should load the segment two segments ahead of current time', () => {
         // epochStartTimeSeconds = Wednesday, 3 March 2021 11:00:00
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
@@ -522,7 +527,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).toHaveBeenCalledWith('https://subtitles/420512818.test', expect.any(Object))
       })
 
-      it('should not load a segment if segments array already contains it', () =>  {
+      it('should not load a segment if segments array already contains it', () => {
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
         mediaPlayer.getCurrentTime.mockReturnValue(10)
@@ -540,7 +545,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).toHaveBeenCalledWith('https://subtitles/420512818.test', expect.any(Object))
       })
 
-      it('only keeps three segments when playing', () =>  {
+      it('only keeps three segments when playing', () => {
         LoadUrl.mockClear()
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
@@ -554,7 +559,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).toHaveBeenCalledWith('https://subtitles/420512815.test', expect.any(Object))
       })
 
-      it('load three new segments when seeking back to a point where none of the segments are available', () =>  {
+      it('load three new segments when seeking back to a point where none of the segments are available', () => {
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
         mediaPlayer.getCurrentTime.mockReturnValue(113.84)
@@ -570,7 +575,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).toHaveBeenCalledTimes(3)
       })
 
-      it('loads three new segments when seeking forwards to a point where none of the segments are available', () =>  {
+      it('loads three new segments when seeking forwards to a point where none of the segments are available', () => {
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
         mediaPlayer.getCurrentTime.mockReturnValue(13.84)
@@ -586,7 +591,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).toHaveBeenCalledTimes(3)
       })
 
-      it('should not load segments when auto start is false', () =>  {
+      it('should not load segments when auto start is false', () => {
         subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
         mediaPlayer.getCurrentTime.mockReturnValue(10)
@@ -595,7 +600,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).not.toHaveBeenCalled()
       })
 
-      it('should load segments when start is called and autoStart is false', () =>  {
+      it('should load segments when start is called and autoStart is false', () => {
         subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
         mediaPlayer.getCurrentTime.mockReturnValue(10)
@@ -612,7 +617,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).toHaveBeenCalledWith('https://subtitles/420512815.test', expect.any(Object))
       })
 
-      it('calls fromXML with xml string where responseText contains more than a simple xml string', () =>  {
+      it('calls fromXML with xml string where responseText contains more than a simple xml string', () => {
         LoadUrlStubResponseText = 'stuff that might exists before the xml string' + LoadUrlStubResponseText
         mediaPlayer.getCurrentTime.mockReturnValue(10)
 
@@ -623,7 +628,7 @@ describe('IMSC Subtitles', () =>  {
         expect(fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>')
       })
 
-      it('should stop loading segments when stop is called', () =>  {
+      it('should stop loading segments when stop is called', () => {
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
         LoadUrl.mockReset()
@@ -635,7 +640,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).not.toHaveBeenCalled()
       })
 
-      it('should not try to load segments when the currentTime is not known by the player', () =>  {
+      it('should not try to load segments when the currentTime is not known by the player', () => {
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
         mediaPlayer.getCurrentTime.mockReturnValue(-1000)
@@ -644,7 +649,7 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).not.toHaveBeenCalled()
       })
 
-      it('should stop loading segments when xml transforming has failed', () =>  {
+      it('should stop loading segments when xml transforming has failed', () => {
         fromXML.mockImplementation(() => { throw new Error() })
 
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
@@ -660,8 +665,8 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).not.toHaveBeenCalled()
       })
 
-      it('should not stop loading segments when the xml response is invalid', () =>  {
-        LoadUrl.mockImplementation(function (url, callbackObject) {
+      it('should not stop loading segments when the xml response is invalid', () => {
+        LoadUrl.mockImplementation((url, callbackObject) => {
           callbackObject.onLoad(null, '', 200)
         })
 
@@ -678,8 +683,8 @@ describe('IMSC Subtitles', () =>  {
         expect(LoadUrl).toHaveBeenCalledWith('https://subtitles/420512818.test', expect.any(Object))
       })
 
-      it('should failover to the next url if loading of subtitles segments fails 3 times in a row', () =>  {
-        LoadUrl.mockImplementation(function (url, callbackObject) {
+      it('should failover to the next url if loading of subtitles segments fails 3 times in a row', () => {
+        LoadUrl.mockImplementation((url, callbackObject) => {
           callbackObject.onError()
         })
 
@@ -692,9 +697,10 @@ describe('IMSC Subtitles', () =>  {
         expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1)
       })
 
-      it('should not failover if loading subtitles segments fails less than three times in a row', () =>  {
-        var loadAttempts = 0
-        LoadUrl.mockImplementation(function (url, callbackObject) {
+      it('should not failover if loading subtitles segments fails less than three times in a row', () => {
+        let loadAttempts = 0
+
+        LoadUrl.mockImplementation((url, callbackObject) => {
           loadAttempts++
           // fail first two segments, load third succesfully
           if (loadAttempts > 2) {
@@ -712,9 +718,9 @@ describe('IMSC Subtitles', () =>  {
         expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(0)
       })
 
-      it('Should continue loading segments from next available url if loading from first subtitles url fails', () =>  {
+      it('Should continue loading segments from next available url if loading from first subtitles url fails', () => {
         avalailableSourceCount = 2
-        LoadUrl.mockImplementation(function (url, callbackObject) {
+        LoadUrl.mockImplementation((url, callbackObject) => {
           callbackObject.onError()
         })
 
@@ -732,7 +738,7 @@ describe('IMSC Subtitles', () =>  {
       })
     })
 
-    describe('rendering', () =>  {
+    describe('rendering', () => {
       beforeEach(() => {
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
       })
@@ -742,9 +748,9 @@ describe('IMSC Subtitles', () =>  {
         renderHTML.mockClear()
       })
 
-      it('should generate and render when time has progressed past a known un-rendered subtitles', () =>  {
-        var times = [[0, 1, 2, 3.84], [0, 3.84, 4, 7.68], [0, 7.68, 9, 9.7, 11.52]]
-        var counter = -1
+      it('should generate and render when time has progressed past a known un-rendered subtitles', () => {
+        let times = [[0, 1, 2, 3.84], [0, 3.84, 4, 7.68], [0, 7.68, 9, 9.7, 11.52]]
+        let counter = -1
 
         times = times.map((time) => {
           return time.map((t) => {
