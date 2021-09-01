@@ -168,7 +168,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   }
 
   function onStreamInitialised () {
-    var setMseDuration = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.mseDurationOverride
+    const setMseDuration = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.mseDurationOverride
     if (setMseDuration && (windowType === WindowTypes.SLIDING || windowType === WindowTypes.GROWING)) {
       // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
       mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER)

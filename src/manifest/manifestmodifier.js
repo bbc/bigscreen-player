@@ -3,11 +3,11 @@ function filter (manifest, representationOptions) {
   const maxFps = representationOptions.maxFps
 
   if (constantFps || maxFps) {
-    manifest.Period.AdaptationSet = manifest.Period.AdaptationSet.map(function (adaptationSet) {
+    manifest.Period.AdaptationSet = manifest.Period.AdaptationSet.map((adaptationSet) => {
       if (adaptationSet.contentType === 'video') {
         const frameRates = []
 
-        adaptationSet.Representation_asArray = adaptationSet.Representation_asArray.filter(function (representation) {
+        adaptationSet.Representation_asArray = adaptationSet.Representation_asArray.filter((representation) => {
           if (!maxFps || representation.frameRate <= maxFps) {
             frameRates.push(representation.frameRate)
             return true

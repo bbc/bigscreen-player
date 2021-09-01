@@ -31,7 +31,7 @@ export default {
   },
 
   cloneArray: function (arr) {
-    var clone = []
+    const clone = []
 
     for (let i = 0, n = arr.length; i < n; i++) {
       clone.push(this.clone(arr[i]))
@@ -41,7 +41,7 @@ export default {
   },
 
   merge: function () {
-    var merged = {}
+    const merged = {}
 
     for (let i = 0; i < arguments.length; i++) {
       const obj = arguments[i]

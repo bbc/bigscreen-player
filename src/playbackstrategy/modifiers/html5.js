@@ -204,7 +204,7 @@ function Html5 () {
     let sentinelActionTaken = false
 
     if (Math.abs(currentTime - sentinelSeekTime) > seekSentinelTolerance) {
-      sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, function () {
+      sentinelActionTaken = nextSentinelAttempt(sentinelLimits.seek, () => {
         mediaElement.currentTime = sentinelSeekTime
       })
     } else if (sentinelIntervalNumber < 3) {
@@ -220,7 +220,7 @@ function Html5 () {
     let sentinelActionTaken = false
 
     if (hasSentinelTimeChangedWithinTolerance) {
-      sentinelActionTaken = nextSentinelAttempt(sentinelLimits.pause, function () {
+      sentinelActionTaken = nextSentinelAttempt(sentinelLimits.pause, () => {
         pauseMediaElement()
       })
     }
