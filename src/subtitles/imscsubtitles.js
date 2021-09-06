@@ -62,7 +62,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
         }
 
         try {
-          const xml = fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1] || responseText)
+          const xml = fromXML(responseText.split(/<\?xml[^\?]+\?>/i)[1] || responseText)
           const times = xml.getMediaTimeEvents()
 
           segments.push({

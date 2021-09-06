@@ -291,7 +291,7 @@ describe('IMSC Subtitles', () => {
       LoadUrlStubResponseText = '<?xml version="1.0" encoding="utf-8" extra property="something"?><tt xmlns="http://www.w3.org/ns/ttml"></tt>'
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
-      expect(fromXML).toHaveBeenCalledWith(LoadUrlStubResponseText)
+      expect(fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>')
     })
 
     it('fires tranformError plugin if IMSC throws an exception when parsing', () => {
