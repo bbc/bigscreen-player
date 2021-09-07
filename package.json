@@ -2,6 +2,7 @@
   "name": "bigscreen-player",
   "version": "4.20.0",
   "description": "Simplified media playback for bigscreen devices.",
+  "browser": "dist/bigscreenplayer.umd.js",
   "module": "dist/esm/main.js",
   "type": "module",
   "scripts": {
