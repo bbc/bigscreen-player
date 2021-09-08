@@ -14,7 +14,7 @@ export default {
     inlineDynamicImports: true,
     file: pkg.browser,
     sourcemap: true,
-    format: 'umd'
+    format: 'es'
   },
   plugins: [
     resolve({ browser: true, preferBuiltins: false }),
