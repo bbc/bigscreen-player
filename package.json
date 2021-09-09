@@ -5,8 +5,15 @@
   "browser": "dist/esm/main.js",
   "module": "dist/esm/main.js",
   "type": "module",
+  "files": [
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE",
+    "CONTRIBUTING.md"
+  ],
   "scripts": {
-    "prepare": "rm -fR ./dist && npm run build",
+    "prepare": "[[ ! -d dist/ ]] && npm run build || exit 0",
     "build": "rollup -c rollup.config.js",
     "start": "rollup -c rollup.dev.config.js -w",
     "test": "jest",
