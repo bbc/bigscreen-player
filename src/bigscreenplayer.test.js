@@ -5,7 +5,7 @@ import Plugins from './plugins'
 import TransferFormats from './models/transferformats'
 import LiveSupport from './models/livesupport'
 import BigscreenPlayer from './bigscreenplayer'
-
+import Chronicle from './debugger/chronicle'
 import PlayerComponent from './playercomponent'
 
 let bigscreenPlayer
@@ -1251,6 +1251,14 @@ describe('Bigscreen Player', () => {
       bigscreenPlayer.unregisterPlugin(mockPlugin)
 
       expect(Plugins.unregisterPlugin).toHaveBeenCalledWith(mockPlugin)
+    })
+  })
+
+  describe('getDebugLogs', () => {
+    it('should call "retrieve" on the Chronicle', () => {
+      jest.spyOn(Chronicle, 'retrieve')
+      bigscreenPlayer.getDebugLogs()
+      expect(Chronicle.retrieve).toHaveBeenCalledTimes(1)
     })
   })
 

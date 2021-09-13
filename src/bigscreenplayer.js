@@ -399,7 +399,8 @@ function BigscreenPlayer () {
     convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
     toggleDebug: toggleDebug,
     getLogLevels: () => DebugTool.logLevels,
-    setLogLevel: DebugTool.setLogLevel
+    setLogLevel: DebugTool.setLogLevel,
+    getDebugLogs: () => Chronicle.retrieve()
   }
 }
 
