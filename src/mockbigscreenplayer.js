@@ -48,7 +48,7 @@ var initialBuffering = false
 var liveWindowData
 var manifestError
 
-var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'clearSubtitleExample', 'areSubtitlesCustomisable', 'setPlaybackRate', 'getPlaybackRate']
+var excludedFuncs = ['getDebugLogs', 'mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'clearSubtitleExample', 'areSubtitlesCustomisable', 'setPlaybackRate', 'getPlaybackRate']
 
 function startProgress (progressCause) {
   setTimeout(function () {
@@ -117,7 +117,7 @@ function mockJasmine (BigscreenPlayer, opts) {
   for (var fn in BigscreenPlayer) {
     if (BigscreenPlayer[fn] && mockFunctions[fn]) {
       // jest.spyOn(BigscreenPlayer, fn).mockImplementation(mockFunctions[fn])
-      spyOn(BigscreenPlayer, fn).and.callFake(mockFunctions[fn]);
+      spyOn(BigscreenPlayer, fn).and.callFake(mockFunctions[fn])
     } else if (!PlaybackUtils.contains(excludedFuncs, fn)) {
       throw new Error(fn + ' was not mocked or included in the exclusion list')
     }
