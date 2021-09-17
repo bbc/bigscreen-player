@@ -200,7 +200,7 @@ define('bigscreenplayer/bigscreenplayer',
             }
           };
 
-          mediaSources = new MediaSources();
+          mediaSources = MediaSources();
 
           // Backwards compatibility with Old API; to be removed on Major Version Update
           if (bigscreenPlayerData.media && !bigscreenPlayerData.media.captions && bigscreenPlayerData.media.captionsUrl) {
@@ -223,6 +223,11 @@ define('bigscreenplayer/bigscreenplayer',
             playerComponent = undefined;
           }
 
+          if (mediaSources) {
+            mediaSources.tearDown();
+            mediaSources = undefined;
+          }
+
           stateChangeCallbacks = [];
           timeUpdateCallbacks = [];
           subtitleCallbacks = [];
@@ -230,7 +235,6 @@ define('bigscreenplayer/bigscreenplayer',
           mediaKind = undefined;
           pauseTrigger = undefined;
           windowType = undefined;
-          mediaSources = undefined;
           resizer = undefined;
           this.unregisterPlugin();
           DebugTool.tearDown();

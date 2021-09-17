@@ -68,6 +68,7 @@ define('bigscreenplayer/manifest/manifestmodifier',
         return {
           __text: source,
           'dvb:priority': priority,
+          'dvb:weight': isNaN(source.dpw) ? 0 : source.dpw,
           serviceLocation: serviceLocation
         };
       }
