@@ -66,7 +66,7 @@ define('bigscreenplayer/subtitles/imscsubtitles',
             }
 
             try {
-              var xml = IMSC.fromXML(responseText.split(/<\?xml version=\"1.0\" encoding=\"UTF-8\"\?>/i)[1] || responseText);
+              var xml = IMSC.fromXML(responseText.split(/<\?xml[^\?]+\?>/i)[1] || responseText);
               var times = xml.getMediaTimeEvents();
 
               segments.push({

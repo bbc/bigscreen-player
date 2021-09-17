@@ -10,12 +10,13 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
     'bigscreenplayer/dynamicwindowutils',
     'bigscreenplayer/utils/timeutils',
     'bigscreenplayer/domhelpers',
+    'bigscreenplayer/utils/playbackutils',
 
     // static imports
     'dashjs'
   ],
-  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers) {
-    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD) {
+  function (MediaState, WindowTypes, DebugTool, MediaKinds, Plugins, ManifestModifier, LiveSupport, DynamicWindowUtils, TimeUtils, DOMHelpers, Utils) {
+    var MSEStrategy = function (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
       var LIVE_DELAY_SECONDS = 1.1;
       var mediaPlayer;
       var mediaElement;
@@ -55,6 +56,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
         QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
         BASE_URL_SELECTED: 'baseUrlSelected',
+        SERVICE_LOCATION_AVAILABLE: 'serviceLocationUnblacklisted',
+        URL_RESOLUTION_FAILED: 'urlResolutionFailed',
         METRIC_ADDED: 'metricAdded',
         METRIC_CHANGED: 'metricChanged',
         STREAM_INITIALIZED: 'streamInitialized'
@@ -176,6 +179,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
           mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER);
         }
+
+        mediaPlayer.setBlacklistExpiryTime(mediaSources.failoverResetTime());
         emitPlayerInfo();
       }
 
@@ -244,6 +249,14 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
         failoverInfo.serviceLocation = event.baseUrl.serviceLocation;
         mediaSources.failover(log, log, failoverInfo);
+      }
+
+      function onServiceLocationAvailable (event) {
+        DebugTool.info('Service Location available: ' + event.entry);
+      }
+
+      function onURLResolutionFailed () {
+        DebugTool.info('URL Resolution failed');
       }
 
       function onMetricAdded (event) {
@@ -329,21 +342,18 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
 
       function setUpMediaPlayer (playbackTime) {
         mediaPlayer = dashjs.MediaPlayer().create();
-        mediaPlayer.updateSettings({
-          'debug': {
-            'logLevel': 2
+        var playerSettings = Utils.merge({
+          debug: {
+            logLevel: 2
+          },
+          streaming: {
+            liveDelay: LIVE_DELAY_SECONDS,
+            bufferToKeep: 4,
+            bufferTimeAtTopQuality: 12,
+            bufferTimeAtTopQualityLongForm: 15
           }
-        });
-
-        mediaPlayer.updateSettings({
-          'streaming': {
-            'liveDelay': LIVE_DELAY_SECONDS,
-            'bufferToKeep': 0,
-            'bufferTimeAtTopQuality': 12,
-            'bufferTimeAtTopQualityLongForm': 12
-          }
-        });
-
+        }, customPlayerSettings);
+        mediaPlayer.updateSettings(playerSettings);
         mediaPlayer.initialize(mediaElement, null, true);
         modifySource(playbackTime);
       }
@@ -369,6 +379,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
         mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
         mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded);
         mediaPlayer.on(DashJSEvents.LOG, onDebugLog);
+        mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable);
+        mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed);
       }
 
       /**
@@ -516,6 +528,8 @@ define('bigscreenplayer/playbackstrategy/msestrategy',
           mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded);
           mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected);
           mediaPlayer.off(DashJSEvents.LOG, onDebugLog);
+          mediaPlayer.off(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable);
+          mediaPlayer.off(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed);
 
           DOMHelpers.safeRemoveElement(mediaElement);
 
