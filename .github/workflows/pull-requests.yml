@@ -4,11 +4,8 @@
 name: Pull Request Checks
 
 on:
-  # Trigger the workflow on push or pull request,
-  # but only for the main branch
-  push:
-    branches:
-      - master
+  # Trigger the workflow pull requests,
+  # but only for the master branch
   pull_request:
     branches:
       - master
