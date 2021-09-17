@@ -22,3 +22,6 @@ WebRunner.html
 
 # Rollup build information
 stats.html
+
+# Jest
+coverage/
