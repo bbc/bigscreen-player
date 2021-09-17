@@ -1,6 +1,6 @@
 <img src="https://user-images.githubusercontent.com/6772464/124460623-7f3d9d80-dd87-11eb-9833-456c9f20bab7.png" width="300" alt="Bigscreen Player logo"/>   
 
-[![Build Status](https://travis-ci.com/bbc/bigscreen-player.svg?branch=master)](https://travis-ci.com/bbc/bigscreen-player/branches) [![npm](https://img.shields.io/npm/v/bigscreen-player)](https://www.npmjs.com/package/bigscreen-player) [![GitHub](https://img.shields.io/github/license/bbc/bigscreen-player)](https://github.com/bbc/bigscreen-player/blob/master/LICENSE)
+[![Build Status](https://github.com/bbc/bigscreen-player/actions/workflows/pull-requests.yml/badge.svg)](https://github.com/bbc/bigscreen-player/actions/workflows/npm-publish.yml) [![npm](https://img.shields.io/npm/v/bigscreen-player)](https://www.npmjs.com/package/bigscreen-player) [![GitHub](https://img.shields.io/github/license/bbc/bigscreen-player)](https://github.com/bbc/bigscreen-player/blob/master/LICENSE)
 
 > Simplified media playback for bigscreen devices.
 
@@ -57,7 +57,9 @@ This project currently has unit test coverage but no integration test suite. Thi
 3. Get a review from the core team.
 4. If the PR checks are green. The core team can merge to master.
 5. Automation takes care of the package versioning.
-6. Publishing to NPM is handled with our [Travis CI integration](https://github.com/bbc/bigscreen-player/blob/master/.travis.yml).
+6. Publishing to NPM is handled with our [GitHub Actions CI integration](https://github.com/bbc/bigscreen-player/blob/master/.github/workflows/npm-publish.yml).
+
+
 
 ## Contributing
 
