@@ -4,12 +4,13 @@ define('bigscreenplayer/mockbigscreenplayer',
     'bigscreenplayer/models/pausetriggers',
     'bigscreenplayer/models/windowtypes',
     'bigscreenplayer/utils/playbackutils',
+    'bigscreenplayer/utils/callcallbacks',
     'bigscreenplayer/plugins',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/pluginenums',
     'bigscreenplayer/version'
   ],
-  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, Plugins, PluginData, PluginEnums, Version) {
+  function (MediaState, PauseTriggers, WindowTypes, PlaybackUtils, callCallbacks, Plugins, PluginData, PluginEnums, Version) {
     var sourceList;
     var source;
     var cdn;
@@ -50,7 +51,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     var liveWindowData;
     var manifestError;
 
-    var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'clearSubtitleExample', 'areSubtitlesCustomisable'];
+    var excludedFuncs = ['mock', 'mockJasmine', 'unmock', 'toggleDebug', 'getLogLevels', 'setLogLevel', 'convertEpochMsToVideoTimeSeconds', 'clearSubtitleExample', 'areSubtitlesCustomisable', 'setPlaybackRate', 'getPlaybackRate'];
 
     function startProgress (progressCause) {
       setTimeout(function () {
@@ -153,9 +154,7 @@ define('bigscreenplayer/mockbigscreenplayer',
     }
 
     function callSubtitlesCallbacks (enabled) {
-      subtitleCallbacks.forEach(function (callback) {
-        callback({ enabled: enabled });
-      });
+      callCallbacks(subtitleCallbacks, { enabled: enabled });
     }
 
     var mockFunctions = {
@@ -387,9 +386,7 @@ define('bigscreenplayer/mockbigscreenplayer',
         }
         stateObject.endOfStream = endOfStream;
 
-        stateChangeCallbacks.forEach(function (callback) {
-          callback(stateObject);
-        });
+        callCallbacks(stateChangeCallbacks, stateObject);
 
         if (autoProgress) {
           if (state !== MediaState.PLAYING) {
@@ -401,11 +398,9 @@ define('bigscreenplayer/mockbigscreenplayer',
       },
       progressTime: function (time) {
         currentTime = time;
-        timeUpdateCallbacks.forEach(function (callback) {
-          callback({
-            currentTime: time,
-            endOfStream: endOfStream
-          });
+        callCallbacks(timeUpdateCallbacks, {
+          currentTime: time,
+          endOfStream: endOfStream
         });
       },
       setEndOfStream: function (isEndOfStream) {

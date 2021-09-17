@@ -258,11 +258,11 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             pauseOnExitSeek = false;
           } else {
             if (isEnded) {
-              mediaPlayer.playFrom(0);
+              mediaPlayer.playFrom && mediaPlayer.playFrom(0);
             } else if (transitions.canResume()) {
               mediaPlayer.resume();
             } else {
-              mediaPlayer.playFrom(currentTime + timeCorrection);
+              mediaPlayer.playFrom && mediaPlayer.playFrom(currentTime + timeCorrection);
             }
           }
         },
@@ -303,6 +303,17 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             return seekableRange;
           }
         },
+        setPlaybackRate: function (rate) {
+          if (typeof mediaPlayer.setPlaybackRate === 'function') {
+            mediaPlayer.setPlaybackRate(rate);
+          }
+        },
+        getPlaybackRate: function () {
+          if (typeof mediaPlayer.getPlaybackRate === 'function') {
+            return mediaPlayer.getPlaybackRate();
+          }
+          return 1.0;
+        },
         getCurrentTime: function () {
           return currentTime;
         },
@@ -317,7 +328,7 @@ define('bigscreenplayer/playbackstrategy/legacyplayeradapter',
             pauseOnExitSeek = isPaused;
           }
 
-          mediaPlayer.playFrom(seekToTime);
+          mediaPlayer.playFrom && mediaPlayer.playFrom(seekToTime);
           if (isPaused && !delayPauseOnExitSeek) {
             mediaPlayer.pause();
           }

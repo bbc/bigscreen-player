@@ -51,7 +51,7 @@ require(
         mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['addEventCallback', 'initialiseMedia', 'beginPlayback',
           'getState', 'resume', 'getPlayerElement', 'getSeekableRange',
           'reset', 'stop', 'removeAllEventCallbacks', 'getSource',
-          'getMimeType', 'beginPlaybackFrom', 'playFrom', 'pause']);
+          'getMimeType', 'beginPlaybackFrom', 'playFrom', 'pause', 'setPlaybackRate', 'getPlaybackRate']);
 
         injector.mock({
           'bigscreenplayer/playbackstrategy/liveglitchcurtain': mockGlitchCurtainConstructorInstance
@@ -183,14 +183,66 @@ require(
       });
 
       describe('play', function () {
-        it('should play from 0 if the stream has ended', function () {
-          setUpLegacyAdaptor();
+        describe('if the player supports playFrom()', function () {
+          it('should play from 0 if the stream has ended', function () {
+            setUpLegacyAdaptor();
 
-          eventCallbacks({type: MediaPlayerEvent.COMPLETE});
+            eventCallbacks({type: MediaPlayerEvent.COMPLETE});
 
-          legacyAdaptor.play();
+            legacyAdaptor.play();
 
-          expect(mediaPlayer.playFrom).toHaveBeenCalledWith(0);
+            expect(mediaPlayer.playFrom).toHaveBeenCalledWith(0);
+          });
+
+          it('should play from the current time if we are not ended, paused or buffering', function () {
+            setUpLegacyAdaptor();
+
+            eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10});
+
+            legacyAdaptor.play();
+
+            expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
+          });
+
+          it('should play from the current time on live if we are not ended, paused or buffering', function () {
+            testTimeCorrection = 10;
+            setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+
+            eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10});
+
+            legacyAdaptor.play();
+
+            expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
+          });
+        });
+
+        describe('if the player does not support playFrom()', function () {
+          beforeEach(function () { delete mediaPlayer.playFrom; });
+
+          it('should not throw an error', function () {
+            setUpLegacyAdaptor();
+
+            eventCallbacks({type: MediaPlayerEvent.COMPLETE});
+
+            legacyAdaptor.play();
+          });
+
+          it('should do nothing if we are not ended, paused or buffering', function () {
+            setUpLegacyAdaptor();
+
+            eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10});
+
+            legacyAdaptor.play();
+          });
+
+          it('should do nothing on live if we are not ended, paused or buffering', function () {
+            testTimeCorrection = 10;
+            setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+
+            eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10});
+
+            legacyAdaptor.play();
+          });
         });
 
         it('should resume if the player is in a paused or buffering state', function () {
@@ -201,27 +253,6 @@ require(
           legacyAdaptor.play();
 
           expect(mediaPlayer.resume).toHaveBeenCalledWith();
-        });
-
-        it('should play from the current time if we are not ended, paused or buffering', function () {
-          setUpLegacyAdaptor();
-
-          eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10});
-
-          legacyAdaptor.play();
-
-          expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
-        });
-
-        it('should play from the current time on live if we are not ended, paused or buffering', function () {
-          testTimeCorrection = 10;
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
-
-          eventCallbacks({type: MediaPlayerEvent.STATUS, currentTime: 10});
-
-          legacyAdaptor.play();
-
-          expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
         });
       });
 
@@ -464,47 +495,118 @@ require(
           expect(legacyAdaptor.getCurrentTime()).toEqual(10);
         });
 
-        it('should seek to the time value passed in', function () {
+        // eslint-disable-next-line jasmine/no-suite-dupes
+        describe('if the player supports playFrom()', function () {
+          it('should seek to the time value passed in', function () {
+            setUpLegacyAdaptor();
+
+            legacyAdaptor.setCurrentTime(10);
+
+            expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
+          });
+
+          it('should seek to the time value passed in + time correction', function () {
+            testTimeCorrection = 10;
+            setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+
+            legacyAdaptor.setCurrentTime(10);
+
+            expect(mediaPlayer.playFrom).toHaveBeenCalledWith(20);
+          });
+
+          it('should pause after a seek if we were in a paused state, not watching dash and on a capable device', function () {
+            setUpLegacyAdaptor();
+
+            eventCallbacks({type: MediaPlayerEvent.PAUSED});
+
+            legacyAdaptor.setCurrentTime(10);
+
+            expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
+
+            expect(mediaPlayer.pause).toHaveBeenCalledWith();
+          });
+
+          it('should not pause after a seek if we are not on capable device and watching a dash stream', function () {
+            setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+
+            legacyAdaptor.load('application/dash+xml', undefined);
+
+            eventCallbacks({type: MediaPlayerEvent.PAUSED});
+
+            legacyAdaptor.setCurrentTime(10);
+
+            expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
+
+            expect(mediaPlayer.pause).not.toHaveBeenCalledWith();
+          });
+        });
+
+        // eslint-disable-next-line jasmine/no-suite-dupes
+        describe('if the player does not support playFrom()', function () {
+          beforeEach(function () { delete mediaPlayer.playFrom; });
+
+          // eslint-disable-next-line jasmine/no-spec-dupes
+          it('should not throw an error', function () {
+            setUpLegacyAdaptor();
+
+            legacyAdaptor.setCurrentTime(10);
+          });
+
+          it('should not throw an error for live', function () {
+            testTimeCorrection = 10;
+            setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+
+            legacyAdaptor.setCurrentTime(10);
+          });
+
+          it('should remain paused if we were in a paused state, not watching dash and on a capable device', function () {
+            setUpLegacyAdaptor();
+
+            eventCallbacks({type: MediaPlayerEvent.PAUSED});
+
+            legacyAdaptor.setCurrentTime(10);
+
+            expect(legacyAdaptor.isPaused()).toEqual(true);
+          });
+
+          it('should not pause after a no-op seek if we are not on capable device and watching a dash stream', function () {
+            setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+
+            legacyAdaptor.load('application/dash+xml', undefined);
+
+            eventCallbacks({type: MediaPlayerEvent.PAUSED});
+
+            legacyAdaptor.setCurrentTime(10);
+
+            expect(mediaPlayer.pause).not.toHaveBeenCalledWith();
+          });
+        });
+      });
+
+      describe('Playback Rate', function () {
+        it('calls through to the mediaPlayers setPlaybackRate function', function () {
           setUpLegacyAdaptor();
 
-          legacyAdaptor.setCurrentTime(10);
+          legacyAdaptor.setPlaybackRate(2);
 
-          expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
+          expect(mediaPlayer.setPlaybackRate).toHaveBeenCalledWith(2);
         });
 
-        it('should seek to the time value passed in + time correction', function () {
-          testTimeCorrection = 10;
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
+        it('calls through to the mediaPlayers getPlaybackRate function and returns correct value', function () {
+          setUpLegacyAdaptor();
+          mediaPlayer.getPlaybackRate.and.returnValue(1.5);
 
-          legacyAdaptor.setCurrentTime(10);
+          var rate = legacyAdaptor.getPlaybackRate();
 
-          expect(mediaPlayer.playFrom).toHaveBeenCalledWith(20);
+          expect(mediaPlayer.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
         });
 
-        it('should pause after a seek if we were in a paused state, not watching dash and on a capable device', function () {
+        it('getPlaybackRate returns 1.0 if mediaPlayer does not have getPlaybackRate function', function () {
+          mediaPlayer = jasmine.createSpyObj('mediaPlayer', ['addEventCallback']);
           setUpLegacyAdaptor();
 
-          eventCallbacks({type: MediaPlayerEvent.PAUSED});
-
-          legacyAdaptor.setCurrentTime(10);
-
-          expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
-
-          expect(mediaPlayer.pause).toHaveBeenCalledWith();
-        });
-
-        it('should not pause after a seek if we are not on capable device and watching a dash stream', function () {
-          setUpLegacyAdaptor({windowType: WindowTypes.SLIDING});
-
-          legacyAdaptor.load('application/dash+xml', undefined);
-
-          eventCallbacks({type: MediaPlayerEvent.PAUSED});
-
-          legacyAdaptor.setCurrentTime(10);
-
-          expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10);
-
-          expect(mediaPlayer.pause).not.toHaveBeenCalledWith();
+          expect(legacyAdaptor.getPlaybackRate()).toEqual(1.0);
         });
       });
 

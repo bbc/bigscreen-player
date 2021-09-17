@@ -49,35 +49,60 @@ define('bigscreenplayer/manifest/manifestmodifier',
     }
 
     function generateBaseUrls (manifest, sources) {
+      if (!manifest) return;
       var baseUrl = extractBaseUrl(manifest);
-      var baseUrls = [];
-      if (!baseUrl) return;
+
+      if (isBaseUrlAbsolute(baseUrl)) {
+        setAbsoluteBaseUrl(baseUrl);
+      } else {
+        if (baseUrl) {
+          setBaseUrlsFromBaseUrl(baseUrl);
+        } else {
+          setBaseUrlsFromSource();
+        }
+      }
+
+      removeUnusedPeriodAttributes();
 
       function generateBaseUrl (source, priority, serviceLocation) {
         return {
           __text: source,
           'dvb:priority': priority,
+          'dvb:weight': isNaN(source.dpw) ? 0 : source.dpw,
           serviceLocation: serviceLocation
         };
       }
 
-      if (baseUrl.match(/^https?:\/\//)) {
-        var newBaseUrl = generateBaseUrl(baseUrl, 0, sources[0]);
-        baseUrls = [newBaseUrl];
+      function removeUnusedPeriodAttributes () {
+        if (manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
+        if (manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
+      }
 
-        if (manifest && (manifest.BaseURL || manifest.Period && manifest.Period.BaseURL)) {
+      function isBaseUrlAbsolute (baseUrl) {
+        return baseUrl && baseUrl.match(/^https?:\/\//);
+      }
+
+      function setAbsoluteBaseUrl (baseUrl) {
+        var newBaseUrl = generateBaseUrl(baseUrl, 0, sources[0]);
+        manifest.BaseURL_asArray = [newBaseUrl];
+
+        if (manifest.BaseURL || manifest.Period && manifest.Period.BaseURL) {
           manifest.BaseURL = newBaseUrl;
         }
-      } else {
-        baseUrls = sources.map(function (source, priority) {
+      }
+
+      function setBaseUrlsFromBaseUrl (baseUrl) {
+        manifest.BaseURL_asArray = sources.map(function (source, priority) {
           var sourceUrl = new URL(baseUrl, source);
           return generateBaseUrl(sourceUrl.href, priority, source);
         });
       }
 
-      manifest.BaseURL_asArray = baseUrls;
-      if (manifest && manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL;
-      if (manifest && manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray;
+      function setBaseUrlsFromSource () {
+        manifest.BaseURL_asArray = sources.map(function (source, priority) {
+          return generateBaseUrl(source, priority, source);
+        });
+      }
     }
 
     return {

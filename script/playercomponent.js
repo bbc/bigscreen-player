@@ -29,7 +29,8 @@ define(
         windowType,
         mediaKind,
         playbackElement,
-        bigscreenPlayerData.media.isUHD
+        bigscreenPlayerData.media.isUHD,
+        bigscreenPlayerData.media.playerSettings
       );
 
       playbackStrategy.addEventCallback(this, eventCallback);
@@ -92,6 +93,14 @@ define(
         if (transitions().canBeginSeek()) {
           isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy.setCurrentTime(time);
         }
+      }
+
+      function setPlaybackRate (rate) {
+        playbackStrategy.setPlaybackRate(rate);
+      }
+
+      function getPlaybackRate () {
+        return playbackStrategy.getPlaybackRate();
       }
 
       function isNativeHLSRestartable () {
@@ -326,6 +335,8 @@ define(
         pause: pause,
         transitions: transitions,
         isEnded: isEnded,
+        setPlaybackRate: setPlaybackRate,
+        getPlaybackRate: getPlaybackRate,
         setCurrentTime: setCurrentTime,
         getCurrentTime: getCurrentTime,
         getDuration: getDuration,

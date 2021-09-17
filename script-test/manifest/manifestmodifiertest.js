@@ -231,8 +231,8 @@ require(
 
           var expectedManifest = {
             BaseURL_asArray: [
-              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' },
-              { __text: 'https://cdn-b.com/dash/', 'dvb:priority': 1, serviceLocation: 'https://cdn-b.com/' }
+              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' },
+              { __text: 'https://cdn-b.com/dash/', 'dvb:priority': 1, 'dvb:weight': 0, serviceLocation: 'https://cdn-b.com/' }
             ],
             Period: {}
           };
@@ -245,9 +245,9 @@ require(
         describe('should return a single base url object for absolute base urls', function () {
           var expectedManifest = {
             Period: {},
-            BaseURL: { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' },
+            BaseURL: { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' },
             BaseURL_asArray: [
-              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, serviceLocation: 'https://cdn-a.com/' }
+              { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' }
             ]
           };
 
@@ -302,18 +302,24 @@ require(
           });
         },
 
-        it('should leave the manifest unchanged if there is no base url', function () {
-          var manifest = {
-            Period: {}
-          };
+        describe('no base url on manifest', function () {
+          it('should return base url objects', function () {
+            var manifest = {
+              Period: {}
+            };
 
-          var expectedManifest = {
-            Period: {}
-          };
+            var expectedManifest = {
+              Period: {},
+              BaseURL_asArray: [
+                { __text: 'https://cdn-a.com/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' },
+                { __text: 'https://cdn-b.com/', 'dvb:priority': 1, 'dvb:weight': 0, serviceLocation: 'https://cdn-b.com/' }
+              ]
+            };
 
-          ManifestModifier.generateBaseUrls(manifest, sources);
+            ManifestModifier.generateBaseUrls(manifest, sources);
 
-          expect(manifest).toEqual(expectedManifest);
+            expect(manifest).toEqual(expectedManifest);
+          });
         }));
       });
     });

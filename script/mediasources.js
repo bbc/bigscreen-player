@@ -7,35 +7,54 @@ define('bigscreenplayer/mediasources',
     'bigscreenplayer/plugindata',
     'bigscreenplayer/debugger/debugtool',
     'bigscreenplayer/manifest/manifestloader',
-    'bigscreenplayer/models/playbackstrategy',
-    'bigscreenplayer/models/transferformats',
-    'bigscreenplayer/models/livesupport'
+    'bigscreenplayer/models/transferformats'
   ],
-  function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, PlaybackStrategy, TransferFormats, LiveSupport) {
+  function (PlaybackUtils, WindowTypes, Plugins, PluginEnums, PluginData, DebugTool, ManifestLoader, TransferFormats) {
     'use strict';
     return function () {
       var mediaSources;
+      var failedOverSources = [];
+      var failoverResetTokens = [];
       var windowType;
       var liveSupport;
       var serverDate;
       var time = {};
       var transferFormat;
+      var subtitlesSources;
+      // Default 5000 can be overridden with media.subtitlesRequestTimeout
+      var subtitlesRequestTimeout = 5000;
+      var failoverResetTimeMs = 120000;
+      var failoverSort;
 
-      function init (urls, newServerDate, newWindowType, newLiveSupport, callbacks) {
-        if (urls === undefined || urls.length === 0) {
+      function init (media, newServerDate, newWindowType, newLiveSupport, callbacks) {
+        if (media.urls === undefined || media.urls.length === 0) {
           throw new Error('Media Sources urls are undefined');
         }
 
         if (callbacks === undefined ||
-      callbacks.onSuccess === undefined ||
-      callbacks.onError === undefined) {
+          callbacks.onSuccess === undefined ||
+          callbacks.onError === undefined) {
           throw new Error('Media Sources callbacks are undefined');
+        }
+
+        if (media.subtitlesRequestTimeout) {
+          subtitlesRequestTimeout = media.subtitlesRequestTimeout;
+        }
+
+        if (media.playerSettings && media.playerSettings.failoverResetTime) {
+          failoverResetTimeMs = media.playerSettings.failoverResetTime;
+        }
+
+        if (media.playerSettings && media.playerSettings.failoverSort) {
+          failoverSort = media.playerSettings.failoverSort;
         }
 
         windowType = newWindowType;
         liveSupport = newLiveSupport;
         serverDate = newServerDate;
-        mediaSources = PlaybackUtils.cloneArray(urls);
+        mediaSources = media.urls ? PlaybackUtils.cloneArray(media.urls) : [];
+        subtitlesSources = media.captions ? PlaybackUtils.cloneArray(media.captions) : [];
+
         updateDebugOutput();
 
         if (needToGetManifest(windowType, liveSupport)) {
@@ -48,7 +67,7 @@ define('bigscreenplayer/mediasources',
       function failover (postFailoverAction, failoverErrorAction, failoverParams) {
         if (shouldFailover(failoverParams)) {
           emitCdnFailover(failoverParams);
-          updateCdns();
+          updateCdns(failoverParams.serviceLocation);
           updateDebugOutput();
 
           if (needToGetManifest(windowType, liveSupport)) {
@@ -58,6 +77,18 @@ define('bigscreenplayer/mediasources',
           }
         } else {
           failoverErrorAction();
+        }
+      }
+
+      function failoverSubtitles (postFailoverAction, failoverErrorAction, statusCode) {
+        if (subtitlesSources.length > 1) {
+          Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn()});
+          subtitlesSources.shift();
+          updateDebugOutput();
+          if (postFailoverAction) { postFailoverAction(); }
+        } else {
+          Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FATAL, cdn: getCurrentSubtitlesCdn()});
+          if (failoverErrorAction) { failoverErrorAction(); }
         }
       }
 
@@ -79,11 +110,15 @@ define('bigscreenplayer/mediasources',
       // the serviceLocation is set to our first cdn url
       // see manifest modifier - generateBaseUrls
       function isFirstManifest (serviceLocation) {
+        return doHostsMatch(serviceLocation, getCurrentUrl());
+      }
+
+      function doHostsMatch (firstUrl, secondUrl) {
         // Matches anything between *:// and / or the end of the line
         var hostRegex = /\w+?:\/\/(.*?)(?:\/|$)/;
 
-        var serviceLocNoQueryHash = stripQueryParamsAndHash(serviceLocation);
-        var currUrlNoQueryHash = stripQueryParamsAndHash(getCurrentUrl());
+        var serviceLocNoQueryHash = stripQueryParamsAndHash(firstUrl);
+        var currUrlNoQueryHash = stripQueryParamsAndHash(secondUrl);
 
         var serviceLocationHost = hostRegex.exec(serviceLocNoQueryHash);
         var currentUrlHost = hostRegex.exec(currUrlNoQueryHash);
@@ -103,6 +138,10 @@ define('bigscreenplayer/mediasources',
         }
 
         return infoValid;
+      }
+
+      function failoverResetTime () {
+        return failoverResetTimeMs;
       }
 
       function needToGetManifest (windowType, liveSupport) {
@@ -158,6 +197,34 @@ define('bigscreenplayer/mediasources',
         return '';
       }
 
+      function getCurrentSubtitlesUrl () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].url.toString();
+        }
+
+        return '';
+      }
+
+      function getCurrentSubtitlesSegmentLength () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].segmentLength;
+        }
+
+        return undefined;
+      }
+
+      function getSubtitlesRequestTimeout () {
+        return subtitlesRequestTimeout;
+      }
+
+      function getCurrentSubtitlesCdn () {
+        if (subtitlesSources.length > 0) {
+          return subtitlesSources[0].cdn;
+        }
+
+        return undefined;
+      }
+
       function availableUrls () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.url;
@@ -168,9 +235,40 @@ define('bigscreenplayer/mediasources',
         return time;
       }
 
-      function updateCdns () {
+      function updateFailedOverSources (mediaSource) {
+        failedOverSources.push(mediaSource);
+
+        if (failoverSort) {
+          mediaSources = failoverSort(mediaSources);
+        }
+
+        var failoverResetToken = setTimeout(function () {
+          if (mediaSources && mediaSources.length > 0 && failedOverSources && failedOverSources.length > 0) {
+            DebugTool.info(mediaSource.cdn + ' has been added back in to available CDNs');
+            mediaSources.push(failedOverSources.shift());
+            updateDebugOutput();
+          }
+        }, failoverResetTimeMs);
+
+        failoverResetTokens.push(failoverResetToken);
+      }
+
+      function updateCdns (serviceLocation) {
         if (hasSourcesToFailoverTo()) {
-          mediaSources.shift();
+          updateFailedOverSources(mediaSources.shift());
+          moveMediaSourceToFront(serviceLocation);
+        }
+      }
+
+      function moveMediaSourceToFront (serviceLocation) {
+        if (serviceLocation) {
+          var serviceLocationIdx = mediaSources.map(function (mediaSource) {
+            return stripQueryParamsAndHash(mediaSource.url);
+          }).indexOf(stripQueryParamsAndHash(serviceLocation));
+
+          if (serviceLocationIdx < 0) serviceLocationIdx = 0;
+
+          mediaSources.unshift(mediaSources.splice(serviceLocationIdx, 1)[0]);
         }
       }
 
@@ -189,33 +287,55 @@ define('bigscreenplayer/mediasources',
         Plugins.interface.onErrorHandled(evt);
       }
 
-      function getCurrentCdn () {
-        if (mediaSources.length > 0) {
-          return mediaSources[0].cdn.toString();
-        }
-
-        return '';
-      }
-
       function availableCdns () {
         return mediaSources.map(function (mediaSource) {
           return mediaSource.cdn;
         });
       }
 
+      function availableSubtitlesCdns () {
+        return subtitlesSources.map(function (subtitleSource) {
+          return subtitleSource.cdn;
+        });
+      }
+
       function updateDebugOutput () {
         DebugTool.keyValue({key: 'available cdns', value: availableCdns()});
-        DebugTool.keyValue({key: 'current cdn', value: getCurrentCdn()});
-        DebugTool.keyValue({key: 'url', value: getCurrentUrl()});
+        DebugTool.keyValue({key: 'url', value: stripQueryParamsAndHash(getCurrentUrl())});
+
+        DebugTool.keyValue({key: 'available subtitle cdns', value: availableSubtitlesCdns()});
+        DebugTool.keyValue({key: 'subtitles url', value: stripQueryParamsAndHash(getCurrentSubtitlesUrl())});
+      }
+
+      function tearDown () {
+        failoverResetTokens.forEach(function (token) {
+          clearTimeout(token);
+        });
+        windowType = undefined;
+        liveSupport = undefined;
+        serverDate = undefined;
+        time = {};
+        transferFormat = undefined;
+        mediaSources = [];
+        failedOverSources = [];
+        failoverResetTokens = [];
+        subtitlesSources = [];
       }
 
       return {
         init: init,
         failover: failover,
+        failoverSubtitles: failoverSubtitles,
         refresh: refresh,
         currentSource: getCurrentUrl,
+        currentSubtitlesSource: getCurrentSubtitlesUrl,
+        currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,
+        currentSubtitlesCdn: getCurrentSubtitlesCdn,
+        subtitlesRequestTimeout: getSubtitlesRequestTimeout,
         availableSources: availableUrls,
-        time: generateTime
+        failoverResetTime: failoverResetTime,
+        time: generateTime,
+        tearDown: tearDown
       };
     };
   });

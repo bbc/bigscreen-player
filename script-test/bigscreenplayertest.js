@@ -84,7 +84,16 @@ require(
       }
 
       if (options.subtitlesAvailable) {
-        bigscreenPlayerData.media.captionsUrl = 'captions';
+        bigscreenPlayerData.media.captions = [
+          {
+            url: 'captions1',
+            segmentLength: 3.84
+          },
+          {
+            url: 'captions2',
+            segmentLength: 3.84
+          }
+        ];
       }
 
       var callbacks;
@@ -96,9 +105,10 @@ require(
 
     describe('Bigscreen Player', function () {
       beforeEach(function (done) {
+        setupManifestData();
         mediaSourcesMock = function () {
           return {
-            init: function (urls, serverDate, windowType, liveSupport, callbacks) {
+            init: function (media, serverDate, windowType, liveSupport, callbacks) {
               mediaSourcesCallbackSuccessSpy = spyOn(callbacks, 'onSuccess').and.callThrough();
               mediaSourcesCallbackErrorSpy = spyOn(callbacks, 'onError').and.callThrough();
               if (forceMediaSourcesConstructionFailure) {
@@ -110,19 +120,19 @@ require(
 
             time: function () {
               return manifestData.time;
-            }
+            },
+            tearDown: function () {}
           };
         };
 
         var mockDebugTool = jasmine.createSpyObj('mockDebugTool', ['apicall', 'time', 'event', 'keyValue', 'tearDown', 'setRootElement']);
         mockPlayerComponentInstance = jasmine.createSpyObj('playerComponentMock', [
           'play', 'pause', 'isEnded', 'isPaused', 'setCurrentTime', 'getCurrentTime', 'getDuration', 'getSeekableRange',
-          'getPlayerElement', 'tearDown', 'getWindowStartTime', 'getWindowEndTime']);
+          'getPlayerElement', 'tearDown', 'getWindowStartTime', 'getWindowEndTime', 'setPlaybackRate', 'getPlaybackRate']);
         mockSubtitlesInstance = jasmine.createSpyObj('mockSubtitlesInstance', ['enable', 'disable', 'show', 'hide', 'enabled', 'available', 'setPosition', 'customise', 'renderExample', 'clearExample', 'tearDown']);
         mockResizer = jasmine.createSpyObj('mockResizer', ['resize', 'clear', 'isResized']);
         successCallback = jasmine.createSpy('successCallback');
         errorCallback = jasmine.createSpy('errorCallback');
-        setupManifestData();
         liveSupport = LiveSupport.SEEKABLE;
         noCallbacks = false;
 
@@ -768,6 +778,38 @@ require(
           mockEventHook({ data: { currentTime: middleOfStreamWindow }, timeUpdate: true });
 
           expect(callback).toHaveBeenCalledWith({ currentTime: middleOfStreamWindow, endOfStream: false });
+        });
+      });
+
+      describe('Playback Rate', function () {
+        it('should setPlaybackRate on the strategy/playerComponent', function () {
+          initialiseBigscreenPlayer();
+
+          bigscreenPlayer.setPlaybackRate(2);
+
+          expect(mockPlayerComponentInstance.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+
+        it('should not set playback rate if playerComponent is not initialised', function () {
+          bigscreenPlayer.setPlaybackRate(2);
+
+          expect(mockPlayerComponentInstance.setPlaybackRate).not.toHaveBeenCalled();
+        });
+
+        it('should call through to get the playback rate when requested', function () {
+          initialiseBigscreenPlayer();
+          mockPlayerComponentInstance.getPlaybackRate.and.returnValue(1.5);
+
+          var rate = bigscreenPlayer.getPlaybackRate();
+
+          expect(mockPlayerComponentInstance.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
+        });
+
+        it('should not get playback rate if playerComponent is not initialised', function () {
+          bigscreenPlayer.getPlaybackRate();
+
+          expect(mockPlayerComponentInstance.getPlaybackRate).not.toHaveBeenCalled();
         });
       });
 

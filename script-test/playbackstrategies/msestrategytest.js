@@ -49,7 +49,8 @@ require(
         mockDashInstance = jasmine.createSpyObj('mockDashInstance',
           ['initialize', 'retrieveManifest', 'getDebug', 'getSource', 'on', 'off', 'time', 'duration', 'attachSource',
             'reset', 'isPaused', 'pause', 'play', 'seek', 'isReady', 'refreshManifest', 'getDashMetrics', 'getDashAdapter',
-            'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'updateSettings', 'setDuration']);
+            'getBitrateInfoListFor', 'getAverageThroughput', 'getDVRWindowSize', 'updateSettings', 'setDuration', 'setPlaybackRate', 'getPlaybackRate',
+            'setBlacklistExpiryTime']);
         mockPluginsInterface = jasmine.createSpyObj('interface', ['onErrorCleared', 'onBuffering', 'onBufferingCleared', 'onError', 'onFatalError', 'onErrorHandled', 'onPlayerInfoUpdated']);
         mockPlugins = {
           interface: mockPluginsInterface
@@ -132,7 +133,7 @@ require(
         mediaSourcesTimeSpy = spyOn(mediaSources, 'time');
         mediaSourcesTimeSpy.and.callThrough();
         spyOn(mediaSources, 'failover').and.callThrough();
-        mediaSources.init(cdnArray, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
+        mediaSources.init({urls: cdnArray, captions: []}, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks);
 
         testManifestObject = {
           type: 'manifestLoaded',
@@ -241,16 +242,19 @@ require(
             {
               __text: cdnArray[0].url + 'dash/',
               'dvb:priority': 0,
+              'dvb:weight': 0,
               serviceLocation: cdnArray[0].url
             },
             {
               __text: cdnArray[1].url + 'dash/',
               'dvb:priority': 1,
+              'dvb:weight': 0,
               serviceLocation: cdnArray[1].url
             },
             {
               __text: cdnArray[2].url + 'dash/',
               'dvb:priority': 2,
+              'dvb:weight': 0,
               serviceLocation: cdnArray[2].url
             }
           ];
@@ -277,37 +281,31 @@ require(
         });
 
         describe('for SLIDING window', function () {
-          it('should initialise MediaPlayer with the expected parameters when startTime is zero', function () {
-            setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
-
+          beforeEach(function () {
+            setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100000, 200000);
+            mediaSources.time.and.returnValue(mockTimeModel);
             mockDashInstance.getSource.and.returnValue('src');
+          });
 
+          it('should initialise MediaPlayer with the expected parameters when startTime is zero', function () {
             mseStrategy.load(null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url);
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:101');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set to 0.1', function () {
-            setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
-
-            mockDashInstance.getSource.and.returnValue('src');
-
             mseStrategy.load(null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#r=0');
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:101');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
-            setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO);
-
-            mockDashInstance.getSource.and.returnValue('src');
-
-            mseStrategy.load(null, 100);
+            mseStrategy.load(null, 60);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#r=100');
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:160');
           });
         });
 
@@ -322,21 +320,21 @@ require(
             mseStrategy.load(null, 0);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=101');
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:101');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set to 0.1', function () {
             mseStrategy.load(null, 0.1);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=101');
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:101');
           });
 
           it('should initialise MediaPlayer with the expected parameters when startTime is set', function () {
             mseStrategy.load(null, 60);
 
             expect(mockDashInstance.initialize).toHaveBeenCalledWith(mockVideoElement, null, true);
-            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=160');
+            expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url + '#t=posix:160');
           });
         });
 
@@ -812,6 +810,28 @@ require(
 
             expect(mockDashInstance.seek).toHaveBeenCalledWith(78.9);
           });
+        });
+      });
+
+      describe('Playback Rate', function () {
+        it('should call through to MediaPlayer\'s setPlaybackRate function', function () {
+          setUpMSE();
+          mseStrategy.load(null, 0);
+
+          mseStrategy.setPlaybackRate(2);
+
+          expect(mockDashInstance.setPlaybackRate).toHaveBeenCalledWith(2);
+        });
+
+        it('should call through to MediaPlayer\'s getPlaybackRate function and returns correct value', function () {
+          setUpMSE();
+          mseStrategy.load(null, 0);
+          mockDashInstance.getPlaybackRate.and.returnValue(1.5);
+
+          var rate = mseStrategy.getPlaybackRate();
+
+          expect(mockDashInstance.getPlaybackRate).toHaveBeenCalled();
+          expect(rate).toEqual(1.5);
         });
       });
 
