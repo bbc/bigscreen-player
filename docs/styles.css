@@ -1,0 +1,13 @@
+html, body {
+    height: 100%;
+    background: rgb(255,160,48);
+    background: linear-gradient(90deg, rgba(255,160,48,1) 34%, rgba(255,254,0,1) 100%);
+}
+
+.main {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
