@@ -5,7 +5,7 @@ import MSEStrategy from './msestrategy'
 
 jest.mock('./nativestrategy')
 jest.mock('dashjs/index_mediaplayerOnly', () => ({ MediaPlayer: () => {} }))
-jest.mock('./msestrategy')
+jest.mock('./msestrategy', () => jest.fn)
 
 describe('Strategy Picker', () => {
   const isUHD = true
@@ -65,7 +65,7 @@ describe('Strategy Picker', () => {
         mseExceptions: ['growingWindow']
       }
 
-      StrategyPicker(WindowTypes.GROWING, !isUHD).then((strategy) => {
+      return StrategyPicker(WindowTypes.GROWING, !isUHD).then((strategy) => {
         expect(strategy).toEqual(NativeStrategy)
       })
     })
@@ -76,7 +76,7 @@ describe('Strategy Picker', () => {
       playbackStrategy: 'hybridstrategy'
     }
 
-    StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
+    return StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
       expect(strategy).toEqual(MSEStrategy)
     })
   })
@@ -84,7 +84,7 @@ describe('Strategy Picker', () => {
   it('should use mse strategy when configured', () => {
     window.bigscreenPlayer.playbackStrategy = 'msestrategy'
 
-    StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
+    return StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
       expect(strategy).toEqual(MSEStrategy)
     })
   })
