@@ -12,6 +12,7 @@ describe('Strategy Picker', () => {
 
   beforeEach(() => {
     window.bigscreenPlayer = {}
+    jest.resetModules()
   })
 
   afterEach(() => {
@@ -85,6 +86,30 @@ describe('Strategy Picker', () => {
 
     StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
       expect(strategy).toEqual(MSEStrategy)
+    })
+  })
+
+  it('should reject when mse strategy cannot be loaded', () => {
+    window.bigscreenPlayer.playbackStrategy = 'msestrategy'
+
+    jest.doMock('./msestrategy', () => {
+      throw new Error()
+    })
+
+    return StrategyPicker(WindowTypes.STATIC, isUHD).catch((rejection) => {
+      expect(rejection).toEqual('strategyDynamicLoadError')
+    })
+  })
+
+  it('should reject when mse strategy cannot be loaded for hybrid strategy configuration', () => {
+    window.bigscreenPlayer.playbackStrategy = 'hybridstrategy'
+
+    jest.doMock('./msestrategy', () => {
+      throw new Error()
+    })
+
+    return StrategyPicker(WindowTypes.STATIC, isUHD).catch((rejection) => {
+      expect(rejection).toEqual('strategyDynamicLoadError')
     })
   })
 })

@@ -15,8 +15,14 @@ function StrategyPicker (windowType, isUHD) {
       }
 
       return import('./msestrategy').then(({default: MSEStrategy}) => resolve(MSEStrategy))
+        .catch(() => {
+          reject('strategyDynamicLoadError')
+        })
     } else if (window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.MSE) {
       return import('./msestrategy').then(({default: MSEStrategy}) => resolve(MSEStrategy))
+        .catch(() => {
+          reject('strategyDynamicLoadError')
+        })
     } else {
       return resolve(NativeStrategy)
     }
