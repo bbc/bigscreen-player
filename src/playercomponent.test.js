@@ -62,7 +62,7 @@ const mockStrategy = (() => {
 })()
 
 jest.mock('./playbackstrategy/strategypicker', () => () =>
-  new Promise((resolve, _) => resolve(() => mockStrategy)))
+  new Promise((_, reject) => reject('boom')))
 
 describe('Player Component', () => {
   let playerComponent
@@ -166,6 +166,20 @@ describe('Player Component', () => {
       })
 
       setUpPlayerComponent()
+    })
+
+    it('should call the provided error callback when StrategyPicker rejects promise', (done) => {
+      const errorCallbackSpy = jest.fn((e) => {
+        expect(e).toBe('boom')
+        done()
+      })
+
+      PlayerComponent(playbackElement, {
+        media: {
+          transferFormat: null,
+          kind: null
+        }
+      }, {}, null, null, errorCallbackSpy)
     })
   })
 

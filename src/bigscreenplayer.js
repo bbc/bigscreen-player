@@ -21,6 +21,7 @@ function BigscreenPlayer () {
   let subtitleCallbacks = []
 
   let playerReadyCallback
+  let playerErrorCallback
   let mediaKind
   let initialPlaybackTimeEpoch
   let serverDate
@@ -122,7 +123,8 @@ function BigscreenPlayer () {
       bigscreenPlayerData,
       mediaSources,
       windowType,
-      mediaStateUpdateCallback
+      mediaStateUpdateCallback,
+      playerErrorCallback
     )
 
     subtitles = Subtitles(
@@ -182,7 +184,9 @@ function BigscreenPlayer () {
       if (!callbacks) {
         callbacks = {}
       }
+
       playerReadyCallback = callbacks.onSuccess
+      playerErrorCallback = callbacks.onError
 
       const mediaSourceCallbacks = {
         onSuccess: () => bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles),

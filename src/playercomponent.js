@@ -8,11 +8,10 @@ import LiveSupport from './models/livesupport'
 import PlaybackStrategyModel from './models/playbackstrategy'
 import StrategyPicker from './playbackstrategy/strategypicker'
 
-function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) {
+function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, windowType, stateUpdateCallback, errorCallback) {
   const transferFormat = bigscreenPlayerData.media.transferFormat
 
   let mediaKind = bigscreenPlayerData.media.kind
-  let stateUpdateCallback = callback
   let isInitialPlay = true
   let errorTimeoutID = null
 
@@ -38,6 +37,8 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     bubbleErrorCleared()
 
     initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime)
+  }).catch((e) => {
+    if (errorCallback) errorCallback(e)
   })
 
   function play () {
