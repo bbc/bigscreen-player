@@ -38,7 +38,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
 
     initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime)
   }).catch((e) => {
-    if (errorCallback) errorCallback(e)
+    errorCallback && errorCallback(e)
   })
 
   function play () {
