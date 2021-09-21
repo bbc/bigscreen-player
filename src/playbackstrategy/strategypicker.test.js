@@ -4,7 +4,6 @@ import NativeStrategy from './nativestrategy'
 import MSEStrategy from './msestrategy'
 
 jest.mock('./nativestrategy')
-jest.mock('dashjs/index_mediaplayerOnly', () => ({ MediaPlayer: () => {} }))
 jest.mock('./msestrategy', () => jest.fn)
 
 describe('Strategy Picker', () => {
