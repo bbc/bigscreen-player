@@ -177,12 +177,12 @@ describe('Player Component', () => {
     it('should trigger the error callback when strategyPicker rejects', (done) => {
       jest.spyOn(StrategyPicker, 'default').mockImplementationOnce(function () {
         return new Promise(function (resolve, reject) {
-          return reject('dynamicloaderror')
+          return reject({error: 'strategydynamicloaderror'})
         })
       })
 
       let errorCallbackSpy = jest.fn(() => {
-        expect(errorCallbackSpy).toHaveBeenCalledWith('dynamicloaderror')
+        expect(errorCallbackSpy).toHaveBeenCalledWith({error: 'strategydynamicloaderror'})
         done()
       })
 

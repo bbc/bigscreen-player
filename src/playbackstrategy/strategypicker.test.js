@@ -96,7 +96,7 @@ describe('Strategy Picker', () => {
     })
 
     return StrategyPicker(WindowTypes.STATIC, isUHD).catch((rejection) => {
-      expect(rejection).toEqual('strategyDynamicLoadError')
+      expect(rejection).toEqual({error: 'strategyDynamicLoadError'})
     })
   })
 
@@ -108,7 +108,7 @@ describe('Strategy Picker', () => {
     })
 
     return StrategyPicker(WindowTypes.STATIC, isUHD).catch((rejection) => {
-      expect(rejection).toEqual('strategyDynamicLoadError')
+      expect(rejection).toEqual({error: 'strategyDynamicLoadError'})
     })
   })
 })
