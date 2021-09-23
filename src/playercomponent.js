@@ -351,7 +351,9 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
 }
 
 function getLiveSupport () {
-  return window.bigscreenPlayer && window.bigscreenPlayer.liveSupport || 'seekable'
+  return window.bigscreenPlayer &&
+    window.bigscreenPlayer.liveSupport ||
+    LiveSupport.SEEKABLE
 }
 
 PlayerComponent.getLiveSupport = getLiveSupport
