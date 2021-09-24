@@ -285,6 +285,6 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 }
 
-BasicStrategy.getLiveSupport = function () { return LiveSupport.SEEKABLE }
+BasicStrategy.getLiveSupport = () => LiveSupport.SEEKABLE
 
 export default BasicStrategy
