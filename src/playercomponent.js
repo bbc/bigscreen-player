@@ -42,23 +42,23 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
   })
 
   function play () {
-    playbackStrategy.play()
+    playbackStrategy && playbackStrategy.play()
   }
 
   function isEnded () {
-    return playbackStrategy.isEnded()
+    return playbackStrategy && playbackStrategy.isEnded()
   }
 
   function pause (opts) {
     opts = opts || {}
     if (transitions().canBePaused()) {
       const disableAutoResume = windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
-      playbackStrategy.pause({ disableAutoResume: disableAutoResume })
+      playbackStrategy && playbackStrategy.pause({ disableAutoResume: disableAutoResume })
     }
   }
 
   function getDuration () {
-    return playbackStrategy.getDuration()
+    return playbackStrategy && playbackStrategy.getDuration()
   }
 
   function getWindowStartTime () {
@@ -78,29 +78,29 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
   }
 
   function getCurrentTime () {
-    return playbackStrategy.getCurrentTime()
+    return playbackStrategy && playbackStrategy.getCurrentTime()
   }
 
   function getSeekableRange () {
-    return playbackStrategy.getSeekableRange()
+    return playbackStrategy && playbackStrategy.getSeekableRange()
   }
 
   function isPaused () {
-    return playbackStrategy.isPaused()
+    return playbackStrategy && playbackStrategy.isPaused()
   }
 
   function setCurrentTime (time) {
     if (transitions().canBeginSeek()) {
-      isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy.setCurrentTime(time)
+      isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy && playbackStrategy.setCurrentTime(time)
     }
   }
 
   function setPlaybackRate (rate) {
-    playbackStrategy.setPlaybackRate(rate)
+    playbackStrategy && playbackStrategy.setPlaybackRate(rate)
   }
 
   function getPlaybackRate () {
-    return playbackStrategy.getPlaybackRate()
+    return playbackStrategy && playbackStrategy.getPlaybackRate()
   }
 
   function isNativeHLSRestartable () {
@@ -115,10 +115,10 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
 
     const doSeek = () => {
       const windowOffset = mediaSources.time().windowStartTime - originalWindowStartOffset
-      const seekableRange = playbackStrategy.getSeekableRange()
+      const seekableRange = playbackStrategy && playbackStrategy.getSeekableRange()
 
       let seekToTime = time - windowOffset / 1000
-      let thenPause = playbackStrategy.isPaused()
+      let thenPause = playbackStrategy && playbackStrategy.isPaused()
 
       tearDownMediaElement()
 
@@ -138,12 +138,12 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
   }
 
   function transitions () {
-    return playbackStrategy.transitions
+    return playbackStrategy && playbackStrategy.transitions
   }
 
   function tearDownMediaElement () {
     clearTimeouts()
-    playbackStrategy.reset()
+    playbackStrategy && playbackStrategy.reset()
   }
 
   function eventCallback (mediaState) {
@@ -311,7 +311,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
   }
 
   function loadMedia (type, startTime, thenPause) {
-    playbackStrategy.load(type, startTime)
+    playbackStrategy && playbackStrategy.load(type, startTime)
     if (thenPause) {
       pause()
     }
@@ -319,7 +319,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
 
   function tearDown () {
     tearDownMediaElement()
-    playbackStrategy.tearDown()
+    playbackStrategy && playbackStrategy.tearDown()
     playbackStrategy = null
     isInitialPlay = true
     errorTimeoutID = undefined
