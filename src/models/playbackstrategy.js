@@ -1,7 +1,8 @@
 const PlaybackStrategy = {
   MSE: 'msestrategy',
   HYBRID: 'hybridstrategy',
-  NATIVE: 'nativestrategy'
+  NATIVE: 'nativestrategy',
+  BASIC: 'basicstrategy'
 }
 
 export default PlaybackStrategy
