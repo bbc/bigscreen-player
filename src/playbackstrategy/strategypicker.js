@@ -1,5 +1,6 @@
 import PlaybackStrategy from '../models/playbackstrategy'
 import NativeStrategy from './nativestrategy'
+import BasicStrategy from './basicstrategy'
 
 function StrategyPicker (windowType, isUHD) {
   return new Promise((resolve, reject) => {
@@ -23,6 +24,8 @@ function StrategyPicker (windowType, isUHD) {
         .catch(() => {
           reject({error: 'strategyDynamicLoadError'})
         })
+    } else if (window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.BASIC) {
+      return resolve(BasicStrategy)
     } else {
       return resolve(NativeStrategy)
     }

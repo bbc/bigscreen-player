@@ -2,8 +2,10 @@ import WindowTypes from '../models/windowtypes'
 import StrategyPicker from './strategypicker'
 import NativeStrategy from './nativestrategy'
 import MSEStrategy from './msestrategy'
+import BasicStrategy from './basicstrategy'
 
 jest.mock('./nativestrategy')
+jest.mock('./basicstrategy')
 jest.mock('./msestrategy', () => jest.fn)
 
 describe('Strategy Picker', () => {
@@ -21,6 +23,16 @@ describe('Strategy Picker', () => {
   it('should default to native strategy', () => {
     return StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
       expect(strategy).toEqual(NativeStrategy)
+    })
+  })
+
+  it('should use basic strategy when defined', () => {
+    window.bigscreenPlayer = {
+      playbackStrategy: 'basicstrategy'
+    }
+
+    return StrategyPicker(WindowTypes.STATIC, isUHD).then((strategy) => {
+      expect(strategy).toEqual(BasicStrategy)
     })
   })
 
