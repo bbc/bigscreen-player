@@ -6,7 +6,7 @@
 
 ## Introduction
 
-The *Bigscreen Player* is an open source project developed by the BBC to simplify video and audio playback on a wide range of 'bigscreen' devices (TVs, set-top boxes, games consoles, and streaming devices).
+*Bigscreen Player* is an open source project developed by the BBC to simplify video and audio playback on a wide range of 'bigscreen' devices (TVs, set-top boxes, games consoles, and streaming devices).
 
 ## Getting Started
 
@@ -219,11 +219,11 @@ bigscreenPlayer.unregisterPlugin(examplePlugin);
 
 ## Testing
 
-The project is fully unit tested using the [Jasmine](https://jasmine.github.io/) framework. To run the tests:
+The project is unit tested using [Jest](https://jestjs.io/). To run the tests:
 
-`$ npm run spec`
+`$ npm test`
 
-This project currently has unit test coverage but no integration test suite. This is on our Roadmap to address. Quality is ensured via extensive manual testing however.
+This project currently has unit test coverage but no integration test suite. This is on our Roadmap to address.
 
 ### Mocking media playback
 
@@ -254,7 +254,7 @@ See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player
 
 ## API Reference
 
-The full api is documented [here](https://github.com/bbc/bigscreen-player/wiki/API-Reference).
+The API is documented [here](https://github.com/bbc/bigscreen-player/wiki/API-Reference).
 
 ## Contributing
 
@@ -262,4 +262,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-The Bigscreen Player is available to everyone under the terms of the Apache 2.0 open source license. Take a look at the LICENSE file in the code for more information.
+Bigscreen Player is available to everyone under the terms of the Apache 2.0 open source license. Take a look at the LICENSE file in the code for more information.
