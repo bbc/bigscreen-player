@@ -240,11 +240,6 @@ See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player
     - `semver minor`
     - `semver major`
 
-    along with one of the following:
-    - `has a user facing change`
-    - `has no user facing changes`
-
-    The labels-checker PR check will let you know if it is correct.
 3. Get a review from the core team.
 4. If the PR checks are green. The core team can merge to master.
 5. Automation takes care of the package versioning.
