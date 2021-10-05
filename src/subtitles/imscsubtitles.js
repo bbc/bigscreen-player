@@ -1,4 +1,4 @@
-import { fromXML, generateISD, renderHTML } from 'smp-imsc'
+import { fromXML, generateISD, renderHTML } from 'imsc'
 import DOMHelpers from '../domhelpers'
 import DebugTool from '../debugger/debugtool'
 import Plugins from '../plugins'
