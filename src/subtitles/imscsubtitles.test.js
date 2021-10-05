@@ -1,9 +1,9 @@
 import IMSCSubtitles from './imscsubtitles'
-import { fromXML, generateISD, renderHTML } from 'smp-imsc'
+import { fromXML, generateISD, renderHTML } from 'imsc'
 import LoadUrl from '../utils/loadurl'
 import Plugins from '../plugins'
 
-jest.mock('smp-imsc')
+jest.mock('imsc')
 jest.mock('../utils/loadurl')
 
 jest.mock('../plugins', () => {
