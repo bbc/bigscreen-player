@@ -27,7 +27,6 @@ jobs:
           node-version: 14
           registry-url: https://registry.npmjs.org/
       - run: npm ci
-      - run: npm run build:dist --if-present
       - run: npm publish dist/
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}

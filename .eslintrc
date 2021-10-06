@@ -1,26 +1,24 @@
 {
+    "parser": "@babel/eslint-parser",
     "parserOptions": {
-      "ecmaVersion": 2015
+      "ecmaVersion": 2015,
+      "sourceType": "module",
+      "allowImportExportEverywhere": true,
+      "requireConfigFile": false
     },
     "env": {
+      "jest/globals": true,
       "node": true,
-      "browser": true,
-      "jasmine": true,
-      "phantomjs": true
+      "browser": true
     },
     "plugins": [
       "standard",
-      "jasmine",
-      "require",
-      "es5"
-    ],
-    "extends": [
-      "plugin:es5/no-es2015",
-      "plugin:jasmine/recommended"
+      "jest"
     ],
     "globals": {
       "dashjs": true,
-      "define": false
+      "Promise": true,
+      "jest": true
     },
     "rules": {
       "accessor-pairs": "error",
@@ -242,7 +240,7 @@
         "single",
         "avoid-escape"
       ],
-      "semi": [ 2, "always" ],
+      "semi": [1, "never"],
       "semi-spacing": [
         "error",
         {

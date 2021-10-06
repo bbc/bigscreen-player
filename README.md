@@ -6,7 +6,7 @@
 
 ## Introduction
 
-The *Bigscreen Player* is an open source project developed by the BBC to simplify video and audio playback on a wide range of 'bigscreen' devices (TVs, set-top boxes, games consoles, and streaming devices).
+*Bigscreen Player* is an open source project developed by the BBC to simplify video and audio playback on a wide range of 'bigscreen' devices (TVs, set-top boxes, games consoles, and streaming devices).
 
 ## Getting Started
 
@@ -14,104 +14,91 @@ The *Bigscreen Player* is an open source project developed by the BBC to simplif
 
 ### Initialisation
 
-Bigscreen Player uses requirejs for managing dependencies. Once you have required the player, a playback session can be initialised by simply calling the `init()` function with some initial data.
+A playback session can be initialised by simply calling the `init()` function with some initial data.
 
 
 The player will render itself into a supplied parent element, and playback will begin as soon as enough data has buffered.
 
 ```javascript
+import { BigscreenPlayer, MediaKinds, WindowTypes } from 'bigscreen-player'
+
 // configure the media player that will be used before loading
 // see below for further details of ths config
 
 // options are: msestrategy, nativestrategy, hybridstrategy
-window.bigscreenPlayer.playbackStrategy = 'msestrategy';
+window.bigscreenPlayer.playbackStrategy = 'msestrategy'
 
-require(
-  [
-    'bigscreenplayer/bigscreenplayer',
-    'bigscreenplayer/windowtypes',
-    'bigscreenplayer/mediakinds'
-  ],
+const bigscreenPlayer = BigscreenPlayer()
+const playbackElement = document.createElement('div')
+const body = document.getElementByTagName('body')[0]
 
-  function (BigscreenPlayer, WindowType, MediaKind) {
+playbackElement.id = 'BigscreenPlayback'
+body.appendChild(playbackElement)
 
-    var bigscreenPlayer = BigscreenPlayer();
-
-    var playbackElement = document.createElement('div');
-    playbackElement.id = 'BigscreenPlayback';
-
-    var body = document.getElementByTagName('body')[0];
-    body.appendChild(playbackElement);
-
-    var minimalData = {
-      media: {
-        mimeType: 'video/mp4',
-        urls: [
-          {
-            url: 'https://www.cdn1url.com/reallygoodvideo'
-          }
-        ]
+const minimalData = {
+  media: {
+    type: 'application/dash+xml',
+    urls: [
+      {
+        url: 'https://example.com/video.mpd'
       }
-    }
-
-    var optionalData = {
-      initialPlaybackTime: 0, // Time (in seconds) to begin playback from
-      media: {
-        mimeType: 'video/mp4',
-        bitrate: 8940,         // Displayed by Debug Tool
-        codec: 'h264',
-        kind: MediaKind.VIDEO, // Can be VIDEO, or AUDIO
-        urls: [
-          // Multiple urls offer the ability to fail-over to another CDN if required
-          {
-            url: 'https://www.cdn1url.com/reallygoodvideo',
-            cdn: 'cdn1' // Displayed by Debug Tool
-          }, {
-            url: 'https://www.cdn2url.com/reallygoodvideo',
-            cdn: 'cdn2'
-          }
-        ],
-        captions: [{
-            url: 'https://www.somelovelycaptionsurl.com/captions/$segment$', // $segment$ required for replacement for live
-            segmentLength: 3.84, // Required to calculate live subtitle segment to fetch & live subtitle URL.
-            cdn: 'cdn1' // Displayed by Debug Tool
-          }, {
-            url: 'https://www.somelovelycaptionsurl2.com/captions/$segment$',
-            segmentLength: 3.84,
-            cdn: 'cdn1'
-          },
-        ],
-        captionsUrl: 'https://www.somelovelycaptionsurl.com/captions/', // NB This parameter is being deprecated in favour of the captions array shown above.
-        subtitlesRequestTimeout: 5000, // Optional override for the XHR timeout on sidecar loaded subtitles
-        subtitleCustomisation: {
-          size: 0.75,
-          lineHeight: 1.10,
-          fontFamily: 'Arial',
-          backgroundColour: 'black' // (css colour, hex)
-        },
-        playerSettings: { // This currently can be used to customise settings for the msestrategy. It is a pass through of all the dash.js player settings.
-          failoverSort: someSortAlgo, // Post failover custom sorting algorithm
-          failoverResetTime: 60000,
-          streaming: {
-            bufferToKeep: 8,
-            ...
-          }
-        }
-      }
-    }
-
-    // STATIC for VOD content, GROWING/SLIDING for LIVE content
-    var windowType = WindowType.STATIC;
-    var enableSubtitles = false;
-
-    bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles);
+    ]
   }
-)
+}
+
+const optionalData = {
+  initialPlaybackTime: 0, // Time (in seconds) to begin playback from
+  media: {
+    type: 'application/dash+xml',
+    kind: MediaKinds.VIDEO, // Can be VIDEO, or AUDIO
+    urls: [
+      // Multiple urls offer the ability to fail-over to another CDN if required
+      {
+        url: 'https://example.com/video.mpd',
+        cdn: 'origin' // For Debug Tool reference
+      }, {
+        url: 'https://failover.example.com/video.mpd',
+        cdn: 'failover'
+      }
+    ],
+    captions: [{
+      url: 'https://example.com/captions/$segment$', // $segment$ required for replacement for live subtitle segments
+      segmentLength: 3.84, // Required to calculate live subtitle segment to fetch & live subtitle URL.
+      cdn: 'origin' // Displayed by Debug Tool
+    }, {
+      url: 'https://failover.example.com/captions/$segment$',
+      segmentLength: 3.84,
+      cdn: 'failover'
+    }
+    ],
+    captionsUrl: 'https://example.com/imsc-doc.xml', // NB This parameter is being deprecated in favour of the captions array shown above.
+    subtitlesRequestTimeout: 5000, // Optional override for the XHR timeout on sidecar loaded subtitles
+    subtitleCustomisation: {
+      size: 0.75,
+      lineHeight: 1.10,
+      fontFamily: 'Arial',
+      backgroundColour: 'black' // (css colour, hex)
+    },
+    playerSettings: { // This currently can be used to customise settings for the msestrategy. It is a pass through of all the dash.js player settings.
+      failoverSort: failoverSort, // Post failover custom sorting algorithm
+      failoverResetTime: 60000,
+      streaming: {
+        bufferToKeep: 8
+      }
+    }
+  }
+}
+
+// STATIC for VOD content, GROWING/SLIDING for LIVE content
+const windowType = WindowTypes.STATIC
+const enableSubtitles = false
+
+bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles)
 ```
 
 ### Configuration
 
-The Bigscreen Player has some global configuration that is needed before initialisation. A *playback strategy* must be configured:
+Bigscreen Player has some global configuration that is needed before initialisation. A *playback strategy* may be configured, or defaulted to the native Html5 strategy:
 
 ```javascript
 window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy'
@@ -132,17 +119,17 @@ State changes which are emitted from the player can be acted upon to by register
 State changes may be registered for before initialisation and will automatically be cleared upon `tearDown()` of the player.
 
 ```javascript
-var bigscreenPlayer = BigscreenPlayer();
+const bigscreenPlayer = BigscreenPlayer()
 
 // The token is only required in the case where the function is anonymous, a reference to the function can be stored and used to unregister otherwise.
 var stateChangeToken = bigscreenPlayer.registerForStateChanges(function (event) {
   if(event.state == MediaState.PLAYING) {
-    console.log('Playing');
+    console.log('Playing')
     // handle playing event
   }
-});
+})
 
-bigscreenPlayer.unRegisterForStateChanges(stateChangeToken);
+bigscreenPlayer.unregisterForStateChanges(stateChangeToken)
 ```
 
 ### Reacting to time updates
@@ -232,11 +219,11 @@ bigscreenPlayer.unregisterPlugin(examplePlugin);
 
 ## Testing
 
-The project is fully unit tested using the [Jasmine](https://jasmine.github.io/) framework. To run the tests:
+The project is unit tested using [Jest](https://jestjs.io/). To run the tests:
 
-`$ npm run spec`
+`$ npm test`
 
-This project currently has unit test coverage but no integration test suite. This is on our Roadmap to address. Quality is ensured via extensive manual testing however.
+This project currently has unit test coverage but no integration test suite. This is on our Roadmap to address.
 
 ### Mocking media playback
 
@@ -253,11 +240,6 @@ See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player
     - `semver minor`
     - `semver major`
 
-    along with one of the following:
-    - `has a user facing change`
-    - `has no user facing changes`
-
-    The labels-checker PR check will let you know if it is correct.
 3. Get a review from the core team.
 4. If the PR checks are green. The core team can merge to master.
 5. Automation takes care of the package versioning.
@@ -267,7 +249,7 @@ See [here](https://github.com/bbc/bigscreen-player/wiki/Mocking-Bigscreen-Player
 
 ## API Reference
 
-The full api is documented [here](https://github.com/bbc/bigscreen-player/wiki/API-Reference).
+The API is documented [here](https://github.com/bbc/bigscreen-player/wiki/API-Reference).
 
 ## Contributing
 
@@ -275,4 +257,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
-The Bigscreen Player is available to everyone under the terms of the Apache 2.0 open source license. Take a look at the LICENSE file in the code for more information.
+Bigscreen Player is available to everyone under the terms of the Apache 2.0 open source license. Take a look at the LICENSE file in the code for more information.
