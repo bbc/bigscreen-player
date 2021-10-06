@@ -11,6 +11,9 @@ node_modules
 # Packaging dir
 dist
 
+# Local dev dir
+dist-local
+
 # Ignore Visual Studio Code project files
 .vscode
 

@@ -5,14 +5,13 @@ import babel from '@rollup/plugin-babel'
 import serve from 'rollup-plugin-serve'
 import liveReload from 'rollup-plugin-livereload'
 import json from '@rollup/plugin-json'
-import pkg from './package.json'
 
 export default {
   input: 'src/main.js',
   output: {
     name: 'bsp',
     inlineDynamicImports: true,
-    file: pkg.browser,
+    file: 'dist-local/esm/main.js',
     sourcemap: true,
     format: 'es'
   },
