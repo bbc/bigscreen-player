@@ -11,12 +11,6 @@ node_modules
 # Packaging dir
 dist
 
-# Externals
-script/external/
-
-# Testing files
-WebRunner.html
-
 # Ignore Visual Studio Code project files
 .vscode
 

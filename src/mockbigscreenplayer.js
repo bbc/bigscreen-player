@@ -116,7 +116,7 @@ function mockJasmine (BigscreenPlayer, opts) {
 
   for (var fn in BigscreenPlayer) {
     if (BigscreenPlayer[fn] && mockFunctions[fn]) {
-      // jest.spyOn(BigscreenPlayer, fn).mockImplementation(mockFunctions[fn])
+      // eslint-disable-next-line no-undef
       spyOn(BigscreenPlayer, fn).and.callFake(mockFunctions[fn])
     } else if (!PlaybackUtils.contains(excludedFuncs, fn)) {
       throw new Error(fn + ' was not mocked or included in the exclusion list')
