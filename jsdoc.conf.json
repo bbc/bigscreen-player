@@ -7,7 +7,7 @@
     },
     "source": {
         "include": [
-            "script"
+            "src"
         ],
         "includePattern": ".js$",
         "excludePattern": "(node_modules/|docs)"
