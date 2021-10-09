@@ -1,5 +1,5 @@
 /**
- * @module bigscreenplayer/models/windowtypes
+ * Enums for WindowTypes
  * @readonly
  * @enum {string}
  */

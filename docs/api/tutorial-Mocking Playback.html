@@ -32,7 +32,7 @@
 
 
     <title>
-      domhelpers.js
+      Tutorial: Mocking Playback
     </title>
 
     <!--[if lt IE 9]>
@@ -99,82 +99,77 @@
     <div id="main" class="main-content">
       
       <h1 id='page-title' class="page-title">
-        domhelpers.js
+        Tutorial: Mocking Playback
       </h1>
       
 
-      
+      <section>
 
-
-
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>function addClass (el, className) {
-  if (el.classList) {
-    el.classList.add(className)
-  } else {
-    el.className += ' ' + className
-  }
-}
 
-function removeClass (el, className) {
-  if (el.classList) {
-    el.classList.remove(className)
-  } else {
-    el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ')
-  }
-}
+    <h2>Mocking Playback</h2>
+</header>
 
-function hasClass (el, className) {
-  if (el.classList) {
-    return el.classList.contains(className)
-  } else {
-    return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className)
-  }
-}
+<article>
+    <p>When writing tests for your application it may be useful to use the mocking functions provided. This creates a fake player with mocking hook functions to simulate real world scenarios.</p>
+<p>Bigscreen Player includes a test mode than can be triggered by calling <code>mock()</code> or <code>mockJasmine()</code>.</p>
+<h2><code>mock(opts)</code> and <code>mockJasmine(opts)</code></h2>
+<p><code>mockJasmine()</code> should be used when you want to mock Bigscreen Player within Jasmine tests. This turns each Bigsceen Player api function into a Jasmine spy, so you can call all the spy function on them e.g. <code>expect(BigscreenPlayer.play).toHaveBeenCalled()</code>.</p>
+<p><code>mock()</code> should be used when you are not running Jasmine tests.</p>
+<h3><code>opts</code></h3>
+<ul>
+<li><code>autoProgress = true|false</code> (optional; defaults to false) - playback will automatically progress after 100ms, transitioning into PLAYING, then updates the time every 500ms.</li>
+</ul>
+<h2><code>unmock()</code></h2>
+<p>Should be called when you want to stop mocking Bigsceen Player, including in the <code>afterEach()</code> of Jasmine tests.</p>
+<h2>Mocking hooks</h2>
+<p>When Bigsceen Player has been mocked, there are various hooks added to the API in order to modify its behaviour or emulate certain real life scenarios.</p>
+<h3><code>changeState(state, eventTrigger, opts)</code></h3>
+<p>Hook for changing the state e.g. <code>BigscreenPlayer.changeState(MediaState.WAITING)</code> would emulate playback buffering.</p>
+<ul>
+<li><code>state = MediaState</code> - <a href="/models/mediastate.js">MediaState</a> to change to.</li>
+<li><code>eventTrigger = 'device'|'other'</code> (optional; defaults to device) - determines whether the state change was caused by the device or not; affects <code>onBufferingCleared</code> and <code>onErrorCleared</code> plugin calls.</li>
+</ul>
+<h3><code>getSource()</code></h3>
+<p>Get the URL of the current media.</p>
+<h3><code>progressTime(time)</code></h3>
+<p>Emulate playback jumping to a given <code>time</code>.</p>
+<h3><code>setCanPause(value)</code></h3>
+<p>Make <code>canPause()</code> return <code>value</code>.</p>
+<h3><code>setCanSeek(value)</code></h3>
+<p>Make <code>canSeek()</code> return <code>value</code>.</p>
+<h3><code>setDuration(mediaDuration)</code></h3>
+<p>Set the duration to <code>mediaDuration</code>.</p>
+<h3><code>setEndOfStream(isEndOfStream)</code></h3>
+<p>Sets the <code>endOfStream</code> value to be sent with events to <code>isEndOfStream</code>.</p>
+<h3><code>setInitialBuffering(value)</code></h3>
+<p>If Mock Bigsceen Player is setup to automatically progress, it will by default start progressing 100ms after <code>init()</code> has been called. If <code>setInitialBuffering(true)</code> is called, playback will not progress until something else causes it e.g. <code>play()</code> or <code>changeState(MediaState.PLAYING)</code>.</p>
+<h3><code>setLiveWindowStart(value)</code></h3>
+<p>Sets the live window start time to <code>value</code>; used in the calculation for <code>convertVideoTimeSecondsToEpochMs(seconds)</code>.</p>
+<h3><code>setMediaKind(kind)</code></h3>
+<p>Sets return value of <code>getMediaKind()</code> and <code>avType</code> for AV stats to <code>kind</code>.</p>
+<h3><code>setSeekableRange(newSeekableRange)</code></h3>
+<p>Set the seekable range to <code>newSeekableRange</code>.</p>
+<ul>
+<li><code>newSeekableRange</code>
+<ul>
+<li><code>start</code> - seekable range start</li>
+<li><code>end</code> - seekable range end</li>
+</ul>
+</li>
+</ul>
+<h3><code>setWindowType(type)</code></h3>
+<p>Sets the <a href="/models/windowtypes.js">WindowType</a>. Mock Bigsceen Player will behave differently for VOD, WEBCAST, and SIMULCAST as in production.</p>
+<h3><code>setSubtitlesAvailable(value)</code></h3>
+<p>Sets the return value of <code>isSubtitlesAvailable()</code> to <code>value</code>.</p>
+<h3><code>triggerError()</code></h3>
+<p>Triggers a non-fatal error which stalls playback. Will be dismissed when any call to Bigsceen Player is made which results in a state change, or with mocking hooks <code>changeState()</code> or <code>triggerErrorHandled()</code>.</p>
+<h3><code>triggerErrorHandled()</code></h3>
+<p>Makes Bigsceen Player handle an error - changes the URL if multiple were passed in, and the list hasn't already been exhausted, and resumes playback if Mock Bigsceen Player is automatically progressing.</p>
+</article>
 
-function isRGBATuple (rgbaString) {
-  return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString)
-}
-
-/**
- *  Checks that the string is an RGBA tuple and returns a RGB Tripple.
- *  A string that isn't an RGBA tuple will be returned to the caller.
- * @param {String} rgbaString
- */
-function rgbaToRGB (rgbaString) {
-  if (isRGBATuple(rgbaString)) {
-    rgbaString = rgbaString.slice(0, 7)
-  }
-  return rgbaString
-}
-
-/**
- * Safely removes an element from the DOM, simply doing
- * nothing if the node is detached (Has no parent).
- * @param {Element} el The Element to remove
- */
-function safeRemoveElement (el) {
-  if (el.parentNode) {
-    el.parentNode.removeChild(el)
-  }
-}
-
-export default {
-  addClass: addClass,
-  removeClass: removeClass,
-  hasClass: hasClass,
-  rgbaToRGB: rgbaToRGB,
-  isRGBA: isRGBATuple,
-  safeRemoveElement: safeRemoveElement
-}
-</code></pre>
-        </article>
-    </section>
-
-
-
+</section>
 
     </div>
 

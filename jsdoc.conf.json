@@ -21,7 +21,10 @@
         "useLongnameInNav": true,
         "showInheritedInNav": true,
         "default": {
-            "includeDate": false
+            "includeDate": false,
+            "staticFiles": {
+                "include": ["./docs/static"]
+            }
         }
     },
     "opts": {
@@ -29,12 +32,12 @@
         "encoding": "utf8",
         "recurse": true,
         "hierarchy": true,
-        "readme": "docs/API.md",
+        "readme": "README.md",
         "tutorials": "./docs/tutorials",
         "template": "node_modules/clean-jsdoc-theme",
         "theme_opts": {
             "theme": "dark",
-            "title": "<img src='bsp.png'/>",
+            "title": "<img src='bsp-logo.png'/>",
             "footer": "",
             "search": {
                 "shouldSort": true,
@@ -45,10 +48,6 @@
                 "minMatchCharLength": 1
             },
             "menu": [
-                {
-                    "title": "Home",
-                    "link": "/api/"
-                },
                 {
                     "title": "Github",
                     "link": "https://github.com/bbc/bigscreen-player",

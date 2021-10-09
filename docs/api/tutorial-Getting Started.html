@@ -32,7 +32,7 @@
 
 
     <title>
-      domhelpers.js
+      Tutorial: Getting Started
     </title>
 
     <!--[if lt IE 9]>
@@ -99,82 +99,91 @@
     <div id="main" class="main-content">
       
       <h1 id='page-title' class="page-title">
-        domhelpers.js
+        Tutorial: Getting Started
       </h1>
       
 
-      
+      <section>
 
-
-
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>function addClass (el, className) {
-  if (el.classList) {
-    el.classList.add(className)
-  } else {
-    el.className += ' ' + className
-  }
-}
 
-function removeClass (el, className) {
-  if (el.classList) {
-    el.classList.remove(className)
-  } else {
-    el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ')
-  }
-}
+    <h2>Getting Started</h2>
+</header>
 
-function hasClass (el, className) {
-  if (el.classList) {
-    return el.classList.contains(className)
-  } else {
-    return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className)
-  }
-}
-
-function isRGBATuple (rgbaString) {
-  return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString)
-}
-
-/**
- *  Checks that the string is an RGBA tuple and returns a RGB Tripple.
- *  A string that isn't an RGBA tuple will be returned to the caller.
- * @param {String} rgbaString
- */
-function rgbaToRGB (rgbaString) {
-  if (isRGBATuple(rgbaString)) {
-    rgbaString = rgbaString.slice(0, 7)
-  }
-  return rgbaString
-}
-
-/**
- * Safely removes an element from the DOM, simply doing
- * nothing if the node is detached (Has no parent).
- * @param {Element} el The Element to remove
- */
-function safeRemoveElement (el) {
-  if (el.parentNode) {
-    el.parentNode.removeChild(el)
-  }
-}
-
-export default {
-  addClass: addClass,
-  removeClass: removeClass,
-  hasClass: hasClass,
-  rgbaToRGB: rgbaToRGB,
-  isRGBA: isRGBATuple,
-  safeRemoveElement: safeRemoveElement
-}
+<article>
+    <h1>Installation</h1>
+<h2>NPM</h2>
+<pre class="prettyprint source lang-bash"><code>$ npm install bigscreen-player --save
 </code></pre>
-        </article>
-    </section>
+<h2>Manual</h2>
+<p>You can use the bundle hosted on <a href="https://unpkg.com/">unpkg</a> in your HTML file directly:</p>
+<pre class="prettyprint source lang-html"><code>&lt;script src=&quot;https://unpkg.com/:bigscreen-player@:latest/:bigscreen-player.umd.js&quot;>&lt;/script>
+</code></pre>
+<h1>Configuration</h1>
+<p>Bigscreen Player has some global configuration that is needed before initialisation. A <em>playback strategy</em> must be configured:</p>
+<pre class="prettyprint source lang-javascript"><code>window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'talstrategy' (deprecated)
+</code></pre>
+<p>See the <a href="design/playback-strategies.md">playback strategies</a> wiki page for further details on these strategies.</p>
+<h1>Initialisation</h1>
+<p>The player will render itself into a supplied parent element, and playback will begin as soon as enough data has buffered.</p>
+<pre class="prettyprint source lang-javascript"><code>// configure the media player that will be used before loading
+// see below for further details of ths config
 
+// options are: msestrategy, nativestrategy, hybridstrategy, talstrategy (deprecated)
+window.bigscreenPlayer.playbackStrategy = 'msestrategy';
 
+var bigscreenPlayer = BigscreenPlayer();
 
+var playbackElement = document.createElement('div');
+playbackElement.id = 'BigscreenPlayback';
+
+var body = document.getElementByTagName('body')[0];
+body.appendChild(playbackElement);
+
+var minimalData = {
+  media: {
+    mimeType: 'video/mp4',
+    urls: [
+      {
+        url: 'https://www.cdn1url.com/reallygoodvideo'
+      }
+    ]
+  }
+}
+
+var optionalData = {
+  initialPlaybackTime: 0, // Time (in seconds) to begin playback from
+  media: {
+    mimeType: 'video/mp4', // Used by TAL
+    bitrate: 8940,         // Displayed by Debug Tool
+    captionsUrl: 'https://www.somelovelycaptionsurl.com/captions',
+    codec: 'h264',
+    kind: MediaKind.VIDEO, // Can be VIDEO, or AUDIO
+    urls: [
+      // Multiple urls offer the ability to fail-over to another CDN if required
+      {
+        url: 'https://www.cdn1url.com/reallygoodvideo',
+        cdn: 'cdn1' // Displayed by Debug Tool
+      }, {
+        url: 'https://www.cdn2url.com/reallygoodvideo',
+        cdn: 'cdn2'
+      }
+    ]
+  }
+}
+
+// STATIC for VOD content, GROWING/SLIDING for LIVE content
+var windowType = WindowType.STATIC;
+var enableSubtitles = false;
+
+bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles);
+
+</code></pre>
+<p><a href="tutorial-events.html">→ Next - Events</a></p>
+</article>
+
+</section>
 
     </div>
 

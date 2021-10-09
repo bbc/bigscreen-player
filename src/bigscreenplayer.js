@@ -207,7 +207,7 @@ function BigscreenPlayer () {
      * @name init
      * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
      * @param {BigsceenPlayerData} bigscreenPlayerData
-     * @param {WindowTypes} newWindowType - @see {@link module:bigscreenplayer/models/windowtypes}
+     * @param {WindowTypes} newWindowType
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
      * @param {TALDevice} newDevice - An optional TAL device object
      * @param {InitCallbacks} callbacks

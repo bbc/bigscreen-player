@@ -32,7 +32,7 @@
 
 
     <title>
-      domhelpers.js
+      Tutorial: CDN Failover
     </title>
 
     <!--[if lt IE 9]>
@@ -99,82 +99,67 @@
     <div id="main" class="main-content">
       
       <h1 id='page-title' class="page-title">
-        domhelpers.js
+        Tutorial: CDN Failover
       </h1>
       
 
-      
+      <section>
 
-
-
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>function addClass (el, className) {
-  if (el.classList) {
-    el.classList.add(className)
-  } else {
-    el.className += ' ' + className
-  }
-}
 
-function removeClass (el, className) {
-  if (el.classList) {
-    el.classList.remove(className)
-  } else {
-    el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ')
-  }
-}
+    <h2>CDN Failover</h2>
+</header>
 
-function hasClass (el, className) {
-  if (el.classList) {
-    return el.classList.contains(className)
-  } else {
-    return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className)
-  }
-}
+<article>
+    <p>When a user is playing video/audio and an error occurs we want playback to recover using different CDN.</p>
+<h3>When is it triggered?</h3>
+<p>Few reasons why errors can happen when playback is attempted:</p>
+<ul>
+<li>Loss of network/low network</li>
+<li>Loss of connection to a particular CDN</li>
+<li>Missing segments in manifest</li>
+<li>Device specific fatal errors</li>
+</ul>
+<p><em>Note: CDN Failover is not attempted if the error occurs in last 60 secs of static (on demand) content</em></p>
+<h2>Standard Failover - On all devices/playback strategies</h2>
+<h3>Buffering timeout Errors</h3>
+<p>Some potential causes:</p>
+<ul>
+<li>Loss of Network</li>
+<li>Internal error not reported by device browser</li>
+</ul>
+<h4>Errors at the start of the playback</h4>
+<ol>
+<li>Bigscreen Player has been initialised and is in WAITING state</li>
+<li>CDN failover is attempted after 30 secs</li>
+</ol>
+<h4>Errors during playback</h4>
+<ol>
+<li>Playback strategy reports waiting event</li>
+<li>Bigscreen Player is in WAITING state</li>
+<li>CDN failover is attempted after 20 secs</li>
+</ol>
+<p><em><strong>This can be replicated by network throttling. We usually use very low setting of 12 kb/s to trigger buffering.</strong></em></p>
+<h3>FATAL Errors</h3>
+<p>Some potential causes:</p>
+<ul>
+<li>Loss of CDN, unavailable CDN</li>
+<li>Corrupted stream</li>
+<li>Issue with the device browser</li>
+</ul>
+<ol>
+<li>Playback strategy reports error event</li>
+<li>Bigscreen Player is in WAITING state</li>
+<li>CDN failover is attempted after 5 secs</li>
+</ol>
+<p><em><strong>This can be replicated by blocking CDN in the inspect debug tool.</strong></em></p>
+<h2>Seamless Failover - Only on  MSE Strategy Devices</h2>
+<p>We provide dash.js with all the <code>urls</code> provided. dash.js will switch CDN 'seamlessly' if it detects an issue, which may not always result in a WAITING event being throw.</p>
+<p><em><strong>This can be replicated by blocking CDN in the inspect debug tool</strong></em></p>
+</article>
 
-function isRGBATuple (rgbaString) {
-  return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString)
-}
-
-/**
- *  Checks that the string is an RGBA tuple and returns a RGB Tripple.
- *  A string that isn't an RGBA tuple will be returned to the caller.
- * @param {String} rgbaString
- */
-function rgbaToRGB (rgbaString) {
-  if (isRGBATuple(rgbaString)) {
-    rgbaString = rgbaString.slice(0, 7)
-  }
-  return rgbaString
-}
-
-/**
- * Safely removes an element from the DOM, simply doing
- * nothing if the node is detached (Has no parent).
- * @param {Element} el The Element to remove
- */
-function safeRemoveElement (el) {
-  if (el.parentNode) {
-    el.parentNode.removeChild(el)
-  }
-}
-
-export default {
-  addClass: addClass,
-  removeClass: removeClass,
-  hasClass: hasClass,
-  rgbaToRGB: rgbaToRGB,
-  isRGBA: isRGBATuple,
-  safeRemoveElement: safeRemoveElement
-}
-</code></pre>
-        </article>
-    </section>
-
-
-
+</section>
 
     </div>
 

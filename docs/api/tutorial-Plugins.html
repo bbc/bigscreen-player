@@ -32,7 +32,7 @@
 
 
     <title>
-      domhelpers.js
+      Tutorial: Plugins
     </title>
 
     <!--[if lt IE 9]>
@@ -99,82 +99,67 @@
     <div id="main" class="main-content">
       
       <h1 id='page-title' class="page-title">
-        domhelpers.js
+        Tutorial: Plugins
       </h1>
       
 
-      
+      <section>
 
-
-
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>function addClass (el, className) {
-  if (el.classList) {
-    el.classList.add(className)
-  } else {
-    el.className += ' ' + className
+
+    <h2>Plugins</h2>
+</header>
+
+<article>
+    <p>Plugins can be created to extend the functionality of the Bigscreen Player by adhering to an interface which propogates non state change events from the player. For example, when an error is raised or cleared.</p>
+<p>The full interface is as follows:</p>
+<ul>
+<li><code>onError</code></li>
+<li><code>onFatalError</code></li>
+<li><code>onErrorCleared</code></li>
+<li><code>onErrorHandled</code></li>
+<li><code>onBuffering</code></li>
+<li><code>onBufferingCleared</code></li>
+<li><code>onScreenCapabilityDetermined</code></li>
+</ul>
+<p>An example plugin may look like:</p>
+<pre class="prettyprint source lang-javascript"><code>function ExamplePlugin (appName) {
+
+  var name = appName;
+
+  function onFatalError (evt) {
+    console.log('A fatal error has occured in the app: ' + name);
   }
-}
 
-function removeClass (el, className) {
-  if (el.classList) {
-    el.classList.remove(className)
-  } else {
-    el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ')
+  function onErrorHandled (evt) {
+    console.log('The ' + name + ' app is handling a playback error');
   }
-}
 
-function hasClass (el, className) {
-  if (el.classList) {
-    return el.classList.contains(className)
-  } else {
-    return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className)
-  }
-}
-
-function isRGBATuple (rgbaString) {
-  return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString)
-}
-
-/**
- *  Checks that the string is an RGBA tuple and returns a RGB Tripple.
- *  A string that isn't an RGBA tuple will be returned to the caller.
- * @param {String} rgbaString
- */
-function rgbaToRGB (rgbaString) {
-  if (isRGBATuple(rgbaString)) {
-    rgbaString = rgbaString.slice(0, 7)
-  }
-  return rgbaString
-}
-
-/**
- * Safely removes an element from the DOM, simply doing
- * nothing if the node is detached (Has no parent).
- * @param {Element} el The Element to remove
- */
-function safeRemoveElement (el) {
-  if (el.parentNode) {
-    el.parentNode.removeChild(el)
-  }
-}
-
-export default {
-  addClass: addClass,
-  removeClass: removeClass,
-  hasClass: hasClass,
-  rgbaToRGB: rgbaToRGB,
-  isRGBA: isRGBATuple,
-  safeRemoveElement: safeRemoveElement
+  return {
+    onFatalError: onFatalError,
+    onErrorHandled: onErrorHandled
+  };
 }
 </code></pre>
-        </article>
-    </section>
+<pre class="prettyprint source lang-javascript"><code>var bigscreenPlayer = BigscreenPlayer();
 
+var examplePlugin = ExamplePlugin('myApp');
 
+bigscreenPlayer.registerPlugin(examplePlugin);
 
+// initialise bigscreenPlayer - see above
+
+// you should unregister your plugins as part of your playback cleanup
+
+// calling with no argument will unregister all plugins
+bigscreenPlayer.unregisterPlugin(examplePlugin);
+
+</code></pre>
+<p><a href="tutorial-events.html">← Prev - Events</a></p>
+</article>
+
+</section>
 
     </div>
 

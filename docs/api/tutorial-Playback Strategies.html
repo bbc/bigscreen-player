@@ -32,7 +32,7 @@
 
 
     <title>
-      domhelpers.js
+      Tutorial: Playback Strategies
     </title>
 
     <!--[if lt IE 9]>
@@ -99,82 +99,60 @@
     <div id="main" class="main-content">
       
       <h1 id='page-title' class="page-title">
-        domhelpers.js
+        Tutorial: Playback Strategies
       </h1>
       
 
-      
+      <section>
 
-
-
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>function addClass (el, className) {
-  if (el.classList) {
-    el.classList.add(className)
-  } else {
-    el.className += ' ' + className
-  }
-}
 
-function removeClass (el, className) {
-  if (el.classList) {
-    el.classList.remove(className)
-  } else {
-    el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ')
-  }
-}
+    <h2>Playback Strategies</h2>
+</header>
 
-function hasClass (el, className) {
-  if (el.classList) {
-    return el.classList.contains(className)
-  } else {
-    return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className)
-  }
-}
-
-function isRGBATuple (rgbaString) {
-  return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString)
-}
-
-/**
- *  Checks that the string is an RGBA tuple and returns a RGB Tripple.
- *  A string that isn't an RGBA tuple will be returned to the caller.
- * @param {String} rgbaString
- */
-function rgbaToRGB (rgbaString) {
-  if (isRGBATuple(rgbaString)) {
-    rgbaString = rgbaString.slice(0, 7)
-  }
-  return rgbaString
-}
-
-/**
- * Safely removes an element from the DOM, simply doing
- * nothing if the node is detached (Has no parent).
- * @param {Element} el The Element to remove
- */
-function safeRemoveElement (el) {
-  if (el.parentNode) {
-    el.parentNode.removeChild(el)
-  }
-}
-
-export default {
-  addClass: addClass,
-  removeClass: removeClass,
-  hasClass: hasClass,
-  rgbaToRGB: rgbaToRGB,
-  isRGBA: isRGBATuple,
-  safeRemoveElement: safeRemoveElement
-}
+<article>
+    <p>As part of the configuration of Bigscreen Player, a 'playback strategy' should be provided.</p>
+<p>There are four options available:</p>
+<ul>
+<li><code>msestrategy</code></li>
+<li><code>nativestrategy</code></li>
+<li><code>hybridstrategy</code></li>
+<li><code>basicstrategy</code></li>
+</ul>
+<p>Your app should write this globally to the window before initialising Bigscreen Player. This enables only the required media player code to be loaded. For example, if MSE playback is not needed, the <em>dashjs</em> library does not have to be loaded.</p>
+<pre class="prettyprint source lang-javascript"><code>window.bigscreenPayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'basicstategy'
 </code></pre>
-        </article>
-    </section>
+<p>The player will require in the correct strategy file at runtime.</p>
+<h2>MSE Strategy</h2>
+<p>The MSE strategy utilises the open source <a href="https://github.com/Dash-Industry-Forum/dash.js/wiki"><em>dashjs</em></a> library. Dashjs handles much of the playback, and the strategy interacts with this to provide a consistent interface. No other dependencies are requried.</p>
+<h2>Native Strategy</h2>
+<p>We have migrated TAL media player implementations into the Native Strategy, so that you can play media on devices that do not support Media Source Extensions without TAL. So far there is support for playback via:</p>
+<ul>
+<li><code>HTHML5</code></li>
+<li><code>CEHTML</code></li>
+<li><code>SAMSUNG_MAPLE</code></li>
+<li><code>SAMSUNG_STREAMING</code></li>
+<li><code>SAMSUNG_STREAMING_2015</code></li>
+</ul>
+<p>This requires additional config, to select which implementation to use and indicate the device's live playback capability:</p>
+<pre class="prettyprint source lang-javascript"><code>window.bigscreenPlayer.liveSupport: 'seekable', // OR 'none' OR 'playable' OR 'restartable'; defaults to 'playable'
+window.bigscreenPlayer.mediaPlayer: 'html5' // OR 'cehtml'; defaults to 'html5'
+</code></pre>
+<h2>Hybrid Strategy</h2>
+<p>In some circumstances, you may wish to use both the MSE and Native strategies. For example, using MSE for Video on Demand and Native for Live Video. In our experience, we have found this helpful for targeting certain devices that are unable to play growing or static window type content using MSE.</p>
+<p>When using hybrid, the strategy is chosen at the point of playback. It defaults to the <em>msestrategy</em> and will switch to <em>nativestrategy</em> if an exception is configured.</p>
+<h3>Configuring Exceptions</h3>
+<p>The Native strategy can be reverted to on a hybrid device by adding exceptions based on the media's window type (STATIC, SLIDING, GROWING) and whether the content is UHD.</p>
+<p>The following example would use MSE playback for STATIC and GROWING window types, and Native playback for UHD and SLIDING window content.</p>
+<pre class="prettyprint source lang-javascript"><code>window.bigscreenPlayer.playbackStrategy = 'hybridstrategy';
+window.bigscreenPlayer.mseExceptions = ['uhd', 'slidingWindow'];
+</code></pre>
+<h2>Basic Strategy</h2>
+<p>This strategy is similar to native, in that it relies on the browser's media element to handle play back of the source provided. It is intended to be a lightweight wrapper around standard HTML5 media playback. It is media element event driven, and contains none of the workarounds (such as overrides and sentinels) that the native strategy does.</p>
+</article>
 
-
-
+</section>
 
     </div>
 
