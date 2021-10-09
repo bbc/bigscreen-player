@@ -11,11 +11,14 @@ node_modules
 # Packaging dir
 dist
 
-# Externals
-script/external/
-
-# Testing files
-WebRunner.html
+# Local dev dir
+dist-local
 
 # Ignore Visual Studio Code project files
 .vscode
+
+# Rollup build information
+stats.html
+
+# Jest
+coverage/

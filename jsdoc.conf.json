@@ -30,7 +30,6 @@
         "recurse": true,
         "hierarchy": true,
         "readme": "docs/API.md",
-        // "template": "./node_modules/docdash",
         "tutorials": "./docs/tutorials",
         "template": "node_modules/clean-jsdoc-theme",
         "theme_opts": {
