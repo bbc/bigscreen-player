@@ -66,40 +66,5 @@
                 }
             ]
         }
-    },
-    "docdash": {
-        "search": true,
-        "typedefs": true,
-        "collapse": true,
-        "meta": {
-            "title": "Bigscreen Player",
-            "description": "Simplified media playback for bigscreen devices",
-            "keyword": ""
-        },
-        "navLevel": 2,
-        "menu": {
-            "Github": {
-                "href": "https://github.com/bbc/bigscreen-player",
-                "target": "_blank",
-                "class": "menu-item",
-                "id": "website_link"
-            },
-            "NPM": {
-                "href": "https://www.npmjs.com/package/bigscreen-player",
-                "target": "_blank",
-                "class": "menu-item",
-                "id": "forum_link"
-            }
-        },
-        "sectionOrder": [
-            "Tutorials",
-            "Classes",
-            "Modules",
-            "Externals",
-            "Events",
-            "Namespaces",
-            "Mixins",
-            "Interfaces"
-        ]
     }
 }
