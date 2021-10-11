@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Adding meta -->
+    
+    
+    <meta name="description" content="Simplified media playback for bigscreen devices" />
+    
+    
+
+    <!-- Adding external script-->
+    
+
+    <!-- Adding external style-->
+    
+
+    <!-- Adding scripts-->
+    
+
+    <!-- Adding style-->
+    
+
+    <!-- Adding overlay script-->
+    
+
+    <!-- Adding overlay style-->
+    
+
+
+    <title>
+      Tutorial: Mocking Playback
+    </title>
+
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/third-party/ionicons.min.css">
+    <link type="text/css" rel="stylesheet" href="styles/third-party/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/reset.css">
+    <link type="text/css" rel="stylesheet" href="styles/clean-jsdoc-theme-base.css">
+    <link type="text/css" rel="stylesheet" href="styles/clean-jsdoc-theme-dark.css">
+    
+    <svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+    style="display:none">
+    <defs>
+        <symbol id="copy-icon" viewbox="0 0 488.3 488.3">
+            <g>
+                <path
+                    d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z" />
+                <path
+                    d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z" />
+            </g>
+        </symbol>
+        <symbol id='search-icon' viewBox="0 0 512 512">
+            <g>
+                <g>
+                    <path
+                        d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z" />
+                </g>
+            </g>
+            <g>
+                <g>
+                    <path
+                        d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z" />
+                </g>
+            </g>
+        </symbol>
+        <symbol id="down-icon" viewBox="0 0 16 16">
+            <path 
+                fill-rule="evenodd" 
+                clip-rule="evenodd" 
+                d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"
+            >
+            </path>
+        </symbol>
+    </defs>
+</svg>
+  </head>
+
+  <body>
+
+    <nav class="navbar" id="navbar">
+      <h2><a href="index.html"><img src='bsp-logo.png'/></a></h2><div class="search-box" id="search-box"><div class="search-box-input-container"><input class="search-box-input" type="text" placeholder="Search..." id="search-box-input" /><svg class="search-icon" alt="search-icon"><use xlink:href="#search-icon"></use></svg></div><div class="search-item-container" id="search-item-container"><ul class="search-item-ul" id="search-item-ul"></ul></div></div><div class="sidebar-main-content" id="sidebar-main-content"><ul><li class="menu-li"><a href='https://github.com/bbc/bigscreen-player' class=' menu-link' id='' target='_blank'>Github</a></li><li class="menu-li"><a href='https://www.npmjs.com/package/bigscreen-player' class=' menu-link' id='' target='_blank'>NPM</a></li></ul><div class="accordion collapsed" id="8171550" > <h3 class="accordion-heading">Tutorials<svg><use xlink:href="#down-icon"></use></svg></h3><ul class="accordion-content"><li class="accordion-list" id=""><a href="tutorial-CDN Failover.html">CDN Failover</a></li><li class="accordion-list" id=""><a href="tutorial-Design.html">Design</a></li><li class="accordion-list" id=""><a href="tutorial-Events.html">Events</a></li><li class="accordion-list" id=""><a href="tutorial-Getting Started.html">Getting Started</a></li><li class="accordion-list" id=""><a href="tutorial-Mocking Playback.html">Mocking Playback</a></li><li class="accordion-list" id=""><a href="tutorial-Playback Strategies.html">Playback Strategies</a></li><li class="accordion-list" id=""><a href="tutorial-Plugins.html">Plugins</a></li><li class="accordion-list" id=""><a href="tutorial-Testing.html">Testing</a></li></ul> </div><div class="accordion collapsed" id="391305" > <h3 class="accordion-heading">Modules<svg><use xlink:href="#down-icon"></use></svg></h3><ul class="accordion-content"><li class="accordion collapsed child" id=4543964><div class="accordion-heading child"><a href="module-bigscreenplayer_bigscreenplayer.html">bigscreenplayer/bigscreenplayer</a><svg><use xlink:href="#down-icon"></use></svg></div><ul class='methods accordion-content'><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.canPause">canPause</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.canSeek">canSeek</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.convertEpochMsToVideoTimeSeconds">convertEpochMsToVideoTimeSeconds</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.convertVideoTimeSecondsToEpochMs">convertVideoTimeSecondsToEpochMs</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getCurrentTime">getCurrentTime</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getDuration">getDuration</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getFrameworkVersion">getFrameworkVersion</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getLiveWindowData">getLiveWindowData</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getLogLevels">getLogLevels</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getMediaKind">getMediaKind</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getPlayerElement">getPlayerElement</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getSeekableRange">getSeekableRange</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getWindowType">getWindowType</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isEnded">isEnded</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isPaused">isPaused</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isPlayingAtLiveEdge">isPlayingAtLiveEdge</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesAvailable">isSubtitlesAvailable</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesEnabled">isSubtitlesEnabled</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.mock">mock</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.mockJasmine">mockJasmine</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.pause">pause</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.play">play</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerForStateChanges">registerForStateChanges</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerForSubtitleChanges">registerForSubtitleChanges</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerForTimeUpdates">registerForTimeUpdates</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerPlugin">registerPlugin</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.setCurrentTime">setCurrentTime</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.setLogLevel">setLogLevel</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.setSubtitlesEnabled">setSubtitlesEnabled</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.setTransportControlsPosition">setTransportControlsPosition</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.toggleDebug">toggleDebug</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.transitions">transitions</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unmock">unmock</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterForStateChanges">unregisterForStateChanges</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterForSubtitleChanges">unregisterForSubtitleChanges</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterForTimeUpdates">unregisterForTimeUpdates</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterPlugin">unregisterPlugin</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#~getLiveSupport">getLiveSupport</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#~init">init</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#~tearDown">tearDown</a></li></ul></li></ul> </div><div class="accordion collapsed" id="3154388" > <h3 class="accordion-heading">Global<svg><use xlink:href="#down-icon"></use></svg></h3><ul class="accordion-content"><li class="accordion-list" id=""><a href="global.html#hasAttribute">hasAttribute</a></li><li class="accordion-list" id=""><a href="global.html#rgbaToRGB">rgbaToRGB</a></li><li class="accordion-list" id=""><a href="global.html#safeRemoveElement">safeRemoveElement</a></li><li class="accordion-list" id=""><a href="global.html#Time">Time</a></li><li class="accordion-list" id=""><a href="global.html#WindowTypes">WindowTypes</a></li></ul> </div></div>
+      
+
+    </nav>
+    <div class="navbar-ham" id="navbar-ham">
+      <div>
+        <div class="first"></div>
+        <div class="second"></div>
+        <div class="third"></div>
+      </div>
+    </div>
+
+    <div id="main" class="main-content">
+      
+      <h1 id='page-title' class="page-title">
+        Tutorial: Mocking Playback
+      </h1>
+      
+
+      <section>
+
+<header>
+    
+
+    <h2>Mocking Playback</h2>
+</header>
+
+<article>
+    <p>When writing tests for your application it may be useful to use the mocking functions provided. This creates a fake player with mocking hook functions to simulate real world scenarios.</p>
+<p>Bigscreen Player includes a test mode than can be triggered by calling <code>mock()</code> or <code>mockJasmine()</code>.</p>
+<h2><code>mock(opts)</code> and <code>mockJasmine(opts)</code></h2>
+<p><code>mockJasmine()</code> should be used when you want to mock Bigscreen Player within Jasmine tests. This turns each Bigsceen Player api function into a Jasmine spy, so you can call all the spy function on them e.g. <code>expect(BigscreenPlayer.play).toHaveBeenCalled()</code>.</p>
+<p><code>mock()</code> should be used when you are not running Jasmine tests.</p>
+<h3><code>opts</code></h3>
+<ul>
+<li><code>autoProgress = true|false</code> (optional; defaults to false) - playback will automatically progress after 100ms, transitioning into PLAYING, then updates the time every 500ms.</li>
+</ul>
+<h2><code>unmock()</code></h2>
+<p>Should be called when you want to stop mocking Bigsceen Player, including in the <code>afterEach()</code> of Jasmine tests.</p>
+<h2>Mocking hooks</h2>
+<p>When Bigsceen Player has been mocked, there are various hooks added to the API in order to modify its behaviour or emulate certain real life scenarios.</p>
+<h3><code>changeState(state, eventTrigger, opts)</code></h3>
+<p>Hook for changing the state e.g. <code>BigscreenPlayer.changeState(MediaState.WAITING)</code> would emulate playback buffering.</p>
+<ul>
+<li><code>state = MediaState</code> - <a href="/models/mediastate.js">MediaState</a> to change to.</li>
+<li><code>eventTrigger = 'device'|'other'</code> (optional; defaults to device) - determines whether the state change was caused by the device or not; affects <code>onBufferingCleared</code> and <code>onErrorCleared</code> plugin calls.</li>
+</ul>
+<h3><code>getSource()</code></h3>
+<p>Get the URL of the current media.</p>
+<h3><code>progressTime(time)</code></h3>
+<p>Emulate playback jumping to a given <code>time</code>.</p>
+<h3><code>setCanPause(value)</code></h3>
+<p>Make <code>canPause()</code> return <code>value</code>.</p>
+<h3><code>setCanSeek(value)</code></h3>
+<p>Make <code>canSeek()</code> return <code>value</code>.</p>
+<h3><code>setDuration(mediaDuration)</code></h3>
+<p>Set the duration to <code>mediaDuration</code>.</p>
+<h3><code>setEndOfStream(isEndOfStream)</code></h3>
+<p>Sets the <code>endOfStream</code> value to be sent with events to <code>isEndOfStream</code>.</p>
+<h3><code>setInitialBuffering(value)</code></h3>
+<p>If Mock Bigsceen Player is setup to automatically progress, it will by default start progressing 100ms after <code>init()</code> has been called. If <code>setInitialBuffering(true)</code> is called, playback will not progress until something else causes it e.g. <code>play()</code> or <code>changeState(MediaState.PLAYING)</code>.</p>
+<h3><code>setLiveWindowStart(value)</code></h3>
+<p>Sets the live window start time to <code>value</code>; used in the calculation for <code>convertVideoTimeSecondsToEpochMs(seconds)</code>.</p>
+<h3><code>setMediaKind(kind)</code></h3>
+<p>Sets return value of <code>getMediaKind()</code> and <code>avType</code> for AV stats to <code>kind</code>.</p>
+<h3><code>setSeekableRange(newSeekableRange)</code></h3>
+<p>Set the seekable range to <code>newSeekableRange</code>.</p>
+<ul>
+<li><code>newSeekableRange</code>
+<ul>
+<li><code>start</code> - seekable range start</li>
+<li><code>end</code> - seekable range end</li>
+</ul>
+</li>
+</ul>
+<h3><code>setWindowType(type)</code></h3>
+<p>Sets the <a href="/models/windowtypes.js">WindowType</a>. Mock Bigsceen Player will behave differently for VOD, WEBCAST, and SIMULCAST as in production.</p>
+<h3><code>setSubtitlesAvailable(value)</code></h3>
+<p>Sets the return value of <code>isSubtitlesAvailable()</code> to <code>value</code>.</p>
+<h3><code>triggerError()</code></h3>
+<p>Triggers a non-fatal error which stalls playback. Will be dismissed when any call to Bigsceen Player is made which results in a state change, or with mocking hooks <code>changeState()</code> or <code>triggerErrorHandled()</code>.</p>
+<h3><code>triggerErrorHandled()</code></h3>
+<p>Makes Bigsceen Player handle an error - changes the URL if multiple were passed in, and the list hasn't already been exhausted, and resumes playback if Mock Bigsceen Player is automatically progressing.</p>
+</article>
+
+</section>
+
+    </div>
+
+    <footer class="footer" id="footer">
+      
+    </footer>
+
+    <script src="scripts/third-party/prettify.js"></script>
+    <script src="scripts/third-party/lang-css.js"></script>
+    <script type="text/javascript" src="scripts/misc.js"></script>
+
+    <script>prettyPrint();</script>
+    <script src="scripts/linenumber.js"></script>
+    <script src="scripts/fix-code-block.js"></script>
+    <script src="scripts/fix-navbar.js"></script>
+    
+      <script src="scripts/search.js"></script>
+      <script src="scripts/third-party/fuse.js"></script>
+      <script>
+        var list = [{"title":"CDN Failover","link":"CDN Failover"},{"title":"Design","link":"Design"},{"title":"Events","link":"Events"},{"title":"Getting Started","link":"Getting Started"},{"title":"Mocking Playback","link":"Mocking Playback"},{"title":"Playback Strategies","link":"Playback Strategies"},{"title":"Plugins","link":"Plugins"},{"title":"Testing","link":"Testing"},{"title":"bigscreenplayer/bigscreenplayer","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html\">bigscreenplayer/bigscreenplayer</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.canPause","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.canPause\">module:bigscreenplayer/bigscreenplayer.canPause &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.canSeek","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.canSeek\">module:bigscreenplayer/bigscreenplayer.canSeek &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.convertEpochMsToVideoTimeSeconds","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.convertEpochMsToVideoTimeSeconds\">module:bigscreenplayer/bigscreenplayer.convertEpochMsToVideoTimeSeconds &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.convertVideoTimeSecondsToEpochMs","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.convertVideoTimeSecondsToEpochMs\">module:bigscreenplayer/bigscreenplayer.convertVideoTimeSecondsToEpochMs &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getCurrentTime","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getCurrentTime\">module:bigscreenplayer/bigscreenplayer.getCurrentTime &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getDuration","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getDuration\">module:bigscreenplayer/bigscreenplayer.getDuration &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getFrameworkVersion","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getFrameworkVersion\">module:bigscreenplayer/bigscreenplayer.getFrameworkVersion &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getLiveWindowData","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getLiveWindowData\">module:bigscreenplayer/bigscreenplayer.getLiveWindowData &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getLogLevels","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getLogLevels\">module:bigscreenplayer/bigscreenplayer.getLogLevels &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getMediaKind","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getMediaKind\">module:bigscreenplayer/bigscreenplayer.getMediaKind &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getPlayerElement","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getPlayerElement\">module:bigscreenplayer/bigscreenplayer.getPlayerElement &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getSeekableRange","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getSeekableRange\">module:bigscreenplayer/bigscreenplayer.getSeekableRange &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getWindowType","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getWindowType\">module:bigscreenplayer/bigscreenplayer.getWindowType &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isEnded","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isEnded\">module:bigscreenplayer/bigscreenplayer.isEnded &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isPaused","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isPaused\">module:bigscreenplayer/bigscreenplayer.isPaused &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isPlayingAtLiveEdge","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isPlayingAtLiveEdge\">module:bigscreenplayer/bigscreenplayer.isPlayingAtLiveEdge &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isSubtitlesAvailable","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesAvailable\">module:bigscreenplayer/bigscreenplayer.isSubtitlesAvailable &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isSubtitlesEnabled","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesEnabled\">module:bigscreenplayer/bigscreenplayer.isSubtitlesEnabled &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.mock","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.mock\">module:bigscreenplayer/bigscreenplayer.mock &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.mockJasmine","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.mockJasmine\">module:bigscreenplayer/bigscreenplayer.mockJasmine &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.pause","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.pause\">module:bigscreenplayer/bigscreenplayer.pause &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.play","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.play\">module:bigscreenplayer/bigscreenplayer.play &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.registerForStateChanges","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.registerForStateChanges\">module:bigscreenplayer/bigscreenplayer.registerForStateChanges &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.registerForSubtitleChanges","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.registerForSubtitleChanges\">module:bigscreenplayer/bigscreenplayer.registerForSubtitleChanges &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.registerForTimeUpdates","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.registerForTimeUpdates\">module:bigscreenplayer/bigscreenplayer.registerForTimeUpdates &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.registerPlugin","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.registerPlugin\">module:bigscreenplayer/bigscreenplayer.registerPlugin &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.setCurrentTime","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.setCurrentTime\">module:bigscreenplayer/bigscreenplayer.setCurrentTime &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.setLogLevel","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.setLogLevel\">module:bigscreenplayer/bigscreenplayer.setLogLevel &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.setSubtitlesEnabled","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.setSubtitlesEnabled\">module:bigscreenplayer/bigscreenplayer.setSubtitlesEnabled &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.setTransportControlsPosition","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.setTransportControlsPosition\">module:bigscreenplayer/bigscreenplayer.setTransportControlsPosition &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.toggleDebug","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.toggleDebug\">module:bigscreenplayer/bigscreenplayer.toggleDebug &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.transitions","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.transitions\">module:bigscreenplayer/bigscreenplayer.transitions &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unmock","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unmock\">module:bigscreenplayer/bigscreenplayer.unmock &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unregisterForStateChanges","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unregisterForStateChanges\">module:bigscreenplayer/bigscreenplayer.unregisterForStateChanges &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unregisterForSubtitleChanges","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unregisterForSubtitleChanges\">module:bigscreenplayer/bigscreenplayer.unregisterForSubtitleChanges &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unregisterForTimeUpdates","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unregisterForTimeUpdates\">module:bigscreenplayer/bigscreenplayer.unregisterForTimeUpdates &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unregisterPlugin","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unregisterPlugin\">module:bigscreenplayer/bigscreenplayer.unregisterPlugin &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer~getLiveSupport","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#~getLiveSupport\">module:bigscreenplayer/bigscreenplayer~getLiveSupport &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer~init","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#~init\">module:bigscreenplayer/bigscreenplayer~init &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer~tearDown","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#~tearDown\">module:bigscreenplayer/bigscreenplayer~tearDown &rtrif; undefined</a>"},{"title":"hasAttribute","link":"<a href=\"global.html#hasAttribute\">hasAttribute</a>"},{"title":"rgbaToRGB","link":"<a href=\"global.html#rgbaToRGB\">rgbaToRGB</a>"},{"title":"safeRemoveElement","link":"<a href=\"global.html#safeRemoveElement\">safeRemoveElement</a>"},{"title":"Time","link":"<a href=\"global.html#Time\">Time</a>"},{"title":"WindowTypes","link":"<a href=\"global.html#WindowTypes\">WindowTypes</a>"}];
+        var options = {"shouldSort":true,"threshold":0.4,"location":0,"distance":100,"maxPatternLength":32,"minMatchCharLength":1}
+          setupSearch(list, options)
+      </script>
+    
+
+    
+
+    
+
+    
+
+    
+
+
+  </body>
+
+</html>
