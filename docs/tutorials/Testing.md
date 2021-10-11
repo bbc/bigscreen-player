@@ -2,7 +2,7 @@
 
 Different Streaming types should be considered - MP4, HLS, DASH - Audio and Video
 * Subtitles (currently on demand only)
-* [CDN Failover](/tutorial-cdn-failover.html)
+* CDN Failover
 * Tearing down playback and immediately starting something new (e.g 'autoplay' features)
 * Soak testing (i.e. play for a long period of time)
 * End of playback 

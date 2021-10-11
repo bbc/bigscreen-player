@@ -11,9 +11,6 @@ Bigscreen Player has some global configuration that is needed before initialisat
 window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'talstrategy' (deprecated)
 ```
 
-See the [playback strategies](Playback Strategies.md) wiki page for further details on these strategies.
-
-
 # Initialisation
 
 A playback session can be initialised by simply calling the `init()` function with some initial data.
@@ -97,6 +94,4 @@ const enableSubtitles = false
 
 bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles)
 ```
-
-[→ Next - Events](tutorial-events.html)
 

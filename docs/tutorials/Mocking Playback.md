@@ -24,7 +24,7 @@ When Bigsceen Player has been mocked, there are various hooks added to the API i
 
 Hook for changing the state e.g. `BigscreenPlayer.changeState(MediaState.WAITING)` would emulate playback buffering.
 
-- `state = MediaState` - [MediaState](/models/mediastate.js) to change to.
+- `state = MediaState` - [MediaState](global.html#WindowTypes) to change to.
 - `eventTrigger = 'device'|'other'` (optional; defaults to device) - determines whether the state change was caused by the device or not; affects `onBufferingCleared` and `onErrorCleared` plugin calls.
 
 ### `getSource()`
