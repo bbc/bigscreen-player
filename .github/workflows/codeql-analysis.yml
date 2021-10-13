@@ -20,6 +20,9 @@ on:
   schedule:
     - cron: '15 0 * * 4'
 
+paths-ignore:
+  - docs/api
+
 jobs:
   analyze:
     name: Analyze
