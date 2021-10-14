@@ -1,3 +1,5 @@
+import Plugins from '../plugins'
+
 function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
   const useLegacySubs = window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles || false
@@ -9,11 +11,15 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
     import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {
       subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
       callback(subtitlesEnabled)
+    }).catch(() => {
+      Plugins.interface.onSubtitlesDynamicLoadError()
     })
   } else {
     import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
       subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
       callback(subtitlesEnabled)
+    }).catch(() => {
+      Plugins.interface.onSubtitlesDynamicLoadError()
     })
   }
 
