@@ -24,13 +24,6 @@ $ npm run start
 
 This will open a web page at `localhost:8080`.
 
-## Documentation
-
-Bigscreen Player uses JSDocs to autogenerate API documentation. To regenerate the documentation run:
-```bash
-$ npm run docs:jsdoc
-```
-
 ## Testing
 
 The project is unit tested using [Jest](https://jestjs.io/). To run the tests:
@@ -52,6 +45,13 @@ This project currently has unit test coverage but no integration test suite. Thi
 4. If the PR checks are green. The core team can merge to master.
 5. Automation takes care of the package versioning.
 6. Publishing to NPM is handled with our [GitHub Actions CI integration](https://github.com/bbc/bigscreen-player/blob/master/.github/workflows/npm-publish.yml).
+
+## Documentation
+
+Bigscreen Player uses JSDocs to autogenerate API documentation. To regenerate the documentation run:
+```bash
+$ npm run docs
+```
 
 ## Contributing
 
