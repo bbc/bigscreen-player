@@ -42,6 +42,7 @@ export default {
     onSubtitlesTimeout: (evt) => callOnAllPlugins('onSubtitlesTimeout', evt),
     onSubtitlesXMLError: (evt) => callOnAllPlugins('onSubtitlesXMLError', evt),
     onSubtitlesTransformError: (evt) => callOnAllPlugins('onSubtitlesTransformError', evt),
-    onSubtitlesRenderError: (evt) => callOnAllPlugins('onSubtitlesRenderError', evt)
+    onSubtitlesRenderError: (evt) => callOnAllPlugins('onSubtitlesRenderError', evt),
+    onSubtitlesDynamicLoadError: (evt) => callOnAllPlugins('onSubtitlesDynamicLoadError', evt)
   }
 }
