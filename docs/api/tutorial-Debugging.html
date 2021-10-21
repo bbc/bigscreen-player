@@ -32,7 +32,7 @@
 
 
     <title>
-      Tutorial: Design
+      Tutorial: Debugging
     </title>
 
     <!--[if lt IE 9]>
@@ -99,7 +99,7 @@
     <div id="main" class="main-content">
       
       <h1 id='page-title' class="page-title">
-        Tutorial: Design
+        Tutorial: Debugging
       </h1>
       
 
@@ -108,24 +108,14 @@
 <header>
     
 
-    <h2>Design</h2>
+    <h2>Debugging</h2>
 </header>
 
 <article>
-    <p>This document covers the basics of the <code>bigscreen-player</code> high level architecture. It describes an overview of the internal workings that is useful to understand in order to carry out development and possibly contribute to the code base.</p>
-<p>Further setup code and specific examples can be found in the repo itself. A good place to start is the <a href="https://github.com/bbc/bigscreen-player/blob/master/README.md">README</a>.</p>
-<h2>Dependencies</h2>
-<p>As it stands, the player relies on two dependencies:</p>
-<h4><a href="https://github.com/bbc/dash.js">Dash.js</a></h4>
-<p>Our custom fork of the reference implementation of the <em><strong>dynamic adaptive streaming over http</strong></em> protocol. Used for MSE (Media Source Extension) capable devices. This is required in specifically by <code>bigscreen-player</code>, when the mse-strategy is used.</p>
-<h4><a href="https://github.com/bbc/imscJS">imscJS</a></h4>
-<p>Our custom fork for rendering subtitles.</p>
-<h2>Architecture</h2>
-<p><img src="../static/bsp_arch.svg" alt="Bigscreen Player Image"></p>
-<h3>Player Component</h3>
-<p>This stage provides a wrapper for the interaction with all of the individual strategies and is what <code>bigscreen-player</code> uses to interact with the video element, at its core.</p>
-<h2>Playback Spinner</h2>
-<p>Although the player itself doesn't handle UI interaction, the playback spinner element to be shown (when buffering) is generated within <code>bigscreen-player</code>. This creates a container, and then places an element of the specified CSS class within the container. This element can then be surfaced upwards to be placed on the UI by an application's UI handler.</p>
+    <p>During development, <code>bigscreen-player</code> offers a form of debugging with an on-screen debugger. Using this tool, specific events can be monitored to check successful execution of the program logic. This is particularly useful where no native JS consoles are accessible on certain devices.</p>
+<h3>The Chronicle</h3>
+<p>The debug-tool latches on top of the <code>chronicle</code> which acts similarly to the plugin interface. It has a reference to all of the callbacks that need to be updated upon a debug event occurring.</p>
+<p>This could allow for a possible extension of the debugging interface <em>if</em> needed.</p>
 </article>
 
 </section>
