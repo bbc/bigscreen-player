@@ -1,4 +1,5 @@
 import Plugins from '../plugins'
+import DebugTool from '../debugger/debugtool'
 
 function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
@@ -19,6 +20,7 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
       subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
       callback(subtitlesEnabled)
     }).catch((e) => {
+      DebugTool.info(JSON.stringify(e))
       Plugins.interface.onSubtitlesDynamicLoadError(e)
     })
   }
