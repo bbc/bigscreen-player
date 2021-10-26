@@ -11,15 +11,15 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
     import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {
       subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
       callback(subtitlesEnabled)
-    }).catch(() => {
-      Plugins.interface.onSubtitlesDynamicLoadError()
+    }).catch((e) => {
+      Plugins.interface.onSubtitlesDynamicLoadError(e)
     })
   } else {
     import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
       subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
       callback(subtitlesEnabled)
-    }).catch(() => {
-      Plugins.interface.onSubtitlesDynamicLoadError()
+    }).catch((e) => {
+      Plugins.interface.onSubtitlesDynamicLoadError(e)
     })
   }
 
