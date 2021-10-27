@@ -8,6 +8,8 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
   let subtitlesEnabled = autoStart
   let subtitlesContainer
 
+  DebugTool.info('Subtitles loading start')
+
   if (useLegacySubs) {
     import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {
       subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
@@ -16,13 +18,20 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
       Plugins.interface.onSubtitlesDynamicLoadError(e)
     })
   } else {
-    import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
-      subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
-      callback(subtitlesEnabled)
-    }).catch((e) => {
-      DebugTool.info(JSON.stringify(e))
-      Plugins.interface.onSubtitlesDynamicLoadError(e)
-    })
+    try {
+      import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
+        subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+        callback(subtitlesEnabled)
+      }).catch((evt) => {
+        DebugTool.info('IMSC Dynamic load error')
+        DebugTool.info(evt)
+        DebugTool.info(JSON.stringify(evt))
+        Plugins.interface.onSubtitlesDynamicLoadError(evt)
+      })
+    } catch (error) {
+      DebugTool.info('IMSC try catch error')
+      DebugTool.info(error)
+    }
   }
 
   function enable () {
