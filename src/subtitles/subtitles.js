@@ -1,5 +1,6 @@
 import Plugins from '../plugins'
 import DebugTool from '../debugger/debugtool'
+import IMSCSubtitles from './imscsubtitles.js'
 
 function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
@@ -18,20 +19,22 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
       Plugins.interface.onSubtitlesDynamicLoadError(e)
     })
   } else {
-    try {
-      import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
-        subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
-        callback(subtitlesEnabled)
-      }).catch((evt) => {
-        DebugTool.info('IMSC Dynamic load error')
-        DebugTool.info(evt)
-        DebugTool.info(JSON.stringify(evt))
-        Plugins.interface.onSubtitlesDynamicLoadError(evt)
-      })
-    } catch (error) {
-      DebugTool.info('IMSC try catch error')
-      DebugTool.info(error)
-    }
+    subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+    callback(subtitlesEnabled)
+    // try {
+    //   import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
+    //     subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+    //     callback(subtitlesEnabled)
+    //   }).catch((evt) => {
+    //     DebugTool.info('IMSC Dynamic load error')
+    //     DebugTool.info(evt)
+    //     DebugTool.info(JSON.stringify(evt))
+    //     Plugins.interface.onSubtitlesDynamicLoadError(evt)
+    //   })
+    // } catch (error) {
+    //   DebugTool.info('IMSC try catch error')
+    //   DebugTool.info(error)
+    // }
   }
 
   function enable () {
