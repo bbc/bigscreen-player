@@ -35,12 +35,7 @@ This project currently has unit test coverage but no integration test suite. Thi
 ## Releasing
 
 1. Create a PR.
-2. Label the PR with one of these labels: 
-    - `semver prerelease` 
-    - `semver patch`
-    - `semver minor`
-    - `semver major`
-
+2. Label the PR with one of these labels; `semver prerelease`, `semver patch`, `semver minor` or `semver major`
 3. Get a review from the core team.
 4. If the PR checks are green. The core team can merge to master.
 5. Automation takes care of the package versioning.
