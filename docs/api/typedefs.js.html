@@ -32,7 +32,7 @@
 
 
     <title>
-      Tutorial: Plugins
+      typedefs.js
     </title>
 
     <!--[if lt IE 9]>
@@ -99,66 +99,47 @@
     <div id="main" class="main-content">
       
       <h1 id='page-title' class="page-title">
-        Tutorial: Plugins
+        typedefs.js
       </h1>
       
 
-      <section>
+      
 
-<header>
+
+
     
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * Data required for playback
+ * @typedef {Object} BigscreenPlayerData
+ * @property {Object} media
+ * @property {String} media.type - source type e.g 'application/dash+xml'
+ * @property {String} media.mimeType - mimeType e.g 'video/mp4'
+ * @property {String} media.kind - 'video' or 'audio'
+ * @property {String} media.captionsUrl - 'Location for a captions file'
+ * @property {MediaUrl[]} media.urls - Media urls to use
+ * @property {Date} serverDate - Date object with server time offset
+ */
 
-    <h2>Plugins</h2>
-</header>
+/**
+ * @typedef {Object} MediaUrl
+ * @property {String} url - media endpoint
+ * @property {String} cdn - identifier for the endpoint
+ */
 
-<article>
-    <p>Plugins can be created to extend the functionality of the Bigscreen Player by adhering to an interface which propogates non state change events from the player. For example, when an error is raised or cleared.</p>
-<p>The full interface is as follows:</p>
-<ul>
-<li><code>onError</code></li>
-<li><code>onFatalError</code></li>
-<li><code>onErrorCleared</code></li>
-<li><code>onErrorHandled</code></li>
-<li><code>onBuffering</code></li>
-<li><code>onBufferingCleared</code></li>
-<li><code>onScreenCapabilityDetermined</code></li>
-</ul>
-<p>An example plugin may look like:</p>
-<pre class="prettyprint source lang-javascript"><code>function ExamplePlugin (appName) {
-
-  var name = appName;
-
-  function onFatalError (evt) {
-    console.log('A fatal error has occured in the app: ' + name);
-  }
-
-  function onErrorHandled (evt) {
-    console.log('The ' + name + ' app is handling a playback error');
-  }
-
-  return {
-    onFatalError: onFatalError,
-    onErrorHandled: onErrorHandled
-  };
-}
+/**
+ *
+ * @typedef {object} InitCallbacks
+ * @property {function} [callbacks.onSuccess] - Called after Bigscreen Player is initialised
+ * @property {function} [callbacks.onError] - Called when an error occurs during initialisation
+ */
 </code></pre>
-<pre class="prettyprint source lang-javascript"><code>var bigscreenPlayer = BigscreenPlayer();
+        </article>
+    </section>
 
-var examplePlugin = ExamplePlugin('myApp');
 
-bigscreenPlayer.registerPlugin(examplePlugin);
 
-// initialise bigscreenPlayer - see above
-
-// you should unregister your plugins as part of your playback cleanup
-
-// calling with no argument will unregister all plugins
-bigscreenPlayer.unregisterPlugin(examplePlugin);
-
-</code></pre>
-</article>
-
-</section>
 
     </div>
 
