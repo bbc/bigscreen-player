@@ -183,7 +183,7 @@ function BigscreenPlayer () {
      * @function
      * @name init
      * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
-     * @param {BigsceenPlayerData} bigscreenPlayerData
+     * @param {BigscreenPlayerData} bigscreenPlayerData
      * @param {WindowTypes} newWindowType
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
      * @param {TALDevice} newDevice - An optional TAL device object
@@ -428,7 +428,6 @@ function BigscreenPlayer () {
       DebugTool.apicall('play')
       playerComponent.play()
     },
-
     /**
      * Pause the media asset.
      * @function
