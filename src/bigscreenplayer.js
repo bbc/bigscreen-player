@@ -1,3 +1,6 @@
+/**
+ * @module bigscreenplayer/bigscreenplayer
+ */
 import MediaState from './models/mediastate'
 import PlayerComponent from './playercomponent'
 import PauseTriggers from './models/pausetriggers'
@@ -14,6 +17,7 @@ import Version from './version'
 import Resizer from './resizer'
 import ReadyHelper from './readyhelper'
 import Subtitles from './subtitles/subtitles'
+import './typedefs'
 
 function BigscreenPlayer () {
   let stateChangeCallbacks = []
@@ -172,7 +176,19 @@ function BigscreenPlayer () {
     return subtitles ? subtitles.available() : false
   }
 
-  return {
+  return /** @alias module:bigscreenplayer/bigscreenplayer */{
+
+    /**
+     * Call first to initialise bigscreen player for playback.
+     * @function
+     * @name init
+     * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
+     * @param {BigscreenPlayerData} bigscreenPlayerData
+     * @param {WindowTypes} newWindowType
+     * @param {boolean} enableSubtitles - Enable subtitles on initialisation
+     * @param {TALDevice} newDevice - An optional TAL device object
+     * @param {InitCallbacks} callbacks
+     */
     init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) => {
       playbackElement = newPlaybackElement
       Chronicle.init()
@@ -209,6 +225,11 @@ function BigscreenPlayer () {
       mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks)
     },
 
+    /**
+     * Should be called at the end of all playback sessions. Resets state and clears any UI.
+     * @function
+     * @name tearDown
+     */
     tearDown: function () {
       if (subtitles) {
         subtitles.tearDown()
@@ -238,11 +259,22 @@ function BigscreenPlayer () {
       Chronicle.tearDown()
     },
 
+    /**
+     * Pass a function to call whenever the player transitions state.
+     * @see {@link module:models/mediastate}
+     * @function
+     * @param {Function} callback
+     */
     registerForStateChanges: (callback) => {
       stateChangeCallbacks.push(callback)
       return callback
     },
 
+    /**
+     * Unregisters a previously registered callback.
+     * @function
+     * @param {Function} callback
+     */
     unregisterForStateChanges: (callback) => {
       const indexOf = stateChangeCallbacks.indexOf(callback)
       if (indexOf !== -1) {
@@ -250,11 +282,21 @@ function BigscreenPlayer () {
       }
     },
 
+    /**
+     * Pass a function to call whenever the player issues a time update.
+     * @function
+     * @param {Function} callback
+     */
     registerForTimeUpdates: (callback) => {
       timeUpdateCallbacks.push(callback)
       return callback
     },
 
+    /**
+     * Unregisters a previously registered callback.
+     * @function
+     * @param {Function} callback
+     */
     unregisterForTimeUpdates: (callback) => {
       const indexOf = timeUpdateCallbacks.indexOf(callback)
 
@@ -263,11 +305,21 @@ function BigscreenPlayer () {
       }
     },
 
+    /**
+     * Pass a function to be called whenever subtitles are enabled or disabled.
+     * @function
+     * @param {Function} callback
+     */
     registerForSubtitleChanges: (callback) => {
       subtitleCallbacks.push(callback)
       return callback
     },
 
+    /**
+     * Unregisters a previously registered callback for changes to subtitles.
+     * @function
+     * @param {Function} callback
+     */
     unregisterForSubtitleChanges: (callback) => {
       const indexOf = subtitleCallbacks.indexOf(callback)
       if (indexOf !== -1) {
@@ -275,6 +327,11 @@ function BigscreenPlayer () {
       }
     },
 
+    /**
+     * Sets the current time of the media asset.
+     * @function
+     * @param {Number} time - In seconds
+     */
     setCurrentTime: function (time) {
       DebugTool.apicall('setCurrentTime')
       if (playerComponent) {
@@ -292,15 +349,46 @@ function BigscreenPlayer () {
     },
 
     getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
+
+    /**
+     * Returns the media asset's current time in seconds.
+     * @function
+     */
     getCurrentTime: () => playerComponent && playerComponent.getCurrentTime() || 0,
+
+    /**
+     * Returns the current media kind.
+     * 'audio' or 'video'
+     * @function
+     */
     getMediaKind: () => mediaKind,
+
+    /**
+     * Returns the current window type.
+     * @see {@link module:bigscreenplayer/models/windowtypes}
+     * @function
+     */
     getWindowType: () => windowType,
+
+    /**
+     * Returns an object including the current start and end times.
+     * @function
+     * @returns {Object} {start: Number, end: Number}
+     */
     getSeekableRange: () => playerComponent ? playerComponent.getSeekableRange() : {},
 
+    /**
+    * @function
+    * @returns {boolean} Returns true if media is initialised and playing a live stream within a tolerance of the end of the seekable range (10 seconds).
+    */
     isPlayingAtLiveEdge: function () {
       return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
     },
 
+    /**
+     * @function
+     * @return {Object} An object of the shape {windowStartTime: Number, windowEndTime: Number, initialPlaybackTime: Number, serverDate: Date}
+     */
     getLiveWindowData: () => {
       if (windowType === WindowTypes.STATIC) {
         return {}
@@ -314,15 +402,39 @@ function BigscreenPlayer () {
       }
     },
 
+    /**
+     * @function
+     * @returns the duration of the media asset.
+     */
     getDuration: () => playerComponent && playerComponent.getDuration(),
+
+    /**
+     * @function
+     * @returns if the player is paused.
+     */
     isPaused: () => playerComponent ? playerComponent.isPaused() : true,
+
+    /**
+     * @function
+     * @returns if the media asset has ended.
+     */
     isEnded: () => playerComponent ? playerComponent.isEnded() : false,
 
+    /**
+     * Play the media assest from the current point in time.
+     * @function
+     */
     play: () => {
       DebugTool.apicall('play')
       playerComponent.play()
     },
-
+    /**
+     * Pause the media asset.
+     * @function
+     * @param {*} opts
+     * @param {boolean} opts.userPause
+     * @param {boolean} opts.disableAutoResume
+     */
     pause: (opts) => {
       DebugTool.apicall('pause')
       pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
@@ -343,8 +455,23 @@ function BigscreenPlayer () {
       resizer.clear(playbackElement)
     },
 
+    /**
+     * Set whether or not subtitles should be enabled.
+     * @function
+     * @param {boolean} value
+     */
     setSubtitlesEnabled: setSubtitlesEnabled,
+
+    /**
+     * @function
+     * @return if subtitles are currently enabled.
+     */
     isSubtitlesEnabled: isSubtitlesEnabled,
+
+    /**
+     * @function
+     * @return Returns whether or not subtitles are currently enabled.
+     */
     isSubtitlesAvailable: isSubtitlesAvailable,
 
     areSubtitlesCustomisable: () => {
@@ -369,45 +496,132 @@ function BigscreenPlayer () {
       }
     },
 
+    /**
+     *
+     * An enum may be used to set the on-screen position of any transport controls
+     * (work in progress to remove this - UI concern).
+     * @function
+     * @param {*} position
+     */
     setTransportControlsPosition: (position) => {
       if (subtitles) {
         subtitles.setPosition(position)
       }
     },
 
+    /**
+     * @function
+     * @return Returns whether the current media asset is seekable.
+     */
     canSeek: function () {
       return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
     },
 
+    /**
+     * @function
+     * @return Returns whether the current media asset is pausable.
+     */
     canPause: () => {
       return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport())
     },
 
+    /**
+     * Return a mock for in place testing.
+     * @function
+     * @param {*} opts
+     */
     mock: function (opts) { MockBigscreenPlayer.mock(this, opts) },
+
+    /**
+     * Unmock the player.
+     * @function
+     */
     unmock: function () { MockBigscreenPlayer.unmock(this) },
+
+    /**
+     * Return a mock for unit tests.
+     * @function
+     * @param {*} opts
+     */
     mockJasmine: function (opts) { MockBigscreenPlayer.mockJasmine(this, opts) },
 
+    /**
+     * Register a plugin for extended events.
+     * @function
+     * @param {*} plugin
+     */
     registerPlugin: (plugin) => Plugins.registerPlugin(plugin),
+
+    /**
+     * Unregister a previously registered plugin.
+     * @function
+     * @param {*} plugin
+     */
     unregisterPlugin: (plugin) => Plugins.unregisterPlugin(plugin),
+
+    /**
+     * Returns an object with a number of functions related to the ability to transition state
+     * given the current state and the playback strategy in use.
+     * @function
+     */
     transitions: () => playerComponent ? playerComponent.transitions() : {},
+
+    /**
+     * @function
+     * @return The media element currently being used.
+     */
     getPlayerElement: () => playerComponent && playerComponent.getPlayerElement(),
 
+    /**
+     * @function
+     * @param {Number} epochTime - Unix Epoch based time in milliseconds.
+     * @return the time in seconds within the current sliding window.
+     */
     convertEpochMsToVideoTimeSeconds: (epochTime) => {
       return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined
     },
 
+    /**
+     * @function
+     * @return The runtime version of the library.
+     */
     getFrameworkVersion: () => {
       return Version
     },
 
+    /**
+     * @function
+     * @param {Number} time - Seconds
+     * @return the time in milliseconds within the current sliding window.
+     */
     convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
+
+    /**
+     * Toggle the visibility of the debug tool overlay.
+     * @function
+     */
     toggleDebug: toggleDebug,
+
+    /**
+     * @function
+     * @return {Object} - Key value pairs of available log levels
+     */
     getLogLevels: () => DebugTool.logLevels,
+
+    /**
+     * @function
+     * @param logLevel -  log level to display @see getLogLevels
+     */
     setLogLevel: DebugTool.setLogLevel,
     getDebugLogs: () => Chronicle.retrieve()
   }
 }
 
+/**
+ * @function
+ * @param {TALDevice} device
+ * @return the live support of the device.
+ */
 function getLiveSupport () {
   return PlayerComponent.getLiveSupport()
 }
