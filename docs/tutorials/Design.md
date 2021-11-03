@@ -17,6 +17,3 @@ Our custom fork for rendering subtitles.
 
 ### Player Component
 This stage provides a wrapper for the interaction with all of the individual strategies and is what `bigscreen-player` uses to interact with the video element, at its core.
-
-## Playback Spinner
-Although the player itself doesn't handle UI interaction, the playback spinner element to be shown (when buffering) is generated within `bigscreen-player`. This creates a container, and then places an element of the specified CSS class within the container. This element can then be surfaced upwards to be placed on the UI by an application's UI handler.
