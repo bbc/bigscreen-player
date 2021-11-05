@@ -5229,8 +5229,20 @@ try {
         })(exports, typeof imscNames === 'undefined' ? names : imscNames, typeof imscStyles === 'undefined' ? styles : imscStyles, typeof imscUtils === 'undefined' ? utils : imscUtils);
     });    
 } catch (smpError) {
-    alert('SMP Test error')
-    alert(JSON.stringify(smpError))
+
+    var overlayElement = document.createElement('div');
+    overlayElement.id = 'overlayElement';
+    overlayElement.style.position = 'absolute';
+    overlayElement.style.bottom = '200px';
+    overlayElement.style.right = '300px';
+    overlayElement.style.height = '50%';
+    overlayElement.style.width = '50%';
+    overlayElement.style.backgroundColor = 'white';
+    overlayElement.style.zIndex = '1000';
+
+    document.body.appendChild(overlayElement);
+
+    overlayElement.innerText = smpError
     throw smpError
 }
 
