@@ -10,18 +10,11 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
 
   DebugTool.info('Subtitles loading start')
 
-  window.onerror = function (msg, url, lineNo, columnNo, error) {
+  window.addEventListener('error', function (error) {
     DebugTool.info('Window onError')
-    var message = [
-      'Message: ' + msg,
-      'URL: ' + url,
-      'Line: ' + lineNo,
-      'Column: ' + columnNo,
-      'Error object: ' + JSON.stringify(error)
-    ].join(' - ')
 
-    DebugTool.info(message)
-  }
+    DebugTool.info(JSON.stringify(error))
+  })
 
   if (useLegacySubs) {
     import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {
