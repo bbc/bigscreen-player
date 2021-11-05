@@ -1,6 +1,5 @@
 import Plugins from '../plugins'
 import DebugTool from '../debugger/debugtool'
-import IMSCSubtitles from './imscsubtitles.js'
 
 function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
@@ -11,6 +10,19 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
 
   DebugTool.info('Subtitles loading start')
 
+  window.onerror = function (msg, url, lineNo, columnNo, error) {
+    DebugTool.info('Window onError')
+    var message = [
+      'Message: ' + msg,
+      'URL: ' + url,
+      'Line: ' + lineNo,
+      'Column: ' + columnNo,
+      'Error object: ' + JSON.stringify(error)
+    ].join(' - ')
+
+    DebugTool.info(message)
+  }
+
   if (useLegacySubs) {
     import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {
       subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
@@ -19,22 +31,20 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
       Plugins.interface.onSubtitlesDynamicLoadError(e)
     })
   } else {
-    subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
-    callback(subtitlesEnabled)
-    // try {
-    //   import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
-    //     subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
-    //     callback(subtitlesEnabled)
-    //   }).catch((evt) => {
-    //     DebugTool.info('IMSC Dynamic load error')
-    //     DebugTool.info(evt)
-    //     DebugTool.info(JSON.stringify(evt))
-    //     Plugins.interface.onSubtitlesDynamicLoadError(evt)
-    //   })
-    // } catch (error) {
-    //   DebugTool.info('IMSC try catch error')
-    //   DebugTool.info(error)
-    // }
+    try {
+      import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
+        subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+        callback(subtitlesEnabled)
+      }).catch((evt) => {
+        DebugTool.info('IMSC Dynamic load error')
+        DebugTool.info(evt)
+        DebugTool.info(JSON.stringify(evt))
+        Plugins.interface.onSubtitlesDynamicLoadError(evt)
+      })
+    } catch (error) {
+      DebugTool.info('IMSC try catch error')
+      DebugTool.info(error)
+    }
   }
 
   function enable () {
