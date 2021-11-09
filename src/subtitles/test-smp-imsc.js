@@ -4887,10 +4887,14 @@ try {
       }
     })(exports, typeof imscNames === 'undefined' ? names : imscNames, typeof imscStyles === 'undefined' ? styles : imscStyles, typeof imscUtils === 'undefined' ? utils : imscUtils)
   })
-  DebugTool.info('try block in IMSC')
+  setTimeout(function () {
+    DebugTool.info('try block in IMSC')
+  }, 5000)
 } catch (smpError) {
-  DebugTool.info('Catch block in IMSC')
-  DebugTool.info(JSON.stringify(smpError))
+  setTimeout(function () {
+    DebugTool.info('Catch block in IMSC')
+    DebugTool.info(JSON.stringify(smpError))
+  }, 5000)
   var overlayElement = document.createElement('div')
   overlayElement.id = 'overlayElement'
   overlayElement.style.position = 'absolute'
@@ -4907,7 +4911,7 @@ try {
   throw smpError
 }
 
-var fromXML = doc.fromXML
-var generateISD = isd.generateISD
-var render = html.render
+var fromXML = doc && doc.fromXML
+var generateISD = isd && isd.generateISD
+var render = html && html.render
 export { fromXML, generateISD, render as renderHTML }
