@@ -1,3 +1,4 @@
+import DebugTool from '../debugger/debugtool'
 var doc;
 var isd;
 var html;
@@ -5227,9 +5228,11 @@ try {
                     throw msg;
             }
         })(exports, typeof imscNames === 'undefined' ? names : imscNames, typeof imscStyles === 'undefined' ? styles : imscStyles, typeof imscUtils === 'undefined' ? utils : imscUtils);
-    });    
+    });
+    DebugTool.info('try block in IMSC')   
 } catch (smpError) {
-
+    DebugTool.info('Catch block in IMSC')
+    DebugTool.info(JSON.stringify(smpError))
     var overlayElement = document.createElement('div');
     overlayElement.id = 'overlayElement';
     overlayElement.style.position = 'absolute';
