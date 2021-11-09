@@ -4888,6 +4888,18 @@ try {
     })(exports, typeof imscNames === 'undefined' ? names : imscNames, typeof imscStyles === 'undefined' ? styles : imscStyles, typeof imscUtils === 'undefined' ? utils : imscUtils)
   })
   setTimeout(function () {
+    var overlayElement2 = document.createElement('div')
+    overlayElement2.id = 'overlayElement'
+    overlayElement2.style.position = 'absolute'
+    overlayElement2.style.bottom = '200px'
+    overlayElement2.style.right = '300px'
+    overlayElement2.style.height = '50%'
+    overlayElement2.style.width = '50%'
+    overlayElement2.style.backgroundColor = 'white'
+    overlayElement2.style.zIndex = '1000'
+
+    document.body.appendChild(overlayElement2)
+    overlayElement2.innerText = 'try block in IMSC'
     DebugTool.info('try block in IMSC')
   }, 5000)
 } catch (smpError) {
@@ -4907,7 +4919,7 @@ try {
 
   document.body.appendChild(overlayElement)
 
-  overlayElement.innerText = smpError
+  overlayElement.innerText = 'catch block in IMSC'
   throw smpError
 }
 
