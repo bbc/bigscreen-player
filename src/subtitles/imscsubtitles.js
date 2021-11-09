@@ -6,6 +6,10 @@ import Utils from '../utils/playbackutils'
 import LoadURL from '../utils/loadurl'
 import TimeUtils from '../utils/timeutils'
 
+DebugTool.info('fromXML: ' + fromXML)
+DebugTool.info('generateISD: ' + generateISD)
+DebugTool.info('renderHTML: ' + renderHTML)
+
 function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
   const SEGMENTS_TO_KEEP = 3
   const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()

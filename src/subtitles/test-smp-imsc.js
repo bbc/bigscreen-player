@@ -5243,7 +5243,7 @@ try {
     document.body.appendChild(overlayElement);
 
     overlayElement.innerText = smpError
-    throw smpError
+    return undefined
 }
 
 var fromXML = doc.fromXML;
