@@ -166,7 +166,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   }
 
   function emitManifestInfo (manifest) {
-    Plugins.interface.onManifestLoaded({ manifest })
+    Plugins.interface.onManifestLoaded(manifest)
   }
 
   function onManifestValidityChange (event) {
