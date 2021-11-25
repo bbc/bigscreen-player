@@ -232,6 +232,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
 
     emitPlayerInfo()
+    Plugins.interface.onQualityChangedRendered(event)
   }
 
   /**

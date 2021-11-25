@@ -39,6 +39,7 @@ export default {
     onScreenCapabilityDetermined: (tvInfo) => callOnAllPlugins('onScreenCapabilityDetermined', tvInfo),
     onPlayerInfoUpdated: (evt) => callOnAllPlugins('onPlayerInfoUpdated', evt),
     onManifestLoaded: (manifest) => callOnAllPlugins('onManifestLoaded', manifest),
+    onQualityChangedRendered: (evt) => callOnAllPlugins('onQualityChangedRendered', evt),
     onSubtitlesLoadError: (evt) => callOnAllPlugins('onSubtitlesLoadError', evt),
     onSubtitlesTimeout: (evt) => callOnAllPlugins('onSubtitlesTimeout', evt),
     onSubtitlesXMLError: (evt) => callOnAllPlugins('onSubtitlesXMLError', evt),
