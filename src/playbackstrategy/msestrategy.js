@@ -348,7 +348,8 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     mediaPlayer = MediaPlayer().create()
     const playerSettings = Utils.merge({
       debug: {
-        logLevel: 5
+        logLevel: 5,
+        dispatchEvent: true
       },
       streaming: {
         liveDelay: LIVE_DELAY_SECONDS,
