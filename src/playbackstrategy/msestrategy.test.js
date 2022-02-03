@@ -40,7 +40,7 @@ const mockDashMediaPlayer = {
   create: jest.fn(() => mockDashInstance)
 }
 
-jest.mock('dashjs/index_mediaplayerOnly', () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
+jest.mock('dashjs', () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
 jest.mock('../dynamicwindowutils')
 
 describe('Media Source Extensions Playback Strategy', () => {
@@ -123,7 +123,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     mediaSources = new MediaSources()
     jest.spyOn(mediaSources, 'time')
     jest.spyOn(mediaSources, 'failover')
-    mediaSources.init({urls: cdnArray, captions: []}, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks)
+    mediaSources.init({ urls: cdnArray, captions: [] }, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks)
 
     testManifestObject = {
       type: 'manifestLoaded',
@@ -142,7 +142,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     mockAudioElement = undefined
   })
 
-  function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
+  function setUpMSE(timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
     const defaultWindowType = windowType || WindowTypes.STATIC
     const defaultMediaKind = mediaKind || MediaKinds.VIDEO
 
@@ -327,7 +327,7 @@ describe('Media Source Extensions Playback Strategy', () => {
   })
 
   describe('Load when a mediaPlayer exists (e.g. CDN failover)', () => {
-    const noop = () => {}
+    const noop = () => { }
     let failoverInfo
 
     beforeEach(() => {
@@ -544,7 +544,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
 
     it('should empty the eventCallbacks array and stop emitting events', () => {
-      function tearDownAndError () {
+      function tearDownAndError() {
         mseStrategy.load(null, 0)
         mseStrategy.tearDown()
         dashEventCallback('pause')
@@ -771,7 +771,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       it('should call seek on media player with the time clamped to new end when manifest refreshes and contains a duration', () => {
         mockDashInstance.refreshManifest.mockImplementation((callback) =>
-          callback({mediaPresentationDuration: 80}))
+          callback({ mediaPresentationDuration: 80 }))
 
         mseStrategy.setCurrentTime(90)
 
@@ -1101,7 +1101,7 @@ describe('Media Source Extensions Playback Strategy', () => {
         }
       }
 
-      const noop = () => {}
+      const noop = () => { }
       mediaSources.failover(noop, noop, { errorMessage: 'failover', isBufferingTimeoutError: false })
       mediaSources.failover(noop, noop, { errorMessage: 'failover', isBufferingTimeoutError: false })
 
