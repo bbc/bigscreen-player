@@ -899,6 +899,16 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
   })
 
+  describe('onManifestLoaded', () => {
+    it('calls onManifestLoaded plugin with the manifest when dashjs loads it', () => {
+      const onManifestLoadedSpy = jest.spyOn(Plugins.interface, 'onManifestLoaded')
+
+      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
+
+      expect(onManifestLoadedSpy).toHaveBeenCalledWith(expect.any(Object))
+    })
+  })
+
   describe('onMetricAdded and onQualityChangeRendered', () => {
     const mockEvent = {
       mediaType: 'video',

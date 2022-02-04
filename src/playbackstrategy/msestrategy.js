@@ -160,7 +160,13 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
       ManifestModifier.filter(manifest, representationOptions)
       ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources())
+
+      emitManifestInfo(manifest)
     }
+  }
+
+  function emitManifestInfo (manifest) {
+    Plugins.interface.onManifestLoaded(manifest)
   }
 
   function onManifestValidityChange (event) {
@@ -226,6 +232,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
 
     emitPlayerInfo()
+    Plugins.interface.onQualityChangedRendered(event)
   }
 
   /**
