@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "prepare": "[ ! -d dist/ ] && npm run build || exit 0",
-    "docs": "npx jsdoc -c jsdoc.conf.json",
+    "docs": "npx jsdoc -c jsdoc.conf.json && npm run dep-graph",
     "dep-graph": "npx dependency-cruiser --include-only 'src' -x '(node_modules|stubData|.test.js)' --output-type dot src | dot -T svg > ./docs/static/depgraph.svg",
     "build": "rollup -c rollup.config.js",
     "start": "rollup -c rollup.dev.config.js -w",
