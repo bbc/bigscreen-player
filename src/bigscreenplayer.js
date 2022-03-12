@@ -119,9 +119,7 @@ function BigscreenPlayer () {
       bigscreenPlayerData.initialPlaybackTime,
       windowType,
       PlayerComponent.getLiveSupport(),
-      playerReadyCallback
-    )
-
+      playerReadyCallback)
     playerComponent = new PlayerComponent(
       playbackElement,
       bigscreenPlayerData,
@@ -186,7 +184,6 @@ function BigscreenPlayer () {
      * @param {BigscreenPlayerData} bigscreenPlayerData
      * @param {WindowTypes} newWindowType
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
-     * @param {TALDevice} newDevice - An optional TAL device object
      * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) => {
