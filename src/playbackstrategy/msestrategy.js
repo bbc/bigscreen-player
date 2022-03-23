@@ -112,6 +112,12 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       }
     }
 
+    if (mediaElement && mediaElement.buffered) {
+      for (var i = 0; i < mediaElement.buffered.length; i++) {
+        DebugTool.keyValue({key: 'buffered-range-' + i, value: 'start: ' + mediaElement.buffered.start(i) + ' end: ' + mediaElement.buffered.end(i)})
+      } 
+    }
+
     publishTimeUpdate()
   }
 
