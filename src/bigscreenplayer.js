@@ -119,7 +119,8 @@ function BigscreenPlayer () {
       bigscreenPlayerData.initialPlaybackTime,
       windowType,
       PlayerComponent.getLiveSupport(),
-      playerReadyCallback)
+      playerReadyCallback
+    )
     playerComponent = new PlayerComponent(
       playbackElement,
       bigscreenPlayerData,
