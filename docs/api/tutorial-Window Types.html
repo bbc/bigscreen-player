@@ -32,7 +32,7 @@
 
 
     <title>
-      domhelpers.js
+      Tutorial: Window Types
     </title>
 
     <!--[if lt IE 9]>
@@ -99,82 +99,29 @@
     <div id="main" class="main-content">
       
       <h1 id='page-title' class="page-title">
-        domhelpers.js
+        Tutorial: Window Types
       </h1>
       
 
-      
+      <section>
 
-
-
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>function addClass (el, className) {
-  if (el.classList) {
-    el.classList.add(className)
-  } else {
-    el.className += ' ' + className
-  }
-}
 
-function removeClass (el, className) {
-  if (el.classList) {
-    el.classList.remove(className)
-  } else {
-    el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ')
-  }
-}
+    <h2>Window Types</h2>
+</header>
 
-function hasClass (el, className) {
-  if (el.classList) {
-    return el.classList.contains(className)
-  } else {
-    return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className)
-  }
-}
+<article>
+    <p>Content has a window of time that a user can move within when streaming content.</p>
+<h1>Static</h1>
+<p>For content with a set duration (e.g. VOD/AOD), the window is static and set to the duration of the content.</p>
+<h1>Sliding</h1>
+<p>For live content, the size of the window remains static, however the window slides along time. This means a user can move only a set amount of time forwards and backwards.</p>
+<h1>Growing</h1>
+<p>For content with a start time, but an indeterminate end time, a growing window is used. The window size continues to increase as the content continues to play, allowing a user to move as far back as they want.</p>
+</article>
 
-function isRGBATuple (rgbaString) {
-  return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString)
-}
-
-/**
- *  Checks that the string is an RGBA tuple and returns a RGB Tripple.
- *  A string that isn't an RGBA tuple will be returned to the caller.
- * @param {String} rgbaString
- */
-function rgbaToRGB (rgbaString) {
-  if (isRGBATuple(rgbaString)) {
-    rgbaString = rgbaString.slice(0, 7)
-  }
-  return rgbaString
-}
-
-/**
- * Safely removes an element from the DOM, simply doing
- * nothing if the node is detached (Has no parent).
- * @param {Element} el The Element to remove
- */
-function safeRemoveElement (el) {
-  if (el.parentNode) {
-    el.parentNode.removeChild(el)
-  }
-}
-
-export default {
-  addClass: addClass,
-  removeClass: removeClass,
-  hasClass: hasClass,
-  rgbaToRGB: rgbaToRGB,
-  isRGBA: isRGBATuple,
-  safeRemoveElement: safeRemoveElement
-}
-</code></pre>
-        </article>
-    </section>
-
-
-
+</section>
 
     </div>
 
