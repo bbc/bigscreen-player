@@ -9,7 +9,8 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
 
   const setSourceOpts = {
     disableSentinels: !!isUHD && windowType !== WindowTypes.STATIC && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.liveUhdDisableSentinels,
-    disableSeekSentinel: window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableSeekSentinel
+    disableSeekSentinel: window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableSeekSentinel,
+    limitSeekableRangeCalls: window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.limitSeekableRangeCalls
   }
 
   const timeCorrection = mediaSources.time() && mediaSources.time().correction || 0
