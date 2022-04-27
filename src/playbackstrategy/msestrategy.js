@@ -180,7 +180,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER)
     }
 
-    mediaPlayer.setBlacklistExpiryTime(mediaSources.failoverResetTime())
+    // mediaPlayer.setBlacklistExpiryTime(mediaSources.failoverResetTime())
     emitPlayerInfo()
   }
 
