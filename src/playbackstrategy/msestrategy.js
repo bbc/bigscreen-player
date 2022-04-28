@@ -348,13 +348,18 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     mediaPlayer = MediaPlayer().create()
     const playerSettings = Utils.merge({
       debug: {
-        logLevel: 2
+        logLevel: 5,
+        dispatchEvent: true
       },
       streaming: {
-        liveDelay: LIVE_DELAY_SECONDS,
-        bufferToKeep: 4,
-        bufferTimeAtTopQuality: 12,
-        bufferTimeAtTopQualityLongForm: 15,
+        buffer: {
+          bufferToKeep: 4,
+          bufferTimeAtTopQuality: 12,
+          bufferTimeAtTopQualityLongForm: 15,
+        },
+        delay: {
+          liveDelay: LIVE_DELAY_SECONDS,
+        },
         gaps: {
           enableStallFix: true
         }
