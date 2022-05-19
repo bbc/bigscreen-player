@@ -506,6 +506,9 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     getSeekableRange: getSeekableRange,
     getCurrentTime: getCurrentTime,
     getDuration: getDuration,
+    getPlayerElement: () => {
+      return mediaElement
+    },
     tearDown: () => {
       mediaPlayer.reset()
 
