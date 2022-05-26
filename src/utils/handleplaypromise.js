@@ -1,12 +1,12 @@
-function handlePlayPromise(playPromise) {
-  if (!playPromise || typeof playPromise.catch  !== 'function') return;
+function handlePlayPromise (playPromise) {
+  if (!playPromise || typeof playPromise.catch !== 'function') return
 
   playPromise.catch((e) => {
     if (e && e.name === 'AbortError') {
-      return;
+      return
     }
-    throw e;
-  });
+    throw e
+  })
 }
 
-export default handlePlayPromise;
+export default handlePlayPromise
