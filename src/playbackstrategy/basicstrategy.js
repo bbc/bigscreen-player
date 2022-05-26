@@ -4,6 +4,7 @@ import MediaKinds from '../models/mediakinds'
 import LiveSupport from '../models/livesupport'
 import DynamicWindowUtils from '../dynamicwindowutils'
 import DOMHelpers from '../domhelpers'
+import handlePlayPromise from '../utils/handleplaypromise'
 
 function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
   const CLAMP_OFFSET_SECONDS = 1.1
@@ -181,7 +182,7 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 
   function play () {
-    mediaElement.play()
+    handlePlayPromise(mediaElement.play())
   }
 
   function setCurrentTime (time) {
