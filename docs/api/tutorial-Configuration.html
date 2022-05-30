@@ -32,7 +32,7 @@
 
 
     <title>
-      subtitles/transformer.js
+      Tutorial: Configuration
     </title>
 
     <!--[if lt IE 9]>
@@ -99,187 +99,97 @@
     <div id="main" class="main-content">
       
       <h1 id='page-title' class="page-title">
-        subtitles/transformer.js
+        Tutorial: Configuration
       </h1>
       
 
-      
+      <section>
 
-
-
+<header>
     
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>import TimedText from './timedtext'
-import DOMHelpers from '../domhelpers'
-import Plugins from '../plugins'
-import DebugTool from '../debugger/debugtool'
 
-function Transformer () {
-  const _styles = {}
-  const elementToStyleMap = [
-    {
-      attribute: 'tts:color',
-      property: 'color'
-    }, {
-      attribute: 'tts:backgroundColor',
-      property: 'text-shadow'
-    }, {
-      attribute: 'tts:fontStyle',
-      property: 'font-style'
-    }, {
-      attribute: 'tts:textAlign',
-      property: 'text-align'
-    }
-  ]
+    <h2>Configuration</h2>
+</header>
 
-  /**
-  * Safely checks if an attribute exists on an element.
-  * Browsers &lt; DOM Level 2 do not have 'hasAttribute'
-  *
-  * The interesting case - can be null when it isn't there or "", but then can also return "" when there is an attribute with no value.
-  * For subs this is good enough. There should not be attributes without values.
-  * @param {Element} el HTML Element
-  * @param {String} attribute attribute to check for
-  */
-  const hasAttribute = (el, attribute) => !!el.getAttribute(attribute)
-
-  function hasNestedTime (element) {
-    return (!hasAttribute(element, 'begin') || !hasAttribute(element, 'end'))
-  }
-
-  function isEBUDistribution (metadata) {
-    return metadata === 'urn:ebu:tt:distribution:2014-01' || metadata === 'urn:ebu:tt:distribution:2018-04'
-  }
-
-  function rgbWithOpacity (value) {
-    if (DOMHelpers.isRGBA(value)) {
-      let opacity = parseInt(value.slice(7, 9), 16) / 255
-
-      if (isNaN(opacity)) {
-        opacity = 1.0
-      }
-
-      value = DOMHelpers.rgbaToRGB(value)
-      value += '; opacity: ' + opacity + ';'
-    }
-    return value
-  }
-
-  function elementToStyle (el) {
-    const styles = _styles
-    const inherit = el.getAttribute('style')
-    let stringStyle = ''
-
-    if (inherit) {
-      if (styles[inherit]) {
-        stringStyle = styles[inherit]
-      } else {
-        return false
-      }
-    }
-
-    for (let i = 0, j = elementToStyleMap.length; i &lt; j; i++) {
-      const map = elementToStyleMap[i]
-      let value = el.getAttribute(map.attribute)
-
-      if (value === null || value === undefined) {
-        continue
-      }
-
-      if (map.conversion) {
-        value = map.conversion(value)
-      }
-
-      if (map.attribute === 'tts:backgroundColor') {
-        value = rgbWithOpacity(value)
-        value += ' 2px 2px 1px'
-      }
-
-      if (map.attribute === 'tts:color') {
-        value = rgbWithOpacity(value)
-      }
-
-      stringStyle += map.property + ': ' + value + '; '
-    }
-
-    return stringStyle
-  }
-
-  function transformXML (xml) {
-    try {
-      // Use .getElementsByTagNameNS() when parsing XML as some implementations of .getElementsByTagName() will lowercase its argument before proceding
-      const conformsToStandardElements = Array.prototype.slice.call(xml.getElementsByTagNameNS('urn:ebu:tt:metadata', 'conformsToStandard'))
-      const isEBUTTD = conformsToStandardElements &amp;&amp;
-        conformsToStandardElements.some((node) => isEBUDistribution(node.textContent))
-
-      const captionValues = {
-        ttml: {
-          namespace: 'http://www.w3.org/2006/10/ttaf1',
-          idAttribute: 'id'
-        },
-        ebuttd: {
-          namespace: 'http://www.w3.org/ns/ttml',
-          idAttribute: 'xml:id'
-        }
-      }
-
-      const captionStandard = isEBUTTD ? captionValues.ebuttd : captionValues.ttml
-      const styles = _styles
-      const styleElements = xml.getElementsByTagNameNS(captionStandard.namespace, 'style')
-
-      for (let i = 0; i &lt; styleElements.length; i++) {
-        const se = styleElements[i]
-        const id = se.getAttribute(captionStandard.idAttribute)
-        const style = elementToStyle(se)
-
-        if (style) {
-          styles[id] = style
-        }
-      }
-
-      const body = xml.getElementsByTagNameNS(captionStandard.namespace, 'body')[0]
-      const s = elementToStyle(body)
-      const ps = xml.getElementsByTagNameNS(captionStandard.namespace, 'p')
-      const items = []
-
-      for (let k = 0, m = ps.length; k &lt; m; k++) {
-        if (hasNestedTime(ps[k])) {
-          const tag = ps[k]
-          for (let index = 0; index &lt; tag.childNodes.length; index++) {
-            if (hasAttribute(tag.childNodes[index], 'begin') &amp;&amp; hasAttribute(tag.childNodes[index], 'end')) {
-              // TODO: rather than pass a function, can't we make timedText look after it's style from this point?
-              items.push(TimedText(tag.childNodes[index], elementToStyle))
-            }
-          }
-        } else {
-          items.push(TimedText(ps[k], elementToStyle))
-        }
-      }
-
-      return {
-        baseStyle: s,
-        subtitlesForTime: (time) =>
-          items.filter((subtitle) => subtitle.start &lt; time &amp;&amp; subtitle.end > time)
-      }
-    } catch (e) {
-      DebugTool.info('Error transforming captions : ' + e)
-      Plugins.interface.onSubtitlesTransformError()
-    }
-  }
-
-  return {
-    transformXML: transformXML
-  }
-}
-
-export default Transformer
+<article>
+    <h1>Configuration</h1>
+<p>Configuration for bigscreen-player can be set using an object on the window:</p>
+<pre class="prettyprint source"><code>window.bigscreenPlayer
 </code></pre>
-        </article>
-    </section>
+<h2>Playback Strategy</h2>
+<p>As mentioned in the &quot;Getting Started&quot; guide, bigscreen-player requires a <code>playbackStrategy</code> to be set:</p>
+<h2>Overrides</h2>
+<p>This library works across a multitude of different devices. But in order to do so, different configuration options are available to ensure the experience is good on those devices.</p>
+<p>In order to add an override, simply add an <code>overiddes</code> object to the object above.</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+<th>Values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>disableSeekSentinel</code></td>
+<td>Does what it says on the tin, if we are about to fire a seekSentinel it will just return early if this flag is true. Roku device doesn't get timeupdates quick enough and fires a seek sentinel returning to beginning of playback</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><code>showLiveCurtain</code></td>
+<td>This is a black html div element placed on top of the video, this is used to hide seeking issues such as the <code>forceBeginPlaybackToEndOfWindow</code></td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><code>forceBeginPlaybackToEndOfWindow</code></td>
+<td>This is a an override that happens in the restartable/seekable players, whenever we start a stream without a start time and this override is true it will give the player a start time of infinity to force it to the end of the window. It is also used in conjunction with the showLiveCurtain for seeking as some devices will play from the wrong point for a few frames before jumping to the correct time.</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><code>pauseOnExitSeek</code></td>
+<td>This is a workaround for devices which will error if you try to pause straight after seeking. This is a business decision that if you are paused before you seek you should remain paused on exiting seek. This is done by waiting for a time update event to make sure we are playing after the seek before we attempt to pause the player.</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><code>deferedPlayback</code></td>
+<td>Currently a workaround for an issue on a Sony 2012 device. The device will call play before seek on a deferedPlayFrom instead of calls to seek then play.</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><code>mseDurationOverride</code></td>
+<td>dash.js v3.0 update caused issues for certain devices when playing from the live point. This will force set the duration when playing live content and stop any issues.</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><code>restartTimeout</code></td>
+<td>This is used after a seek attempted to ensure that a seek has happened correctly.</td>
+<td>number</td>
+</tr>
+<tr>
+<td><code>disableMediaSourceUnload</code></td>
+<td>When tearing down in HTML5 we unload the source as part of the html5 spec. This prevents this from happening as it was causing issues on devices.</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><code>legacySubtitles</code></td>
+<td>This can be used to render subtitles using our legacy method, rather than the new method which utilises the third party imscJS library.</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><code>liveUhdDisableSentinels</code></td>
+<td>Disables any sentinels when consuming live UHD content</td>
+<td>boolean</td>
+</tr>
+<tr>
+<td><code>cacheSeekableRange</code></td>
+<td>Caches the seekable range so it can't be requested more than every 250ms for devices that struggle.</td>
+<td>boolean</td>
+</tr>
+</tbody>
+</table>
+</article>
 
-
-
+</section>
 
     </div>
 
