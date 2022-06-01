@@ -9,6 +9,10 @@ window.bigscreenPlayer
 
 As mentioned in the "Getting Started" guide, bigscreen-player requires a `playbackStrategy` to be set:
 
+```javascript
+window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'basicstrategy'
+```
+
 ## Overrides
 
 This library works across a multitude of different devices. But in order to do so, different configuration options are available to ensure the experience is good on those devices.
@@ -27,4 +31,4 @@ In order to add an override, simply add an `overiddes` object to the object abov
 | `disableMediaSourceUnload` | When tearing down in HTML5 we unload the source as part of the html5 spec. This prevents this from happening as it was causing issues on devices. | boolean |
 | `legacySubtitles` | This can be used to render subtitles using our legacy method, rather than the new method which utilises the third party imscJS library. | boolean |
 | `liveUhdDisableSentinels` | Disables any sentinels when consuming live UHD content | boolean |
-| `cacheSeekableRange` | Caches the seekable range so it can't be requested more than every 250ms for devices that struggle. | boolean |**** 
+| `cacheSeekableRange` | Caches the seekable range so it can't be requested more than every 250ms for devices that struggle. | boolean |
