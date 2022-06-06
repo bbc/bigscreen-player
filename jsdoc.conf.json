@@ -47,18 +47,6 @@
                 "maxPatternLength": 32,
                 "minMatchCharLength": 1
             },
-            "menu": [
-                {
-                    "title": "Github",
-                    "link": "https://github.com/bbc/bigscreen-player",
-                    "target": "_blank"
-                },
-                {
-                    "title": "NPM",
-                    "link": "https://www.npmjs.com/package/bigscreen-player",
-                    "target": "_blank"
-                }
-            ],
             "meta": [
                 {
                     "name": "description",
