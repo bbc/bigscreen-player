@@ -1,5 +1,6 @@
 import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DOMHelpers from '../../domhelpers'
+import handlePlayPromise from '../../utils/handleplaypromise'
 
 function Html5 () {
   const sentinelLimits = {
@@ -493,11 +494,11 @@ function Html5 () {
 
   function deferredPlayFrom () {
     if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.deferredPlayback) {
-      mediaElement.play()
+      handlePlayPromise(mediaElement.play())
       seekTo(targetSeekTime)
     } else {
       seekTo(targetSeekTime)
-      mediaElement.play()
+      handlePlayPromise(mediaElement.play())
     }
 
     if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
@@ -744,7 +745,7 @@ function Html5 () {
         case MediaPlayerBase.STATE.STOPPED:
           trustZeroes = true
           toBuffering()
-          mediaElement.play()
+          handlePlayPromise(mediaElement.play())
           break
 
         default:
@@ -806,12 +807,12 @@ function Html5 () {
         case MediaPlayerBase.STATE.BUFFERING:
           if (isReadyToPlayFrom()) {
             // If we are not ready to playFrom, then calling play would seek to the start of media, which we might not want.
-            mediaElement.play()
+            handlePlayPromise(mediaElement.play())
           }
           break
 
         case MediaPlayerBase.STATE.PAUSED:
-          mediaElement.play()
+          handlePlayPromise(mediaElement.play())
           toPlaying()
           break
 
