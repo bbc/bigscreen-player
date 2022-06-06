@@ -501,6 +501,25 @@ describe('Media Source Extensions Playback Strategy', () => {
     })
   })
 
+  describe('getPlayerElement()', () => {
+    it('returns the media player video element', () => {
+      setUpMSE()
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getPlayerElement()).toBe(mockVideoElement);
+    })
+
+    it('returns the media player audio element', () => {
+      setUpMSE(null, null, 'audio')
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getPlayerElement()).toBe(mockAudioElement);
+    })
+
+  })
+
   describe('tearDown()', () => {
     it('should reset the MediaPlayer', () => {
       setUpMSE()
