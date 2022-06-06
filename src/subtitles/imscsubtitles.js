@@ -266,6 +266,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
   }
 
   function start () {
+    stop()
     const url = mediaSources.currentSubtitlesSource()
     if (url && url !== '') {
       if (!liveSubtitles && segments.length === 0) {

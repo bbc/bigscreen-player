@@ -640,6 +640,17 @@ describe('IMSC Subtitles', () => {
         expect(LoadUrl).not.toHaveBeenCalled()
       })
 
+      it('should not create hanging interval references when start is called from an already started state', () => {
+        subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
+
+        subtitles.start()
+
+        expect(()=> {
+          subtitles.tearDown()
+          jest.advanceTimersByTime(750)
+        }).not.toThrow() // if the original interval caused by the autostart was lost, an exception would be thrown on tearDown
+      })
+
       it('should not try to load segments when the currentTime is not known by the player', () => {
         subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
