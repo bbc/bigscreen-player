@@ -51,6 +51,9 @@ function Html5 () {
   let sentinelIntervalNumber
   let lastSentinelTime
 
+  let cachedSeekableRange
+  let readyToCache = true
+
   function emitEvent (eventType, eventLabels) {
     const event = {
       type: eventType,
@@ -332,12 +335,36 @@ function Html5 () {
     return undefined
   }
 
+  function getCachedSeekableRange () {
+    if (readyToCache) {
+      cacheSeekableRange()
+    }
+
+    return cachedSeekableRange
+  }
+
+  function cacheSeekableRange () {
+    readyToCache = false
+    setTimeout(function () {
+      readyToCache = true
+    }, 250)
+
+    cachedSeekableRange = {
+      start: mediaElement.seekable.start(0),
+      end: mediaElement.seekable.end(0)
+    }
+  }
+
   function getSeekableRange () {
     if (mediaElement) {
       if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
-        return {
-          start: mediaElement.seekable.start(0),
-          end: mediaElement.seekable.end(0)
+        if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.cacheSeekableRange) {
+          return getCachedSeekableRange()
+        } else {
+          return {
+            start: mediaElement.seekable.start(0),
+            end: mediaElement.seekable.end(0)
+          }
         }
       } else if (mediaElement.duration !== undefined) {
         return {
