@@ -1,6 +1,7 @@
 import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DOMHelpers from '../../domhelpers'
 import handlePlayPromise from '../../utils/handleplaypromise'
+import DebugTool from '../../debugger/debugtool'
 
 function Html5 () {
   const sentinelLimits = {
@@ -344,10 +345,11 @@ function Html5 () {
   }
 
   function cacheSeekableRange () {
+    DebugTool.info('cacheSeekableRange')
     readyToCache = false
     setTimeout(function () {
       readyToCache = true
-    }, 250)
+    }, 1100)
 
     cachedSeekableRange = {
       start: mediaElement.seekable.start(0),
