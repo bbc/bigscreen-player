@@ -349,7 +349,7 @@ function Html5 () {
     readyToCache = false
     setTimeout(function () {
       readyToCache = true
-    }, 500)
+    }, 1100)
 
     cachedSeekableRange = {
       start: mediaElement.seekable.start(0),
