@@ -351,7 +351,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
         logLevel: 2
       },
       streaming: {
-        liveDelay: LIVE_DELAY_SECONDS,
+        liveDelay: 10,
         bufferToKeep: 4,
         bufferTimeAtTopQuality: 12,
         bufferTimeAtTopQualityLongForm: 15
