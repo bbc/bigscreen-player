@@ -1,7 +1,6 @@
 import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DOMHelpers from '../../domhelpers'
 import handlePlayPromise from '../../utils/handleplaypromise'
-import DebugTool from '../../debugger/debugtool'
 
 function Html5 () {
   const sentinelLimits = {
@@ -350,40 +349,31 @@ function Html5 () {
       readyToCache = true
     }, 250)
 
-    if (mediaElement.seekable && mediaElement.seekable.length > 0) {
-      cachedSeekableRange = {
-        start: mediaElement.seekable.start(0),
-        end: mediaElement.seekable.end(0)
-      }
-    } else if (mediaElement.duration !== undefined) {
-      cachedSeekableRange = {
-        start: 0,
-        end: mediaElement.duration
+    cachedSeekableRange = getElementSeekableRange()
+  }
+
+  function getElementSeekableRange () {
+    if (mediaElement) {
+      if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
+        return {
+          start: mediaElement.seekable.start(0),
+          end: mediaElement.seekable.end(0)
+        }
+      } else if (mediaElement.duration !== undefined) {
+        return {
+          start: 0,
+          end: mediaElement.duration
+        }
       }
     }
   }
 
   function getSeekableRange () {
-    if (mediaElement) {
-      if (isReadyToPlayFrom()) {
-        if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.cacheSeekableRange) {
-          return getCachedSeekableRange()
-        } else {
-          if (mediaElement.seekable && mediaElement.seekable.length > 0) {
-            return {
-              start: mediaElement.seekable.start(0),
-              end: mediaElement.seekable.end(0)
-            }
-          } else if (mediaElement.duration !== undefined) {
-            return {
-              start: 0,
-              end: mediaElement.duration
-            }
-          }
-        }
-      }
+    if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.cacheSeekableRange) {
+      return getCachedSeekableRange()
+    } else {
+      return getElementSeekableRange()
     }
-    return undefined
   }
 
   function onFinishedBuffering () {
