@@ -267,6 +267,7 @@ function Html5 () {
   }
 
   function setSentinels (sentinels) {
+    disableSeekSentinel = true
     if (disableSentinels) { return }
 
     clearSentinels()
@@ -345,11 +346,10 @@ function Html5 () {
   }
 
   function cacheSeekableRange () {
-    DebugTool.info('cacheSeekableRange')
     readyToCache = false
     setTimeout(function () {
       readyToCache = true
-    }, 1100)
+    }, 250)
 
     cachedSeekableRange = {
       start: mediaElement.seekable.start(0),
