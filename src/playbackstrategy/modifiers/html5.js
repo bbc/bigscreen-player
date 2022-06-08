@@ -267,7 +267,6 @@ function Html5 () {
   }
 
   function setSentinels (sentinels) {
-    disableSeekSentinel = true
     if (disableSentinels) { return }
 
     clearSentinels()
@@ -351,27 +350,36 @@ function Html5 () {
       readyToCache = true
     }, 250)
 
-    cachedSeekableRange = {
-      start: mediaElement.seekable.start(0),
-      end: mediaElement.seekable.end(0)
+    if (mediaElement.seekable && mediaElement.seekable.length > 0) {
+      cachedSeekableRange = {
+        start: mediaElement.seekable.start(0),
+        end: mediaElement.seekable.end(0)
+      }
+    } else if (mediaElement.duration !== undefined) {
+      cachedSeekableRange = {
+        start: 0,
+        end: mediaElement.duration
+      }
     }
   }
 
   function getSeekableRange () {
     if (mediaElement) {
-      if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
+      if (isReadyToPlayFrom()) {
         if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.cacheSeekableRange) {
           return getCachedSeekableRange()
         } else {
-          return {
-            start: mediaElement.seekable.start(0),
-            end: mediaElement.seekable.end(0)
+          if (mediaElement.seekable && mediaElement.seekable.length > 0) {
+            return {
+              start: mediaElement.seekable.start(0),
+              end: mediaElement.seekable.end(0)
+            }
+          } else if (mediaElement.duration !== undefined) {
+            return {
+              start: 0,
+              end: mediaElement.duration
+            }
           }
-        }
-      } else if (mediaElement.duration !== undefined) {
-        return {
-          start: 0,
-          end: mediaElement.duration
         }
       }
     }
