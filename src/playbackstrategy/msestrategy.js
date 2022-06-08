@@ -352,9 +352,10 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       },
       streaming: {
         liveDelay: 10,
-        bufferToKeep: 4,
+        bufferToKeep: 4,  
         bufferTimeAtTopQuality: 12,
-        bufferTimeAtTopQualityLongForm: 15
+        bufferTimeAtTopQualityLongForm: 15,
+        useSuggestedPresentationDelay: false
       }
     }, customPlayerSettings)
     mediaPlayer.updateSettings(playerSettings)
