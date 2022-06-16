@@ -349,22 +349,15 @@ function Html5 () {
       readyToCache = true
     }, 250)
 
-    cachedSeekableRange = {
-      start: mediaElement.seekable.start(0),
-      end: mediaElement.seekable.end(0)
-    }
+    cachedSeekableRange = getElementSeekableRange()
   }
 
-  function getSeekableRange () {
+  function getElementSeekableRange () {
     if (mediaElement) {
       if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
-        if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.cacheSeekableRange) {
-          return getCachedSeekableRange()
-        } else {
-          return {
-            start: mediaElement.seekable.start(0),
-            end: mediaElement.seekable.end(0)
-          }
+        return {
+          start: mediaElement.seekable.start(0),
+          end: mediaElement.seekable.end(0)
         }
       } else if (mediaElement.duration !== undefined) {
         return {
@@ -373,7 +366,14 @@ function Html5 () {
         }
       }
     }
-    return undefined
+  }
+
+  function getSeekableRange () {
+    if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.cacheSeekableRange) {
+      return getCachedSeekableRange()
+    } else {
+      return getElementSeekableRange()
+    }
   }
 
   function onFinishedBuffering () {
