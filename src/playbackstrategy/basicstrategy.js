@@ -29,9 +29,9 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
     }
   }
 
-  function publishError () {
+  function publishError(mediaError) {
     if (errorCallback) {
-      errorCallback()
+      errorCallback(mediaError)
     }
   }
 
@@ -121,7 +121,11 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 
   function onError (_event) {
-    publishError()
+    let mediaError = {
+      code: mediaElement.error?.code || 0,
+      message: mediaElement.error?.message || 'unknown'
+    }
+    publishError(mediaError)
   }
 
   function onLoadedMetadata () {
