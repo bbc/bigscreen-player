@@ -104,7 +104,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
     jest.spyOn(mockVideoElement, 'addEventListener').mockImplementation((eventType, handler) => {
       eventHandlers[eventType] = handler
-      eventCallbacks = (event) => eventHandlers[event].call(event)
+      eventCallbacks = (eventType, event) => eventHandlers[eventType].call(this, event)
     })
 
     jest.spyOn(mockVideoElement, 'removeEventListener')
@@ -1167,4 +1167,60 @@ describe('Media Source Extensions Playback Strategy', () => {
       expect(eventCallbackSpy).toHaveBeenCalledTimes(2)
     })
   })
+
+  describe('error events', () => {
+
+    describe('from the video element', () => {
+      it('should emit events to the callbackHandler with an error code and message', () => {
+        mockVideoElement.error = {
+          code: 3,
+          message: 'Err Decode'
+        }
+
+        const errorCallbackSpy = jest.fn()
+        setUpMSE()
+        mseStrategy.load(null, 0)
+
+        mseStrategy.addErrorCallback(this, errorCallbackSpy)
+
+        // Do this later to tidy up the tech debt
+        // mockVideoElement.dispatchEvent(new Event('error'))
+        eventCallbacks('error', {code: 0, message: 'boom!'})
+
+        expect(errorCallbackSpy).toHaveBeenCalledTimes(1)
+        expect(errorCallbackSpy).toHaveBeenCalledWith({code: 3, message: 'Err Decode'})
+      })
+
+      it('should emit events to the callbackHandler with a generic error code and message', () => {
+        mockVideoElement.error = {
+          code: 0,
+          message: ''
+        }
+
+        const errorCallbackSpy = jest.fn()
+        setUpMSE()
+        mseStrategy.load(null, 0)
+
+        mseStrategy.addErrorCallback(this, errorCallbackSpy)
+
+        // Do this later to tidy up the tech debt
+        // mockVideoElement.dispatchEvent(new Event('error'))
+        eventCallbacks('error', {code: 0, message: 'boom!'})
+
+        expect(errorCallbackSpy).toHaveBeenCalledTimes(1)
+        expect(errorCallbackSpy).toHaveBeenCalledWith({code: 0, message: 'unknown'})
+      })
+    })
+
+
+    describe('from the dashjs handler', () => {
+      it('should emit events to the callbackHandler', () => {
+        setUpMSE()
+        mseStrategy.load(null, 0)
+        // dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, mockEvent)
+        // check the callbackError listener has been called
+        fail()
+      })
+    })
+  })  
 })

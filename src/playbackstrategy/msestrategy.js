@@ -131,15 +131,20 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       }
 
       if (event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
-        manifestDownloadError(event)
+        manifestDownloadError({code: 2, message: event.error.message})
         return
       }
     }
-    publishError()
+
+    let mediaElementError = {
+      code: mediaElement.error?.code || 0,
+      message: mediaElement.error?.message || 'unknown' 
+    }
+    publishError(mediaElementError)
   }
 
   function manifestDownloadError (event) {
-    const error = () => publishError()
+    const error = () => publishError(event)
 
     const failoverParams = {
       errorMessage: 'manifest-refresh',
@@ -305,9 +310,9 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
   }
 
-  function publishError () {
+  function publishError (error) {
     if (errorCallback) {
-      errorCallback()
+      errorCallback(error)
     }
   }
 
