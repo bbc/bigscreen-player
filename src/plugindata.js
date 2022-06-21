@@ -5,7 +5,9 @@ function PluginData (args) {
   this.isInitialPlay = args.isInitialPlay
   this.cdn = args.cdn
   this.newCdn = args.newCdn
-  this.timeStamp = new Date()
+  this.timeStamp = new Date(),
+  this.code = args.code,
+  this.message = args.message
 }
 
 export default PluginData
