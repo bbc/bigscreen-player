@@ -8,7 +8,7 @@ $ npm install bigscreen-player --save
 Bigscreen Player has some global configuration that is needed before initialisation. A *playback strategy* must be configured:
 
 ```javascript
-window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'talstrategy' (deprecated)
+window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'basicstrategy'
 ```
 
 # Initialisation
@@ -24,7 +24,7 @@ import { BigscreenPlayer, MediaKinds, WindowTypes } from 'bigscreen-player'
 // configure the media player that will be used before loading
 // see below for further details of ths config
 
-// options are: msestrategy, nativestrategy, hybridstrategy
+// options are: msestrategy, nativestrategy, hybridstrategy, basicstrategy
 window.bigscreenPlayer.playbackStrategy = 'msestrategy'
 
 const bigscreenPlayer = BigscreenPlayer()

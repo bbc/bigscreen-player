@@ -1,5 +1,6 @@
 import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DOMHelpers from '../../domhelpers'
+import handlePlayPromise from '../../utils/handleplaypromise'
 
 function Html5 () {
   const sentinelLimits = {
@@ -49,6 +50,9 @@ function Html5 () {
   let sentinelInterval
   let sentinelIntervalNumber
   let lastSentinelTime
+
+  let cachedSeekableRange
+  let readyToCache = true
 
   function emitEvent (eventType, eventLabels) {
     const event = {
@@ -331,7 +335,24 @@ function Html5 () {
     return undefined
   }
 
-  function getSeekableRange () {
+  function getCachedSeekableRange () {
+    if (readyToCache) {
+      cacheSeekableRange()
+    }
+
+    return cachedSeekableRange
+  }
+
+  function cacheSeekableRange () {
+    readyToCache = false
+    setTimeout(function () {
+      readyToCache = true
+    }, 250)
+
+    cachedSeekableRange = getElementSeekableRange()
+  }
+
+  function getElementSeekableRange () {
     if (mediaElement) {
       if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
         return {
@@ -345,7 +366,14 @@ function Html5 () {
         }
       }
     }
-    return undefined
+  }
+
+  function getSeekableRange () {
+    if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.cacheSeekableRange) {
+      return getCachedSeekableRange()
+    } else {
+      return getElementSeekableRange()
+    }
   }
 
   function onFinishedBuffering () {
@@ -466,11 +494,11 @@ function Html5 () {
 
   function deferredPlayFrom () {
     if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.deferredPlayback) {
-      mediaElement.play()
+      handlePlayPromise(mediaElement.play())
       seekTo(targetSeekTime)
     } else {
       seekTo(targetSeekTime)
-      mediaElement.play()
+      handlePlayPromise(mediaElement.play())
     }
 
     if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
@@ -717,7 +745,7 @@ function Html5 () {
         case MediaPlayerBase.STATE.STOPPED:
           trustZeroes = true
           toBuffering()
-          mediaElement.play()
+          handlePlayPromise(mediaElement.play())
           break
 
         default:
@@ -779,12 +807,12 @@ function Html5 () {
         case MediaPlayerBase.STATE.BUFFERING:
           if (isReadyToPlayFrom()) {
             // If we are not ready to playFrom, then calling play would seek to the start of media, which we might not want.
-            mediaElement.play()
+            handlePlayPromise(mediaElement.play())
           }
           break
 
         case MediaPlayerBase.STATE.PAUSED:
-          mediaElement.play()
+          handlePlayPromise(mediaElement.play())
           toPlaying()
           break
 
