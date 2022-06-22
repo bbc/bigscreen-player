@@ -46,7 +46,6 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     ERROR: 'error',
     MANIFEST_LOADED: 'manifestLoaded',
     DOWNLOAD_MANIFEST_ERROR_CODE: 25,
-    DOWNLOAD_SIDX_ERROR_CODE: 26,
     DOWNLOAD_CONTENT_ERROR_CODE: 27,
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
     MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
@@ -124,19 +123,17 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       DebugTool.info('MSE Error: ' + event.error.message)
 
       // Don't raise an error on fragment download error
-      if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE ||
-        event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
-        event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE) {
+      if (event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE || event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE) {
         return
       }
 
       if (event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
-        manifestDownloadError({code: 2, message: event.error.message})
+        manifestDownloadError(event.error)
         return
       }
     }
 
-    publishError()
+    publishError(event.error)
   }
 
   function manifestDownloadError (event) {
