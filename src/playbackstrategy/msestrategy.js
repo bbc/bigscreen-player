@@ -136,8 +136,8 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     publishError(event.error)
   }
 
-  function manifestDownloadError (event) {
-    const error = () => publishError(event)
+  function manifestDownloadError (mediaError) {
+    const error = () => publishError(mediaError)
 
     const failoverParams = {
       errorMessage: 'manifest-refresh',
@@ -303,9 +303,9 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
   }
 
-  function publishError (error) {
+  function publishError (mediaError) {
     if (errorCallback) {
-      errorCallback(error)
+      errorCallback(mediaError)
     }
   }
 
