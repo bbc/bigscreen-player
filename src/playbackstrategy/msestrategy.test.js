@@ -1135,6 +1135,28 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       expect(mockErrorCallback).toHaveBeenCalledWith({code: 1, message: 'MEDIA_ERR_ABORTED (message from element)'})
     })
+
+    it('should reset the media player immediately if an unsupported codec error is thrown', () => {
+      const mockEvent = {
+        error: {
+          message: 'videoCodec is not supported',
+          code: 30
+        }
+      }
+
+      setUpMSE()
+
+      const mockErrorCallback = jest.fn()
+      mseStrategy.addErrorCallback(null, mockErrorCallback)
+
+      mseStrategy.load(null, 0)
+      mockVideoElement.currentTime = 10
+
+      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
+
+      expect(mockDashInstance.reset).toHaveBeenCalled()
+      expect(mockErrorCallback).toHaveBeenCalledWith({code: 30, message: 'videoCodec is not supported'})
+    })
   })
 
   describe('seeking and waiting events', () => {

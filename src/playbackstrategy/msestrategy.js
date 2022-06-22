@@ -48,6 +48,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     DOWNLOAD_MANIFEST_ERROR_CODE: 25,
     DOWNLOAD_CONTENT_ERROR_CODE: 27,
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
+    UNSUPPORTED_CODEC: 30,
     MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
     QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
     BASE_URL_SELECTED: 'baseUrlSelected',
@@ -120,7 +121,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
 
     if (event.error && event.error.message) {
-      DebugTool.info('MSE Error: ' + event.error.message)
+      DebugTool.info('MSE Error: ' + event.error.message + ' Code: ' + event.error.code)
 
       // Don't raise an error on fragment download error
       if (event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE || event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE) {
@@ -130,6 +131,11 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       if (event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
         manifestDownloadError(event.error)
         return
+      }
+
+      // It is possible audio could play back even if the video codec is not supported. Resetting here prevents this.
+      if(event.error.code === DashJSEvents.UNSUPPORTED_CODEC) {
+        mediaPlayer.reset()
       }
     }
 
