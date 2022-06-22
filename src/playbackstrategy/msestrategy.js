@@ -136,11 +136,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       }
     }
 
-    let mediaElementError = {
-      code: mediaElement.error?.code || 0,
-      message: mediaElement.error?.message || 'unknown' 
-    }
-    publishError(mediaElementError)
+    publishError()
   }
 
   function manifestDownloadError (event) {
@@ -379,7 +375,6 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     mediaElement.addEventListener('seeking', onBuffering)
     mediaElement.addEventListener('seeked', onSeeked)
     mediaElement.addEventListener('ended', onEnded)
-    mediaElement.addEventListener('error', onError)
     mediaPlayer.on(DashJSEvents.ERROR, onError)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
@@ -524,7 +519,6 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       mediaElement.removeEventListener('seeking', onBuffering)
       mediaElement.removeEventListener('seeked', onSeeked)
       mediaElement.removeEventListener('ended', onEnded)
-      mediaElement.removeEventListener('error', onError)
       mediaPlayer.off(DashJSEvents.ERROR, onError)
       mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)

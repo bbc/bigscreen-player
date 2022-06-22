@@ -317,7 +317,6 @@ describe('Media Source Extensions Playback Strategy', () => {
       expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('seeking', expect.any(Function))
       expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('seeked', expect.any(Function))
       expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('ended', expect.any(Function))
-      expect(mockVideoElement.addEventListener).toHaveBeenCalledWith('error', expect.any(Function))
       expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.ERROR, expect.any(Function))
       expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_LOADED, expect.any(Function))
       expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, expect.any(Function))
@@ -543,7 +542,6 @@ describe('Media Source Extensions Playback Strategy', () => {
       expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('seeking', expect.any(Function))
       expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('seeked', expect.any(Function))
       expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('ended', expect.any(Function))
-      expect(mockVideoElement.removeEventListener).toHaveBeenCalledWith('error', expect.any(Function))
       expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.ERROR, expect.any(Function))
       expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, expect.any(Function))
       expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.METRIC_ADDED, expect.any(Function))
@@ -1167,60 +1165,4 @@ describe('Media Source Extensions Playback Strategy', () => {
       expect(eventCallbackSpy).toHaveBeenCalledTimes(2)
     })
   })
-
-  describe('error events', () => {
-
-    describe('from the video element', () => {
-      it('should emit events to the callbackHandler with an error code and message', () => {
-        mockVideoElement.error = {
-          code: 3,
-          message: 'Err Decode'
-        }
-
-        const errorCallbackSpy = jest.fn()
-        setUpMSE()
-        mseStrategy.load(null, 0)
-
-        mseStrategy.addErrorCallback(this, errorCallbackSpy)
-
-        // Do this later to tidy up the tech debt
-        // mockVideoElement.dispatchEvent(new Event('error'))
-        eventCallbacks('error', {code: 0, message: 'boom!'})
-
-        expect(errorCallbackSpy).toHaveBeenCalledTimes(1)
-        expect(errorCallbackSpy).toHaveBeenCalledWith({code: 3, message: 'Err Decode'})
-      })
-
-      it('should emit events to the callbackHandler with a generic error code and message', () => {
-        mockVideoElement.error = {
-          code: 0,
-          message: ''
-        }
-
-        const errorCallbackSpy = jest.fn()
-        setUpMSE()
-        mseStrategy.load(null, 0)
-
-        mseStrategy.addErrorCallback(this, errorCallbackSpy)
-
-        // Do this later to tidy up the tech debt
-        // mockVideoElement.dispatchEvent(new Event('error'))
-        eventCallbacks('error', {code: 0, message: 'boom!'})
-
-        expect(errorCallbackSpy).toHaveBeenCalledTimes(1)
-        expect(errorCallbackSpy).toHaveBeenCalledWith({code: 0, message: 'unknown'})
-      })
-    })
-
-
-    describe('from the dashjs handler', () => {
-      it('should emit events to the callbackHandler', () => {
-        setUpMSE()
-        mseStrategy.load(null, 0)
-        // dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, mockEvent)
-        // check the callbackError listener has been called
-        fail()
-      })
-    })
-  })  
 })
