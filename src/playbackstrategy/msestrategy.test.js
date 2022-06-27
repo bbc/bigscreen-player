@@ -1159,6 +1159,43 @@ describe('Media Source Extensions Playback Strategy', () => {
       expect(mockDashInstance.reset).toHaveBeenCalled()
       expect(mockErrorCallback).toHaveBeenCalledWith({code: 30, message: 'videoCodec is not supported'})
     })
+
+    it('should initiate a failover with the previous error code and message on baseurlselected', () => {
+      const mockErrorEvent = {
+        error: {
+          message: 'content download error',
+          code: 27
+        }
+      }
+
+      setUpMSE()
+
+      mseStrategy.load(null, 0)
+      mockVideoElement.currentTime = 10
+
+      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockErrorEvent)
+      expect(mediaSources.failover).not.toHaveBeenCalled()
+
+      const mockBaseUrlEvent = {
+        mediaType: 'video',
+        type: 'baseUrlSelected',
+        baseUrl: {
+          serviceLocation: 'cdn1'
+        }
+      }
+
+      dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, mockBaseUrlEvent)
+
+      const failoverParams = {
+        errorMessage: 'download',
+        isBufferingTimeoutError: false,
+        serviceLocation: 'cdn1',
+        code: mockErrorEvent.error.code,
+        message: mockErrorEvent.error.message
+      }
+
+      expect(mediaSources.failover).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), failoverParams)
+    })
   })
 
   describe('seeking and waiting events', () => {

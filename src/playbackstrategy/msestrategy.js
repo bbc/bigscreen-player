@@ -28,6 +28,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   let isEnded = false
 
   let dashMetrics
+  let lastError
 
   let publishedSeekEvent = false
   let isSeeking = false
@@ -122,6 +123,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
     if (event.error && event.error.message) {
       DebugTool.info('MSE Error: ' + event.error.message + ' Code: ' + event.error.code)
+      lastError = event.error
 
       // Don't raise an error on fragment download error
       if (event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE || event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE) {
@@ -249,15 +251,19 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   function onBaseUrlSelected (event) {
     const failoverInfo = {
       errorMessage: 'download',
-      isBufferingTimeoutError: false
+      isBufferingTimeoutError: false,
+      code: lastError && lastError.code,
+      message: lastError && lastError.message
     }
 
     function log () {
       DebugTool.info('BaseUrl selected: ' + event.baseUrl.url)
+      lastError = undefined
     }
 
     failoverInfo.serviceLocation = event.baseUrl.serviceLocation
     mediaSources.failover(log, log, failoverInfo)
+
   }
 
   function onServiceLocationAvailable (event) {
@@ -537,6 +543,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
       DOMHelpers.safeRemoveElement(mediaElement)
 
+      lastError = undefined
       mediaPlayer = undefined
       mediaElement = undefined
       eventCallbacks = []
