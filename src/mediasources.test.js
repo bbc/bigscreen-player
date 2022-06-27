@@ -220,6 +220,30 @@ describe('Media Sources', () => {
       expect(ManifestLoader.load).toHaveBeenCalledWith(testSources[1].url, serverDate, expect.anything())
     })
 
+    it('should fire onErrorHandled plugin with correct error code and message when failing to load manifest', () => {
+      setupMockManifestLoaderFail()
+
+      const mediaSources = MediaSources()
+      mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks)
+
+      const callbacks = createSpyObj(['onSuccess', 'onError'])
+      mediaSources.refresh(callbacks.onSuccess, callbacks.onError)
+
+      const pluginData = {
+        status: PluginEnums.STATUS.FAILOVER,
+        stateType: PluginEnums.TYPE.ERROR,
+        isBufferingTimeoutError: false,
+        cdn: 'http://supplier1.com/',
+        newCdn: 'http://supplier2.com/',
+        isInitialPlay: undefined,
+        timeStamp: expect.any(Object),
+        code: PluginEnums.ERROR_CODES.MANIFEST,
+        message: PluginEnums.ERROR_MESSAGES.MANIFEST
+      }
+
+      expect(Plugins.interface.onErrorHandled).toHaveBeenCalledWith(expect.objectContaining(pluginData))
+    })
+
     it('When there are sources to failover to, it calls the post failover callback', () => {
       const failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true}
 
@@ -244,7 +268,7 @@ describe('Media Sources', () => {
     })
 
     it('When there are sources to failover to, it emits correct plugin event', () => {
-      const failoverInfo = {errorMessage: 'test error', isBufferingTimeoutError: true}
+      const failoverInfo = {errorMessage: 'test error', isBufferingTimeoutError: true, code: 0, message: 'unknown'}
 
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
@@ -257,7 +281,9 @@ describe('Media Sources', () => {
         cdn: 'http://supplier1.com/',
         newCdn: 'http://supplier2.com/',
         isInitialPlay: undefined,
-        timeStamp: expect.any(Object)
+        timeStamp: expect.any(Object),
+        code: 0,
+        message: 'unknown' 
       }
 
       expect(Plugins.interface.onErrorHandled).toHaveBeenCalledWith(expect.objectContaining(pluginData))

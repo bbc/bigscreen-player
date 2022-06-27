@@ -168,7 +168,7 @@ function MediaSources () {
     }
 
     const onManifestLoadError = () => {
-      failover(load, failoverError, {errorMessage: 'manifest-load', isBufferingTimeoutError: false})
+      failover(load, failoverError, {errorMessage: 'manifest-load', isBufferingTimeoutError: false, code: PluginEnums.ERROR_CODES.MANIFEST, message: PluginEnums.ERROR_MESSAGES.MANIFEST })
     }
 
     function load () {
@@ -278,7 +278,9 @@ function MediaSources () {
       stateType: PluginEnums.TYPE.ERROR,
       isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
       cdn: mediaSources[0].cdn,
-      newCdn: mediaSources[1].cdn
+      newCdn: mediaSources[1].cdn,
+      code: failoverInfo.code,
+      message: failoverInfo.message
     })
     Plugins.interface.onErrorHandled(evt)
   }
