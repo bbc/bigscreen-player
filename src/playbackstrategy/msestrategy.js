@@ -149,7 +149,9 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       errorMessage: 'manifest-refresh',
       isBufferingTimeoutError: false,
       currentTime: getCurrentTime(),
-      duration: getDuration()
+      duration: getDuration(),
+      code: mediaError.code,
+      message: mediaError.message
     }
 
     mediaSources.failover(load, error, failoverParams)

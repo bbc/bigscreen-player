@@ -1064,7 +1064,9 @@ describe('Media Source Extensions Playback Strategy', () => {
         errorMessage: 'manifest-refresh',
         isBufferingTimeoutError: false,
         currentTime: mseStrategy.getCurrentTime(),
-        duration: mseStrategy.getDuration()
+        duration: mseStrategy.getDuration(),
+        code: mockEvent.error.code,
+        message: mockEvent.error.message
       }
 
       expect(mediaSources.failover).toHaveBeenCalledWith(mseStrategy.load, expect.any(Function), failoverParams)
