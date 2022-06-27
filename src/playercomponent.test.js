@@ -97,7 +97,7 @@ describe('Player Component', () => {
     }
 
     mockMediaSources = {
-      failover: (successCallback, errorCallback, _) => {
+      failover: jest.fn().mockImplementation((successCallback, errorCallback, _) => {
         if (forceMediaSourcesError) {
           errorCallback()
         } else {
@@ -110,7 +110,7 @@ describe('Player Component', () => {
           }
           successCallback()
         }
-      },
+      }),
       time: () => testTime,
       refresh: (successCallback, _) => {
         if (updateTestTime) {
@@ -845,6 +845,7 @@ describe('Player Component', () => {
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
+        expect(mockMediaSources.failover).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), expect.objectContaining({code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT}))
       })
     })
 
@@ -863,6 +864,7 @@ describe('Player Component', () => {
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
+        expect(mockMediaSources.failover).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), expect.objectContaining({code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT}))
       })
     })
 
@@ -881,6 +883,8 @@ describe('Player Component', () => {
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
         expect(mockStrategy.reset).toHaveBeenCalledWith()
+
+        expect(mockMediaSources.failover).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), expect.objectContaining({code: 0, message: 'unknown'}))
       })
     })
 

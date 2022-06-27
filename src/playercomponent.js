@@ -200,7 +200,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     clearBufferingErrorTimeout()
     errorTimeoutID = setTimeout(() => {
       bubbleBufferingCleared()
-      attemptCdnFailover(true)
+      attemptCdnFailover(true, {code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT})
     }, bufferingTimeout)
   }
 
@@ -229,7 +229,9 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
       errorMessage: bufferingTimeoutError ? 'bufferingTimeoutError' : 'fatalError',
       isBufferingTimeoutError: bufferingTimeoutError,
       currentTime: getCurrentTime(),
-      duration: getDuration()
+      duration: getDuration(),
+      code: mediaError.code,
+      message: mediaError.message
     }
 
     const doLoadMedia = () => {
