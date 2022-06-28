@@ -309,7 +309,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
       isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError || false),
     }
 
-    if(opts && Number.isInteger(opts.code) && opts.message ) {
+    if(opts && opts.code > -1 && opts.message ) {
       stateUpdateData.code = opts.code
       stateUpdateData.message = opts.message
     }
