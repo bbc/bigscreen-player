@@ -289,9 +289,9 @@ describe('Bigscreen Player', () => {
     })
 
     it('should set isBufferingTimeoutError when a fatal error event comes back from strategy', () => {
-      mockEventHook({data: {state: MediaState.FATAL_ERROR}, isBufferingTimeoutError: false})
+      mockEventHook({data: {state: MediaState.FATAL_ERROR}, isBufferingTimeoutError: false, code: 1, message: 'media-error-aborted'})
 
-      expect(callback).toHaveBeenCalledWith({state: MediaState.FATAL_ERROR, isBufferingTimeoutError: false, endOfStream: false})
+      expect(callback).toHaveBeenCalledWith({state: MediaState.FATAL_ERROR, isBufferingTimeoutError: false, code: 1, message: 'media-error-aborted', endOfStream: false})
     })
 
     it('should return a reference to the callback passed in', () => {
