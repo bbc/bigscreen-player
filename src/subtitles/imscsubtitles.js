@@ -81,9 +81,9 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
           stop()
         }
       },
-      onError: ({statusCode} = {}) => {
+      onError: ({errorType, statusCode} = {}) => {
         DebugTool.info('Error loading subtitles data: ' + statusCode)
-        loadErrorFailover(statusCode)
+        loadErrorFailover({errorType, statusCode})
       },
       onTimeout: () => {
         DebugTool.info('Request timeout loading subtitles')
@@ -105,13 +105,13 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
     }
   }
 
-  function loadErrorFailover (statusCode) {
+  function loadErrorFailover (opts) {
     const errorCase = () => { DebugTool.info('No more CDNs available for subtitle failover') }
 
     if ((liveSubtitles && loadErrorLimit()) || !liveSubtitles) {
       stop()
       segments = []
-      mediaSources.failoverSubtitles(start, errorCase, statusCode)
+      mediaSources.failoverSubtitles(start, errorCase, opts)
     }
   }
 
