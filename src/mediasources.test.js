@@ -467,7 +467,7 @@ describe('Media Sources', () => {
     it('fires onSubtitlesLoadError plugin with a correct parameters when there are sources available to failover to', () => {
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
-      mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, 404)
+      mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, {statusCode: 404})
 
       expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({ status: 404, severity: PluginEnums.STATUS.FAILOVER, cdn: 'http://supplier1.com/', subtitlesSources: 2 })
     })
@@ -477,7 +477,7 @@ describe('Media Sources', () => {
 
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
-      mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, 404)
+      mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, {statusCode: 404})
 
       expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({ status: 404, severity: PluginEnums.STATUS.FATAL, cdn: 'http://supplier1.com/', subtitlesSources: 1 })
     })
