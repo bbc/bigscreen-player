@@ -78,7 +78,7 @@ function MediaSources () {
 
   function failoverSubtitles (postFailoverAction, failoverErrorAction, {statusCode, errorType} = {}) {
     if (subtitlesSources.length > 1) {
-      Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn(), subtitlesSources: subtitlesSources.length})
+      Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn(), subtitlesSources: subtitlesSources.length, errorType: errorType})
       subtitlesSources.shift()
       updateDebugOutput()
       if (postFailoverAction) { postFailoverAction() }
