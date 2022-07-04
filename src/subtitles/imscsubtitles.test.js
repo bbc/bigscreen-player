@@ -645,7 +645,7 @@ describe('IMSC Subtitles', () => {
 
         subtitles.start()
 
-        expect(()=> {
+        expect(() => {
           subtitles.tearDown()
           jest.advanceTimersByTime(750)
         }).not.toThrow() // if the original interval caused by the autostart was lost, an exception would be thrown on tearDown

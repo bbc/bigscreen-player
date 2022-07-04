@@ -115,7 +115,7 @@ describe('Legacy Subtitles', () => {
   it('Should try to failover to the next url if responseXML from the loader is invalid', () => {
     avalailableSourceCount = 1
     LoadUrl.mockImplementation((url, callbackObject) => {
-      callbackObject.onError(404)
+      callbackObject.onError({statusCode: 404})
     })
     legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
 
