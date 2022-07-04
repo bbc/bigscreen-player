@@ -1,3 +1,6 @@
+const NON_200 = 1
+const EXCEPTION = 2
+
 function LoadUrl (url, opts) {
   const xhr = new XMLHttpRequest()
 
@@ -18,7 +21,7 @@ function LoadUrl (url, opts) {
         }
       } else {
         if (opts.onError) {
-          opts.onError(xhr.status)
+          opts.onError({errorType: NON_200, status: xhr.status})
         }
       }
     }
@@ -37,7 +40,7 @@ function LoadUrl (url, opts) {
     xhr.send(opts.data || null)
   } catch (ex) {
     if (opts.onError) {
-      opts.onError(xhr.status)
+      opts.onError({errorType: EXCEPTION, status: xhr.status})
     }
   }
 }

@@ -81,7 +81,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
           stop()
         }
       },
-      onError: (statusCode) => {
+      onError: ({statusCode}) => {
         DebugTool.info('Error loading subtitles data: ' + statusCode)
         loadErrorFailover(statusCode)
       },
