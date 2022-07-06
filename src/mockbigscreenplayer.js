@@ -223,12 +223,11 @@ var mockFunctions = {
     stateChangeCallbacks.push(callback)
     return callback
   },
-  unregisterForStateChanges: function (callback) {
-    var indexOf = stateChangeCallbacks.indexOf(callback)
-
-    if (indexOf !== -1) {
-      stateChangeCallbacks.splice(indexOf, 1)
-    }
+  unregisterForStateChanges: (callback) => {
+    console.log('unregisterForStateChanges', callback)
+    stateChangeCallbacks = stateChangeCallbacks.filter(function (existingCallback) {
+      return callback !== existingCallback
+    })
   },
   setCurrentTime: function (time) {
     currentTime = time
