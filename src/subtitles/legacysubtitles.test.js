@@ -119,7 +119,7 @@ describe('Legacy Subtitles', () => {
     })
     legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
 
-    expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), 404)
+    expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), {statusCode: 404})
     expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1)
   })
 
