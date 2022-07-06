@@ -202,27 +202,33 @@ var mockFunctions = {
     return callback
   },
   unregisterForTimeUpdates: function (callback) {
-    timeUpdateCallbacks = timeUpdateCallbacks.filter(function (existingCallback) {
-      return callback !== existingCallback
-    })
+    var indexOf = timeUpdateCallbacks.indexOf(callback)
+
+    if (indexOf !== -1) {
+      timeUpdateCallbacks.splice(indexOf, 1)
+    }
   },
   registerForSubtitleChanges: function (callback) {
     subtitleCallbacks.push(callback)
     return callback
   },
   unregisterForSubtitleChanges: function (callback) {
-    subtitleCallbacks = subtitleCallbacks.filter(function (existingCallback) {
-      return callback !== existingCallback
-    })
+    var indexOf = subtitleCallbacks.indexOf(callback)
+
+    if (indexOf !== -1) {
+      subtitleCallbacks.splice(indexOf, 1)
+    }
   },
   registerForStateChanges: function (callback) {
     stateChangeCallbacks.push(callback)
     return callback
   },
   unregisterForStateChanges: function (callback) {
-    stateChangeCallbacks = stateChangeCallbacks.filter(function (existingCallback) {
-      return callback !== existingCallback
-    })
+    var indexOf = stateChangeCallbacks.indexOf(callback)
+
+    if (indexOf !== -1) {
+      stateChangeCallbacks.splice(indexOf, 1)
+    }
   },
   setCurrentTime: function (time) {
     currentTime = time
