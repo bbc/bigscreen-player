@@ -367,8 +367,10 @@ var mockingHooks = {
       fatalErrorBufferingTimeout = true
       Plugins.interface.onBuffering(new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING}))
     } else {
+      console.log('onBufferingCleared plugin call')
       Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}))
     }
+    console.log('onErrorCleared plugin call')
     Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}))
 
     if (state === MediaState.FATAL_ERROR) {
@@ -390,6 +392,7 @@ var mockingHooks = {
     }
     stateObject.endOfStream = endOfStream
 
+    console.log('stateChangeCallbacks', stateChangeCallbacks)
     callCallbacks(stateChangeCallbacks, stateObject)
 
     if (autoProgress) {
