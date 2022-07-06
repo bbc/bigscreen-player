@@ -324,6 +324,27 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
+    it('should remove callback from stateChangeCallbacks when a callback removes itself', () => {
+      const listener1 = jest.fn()
+      const listener2 = jest.fn().mockImplementation(() => {
+        bigscreenPlayer.unregisterForStateChanges(listener2)
+      })
+      const listener3 = jest.fn()
+
+      initialiseBigscreenPlayer()
+
+      bigscreenPlayer.registerForStateChanges(listener1)
+      bigscreenPlayer.registerForStateChanges(listener2)
+      bigscreenPlayer.registerForStateChanges(listener3)
+
+      mockEventHook({data: {state: MediaState.PLAYING}})
+      mockEventHook({data: {state: MediaState.PLAYING}})
+
+      expect(listener1).toHaveBeenCalledTimes(2)
+      expect(listener2).toHaveBeenCalledTimes(1)
+      expect(listener3).toHaveBeenCalledTimes(2)
+    })
+
     it('should only remove existing callbacks from stateChangeCallbacks', () => {
       initialiseBigscreenPlayer()
 
@@ -527,6 +548,27 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
+    it('should remove callback from timeUpdateCallbacks when a callback removes itself', () => {
+      initialiseBigscreenPlayer()
+
+      const listener1 = jest.fn()
+      const listener2 = jest.fn().mockImplementation(() => {
+        bigscreenPlayer.unregisterForTimeUpdates(listener2)
+      })
+      const listener3 = jest.fn()
+
+      bigscreenPlayer.registerForTimeUpdates(listener1)
+      bigscreenPlayer.registerForTimeUpdates(listener2)
+      bigscreenPlayer.registerForTimeUpdates(listener3)
+
+      mockEventHook({data: {currentTime: 0}, timeUpdate: true})
+      mockEventHook({data: {currentTime: 1}, timeUpdate: true})
+
+      expect(listener1).toHaveBeenCalledTimes(2)
+      expect(listener2).toHaveBeenCalledTimes(1)
+      expect(listener3).toHaveBeenCalledTimes(2)
+    })
+
     it('should only remove existing callbacks from timeUpdateCallbacks', () => {
       initialiseBigscreenPlayer()
 
@@ -585,6 +627,27 @@ describe('Bigscreen Player', () => {
 
       bigscreenPlayer.unregisterForSubtitleChanges(listener2)
 
+      bigscreenPlayer.setSubtitlesEnabled(false)
+
+      expect(listener1).toHaveBeenCalledTimes(2)
+      expect(listener2).toHaveBeenCalledTimes(1)
+      expect(listener3).toHaveBeenCalledTimes(2)
+    })
+
+    it('should remove callback from subtitleCallbacks when a callback removes itself', () => {
+      initialiseBigscreenPlayer()
+
+      const listener1 = jest.fn()
+      const listener2 = jest.fn().mockImplementation(() => {
+        bigscreenPlayer.unregisterForSubtitleChanges(listener2)
+      })
+      const listener3 = jest.fn()
+
+      bigscreenPlayer.registerForSubtitleChanges(listener1)
+      bigscreenPlayer.registerForSubtitleChanges(listener2)
+      bigscreenPlayer.registerForSubtitleChanges(listener3)
+
+      bigscreenPlayer.setSubtitlesEnabled(true)
       bigscreenPlayer.setSubtitlesEnabled(false)
 
       expect(listener1).toHaveBeenCalledTimes(2)
