@@ -202,28 +202,24 @@ var mockFunctions = {
     return callback
   },
   unregisterForTimeUpdates: function (callback) {
-    var indexOf = timeUpdateCallbacks.indexOf(callback)
-
-    if (indexOf !== -1) {
-      timeUpdateCallbacks.splice(indexOf, 1)
-    }
+    timeUpdateCallbacks = timeUpdateCallbacks.filter(function (existingCallback) {
+      return callback !== existingCallback
+    })
   },
   registerForSubtitleChanges: function (callback) {
     subtitleCallbacks.push(callback)
     return callback
   },
   unregisterForSubtitleChanges: function (callback) {
-    var indexOf = subtitleCallbacks.indexOf(callback)
-
-    if (indexOf !== -1) {
-      subtitleCallbacks.splice(indexOf, 1)
-    }
+    subtitleCallbacks = subtitleCallbacks.filter(function (existingCallback) {
+      return callback !== existingCallback
+    })
   },
   registerForStateChanges: function (callback) {
     stateChangeCallbacks.push(callback)
     return callback
   },
-  unregisterForStateChanges: (callback) => {
+  unregisterForStateChanges: function (callback) {
     var indexOf = stateChangeCallbacks.indexOf(callback)
 
     if (indexOf !== -1) {
