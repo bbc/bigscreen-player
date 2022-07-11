@@ -877,7 +877,7 @@ describe('Legacy Playback Adapter', () => {
       expect(timeUpdateCallbackSpy).toHaveBeenCalledWith()
     })
 
-    it('should publish an error event', () => {
+    it('should publish an error event with default code and message if element does not emit them', () => {
       setUpLegacyAdaptor()
 
       const errorCallbackSpy = jest.fn()
