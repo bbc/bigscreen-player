@@ -122,8 +122,8 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
 
   function onError (_event) {
     let mediaError = {
-      code: mediaElement.error?.code || 0,
-      message: mediaElement.error?.message || 'unknown'
+      code: mediaElement && mediaElement.error && mediaElement.error.code || 0,
+      message: mediaElement && mediaElement.error && mediaElement.error.message || 'unknown'
     }
     publishError(mediaError)
   }
