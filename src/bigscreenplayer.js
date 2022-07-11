@@ -276,10 +276,9 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForStateChanges: (callback) => {
-      const indexOf = stateChangeCallbacks.indexOf(callback)
-      if (indexOf !== -1) {
-        stateChangeCallbacks.splice(indexOf, 1)
-      }
+      stateChangeCallbacks = stateChangeCallbacks.filter(function (existingCallback) {
+        return callback !== existingCallback
+      })
     },
 
     /**
@@ -298,11 +297,9 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForTimeUpdates: (callback) => {
-      const indexOf = timeUpdateCallbacks.indexOf(callback)
-
-      if (indexOf !== -1) {
-        timeUpdateCallbacks.splice(indexOf, 1)
-      }
+      timeUpdateCallbacks = timeUpdateCallbacks.filter(function (existingCallback) {
+        return callback !== existingCallback
+      })
     },
 
     /**
@@ -321,10 +318,9 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForSubtitleChanges: (callback) => {
-      const indexOf = subtitleCallbacks.indexOf(callback)
-      if (indexOf !== -1) {
-        subtitleCallbacks.splice(indexOf, 1)
-      }
+      subtitleCallbacks = subtitleCallbacks.filter(function (existingCallback) {
+        return callback !== existingCallback
+      })
     },
 
     /**
