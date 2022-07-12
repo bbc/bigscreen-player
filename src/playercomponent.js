@@ -131,7 +131,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
 
     const onError = () => {
       tearDownMediaElement()
-      bubbleFatalError(false)
+      bubbleFatalError(false, {code: PluginEnums.ERROR_CODES.MANIFEST, message: PluginEnums.ERROR_MESSAGES.MANIFEST})
     }
 
     mediaSources.refresh(doSeek, onError)
@@ -200,7 +200,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     clearBufferingErrorTimeout()
     errorTimeoutID = setTimeout(() => {
       bubbleBufferingCleared()
-      attemptCdnFailover(true, {code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT})
+      attemptCdnFailover({code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT})
     }, bufferingTimeout)
   }
 
@@ -216,14 +216,15 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
       fatalErrorTimeout = setTimeout(() => {
         fatalErrorTimeout = null
         fatalError = true
-        attemptCdnFailover(false, mediaError)
+        attemptCdnFailover(mediaError)
       }, 5000)
     }
   }
 
-  function attemptCdnFailover (bufferingTimeoutError, mediaError) {
+  function attemptCdnFailover (mediaError) {
     const time = getCurrentTime()
     const oldWindowStartTime = getWindowStartTime()
+    const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
 
     const failoverParams = {
       errorMessage: bufferingTimeoutError ? 'bufferingTimeoutError' : 'fatalError',
