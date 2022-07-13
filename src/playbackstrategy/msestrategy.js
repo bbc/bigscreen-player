@@ -12,8 +12,6 @@ import Utils from '../utils/playbackutils'
 import { MediaPlayer } from 'dashjs/index_mediaplayerOnly'
 
 function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
-  const LIVE_DELAY_SECONDS = 1.1
-
   let mediaPlayer
   let mediaElement
 
@@ -40,6 +38,18 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       numDownloaded: undefined
     }
   }
+
+  let playerSettings = Utils.merge({
+    debug: {
+      logLevel: 2
+    },
+    streaming: {
+      liveDelay: 1.1,
+      bufferToKeep: 4,
+      bufferTimeAtTopQuality: 12,
+      bufferTimeAtTopQualityLongForm: 15
+    }
+  }, customPlayerSettings)
 
   const DashJSEvents = {
     LOG: 'log',
@@ -316,7 +326,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   }
 
   function getClampedTime (time, range) {
-    return Math.min(Math.max(time, range.start), range.end - LIVE_DELAY_SECONDS)
+    return Math.min(Math.max(time, range.start), range.end - playerSettings.streaming.liveDelay)
   }
 
   function load (mimeType, playbackTime) {
@@ -346,17 +356,6 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
   function setUpMediaPlayer (playbackTime) {
     mediaPlayer = MediaPlayer().create()
-    const playerSettings = Utils.merge({
-      debug: {
-        logLevel: 2
-      },
-      streaming: {
-        liveDelay: LIVE_DELAY_SECONDS,
-        bufferToKeep: 4,
-        bufferTimeAtTopQuality: 12,
-        bufferTimeAtTopQualityLongForm: 15
-      }
-    }, customPlayerSettings)
     mediaPlayer.updateSettings(playerSettings)
     mediaPlayer.initialize(mediaElement, null, true)
     modifySource(playbackTime)
@@ -419,7 +418,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       if (dvrInfo) {
         return {
           start: dvrInfo.range.start - timeCorrection,
-          end: dvrInfo.range.end - timeCorrection
+          end: dvrInfo.range.end - timeCorrection - playerSettings.streaming.liveDelay
         }
       }
     }
@@ -454,7 +453,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
   function calculateSeekOffset (time) {
     function getClampedTimeForLive (time) {
-      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - LIVE_DELAY_SECONDS)
+      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - playerSettings.streaming.liveDelay)
     }
 
     if (windowType === WindowTypes.SLIDING) {
