@@ -227,7 +227,6 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
 
     const failoverParams = {
-      errorMessage: bufferingTimeoutError ? 'bufferingTimeoutError' : 'fatalError',
       isBufferingTimeoutError: bufferingTimeoutError,
       currentTime: getCurrentTime(),
       duration: getDuration(),

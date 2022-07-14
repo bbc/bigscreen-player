@@ -148,7 +148,6 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     const error = () => publishError(mediaError)
 
     const failoverParams = {
-      errorMessage: 'manifest-refresh',
       isBufferingTimeoutError: false,
       currentTime: getCurrentTime(),
       duration: getDuration(),
@@ -250,7 +249,6 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
    */
   function onBaseUrlSelected (event) {
     const failoverInfo = {
-      errorMessage: 'download',
       isBufferingTimeoutError: false,
       code: lastError && lastError.code,
       message: lastError && lastError.message

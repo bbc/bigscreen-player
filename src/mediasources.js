@@ -125,9 +125,7 @@ function MediaSources () {
   }
 
   function isFailoverInfoValid (failoverParams) {
-    const infoValid = typeof failoverParams === 'object' &&
-      typeof failoverParams.errorMessage === 'string' &&
-      typeof failoverParams.isBufferingTimeoutError === 'boolean'
+    const infoValid = typeof failoverParams === 'object' && typeof failoverParams.isBufferingTimeoutError === 'boolean'
 
     if (!infoValid) {
       DebugTool.error('failoverInfo is not valid')
@@ -168,7 +166,7 @@ function MediaSources () {
     }
 
     const onManifestLoadError = () => {
-      failover(load, failoverError, {errorMessage: 'manifest-load', isBufferingTimeoutError: false, code: PluginEnums.ERROR_CODES.MANIFEST, message: PluginEnums.ERROR_MESSAGES.MANIFEST })
+      failover(load, failoverError, {isBufferingTimeoutError: false, code: PluginEnums.ERROR_CODES.MANIFEST, message: PluginEnums.ERROR_MESSAGES.MANIFEST })
     }
 
     function load () {

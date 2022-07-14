@@ -330,7 +330,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     let failoverInfo
 
     beforeEach(() => {
-      failoverInfo = { errorMessage: 'failover', isBufferingTimeoutError: false }
+      failoverInfo = { isBufferingTimeoutError: false }
     })
 
     it('should attach a new source with the expected parameters', () => {
@@ -1061,7 +1061,6 @@ describe('Media Source Extensions Playback Strategy', () => {
       dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
 
       const failoverParams = {
-        errorMessage: 'manifest-refresh',
         isBufferingTimeoutError: false,
         currentTime: mseStrategy.getCurrentTime(),
         duration: mseStrategy.getDuration(),
@@ -1101,8 +1100,8 @@ describe('Media Source Extensions Playback Strategy', () => {
       }
 
       const noop = () => {}
-      mediaSources.failover(noop, noop, { errorMessage: 'failover', isBufferingTimeoutError: false })
-      mediaSources.failover(noop, noop, { errorMessage: 'failover', isBufferingTimeoutError: false })
+      mediaSources.failover(noop, noop, { isBufferingTimeoutError: false })
+      mediaSources.failover(noop, noop, { isBufferingTimeoutError: false })
 
       setUpMSE()
 
@@ -1187,7 +1186,6 @@ describe('Media Source Extensions Playback Strategy', () => {
       dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, mockBaseUrlEvent)
 
       const failoverParams = {
-        errorMessage: 'download',
         isBufferingTimeoutError: false,
         serviceLocation: 'cdn1',
         code: mockErrorEvent.error.code,
