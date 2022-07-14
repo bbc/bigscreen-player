@@ -50,7 +50,7 @@ function BigscreenPlayer () {
         endOfStream: endOfStream
       })
     } else {
-      let stateObject = {state: evt.data.state}
+      let stateObject = { state: evt.data.state }
 
       if (evt.data.state === MediaState.PAUSED) {
         endOfStream = false
@@ -77,12 +77,12 @@ function BigscreenPlayer () {
     }
 
     if (evt.data.seekableRange) {
-      DebugTool.keyValue({key: 'seekableRangeStart', value: deviceTimeToDate(evt.data.seekableRange.start)})
-      DebugTool.keyValue({key: 'seekableRangeEnd', value: deviceTimeToDate(evt.data.seekableRange.end)})
+      DebugTool.keyValue({ key: 'seekableRangeStart', value: deviceTimeToDate(evt.data.seekableRange.start) })
+      DebugTool.keyValue({ key: 'seekableRangeEnd', value: deviceTimeToDate(evt.data.seekableRange.end) })
     }
 
     if (evt.data.duration) {
-      DebugTool.keyValue({key: 'duration', value: evt.data.duration})
+      DebugTool.keyValue({ key: 'duration', value: evt.data.duration })
     }
 
     if (playerComponent && readyHelper) {
@@ -192,7 +192,7 @@ function BigscreenPlayer () {
       Chronicle.init()
       resizer = Resizer()
       DebugTool.setRootElement(playbackElement)
-      DebugTool.keyValue({key: 'framework-version', value: Version})
+      DebugTool.keyValue({ key: 'framework-version', value: Version })
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
       if (!callbacks) {

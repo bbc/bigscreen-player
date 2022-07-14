@@ -46,7 +46,7 @@ function supportsSeeking (liveSupport) {
 
 function autoResumeAtStartOfRange (currentTime, seekableRange, addEventCallback, removeEventCallback, checkNotPauseEvent, resume) {
   const resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS)
-  DebugTool.keyValue({key: 'autoresume', value: resumeTimeOut})
+  DebugTool.keyValue({ key: 'autoresume', value: resumeTimeOut })
   const autoResumeTimer = setTimeout(() => {
     removeEventCallback(undefined, detectIfUnpaused)
     resume()

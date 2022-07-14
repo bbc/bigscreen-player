@@ -699,7 +699,7 @@ function SamsungStreaming2015 () {
 
   function _reportError (errorMessage) {
     DebugTool.info(errorMessage)
-    _emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage})
+    _emitEvent(MediaPlayerBase.EVENT.ERROR, { 'errorMessage': errorMessage })
   }
 
   function _isNearToCurrentTime (seconds) {

@@ -108,7 +108,7 @@ describe('Legacy Subtitles', () => {
     })
     legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
 
-    expect(Plugins.interface.onSubtitlesXMLError).toHaveBeenCalledWith({cdn: subtitlesCdn})
+    expect(Plugins.interface.onSubtitlesXMLError).toHaveBeenCalledWith({ cdn: subtitlesCdn })
     expect(Plugins.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1)
   })
 
@@ -129,7 +129,7 @@ describe('Legacy Subtitles', () => {
     })
     legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
 
-    expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledWith({cdn: subtitlesCdn})
+    expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledWith({ cdn: subtitlesCdn })
     expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1)
   })
 
@@ -189,10 +189,10 @@ describe('Legacy Subtitles', () => {
     })
 
     test.each([
-      {className: 'controlsVisible', pos: TransportControlPosition.CONTROLS_ONLY},
-      {className: 'controlsWithInfoVisible', pos: TransportControlPosition.CONTROLS_WITH_INFO},
-      {className: 'leftCarouselVisible', pos: TransportControlPosition.LEFT_CAROUSEL},
-      {className: 'bottomCarouselVisible', pos: TransportControlPosition.BOTTOM_CAROUSEL}])('Has class $position.className for position $position.pos', (position) => {
+      { className: 'controlsVisible', pos: TransportControlPosition.CONTROLS_ONLY },
+      { className: 'controlsWithInfoVisible', pos: TransportControlPosition.CONTROLS_WITH_INFO },
+      { className: 'leftCarouselVisible', pos: TransportControlPosition.LEFT_CAROUSEL },
+      { className: 'bottomCarouselVisible', pos: TransportControlPosition.BOTTOM_CAROUSEL }])('Has class $position.className for position $position.pos', (position) => {
       legacySubtitles.updatePosition(position.pos)
 
       expect(parentElement.firstChild.className).toContain(position.className)

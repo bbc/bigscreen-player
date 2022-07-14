@@ -49,7 +49,7 @@ describe('HTML5 Strategy', () => {
     ]
 
     mockMediaSources = {
-      time: () => ({correction: testTimeCorrection}),
+      time: () => ({ correction: testTimeCorrection }),
       currentSource: () => cdnArray[0].url
     }
   })

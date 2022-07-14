@@ -123,7 +123,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     mediaSources = new MediaSources()
     jest.spyOn(mediaSources, 'time')
     jest.spyOn(mediaSources, 'failover')
-    mediaSources.init({urls: cdnArray, captions: []}, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks)
+    mediaSources.init({ urls: cdnArray, captions: [] }, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, mediaSourceCallbacks)
 
     testManifestObject = {
       type: 'manifestLoaded',
@@ -789,7 +789,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       it('should call seek on media player with the time clamped to new end when manifest refreshes and contains a duration', () => {
         mockDashInstance.refreshManifest.mockImplementation((callback) =>
-          callback({mediaPresentationDuration: 80}))
+          callback({ mediaPresentationDuration: 80 }))
 
         mseStrategy.setCurrentTime(90)
 

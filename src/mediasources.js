@@ -78,12 +78,12 @@ function MediaSources () {
 
   function failoverSubtitles (postFailoverAction, failoverErrorAction, statusCode) {
     if (subtitlesSources.length > 1) {
-      Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn()})
+      Plugins.interface.onSubtitlesLoadError({ status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn() })
       subtitlesSources.shift()
       updateDebugOutput()
       if (postFailoverAction) { postFailoverAction() }
     } else {
-      Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FATAL, cdn: getCurrentSubtitlesCdn()})
+      Plugins.interface.onSubtitlesLoadError({ status: statusCode, severity: PluginEnums.STATUS.FATAL, cdn: getCurrentSubtitlesCdn() })
       if (failoverErrorAction) { failoverErrorAction() }
     }
   }
@@ -153,7 +153,7 @@ function MediaSources () {
   }
 
   function refresh (onSuccess, onError) {
-    loadManifest(serverDate, {onSuccess: onSuccess, onError: onError})
+    loadManifest(serverDate, { onSuccess: onSuccess, onError: onError })
   }
 
   function loadManifest (serverDate, callbacks) {
@@ -164,11 +164,11 @@ function MediaSources () {
     }
 
     const failoverError = () => {
-      callbacks.onError({error: 'manifest'})
+      callbacks.onError({ error: 'manifest' })
     }
 
     const onManifestLoadError = () => {
-      failover(load, failoverError, {errorMessage: 'manifest-load', isBufferingTimeoutError: false})
+      failover(load, failoverError, { errorMessage: 'manifest-load', isBufferingTimeoutError: false })
     }
 
     function load () {
@@ -294,11 +294,11 @@ function MediaSources () {
   }
 
   function updateDebugOutput () {
-    DebugTool.keyValue({key: 'available cdns', value: availableCdns()})
-    DebugTool.keyValue({key: 'url', value: stripQueryParamsAndHash(getCurrentUrl())})
+    DebugTool.keyValue({ key: 'available cdns', value: availableCdns() })
+    DebugTool.keyValue({ key: 'url', value: stripQueryParamsAndHash(getCurrentUrl()) })
 
-    DebugTool.keyValue({key: 'available subtitle cdns', value: availableSubtitlesCdns()})
-    DebugTool.keyValue({key: 'subtitles url', value: stripQueryParamsAndHash(getCurrentSubtitlesUrl())})
+    DebugTool.keyValue({ key: 'available subtitle cdns', value: availableSubtitlesCdns() })
+    DebugTool.keyValue({ key: 'subtitles url', value: stripQueryParamsAndHash(getCurrentSubtitlesUrl()) })
   }
 
   function tearDown () {

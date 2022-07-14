@@ -88,7 +88,7 @@ describe('Player Component', () => {
       media: {
         kind: opts.mediaKind || MediaKinds.VIDEO,
         codec: undefined,
-        urls: [{url: 'a.mpd', cdn: 'cdn-a'}, {url: 'b.mpd', cdn: 'cdn-b'}, {url: 'c.mpd', cdn: 'cdn-c'}],
+        urls: [{ url: 'a.mpd', cdn: 'cdn-a' }, { url: 'b.mpd', cdn: 'cdn-b' }, { url: 'c.mpd', cdn: 'cdn-c' }],
         type: opts.type || 'application/dash+xml',
         transferFormat: opts.transferFormat || TransferFormats.DASH,
         bitrate: undefined
@@ -177,43 +177,43 @@ describe('Player Component', () => {
     it('should trigger the error callback when strategyPicker rejects', (done) => {
       jest.spyOn(StrategyPicker, 'default').mockImplementationOnce(function () {
         return new Promise(function (resolve, reject) {
-          return reject({error: 'strategydynamicloaderror'})
+          return reject({ error: 'strategydynamicloaderror' })
         })
       })
 
       let errorCallbackSpy = jest.fn(() => {
-        expect(errorCallbackSpy).toHaveBeenCalledWith({error: 'strategydynamicloaderror'})
+        expect(errorCallbackSpy).toHaveBeenCalledWith({ error: 'strategydynamicloaderror' })
         done()
       })
 
-      setUpPlayerComponent({errorCallback: errorCallbackSpy})
+      setUpPlayerComponent({ errorCallback: errorCallbackSpy })
     })
   })
 
   describe('Pause', () => {
     it('should disable auto resume when playing a video webcast', () => {
-      setUpPlayerComponent({windowType: WindowTypes.GROWING})
+      setUpPlayerComponent({ windowType: WindowTypes.GROWING })
 
       return StrategyPicker.default().then(() => {
         playerComponent.pause()
-        expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: true})
+        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: true })
       })
     })
 
     it('should use options for disable auto resume when playing audio', () => {
-      setUpPlayerComponent({windowType: WindowTypes.SLIDING, mediaKind: 'audio'})
+      setUpPlayerComponent({ windowType: WindowTypes.SLIDING, mediaKind: 'audio' })
 
       jest.spyOn(mockStrategy, 'pause')
 
       return StrategyPicker.default().then(() => {
         playerComponent.pause()
-        expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: undefined})
+        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: undefined })
 
-        playerComponent.pause({disableAutoResume: false})
-        expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: false})
+        playerComponent.pause({ disableAutoResume: false })
+        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: false })
 
-        playerComponent.pause({disableAutoResume: true})
-        expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: true})
+        playerComponent.pause({ disableAutoResume: true })
+        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: true })
       })
     })
 
@@ -224,13 +224,13 @@ describe('Player Component', () => {
 
       return StrategyPicker.default().then(() => {
         playerComponent.pause()
-        expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: undefined})
+        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: undefined })
 
-        playerComponent.pause({disableAutoResume: false})
-        expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: false})
+        playerComponent.pause({ disableAutoResume: false })
+        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: false })
 
-        playerComponent.pause({disableAutoResume: true})
-        expect(mockStrategy.pause).toHaveBeenCalledWith({disableAutoResume: true})
+        playerComponent.pause({ disableAutoResume: true })
+        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: true })
       })
     })
   })
@@ -271,7 +271,7 @@ describe('Player Component', () => {
     })
 
     it('should setCurrentTime on the strategy when in a seekable state', () => {
-      mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 100}))
+      mockStrategy.getSeekableRange = jest.fn(() => ({ start: 0, end: 100 }))
       setUpPlayerComponent()
 
       return StrategyPicker.default().then(() => {
@@ -287,7 +287,7 @@ describe('Player Component', () => {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
       window.bigscreenPlayer.liveSupport = LiveSupport.RESTARTABLE
 
-      mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 100}))
+      mockStrategy.getSeekableRange = jest.fn(() => ({ start: 0, end: 100 }))
 
       setUpPlayerComponent({
         windowType: WindowTypes.SLIDING,
@@ -308,7 +308,7 @@ describe('Player Component', () => {
     it('should reload the element with no time if the new time is within 30 seconds of the end of the window', () => {
       window.bigscreenPlayer.playbackStrategy = 'nativestrategy'
 
-      mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 70}))
+      mockStrategy.getSeekableRange = jest.fn(() => ({ start: 0, end: 70 }))
       mockStrategy.liveSupport = LiveSupport.RESTARTABLE
 
       setUpPlayerComponent({
@@ -817,7 +817,7 @@ describe('Player Component', () => {
       currentTime = 50
       type = 'application/dash+xml'
 
-      mockStrategy.getSeekableRange = jest.fn(() => ({start: 0, end: 100}))
+      mockStrategy.getSeekableRange = jest.fn(() => ({ start: 0, end: 100 }))
       mockStrategy.getCurrentTime = jest.fn(() => currentTime)
       currentStrategy = window.bigscreenPlayer.playbackStrategy
     })
@@ -972,7 +972,7 @@ describe('Player Component', () => {
         timeStamp: expect.any(Object)
       }
 
-      setUpPlayerComponent({multiCdn: true})
+      setUpPlayerComponent({ multiCdn: true })
 
       return StrategyPicker.default().then(() => {
         mockStrategy.mockingHooks.fireError()
@@ -993,7 +993,7 @@ describe('Player Component', () => {
         timeStamp: expect.any(Object)
       }
 
-      setUpPlayerComponent({multiCdn: true})
+      setUpPlayerComponent({ multiCdn: true })
 
       return StrategyPicker.default().then(() => {
         mockStrategy.mockingHooks.fireError()

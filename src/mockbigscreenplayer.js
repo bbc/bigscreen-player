@@ -37,7 +37,7 @@ var mockModes = {
   PLAIN: 1,
   JASMINE: 2
 }
-var mockStatus = {currentlyMocked: false, mode: mockModes.NONE}
+var mockStatus = { currentlyMocked: false, mode: mockModes.NONE }
 var initialised
 var fatalErrorBufferingTimeout
 
@@ -100,7 +100,7 @@ function mock (BigscreenPlayer, opts) {
   for (var hook in mockingHooks) {
     BigscreenPlayer[hook] = mockingHooks[hook]
   }
-  mockStatus = {currentlyMocked: true, mode: mockModes.PLAIN}
+  mockStatus = { currentlyMocked: true, mode: mockModes.PLAIN }
 }
 
 function mockJasmine (BigscreenPlayer, opts) {
@@ -126,7 +126,7 @@ function mockJasmine (BigscreenPlayer, opts) {
   for (var hook in mockingHooks) {
     BigscreenPlayer[hook] = mockingHooks[hook]
   }
-  mockStatus = {currentlyMocked: true, mode: mockModes.JASMINE}
+  mockStatus = { currentlyMocked: true, mode: mockModes.JASMINE }
 }
 
 function unmock (BigscreenPlayer) {
@@ -148,7 +148,7 @@ function unmock (BigscreenPlayer) {
   timeUpdateCallbacks = []
   stateChangeCallbacks = []
 
-  mockStatus = {currentlyMocked: false, mode: mockModes.NONE}
+  mockStatus = { currentlyMocked: false, mode: mockModes.NONE }
 }
 
 function callSubtitlesCallbacks (enabled) {
@@ -172,11 +172,11 @@ var mockFunctions = {
     cdn = sourceList && sourceList[0].cdn
 
     duration = windowType === WindowTypes.STATIC ? 4808 : Infinity
-    seekableRange = {start: 0, end: 4808}
+    seekableRange = { start: 0, end: 4808 }
 
     if (manifestError) {
       if (callbacks && callbacks.onError) {
-        callbacks.onError({error: 'manifest'})
+        callbacks.onError({ error: 'manifest' })
       }
       return
     }
@@ -317,8 +317,8 @@ var mockFunctions = {
       return
     }
 
-    Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}))
-    Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}))
+    Plugins.interface.onBufferingCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering }))
+    Plugins.interface.onErrorCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR }))
     Plugins.unregisterPlugin()
 
     timeUpdateCallbacks = []
@@ -359,14 +359,14 @@ var mockingHooks = {
 
     if (state === MediaState.WAITING) {
       fatalErrorBufferingTimeout = true
-      Plugins.interface.onBuffering(new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING}))
+      Plugins.interface.onBuffering(new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING }))
     } else {
-      Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}))
+      Plugins.interface.onBufferingCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering }))
     }
-    Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}))
+    Plugins.interface.onErrorCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR }))
 
     if (state === MediaState.FATAL_ERROR) {
-      Plugins.interface.onFatalError(new PluginData({status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout}))
+      Plugins.interface.onFatalError(new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout }))
     }
 
     var stateObject = { state: state }
@@ -433,7 +433,7 @@ var mockingHooks = {
   },
   triggerError: function () {
     fatalErrorBufferingTimeout = false
-    Plugins.interface.onError(new PluginData({status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false}))
+    Plugins.interface.onError(new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false }))
     this.changeState(MediaState.WAITING)
     stopProgress()
   },
@@ -446,9 +446,9 @@ var mockingHooks = {
       source = sourceList[0].url
       cdn = sourceList[0].cdn
     }
-    Plugins.interface.onBufferingCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering}))
-    Plugins.interface.onErrorCleared(new PluginData({status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR}))
-    Plugins.interface.onErrorHandled(new PluginData({status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout, cdn: cdn}))
+    Plugins.interface.onBufferingCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: initialBuffering }))
+    Plugins.interface.onErrorCleared(new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR }))
+    Plugins.interface.onErrorHandled(new PluginData({ status: PluginEnums.STATUS.FAILOVER, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: fatalErrorBufferingTimeout, cdn: cdn }))
 
     if (autoProgress) {
       stopProgress()

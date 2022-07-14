@@ -22,7 +22,7 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
         onLoad: (responseXML, responseText, status) => {
           if (!responseXML) {
             DebugTool.info('Error: responseXML is invalid.')
-            Plugins.interface.onSubtitlesXMLError({cdn: mediaSources.currentSubtitlesCdn()})
+            Plugins.interface.onSubtitlesXMLError({ cdn: mediaSources.currentSubtitlesCdn() })
             return
           } else {
             createContainer(responseXML)
@@ -35,7 +35,7 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
         },
         onTimeout: () => {
           DebugTool.info('Request timeout loading subtitles')
-          Plugins.interface.onSubtitlesTimeout({cdn: mediaSources.currentSubtitlesCdn()})
+          Plugins.interface.onSubtitlesTimeout({ cdn: mediaSources.currentSubtitlesCdn() })
         }
       })
     }

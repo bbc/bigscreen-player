@@ -38,14 +38,14 @@ describe('ManifestParser', () => {
       const manifest = dashManifests.badAttributes()
       const liveWindowData = ManifestParser.parse(manifest, 'mpd', new Date('2018-12-13T11:00:00.000000Z'))
 
-      expect(liveWindowData).toEqual({error: 'Error parsing DASH manifest attributes'})
+      expect(liveWindowData).toEqual({ error: 'Error parsing DASH manifest attributes' })
     })
 
     it('returns an error if manifest data is malformed', () => {
       const manifest = 'not an MPD'
       const liveWindowData = ManifestParser.parse(manifest, 'mpd', new Date('2018-12-13T11:00:00.000000Z'))
 
-      expect(liveWindowData).toEqual({error: 'Error parsing DASH manifest'})
+      expect(liveWindowData).toEqual({ error: 'Error parsing DASH manifest' })
     })
   })
 
@@ -64,14 +64,14 @@ describe('ManifestParser', () => {
       const manifest = hlsManifests.invalidDate
       const liveWindowData = ManifestParser.parse(manifest, 'm3u8')
 
-      expect(liveWindowData).toEqual({error: 'Error parsing HLS manifest'})
+      expect(liveWindowData).toEqual({ error: 'Error parsing HLS manifest' })
     })
 
     it('returns an error if hls manifest data is malformed', () => {
       const manifest = 'not an valid manifest'
       const liveWindowData = ManifestParser.parse(manifest, 'm3u8')
 
-      expect(liveWindowData).toEqual({error: 'Error parsing HLS manifest'})
+      expect(liveWindowData).toEqual({ error: 'Error parsing HLS manifest' })
     })
   })
 })

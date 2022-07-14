@@ -55,7 +55,7 @@ describe('Subtitle transformer', () => {
     expect(subtitlesForZero.length).toBe(0)
 
     expect(singleSubtitle.length).toBe(1)
-    expect(singleSubtitle[0]).toEqual(expect.objectContaining({start: 14.04, end: 16.16}))
+    expect(singleSubtitle[0]).toEqual(expect.objectContaining({ start: 14.04, end: 16.16 }))
 
     expect(outOfRangeSubtitles.length).toBe(0)
   })
@@ -75,11 +75,11 @@ describe('Subtitle transformer', () => {
     expect(subtitlesForZero.length).toBe(0)
 
     expect(singleSubtitle.length).toBe(1)
-    expect(singleSubtitle[0]).toEqual(expect.objectContaining({start: 33.560, end: 34.960}))
+    expect(singleSubtitle[0]).toEqual(expect.objectContaining({ start: 33.560, end: 34.960 }))
 
     expect(cumulativeSubtitles.length).toBe(2)
-    expect(cumulativeSubtitles[0]).toEqual(expect.objectContaining({start: 34.960, end: 37}))
-    expect(cumulativeSubtitles[1]).toEqual(expect.objectContaining({start: 35.200, end: 37}))
+    expect(cumulativeSubtitles[0]).toEqual(expect.objectContaining({ start: 34.960, end: 37 }))
+    expect(cumulativeSubtitles[1]).toEqual(expect.objectContaining({ start: 35.200, end: 37 }))
 
     expect(outOfRangeSubtitles.length).toBe(0)
   })
