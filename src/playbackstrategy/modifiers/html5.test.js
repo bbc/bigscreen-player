@@ -17,7 +17,13 @@ describe('HTML5 Base', () => {
   let recentEvents
 
   function eventCallbackReporter (event) {
-    recentEvents.push(event.type)
+    recentEvents.push(event)
+  }
+
+  function getRecentEventTypes(){
+    return recentEvents.map(function (event) {
+      return event.type
+    })
   }
 
   function giveMediaElementMetaData (mediaElement, metadata) {
@@ -198,31 +204,31 @@ describe('HTML5 Base', () => {
       it('Calling Begin Playback In Empty State Is An Error', () => {
         player.beginPlayback()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Begin Playback From In Empty State Is An Error', () => {
         player.beginPlaybackFrom()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Pause In Empty State Is An Error', () => {
         player.pause()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Resume In Empty State Is An Error', () => {
         player.resume()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Stop In Empty State Is An Error', () => {
         player.stop()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Initialise Media In Empty State Goes To Stopped State', () => {
@@ -267,25 +273,25 @@ describe('HTML5 Base', () => {
       it('Calling Initialise Media In Stopped State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Play From In Stopped State Is An Error', () => {
         player.playFrom()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Pause In Stopped State Is An Error', () => {
         player.pause()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Resume In Stopped State Is An Error', () => {
         player.resume()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Send Meta Data In Stopped State Stays In Stopped State', () => {
@@ -313,7 +319,7 @@ describe('HTML5 Base', () => {
 
         errorCallback({type: 'testError'})
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Time Passing Does Not Cause Status Event To Be Sent In Stopped State', () => {
@@ -378,25 +384,25 @@ describe('HTML5 Base', () => {
       it('Calling Initialise Media In Buffering State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Begin Playback In Buffering State Is An Error', () => {
         player.beginPlayback()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Begin Playback From In Buffering State Is An Error', () => {
         player.beginPlaybackFrom()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Reset In Buffering State Is An Error', () => {
         player.reset()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Send Meta Data In Buffering State Stays In Buffering State', () => {
@@ -418,7 +424,7 @@ describe('HTML5 Base', () => {
 
         errorCallback()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Time Passing Does Not Cause Status Event To Be Sent In Buffering State', () => {
@@ -426,7 +432,7 @@ describe('HTML5 Base', () => {
         jest.advanceTimersByTime(1200)
 
         // sentinel & playing events
-        expect(recentEvents).toEqual([MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING, MediaPlayerBase.EVENT.PLAYING])
+        expect(getRecentEventTypes()).toEqual([MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING, MediaPlayerBase.EVENT.PLAYING])
       })
 
       it('When Buffering Finishes And No Further Api Calls Then We Go To Playing State', () => {
@@ -471,7 +477,7 @@ describe('HTML5 Base', () => {
       it('Device Buffering Notification In Buffering State Does Not Emit Second Buffering Event', () => {
         waitingCallback()
 
-        expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.BUFFERING)
+        expect(getRecentEventTypes()).not.toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
     })
 
@@ -513,25 +519,25 @@ describe('HTML5 Base', () => {
       it('Calling Begin Playback In Playing State Is An Error', () => {
         player.beginPlayback()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Begin Playback From In Playing State Is An Error', () => {
         player.beginPlaybackFrom()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Initialise Media In Playing State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Reset In Playing State Is An Error', () => {
         player.reset()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Send Meta Data In Playing State Stays In Playing State', () => {
@@ -557,7 +563,7 @@ describe('HTML5 Base', () => {
 
         errorCallback()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('When Call Resume While Already Playing Then Remain In Play State', () => {
@@ -605,19 +611,19 @@ describe('HTML5 Base', () => {
         timeupdateCallback()
         jest.advanceTimersByTime(1000)
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.STATUS)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.STATUS)
 
         recentEvents = []
         timeupdateCallback()
         jest.advanceTimersByTime(1000)
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.STATUS)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.STATUS)
 
         recentEvents = []
         timeupdateCallback()
         jest.advanceTimersByTime(1000)
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.STATUS)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.STATUS)
       })
 
       it('Get Duration Returns Infinity With A Live Video Stream', () => {
@@ -699,25 +705,25 @@ describe('HTML5 Base', () => {
       it('Calling Begin Playback In Paused State Is An Error', () => {
         player.beginPlayback()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Begin Playback From In Paused State Is An Error', () => {
         player.beginPlaybackFrom()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Initialise Media In Paused State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Calling Reset In Paused State Is An Error', () => {
         player.reset()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Send Meta Data In Paused State Stays In Paused State', () => {
@@ -745,13 +751,13 @@ describe('HTML5 Base', () => {
 
         errorCallback()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
       })
 
       it('Time Passing Does Not Cause Status Event To Be Sent In Paused State', () => {
         jest.advanceTimersByTime(10000)
 
-        expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.STATUS)
+        expect(getRecentEventTypes()).not.toContain(MediaPlayerBase.EVENT.STATUS)
       })
 
       it('When Calling Resume While Paused Goes To Playing State', () => {
@@ -828,42 +834,42 @@ describe('HTML5 Base', () => {
       it('Calling Begin Playback In Complete State Is An Error', () => {
         player.beginPlayback()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Begin Playback From In Complete State Is An Error', () => {
         player.beginPlaybackFrom()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Initialise Media From In Complete State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Pause From In Complete State Is An Error', () => {
         player.pause()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Resume From In Complete State Is An Error', () => {
         player.resume()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Reset From In Complete State Is An Error', () => {
         player.reset()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       }
       )
@@ -896,7 +902,7 @@ describe('HTML5 Base', () => {
         timeupdateCallback()
         jest.advanceTimersByTime()
 
-        expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.STATUS)
+        expect(getRecentEventTypes()).not.toContain(MediaPlayerBase.EVENT.STATUS)
       })
 
       it('When Call Play From While Complete Goes To Buffering State', () => {
@@ -962,49 +968,49 @@ describe('HTML5 Base', () => {
       it('Calling Begin Playback In Error State Is An Error', () => {
         player.beginPlayback()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Begin Playback From In Error State Is An Error', () => {
         player.beginPlaybackFrom()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Initialise Media In Error State Is An Error', () => {
         player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Play From In Error State Is An Error', () => {
         player.playFrom()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Pause In Error State Is An Error', () => {
         player.pause()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Resume In Error State Is An Error', () => {
         player.resume()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
       it('Calling Stop From In Error State Is An Error', () => {
         player.stop()
 
-        expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+        expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
         expect(player.getState()).toEqual(MediaPlayerBase.STATE.ERROR)
       })
 
@@ -1265,14 +1271,18 @@ describe('HTML5 Base', () => {
 
     it(' Error Event From Media Element Causes Error Log With Code And Error Message In Event', () => {
       mockVideoMediaElement.error = {
-        code: 'This is a test error'
+        code: 1,
+        message: 'This is a test error'
       }
 
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
       errorCallback()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
+
+      let expectedArray = [expect.objectContaining(mockVideoMediaElement.error)]
+      expect(recentEvents).toEqual(expect.arrayContaining(expectedArray))
     })
 
     it(' Error Event From Source Element Causes Error Log And Error Message In Event', () => {
@@ -1288,7 +1298,7 @@ describe('HTML5 Base', () => {
 
       sourceError()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.ERROR)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.ERROR)
     })
 
     it(' Pause Passed Through To Media Element When In Playing State', () => {
@@ -1922,13 +1932,13 @@ describe('HTML5 Base', () => {
     it(' Seek Attempted Event Emitted On Initialise Media If The State Is Empty', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
     })
 
     it('Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
 
       player.beginPlaybackFrom(0)
       waitingCallback()
@@ -1941,13 +1951,13 @@ describe('HTML5 Base', () => {
       timeupdateCallback()
       timeupdateCallback()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
     })
 
     it('Seek Finished Event Is Emitted Only Once', () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
 
       player.beginPlaybackFrom(0)
       waitingCallback()
@@ -1960,7 +1970,7 @@ describe('HTML5 Base', () => {
       timeupdateCallback()
       timeupdateCallback()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
       recentEvents = []
       timeupdateCallback()
 
@@ -1976,7 +1986,7 @@ describe('HTML5 Base', () => {
 
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'http://url/', 'video/mp4', sourceContainer, {})
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
 
       player.beginPlaybackFrom(0)
       waitingCallback()
@@ -1997,7 +2007,7 @@ describe('HTML5 Base', () => {
       jest.advanceTimersByTime(1100)
       timeupdateCallback()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
     })
   })
 
@@ -2029,8 +2039,8 @@ describe('HTML5 Base', () => {
       waitForSentinels()
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.BUFFERING)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
     })
 
@@ -2117,7 +2127,7 @@ describe('HTML5 Base', () => {
       mockVideoMediaElement.currentTime = 0
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
     })
 
     it(' Enter Buffering Sentinel Does Not Activate When Playback Halts When Only One Sentinel Iteration Since State Changed', () => {
@@ -2199,7 +2209,7 @@ describe('HTML5 Base', () => {
         waitForSentinels()
       }
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.BUFFERING)
     }
 
@@ -2280,7 +2290,7 @@ describe('HTML5 Base', () => {
       waitForSentinels()
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
     })
 
     it(' Enter Buffering Sentinel Only Fires On Second Attempt When Device Reports Time As Not Changing Within Tolerance', () => {
@@ -2301,7 +2311,7 @@ describe('HTML5 Base', () => {
       mockVideoMediaElement.currentTime = 0.01
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
     })
 
     it(' Enter Buffering Sentinel Does Not Fire On Two Non Consecutive Occurrences Of Device Reporting Time As Not Changing Within Tolerance', () => {
@@ -2326,7 +2336,7 @@ describe('HTML5 Base', () => {
       recentEvents = []
       waitForSentinels()
 
-      expect(recentEvents).toEqual([MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING, MediaPlayerBase.EVENT.PLAYING])
+      expect(getRecentEventTypes()).toEqual([MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING, MediaPlayerBase.EVENT.PLAYING])
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PLAYING)
     })
 
@@ -2360,7 +2370,7 @@ describe('HTML5 Base', () => {
       jest.spyOn(mockVideoMediaElement, 'paused', 'get').mockReturnValue(true)
       waitForSentinels()
 
-      expect(recentEvents).toEqual([MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING, MediaPlayerBase.EVENT.PAUSED])
+      expect(getRecentEventTypes()).toEqual([MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING, MediaPlayerBase.EVENT.PAUSED])
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
     })
 
@@ -2387,7 +2397,7 @@ describe('HTML5 Base', () => {
       recentEvents = []
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
@@ -2427,7 +2437,7 @@ describe('HTML5 Base', () => {
       recentEvents = []
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(mockVideoMediaElement.currentTime).toEqual(98.9)
     })
 
@@ -2488,7 +2498,7 @@ describe('HTML5 Base', () => {
       recentEvents = []
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
@@ -2555,7 +2565,7 @@ describe('HTML5 Base', () => {
       recentEvents = []
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
@@ -2586,7 +2596,7 @@ describe('HTML5 Base', () => {
       recentEvents = []
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
     })
 
     it(' Pause Sentinel Retries Pause If Pause Fails', () => {
@@ -2602,7 +2612,7 @@ describe('HTML5 Base', () => {
       mockVideoMediaElement.pause.mockClear()
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
     })
@@ -2667,7 +2677,7 @@ describe('HTML5 Base', () => {
       recentEvents = []
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_COMPLETE, MediaPlayerBase.EVENT.COMPLETE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_COMPLETE, MediaPlayerBase.EVENT.COMPLETE)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.COMPLETE)
     })
 
@@ -2831,7 +2841,7 @@ describe('HTML5 Base', () => {
       mockVideoMediaElement.currentTime += 1
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
 
@@ -2839,7 +2849,7 @@ describe('HTML5 Base', () => {
       mockVideoMediaElement.currentTime += 1
       waitForSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
     })
@@ -2872,13 +2882,13 @@ describe('HTML5 Base', () => {
 
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
 
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
@@ -2906,7 +2916,7 @@ describe('HTML5 Base', () => {
       resetStubsThenAdvanceTimeThenRunSentinels()
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       expect(mockVideoMediaElement.pause).not.toHaveBeenCalled()
 
@@ -2942,7 +2952,7 @@ describe('HTML5 Base', () => {
       resetStubsThenAdvanceTimeThenRunSentinels()
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       expect(mockVideoMediaElement.pause).not.toHaveBeenCalled()
     })
@@ -2975,7 +2985,7 @@ describe('HTML5 Base', () => {
       resetStubsThenAdvanceTimeThenRunSentinels()
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.PAUSED)
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
@@ -3001,13 +3011,13 @@ describe('HTML5 Base', () => {
       mockVideoMediaElement.currentTime = 0
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(mockVideoMediaElement.currentTime).toEqual(50)
 
       mockVideoMediaElement.currentTime = 0
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
@@ -3038,7 +3048,7 @@ describe('HTML5 Base', () => {
       mockVideoMediaElement.currentTime = 0
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE)
       expect(mockVideoMediaElement.currentTime).toEqual(1)
 
       resetStubsThenAdvanceTimeThenRunSentinels()
@@ -3080,7 +3090,7 @@ describe('HTML5 Base', () => {
       mockVideoMediaElement.currentTime += 1
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
 
       mockVideoMediaElement.currentTime = 0
@@ -3089,7 +3099,7 @@ describe('HTML5 Base', () => {
       resetStubsThenAdvanceTimeThenRunSentinels()
 
       // Ensure that pause has a second attempt (rather than seek returning, etc)
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
       expect(mockVideoMediaElement.pause).toHaveBeenCalledTimes(1)
     })
 
@@ -3124,7 +3134,7 @@ describe('HTML5 Base', () => {
 
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 
@@ -3160,7 +3170,7 @@ describe('HTML5 Base', () => {
 
       resetStubsThenAdvanceTimeThenRunSentinels()
 
-      expect(recentEvents).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
+      expect(getRecentEventTypes()).toContain(MediaPlayerBase.EVENT.SENTINEL_SEEK)
       expect(mockVideoMediaElement.currentTime).toEqual(50)
     })
 

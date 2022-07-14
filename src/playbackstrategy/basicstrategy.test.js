@@ -655,10 +655,11 @@ describe('HTML5 Strategy', () => {
       expect(timeUpdateCallbackSpy).toHaveBeenCalledTimes(1)
     })
 
-    it('should publish a error event on error', () => {
+    it('should publish a error event with code and message on error', () => {
       videoElement.dispatchEvent(new Event('error'))
 
-      expect(errorCallbackSpy).toHaveBeenCalled()
+      // cannot fully test that the MediaError is used as JSDOM cannot set error on the video element
+      expect(errorCallbackSpy).toHaveBeenCalledWith({code: 0, message: 'unknown'})
       expect(errorCallbackSpy).toHaveBeenCalledTimes(1)
     })
   })

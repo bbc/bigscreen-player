@@ -28,6 +28,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
   let isEnded = false
 
   let dashMetrics
+  let lastError
 
   let publishedSeekEvent = false
   let isSeeking = false
@@ -46,9 +47,9 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     ERROR: 'error',
     MANIFEST_LOADED: 'manifestLoaded',
     DOWNLOAD_MANIFEST_ERROR_CODE: 25,
-    DOWNLOAD_SIDX_ERROR_CODE: 26,
     DOWNLOAD_CONTENT_ERROR_CODE: 27,
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
+    UNSUPPORTED_CODEC: 30,
     MANIFEST_VALIDITY_CHANGED: 'manifestValidityChanged',
     QUALITY_CHANGE_RENDERED: 'qualityChangeRendered',
     BASE_URL_SELECTED: 'baseUrlSelected',
@@ -121,31 +122,37 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
 
     if (event.error && event.error.message) {
-      DebugTool.info('MSE Error: ' + event.error.message)
+      DebugTool.info('MSE Error: ' + event.error.message + ' Code: ' + event.error.code)
+      lastError = event.error
 
       // Don't raise an error on fragment download error
-      if (event.error.code === DashJSEvents.DOWNLOAD_SIDX_ERROR_CODE ||
-        event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
-        event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE) {
+      if (event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE || event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE) {
         return
       }
 
       if (event.error.code === DashJSEvents.DOWNLOAD_MANIFEST_ERROR_CODE) {
-        manifestDownloadError(event)
+        manifestDownloadError(event.error)
         return
       }
+
+      // It is possible audio could play back even if the video codec is not supported. Resetting here prevents this.
+      if(event.error.code === DashJSEvents.UNSUPPORTED_CODEC) {
+        mediaPlayer.reset()
+      }
     }
-    publishError()
+
+    publishError(event.error)
   }
 
-  function manifestDownloadError (event) {
-    const error = () => publishError()
+  function manifestDownloadError (mediaError) {
+    const error = () => publishError(mediaError)
 
     const failoverParams = {
-      errorMessage: 'manifest-refresh',
       isBufferingTimeoutError: false,
       currentTime: getCurrentTime(),
-      duration: getDuration()
+      duration: getDuration(),
+      code: mediaError.code,
+      message: mediaError.message
     }
 
     mediaSources.failover(load, error, failoverParams)
@@ -242,16 +249,19 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
    */
   function onBaseUrlSelected (event) {
     const failoverInfo = {
-      errorMessage: 'download',
-      isBufferingTimeoutError: false
+      isBufferingTimeoutError: false,
+      code: lastError && lastError.code,
+      message: lastError && lastError.message
     }
 
     function log () {
       DebugTool.info('BaseUrl selected: ' + event.baseUrl.url)
+      lastError = undefined
     }
 
     failoverInfo.serviceLocation = event.baseUrl.serviceLocation
     mediaSources.failover(log, log, failoverInfo)
+
   }
 
   function onServiceLocationAvailable (event) {
@@ -305,9 +315,9 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
   }
 
-  function publishError () {
+  function publishError (mediaError) {
     if (errorCallback) {
-      errorCallback()
+      errorCallback(mediaError)
     }
   }
 
@@ -374,7 +384,6 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     mediaElement.addEventListener('seeking', onBuffering)
     mediaElement.addEventListener('seeked', onSeeked)
     mediaElement.addEventListener('ended', onEnded)
-    mediaElement.addEventListener('error', onError)
     mediaPlayer.on(DashJSEvents.ERROR, onError)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
@@ -519,7 +528,6 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       mediaElement.removeEventListener('seeking', onBuffering)
       mediaElement.removeEventListener('seeked', onSeeked)
       mediaElement.removeEventListener('ended', onEnded)
-      mediaElement.removeEventListener('error', onError)
       mediaPlayer.off(DashJSEvents.ERROR, onError)
       mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
@@ -533,6 +541,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
       DOMHelpers.safeRemoveElement(mediaElement)
 
+      lastError = undefined
       mediaPlayer = undefined
       mediaElement = undefined
       eventCallbacks = []

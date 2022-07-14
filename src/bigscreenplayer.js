@@ -61,7 +61,9 @@ function BigscreenPlayer () {
       if (evt.data.state === MediaState.FATAL_ERROR) {
         stateObject = {
           state: MediaState.FATAL_ERROR,
-          isBufferingTimeoutError: evt.isBufferingTimeoutError
+          isBufferingTimeoutError: evt.isBufferingTimeoutError,
+          code: evt.code,
+          message: evt.message
         }
       }
 
