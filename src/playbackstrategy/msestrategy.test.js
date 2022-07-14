@@ -507,7 +507,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       mseStrategy.load(null, 0)
 
-      expect(mseStrategy.getPlayerElement()).toBe(mockVideoElement);
+      expect(mseStrategy.getPlayerElement()).toBe(mockVideoElement)
     })
 
     it('returns the media player audio element', () => {
@@ -515,9 +515,8 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       mseStrategy.load(null, 0)
 
-      expect(mseStrategy.getPlayerElement()).toBe(mockAudioElement);
+      expect(mseStrategy.getPlayerElement()).toBe(mockAudioElement)
     })
-
   })
 
   describe('tearDown()', () => {
