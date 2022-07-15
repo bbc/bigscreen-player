@@ -35,9 +35,9 @@ function LoadUrl (url, opts) {
       }
     }
     xhr.send(opts.data || null)
-  } catch (ex) {
+  } catch ({ name }) {
     if (opts.onError) {
-      opts.onError({errorType: ex ? ex.name : undefined, statusCode: xhr.status})
+      opts.onError({errorType: name, statusCode: xhr.status})
     }
   }
 }
