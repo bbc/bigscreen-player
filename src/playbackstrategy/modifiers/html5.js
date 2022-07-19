@@ -1,6 +1,7 @@
 import MediaPlayerBase from '../modifiers/mediaplayerbase'
 import DOMHelpers from '../../domhelpers'
 import handlePlayPromise from '../../utils/handleplaypromise'
+import DebugTool from '../../debugger/debugtool'
 
 function Html5 () {
   const sentinelLimits = {
@@ -293,8 +294,9 @@ function Html5 () {
     }, 1100)
   }
 
-  function reportError (_errorMessage) {
-    emitEvent(MediaPlayerBase.EVENT.ERROR)
+  function reportError (errorString, mediaError) {
+    DebugTool.info('HTML5 Media Player error: ' + errorString)
+    emitEvent(MediaPlayerBase.EVENT.ERROR, mediaError)
   }
 
   function toBuffering () {
@@ -397,7 +399,7 @@ function Html5 () {
   }
 
   function onError () {
-    reportError('Media element error code: ' + mediaElement.error.code)
+    reportError('Media element error code: ' + mediaElement.error.code, {code: mediaElement.error.code, message: mediaElement.error.message })
   }
 
   function onSourceError () {

@@ -131,7 +131,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
 
     const onError = () => {
       tearDownMediaElement()
-      bubbleFatalError(false)
+      bubbleFatalError(false, {code: PluginEnums.ERROR_CODES.MANIFEST, message: PluginEnums.ERROR_MESSAGES.MANIFEST})
     }
 
     mediaSources.refresh(doSeek, onError)
@@ -190,9 +190,9 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     publishMediaStateUpdate(undefined, { timeUpdate: true })
   }
 
-  function onError () {
+  function onError (mediaError) {
     bubbleBufferingCleared()
-    raiseError()
+    raiseError(mediaError)
   }
 
   function startBufferingErrorTimeout () {
@@ -200,36 +200,38 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     clearBufferingErrorTimeout()
     errorTimeoutID = setTimeout(() => {
       bubbleBufferingCleared()
-      attemptCdnFailover(true)
+      attemptCdnFailover({code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT})
     }, bufferingTimeout)
   }
 
-  function raiseError () {
+  function raiseError (mediaError) {
     clearBufferingErrorTimeout()
     publishMediaStateUpdate(MediaState.WAITING)
-    bubbleErrorRaised()
-    startFatalErrorTimeout()
+    bubbleErrorRaised(mediaError)
+    startFatalErrorTimeout(mediaError)
   }
 
-  function startFatalErrorTimeout () {
+  function startFatalErrorTimeout (mediaError) {
     if (!fatalErrorTimeout && !fatalError) {
       fatalErrorTimeout = setTimeout(() => {
         fatalErrorTimeout = null
         fatalError = true
-        attemptCdnFailover(false)
+        attemptCdnFailover(mediaError)
       }, 5000)
     }
   }
 
-  function attemptCdnFailover (bufferingTimeoutError) {
+  function attemptCdnFailover (mediaError) {
     const time = getCurrentTime()
     const oldWindowStartTime = getWindowStartTime()
+    const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
 
     const failoverParams = {
-      errorMessage: bufferingTimeoutError ? 'bufferingTimeoutError' : 'fatalError',
       isBufferingTimeoutError: bufferingTimeoutError,
       currentTime: getCurrentTime(),
-      duration: getDuration()
+      duration: getDuration(),
+      code: mediaError.code,
+      message: mediaError.message
     }
 
     const doLoadMedia = () => {
@@ -241,7 +243,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     }
 
     const doErrorCallback = () => {
-      bubbleFatalError(bufferingTimeoutError)
+      bubbleFatalError(bufferingTimeoutError, mediaError)
     }
 
     mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams)
@@ -274,8 +276,8 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     Plugins.interface.onErrorCleared(evt)
   }
 
-  function bubbleErrorRaised () {
-    const evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false })
+  function bubbleErrorRaised (mediaError) {
+    const evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false, code: mediaError.code, message: mediaError.message })
     Plugins.interface.onError(evt)
   }
 
@@ -289,20 +291,30 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     Plugins.interface.onBufferingCleared(evt)
   }
 
-  function bubbleFatalError (bufferingTimeoutError) {
-    const evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: bufferingTimeoutError })
+  function bubbleFatalError (bufferingTimeoutError, mediaError) {
+    const evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: bufferingTimeoutError, code: mediaError.code, message: mediaError.message })
     Plugins.interface.onFatalError(evt)
-    publishMediaStateUpdate(MediaState.FATAL_ERROR, { isBufferingTimeoutError: bufferingTimeoutError })
+    publishMediaStateUpdate(MediaState.FATAL_ERROR, { isBufferingTimeoutError: bufferingTimeoutError, code: mediaError.code, message: mediaError.message })
   }
 
   function publishMediaStateUpdate (state, opts) {
-    const mediaData = {}
-    mediaData.currentTime = getCurrentTime()
-    mediaData.seekableRange = getSeekableRange()
-    mediaData.state = state
-    mediaData.duration = getDuration()
+    let stateUpdateData = {
+      data: {
+        currentTime: getCurrentTime(),
+        seekableRange: getSeekableRange(),
+        state: state,
+        duration: getDuration()
+      },
+      timeUpdate: opts && opts.timeUpdate,
+      isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError || false),
+    }
 
-    stateUpdateCallback({ data: mediaData, timeUpdate: opts && opts.timeUpdate, isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError || false) })
+    if(opts && opts.code > -1 && opts.message ) {
+      stateUpdateData.code = opts.code
+      stateUpdateData.message = opts.message
+    }
+
+    stateUpdateCallback(stateUpdateData)
   }
 
   function initialMediaPlay (media, startTime) {
