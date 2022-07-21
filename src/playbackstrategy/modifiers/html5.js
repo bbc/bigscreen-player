@@ -399,7 +399,7 @@ function Html5 () {
   }
 
   function onError () {
-    reportError('Media element error code: ' + mediaElement.error.code, {code: mediaElement.error.code, message: mediaElement.error.message })
+    reportError('Media element error code: ' + mediaElement.error.code, { code: mediaElement.error.code, message: mediaElement.error.message })
   }
 
   function onSourceError () {

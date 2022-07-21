@@ -881,7 +881,7 @@ describe('Legacy Playback Adapter', () => {
       setUpLegacyAdaptor()
 
       const errorCallbackSpy = jest.fn()
-      
+
       legacyAdaptor.addErrorCallback(this, errorCallbackSpy)
       eventCallbacks({type: MediaPlayerEvent.ERROR})
 

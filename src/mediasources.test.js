@@ -283,7 +283,7 @@ describe('Media Sources', () => {
         isInitialPlay: undefined,
         timeStamp: expect.any(Object),
         code: 0,
-        message: 'unknown' 
+        message: 'unknown'
       }
 
       expect(Plugins.interface.onErrorHandled).toHaveBeenCalledWith(expect.objectContaining(pluginData))
