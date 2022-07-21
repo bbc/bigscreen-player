@@ -146,7 +146,7 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
       }
 
       // It is possible audio could play back even if the video codec is not supported. Resetting here prevents this.
-      if(event.error.code === DashJSEvents.UNSUPPORTED_CODEC) {
+      if (event.error.code === DashJSEvents.UNSUPPORTED_CODEC) {
         mediaPlayer.reset()
       }
     }
@@ -271,7 +271,6 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
     failoverInfo.serviceLocation = event.baseUrl.serviceLocation
     mediaSources.failover(log, log, failoverInfo)
-
   }
 
   function onServiceLocationAvailable (event) {

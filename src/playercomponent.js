@@ -306,10 +306,10 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
         duration: getDuration()
       },
       timeUpdate: opts && opts.timeUpdate,
-      isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError || false),
+      isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError || false)
     }
 
-    if(opts && opts.code > -1 && opts.message ) {
+    if (opts && opts.code > -1 && opts.message) {
       stateUpdateData.code = opts.code
       stateUpdateData.message = opts.message
     }

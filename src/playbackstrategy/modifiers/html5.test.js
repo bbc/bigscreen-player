@@ -20,7 +20,7 @@ describe('HTML5 Base', () => {
     recentEvents.push(event)
   }
 
-  function getRecentEventTypes(){
+  function getRecentEventTypes () {
     return recentEvents.map(function (event) {
       return event.type
     })
