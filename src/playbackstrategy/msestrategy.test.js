@@ -142,7 +142,7 @@ describe('Media Source Extensions Playback Strategy', () => {
     mockAudioElement = undefined
   })
 
-  function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS) {
+  function setUpMSE (timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS, customPlayerSettings) {
     const defaultWindowType = windowType || WindowTypes.STATIC
     const defaultMediaKind = mediaKind || MediaKinds.VIDEO
 
@@ -152,7 +152,7 @@ describe('Media Source Extensions Playback Strategy', () => {
       windowEndTime: windowEndTimeMS || 0
     }
 
-    mseStrategy = MSEStrategy(mediaSources, defaultWindowType, defaultMediaKind, playbackElement, {}, false)
+    mseStrategy = MSEStrategy(mediaSources, defaultWindowType, defaultMediaKind, playbackElement, false, customPlayerSettings || {})
   }
 
   describe('Transitions', () => {
@@ -461,6 +461,30 @@ describe('Media Source Extensions Playback Strategy', () => {
   describe('getSeekableRange()', () => {
     it('returns the correct start and end time', () => {
       setUpMSE()
+      mseStrategy.load(null, 45)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 101 })
+    })
+
+    it('returns the end time taking the live delay into account for a live stream', () => {
+      let customPlayerSettings = {
+        streaming: {
+          liveDelay: 20
+        }
+      }
+      setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
+      mseStrategy.load(null, 45)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 81 })
+    })
+
+    it('returns the end time ignoring the live delay for an on demand stream', () => {
+      let customPlayerSettings = {
+        streaming: {
+          liveDelay: 20
+        }
+      }
+      setUpMSE(0, WindowTypes.STATIC, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
       mseStrategy.load(null, 45)
 
       expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 101 })
