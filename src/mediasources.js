@@ -76,14 +76,14 @@ function MediaSources () {
     }
   }
 
-  function failoverSubtitles (postFailoverAction, failoverErrorAction, statusCode) {
+  function failoverSubtitles (postFailoverAction, failoverErrorAction, {statusCode, ...rest} = {}) {
     if (subtitlesSources.length > 1) {
-      Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn()})
+      Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn(), subtitlesSources: subtitlesSources.length, ...rest})
       subtitlesSources.shift()
       updateDebugOutput()
       if (postFailoverAction) { postFailoverAction() }
     } else {
-      Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FATAL, cdn: getCurrentSubtitlesCdn()})
+      Plugins.interface.onSubtitlesLoadError({status: statusCode, severity: PluginEnums.STATUS.FATAL, cdn: getCurrentSubtitlesCdn(), subtitlesSources: subtitlesSources.length, ...rest})
       if (failoverErrorAction) { failoverErrorAction() }
     }
   }
