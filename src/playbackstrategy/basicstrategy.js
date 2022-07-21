@@ -29,7 +29,7 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
     }
   }
 
-  function publishError(mediaError) {
+  function publishError (mediaError) {
     if (errorCallback) {
       errorCallback(mediaError)
     }
