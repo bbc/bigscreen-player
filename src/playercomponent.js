@@ -195,13 +195,21 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     raiseError(mediaError)
   }
 
+  function getBufferingTimeout() {
+    const DEFAULT_INITIAL_PLAY_TIMEOUT_MS = 30000;
+    const DEFAULT_TIMEOUT_MS = 20000;
+    const initialBufferingTimeout = bigscreenPlayerData.media && bigscreenPlayerData.media.playerSettings && bigscreenPlayerData.media.playerSettings.initialBufferingTimeout || DEFAULT_INITIAL_PLAY_TIMEOUT_MS
+    const bufferingTimeout = bigscreenPlayerData.media && bigscreenPlayerData.media.playerSettings && bigscreenPlayerData.media.playerSettings.bufferingTimeout || DEFAULT_TIMEOUT_MS
+
+    return isInitialPlay ? initialBufferingTimeout : bufferingTimeout
+  }
+
   function startBufferingErrorTimeout () {
-    const bufferingTimeout = isInitialPlay ? 30000 : 20000
     clearBufferingErrorTimeout()
     errorTimeoutID = setTimeout(() => {
       bubbleBufferingCleared()
       attemptCdnFailover({code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT})
-    }, bufferingTimeout)
+    }, getBufferingTimeout())
   }
 
   function raiseError (mediaError) {
