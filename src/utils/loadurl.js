@@ -14,6 +14,7 @@ function LoadUrl (url, opts) {
       xhr.onreadystatechange = null
       if (xhr.status >= 200 && xhr.status < 300) {
         if (opts.onLoad) {
+          console.log('xhr result', xhr)
           opts.onLoad(xhr.responseXML, xhr.responseText, xhr.status)
         }
       } else {
