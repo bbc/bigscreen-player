@@ -9,7 +9,7 @@ import DynamicWindowUtils from '../dynamicwindowutils'
 import TimeUtils from '../utils/timeutils'
 import DOMHelpers from '../domhelpers'
 import Utils from '../utils/playbackutils'
-import { MediaPlayer } from 'dashjs'
+import { MediaPlayer } from 'dashjs/index_mediaplayerOnly'
 
 function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
   let mediaPlayer
