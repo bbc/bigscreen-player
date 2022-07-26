@@ -53,7 +53,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     LoadURL(url, {
       timeout: mediaSources.subtitlesRequestTimeout(),
       onLoad: (responseXML, responseText, status) => {
-        console.log('Subtitles loaded with HTTP Status code', status')
+        console.log('Subtitles loaded with HTTP Status code', status)
         DebugTool.info('Subtitles loaded with HTTP Status code', status)
         resetLoadErrorCount()
         if (!responseXML && !liveSubtitles) {
