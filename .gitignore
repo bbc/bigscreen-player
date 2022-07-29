@@ -14,6 +14,9 @@ dist
 # Local dev dir
 dist-local
 
+# Integration tests dir
+dist-local-integration
+
 # Ignore Visual Studio Code project files
 .vscode
 

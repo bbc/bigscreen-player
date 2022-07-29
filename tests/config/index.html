@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>bigscreen-player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"></head>
+  <body>
+
+  <script type="module">
+    import { BigscreenPlayer } from './main.js'
+
+    window.bigscreenPlayer = {playbackStrategy: 'msestrategy'}
+
+    let player = BigscreenPlayer()
+    let playbackElement = document.createElement('div')
+
+    window.bsp_player = player
+    window.playbackElement = playbackElement
+
+    document.body.appendChild(playbackElement)
+
+    playbackElement.style.position = 'absolute';
+    playbackElement.style.height = '720px';
+    playbackElement.style.width = '1280px';
+  
+  </script>
+</body>
+</html>
