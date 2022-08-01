@@ -1,4 +1,4 @@
-function LoadUrl (url, opts) {
+function LoadUrl(url, opts) {
   const xhr = new XMLHttpRequest()
 
   if (opts.timeout) {
@@ -12,13 +12,13 @@ function LoadUrl (url, opts) {
   xhr.onreadystatechange = () => {
     if (xhr.readyState === 4) {
       xhr.onreadystatechange = null
-      if (xhr.status >= 200 && xhr.status < 300) {
+      if (xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300)) {
         if (opts.onLoad) {
           opts.onLoad(xhr.responseXML, xhr.responseText, xhr.status)
         }
       } else {
         if (opts.onError) {
-          opts.onError({errorType: 'NON_200_ERROR', statusCode: xhr.status})
+          opts.onError({ errorType: 'NON_200_ERROR', statusCode: xhr.status })
         }
       }
     }
@@ -37,7 +37,7 @@ function LoadUrl (url, opts) {
     xhr.send(opts.data || null)
   } catch ({ name }) {
     if (opts.onError) {
-      opts.onError({errorType: name, statusCode: xhr.status})
+      opts.onError({ errorType: name, statusCode: xhr.status })
     }
   }
 }
