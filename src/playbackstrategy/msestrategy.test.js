@@ -1136,7 +1136,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
 
-      expect(mockErrorCallback).toHaveBeenCalledWith({code: 25, message: 'manifest download error'})
+      expect(mockErrorCallback).toHaveBeenCalledWith({ code: 25, message: 'manifest download error' })
     })
 
     it('should publish an error event for any other error propagated from dash.js', () => {
@@ -1157,7 +1157,7 @@ describe('Media Source Extensions Playback Strategy', () => {
 
       dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
 
-      expect(mockErrorCallback).toHaveBeenCalledWith({code: 1, message: 'MEDIA_ERR_ABORTED (message from element)'})
+      expect(mockErrorCallback).toHaveBeenCalledWith({ code: 1, message: 'MEDIA_ERR_ABORTED (message from element)' })
     })
 
     it('should reset the media player immediately if an unsupported codec error is thrown', () => {
@@ -1179,7 +1179,7 @@ describe('Media Source Extensions Playback Strategy', () => {
       dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
 
       expect(mockDashInstance.reset).toHaveBeenCalled()
-      expect(mockErrorCallback).toHaveBeenCalledWith({code: 30, message: 'videoCodec is not supported'})
+      expect(mockErrorCallback).toHaveBeenCalledWith({ code: 30, message: 'videoCodec is not supported' })
     })
 
     it('should initiate a failover with the previous error code and message on baseurlselected', () => {

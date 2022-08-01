@@ -57,7 +57,7 @@ const setupMockManifestLoaderFailOnce = (transferFormat) => {
   })
 }
 
-function createSpyObj(methodNames) {
+function createSpyObj (methodNames) {
   return methodNames.reduce((obj, method) => { obj[method] = jest.fn(); return obj }, {})
 }
 

@@ -28,10 +28,10 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
             createContainer(responseXML)
           }
         },
-        onError: ({statusCode, ...rest} = {}) => {
+        onError: ({ statusCode, ...rest } = {}) => {
           const errorCase = () => { DebugTool.info('Failed to load from subtitles file from all available CDNs') }
           DebugTool.info('Error loading subtitles data: ' + statusCode)
-          mediaSources.failoverSubtitles(loadSubtitles, errorCase, {statusCode, ...rest})
+          mediaSources.failoverSubtitles(loadSubtitles, errorCase, { statusCode, ...rest })
         },
         onTimeout: () => {
           DebugTool.info('Request timeout loading subtitles')

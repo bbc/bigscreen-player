@@ -659,7 +659,7 @@ describe('HTML5 Strategy', () => {
       videoElement.dispatchEvent(new Event('error'))
 
       // cannot fully test that the MediaError is used as JSDOM cannot set error on the video element
-      expect(errorCallbackSpy).toHaveBeenCalledWith({code: 0, message: 'unknown'})
+      expect(errorCallbackSpy).toHaveBeenCalledWith({ code: 0, message: 'unknown' })
       expect(errorCallbackSpy).toHaveBeenCalledTimes(1)
     })
   })
