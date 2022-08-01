@@ -7,7 +7,7 @@ import DebugTool from './debugger/debugtool'
 import ManifestLoader from './manifest/manifestloader'
 import TransferFormats from './models/transferformats'
 
-function MediaSources () {
+function MediaSources() {
   let mediaSources
   let failedOverSources = []
   let failoverResetTokens = []
@@ -22,7 +22,7 @@ function MediaSources () {
   let failoverResetTimeMs = 120000
   let failoverSort
 
-  function init (media, newServerDate, newWindowType, newLiveSupport, callbacks) {
+  function init(media, newServerDate, newWindowType, newLiveSupport, callbacks) {
     if (media.urls === undefined || media.urls.length === 0) {
       throw new Error('Media Sources urls are undefined')
     }
@@ -60,7 +60,7 @@ function MediaSources () {
     }
   }
 
-  function failover (postFailoverAction, failoverErrorAction, failoverParams) {
+  function failover(postFailoverAction, failoverErrorAction, failoverParams) {
     if (shouldFailover(failoverParams)) {
       emitCdnFailover(failoverParams)
       updateCdns(failoverParams.serviceLocation)
@@ -76,19 +76,19 @@ function MediaSources () {
     }
   }
 
-  function failoverSubtitles (postFailoverAction, failoverErrorAction, statusCode) {
+  function failoverSubtitles(postFailoverAction, failoverErrorAction, { statusCode, ...rest } = {}) {
     if (subtitlesSources.length > 1) {
-      Plugins.interface.onSubtitlesLoadError({ status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn() })
+      Plugins.interface.onSubtitlesLoadError({ status: statusCode, severity: PluginEnums.STATUS.FAILOVER, cdn: getCurrentSubtitlesCdn(), subtitlesSources: subtitlesSources.length, ...rest })
       subtitlesSources.shift()
       updateDebugOutput()
       if (postFailoverAction) { postFailoverAction() }
     } else {
-      Plugins.interface.onSubtitlesLoadError({ status: statusCode, severity: PluginEnums.STATUS.FATAL, cdn: getCurrentSubtitlesCdn() })
+      Plugins.interface.onSubtitlesLoadError({ status: statusCode, severity: PluginEnums.STATUS.FATAL, cdn: getCurrentSubtitlesCdn(), subtitlesSources: subtitlesSources.length, ...rest })
       if (failoverErrorAction) { failoverErrorAction() }
     }
   }
 
-  function shouldFailover (failoverParams) {
+  function shouldFailover(failoverParams) {
     if (isFirstManifest(failoverParams.serviceLocation)) {
       return false
     }
@@ -98,18 +98,18 @@ function MediaSources () {
     return isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover)
   }
 
-  function stripQueryParamsAndHash (url) {
+  function stripQueryParamsAndHash(url) {
     return typeof (url) === 'string' ? url.split(/[?#]/)[0] : url
   }
 
   // we don't want to failover on the first playback
   // the serviceLocation is set to our first cdn url
   // see manifest modifier - generateBaseUrls
-  function isFirstManifest (serviceLocation) {
+  function isFirstManifest(serviceLocation) {
     return doHostsMatch(serviceLocation, getCurrentUrl())
   }
 
-  function doHostsMatch (firstUrl, secondUrl) {
+  function doHostsMatch(firstUrl, secondUrl) {
     // Matches anything between *:// and / or the end of the line
     const hostRegex = /\w+?:\/\/(.*?)(?:\/|$)/
 
@@ -124,10 +124,8 @@ function MediaSources () {
       : serviceLocNoQueryHash === currUrlNoQueryHash
   }
 
-  function isFailoverInfoValid (failoverParams) {
-    const infoValid = typeof failoverParams === 'object' &&
-      typeof failoverParams.errorMessage === 'string' &&
-      typeof failoverParams.isBufferingTimeoutError === 'boolean'
+  function isFailoverInfoValid(failoverParams) {
+    const infoValid = typeof failoverParams === 'object' && typeof failoverParams.isBufferingTimeoutError === 'boolean'
 
     if (!infoValid) {
       DebugTool.error('failoverInfo is not valid')
@@ -136,11 +134,11 @@ function MediaSources () {
     return infoValid
   }
 
-  function failoverResetTime () {
+  function failoverResetTime() {
     return failoverResetTimeMs
   }
 
-  function needToGetManifest (windowType, liveSupport) {
+  function needToGetManifest(windowType, liveSupport) {
     const requiresManifestLoad = {
       restartable: true,
       seekable: true,
@@ -152,11 +150,11 @@ function MediaSources () {
     return requiredTransferFormat && windowType !== WindowTypes.STATIC && requiresManifestLoad[liveSupport]
   }
 
-  function refresh (onSuccess, onError) {
+  function refresh(onSuccess, onError) {
     loadManifest(serverDate, { onSuccess: onSuccess, onError: onError })
   }
 
-  function loadManifest (serverDate, callbacks) {
+  function loadManifest(serverDate, callbacks) {
     const onManifestLoadSuccess = (manifestData) => {
       time = manifestData.time
       transferFormat = manifestData.transferFormat
@@ -168,10 +166,10 @@ function MediaSources () {
     }
 
     const onManifestLoadError = () => {
-      failover(load, failoverError, { errorMessage: 'manifest-load', isBufferingTimeoutError: false })
+      failover(load, failoverError, { isBufferingTimeoutError: false, code: PluginEnums.ERROR_CODES.MANIFEST, message: PluginEnums.ERROR_MESSAGES.MANIFEST })
     }
 
-    function load () {
+    function load() {
       ManifestLoader.load(
         getCurrentUrl(),
         serverDate,
@@ -185,7 +183,7 @@ function MediaSources () {
     load()
   }
 
-  function getCurrentUrl () {
+  function getCurrentUrl() {
     if (mediaSources.length > 0) {
       return mediaSources[0].url.toString()
     }
@@ -193,7 +191,7 @@ function MediaSources () {
     return ''
   }
 
-  function getCurrentSubtitlesUrl () {
+  function getCurrentSubtitlesUrl() {
     if (subtitlesSources.length > 0) {
       return subtitlesSources[0].url.toString()
     }
@@ -201,7 +199,7 @@ function MediaSources () {
     return ''
   }
 
-  function getCurrentSubtitlesSegmentLength () {
+  function getCurrentSubtitlesSegmentLength() {
     if (subtitlesSources.length > 0) {
       return subtitlesSources[0].segmentLength
     }
@@ -209,11 +207,11 @@ function MediaSources () {
     return undefined
   }
 
-  function getSubtitlesRequestTimeout () {
+  function getSubtitlesRequestTimeout() {
     return subtitlesRequestTimeout
   }
 
-  function getCurrentSubtitlesCdn () {
+  function getCurrentSubtitlesCdn() {
     if (subtitlesSources.length > 0) {
       return subtitlesSources[0].cdn
     }
@@ -221,17 +219,17 @@ function MediaSources () {
     return undefined
   }
 
-  function availableUrls () {
+  function availableUrls() {
     return mediaSources.map((mediaSource) => {
       return mediaSource.url
     })
   }
 
-  function generateTime () {
+  function generateTime() {
     return time
   }
 
-  function updateFailedOverSources (mediaSource) {
+  function updateFailedOverSources(mediaSource) {
     failedOverSources.push(mediaSource)
 
     if (failoverSort) {
@@ -249,14 +247,14 @@ function MediaSources () {
     failoverResetTokens.push(failoverResetToken)
   }
 
-  function updateCdns (serviceLocation) {
+  function updateCdns(serviceLocation) {
     if (hasSourcesToFailoverTo()) {
       updateFailedOverSources(mediaSources.shift())
       moveMediaSourceToFront(serviceLocation)
     }
   }
 
-  function moveMediaSourceToFront (serviceLocation) {
+  function moveMediaSourceToFront(serviceLocation) {
     if (serviceLocation) {
       let serviceLocationIdx = mediaSources.map((mediaSource) => {
         return stripQueryParamsAndHash(mediaSource.url)
@@ -268,32 +266,34 @@ function MediaSources () {
     }
   }
 
-  function hasSourcesToFailoverTo () {
+  function hasSourcesToFailoverTo() {
     return mediaSources.length > 1
   }
 
-  function emitCdnFailover (failoverInfo) {
+  function emitCdnFailover(failoverInfo) {
     const evt = new PluginData({
       status: PluginEnums.STATUS.FAILOVER,
       stateType: PluginEnums.TYPE.ERROR,
       isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
       cdn: mediaSources[0].cdn,
-      newCdn: mediaSources[1].cdn
+      newCdn: mediaSources[1].cdn,
+      code: failoverInfo.code,
+      message: failoverInfo.message
     })
     Plugins.interface.onErrorHandled(evt)
   }
 
-  function availableCdns () {
+  function availableCdns() {
     return mediaSources.map((mediaSource) => {
       return mediaSource.cdn
     })
   }
 
-  function availableSubtitlesCdns () {
+  function availableSubtitlesCdns() {
     return subtitlesSources.map((subtitleSource) => subtitleSource.cdn)
   }
 
-  function updateDebugOutput () {
+  function updateDebugOutput() {
     DebugTool.keyValue({ key: 'available cdns', value: availableCdns() })
     DebugTool.keyValue({ key: 'url', value: stripQueryParamsAndHash(getCurrentUrl()) })
 
@@ -301,7 +301,7 @@ function MediaSources () {
     DebugTool.keyValue({ key: 'subtitles url', value: stripQueryParamsAndHash(getCurrentSubtitlesUrl()) })
   }
 
-  function tearDown () {
+  function tearDown() {
     failoverResetTokens.forEach((token) => clearTimeout(token))
 
     windowType = undefined

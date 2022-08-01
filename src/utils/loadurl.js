@@ -18,7 +18,7 @@ function LoadUrl (url, opts) {
         }
       } else {
         if (opts.onError) {
-          opts.onError(xhr.status)
+          opts.onError({errorType: 'NON_200_ERROR', statusCode: xhr.status})
         }
       }
     }
@@ -35,9 +35,9 @@ function LoadUrl (url, opts) {
       }
     }
     xhr.send(opts.data || null)
-  } catch (ex) {
+  } catch ({ name }) {
     if (opts.onError) {
-      opts.onError(xhr.status)
+      opts.onError({errorType: name, statusCode: xhr.status})
     }
   }
 }

@@ -97,7 +97,7 @@ describe('Player Component', () => {
     }
 
     mockMediaSources = {
-      failover: (successCallback, errorCallback, _) => {
+      failover: jest.fn().mockImplementation((successCallback, errorCallback, _) => {
         if (forceMediaSourcesError) {
           errorCallback()
         } else {
@@ -110,7 +110,7 @@ describe('Player Component', () => {
           }
           successCallback()
         }
-      },
+      }),
       time: () => testTime,
       refresh: (successCallback, _) => {
         if (updateTestTime) {
@@ -408,7 +408,7 @@ describe('Player Component', () => {
           // trigger a error event to start the fatal error timeout,
           // after 5 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
-          mockStrategy.mockingHooks.fireError()
+          mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
           mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
 
@@ -490,7 +490,7 @@ describe('Player Component', () => {
           // trigger a error event to start the fatal error timeout,
           // after 5 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
-          mockStrategy.mockingHooks.fireError()
+          mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
           mockStrategy.mockingHooks.fireEvent(MediaState.PAUSED)
 
@@ -645,7 +645,7 @@ describe('Player Component', () => {
           // trigger a error event to start the fatal error timeout,
           // after 5 seconds it should fire a media state update of FATAL
           // it is expected to be cleared
-          mockStrategy.mockingHooks.fireError()
+          mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
           mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
 
@@ -732,7 +732,7 @@ describe('Player Component', () => {
         setUpPlayerComponent()
 
         return StrategyPicker.default().then(() => {
-          mockStrategy.mockingHooks.fireError()
+          mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
           expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
         })
@@ -752,7 +752,7 @@ describe('Player Component', () => {
 
           jest.advanceTimersByTime(29999)
 
-          mockStrategy.mockingHooks.fireError()
+          mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
           jest.advanceTimersByTime(1)
 
@@ -767,7 +767,7 @@ describe('Player Component', () => {
         setUpPlayerComponent()
 
         return StrategyPicker.default().then(() => {
-          mockStrategy.mockingHooks.fireError()
+          mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
           expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.WAITING)
         })
@@ -781,13 +781,15 @@ describe('Player Component', () => {
           isBufferingTimeoutError: false,
           cdn: undefined,
           isInitialPlay: undefined,
-          timeStamp: expect.any(Object)
+          timeStamp: expect.any(Object),
+          code: 0,
+          message: 'unknown'
         }
 
         setUpPlayerComponent()
 
         return StrategyPicker.default().then(() => {
-          mockStrategy.mockingHooks.fireError()
+          mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
           expect(Plugins.interface.onError).toHaveBeenCalledWith(expect.objectContaining(pluginData))
         })
@@ -811,7 +813,9 @@ describe('Player Component', () => {
         cdn: undefined,
         newCdn: undefined,
         isInitialPlay: undefined,
-        timeStamp: expect.any(Object)
+        timeStamp: expect.any(Object),
+        code: 0,
+        message: 'unknown'
       }
 
       currentTime = 50
@@ -841,6 +845,7 @@ describe('Player Component', () => {
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
+        expect(mockMediaSources.failover).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), expect.objectContaining({code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT}))
       })
     })
 
@@ -859,6 +864,7 @@ describe('Player Component', () => {
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
+        expect(mockMediaSources.failover).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), expect.objectContaining({code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT}))
       })
     })
 
@@ -866,7 +872,7 @@ describe('Player Component', () => {
       setUpPlayerComponent()
 
       return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireError()
+        mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
         jest.advanceTimersByTime(4999)
 
@@ -877,6 +883,8 @@ describe('Player Component', () => {
         expect(mockStrategy.load).toHaveBeenCalledTimes(2)
         expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
         expect(mockStrategy.reset).toHaveBeenCalledWith()
+
+        expect(mockMediaSources.failover).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), expect.objectContaining({code: 0, message: 'unknown'}))
       })
     })
 
@@ -885,12 +893,11 @@ describe('Player Component', () => {
       forceMediaSourcesError = true
 
       return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireError()
+        mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
         jest.advanceTimersByTime(5000)
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-
         expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(expect.objectContaining(fatalErrorPluginData))
       })
     })
@@ -900,13 +907,15 @@ describe('Player Component', () => {
       forceMediaSourcesError = true
 
       return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireError()
+        mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
         mockStateUpdateCallback.mockReset()
 
         jest.advanceTimersByTime(5000)
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(1)
         expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.FATAL_ERROR)
+        expect(mockStateUpdateCallback.mock.calls[0][0].code).toEqual(0)
+        expect(mockStateUpdateCallback.mock.calls[0][0].message).toEqual('unknown')
       })
     })
 
@@ -939,7 +948,7 @@ describe('Player Component', () => {
         // after 30 seconds it should fire a media state update of FATAL
         // it is expected to be cleared
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
-        mockStrategy.mockingHooks.fireError()
+        mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
         jest.advanceTimersByTime(30000)
 
@@ -954,7 +963,7 @@ describe('Player Component', () => {
         // trigger a error event to start the fatal error timeout,
         // after 5 seconds it should fire a media state update of FATAL
         // it is expected to be cleared
-        mockStrategy.mockingHooks.fireError()
+        mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
         jest.advanceTimersByTime(5000)
 
@@ -975,7 +984,7 @@ describe('Player Component', () => {
       setUpPlayerComponent({ multiCdn: true })
 
       return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireError()
+        mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
         jest.advanceTimersByTime(5000)
 
@@ -996,7 +1005,7 @@ describe('Player Component', () => {
       setUpPlayerComponent({ multiCdn: true })
 
       return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireError()
+        mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
         jest.advanceTimersByTime(5000)
 
@@ -1044,7 +1053,7 @@ describe('Player Component', () => {
         // trigger a error event to start the fatal error timeout,
         // after 5 seconds it should fire a media state update of FATAL
         // it is expected to be cleared
-        mockStrategy.mockingHooks.fireError()
+        mockStrategy.mockingHooks.fireError({code: 0, message: 'unknown'})
 
         playerComponent.tearDown()
 

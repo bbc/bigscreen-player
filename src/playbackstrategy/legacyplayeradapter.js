@@ -112,11 +112,15 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
     publishMediaState(MediaState.ENDED)
   }
 
-  function onError () {
+  function onError (error) {
     if (handleErrorOnExitingSeek && exitingSeek) {
       restartMediaPlayer()
     } else {
-      publishError()
+      let mediaError = {
+        code: error.code || 0,
+        message: error.message || 'unknown'
+      }
+      publishError(mediaError)
     }
   }
 
@@ -154,9 +158,9 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
     }
   }
 
-  function publishError () {
+  function publishError (mediaError) {
     if (errorCallback) {
-      errorCallback()
+      errorCallback(mediaError)
     }
   }
 

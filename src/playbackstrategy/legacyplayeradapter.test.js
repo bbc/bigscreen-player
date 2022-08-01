@@ -876,5 +876,27 @@ describe('Legacy Playback Adapter', () => {
 
       expect(timeUpdateCallbackSpy).toHaveBeenCalledWith()
     })
+
+    it('should publish an error event with default code and message if element does not emit them', () => {
+      setUpLegacyAdaptor()
+
+      const errorCallbackSpy = jest.fn()
+
+      legacyAdaptor.addErrorCallback(this, errorCallbackSpy)
+      eventCallbacks({type: MediaPlayerEvent.ERROR})
+
+      expect(errorCallbackSpy).toHaveBeenCalledWith({code: 0, message: 'unknown'})
+    })
+
+    it('should publish an error event passing through correct code and message', () => {
+      setUpLegacyAdaptor()
+
+      const errorCallbackSpy = jest.fn()
+
+      legacyAdaptor.addErrorCallback(this, errorCallbackSpy)
+      eventCallbacks({type: MediaPlayerEvent.ERROR, code: 1, message: 'This is a test error'})
+
+      expect(errorCallbackSpy).toHaveBeenCalledWith({code: 1, message: 'This is a test error'})
+    })
   })
 })

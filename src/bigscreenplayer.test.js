@@ -60,7 +60,7 @@ jest.mock('./debugger/debugtool')
 jest.mock('./resizer', () => jest.fn(() => mockResizer))
 jest.mock('./subtitles/subtitles', () => jest.fn(() => mockSubtitlesInstance))
 
-function setupManifestData (options) {
+function setupManifestData(options) {
   manifestData = {
     time: options && options.time || {
       windowStartTime: 724000,
@@ -71,7 +71,7 @@ function setupManifestData (options) {
 }
 
 // options = subtitlesAvailable, windowType, windowStartTime, windowEndTime
-function initialiseBigscreenPlayer (options) {
+function initialiseBigscreenPlayer(options) {
   options = options || {}
 
   const windowType = options.windowType || WindowTypes.STATIC
@@ -289,9 +289,9 @@ describe('Bigscreen Player', () => {
     })
 
     it('should set isBufferingTimeoutError when a fatal error event comes back from strategy', () => {
-      mockEventHook({ data: { state: MediaState.FATAL_ERROR }, isBufferingTimeoutError: false })
+      mockEventHook({ data: { state: MediaState.FATAL_ERROR }, isBufferingTimeoutError: false, code: 1, message: 'media-error-aborted' })
 
-      expect(callback).toHaveBeenCalledWith({ state: MediaState.FATAL_ERROR, isBufferingTimeoutError: false, endOfStream: false })
+      expect(callback).toHaveBeenCalledWith({ state: MediaState.FATAL_ERROR, isBufferingTimeoutError: false, code: 1, message: 'media-error-aborted', endOfStream: false })
     })
 
     it('should return a reference to the callback passed in', () => {
