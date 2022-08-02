@@ -1,4 +1,4 @@
-function LoadUrl(url, opts) {
+function LoadUrl (url, opts) {
   const xhr = new XMLHttpRequest()
 
   if (opts.timeout) {
