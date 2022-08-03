@@ -12,8 +12,6 @@ import Utils from '../utils/playbackutils'
 import { MediaPlayer } from 'dashjs'
 
 function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
-  const LIVE_DELAY_SECONDS = 1.1
-
   let mediaPlayer
   let mediaElement
 
