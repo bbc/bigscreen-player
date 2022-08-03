@@ -64,7 +64,7 @@ function createSpyObj (methodNames) {
 describe('Media Sources', () => {
   const FAILOVER_RESET_TIMEOUT = 60000
   const SEGMENT_LENGTH = 3.84
-  const noop = () => {}
+  const noop = () => { }
 
   let testSources
   let testSubtitlesSources
@@ -79,12 +79,12 @@ describe('Media Sources', () => {
     testCallbacks = createSpyObj(['onSuccess', 'onError'])
 
     testSources = [
-      {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
-      {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
+      { url: 'http://source1.com/', cdn: 'http://supplier1.com/' },
+      { url: 'http://source2.com/', cdn: 'http://supplier2.com/' }
     ]
     testSubtitlesSources = [
-      {url: 'http://subtitlessource1.com/', cdn: 'http://supplier1.com/', segmentLength: SEGMENT_LENGTH},
-      {url: 'http://subtitlessource2.com/', cdn: 'http://supplier2.com/', segmentLength: SEGMENT_LENGTH}
+      { url: 'http://subtitlessource1.com/', cdn: 'http://supplier1.com/', segmentLength: SEGMENT_LENGTH },
+      { url: 'http://subtitlessource2.com/', cdn: 'http://supplier2.com/', segmentLength: SEGMENT_LENGTH }
     ]
 
     testMedia = {
@@ -131,12 +131,12 @@ describe('Media Sources', () => {
 
       expect(() => {
         const mediaSources = MediaSources()
-        mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {onSuccess: noop})
+        mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, { onSuccess: noop })
       }).toThrow(new Error('Media Sources callbacks are undefined'))
 
       expect(() => {
         const mediaSources = MediaSources()
-        mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, {onError: noop})
+        mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, { onError: noop })
       }).toThrow(new Error('Media Sources callbacks are undefined'))
     })
 
@@ -176,7 +176,7 @@ describe('Media Sources', () => {
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks)
 
-      expect(testCallbacks.onError).toHaveBeenCalledWith({error: 'manifest'})
+      expect(testCallbacks.onError).toHaveBeenCalledWith({ error: 'manifest' })
     })
 
     it('sets time data correcly when manifest loader successfully returns', () => {
@@ -207,7 +207,7 @@ describe('Media Sources', () => {
     })
 
     it('should load the manifest from the next url if manifest load is required', () => {
-      const failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true}
+      const failoverInfo = { isBufferingTimeoutError: true }
 
       setupMockManifestLoaderSuccess(TransferFormats.HLS)
 
@@ -220,8 +220,32 @@ describe('Media Sources', () => {
       expect(ManifestLoader.load).toHaveBeenCalledWith(testSources[1].url, serverDate, expect.anything())
     })
 
+    it('should fire onErrorHandled plugin with correct error code and message when failing to load manifest', () => {
+      setupMockManifestLoaderFail()
+
+      const mediaSources = MediaSources()
+      mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks)
+
+      const callbacks = createSpyObj(['onSuccess', 'onError'])
+      mediaSources.refresh(callbacks.onSuccess, callbacks.onError)
+
+      const pluginData = {
+        status: PluginEnums.STATUS.FAILOVER,
+        stateType: PluginEnums.TYPE.ERROR,
+        isBufferingTimeoutError: false,
+        cdn: 'http://supplier1.com/',
+        newCdn: 'http://supplier2.com/',
+        isInitialPlay: undefined,
+        timeStamp: expect.any(Object),
+        code: PluginEnums.ERROR_CODES.MANIFEST,
+        message: PluginEnums.ERROR_MESSAGES.MANIFEST
+      }
+
+      expect(Plugins.interface.onErrorHandled).toHaveBeenCalledWith(expect.objectContaining(pluginData))
+    })
+
     it('When there are sources to failover to, it calls the post failover callback', () => {
-      const failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true}
+      const failoverInfo = { isBufferingTimeoutError: true }
 
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
@@ -232,7 +256,7 @@ describe('Media Sources', () => {
     })
 
     it('When there are no more sources to failover to, it calls failure action callback', () => {
-      const failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true}
+      const failoverInfo = { isBufferingTimeoutError: true }
       testMedia.urls.pop()
 
       const mediaSources = MediaSources()
@@ -244,7 +268,7 @@ describe('Media Sources', () => {
     })
 
     it('When there are sources to failover to, it emits correct plugin event', () => {
-      const failoverInfo = {errorMessage: 'test error', isBufferingTimeoutError: true}
+      const failoverInfo = { isBufferingTimeoutError: true, code: 0, message: 'unknown' }
 
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
@@ -257,14 +281,16 @@ describe('Media Sources', () => {
         cdn: 'http://supplier1.com/',
         newCdn: 'http://supplier2.com/',
         isInitialPlay: undefined,
-        timeStamp: expect.any(Object)
+        timeStamp: expect.any(Object),
+        code: 0,
+        message: 'unknown'
       }
 
       expect(Plugins.interface.onErrorHandled).toHaveBeenCalledWith(expect.objectContaining(pluginData))
     })
 
     it('Plugin event not emitted when there are no sources to failover to', () => {
-      const failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true}
+      const failoverInfo = { isBufferingTimeoutError: true }
       testMedia.urls.pop()
 
       const mediaSources = MediaSources()
@@ -277,15 +303,14 @@ describe('Media Sources', () => {
 
     it('moves the specified service location to the top of the list', () => {
       const failoverInfo = {
-        errorMessage: 'failover',
         isBufferingTimeoutError: true,
         serviceLocation: 'http://source3.com/?key=value#hash'
       }
 
       const mediaSources = MediaSources()
 
-      testMedia.urls.push({url: 'http://source3.com/', cdn: 'http://supplier3.com/'})
-      testMedia.urls.push({url: 'http://source4.com/', cdn: 'http://supplier4.com/'})
+      testMedia.urls.push({ url: 'http://source3.com/', cdn: 'http://supplier3.com/' })
+      testMedia.urls.push({ url: 'http://source4.com/', cdn: 'http://supplier4.com/' })
 
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
       mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo)
@@ -295,15 +320,14 @@ describe('Media Sources', () => {
 
     it('selects the next CDN when the service location is not in the CDN list', () => {
       const failoverInfo = {
-        errorMessage: 'failover',
         isBufferingTimeoutError: true,
         serviceLocation: 'http://sourceInfinity.com/?key=value#hash'
       }
 
       const mediaSources = MediaSources()
 
-      testMedia.urls.push({url: 'http://source3.com/', cdn: 'http://supplier3.com/'})
-      testMedia.urls.push({url: 'http://source4.com/', cdn: 'http://supplier4.com/'})
+      testMedia.urls.push({ url: 'http://source3.com/', cdn: 'http://supplier3.com/' })
+      testMedia.urls.push({ url: 'http://source4.com/', cdn: 'http://supplier4.com/' })
 
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
       mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo)
@@ -334,7 +358,6 @@ describe('Media Sources', () => {
         {
           duration: 999,
           currentTime: 1,
-          errorMessage: '',
           isBufferingTimeoutError: false,
           serviceLocation: 'http://source1.com/path/to/different/thing.extension'
         })
@@ -346,8 +369,8 @@ describe('Media Sources', () => {
       const mediaSources = MediaSources()
 
       testMedia.urls = [
-        {url: 'http://source1.com', cdn: 'http://cdn1.com'},
-        {url: 'http://source2.com', cdn: 'http://cdn2.com'}]
+        { url: 'http://source1.com', cdn: 'http://cdn1.com' },
+        { url: 'http://source2.com', cdn: 'http://cdn2.com' }]
 
       mediaSources.init(
         testMedia,
@@ -363,9 +386,9 @@ describe('Media Sources', () => {
         {
           duration: 999,
           currentTime: 1,
-          errorMessage: '',
           isBufferingTimeoutError: false,
-          serviceLocation: 'http://source1.com?key=value#hash'})
+          serviceLocation: 'http://source1.com?key=value#hash'
+        })
 
       expect(mediaSources.currentSource()).toBe('http://source1.com')
     })
@@ -374,8 +397,8 @@ describe('Media Sources', () => {
   describe('currentSource', () => {
     beforeEach(() => {
       testSources = [
-        {url: 'http://source1.com/', cdn: 'http://supplier1.com/'},
-        {url: 'http://source2.com/', cdn: 'http://supplier2.com/'}
+        { url: 'http://source1.com/', cdn: 'http://supplier1.com/' },
+        { url: 'http://source2.com/', cdn: 'http://supplier2.com/' }
       ]
     })
 
@@ -389,7 +412,7 @@ describe('Media Sources', () => {
     it('returns the second media source following a failover', () => {
       const postFailoverAction = jest.fn()
       const onFailureAction = jest.fn()
-      const failoverInfo = {errorMessage: 'failover', isBufferingTimeoutError: true}
+      const failoverInfo = { isBufferingTimeoutError: true }
 
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
@@ -466,9 +489,9 @@ describe('Media Sources', () => {
     it('fires onSubtitlesLoadError plugin with a correct parameters when there are sources available to failover to', () => {
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
-      mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, 404)
+      mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, {statusCode: 404})
 
-      expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404, severity: PluginEnums.STATUS.FAILOVER, cdn: 'http://supplier1.com/'})
+      expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({ status: 404, severity: PluginEnums.STATUS.FAILOVER, cdn: 'http://supplier1.com/', subtitlesSources: 2 })
     })
 
     it('fires onSubtitlesLoadError plugin with a correct parameters when there are no sources available to failover to', () => {
@@ -476,9 +499,9 @@ describe('Media Sources', () => {
 
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
-      mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, 404)
+      mediaSources.failoverSubtitles(postFailoverAction, onFailureAction, {statusCode: 404})
 
-      expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({status: 404, severity: PluginEnums.STATUS.FATAL, cdn: 'http://supplier1.com/'})
+      expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({ status: 404, severity: PluginEnums.STATUS.FATAL, cdn: 'http://supplier1.com/', subtitlesSources: 1 })
     })
   })
 
@@ -506,7 +529,6 @@ describe('Media Sources', () => {
         const failoverParams = {
           duration: 100,
           currentTime: 94,
-          errorMessage: 'test error',
           isBufferingTimeoutError: false
         }
 
@@ -521,7 +543,6 @@ describe('Media Sources', () => {
         const failoverParams = {
           duration: 100,
           currentTime: 96,
-          errorMessage: 'test error',
           isBufferingTimeoutError: false
         }
 
@@ -536,7 +557,6 @@ describe('Media Sources', () => {
         const failoverParams = {
           duration: 0,
           currentTime: undefined,
-          errorMessage: 'test error',
           isBufferingTimeoutError: false
         }
 
@@ -555,7 +575,6 @@ describe('Media Sources', () => {
           mediaSources.init(testMedia, new Date(), WindowTypes.GROWING, LiveSupport.SEEKABLE, testCallbacks)
 
           const failoverParams = {
-            errorMessage: 'test error',
             isBufferingTimeoutError: false
           }
 
@@ -577,7 +596,6 @@ describe('Media Sources', () => {
           const mediaSourceCallbacks = createSpyObj(['onSuccess', 'onError'])
 
           const failoverParams = {
-            errorMessage: 'test error',
             isBufferingTimeoutError: false
           }
 
@@ -618,7 +636,7 @@ describe('Media Sources', () => {
   })
 
   describe('failoverTimeout', () => {
-    const error = {errorMessage: 'oops', isBufferingTimeoutError: false}
+    const error = { isBufferingTimeoutError: false }
 
     it('should add the cdn that failed back in to available cdns after a timeout', () => {
       const mediaSources = MediaSources()
@@ -665,7 +683,6 @@ describe('Media Sources', () => {
       const failoverParams = {
         duration: 500,
         currentTime: 42,
-        errorMessage: 'buffering-time-out',
         isBufferingTimeoutError: true
       }
 

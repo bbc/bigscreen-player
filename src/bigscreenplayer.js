@@ -61,7 +61,9 @@ function BigscreenPlayer () {
       if (evt.data.state === MediaState.FATAL_ERROR) {
         stateObject = {
           state: MediaState.FATAL_ERROR,
-          isBufferingTimeoutError: evt.isBufferingTimeoutError
+          isBufferingTimeoutError: evt.isBufferingTimeoutError,
+          code: evt.code,
+          message: evt.message
         }
       }
 
@@ -121,7 +123,6 @@ function BigscreenPlayer () {
       PlayerComponent.getLiveSupport(),
       playerReadyCallback
     )
-
     playerComponent = new PlayerComponent(
       playbackElement,
       bigscreenPlayerData,
@@ -186,7 +187,6 @@ function BigscreenPlayer () {
      * @param {BigscreenPlayerData} bigscreenPlayerData
      * @param {WindowTypes} newWindowType
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
-     * @param {TALDevice} newDevice - An optional TAL device object
      * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) => {
@@ -276,10 +276,9 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForStateChanges: (callback) => {
-      const indexOf = stateChangeCallbacks.indexOf(callback)
-      if (indexOf !== -1) {
-        stateChangeCallbacks.splice(indexOf, 1)
-      }
+      stateChangeCallbacks = stateChangeCallbacks.filter(function (existingCallback) {
+        return callback !== existingCallback
+      })
     },
 
     /**
@@ -298,11 +297,9 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForTimeUpdates: (callback) => {
-      const indexOf = timeUpdateCallbacks.indexOf(callback)
-
-      if (indexOf !== -1) {
-        timeUpdateCallbacks.splice(indexOf, 1)
-      }
+      timeUpdateCallbacks = timeUpdateCallbacks.filter(function (existingCallback) {
+        return callback !== existingCallback
+      })
     },
 
     /**
@@ -321,10 +318,9 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForSubtitleChanges: (callback) => {
-      const indexOf = subtitleCallbacks.indexOf(callback)
-      if (indexOf !== -1) {
-        subtitleCallbacks.splice(indexOf, 1)
-      }
+      subtitleCallbacks = subtitleCallbacks.filter(function (existingCallback) {
+        return callback !== existingCallback
+      })
     },
 
     /**

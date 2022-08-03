@@ -4,6 +4,7 @@ import MediaKinds from '../models/mediakinds'
 import LiveSupport from '../models/livesupport'
 import DynamicWindowUtils from '../dynamicwindowutils'
 import DOMHelpers from '../domhelpers'
+import handlePlayPromise from '../utils/handleplaypromise'
 
 function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
   const CLAMP_OFFSET_SECONDS = 1.1
@@ -28,9 +29,9 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
     }
   }
 
-  function publishError () {
+  function publishError (mediaError) {
     if (errorCallback) {
-      errorCallback()
+      errorCallback(mediaError)
     }
   }
 
@@ -120,7 +121,11 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 
   function onError (_event) {
-    publishError()
+    let mediaError = {
+      code: mediaElement && mediaElement.error && mediaElement.error.code || 0,
+      message: mediaElement && mediaElement.error && mediaElement.error.message || 'unknown'
+    }
+    publishError(mediaError)
   }
 
   function onLoadedMetadata () {
@@ -181,7 +186,7 @@ function BasicStrategy (mediaSources, windowType, mediaKind, playbackElement, is
   }
 
   function play () {
-    mediaElement.play()
+    handlePlayPromise(mediaElement.play())
   }
 
   function setCurrentTime (time) {
