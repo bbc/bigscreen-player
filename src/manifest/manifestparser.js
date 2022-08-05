@@ -26,10 +26,14 @@ function parseMPD (manifest, dateWithOffset) {
         correction: timeCorrection
       }
     } else {
-      return { error: 'Error parsing DASH manifest attributes' }
+      const error = new Error('Error parsing DASH manifest attributes')
+      error.type = 'manifest-dash-attribute-parse'
+      throw error
     }
   } catch (e) {
-    return { error: 'Error parsing DASH manifest' }
+    const error = new Error('Error parsing DASH manifest')
+    error.type = 'manifest-dash-generic-parse'
+    throw error
   }
 }
 
@@ -45,7 +49,9 @@ function parseM3U8 (manifest) {
       windowEndTime: windowEndTime
     }
   } else {
-    return { error: 'Error parsing HLS manifest' }
+    const error = new Error('Error parsing HLS manifest')
+    error.type = 'manifest-hls-generic-parse'
+    throw error
   }
 }
 
