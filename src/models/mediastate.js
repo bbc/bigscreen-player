@@ -1,16 +1,16 @@
 const MediaState = {
   /** Media is stopped and is not attempting to start. */
-  STOPPED: 0,
+  STOPPED: 'stopped',
   /** Media is paused. */
-  PAUSED: 1,
+  PAUSED: 'paused',
   /** Media is playing successfully. */
-  PLAYING: 2,
+  PLAYING: 'playing',
   /** Media is waiting for data (buffering). */
-  WAITING: 4,
+  WAITING: 'waiting',
   /** Media has ended. */
-  ENDED: 5,
+  ENDED: 'ended',
   /** Media has thrown a fatal error. */
-  FATAL_ERROR: 6
+  FATAL_ERROR: 'fatal-error'
 }
 
 /**

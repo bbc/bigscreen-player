@@ -11,21 +11,16 @@
 
     window.bigscreenPlayer = {playbackStrategy: 'msestrategy'}
 
-    let player = BigscreenPlayer()
     let playbackElement = document.createElement('div')
-
-    window.bsp_player = player
-
-    document.body.appendChild(playbackElement)
-
     playbackElement.style.position = 'absolute';
     playbackElement.style.height = '720px';
     playbackElement.style.width = '1280px';
+    document.body.appendChild(playbackElement)
 
-    let windowType = 'staticWindow';
-    let enableSubtitles = false;
     
     let minimalData = {
+        windowType: 'staticWindow',
+        enableSubtitles: false,
         initialPlaybackTime: 30,
         media: {
         captions: [],
@@ -40,17 +35,15 @@
         }]
         }
     };
+    let player =  new BigscreenPlayer(playbackElement, minimalData)
 
-    player.init(playbackElement, minimalData, windowType, enableSubtitles,
-    {
-      onSuccess: function () {
-        player.toggleDebug();
-      },
-      onError: function () {
-        player.toggleDebug();
-        DebugTool.info('Initialisation failed.')
-      }
-  });
+    window.bsp_player = player
+
+    bsp_player.addEventListener('timeupdate', (evt) => {console.log(evt)})
+    bsp_player.addEventListener('paused', (evt) => {console.log(evt)})
+    bsp_player.addEventListener('playing', (evt) => {console.log(evt)})
+    bsp_player.addEventListener('waiting', (evt) => {console.log(evt)})
+    bsp_player.addEventListener('fatal-error', (evt) => {console.log(evt)})
   
   </script>
 </body>

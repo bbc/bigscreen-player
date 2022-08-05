@@ -187,7 +187,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
   }
 
   function onTimeUpdate () {
-    publishMediaStateUpdate(undefined, { timeUpdate: true })
+    publishMediaStateUpdate('timeupdate', { timeUpdate: true })
   }
 
   function onError (mediaError) {
@@ -299,6 +299,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
 
   function publishMediaStateUpdate (state, opts) {
     let stateUpdateData = {
+      type: state,
       data: {
         currentTime: getCurrentTime(),
         seekableRange: getSeekableRange(),
