@@ -42,8 +42,17 @@
     bsp_player.addEventListener('timeupdate', (evt) => {console.log(evt)})
     bsp_player.addEventListener('paused', (evt) => {console.log(evt)})
     bsp_player.addEventListener('playing', (evt) => {console.log(evt)})
-    bsp_player.addEventListener('waiting', (evt) => {console.log(evt)})
+    bsp_player.addEventListener('waiting', (evt) => {
+      console.log(evt)
+    
+    })
     bsp_player.addEventListener('fatal-error', (evt) => {console.log(evt)})
+
+
+    // get set in action 
+    // console.log(bsp_player.currentTime)
+    // bsp_player.currentTime = 80
+    // console.log(bsp_player.currentTime)
   
   </script>
 </body>
