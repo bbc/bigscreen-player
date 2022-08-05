@@ -49,7 +49,7 @@ export default class BigscreenPlayer extends EventTarget {
     const mediaSourceCallbacks = {
       onSuccess: () => {
         console.log('initialising...')
-        this.#bigscreenPlayerDataLoaded(playerData, playerData.enableSubtitles)
+        this.#bigscreenPlayerDataLoaded(playerData)
       },
       onError: (error) => {
         if (callbacks.onError) {
@@ -78,8 +78,7 @@ export default class BigscreenPlayer extends EventTarget {
     return PlayerComponent.getLiveSupport()
   }
 
-
-  #bigscreenPlayerDataLoaded (playerData, enableSubtitles) {
+  #bigscreenPlayerDataLoaded (playerData) {
     if (playerData.windowType !== WindowTypes.STATIC) {
       playerData.time = mediaSources.time()
       serverDate = playerData.serverDate
@@ -100,5 +99,21 @@ export default class BigscreenPlayer extends EventTarget {
       this.#emitter,
       this.#emitter
     )
+  }
+
+  get currentTime() {
+    return this.#playerComponent.getCurrentTime()
+  }
+
+  set currentTime(time) {
+    this.#playerComponent.setCurrentTime(time)
+  }
+
+  pause() {
+    this.#playerComponent.pause()
+  }
+
+  play() {
+    this.#playerComponent.play()
   }
 }
