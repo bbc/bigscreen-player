@@ -12,7 +12,7 @@ function LoadUrl (url, opts) {
   xhr.onreadystatechange = () => {
     if (xhr.readyState === 4) {
       xhr.onreadystatechange = null
-      if (xhr.status === 0 || (xhr.status >= 200 && xhr.status < 300)) {
+      if (xhr.status >= 200 && xhr.status < 300) {
         if (opts.onLoad) {
           opts.onLoad(xhr.responseXML, xhr.responseText, xhr.status)
         }
