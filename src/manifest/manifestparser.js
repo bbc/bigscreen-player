@@ -1,4 +1,5 @@
 import TimeUtils from './../utils/timeutils'
+import DebugTool from '../debugger/debugtool'
 
 function parseMPD (manifest, dateWithOffset) {
   try {
@@ -81,10 +82,23 @@ function getM3U8WindowSizeInSeconds (data) {
 }
 
 function parse (manifest, type, dateWithOffset) {
-  if (type === 'mpd') {
-    return parseMPD(manifest, dateWithOffset)
-  } else if (type === 'm3u8') {
-    return parseM3U8(manifest)
+  const fallback = {
+    windowStartTime: null,
+    windowEndTime: null,
+    correction: 0 
+  }
+
+  try {
+    if (type === 'mpd') {
+      return parseMPD(manifest, dateWithOffset)
+    } else if (type === 'm3u8') {
+      return parseM3U8(manifest)
+    }
+  } catch (e) {
+    // Debug Logging
+    DebugTool.info('Manifest Parse Error: ' + e.type)
+    // Add a plugin to report the failure - Plugins.onManifestParseError, defaults will allow content to play
+    return fallback
   }
 }
 

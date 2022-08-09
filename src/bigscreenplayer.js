@@ -101,7 +101,7 @@ function BigscreenPlayer () {
   }
 
   function convertVideoTimeSecondsToEpochMs (seconds) {
-    return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : undefined
+    return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : null
   }
 
   function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
@@ -574,7 +574,7 @@ function BigscreenPlayer () {
      * @return the time in seconds within the current sliding window.
      */
     convertEpochMsToVideoTimeSeconds: (epochTime) => {
-      return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : undefined
+      return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : null
     },
 
     /**
