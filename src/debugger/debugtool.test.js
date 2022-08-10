@@ -4,7 +4,7 @@ import DebugTool from './debugtool'
 describe('Debug Tool, when intercepting keyValue calls,', () => {
   beforeEach(() => {
     jest.spyOn(global, 'Date').mockImplementation(() => {
-      return {getTime: () => { return 1234 }}
+      return { getTime: () => { return 1234 } }
     })
     Chronicle.init()
   })
@@ -15,14 +15,14 @@ describe('Debug Tool, when intercepting keyValue calls,', () => {
   })
 
   it('should always add entry to chronicle if the key does not match one of the defined static keys', () => {
-    const testObj1 = {key: 'bitrate', value: '1000'}
-    const testObj2 = {key: 'imNotSpecial', value: 'nobodylovesme'}
-    const testObj3 = {key: 'idontmatch', value: 'pleaseaddme'}
+    const testObj1 = { key: 'bitrate', value: '1000' }
+    const testObj2 = { key: 'imNotSpecial', value: 'nobodylovesme' }
+    const testObj3 = { key: 'idontmatch', value: 'pleaseaddme' }
 
     const expectedArray = [
-      {type: 'keyvalue', keyvalue: testObj1, timestamp: 1234},
-      {type: 'keyvalue', keyvalue: testObj2, timestamp: 1234},
-      {type: 'keyvalue', keyvalue: testObj3, timestamp: 1234}
+      { type: 'keyvalue', keyvalue: testObj1, timestamp: 1234 },
+      { type: 'keyvalue', keyvalue: testObj2, timestamp: 1234 },
+      { type: 'keyvalue', keyvalue: testObj3, timestamp: 1234 }
     ]
 
     DebugTool.keyValue(testObj1)
@@ -35,13 +35,13 @@ describe('Debug Tool, when intercepting keyValue calls,', () => {
   })
 
   it('overwrites a keyvalue entry to the chronicle if that keyvalue already exists', () => {
-    const testObj = {key: 'akey', value: 'something'}
-    const testObj1 = {key: 'bitrate', value: '1000'}
-    const testObj2 = {key: 'bitrate', value: '1001'}
+    const testObj = { key: 'akey', value: 'something' }
+    const testObj1 = { key: 'bitrate', value: '1000' }
+    const testObj2 = { key: 'bitrate', value: '1001' }
 
     const expectedArray = [
-      {type: 'keyvalue', keyvalue: {key: 'akey', value: 'something'}, timestamp: 1234},
-      {type: 'keyvalue', keyvalue: {key: 'bitrate', value: '1001'}, timestamp: 1234}
+      { type: 'keyvalue', keyvalue: { key: 'akey', value: 'something' }, timestamp: 1234 },
+      { type: 'keyvalue', keyvalue: { key: 'bitrate', value: '1001' }, timestamp: 1234 }
     ]
 
     DebugTool.keyValue(testObj)

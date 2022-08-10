@@ -119,7 +119,7 @@ describe('Seekable HMTL5 Live Player', () => {
     })
 
     it('calls pause on the media player', () => {
-      player.getSeekableRange.mockReturnValue({start: 0})
+      player.getSeekableRange.mockReturnValue({ start: 0 })
 
       wrapperTests('pause')
     })
@@ -182,7 +182,7 @@ describe('Seekable HMTL5 Live Player', () => {
 
     function startPlaybackAndPause (startTime, disableAutoResume) {
       seekableMediaPlayer.beginPlaybackFrom(startTime || 0)
-      seekableMediaPlayer.pause({disableAutoResume: disableAutoResume})
+      seekableMediaPlayer.pause({ disableAutoResume: disableAutoResume })
     }
 
     beforeEach(() => {
@@ -190,7 +190,7 @@ describe('Seekable HMTL5 Live Player', () => {
 
       initialiseSeekableMediaPlayer(WindowTypes.SLIDING)
 
-      player.getSeekableRange.mockReturnValue({start: 0})
+      player.getSeekableRange.mockReturnValue({ start: 0 })
       player.getCurrentTime.mockReturnValue(20)
 
       player.addEventCallback.mockImplementation((self, callback) => {
@@ -231,7 +231,7 @@ describe('Seekable HMTL5 Live Player', () => {
       startPlaybackAndPause(20, false)
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.PLAYING })
       }
 
       jest.advanceTimersByTime(12 * 1000)
@@ -242,7 +242,7 @@ describe('Seekable HMTL5 Live Player', () => {
     it('Calls resume when paused is called multiple times', () => {
       startPlaybackAndPause(0, false)
 
-      const event = {state: MediaPlayerBase.STATE.PLAYING, currentTime: 25}
+      const event = { state: MediaPlayerBase.STATE.PLAYING, currentTime: 25 }
       for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index](event)
       }
@@ -267,7 +267,7 @@ describe('Seekable HMTL5 Live Player', () => {
 
       jest.advanceTimersByTime(12 * 1000)
 
-      player.getSeekableRange.mockReturnValue({start: 12})
+      player.getSeekableRange.mockReturnValue({ start: 12 })
 
       seekableMediaPlayer.pause()
 
@@ -282,7 +282,7 @@ describe('Seekable HMTL5 Live Player', () => {
       startPlaybackAndPause(20, true)
 
       jest.advanceTimersByTime(12 * 1000)
-      player.getSeekableRange.mockReturnValue({start: 12})
+      player.getSeekableRange.mockReturnValue({ start: 12 })
 
       jest.advanceTimersByTime(1)
 
@@ -293,7 +293,7 @@ describe('Seekable HMTL5 Live Player', () => {
       startPlaybackAndPause(20, false)
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.PAUSED})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.PAUSED })
       }
 
       jest.advanceTimersByTime(12 * 1000)
@@ -305,7 +305,7 @@ describe('Seekable HMTL5 Live Player', () => {
       startPlaybackAndPause(20, false)
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({type: MediaPlayerBase.EVENT.STATUS})
+        mockCallback[index]({ type: MediaPlayerBase.EVENT.STATUS })
       }
 
       jest.advanceTimersByTime(12 * 1000)
@@ -328,15 +328,15 @@ describe('Seekable HMTL5 Live Player', () => {
       player.resume.mockClear()
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.BUFFERING, currentTime: 20})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.BUFFERING, currentTime: 20 })
       }
 
       jest.advanceTimersByTime(11 * 1000)
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING, currentTime: 20})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.PLAYING, currentTime: 20 })
       }
-      player.getSeekableRange.mockReturnValue({start: 20})
+      player.getSeekableRange.mockReturnValue({ start: 20 })
 
       seekableMediaPlayer.pause()
 
@@ -356,7 +356,7 @@ describe('Seekable HMTL5 Live Player', () => {
     })
 
     it('Should auto resume when paused after a seek', () => {
-      player.getSeekableRange.mockReturnValue({start: 0})
+      player.getSeekableRange.mockReturnValue({ start: 0 })
       player.getCurrentTime.mockReturnValue(100)
 
       startPlaybackAndPause(100, false)

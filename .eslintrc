@@ -260,6 +260,10 @@
         "error",
         "never"
       ],
+      "object-curly-spacing": [
+        "error",
+        "always"
+      ],
       "space-infix-ops": "error",
       "space-unary-ops": [
         "error",

@@ -539,7 +539,7 @@ function Cehtml () {
 
   function reportError (errorMessage) {
     DebugTool.info(errorMessage)
-    emitEvent(MediaPlayerBase.EVENT.ERROR, {'errorMessage': errorMessage})
+    emitEvent(MediaPlayerBase.EVENT.ERROR, { 'errorMessage': errorMessage })
   }
 
   function toStopped () {

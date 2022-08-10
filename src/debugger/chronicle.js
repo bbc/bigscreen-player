@@ -34,27 +34,27 @@ function unregisterForUpdates (callback) {
 }
 
 function info (message) {
-  pushToChronicle({type: TYPES.INFO, message: message})
+  pushToChronicle({ type: TYPES.INFO, message: message })
 }
 
 function error (err) {
-  pushToChronicle({type: TYPES.ERROR, error: err})
+  pushToChronicle({ type: TYPES.ERROR, error: err })
 }
 
 function event (event) {
-  pushToChronicle({type: TYPES.EVENT, event: event})
+  pushToChronicle({ type: TYPES.EVENT, event: event })
 }
 
 function apicall (callType) {
-  pushToChronicle({type: TYPES.APICALL, calltype: callType})
+  pushToChronicle({ type: TYPES.APICALL, calltype: callType })
 }
 
 function time (time) {
   if (firstTimeElement) {
-    pushToChronicle({type: TYPES.TIME, currentTime: time})
+    pushToChronicle({ type: TYPES.TIME, currentTime: time })
     firstTimeElement = false
   } else if (!compressTime) {
-    pushToChronicle({type: TYPES.TIME, currentTime: time})
+    pushToChronicle({ type: TYPES.TIME, currentTime: time })
     compressTime = true
   } else {
     const lastElement = chronicle.pop()
@@ -65,7 +65,7 @@ function time (time) {
 }
 
 function keyValue (obj) {
-  pushToChronicle({type: TYPES.KEYVALUE, keyvalue: obj})
+  pushToChronicle({ type: TYPES.KEYVALUE, keyvalue: obj })
 }
 
 function retrieve () {

@@ -15,14 +15,14 @@ function StrategyPicker (windowType, isUHD) {
         return resolve(NativeStrategy)
       }
 
-      return import('./msestrategy').then(({default: MSEStrategy}) => resolve(MSEStrategy))
+      return import('./msestrategy').then(({ default: MSEStrategy }) => resolve(MSEStrategy))
         .catch(() => {
-          reject({error: 'strategyDynamicLoadError'})
+          reject({ error: 'strategyDynamicLoadError' })
         })
     } else if (window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.MSE) {
-      return import('./msestrategy').then(({default: MSEStrategy}) => resolve(MSEStrategy))
+      return import('./msestrategy').then(({ default: MSEStrategy }) => resolve(MSEStrategy))
         .catch(() => {
-          reject({error: 'strategyDynamicLoadError'})
+          reject({ error: 'strategyDynamicLoadError' })
         })
     } else if (window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.BASIC) {
       return resolve(BasicStrategy)

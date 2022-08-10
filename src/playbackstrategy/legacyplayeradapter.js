@@ -66,7 +66,7 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
         eventHistory.pop()
       }
 
-      eventHistory.unshift({type: event.type, time: new Date().getTime()})
+      eventHistory.unshift({ type: event.type, time: new Date().getTime() })
     }
   }
 
@@ -247,13 +247,13 @@ function LegacyPlayerAdapter (mediaSources, windowType, playbackElement, isUHD, 
       mediaPlayer.initialiseMedia('video', mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
       if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
         currentTime = startTime
-        DebugTool.keyValue({key: 'initial-playback-time', value: startTime + timeCorrection})
+        DebugTool.keyValue({ key: 'initial-playback-time', value: startTime + timeCorrection })
         mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0)
       } else {
         mediaPlayer.beginPlayback()
       }
 
-      DebugTool.keyValue({key: 'strategy', value: getStrategy()})
+      DebugTool.keyValue({ key: 'strategy', value: getStrategy() })
     },
     play: () => {
       isPaused = false

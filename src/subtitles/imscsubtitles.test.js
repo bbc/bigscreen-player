@@ -126,7 +126,7 @@ describe('IMSC Subtitles', () => {
     it('is constructed with the correct interface', () => {
       subtitles = IMSCSubtitles(mediaPlayer, false, mockParentElement, mockMediaSources, {})
 
-      expect(subtitles).toEqual(expect.objectContaining({start: expect.any(Function), stop: expect.any(Function), updatePosition: expect.any(Function), tearDown: expect.any(Function)}))
+      expect(subtitles).toEqual(expect.objectContaining({ start: expect.any(Function), stop: expect.any(Function), updatePosition: expect.any(Function), tearDown: expect.any(Function) }))
     })
 
     it('autoplay argument starts the update loop', () => {
@@ -315,7 +315,7 @@ describe('IMSC Subtitles', () => {
       })
       subtitles = IMSCSubtitles(mediaPlayer, true, mockParentElement, mockMediaSources, {})
 
-      expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledWith({cdn: subtitlesCdn})
+      expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledWith({ cdn: subtitlesCdn })
       expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1)
     })
 
@@ -792,7 +792,7 @@ describe('IMSC Subtitles', () => {
 
         progressTime(2.750)
 
-        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({mockCallId: 0}), msToS(epochStartTimeMilliseconds) + 2.750)
+        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({ mockCallId: 0 }), msToS(epochStartTimeMilliseconds) + 2.750)
         expect(renderHTML).toHaveBeenCalledWith(expect.objectContaining({ contents: ['mockContents'] }), expect.any(HTMLDivElement), null, 100, 200, false, null, null, false, {})
 
         generateISD.mockClear()
@@ -808,7 +808,7 @@ describe('IMSC Subtitles', () => {
 
         progressTime(4.25)
 
-        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({mockCallId: 1}), msToS(epochStartTimeMilliseconds) + 4.25)
+        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({ mockCallId: 1 }), msToS(epochStartTimeMilliseconds) + 4.25)
         expect(renderHTML).toHaveBeenCalledWith(expect.objectContaining({ contents: ['mockContents'] }), expect.any(HTMLDivElement), null, 100, 200, false, null, null, false, {})
 
         generateISD.mockClear()
@@ -848,7 +848,7 @@ describe('IMSC Subtitles', () => {
 
         progressTime(8)
 
-        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 8)
+        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({ mockCallId: 2 }), msToS(epochStartTimeMilliseconds) + 8)
         expect(renderHTML).toHaveBeenCalledWith(expect.objectContaining({ contents: ['mockContents'] }), expect.any(HTMLDivElement), null, 100, 200, false, null, null, false, {})
 
         generateISD.mockClear()
@@ -864,7 +864,7 @@ describe('IMSC Subtitles', () => {
 
         progressTime(9.5)
 
-        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 9.5)
+        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({ mockCallId: 2 }), msToS(epochStartTimeMilliseconds) + 9.5)
         expect(renderHTML).toHaveBeenCalledWith(expect.objectContaining({ contents: ['mockContents'] }), expect.any(HTMLDivElement), null, 100, 200, false, null, null, false, {})
 
         generateISD.mockClear()
@@ -872,7 +872,7 @@ describe('IMSC Subtitles', () => {
 
         progressTime(10.25)
 
-        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 10.25)
+        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({ mockCallId: 2 }), msToS(epochStartTimeMilliseconds) + 10.25)
         expect(renderHTML).toHaveBeenCalledWith(expect.objectContaining({ contents: ['mockContents'] }), expect.any(HTMLDivElement), null, 100, 200, false, null, null, false, {})
 
         generateISD.mockClear()
@@ -888,7 +888,7 @@ describe('IMSC Subtitles', () => {
 
         progressTime(11.75)
 
-        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({mockCallId: 2}), msToS(epochStartTimeMilliseconds) + 11.75)
+        expect(generateISD).toHaveBeenCalledWith(expect.objectContaining({ mockCallId: 2 }), msToS(epochStartTimeMilliseconds) + 11.75)
         expect(renderHTML).toHaveBeenCalledWith(expect.objectContaining({ contents: ['mockContents'] }), expect.any(HTMLDivElement), null, 100, 200, false, null, null, false, {})
 
         generateISD.mockClear()

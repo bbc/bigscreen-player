@@ -56,7 +56,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
         resetLoadErrorCount()
         if (!responseXML && !liveSubtitles) {
           DebugTool.info('Error: responseXML is invalid.')
-          Plugins.interface.onSubtitlesXMLError({cdn: mediaSources.currentSubtitlesCdn()})
+          Plugins.interface.onSubtitlesXMLError({ cdn: mediaSources.currentSubtitlesCdn() })
           stop()
           return
         }
@@ -81,13 +81,13 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
           stop()
         }
       },
-      onError: ({statusCode, ...rest} = {}) => {
+      onError: ({ statusCode, ...rest } = {}) => {
         DebugTool.info('Error loading subtitles data: ' + statusCode)
-        loadErrorFailover({statusCode, ...rest})
+        loadErrorFailover({ statusCode, ...rest })
       },
       onTimeout: () => {
         DebugTool.info('Request timeout loading subtitles')
-        Plugins.interface.onSubtitlesTimeout({cdn: mediaSources.currentSubtitlesCdn()})
+        Plugins.interface.onSubtitlesTimeout({ cdn: mediaSources.currentSubtitlesCdn() })
         stop()
       }
     })
@@ -135,7 +135,7 @@ function IMSCSubtitles (mediaPlayer, autoStart, parentElement, mediaSources, def
     const customStyles = {}
 
     if (opts.backgroundColour) {
-      customStyles.spanBackgroundColorAdjust = {transparent: opts.backgroundColour}
+      customStyles.spanBackgroundColorAdjust = { transparent: opts.backgroundColour }
     }
 
     if (opts.fontFamily) {
