@@ -34,18 +34,30 @@ describe('ManifestParser', () => {
       })
     })
 
-    it('returns an error if manifest data has bad data in the attributes', () => {
+    it('returns fallback data if manifest data has bad data in the attributes', () => {
+      const fallbackData = {
+        windowStartTime: null,
+        windowEndTime: null,
+        correction: 0
+      }
+
       const manifest = dashManifests.badAttributes()
       const liveWindowData = ManifestParser.parse(manifest, 'mpd', new Date('2018-12-13T11:00:00.000000Z'))
 
-      expect(liveWindowData).toEqual({error: 'Error parsing DASH manifest attributes'})
+      expect(liveWindowData).toEqual(fallbackData)
     })
 
-    it('returns an error if manifest data is malformed', () => {
+    it('returns fallback data if manifest data is malformed', () => {
+      const fallbackData = {
+        windowStartTime: null,
+        windowEndTime: null,
+        correction: 0
+      }
+
       const manifest = 'not an MPD'
       const liveWindowData = ManifestParser.parse(manifest, 'mpd', new Date('2018-12-13T11:00:00.000000Z'))
 
-      expect(liveWindowData).toEqual({error: 'Error parsing DASH manifest'})
+      expect(liveWindowData).toEqual(fallbackData)
     })
   })
 
@@ -60,18 +72,28 @@ describe('ManifestParser', () => {
       })
     })
 
-    it('returns and error if manifest has an invalid start date', () => {
+    it('returns fallback data if manifest has an invalid start date', () => {
+      const fallbackData = {
+        windowStartTime: null,
+        windowEndTime: null,
+        correction: 0
+      }
       const manifest = hlsManifests.invalidDate
       const liveWindowData = ManifestParser.parse(manifest, 'm3u8')
 
-      expect(liveWindowData).toEqual({error: 'Error parsing HLS manifest'})
+      expect(liveWindowData).toEqual(fallbackData)
     })
 
-    it('returns an error if hls manifest data is malformed', () => {
+    it('returns fallback data if hls manifest data is malformed', () => {
+      const fallbackData = {
+        windowStartTime: null,
+        windowEndTime: null,
+        correction: 0
+      }
       const manifest = 'not an valid manifest'
       const liveWindowData = ManifestParser.parse(manifest, 'm3u8')
 
-      expect(liveWindowData).toEqual({error: 'Error parsing HLS manifest'})
+      expect(liveWindowData).toEqual(fallbackData)
     })
   })
 })

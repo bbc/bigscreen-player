@@ -99,7 +99,7 @@ function BigscreenPlayer () {
       return new Date(time * 1000)
     }
   }
-
+  
   function convertVideoTimeSecondsToEpochMs (seconds) {
     return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : null
   }
