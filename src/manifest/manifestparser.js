@@ -1,5 +1,6 @@
 import TimeUtils from './../utils/timeutils'
 import DebugTool from '../debugger/debugtool'
+import Plugins from '../plugins'
 
 function parseMPD (manifest, dateWithOffset) {
   try {
@@ -39,17 +40,23 @@ function parseMPD (manifest, dateWithOffset) {
 }
 
 function parseM3U8 (manifest) {
-  const windowStartTime = getM3U8ProgramDateTime(manifest)
-  const duration = getM3U8WindowSizeInSeconds(manifest)
-
-  if (windowStartTime && duration) {
-    const windowEndTime = windowStartTime + duration * 1000
-
-    return {
-      windowStartTime: windowStartTime,
-      windowEndTime: windowEndTime
+  try {
+    const windowStartTime = getM3U8ProgramDateTime(manifest)
+    const duration = getM3U8WindowSizeInSeconds(manifest)
+  
+    if (windowStartTime && duration) {
+      const windowEndTime = windowStartTime + duration * 1000
+  
+      return {
+        windowStartTime: windowStartTime,
+        windowEndTime: windowEndTime
+      }
+    } else {
+      const error = new Error('Error parsing HLS manifest attributes')
+      error.type = 'manifest-hls-attribute-parse'
+      throw error
     }
-  } else {
+  } catch (e) {
     const error = new Error('Error parsing HLS manifest')
     error.type = 'manifest-hls-generic-parse'
     throw error
@@ -95,9 +102,8 @@ function parse (manifest, type, dateWithOffset) {
       return parseM3U8(manifest)
     }
   } catch (e) {
-    // Debug Logging
-    DebugTool.info('Manifest Parse Error: ' + e.type)
-    // Add a plugin to report the failure - Plugins.onManifestParseError, defaults will allow content to play
+    DebugTool.error('Manifest Parse Error: ' + e.type)
+    Plugins.interface.onManifestParseError(e.type)
     return fallback
   }
 }

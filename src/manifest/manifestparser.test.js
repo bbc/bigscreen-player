@@ -1,6 +1,7 @@
 import ManifestParser from './manifestparser'
 import DashManifests from './stubData/dashmanifests'
 import HlsManifests from './stubData/hlsmanifests'
+import Plugins from '../plugins'
 
 describe('ManifestParser', () => {
   let dashManifests
@@ -9,6 +10,7 @@ describe('ManifestParser', () => {
   beforeEach(() => {
     dashManifests = new DashManifests()
     hlsManifests = new HlsManifests()
+    jest.spyOn(Plugins.interface, 'onManifestParseError')
   })
 
   describe('DASH mpd', () => {
@@ -45,6 +47,7 @@ describe('ManifestParser', () => {
       const liveWindowData = ManifestParser.parse(manifest, 'mpd', new Date('2018-12-13T11:00:00.000000Z'))
 
       expect(liveWindowData).toEqual(fallbackData)
+      expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
     })
 
     it('returns fallback data if manifest data is malformed', () => {
@@ -58,6 +61,7 @@ describe('ManifestParser', () => {
       const liveWindowData = ManifestParser.parse(manifest, 'mpd', new Date('2018-12-13T11:00:00.000000Z'))
 
       expect(liveWindowData).toEqual(fallbackData)
+      expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
     })
   })
 
@@ -82,6 +86,7 @@ describe('ManifestParser', () => {
       const liveWindowData = ManifestParser.parse(manifest, 'm3u8')
 
       expect(liveWindowData).toEqual(fallbackData)
+      expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
     })
 
     it('returns fallback data if hls manifest data is malformed', () => {
@@ -94,6 +99,7 @@ describe('ManifestParser', () => {
       const liveWindowData = ManifestParser.parse(manifest, 'm3u8')
 
       expect(liveWindowData).toEqual(fallbackData)
+      expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
     })
   })
 })
