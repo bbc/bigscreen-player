@@ -330,7 +330,7 @@ describe('cehtml Base', () => {
       mockMediaElement.playTime = 10000
       mockMediaElement.onPlayStateChange()
 
-      expect(player.getSeekableRange()).toEqual({start: 0, end: 10})
+      expect(player.getSeekableRange()).toEqual({ start: 0, end: 10 })
     })
   })
 

@@ -87,7 +87,7 @@ function DebugTool () {
         entry.keyvalue = message
       }
     } else {
-      staticFieldValues[message.key] = {value: message.value, index: Chronicle.retrieve().length}
+      staticFieldValues[message.key] = { value: message.value, index: Chronicle.retrieve().length }
       Chronicle.keyValue(message)
     }
   }

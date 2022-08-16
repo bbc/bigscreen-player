@@ -8,14 +8,14 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
   let subtitlesContainer
 
   if (useLegacySubs) {
-    import('./legacysubtitles.js').then(({default: LegacySubtitles}) => {
+    import('./legacysubtitles.js').then(({ default: LegacySubtitles }) => {
       subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
       callback(subtitlesEnabled)
     }).catch(() => {
       Plugins.interface.onSubtitlesDynamicLoadError()
     })
   } else {
-    import('./imscsubtitles.js').then(({default: IMSCSubtitles}) => {
+    import('./imscsubtitles.js').then(({ default: IMSCSubtitles }) => {
       subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
       callback(subtitlesEnabled)
     }).catch(() => {
