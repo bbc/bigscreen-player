@@ -11,10 +11,10 @@ function retrieveDashManifest (url, dateWithOffset, callbacks) {
       timeout: 10000,
       onLoad: (responseXML, _responseText, _status) => {
         try {
-          if (responseXML) {
+          if (_responseText) {
             callbacks.onSuccess({
               transferFormat: TransferFormats.DASH,
-              time: ManifestParser.parse(responseXML, 'mpd', dateWithOffset)
+              time: ManifestParser.parse(_responseText, 'mpd', dateWithOffset)
             })
           } else {
             callbacks.onError('Unable to retrieve DASH XML response')

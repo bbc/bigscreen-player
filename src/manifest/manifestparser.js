@@ -1,8 +1,17 @@
 import TimeUtils from './../utils/timeutils'
 import DebugTool from '../debugger/debugtool'
 import Plugins from '../plugins'
+import DashParser from 'dashjs/src/dash/parser/DashParser'
 
-function parseMPD (manifest, dateWithOffset) {
+function parseMPD(_manifest, dateWithOffset) {
+  try {
+    const parser = DashParser().create({debug: {getLogger: () => { return DebugTool}}})
+    const manifest = parser.parse(_manifest)
+    console.log(manifest)
+  } catch (e) {
+    console.error('failed to create dashparser' + e)
+  }
+
   try {
     const mpd = manifest.getElementsByTagName('MPD')[0]
     const availabilityStartTime = Date.parse(mpd.getAttribute('availabilityStartTime'))
@@ -22,7 +31,7 @@ function parseMPD (manifest, dateWithOffset) {
       const windowStartTime = timeShiftBufferDepth ? windowEndTime - (timeShiftBufferDepth * 1000) : availabilityStartTime
       const timeCorrection = timeShiftBufferDepth ? windowStartTime / 1000 : 0
 
-      return {
+    return {
         windowStartTime: windowStartTime,
         windowEndTime: windowEndTime,
         correction: timeCorrection
@@ -31,7 +40,7 @@ function parseMPD (manifest, dateWithOffset) {
       const error = new Error('Error parsing DASH manifest attributes')
       error.type = 'manifest-dash-attribute-parse'
       throw error
-    }
+  }
   } catch (e) {
     const error = new Error('Error parsing DASH manifest')
     error.type = 'manifest-dash-generic-parse'
@@ -39,22 +48,18 @@ function parseMPD (manifest, dateWithOffset) {
   }
 }
 
-function parseM3U8 (manifest) {
+function parseM3U8(manifest) {
   try {
     const windowStartTime = getM3U8ProgramDateTime(manifest)
     const duration = getM3U8WindowSizeInSeconds(manifest)
-  
+
     if (windowStartTime && duration) {
       const windowEndTime = windowStartTime + duration * 1000
-  
+
       return {
         windowStartTime: windowStartTime,
         windowEndTime: windowEndTime
       }
-    } else {
-      const error = new Error('Error parsing HLS manifest attributes')
-      error.type = 'manifest-hls-attribute-parse'
-      throw error
     }
   } catch (e) {
     const error = new Error('Error parsing HLS manifest')
@@ -63,7 +68,7 @@ function parseM3U8 (manifest) {
   }
 }
 
-function getM3U8ProgramDateTime (data) {
+function getM3U8ProgramDateTime(data) {
   const match = /^#EXT-X-PROGRAM-DATE-TIME:(.*)$/m.exec(data)
 
   if (match) {
@@ -75,7 +80,7 @@ function getM3U8ProgramDateTime (data) {
   }
 }
 
-function getM3U8WindowSizeInSeconds (data) {
+function getM3U8WindowSizeInSeconds(data) {
   const regex = /#EXTINF:(\d+(?:\.\d+)?)/g
   let matches = regex.exec(data)
   let result = 0
@@ -88,11 +93,11 @@ function getM3U8WindowSizeInSeconds (data) {
   return Math.floor(result)
 }
 
-function parse (manifest, type, dateWithOffset) {
+function parse(manifest, type, dateWithOffset) {
   const fallback = {
     windowStartTime: null,
     windowEndTime: null,
-    correction: 0 
+    correction: 0
   }
 
   try {
@@ -102,8 +107,8 @@ function parse (manifest, type, dateWithOffset) {
       return parseM3U8(manifest)
     }
   } catch (e) {
-    DebugTool.error('Manifest Parse Error: ' + e.type)
-    Plugins.interface.onManifestParseError(e.type)
+    DebugTool.info('Manifest Parse Error: ' + e.type)
+    Plugins.interface.onManifestParseError(e)
     return fallback
   }
 }
