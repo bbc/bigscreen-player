@@ -1,6 +1,7 @@
 import TimeUtils from './../utils/timeutils'
 import DebugTool from '../debugger/debugtool'
 import Plugins from '../plugins'
+import pluginenums from '../pluginenums'
 
 function parseMPD (manifest, dateWithOffset) {
   try {
@@ -28,13 +29,11 @@ function parseMPD (manifest, dateWithOffset) {
         correction: timeCorrection
       }
     } else {
-      const error = new Error('Error parsing DASH manifest attributes')
-      error.type = 'manifest-dash-attribute-parse'
-      throw error
+      throw new Error('manifest-dash-attributes-parse-error')
     }
   } catch (e) {
-    const error = new Error('Error parsing DASH manifest')
-    error.type = 'manifest-dash-generic-parse'
+    const error = new Error(e.message || 'manifest-dash-parse-error')
+    error.code = pluginenums.ERROR_CODES.MANIFEST_PARSE
     throw error
   }
 }
@@ -52,13 +51,11 @@ function parseM3U8 (manifest) {
         windowEndTime: windowEndTime
       }
     } else {
-      const error = new Error('Error parsing HLS manifest attributes')
-      error.type = 'manifest-hls-attribute-parse'
-      throw error
+      throw new Error('manifest-hls-attributes-parse-error')
     }
   } catch (e) {
-    const error = new Error('Error parsing HLS manifest')
-    error.type = 'manifest-hls-generic-parse'
+    const error = new Error(e.message || 'manifest-hls-parse-error')
+    error.code = pluginenums.ERROR_CODES.MANIFEST_PARSE
     throw error
   }
 }
@@ -102,8 +99,8 @@ function parse (manifest, type, dateWithOffset) {
       return parseM3U8(manifest)
     }
   } catch (e) {
-    DebugTool.error('Manifest Parse Error: ' + e.type)
-    Plugins.interface.onManifestParseError(e.type)
+    DebugTool.error('Manifest Parse Error: ' + e.code + ' ' + e.message)
+    Plugins.interface.onManifestParseError({code: e.code, message: e.message})
     return fallback
   }
 }

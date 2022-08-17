@@ -10,6 +10,7 @@ export default {
     ERROR: 'error'
   },
   ERROR_CODES: {
+    MANIFEST_PARSE: 7,
     BUFFERING_TIMEOUT: 8,
     MANIFEST: 9
   },
