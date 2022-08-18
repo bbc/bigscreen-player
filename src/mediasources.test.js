@@ -237,7 +237,7 @@ describe('Media Sources', () => {
         newCdn: 'http://supplier2.com/',
         isInitialPlay: undefined,
         timeStamp: expect.any(Object),
-        code: PluginEnums.ERROR_CODES.MANIFEST,
+        code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
         message: PluginEnums.ERROR_MESSAGES.MANIFEST
       }
 
