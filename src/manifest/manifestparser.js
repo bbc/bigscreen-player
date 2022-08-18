@@ -42,10 +42,10 @@ function parseM3U8 (manifest) {
   try {
     const windowStartTime = getM3U8ProgramDateTime(manifest)
     const duration = getM3U8WindowSizeInSeconds(manifest)
-  
+
     if (windowStartTime && duration) {
       const windowEndTime = windowStartTime + duration * 1000
-  
+
       return {
         windowStartTime: windowStartTime,
         windowEndTime: windowEndTime
@@ -89,7 +89,7 @@ function parse (manifest, type, dateWithOffset) {
   const fallback = {
     windowStartTime: null,
     windowEndTime: null,
-    correction: 0 
+    correction: 0
   }
 
   try {
@@ -100,7 +100,7 @@ function parse (manifest, type, dateWithOffset) {
     }
   } catch (e) {
     DebugTool.info('Manifest Parse Error: ' + e.code + ' ' + e.message)
-    Plugins.interface.onManifestParseError({code: e.code, message: e.message})
+    Plugins.interface.onManifestParseError({ code: e.code, message: e.message })
     return fallback
   }
 }
