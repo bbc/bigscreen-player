@@ -99,7 +99,7 @@ function parse (manifest, type, dateWithOffset) {
       return parseM3U8(manifest)
     }
   } catch (e) {
-    DebugTool.error('Manifest Parse Error: ' + e.code + ' ' + e.message)
+    DebugTool.info('Manifest Parse Error: ' + e.code + ' ' + e.message)
     Plugins.interface.onManifestParseError({code: e.code, message: e.message})
     return fallback
   }
