@@ -1253,7 +1253,7 @@ describe('Bigscreen Player', () => {
 
       initialiseBigscreenPlayer()
 
-      expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBeUndefined()
+      expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(null)
     })
   })
 
@@ -1286,7 +1286,7 @@ describe('Bigscreen Player', () => {
 
       initialiseBigscreenPlayer()
 
-      expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBeUndefined()
+      expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBe(null)
     })
   })
 

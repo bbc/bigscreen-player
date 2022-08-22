@@ -1,4 +1,7 @@
 import TimeUtils from './../utils/timeutils'
+import DebugTool from '../debugger/debugtool'
+import Plugins from '../plugins'
+import pluginenums from '../pluginenums'
 
 function parseMPD (manifest, dateWithOffset) {
   try {
@@ -26,26 +29,34 @@ function parseMPD (manifest, dateWithOffset) {
         correction: timeCorrection
       }
     } else {
-      return { error: 'Error parsing DASH manifest attributes' }
+      throw new Error('manifest-dash-attributes-parse-error')
     }
   } catch (e) {
-    return { error: 'Error parsing DASH manifest' }
+    const error = new Error(e.message || 'manifest-dash-parse-error')
+    error.code = pluginenums.ERROR_CODES.MANIFEST_PARSE
+    throw error
   }
 }
 
 function parseM3U8 (manifest) {
-  const windowStartTime = getM3U8ProgramDateTime(manifest)
-  const duration = getM3U8WindowSizeInSeconds(manifest)
+  try {
+    const windowStartTime = getM3U8ProgramDateTime(manifest)
+    const duration = getM3U8WindowSizeInSeconds(manifest)
 
-  if (windowStartTime && duration) {
-    const windowEndTime = windowStartTime + duration * 1000
+    if (windowStartTime && duration) {
+      const windowEndTime = windowStartTime + duration * 1000
 
-    return {
-      windowStartTime: windowStartTime,
-      windowEndTime: windowEndTime
+      return {
+        windowStartTime: windowStartTime,
+        windowEndTime: windowEndTime
+      }
+    } else {
+      throw new Error('manifest-hls-attributes-parse-error')
     }
-  } else {
-    return { error: 'Error parsing HLS manifest' }
+  } catch (e) {
+    const error = new Error(e.message || 'manifest-hls-parse-error')
+    error.code = pluginenums.ERROR_CODES.MANIFEST_PARSE
+    throw error
   }
 }
 
@@ -75,10 +86,22 @@ function getM3U8WindowSizeInSeconds (data) {
 }
 
 function parse (manifest, type, dateWithOffset) {
-  if (type === 'mpd') {
-    return parseMPD(manifest, dateWithOffset)
-  } else if (type === 'm3u8') {
-    return parseM3U8(manifest)
+  const fallback = {
+    windowStartTime: null,
+    windowEndTime: null,
+    correction: 0
+  }
+
+  try {
+    if (type === 'mpd') {
+      return parseMPD(manifest, dateWithOffset)
+    } else if (type === 'm3u8') {
+      return parseM3U8(manifest)
+    }
+  } catch (e) {
+    DebugTool.info('Manifest Parse Error: ' + e.code + ' ' + e.message)
+    Plugins.interface.onManifestParseError({ code: e.code, message: e.message })
+    return fallback
   }
 }
 
