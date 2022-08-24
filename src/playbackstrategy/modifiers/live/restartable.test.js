@@ -285,13 +285,13 @@ describe('restartable HMTL5 Live Player', () => {
       restartableMediaPlayer.beginPlaybackFrom(startTime)
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.PLAYING })
       }
 
-      restartableMediaPlayer.pause({disableAutoResume: disableAutoResume})
+      restartableMediaPlayer.pause({ disableAutoResume: disableAutoResume })
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.PAUSED})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.PAUSED })
       }
     }
 
@@ -336,7 +336,7 @@ describe('restartable HMTL5 Live Player', () => {
       startPlaybackAndPause(20, false)
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.PLAYING })
       }
 
       jest.advanceTimersByTime(12 * 1000)
@@ -347,7 +347,7 @@ describe('restartable HMTL5 Live Player', () => {
     it('Calls resume when paused is called multiple times', () => {
       startPlaybackAndPause(0, false)
 
-      const event = {state: MediaPlayerBase.STATE.PLAYING, currentTime: 25}
+      const event = { state: MediaPlayerBase.STATE.PLAYING, currentTime: 25 }
       for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index](event)
       }
@@ -383,7 +383,7 @@ describe('restartable HMTL5 Live Player', () => {
       startPlaybackAndPause(20, false)
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.PAUSED})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.PAUSED })
       }
 
       jest.advanceTimersByTime(12 * 1000)
@@ -416,13 +416,13 @@ describe('restartable HMTL5 Live Player', () => {
       restartableMediaPlayer.beginPlaybackFrom(20)
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.BUFFERING, currentTime: 20})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.BUFFERING, currentTime: 20 })
       }
 
       jest.advanceTimersByTime(11 * 1000)
 
       for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({state: MediaPlayerBase.STATE.PLAYING, currentTime: 20})
+        mockCallback[index]({ state: MediaPlayerBase.STATE.PLAYING, currentTime: 20 })
       }
 
       restartableMediaPlayer.pause()

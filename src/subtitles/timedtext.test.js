@@ -8,7 +8,7 @@ describe('TimedText', () => {
     const mockFunction = jest.fn()
     const timedText = TimedText(mockElement, mockFunction)
 
-    expect(timedText).toEqual(expect.objectContaining({start: 10, end: 13, addToDom: expect.any(Function), removeFromDomIfExpired: expect.any(Function)}))
+    expect(timedText).toEqual(expect.objectContaining({ start: 10, end: 13, addToDom: expect.any(Function), removeFromDomIfExpired: expect.any(Function) }))
   })
 
   it('Should add itself to a supplied DOM element', () => {

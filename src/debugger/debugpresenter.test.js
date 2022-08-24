@@ -14,7 +14,7 @@ describe('Debug Presenter', () => {
   })
 
   it('parses static info from an array of chronicle values', () => {
-    presenter.update([{type: 'keyvalue', keyvalue: {key: 'bitrate', value: '1000'}, timestamp: 1518018558259}])
+    presenter.update([{ type: 'keyvalue', keyvalue: { key: 'bitrate', value: '1000' }, timestamp: 1518018558259 }])
     const expectedObject = {
       static: [
         {
@@ -31,7 +31,7 @@ describe('Debug Presenter', () => {
 
   it('converts any static field Date object into human readable time string', () => {
     const testDate = new Date(1518018558259)
-    presenter.update([{type: 'keyvalue', keyvalue: {key: 'anything', value: testDate}, timestamp: 1518018558259}])
+    presenter.update([{ type: 'keyvalue', keyvalue: { key: 'anything', value: testDate }, timestamp: 1518018558259 }])
     const expectedObject = {
       static: [
         {
@@ -47,7 +47,7 @@ describe('Debug Presenter', () => {
   })
 
   it('parses dynamic info from an array of chronicle values', () => {
-    presenter.update([{type: 'info', message: 'A string info message', timestamp: 1518018558259}])
+    presenter.update([{ type: 'info', message: 'A string info message', timestamp: 1518018558259 }])
     const expectedObject = {
       static: [
       ],
@@ -61,8 +61,8 @@ describe('Debug Presenter', () => {
 
   it('parses multiple dynamic events from an array of chronicle values', () => {
     presenter.update([
-      {type: 'info', message: 'A string info message', timestamp: 1518018558259},
-      {type: 'info', message: 'Another info message', timestamp: 1518018558259}
+      { type: 'info', message: 'A string info message', timestamp: 1518018558259 },
+      { type: 'info', message: 'Another info message', timestamp: 1518018558259 }
     ])
     const expectedObject = {
       static: [
@@ -78,12 +78,12 @@ describe('Debug Presenter', () => {
 
   it('parses error events to simple string representation', () => {
     presenter.update([
-      {type: 'error',
+      { type: 'error',
         error: {
           errorId: '1',
           message: 'An error has occurred'
         },
-        timestamp: 1518018558259}
+        timestamp: 1518018558259 }
     ])
     const expectedObject = {
       static: [
@@ -98,7 +98,7 @@ describe('Debug Presenter', () => {
 
   it('parses events to readable representation', () => {
     presenter.update([
-      {type: 'event', event: {state: MediaState.PLAYING}, timestamp: 1518018558259}
+      { type: 'event', event: { state: MediaState.PLAYING }, timestamp: 1518018558259 }
     ])
     const expectedObject = {
       static: [
@@ -113,7 +113,7 @@ describe('Debug Presenter', () => {
 
   it('parses time to formatted string representation', () => {
     presenter.update([
-      {type: 'time', currentTime: 12.3433, timestamp: 1518018558259}
+      { type: 'time', currentTime: 12.3433, timestamp: 1518018558259 }
     ])
     const expectedObject = {
       static: [
@@ -128,7 +128,7 @@ describe('Debug Presenter', () => {
 
   it('parses long time to formatted string representation', () => {
     presenter.update([
-      {type: 'time', currentTime: 788.9999, timestamp: 1518018558259}
+      { type: 'time', currentTime: 788.9999, timestamp: 1518018558259 }
     ])
     const expectedObject = {
       static: [
@@ -143,7 +143,7 @@ describe('Debug Presenter', () => {
 
   it('parses apicall to a formatted string representation', () => {
     presenter.update([
-      {type: 'apicall', calltype: 'Play', timestamp: 1518018558259}
+      { type: 'apicall', calltype: 'Play', timestamp: 1518018558259 }
     ])
     const expectedObject = {
       static: [
@@ -158,7 +158,7 @@ describe('Debug Presenter', () => {
 
   it('When the log object does not contain a valid type', () => {
     presenter.update([
-      {type: 'blah', someobject: {thing: ''}, timestamp: 1518018558259}
+      { type: 'blah', someobject: { thing: '' }, timestamp: 1518018558259 }
     ])
     const expectedObject = {
       static: [
@@ -173,8 +173,8 @@ describe('Debug Presenter', () => {
 
   it('Only uses the the latest value when updating static fields', () => {
     presenter.update([
-      {type: 'keyvalue', keyvalue: {key: 'bitrate', value: '1000'}, timestamp: 1518018558259},
-      {type: 'keyvalue', keyvalue: {key: 'bitrate', value: '2000'}, timestamp: 1518018558259}
+      { type: 'keyvalue', keyvalue: { key: 'bitrate', value: '1000' }, timestamp: 1518018558259 },
+      { type: 'keyvalue', keyvalue: { key: 'bitrate', value: '2000' }, timestamp: 1518018558259 }
     ])
     const expectedObject = {
       static: [
@@ -192,12 +192,12 @@ describe('Debug Presenter', () => {
 
   it('Only uses the the latest value when updating static fields with multiple fields', () => {
     presenter.update([
-      {type: 'keyvalue', keyvalue: {key: 'bitrate', value: '1000'}, timestamp: 1518018558259},
-      {type: 'keyvalue', keyvalue: {key: 'duration', value: '12345'}, timestamp: 1518018558259},
-      {type: 'keyvalue', keyvalue: {key: 'bitrate', value: '2000'}, timestamp: 1518018558259},
-      {type: 'keyvalue', keyvalue: {key: 'duration', value: '12346'}, timestamp: 1518018558259},
-      {type: 'keyvalue', keyvalue: {key: 'seekableRangeStart', value: '0'}, timestamp: 1518018558259},
-      {type: 'keyvalue', keyvalue: {key: 'seekableRangeEnd', value: '12346'}, timestamp: 1518018558259}
+      { type: 'keyvalue', keyvalue: { key: 'bitrate', value: '1000' }, timestamp: 1518018558259 },
+      { type: 'keyvalue', keyvalue: { key: 'duration', value: '12345' }, timestamp: 1518018558259 },
+      { type: 'keyvalue', keyvalue: { key: 'bitrate', value: '2000' }, timestamp: 1518018558259 },
+      { type: 'keyvalue', keyvalue: { key: 'duration', value: '12346' }, timestamp: 1518018558259 },
+      { type: 'keyvalue', keyvalue: { key: 'seekableRangeStart', value: '0' }, timestamp: 1518018558259 },
+      { type: 'keyvalue', keyvalue: { key: 'seekableRangeEnd', value: '12346' }, timestamp: 1518018558259 }
     ])
     const expectedObject = {
       static: [

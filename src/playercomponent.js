@@ -131,7 +131,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
 
     const onError = () => {
       tearDownMediaElement()
-      bubbleFatalError(false, {code: PluginEnums.ERROR_CODES.MANIFEST, message: PluginEnums.ERROR_MESSAGES.MANIFEST})
+      bubbleFatalError(false, { code: PluginEnums.ERROR_CODES.MANIFEST_LOAD, message: PluginEnums.ERROR_MESSAGES.MANIFEST })
     }
 
     mediaSources.refresh(doSeek, onError)
@@ -200,7 +200,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     clearBufferingErrorTimeout()
     errorTimeoutID = setTimeout(() => {
       bubbleBufferingCleared()
-      attemptCdnFailover({code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT})
+      attemptCdnFailover({ code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT })
     }, bufferingTimeout)
   }
 

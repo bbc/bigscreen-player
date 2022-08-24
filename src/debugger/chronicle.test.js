@@ -127,20 +127,20 @@ describe('Chronicle', () => {
 
   it('stores compressed time info and error events', () => {
     const expectedArray = [
-      {type: 'time', currentTime: 1, timestamp: 1234},
-      {type: 'time', currentTime: 2, timestamp: 1234},
-      {type: 'info', message: 'An info message', timestamp: 1234},
-      {type: 'time', currentTime: 3, timestamp: 1234},
-      {type: 'error', error: {message: 'Something went wrong'}, timestamp: 1234},
-      {type: 'time', currentTime: 4, timestamp: 1234},
-      {type: 'time', currentTime: 6, timestamp: 1234}
+      { type: 'time', currentTime: 1, timestamp: 1234 },
+      { type: 'time', currentTime: 2, timestamp: 1234 },
+      { type: 'info', message: 'An info message', timestamp: 1234 },
+      { type: 'time', currentTime: 3, timestamp: 1234 },
+      { type: 'error', error: { message: 'Something went wrong' }, timestamp: 1234 },
+      { type: 'time', currentTime: 4, timestamp: 1234 },
+      { type: 'time', currentTime: 6, timestamp: 1234 }
     ]
 
     Chronicle.time(1)
     Chronicle.time(2)
     Chronicle.info('An info message')
     Chronicle.time(3)
-    Chronicle.error({message: 'Something went wrong'})
+    Chronicle.error({ message: 'Something went wrong' })
     Chronicle.time(4)
     Chronicle.time(5)
     Chronicle.time(6)
@@ -152,8 +152,8 @@ describe('Chronicle', () => {
 
   it('stores first and last time events', () => {
     const expectedArray = [
-      {type: 'time', currentTime: 1, timestamp: 1234},
-      {type: 'time', currentTime: 3, timestamp: 1234}
+      { type: 'time', currentTime: 1, timestamp: 1234 },
+      { type: 'time', currentTime: 3, timestamp: 1234 }
     ]
 
     Chronicle.time(1)
@@ -167,12 +167,12 @@ describe('Chronicle', () => {
 
   it('stores key value events', () => {
     const expectedArray = [
-      {type: 'keyvalue', keyvalue: {Bitrate: '1000'}, timestamp: 1234},
-      {type: 'keyvalue', keyvalue: {Duration: '1345'}, timestamp: 1234}
+      { type: 'keyvalue', keyvalue: { Bitrate: '1000' }, timestamp: 1234 },
+      { type: 'keyvalue', keyvalue: { Duration: '1345' }, timestamp: 1234 }
     ]
 
-    Chronicle.keyValue({Bitrate: '1000'})
-    Chronicle.keyValue({Duration: '1345'})
+    Chronicle.keyValue({ Bitrate: '1000' })
+    Chronicle.keyValue({ Duration: '1345' })
 
     const chronicle = Chronicle.retrieve()
 
