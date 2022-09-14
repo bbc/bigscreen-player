@@ -469,7 +469,9 @@ describe('Media Source Extensions Playback Strategy', () => {
     it('returns the end time taking the live delay into account for a live stream', () => {
       let customPlayerSettings = {
         streaming: {
-          liveDelay: 20
+          delay: {
+            liveDelay: 20
+          }
         }
       }
       setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
@@ -481,7 +483,9 @@ describe('Media Source Extensions Playback Strategy', () => {
     it('returns the end time ignoring the live delay for an on demand stream', () => {
       let customPlayerSettings = {
         streaming: {
-          liveDelay: 20
+          delay: {
+            liveDelay: 20
+          }
         }
       }
       setUpMSE(0, WindowTypes.STATIC, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
