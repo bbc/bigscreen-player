@@ -75,7 +75,7 @@ function BigscreenPlayer () {
       stateObject.endOfStream = endOfStream
       DebugTool.event(stateObject)
 
-      console.log('mediaStateUpdate: ' + evt)
+      console.log('mediaStateUpdate: ' + evt.data.state)
       console.log(stateChangeCallbacks)
       callCallbacks(stateChangeCallbacks, stateObject)
     }
