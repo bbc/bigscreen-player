@@ -75,10 +75,6 @@ function BigscreenPlayer () {
       stateObject.endOfStream = endOfStream
       DebugTool.event(stateObject)
 
-      console.log('mediaStateUpdate: ' + evt.data.state)
-      stateChangeCallbacks.forEach(function (cb) {
-        console.log('stateChangeCallbacks: ' + cb.name)
-      })
       callCallbacks(stateChangeCallbacks, stateObject)
     }
 
@@ -280,10 +276,10 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForStateChanges: (callback) => {
-      console.log('UnregisterStateChanges: ' + callback.name)
-      stateChangeCallbacks = stateChangeCallbacks.filter(function (existingCallback) {
-        return callback !== existingCallback
-      })
+      const indexOf = stateChangeCallbacks.indexOf(callback)
+      if (indexOf !== -1) {
+        stateChangeCallbacks.splice(indexOf, 1)
+      }
     },
 
     /**

@@ -1,13 +1,15 @@
 import deferExceptions from './deferexceptions'
 
 function CallCallbacks (callbacks, data) {
-  callbacks.forEach(function (callback) {
-    if (callback.name !== 'handleTimeUpdate') {
-      console.log('callback loop: ' + callback.name)
+  for (var i = callbacks.length - 1; i >= 0; i--) {
+    var originalLength = callbacks.length
+
+    deferExceptions(() => callbacks[i](data))
+    var newLength = callbacks.length
+    if (originalLength - newLength > 1) {
+      i = i - (originalLength - newLength)
     }
-    deferExceptions(() => callback(data))
-  })
-  // callbacks.forEach((callback) => deferExceptions(() => callback(data)))
+  }
 }
 
 export default CallCallbacks
