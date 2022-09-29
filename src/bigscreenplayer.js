@@ -75,6 +75,8 @@ function BigscreenPlayer () {
       stateObject.endOfStream = endOfStream
       DebugTool.event(stateObject)
 
+      console.log('mediaStateUpdate: ' + evt)
+      console.log(stateChangeCallbacks)
       callCallbacks(stateChangeCallbacks, stateObject)
     }
 
@@ -276,6 +278,7 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForStateChanges: (callback) => {
+      console.log('UnregisterStateChanges: ' + callback)
       stateChangeCallbacks = stateChangeCallbacks.filter(function (existingCallback) {
         return callback !== existingCallback
       })
