@@ -76,7 +76,7 @@ function BigscreenPlayer () {
       DebugTool.event(stateObject)
 
       console.log('mediaStateUpdate: ' + evt.data.state)
-      console.log(stateChangeCallbacks)
+      console.log(stateChangeCallbacks.name)
       callCallbacks(stateChangeCallbacks, stateObject)
     }
 
