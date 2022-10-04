@@ -9,7 +9,7 @@ function CallCallbacks (callbacks, data) {
     deferExceptions(() => callbacks[i](data))
 
     var newLength = callbacks.length
-    var callbackRemovedSelf = !callbacks.includes(originalCallbacks[i])
+    var callbackRemovedSelf = callbacks.indexOf(originalCallbacks[i]) === -1
 
     if (originalLength !== newLength) {
       i = i - (originalLength - newLength)
