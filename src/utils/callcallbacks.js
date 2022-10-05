@@ -11,11 +11,8 @@ function CallCallbacks (callbacks, data) {
     var newLength = callbacks.length
     var callbackRemovedSelf = callbacks.indexOf(originalCallbacks[i]) === -1
 
-    if (originalLength !== newLength) {
+    if ((originalLength !== newLength) && !callbackRemovedSelf) {
       i = i - (originalLength - newLength)
-      if (callbackRemovedSelf) {
-        i++
-      }
     }
   }
 }
