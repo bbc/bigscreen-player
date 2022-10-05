@@ -298,9 +298,10 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForTimeUpdates: (callback) => {
-      timeUpdateCallbacks = timeUpdateCallbacks.filter(function (existingCallback) {
-        return callback !== existingCallback
-      })
+      const indexOf = timeUpdateCallbacks.indexOf(callback)
+      if (indexOf !== -1) {
+        timeUpdateCallbacks.splice(indexOf, 1)
+      }
     },
 
     /**
@@ -319,9 +320,10 @@ function BigscreenPlayer () {
      * @param {Function} callback
      */
     unregisterForSubtitleChanges: (callback) => {
-      subtitleCallbacks = subtitleCallbacks.filter(function (existingCallback) {
-        return callback !== existingCallback
-      })
+      const indexOf = subtitleCallbacks.indexOf(callback)
+      if (indexOf !== -1) {
+        subtitleCallbacks.splice(indexOf, 1)
+      }
     },
 
     /**
