@@ -345,6 +345,78 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
+    it('should remove callback from stateChangeCallbacks when a callback unregisters another handler last', () => {
+      const listener1 = jest.fn()
+      const listener2 = jest.fn()
+      const listener3 = jest.fn().mockImplementation(() => {
+        bigscreenPlayer.unregisterForStateChanges(listener1)
+        bigscreenPlayer.unregisterForStateChanges(listener2)
+      })
+
+      initialiseBigscreenPlayer()
+
+      bigscreenPlayer.registerForStateChanges(listener1)
+      bigscreenPlayer.registerForStateChanges(listener2)
+      bigscreenPlayer.registerForStateChanges(listener3)
+
+      mockEventHook({ data: { state: MediaState.PLAYING } })
+      mockEventHook({ data: { state: MediaState.PLAYING } })
+
+      expect(listener1).toHaveBeenCalledTimes(0)
+      expect(listener2).toHaveBeenCalledTimes(0)
+      expect(listener3).toHaveBeenCalledTimes(2)
+    })
+
+    it('should remove callback from stateChangeCallbacks when a callback unregisters another handler first', () => {
+      const listener1 = jest.fn().mockImplementation(() => {
+        bigscreenPlayer.unregisterForStateChanges(listener2)
+        bigscreenPlayer.unregisterForStateChanges(listener3)
+      })
+      const listener2 = jest.fn()
+      const listener3 = jest.fn()
+
+      initialiseBigscreenPlayer()
+
+      bigscreenPlayer.registerForStateChanges(listener1)
+      bigscreenPlayer.registerForStateChanges(listener2)
+      bigscreenPlayer.registerForStateChanges(listener3)
+
+      mockEventHook({ data: { state: MediaState.PLAYING } })
+      mockEventHook({ data: { state: MediaState.PLAYING } })
+
+      expect(listener1).toHaveBeenCalledTimes(2)
+      expect(listener2).toHaveBeenCalledTimes(1)
+      expect(listener3).toHaveBeenCalledTimes(1)
+    })
+
+    it('should remove callbacks from stateChangeCallbacks when a callback unregisters multiple handlers in different places', () => {
+      const listener1 = jest.fn().mockImplementation(() => {
+        bigscreenPlayer.unregisterForStateChanges(listener1)
+        bigscreenPlayer.unregisterForStateChanges(listener3)
+      })
+      const listener2 = jest.fn()
+      const listener3 = jest.fn()
+      const listener4 = jest.fn().mockImplementation(() => {
+        bigscreenPlayer.unregisterForStateChanges(listener2)
+        bigscreenPlayer.unregisterForStateChanges(listener4)
+      })
+
+      initialiseBigscreenPlayer()
+
+      bigscreenPlayer.registerForStateChanges(listener1)
+      bigscreenPlayer.registerForStateChanges(listener2)
+      bigscreenPlayer.registerForStateChanges(listener3)
+      bigscreenPlayer.registerForStateChanges(listener4)
+
+      mockEventHook({ data: { state: MediaState.PLAYING } })
+      mockEventHook({ data: { state: MediaState.PLAYING } })
+
+      expect(listener1).toHaveBeenCalledTimes(1)
+      expect(listener2).toHaveBeenCalledTimes(0)
+      expect(listener3).toHaveBeenCalledTimes(1)
+      expect(listener4).toHaveBeenCalledTimes(1)
+    })
+
     it('should only remove existing callbacks from stateChangeCallbacks', () => {
       initialiseBigscreenPlayer()
 
