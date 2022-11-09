@@ -1,0 +1,12 @@
+semi: false
+tabWidth: 2
+printWidth: 120
+singleQuote: false
+trailingComma: "es5"
+bracketSameLine: true
+endOfLine: "lf"
+overrides:
+  - files:
+      - "*.html"
+    options:
+      tabWidth: 4
