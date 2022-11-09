@@ -28,6 +28,15 @@ plugins:
   - unicorn
 
 rules:
+  no-var: "error"
+  array-callback-return: "error"
+  no-await-in-loop: "error"
+  no-constant-binary-expression: "error"
+  no-constructor-return: "error"
+  no-unreachable-loop: "error"
+  no-unused-private-class-members: "error"
+  no-use-before-define: "error"
+
   import/no-unused-modules:
     - "error"
     - unusedExports: true
