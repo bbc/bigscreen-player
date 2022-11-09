@@ -27,7 +27,8 @@
   },
   "husky": {
     "hooks": {
-      "pre-push": "npm test"
+      "pre-commit": "./scripts/format-pre-commit.sh",
+      "pre-push": "npm test && npm run lint"
     }
   },
   "devDependencies": {
