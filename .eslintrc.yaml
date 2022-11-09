@@ -1,0 +1,28 @@
+env:
+  browser: true
+  es6: true
+  node: true
+
+parser: "@babel/eslint-parser"
+
+parserOptions:
+  ecmaVersion: 2015
+  sourceType: module
+
+extends:
+  - eslint:recommended
+
+# plugins:
+#   - 
+
+overrides:
+
+  # Jest test overrides
+  - files:
+      - "src/**/*.test.{js,mjs}"
+    env:
+      jest: true
+    plugins:
+      - jest
+    extends:
+      - plugin:jest/recommended
