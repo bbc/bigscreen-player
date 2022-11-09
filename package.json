@@ -21,7 +21,7 @@
     "start": "rollup -c rollup.dev.config.js -w",
     "test": "jest",
     "coverage": "jest --coverage",
-    "lint": "npx eslint ."
+    "lint": "eslint ."
   },
   "husky": {
     "hooks": {
@@ -40,12 +40,8 @@
     "@rollup/plugin-node-resolve": "^13.0.4",
     "babel-jest": "^27.0.6",
     "clean-jsdoc-theme": "^3.2.7",
-    "eslint": "^7.2.0",
-    "eslint-plugin-es5": "1.3.1",
+    "eslint": "^7.32.0",
     "eslint-plugin-jest": "^24.4.0",
-    "eslint-plugin-node": "^7.0.1",
-    "eslint-plugin-promise": "4.0.1",
-    "eslint-plugin-standard": "4.0.0",
     "husky": "^4.2.5",
     "jest": "^27.0.6",
     "jsdoc": "^3.6.4",
