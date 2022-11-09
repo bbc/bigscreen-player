@@ -16,7 +16,9 @@
   "scripts": {
     "prepare": "[ ! -d dist/ ] && npm run build || exit 0",
     "docs": "npx jsdoc -c jsdoc.conf.json",
-    "build": "rollup -c rollup.config.js",
+    "build": "npm run build:clean && npm run build:bundle",
+    "build:clean": "rm -rf dist",
+    "build:bundle": "rollup -c rollup.config.js",
     "watch": "rollup -c rollup.config.js -w",
     "start": "rollup -c rollup.dev.config.js -w",
     "test": "jest",
