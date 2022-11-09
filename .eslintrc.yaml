@@ -37,7 +37,7 @@ rules:
   # todo
   unicorn/catch-error-name: "off"
   unicorn/prevent-abbreviations: "off"
-  
+
   # TV compatibility
   unicorn/no-array-for-each: "off"
   unicorn/no-array-reduce: "off"
@@ -49,6 +49,9 @@ rules:
 
   # style
   no-prototype-builtins: "off"
+  no-unused-vars:
+    - "error"
+    - varsIgnorePattern: "_"
   unicorn/no-null: "off"
 
   # soft rules
