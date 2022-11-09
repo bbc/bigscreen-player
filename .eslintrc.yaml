@@ -11,11 +11,27 @@ parserOptions:
 
 extends:
   - eslint:recommended
+  - plugin:import/recommended
+  - plugin:json/recommended
+  - plugin:sonarjs/recommended
+  - plugin:unicorn/recommended
 
-# plugins:
-#   - 
+plugins:
+  - import
+  - json
+  - sonarjs
+  - unicorn
+
+rules:
+  import/no-unused-modules:
+    - "error"
 
 overrides:
+  # General test overrides
+  - files:
+      - "**/*.test.{js,mjs}"
+    rules:
+      sonarjs/no-duplicate-string: "off"
 
   # Jest test overrides
   - files:
