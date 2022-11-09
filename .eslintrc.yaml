@@ -9,6 +9,11 @@ parserOptions:
   ecmaVersion: 2015
   sourceType: module
 
+ignorePatterns:
+  - "**/*.config.*"
+  - "**/rollup.*.js"
+  - samsungstreaming2015.js
+
 extends:
   - eslint:recommended
   - plugin:import/recommended
@@ -25,6 +30,30 @@ plugins:
 rules:
   import/no-unused-modules:
     - "error"
+    - unusedExports: true
+      ignoreExports:
+        - src/main.js
+
+  # todo
+  unicorn/catch-error-name: "off"
+  unicorn/prevent-abbreviations: "off"
+  
+  # TV compatibility
+  unicorn/no-array-for-each: "off"
+  unicorn/no-array-reduce: "off"
+  unicorn/no-for-loop: "off"
+  unicorn/numeric-separators-style: "off"
+  unicorn/prefer-includes: "off"
+  unicorn/prefer-dom-node-append: "off"
+  unicorn/prefer-number-properties: "off"
+
+  # style
+  no-prototype-builtins: "off"
+  unicorn/no-null: "off"
+
+  # soft rules
+  sonarjs/cognitive-complexity: "warn"
+  unicorn/consistent-function-scoping: "warn"
 
 overrides:
   # General test overrides
@@ -32,6 +61,8 @@ overrides:
       - "**/*.test.{js,mjs}"
     rules:
       sonarjs/no-duplicate-string: "off"
+      sonarjs/no-identical-functions: "off"
+      unicorn/consistent-function-scoping: "off"
 
   # Jest test overrides
   - files:
