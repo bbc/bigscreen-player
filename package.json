@@ -27,7 +27,7 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "./scripts/format-pre-commit.sh",
+      "pre-commit": "./scripts/format-staged.sh",
       "pre-push": "npm test"
     }
   },
