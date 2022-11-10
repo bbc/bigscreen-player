@@ -5,3 +5,8 @@ node_modules/
 docs/
 dist/
 dist-local/
+
+# configs
+.*rc.yaml
+*.config.*
+rollup.*.js

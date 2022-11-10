@@ -10,9 +10,7 @@ parserOptions:
   sourceType: module
 
 ignorePatterns:
-  - "**/*.config.*"
-  - "**/rollup.*.js"
-  - samsungstreaming2015.js
+  - "samsungstreaming2015.js"
 
 extends:
   - eslint:recommended
@@ -28,53 +26,111 @@ plugins:
   - unicorn
 
 rules:
-  no-var: "error"
-  array-callback-return: "error"
-  no-await-in-loop: "error"
-  no-constant-binary-expression: "error"
-  no-constructor-return: "error"
-  no-unreachable-loop: "error"
-  no-unused-private-class-members: "error"
-  no-use-before-define: "error"
+  # Discuss these!
+  sonarjs/cognitive-complexity: off
+  unicorn/consistent-function-scoping: off
+  unicorn/no-array-reduce: off
+  unicorn/prevent-abbreviations: off
+  unicorn/catch-error-name: off
+
+  # Style
+  arrow-body-style: [error, as-needed]
+  camelcase: error
+  curly: [error, multi-line]
+  default-param-last: error
+  eqeqeq: [error, allow-null]
+  max-nested-callbacks: [error, 3]
+  new-cap: [error, { newIsCap: true, capIsNew: false }]
+  no-else-return: error
+  no-floating-decimal: error
+  no-multi-str: error
+  no-var: error
+  consistent-return: warn
+  object-shorthand: error
+  one-var: [error, { initialized: never }]
+  yoda: [error, never]
+  unicorn/no-null: off
+
+  spaced-comment:
+    - error
+    - always
+    - markers:
+        - global
+        - globals
+        - eslint
+        - eslint-disable
+        - "*package"
+        - "!"
+        - ","
+
+  # Possible problems
+  array-callback-return: error
+  default-case: error
+  no-array-constructor: error
+  no-await-in-loop: error
+  no-caller: error
+  no-confusing-arrow: error
+  no-console: error
+  no-constant-binary-expression: error
+  no-constructor-return: error
+  no-debugger: error
+  no-div-regex: error
+  no-eval: error
+  no-extend-native: error
+  no-extra-bind: error
+  no-implied-eval: error
+  no-iterator: error
+  no-label-var: error
+  no-labels: error
+  no-lone-blocks: error
+  no-new: error
+  no-new-func: error
+  no-new-object: error
+  no-new-wrappers: error
+  no-octal-escape: error
+  no-proto: error
+  no-return-assign: error
+  no-return-await: error
+  no-sequences: error
+  no-throw-literal: error
+  no-unneeded-ternary: error
+  no-unreachable-loop: error
+  no-unused-private-class-members: error
+  no-unused-vars: [error, { argsIgnorePattern: "^_" }]
+  no-useless-call: error
+  no-useless-constructor: error
+  no-useless-return: error
+  no-use-before-define: [error, nofunc]
+  no-with: error
+  use-isnan: error
+  wrap-iife: [error, any]
 
   import/no-unused-modules:
-    - "error"
+    - error
     - unusedExports: true
       ignoreExports:
-        - src/main.js
-
-  # todo
-  unicorn/catch-error-name: "off"
-  unicorn/prevent-abbreviations: "off"
+        - "src/main.js"
 
   # TV compatibility
-  unicorn/no-array-for-each: "off"
-  unicorn/no-array-reduce: "off"
-  unicorn/no-for-loop: "off"
-  unicorn/numeric-separators-style: "off"
-  unicorn/prefer-includes: "off"
-  unicorn/prefer-dom-node-append: "off"
-  unicorn/prefer-number-properties: "off"
-
-  # style
-  no-prototype-builtins: "off"
-  no-unused-vars:
-    - "error"
-    - varsIgnorePattern: "_"
-  unicorn/no-null: "off"
-
-  # soft rules
-  sonarjs/cognitive-complexity: "warn"
-  unicorn/consistent-function-scoping: "warn"
+  no-prototype-builtins: off
+  unicorn/no-array-for-each: off
+  unicorn/no-for-loop: off
+  unicorn/numeric-separators-style: off
+  unicorn/prefer-array-flat: off
+  unicorn/prefer-includes: off
+  unicorn/prefer-dom-node-append: off
+  unicorn/prefer-number-properties: off
+  unicorn/prefer-math-trunc: off
 
 overrides:
   # General test overrides
   - files:
       - "**/*.test.{js,mjs}"
     rules:
-      sonarjs/no-duplicate-string: "off"
-      sonarjs/no-identical-functions: "off"
-      unicorn/consistent-function-scoping: "off"
+      max-nested-callbacks: off
+      sonarjs/no-duplicate-string: off
+      sonarjs/no-identical-functions: off
+      unicorn/consistent-function-scoping: off
 
   # Jest test overrides
   - files:
