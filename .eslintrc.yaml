@@ -48,7 +48,7 @@ rules:
   object-shorthand: error
   one-var: [error, { initialized: never }]
   prefer-const: [error, { destructuring: all, ignoreReadBeforeAssign: true }]
-  prefer-template: "error"
+  prefer-template: error
   quote-props: [error, as-needed]
   yoda: [error, never]
   unicorn/no-null: off
@@ -86,6 +86,7 @@ rules:
   no-label-var: error
   no-labels: error
   no-lone-blocks: error
+  no-loop-func: error
   no-new: error
   no-new-func: error
   no-new-object: error
