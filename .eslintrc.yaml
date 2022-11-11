@@ -47,6 +47,7 @@ rules:
   no-var: error
   object-shorthand: error
   one-var: [error, { initialized: never }]
+  prefer-const: [error, { destructuring: "all", ignoreReadBeforeAssign: true }]
   yoda: [error, never]
   unicorn/no-null: off
 
