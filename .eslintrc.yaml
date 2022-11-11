@@ -49,6 +49,7 @@ rules:
   one-var: [error, { initialized: never }]
   prefer-const: [error, { destructuring: all, ignoreReadBeforeAssign: true }]
   prefer-template: error
+  prefer-rest-params: error
   quote-props: [error, as-needed]
   yoda: [error, never]
   unicorn/no-null: off
