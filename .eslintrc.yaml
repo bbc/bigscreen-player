@@ -38,6 +38,7 @@ rules:
   camelcase: error
   curly: [error, multi-line]
   default-param-last: error
+  dot-notation: error
   eqeqeq: [error, allow-null]
   max-nested-callbacks: [error, 3]
   new-cap: [error, { newIsCap: true, capIsNew: false }]
