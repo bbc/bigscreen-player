@@ -45,7 +45,6 @@ rules:
   no-floating-decimal: error
   no-multi-str: error
   no-var: error
-  consistent-return: warn
   object-shorthand: error
   one-var: [error, { initialized: never }]
   yoda: [error, never]
