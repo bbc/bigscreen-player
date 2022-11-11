@@ -47,6 +47,7 @@ rules:
   no-var: error
   object-shorthand: error
   one-var: [error, { initialized: never }]
+  prefer-arrow-callback: error
   prefer-const: [error, { destructuring: all, ignoreReadBeforeAssign: true }]
   prefer-template: error
   prefer-rest-params: error
