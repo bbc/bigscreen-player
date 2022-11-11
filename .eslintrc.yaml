@@ -54,6 +54,7 @@ rules:
   prefer-spread: error
   quote-props: [error, as-needed]
   yoda: [error, never]
+  import/prefer-default-export: error
   unicorn/no-null: off
 
   spaced-comment:
@@ -113,6 +114,8 @@ rules:
   no-with: error
   use-isnan: error
   wrap-iife: [error, any]
+  import/first: error
+  import/no-mutable-exports: error
 
   import/no-unused-modules:
     - error
