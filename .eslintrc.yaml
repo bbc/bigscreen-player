@@ -81,7 +81,7 @@ rules:
   no-constructor-return: error
   no-debugger: error
   no-div-regex: error
-  no-dupe-class-members: error
+  no-duplicate-imports: error
   no-eval: error
   no-extend-native: error
   no-extra-bind: error
