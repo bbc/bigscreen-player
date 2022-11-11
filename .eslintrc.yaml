@@ -50,6 +50,7 @@ rules:
   prefer-const: [error, { destructuring: all, ignoreReadBeforeAssign: true }]
   prefer-template: error
   prefer-rest-params: error
+  prefer-spread: error
   quote-props: [error, as-needed]
   yoda: [error, never]
   unicorn/no-null: off
