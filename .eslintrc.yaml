@@ -65,6 +65,7 @@ rules:
   # Possible problems
   array-callback-return: error
   default-case: error
+  default-case-last: error
   no-array-constructor: error
   no-await-in-loop: error
   no-caller: error
