@@ -8,11 +8,11 @@ staged_files="$(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |
 
 # Lint all selected files
 # --quiet to silence unmatched file warnings caused by .eslintignore
-echo "${staged_files}" | xargs ./node_modules/.bin/eslint --fix --quiet
+printf "%s\n" "${staged_files}" | xargs ./node_modules/.bin/eslint --fix --quiet
 
 [ "${?}" -ne 0 ] && exit 1
 
 # Add back the modified/linted files to staging
-echo "${staged_files}" | xargs git add
+printf "%s\n" "${staged_files}" | xargs git add
 
 exit 0

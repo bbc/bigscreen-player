@@ -7,9 +7,9 @@ staged_files="$(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |
 [ -z "${staged_files}" ] && exit 0
 
 # Prettify all selected files
-echo "${staged_files}" | xargs ./node_modules/.bin/prettier --ignore-unknown --write
+printf "%s\n" "${staged_files}" | xargs ./node_modules/.bin/prettier --ignore-unknown --write
 
 # Add back the modified/prettified files to staging
-echo "${staged_files}" | xargs git add
+printf "%s\n" "${staged_files}" | xargs git add
 
 exit 0
