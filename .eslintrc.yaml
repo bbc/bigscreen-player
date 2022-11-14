@@ -10,6 +10,8 @@ parserOptions:
   sourceType: module
 
 ignorePatterns:
+  - "samsungmaple.js"
+  - "samsungstreaming.js"
   - "samsungstreaming2015.js"
 
 extends:
@@ -155,3 +157,7 @@ overrides:
       - jest
     extends:
       - plugin:jest/recommended
+      - plugin:jest/style
+    rules:
+      jest/prefer-each: "error"
+      jest/prefer-spy-on: "error"
