@@ -42,7 +42,8 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
 
   let playerSettings = Utils.merge({
     debug: {
-      logLevel: 2
+      logLevel: 3,
+      dispatchEvent: true
     },
     streaming: {
       liveDelay: 1.1,

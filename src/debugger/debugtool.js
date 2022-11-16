@@ -12,7 +12,7 @@ function DebugTool () {
   }
 
   let visible = false
-  let logLevel = LOG_LEVELS.INFO
+  let logLevel = LOG_LEVELS.VERBOSE
   let staticFieldValues = { }
 
   let rootElement, view
