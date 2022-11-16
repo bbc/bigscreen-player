@@ -1,0 +1,165 @@
+root: true
+
+env:
+  browser: true
+  es6: true
+  node: true
+
+parser: "@babel/eslint-parser"
+
+parserOptions:
+  ecmaVersion: 2015
+  sourceType: module
+
+ignorePatterns:
+  - "samsungmaple.js"
+  - "samsungstreaming.js"
+  - "samsungstreaming2015.js"
+
+extends:
+  - eslint:recommended
+  - plugin:import/recommended
+  - plugin:json/recommended
+  - plugin:sonarjs/recommended
+  - plugin:unicorn/recommended
+
+plugins:
+  - import
+  - json
+  - sonarjs
+  - unicorn
+
+rules:
+  # Discuss these!
+  sonarjs/cognitive-complexity: off
+  unicorn/consistent-function-scoping: off
+  unicorn/no-array-reduce: off
+  unicorn/prevent-abbreviations: off
+  unicorn/catch-error-name: off
+
+  # Style
+  arrow-body-style: [error, as-needed]
+  camelcase: error
+  curly: [error, multi-line]
+  default-param-last: error
+  dot-notation: error
+  eqeqeq: [error, allow-null]
+  id-length: [error, { min: 2 }]
+  max-nested-callbacks: [error, 3]
+  new-cap: [error, { newIsCap: true, capIsNew: false }]
+  no-else-return: error
+  no-floating-decimal: error
+  no-multi-str: error
+  no-var: error
+  object-shorthand: error
+  one-var: [error, { initialized: never }]
+  prefer-arrow-callback: error
+  prefer-const: [error, { destructuring: all, ignoreReadBeforeAssign: true }]
+  prefer-template: error
+  prefer-rest-params: error
+  prefer-spread: error
+  quote-props: [error, as-needed]
+  yoda: [error, never]
+  import/prefer-default-export: error
+  unicorn/no-null: off
+
+  spaced-comment:
+    - error
+    - always
+    - markers:
+        - global
+        - globals
+        - eslint
+        - eslint-disable
+        - "*package"
+        - "!"
+        - ","
+
+  # Possible problems
+  array-callback-return: error
+  default-case: error
+  default-case-last: error
+  no-array-constructor: error
+  no-await-in-loop: error
+  no-caller: error
+  no-confusing-arrow: error
+  no-console: error
+  no-constant-binary-expression: error
+  no-constructor-return: error
+  no-debugger: error
+  no-div-regex: error
+  no-duplicate-imports: error
+  no-eval: error
+  no-extend-native: error
+  no-extra-bind: error
+  no-implied-eval: error
+  no-iterator: error
+  no-label-var: error
+  no-labels: error
+  no-lone-blocks: error
+  no-loop-func: error
+  no-new: error
+  no-new-func: error
+  no-new-object: error
+  no-new-wrappers: error
+  no-octal-escape: error
+  no-param-reassign: error
+  no-proto: error
+  no-return-assign: error
+  no-return-await: error
+  no-sequences: error
+  no-throw-literal: error
+  no-unneeded-ternary: error
+  no-unreachable-loop: error
+  no-unused-private-class-members: error
+  no-unused-vars: [error, { argsIgnorePattern: "^_" }]
+  no-useless-call: error
+  no-useless-constructor: error
+  no-useless-return: error
+  no-use-before-define: [error, nofunc]
+  no-with: error
+  use-isnan: error
+  wrap-iife: [error, any]
+  import/first: error
+  import/no-mutable-exports: error
+
+  import/no-unused-modules:
+    - error
+    - unusedExports: true
+      ignoreExports:
+        - "src/main.js"
+
+  # TV compatibility
+  no-prototype-builtins: off
+  unicorn/no-array-for-each: off
+  unicorn/no-for-loop: off
+  unicorn/numeric-separators-style: off
+  unicorn/prefer-array-flat: off
+  unicorn/prefer-includes: off
+  unicorn/prefer-dom-node-append: off
+  unicorn/prefer-number-properties: off
+  unicorn/prefer-math-trunc: off
+
+overrides:
+  # General test overrides
+  - files:
+      - "**/*.test.{js,mjs}"
+    rules:
+      max-nested-callbacks: off
+      sonarjs/no-duplicate-string: off
+      sonarjs/no-identical-functions: off
+      unicorn/consistent-function-scoping: off
+
+  # Jest test overrides
+  - files:
+      - "src/**/*.test.{js,mjs}"
+    env:
+      jest: true
+    plugins:
+      - jest
+    extends:
+      - plugin:jest/recommended
+      - plugin:jest/style
+    rules:
+      jest/prefer-each: "error"
+      jest/prefer-spy-on: "error"
