@@ -74,6 +74,17 @@ export default class BigscreenPlayer {
     this.#playerReadyCallback = callbacks?.onSuccess?.bind(this)
     this.#playerErrorCallback = callbacks?.onError?.bind(this)
 
+    // Backwards compatibility with Old API; to be removed on Major Version Update
+    if (data.media && !data.media.captions && data.media.captionsUrl) {
+      data.media.captions = [
+        {
+          url: data.media.captionsUrl,
+        },
+      ]
+    }
+
+    this.#mediaSources = MediaSources()
+
     const handleDataLoaded = this.#bigscreenPlayerDataLoaded.bind(this)
 
     const mediaSourceCallbacks = {
@@ -83,17 +94,6 @@ export default class BigscreenPlayer {
           callbacks.onError(error)
         }
       },
-    }
-
-    this.#mediaSources = MediaSources()
-
-    // Backwards compatibility with Old API; to be removed on Major Version Update
-    if (data.media && !data.media.captions && data.media.captionsUrl) {
-      data.media.captions = [
-        {
-          url: data.media.captionsUrl,
-        },
-      ]
     }
 
     this.#mediaSources.init(
