@@ -72,16 +72,23 @@ function setupManifestData(options) {
 
 // options = subtitlesAvailable, windowType, windowStartTime, windowEndTime
 function initialiseBigscreenPlayer(options = {}) {
-  const { windowType = WindowTypes.STATIC } = options
-  const { subtitlesEnabled = false } = options
-
   playbackElement = document.createElement("div")
   playbackElement.id = "app"
 
-  const { mediaKind = "video", transferFormat, serverDate, initialPlaybackTime } = options
+  const {
+    mediaKind = "video",
+    subtitlesEnabled = false,
+    windowType = WindowTypes.STATIC,
+    initialPlaybackTime,
+    serverDate,
+    transferFormat,
+  } = options
+
   bigscreenPlayerData = {
     initialPlaybackTime,
     serverDate,
+    subtitlesEnabled,
+    windowType,
     media: {
       transferFormat,
       kind: mediaKind,
@@ -119,7 +126,7 @@ function initialiseBigscreenPlayer(options = {}) {
     callbacks = { onSuccess: successCallback, onError: errorCallback }
   }
 
-  return new BigscreenPlayer(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, callbacks)
+  return new BigscreenPlayer(playbackElement, bigscreenPlayerData, callbacks)
 }
 
 describe("Bigscreen Player", () => {

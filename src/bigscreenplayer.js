@@ -62,10 +62,10 @@ export default class BigscreenPlayer {
    * @param {boolean} isSubtitlesEnabled - Enable subtitles on initialisation
    * @param {InitCallbacks} callbacks
    */
-  constructor(el, data, windowType, isSubtitlesEnabled, callbacks) {
+  constructor(el, data, callbacks) {
     this.#playbackElement = el
     this.#resizer = Resizer()
-    this.#windowType = windowType
+    this.#windowType = data.windowType
     this.#serverDate = data.serverDate
     Chronicle.init()
     DebugTool.setRootElement(this.#playbackElement)
@@ -77,7 +77,7 @@ export default class BigscreenPlayer {
     const handleDataLoaded = this.#bigscreenPlayerDataLoaded.bind(this)
 
     const mediaSourceCallbacks = {
-      onSuccess: () => handleDataLoaded(data, isSubtitlesEnabled),
+      onSuccess: () => handleDataLoaded(data),
       onError: (error) => {
         if (typeof callbacks?.onError === "function") {
           callbacks.onError(error)
@@ -105,11 +105,11 @@ export default class BigscreenPlayer {
     )
   }
 
-  #bigscreenPlayerDataLoaded(data, isSubtitlesEnabled) {
+  #bigscreenPlayerDataLoaded(data) {
     if (this.#windowType !== WindowTypes.STATIC) {
       data.time = this.#mediaSources.time()
-      this.#serverDate = data.serverDate
 
+      this.#serverDate = data.serverDate
       this.#initialPlaybackTimeEpoch = data.initialPlaybackTime
 
       // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
@@ -141,7 +141,7 @@ export default class BigscreenPlayer {
 
     this.#subtitles = Subtitles(
       this.#playerComponent,
-      isSubtitlesEnabled,
+      data.subtitlesEnabled,
       this.#playbackElement,
       data.media.subtitleCustomisation,
       this.#mediaSources,
