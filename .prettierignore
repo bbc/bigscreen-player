@@ -1,0 +1,7 @@
+# deps
+node_modules/
+
+# build
+docs/
+dist/
+dist-local/

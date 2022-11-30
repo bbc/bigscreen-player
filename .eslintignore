@@ -1,3 +1,19 @@
-/docs/
-/dist/
-/dist-local/
+# unsupported
+*.html
+*.md
+*.sh
+*.yaml
+
+# deps
+node_modules/
+
+# build
+docs/
+dist/
+dist-local/
+
+# configs
+.nvmrc
+*.config.*
+rollup.*.js
+.*ignore
