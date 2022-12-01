@@ -17,7 +17,6 @@ import Version from "./version"
 import Resizer from "./resizer"
 import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
-import "./typedefs"
 
 export default class BigscreenPlayer {
   static version = Version
@@ -25,8 +24,6 @@ export default class BigscreenPlayer {
   static END_OF_STREAM_TOLERANCE = 10
 
   /**
-   * @function
-   * @param {TALDevice} device
    * @return the live support of the device.
    */
   static getLiveSupport() {
@@ -53,14 +50,37 @@ export default class BigscreenPlayer {
   #subtitles
 
   /**
+   * @typedef {Object} MediaConnection
+   * @property {String} url - media endpoint
+   * @property {String} cdn - identifier for the endpoint
+   */
+
+  /**
+   * Data required for playback
+   * @typedef {Object} BigscreenPlayerData
+   * @property {Object} media
+   * @property {string} media.type - source type e.g 'application/dash+xml'
+   * @property {string} media.mimeType - mimeType e.g 'video/mp4'
+   * @property {string} media.kind - 'video' or 'audio'
+   * @property {string} media.captionsUrl - 'Location for a captions file'
+   * @property {MediaConnection[]} media.urls - Media urls to use
+   * @property {Date} serverDate - Date object with server time offset
+   * @property {WindowTypes} windowType
+   * @property {boolean} subtitlesEnabled – Enable subtitles on initialisation
+   */
+
+  /**
+   *
+   * @typedef {object} ConstructionCallbacks
+   * @property {function} [callbacks.onSuccess] - Called after Bigscreen Player is initialised
+   * @property {function} [callbacks.onError] - Called when an error occurs during initialisation
+   */
+
+  /**
    * Call first to initialise bigscreen player for playback.
-   * @function
-   * @name init
-   * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
+   * @param {HTMLDivElement} el - The Div element where content elements should be rendered
    * @param {BigscreenPlayerData} data
-   * @param {WindowTypes} windowType
-   * @param {boolean} isSubtitlesEnabled - Enable subtitles on initialisation
-   * @param {InitCallbacks} callbacks
+   * @param {ConstructionCallbacks} callbacks
    */
   constructor(el, data, callbacks) {
     this.#playbackElement = el
@@ -217,8 +237,6 @@ export default class BigscreenPlayer {
 
   /**
    * Should be called at the end of all playback sessions. Resets state and clears any UI.
-   * @function
-   * @name tearDown
    */
   tearDown() {
     if (this.#subtitles) {
@@ -252,7 +270,6 @@ export default class BigscreenPlayer {
   /**
    * Pass a function to call whenever the player transitions state.
    * @see {@link module:models/mediastate}
-   * @function
    * @param {Function} callback
    */
   registerForStateChanges(callback) {
@@ -262,7 +279,6 @@ export default class BigscreenPlayer {
 
   /**
    * Unregisters a previously registered callback.
-   * @function
    * @param {Function} callback
    */
   unregisterForStateChanges(callback) {
@@ -274,7 +290,6 @@ export default class BigscreenPlayer {
 
   /**
    * Pass a function to call whenever the player issues a time update.
-   * @function
    * @param {Function} callback
    */
   registerForTimeUpdates(callback) {
@@ -284,7 +299,6 @@ export default class BigscreenPlayer {
 
   /**
    * Unregisters a previously registered callback.
-   * @function
    * @param {Function} callback
    */
   unregisterForTimeUpdates(callback) {
@@ -296,7 +310,6 @@ export default class BigscreenPlayer {
 
   /**
    * Pass a function to be called whenever subtitles are enabled or disabled.
-   * @function
    * @param {Function} callback
    */
   registerForSubtitleChanges(callback) {
@@ -306,7 +319,6 @@ export default class BigscreenPlayer {
 
   /**
    * Unregisters a previously registered callback for changes to subtitles.
-   * @function
    * @param {Function} callback
    */
   unregisterForSubtitleChanges(callback) {
@@ -318,7 +330,6 @@ export default class BigscreenPlayer {
 
   /**
    * Sets the current time of the media asset.
-   * @function
    * @param {Number} time - In seconds
    */
   setCurrentTime(time) {
@@ -344,7 +355,6 @@ export default class BigscreenPlayer {
 
   /**
    * Returns the media asset's current time in seconds.
-   * @function
    */
   getCurrentTime() {
     return this.#playerComponent?.getCurrentTime() ?? 0
@@ -353,7 +363,6 @@ export default class BigscreenPlayer {
   /**
    * Returns the current media kind.
    * 'audio' or 'video'
-   * @function
    */
   getMediaKind() {
     return this.#mediaKind
@@ -362,7 +371,6 @@ export default class BigscreenPlayer {
   /**
    * Returns the current window type.
    * @see {@link module:bigscreenplayer/models/windowtypes}
-   * @function
    */
   getWindowType() {
     return this.#windowType
@@ -370,7 +378,6 @@ export default class BigscreenPlayer {
 
   /**
    * Returns an object including the current start and end times.
-   * @function
    * @returns {Object} {start: Number, end: Number}
    */
   getSeekableRange() {
@@ -378,7 +385,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @returns {boolean} Returns true if media is initialised and playing a live stream within a tolerance of the end of the seekable range (10 seconds).
    */
   isPlayingAtLiveEdge() {
@@ -390,7 +396,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @return {Object} An object of the shape {windowStartTime: Number, windowEndTime: Number, initialPlaybackTime: Number, serverDate: Date}
    */
   getLiveWindowData() {
@@ -407,7 +412,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @returns the duration of the media asset.
    */
   getDuration() {
@@ -415,7 +419,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @returns if the player is paused.
    */
   isPaused() {
@@ -423,7 +426,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @returns if the media asset has ended.
    */
   isEnded() {
@@ -432,7 +434,6 @@ export default class BigscreenPlayer {
 
   /**
    * Play the media assest from the current point in time.
-   * @function
    */
   play() {
     DebugTool.apicall("play")
@@ -441,7 +442,6 @@ export default class BigscreenPlayer {
 
   /**
    * Pause the media asset.
-   * @function
    * @param {*} opts
    * @param {boolean} opts.userPause
    * @param {boolean} opts.disableAutoResume
@@ -466,7 +466,6 @@ export default class BigscreenPlayer {
 
   /**
    * Set whether or not subtitles should be enabled.
-   * @function
    * @param {boolean} value
    */
   setSubtitlesEnabled(enabled) {
@@ -484,7 +483,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @return if subtitles are currently enabled.
    */
   isSubtitlesEnabled() {
@@ -492,7 +490,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @return Returns whether or not subtitles are currently enabled.
    */
   isSubtitlesAvailable() {
@@ -525,7 +522,6 @@ export default class BigscreenPlayer {
    *
    * An enum may be used to set the on-screen position of any transport controls
    * (work in progress to remove this - UI concern).
-   * @function
    * @param {*} position
    */
   setTransportControlsPosition(position) {
@@ -535,7 +531,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @return Returns whether the current media asset is seekable.
    */
   canSeek() {
@@ -551,7 +546,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @return Returns whether the current media asset is pausable.
    */
   canPause() {
@@ -567,7 +561,6 @@ export default class BigscreenPlayer {
 
   /**
    * Return a mock for in place testing.
-   * @function
    * @param {*} opts
    */
   mock(opts) {
@@ -576,7 +569,6 @@ export default class BigscreenPlayer {
 
   /**
    * Unmock the player.
-   * @function
    */
   unmock() {
     MockBigscreenPlayer.unmock(this)
@@ -584,7 +576,6 @@ export default class BigscreenPlayer {
 
   /**
    * Return a mock for unit tests.
-   * @function
    * @param {*} opts
    */
   mockJasmine(opts) {
@@ -593,7 +584,6 @@ export default class BigscreenPlayer {
 
   /**
    * Register a plugin for extended events.
-   * @function
    * @param {*} plugin
    */
   registerPlugin(plugin) {
@@ -602,7 +592,6 @@ export default class BigscreenPlayer {
 
   /**
    * Unregister a previously registered plugin.
-   * @function
    * @param {*} plugin
    */
   unregisterPlugin(plugin) {
@@ -612,14 +601,12 @@ export default class BigscreenPlayer {
   /**
    * Returns an object with a number of functions related to the ability to transition state
    * given the current state and the playback strategy in use.
-   * @function
    */
   transitions() {
     return this.#playerComponent?.transitions() ?? {}
   }
 
   /**
-   * @function
    * @return The media element currently being used.
    */
   getPlayerElement() {
@@ -627,7 +614,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @param {Number} epochTime - Unix Epoch based time in milliseconds.
    * @return the time in seconds within the current sliding window.
    */
@@ -636,7 +622,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @return The runtime version of the library.
    */
   getFrameworkVersion() {
@@ -644,7 +629,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @param {Number} time - Seconds
    * @return the time in milliseconds within the current sliding window.
    */
@@ -654,7 +638,6 @@ export default class BigscreenPlayer {
 
   /**
    * Toggle the visibility of the debug tool overlay.
-   * @function
    */
   toggleDebug() {
     if (this.#playerComponent) {
@@ -663,7 +646,6 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @function
    * @return {Object} - Key value pairs of available log levels
    */
   static getLogLevels() {
@@ -671,7 +653,7 @@ export default class BigscreenPlayer {
   }
 
   /**
-   * @borrows setLogLevel as setLogLevel
+   * @borrows DebugTool.setLogLevel as setLogLevel
    * @param logLevel -  log level to display @see getLogLevels
    */
   static setLogLevel = DebugTool.setLogLevel
