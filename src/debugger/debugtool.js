@@ -13,7 +13,7 @@ function DebugTool () {
 
   let visible = false
   let logLevel = LOG_LEVELS.INFO
-  let staticFieldValues = { }
+  let staticFieldValues = {}
 
   let rootElement, view
 
@@ -108,19 +108,19 @@ function DebugTool () {
   }
 
   return {
-    toggleVisibility: toggleVisibility,
-    setRootElement: setRootElement,
-    setLogLevel: setLogLevel,
-    getLogLevel: getLogLevel,
+    toggleVisibility,
+    setRootElement,
+    setLogLevel,
+    getLogLevel,
     logLevels: LOG_LEVELS,
-    verbose: verbose,
-    info: info,
-    error: error,
-    event: event,
-    time: time,
+    verbose,
+    info,
+    error,
+    event,
+    time,
     apicall: Chronicle.apicall,
     keyValue: updateKeyValue,
-    tearDown: tearDown
+    tearDown
   }
 }
 
