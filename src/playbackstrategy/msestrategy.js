@@ -40,10 +40,10 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
   }
 
-  let playerSettings = Utils.merge({
-    debug: {
-      logLevel: 2
-    },
+  const debugSettings = DebugTool.getLogLevel() === DebugTool.logLevels.VERBOSE ? { logLevel: 5, dispatchEvent: true } : { logLevel: 2 }
+
+  const playerSettings = Utils.merge({
+    debug: debugSettings,
     streaming: {
       liveDelay: 1.1,
       bufferToKeep: 4,
