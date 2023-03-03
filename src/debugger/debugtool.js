@@ -31,6 +31,10 @@ function DebugTool () {
     }
   }
 
+  function getLogLevel () {
+    return logLevel
+  }
+
   function show () {
     view = DebugView
     view.setRootElement(rootElement)
@@ -107,6 +111,7 @@ function DebugTool () {
     toggleVisibility: toggleVisibility,
     setRootElement: setRootElement,
     setLogLevel: setLogLevel,
+    getLogLevel: getLogLevel,
     logLevels: LOG_LEVELS,
     verbose: verbose,
     info: info,

@@ -609,6 +609,12 @@ function BigscreenPlayer () {
 
     /**
      * @function
+     * @return {string} - currently set log level @see getLogLevels
+     */
+    getLogLevel: () => DebugTool.getLogLevel,
+
+    /**
+     * @function
      * @param logLevel -  log level to display @see getLogLevels
      */
     setLogLevel: DebugTool.setLogLevel,
