@@ -302,8 +302,8 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     }
   }
 
-  function onDebugLog (e) {
-    DebugTool.verbose(e.message)
+  function onDebugLog (error) {
+    DebugTool.verbose(error.message)
   }
 
   function publishMediaState (mediaState) {
