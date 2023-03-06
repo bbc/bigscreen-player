@@ -47,7 +47,7 @@ function BigscreenPlayer () {
       DebugTool.time(evt.data.currentTime)
       callCallbacks(timeUpdateCallbacks, {
         currentTime: evt.data.currentTime,
-        endOfStream: endOfStream
+        endOfStream
       })
     } else {
       let stateObject = { state: evt.data.state }
@@ -95,9 +95,9 @@ function BigscreenPlayer () {
   function deviceTimeToDate (time) {
     if (getWindowStartTime()) {
       return new Date(convertVideoTimeSecondsToEpochMs(time))
-    } else {
+    } 
       return new Date(time * 1000)
-    }
+    
   }
 
   function convertVideoTimeSecondsToEpochMs (seconds) {
@@ -157,7 +157,7 @@ function BigscreenPlayer () {
   }
 
   function callSubtitlesCallbacks (enabled) {
-    callCallbacks(subtitleCallbacks, { enabled: enabled })
+    callCallbacks(subtitleCallbacks, { enabled })
   }
 
   function setSubtitlesEnabled (enabled) {
@@ -397,7 +397,7 @@ function BigscreenPlayer () {
         windowStartTime: getWindowStartTime(),
         windowEndTime: getWindowEndTime(),
         initialPlaybackTime: initialPlaybackTimeEpoch,
-        serverDate: serverDate
+        serverDate
       }
     },
 
@@ -459,19 +459,19 @@ function BigscreenPlayer () {
      * @function
      * @param {boolean} value
      */
-    setSubtitlesEnabled: setSubtitlesEnabled,
+    setSubtitlesEnabled,
 
     /**
      * @function
      * @return if subtitles are currently enabled.
      */
-    isSubtitlesEnabled: isSubtitlesEnabled,
+    isSubtitlesEnabled,
 
     /**
      * @function
      * @return Returns whether or not subtitles are currently enabled.
      */
-    isSubtitlesAvailable: isSubtitlesAvailable,
+    isSubtitlesAvailable,
 
     areSubtitlesCustomisable: () => {
       return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)
@@ -584,22 +584,20 @@ function BigscreenPlayer () {
      * @function
      * @return The runtime version of the library.
      */
-    getFrameworkVersion: () => {
-      return Version
-    },
+    getFrameworkVersion: () => Version,
 
     /**
      * @function
      * @param {Number} time - Seconds
      * @return the time in milliseconds within the current sliding window.
      */
-    convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
+    convertVideoTimeSecondsToEpochMs,
 
     /**
      * Toggle the visibility of the debug tool overlay.
      * @function
      */
-    toggleDebug: toggleDebug,
+    toggleDebug,
 
     /**
      * @function
