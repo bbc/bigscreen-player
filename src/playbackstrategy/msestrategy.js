@@ -549,13 +549,12 @@ function MSEStrategy (mediaSources, windowType, mediaKind, playbackElement, isUH
     reset: () => {},
     isEnded: () => isEnded,
     isPaused,
-    pause: (opts) => {
+    pause: (opts = {}) => {
       if (windowType === WindowTypes.SLIDING) {
         slidingWindowPausedTime = Date.now()
       }
 
       mediaPlayer.pause()
-      opts = opts || {}
       if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
         startAutoResumeTimeout()
       }
