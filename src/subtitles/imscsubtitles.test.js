@@ -1028,7 +1028,7 @@ describe("IMSC Subtitles", () => {
       })
     })
 
-    describe.skip("rendering", () => {
+    describe("rendering", () => {
       it("generates and renders when time has progressed past a known unrendered subtitles segment", () => {
         captions = [
           {
@@ -1041,43 +1041,51 @@ describe("IMSC Subtitles", () => {
 
         const epochStartTimeSeconds = epochStartTimeMilliseconds / 1000
 
-        let timeEventsForSegments = [
-          [0, 1, 2, 3.84],
-          [0, 3.84, 4, 7.68],
-          [0, 7.68, 9, 9.7, 11.52],
-        ]
+        const convertSecondsToEpoch = (...seconds) =>
+          seconds.map((time) => (time === 0 ? 0 : epochStartTimeSeconds + time))
 
-        timeEventsForSegments = timeEventsForSegments.map((segmentTimes) =>
-          segmentTimes.map((time) => (time === 0 ? 0 : epochStartTimeSeconds + time))
-        )
-
-        let segmentsConsumedSoFar = 0
-
-        fromXML.mockImplementation(() => {
-          const imscDocument = {
-            _mockedCallsSoFar: segmentsConsumedSoFar,
-            getMediaTimeEvents: () => timeEventsForSegments[segmentsConsumedSoFar],
-            head: {
-              styling: {},
-            },
-            body: {
-              contents: Array.from({ length: 1 }),
-            },
-          }
-
-          segmentsConsumedSoFar += 1
-
-          return imscDocument
+        const buildMockSegment = ({ beginTimes, id } = {}) => ({
+          _mockedSegmentID: id,
+          body: {
+            contents: ["stub"],
+          },
+          head: {
+            styling: {},
+          },
+          getMediaTimeEvents: () => beginTimes,
         })
 
-        generateISD.mockReturnValueOnce({ contents: ["mockContents"] })
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 1,
+            beginTimes: convertSecondsToEpoch(0, 1, 2, 3.84),
+          })
+        )
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 2,
+            beginTimes: convertSecondsToEpoch(0, 3.84, 4, 7.68),
+          })
+        )
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 3,
+            beginTimes: convertSecondsToEpoch(0, 7.68, 9, 9.7, 11.52),
+          })
+        )
+
+        fromXML.mockReturnValue(buildMockSegment({ id: null }))
+
+        generateISD.mockReturnValue({ contents: ["mockContents"] })
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
         progressTime(2.75)
 
         expect(generateISD).toHaveBeenCalledWith(
-          expect.objectContaining({ _mockedCallsSoFar: 0 }),
+          expect.objectContaining({ _mockedSegmentID: 1 }),
           epochStartTimeSeconds + 2.75
         )
 
@@ -1102,13 +1110,10 @@ describe("IMSC Subtitles", () => {
         expect(generateISD).not.toHaveBeenCalled()
         expect(renderHTML).not.toHaveBeenCalled()
 
-        generateISD.mockClear()
-        renderHTML.mockClear()
-
         progressTime(4.25)
 
         expect(generateISD).toHaveBeenCalledWith(
-          expect.objectContaining({ mockCallId: 1 }),
+          expect.objectContaining({ _mockedSegmentID: 2 }),
           msToS(epochStartTimeMilliseconds) + 4.25
         )
         expect(renderHTML).toHaveBeenCalledWith(
@@ -1137,29 +1142,20 @@ describe("IMSC Subtitles", () => {
         expect(generateISD).not.toHaveBeenCalled()
         expect(renderHTML).not.toHaveBeenCalled()
 
-        generateISD.mockClear()
-        renderHTML.mockClear()
-
         progressTime(6.5)
 
         expect(generateISD).not.toHaveBeenCalled()
         expect(renderHTML).not.toHaveBeenCalled()
-
-        generateISD.mockClear()
-        renderHTML.mockClear()
 
         progressTime(7.25)
 
         expect(generateISD).not.toHaveBeenCalled()
         expect(renderHTML).not.toHaveBeenCalled()
 
-        generateISD.mockClear()
-        renderHTML.mockClear()
-
         progressTime(8)
 
         expect(generateISD).toHaveBeenCalledWith(
-          expect.objectContaining({ mockCallId: 2 }),
+          expect.objectContaining({ _mockedSegmentID: 3 }),
           msToS(epochStartTimeMilliseconds) + 8
         )
         expect(renderHTML).toHaveBeenCalledWith(
@@ -1183,13 +1179,10 @@ describe("IMSC Subtitles", () => {
         expect(generateISD).not.toHaveBeenCalled()
         expect(renderHTML).not.toHaveBeenCalled()
 
-        generateISD.mockClear()
-        renderHTML.mockClear()
-
         progressTime(9.5)
 
         expect(generateISD).toHaveBeenCalledWith(
-          expect.objectContaining({ mockCallId: 2 }),
+          expect.objectContaining({ _mockedSegmentID: 3 }),
           msToS(epochStartTimeMilliseconds) + 9.5
         )
         expect(renderHTML).toHaveBeenCalledWith(
@@ -1211,7 +1204,7 @@ describe("IMSC Subtitles", () => {
         progressTime(10.25)
 
         expect(generateISD).toHaveBeenCalledWith(
-          expect.objectContaining({ mockCallId: 2 }),
+          expect.objectContaining({ _mockedSegmentID: 3 }),
           msToS(epochStartTimeMilliseconds) + 10.25
         )
         expect(renderHTML).toHaveBeenCalledWith(
@@ -1235,13 +1228,10 @@ describe("IMSC Subtitles", () => {
         expect(generateISD).not.toHaveBeenCalled()
         expect(renderHTML).not.toHaveBeenCalled()
 
-        generateISD.mockClear()
-        renderHTML.mockClear()
-
         progressTime(11.75)
 
         expect(generateISD).toHaveBeenCalledWith(
-          expect.objectContaining({ mockCallId: 2 }),
+          expect.objectContaining({ _mockedSegmentID: 3 }),
           msToS(epochStartTimeMilliseconds) + 11.75
         )
         expect(renderHTML).toHaveBeenCalledWith(
