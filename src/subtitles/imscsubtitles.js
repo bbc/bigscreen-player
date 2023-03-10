@@ -158,6 +158,10 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     return customStyles
   }
 
+  function isCurrentTimeBehindCurrentSubtitles(currentTime, segments, segmentIndex) {
+    return currentTime < segments[segmentIndex].times[currentSegmentRendered.previousSubtitleIndex]
+  }
+
   function removeCurrentSubtitlesElement() {
     if (currentSubtitlesElement) {
       DOMHelpers.safeRemoveElement(currentSubtitlesElement)
@@ -184,7 +188,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     let segment
 
     for (let segmentIndex = 0; segmentIndex < segments.length; segmentIndex++) {
-      if (currentTime < segments[segmentIndex].times[currentSegmentRendered.previousSubtitleIndex]) {
+      if (isCurrentTimeBehindCurrentSubtitles(currentTime, segments, segmentIndex)) {
         removeCurrentSubtitlesElement()
       }
 
