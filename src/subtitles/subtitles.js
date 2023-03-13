@@ -1,7 +1,7 @@
 import Plugins from "../plugins"
+import findSegmentTemplate from "../utils/findtemplate"
 
 function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
-  const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
   const useLegacySubs = window.bigscreenPlayer?.overrides?.legacySubtitles ?? false
 
   let subtitlesEnabled = autoStart
@@ -52,7 +52,15 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
   }
 
   function available() {
-    return liveSubtitles && useLegacySubs ? false : !!mediaSources.currentSubtitlesSource()
+    const url = mediaSources.currentSubtitlesSource()
+
+    if (!(typeof url === "string" && url !== "")) {
+      return false
+    }
+
+    const isWhole = findSegmentTemplate(url) == null
+
+    return isWhole || !useLegacySubs
   }
 
   function setPosition(position) {
