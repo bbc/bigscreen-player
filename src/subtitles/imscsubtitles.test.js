@@ -30,7 +30,7 @@ describe("IMSC Subtitles", () => {
   let epochStartTimeMilliseconds
   let targetElement
 
-  const mockFromXmlDefaultReturnValue = {
+  const mockFromXmlReturn = {
     getMediaTimeEvents: () => [1, 3, 8],
     head: {
       styling: {},
@@ -40,7 +40,7 @@ describe("IMSC Subtitles", () => {
     },
   }
 
-  fromXML.mockReturnValue(mockFromXmlDefaultReturnValue)
+  fromXML.mockReturnValue(mockFromXmlReturn)
 
   const mockLoadUrlResponse = {
     xml: "<?xml>",
@@ -72,10 +72,6 @@ describe("IMSC Subtitles", () => {
   }
 
   generateISD.mockReturnValue({ contents: ["mockContents"] })
-
-  function msToS(timeMs) {
-    return timeMs / 1000
-  }
 
   beforeEach(() => {
     jest.useFakeTimers()
@@ -142,7 +138,7 @@ describe("IMSC Subtitles", () => {
       progressTime(1.5)
 
       expect(generateISD).toHaveBeenCalledTimes(1)
-      expect(generateISD).toHaveBeenCalledWith(mockFromXmlDefaultReturnValue, 1.5)
+      expect(generateISD).toHaveBeenCalledWith(mockFromXmlReturn, 1.5)
       expect(renderHTML).toHaveBeenCalledTimes(1)
     })
 
@@ -509,7 +505,7 @@ describe("IMSC Subtitles", () => {
       progressTime(9)
 
       expect(generateISD).toHaveBeenCalledTimes(1)
-      expect(generateISD).toHaveBeenCalledWith(mockFromXmlDefaultReturnValue, 9)
+      expect(generateISD).toHaveBeenCalledWith(mockFromXmlReturn, 9)
       expect(renderHTML).toHaveBeenCalledTimes(1)
 
       progressTime(9.25)
@@ -528,7 +524,7 @@ describe("IMSC Subtitles", () => {
       progressTime(4)
 
       expect(generateISD).toHaveBeenCalledTimes(1)
-      expect(generateISD).toHaveBeenCalledWith(mockFromXmlDefaultReturnValue, 4)
+      expect(generateISD).toHaveBeenCalledWith(mockFromXmlReturn, 4)
       expect(renderHTML).toHaveBeenCalledTimes(1)
     })
 
@@ -542,7 +538,7 @@ describe("IMSC Subtitles", () => {
       progressTime(1.5)
 
       expect(generateISD).toHaveBeenCalledTimes(1)
-      expect(generateISD).toHaveBeenCalledWith(mockFromXmlDefaultReturnValue, 1.5)
+      expect(generateISD).toHaveBeenCalledWith(mockFromXmlReturn, 1.5)
       expect(renderHTML).toHaveBeenCalledTimes(1)
 
       progressTime(2.25)
@@ -553,13 +549,13 @@ describe("IMSC Subtitles", () => {
       progressTime(3)
 
       expect(generateISD).toHaveBeenCalledTimes(2)
-      expect(generateISD).toHaveBeenCalledWith(mockFromXmlDefaultReturnValue, 3)
+      expect(generateISD).toHaveBeenCalledWith(mockFromXmlReturn, 3)
       expect(renderHTML).toHaveBeenCalledTimes(2)
 
       progressTime(9)
 
       expect(generateISD).toHaveBeenCalledTimes(3)
-      expect(generateISD).toHaveBeenCalledWith(mockFromXmlDefaultReturnValue, 9)
+      expect(generateISD).toHaveBeenCalledWith(mockFromXmlReturn, 9)
       expect(renderHTML).toHaveBeenCalledTimes(3)
     })
 
@@ -630,7 +626,7 @@ describe("IMSC Subtitles", () => {
     })
   })
 
-  describe("Live subtitles", () => {
+  describe("subtitles delivered as segments", () => {
     beforeEach(() => {
       epochStartTimeMilliseconds = 1614769200000 // Wednesday, 3 March 2021 11:00:00
     })
@@ -1026,6 +1022,43 @@ describe("IMSC Subtitles", () => {
 
         expect(mockMediaSources.failoverSubtitles).not.toHaveBeenCalled()
       })
+
+      it("handles different segment url templates when performing a failover", () => {
+        for (const _ in [1, 2, 3]) {
+          LoadUrl.mockImplementationOnce((_, callbacks) => {
+            callbacks.onError()
+          })
+        }
+
+        captions = [
+          {
+            type: "application/ttml+xml",
+            url: "mock://some.media/captions/$segment$.m4s",
+            cdn: "foo",
+            segmentLength: 3.84,
+          },
+          {
+            type: "application/ttml+xml",
+            url: "mock://other.media/captions/$Number$.m4s",
+            cdn: "bar",
+            segmentLength: 3.84,
+          },
+        ]
+
+        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+
+        progressTime(0.1) // currentTime > windowStartEpoch
+        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+
+        expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1)
+
+        progressTime(0.1) // currentTime > windowStartEpoch
+        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+
+        expect(LoadUrl).toHaveBeenCalledWith("mock://other.media/captions/420512812.m4s", expect.any(Object))
+        expect(LoadUrl).toHaveBeenCalledWith("mock://other.media/captions/420512813.m4s", expect.any(Object))
+        expect(LoadUrl).toHaveBeenCalledWith("mock://other.media/captions/420512814.m4s", expect.any(Object))
+      })
     })
 
     describe("rendering", () => {
@@ -1114,7 +1147,7 @@ describe("IMSC Subtitles", () => {
 
         expect(generateISD).toHaveBeenCalledWith(
           expect.objectContaining({ _mockedSegmentID: 2 }),
-          msToS(epochStartTimeMilliseconds) + 4.25
+          epochStartTimeSeconds + 4.25
         )
         expect(renderHTML).toHaveBeenCalledWith(
           expect.objectContaining({ contents: ["mockContents"] }),
@@ -1156,7 +1189,7 @@ describe("IMSC Subtitles", () => {
 
         expect(generateISD).toHaveBeenCalledWith(
           expect.objectContaining({ _mockedSegmentID: 3 }),
-          msToS(epochStartTimeMilliseconds) + 8
+          epochStartTimeSeconds + 8
         )
         expect(renderHTML).toHaveBeenCalledWith(
           expect.objectContaining({ contents: ["mockContents"] }),
@@ -1183,7 +1216,7 @@ describe("IMSC Subtitles", () => {
 
         expect(generateISD).toHaveBeenCalledWith(
           expect.objectContaining({ _mockedSegmentID: 3 }),
-          msToS(epochStartTimeMilliseconds) + 9.5
+          epochStartTimeSeconds + 9.5
         )
         expect(renderHTML).toHaveBeenCalledWith(
           expect.objectContaining({ contents: ["mockContents"] }),
@@ -1205,7 +1238,7 @@ describe("IMSC Subtitles", () => {
 
         expect(generateISD).toHaveBeenCalledWith(
           expect.objectContaining({ _mockedSegmentID: 3 }),
-          msToS(epochStartTimeMilliseconds) + 10.25
+          epochStartTimeSeconds + 10.25
         )
         expect(renderHTML).toHaveBeenCalledWith(
           expect.objectContaining({ contents: ["mockContents"] }),
@@ -1232,7 +1265,7 @@ describe("IMSC Subtitles", () => {
 
         expect(generateISD).toHaveBeenCalledWith(
           expect.objectContaining({ _mockedSegmentID: 3 }),
-          msToS(epochStartTimeMilliseconds) + 11.75
+          epochStartTimeSeconds + 11.75
         )
         expect(renderHTML).toHaveBeenCalledWith(
           expect.objectContaining({ contents: ["mockContents"] }),
