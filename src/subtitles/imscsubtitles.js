@@ -29,13 +29,13 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   function loadAllRequiredSegments() {
     const segmentsToLoad = []
 
-    const currentSegment = TimeUtils.calculateSegmentNumber(
+    const currentSegmentNumber = TimeUtils.calculateSegmentNumber(
       windowStartEpochSeconds + mediaPlayer.getCurrentTime(),
       mediaSources.currentSubtitlesSegmentLength()
     )
 
-    for (let i = 0; i < SEGMENTS_BUFFER_SIZE; i++) {
-      const segmentNumber = currentSegment + i
+    for (let offset = 0; offset < SEGMENTS_BUFFER_SIZE; offset++) {
+      const segmentNumber = currentSegmentNumber + offset
       const alreadyLoaded = segments.some((segment) => segment.number === segmentNumber)
 
       if (!alreadyLoaded) {
@@ -82,8 +82,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
           if (segments.length > SEGMENTS_BUFFER_SIZE) {
             pruneSegments()
           }
-        } catch (e) {
-          DebugTool.info(`Error transforming subtitles: ${e}`)
+        } catch (error) {
+          DebugTool.info(`Error transforming subtitles: ${error}`)
           Plugins.interface.onSubtitlesTransformError()
           stop()
         }
@@ -130,7 +130,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     // Before sorting, check if we've gone back in time, so we know whether to prune from front or back of array
     const seekedBack = segments[SEGMENTS_BUFFER_SIZE].number < segments[SEGMENTS_BUFFER_SIZE - 1].number
 
-    segments.sort((a, b) => a.number - b.number)
+    segments.sort((someSegment, otherSegment) => someSegment.number - otherSegment.number)
 
     if (seekedBack) {
       segments.pop()
@@ -164,6 +164,10 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     return customStyles
   }
 
+  function isCurrentTimeBehindCurrentSubtitles(currentTime, segments, segmentIndex) {
+    return currentTime < segments[segmentIndex].times[currentSegmentRendered.previousSubtitleIndex]
+  }
+
   function removeCurrentSubtitlesElement() {
     if (currentSubtitlesElement) {
       DOMHelpers.safeRemoveElement(currentSubtitlesElement)
@@ -181,19 +185,23 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   function getSegmentToRender(currentTime) {
     let segment
 
-    for (let i = 0; i < segments.length; i++) {
-      for (let j = 0; j < segments[i].times.length; j++) {
-        const lastOne = segments[i].times.length === j + 1
+    for (let segmentIndex = 0; segmentIndex < segments.length; segmentIndex++) {
+      if (isCurrentTimeBehindCurrentSubtitles(currentTime, segments, segmentIndex)) {
+        removeCurrentSubtitlesElement()
+      }
+
+      for (let timesIndex = 0; timesIndex < segments[segmentIndex].times.length; timesIndex++) {
+        const lastOne = segments[segmentIndex].times.length === timesIndex + 1
 
         if (
-          currentTime >= segments[i].times[j] &&
-          (lastOne || currentTime < segments[i].times[j + 1]) &&
-          segments[i].previousSubtitleIndex !== j &&
-          segments[i].times[j] !== 0
+          currentTime >= segments[segmentIndex].times[timesIndex] &&
+          (lastOne || currentTime < segments[segmentIndex].times[timesIndex + 1]) &&
+          segments[segmentIndex].previousSubtitleIndex !== timesIndex &&
+          segments[segmentIndex].times[timesIndex] !== 0
         ) {
-          segment = segments[i]
-          currentSegmentRendered = segments[i]
-          segments[i].previousSubtitleIndex = j
+          segment = segments[segmentIndex]
+          currentSegmentRendered = segments[segmentIndex]
+          segments[segmentIndex].previousSubtitleIndex = timesIndex
           break
         }
       }
@@ -254,8 +262,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     try {
       const isd = generateISD(xml, currentTime)
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
-    } catch (e) {
-      DebugTool.info(`Exception while rendering subtitles: ${e}`)
+    } catch (error) {
+      DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
     }
   }
