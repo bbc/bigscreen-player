@@ -140,9 +140,35 @@ describe("Media Sources", () => {
       expect(mediaSources.time()).toEqual(mockTimeObject)
     })
 
-    it.todo("fetch start time off the manifest for media with segmented subtitles")
+    it("fetch start time off the manifest for on-demand media with segmented subtitles", () => {
+      testMedia.captions = [
+        { url: "mock://some.media/captions/$segment$.m4s", cdn: "foo", segmentLength: SEGMENT_LENGTH },
+      ]
 
-    it.todo("calls onError when manifest fails to load for media with segmented subtitles")
+      setupMockManifestLoaderSuccess()
+
+      const mediaSources = MediaSources()
+
+      mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
+
+      expect(testCallbacks.onSuccess).toHaveBeenCalledTimes(1)
+      expect(mediaSources.time()).toEqual(mockTimeObject)
+    })
+
+    it("calls onError when manifest fails to load for media with segmented subtitles", () => {
+      testMedia.captions = [
+        { url: "mock://some.media/captions/$segment$.m4s", cdn: "foo", segmentLength: SEGMENT_LENGTH },
+      ]
+
+      setupMockManifestLoaderFail()
+
+      const mediaSources = MediaSources()
+
+      mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
+
+      expect(testCallbacks.onError).toHaveBeenCalledTimes(1)
+      expect(testCallbacks.onError).toHaveBeenCalledWith({ error: "manifest" })
+    })
 
     it("fails over to next source when the first source fails to load", () => {
       ManifestLoader.load.mockImplementationOnce((url, serverDate, callbacks) => callbacks.onError())
@@ -195,6 +221,7 @@ describe("Media Sources", () => {
     it("should load the manifest from the next url if manifest load is required", () => {
       const failoverInfo = { isBufferingTimeoutError: true }
 
+      // HLS manifests must be reloaded on failover to fetch accurate start time
       setupMockManifestLoaderSuccess(TransferFormats.HLS)
 
       const serverDate = new Date()

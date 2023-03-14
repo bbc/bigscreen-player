@@ -6,6 +6,7 @@ import PluginData from "./plugindata"
 import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/manifestloader"
 import TransferFormats from "./models/transferformats"
+import findSegmentTemplate from "./utils/findtemplate"
 
 function MediaSources() {
   let mediaSources
@@ -154,16 +155,31 @@ function MediaSources() {
     return failoverResetTimeMs
   }
 
+  function hasSegmentedSubtitles() {
+    const url = getCurrentSubtitlesUrl()
+
+    if (typeof url !== "string" || url === "") {
+      return false
+    }
+
+    return findSegmentTemplate(url) != null
+  }
+
   function needToGetManifest(windowType, liveSupport) {
-    const requiresManifestLoad = {
+    const isStartTimeAccurate = {
       restartable: true,
       seekable: true,
       playable: false,
       none: false,
     }
 
-    const requiredTransferFormat = transferFormat === TransferFormats.HLS || transferFormat === undefined
-    return requiredTransferFormat && windowType !== WindowTypes.STATIC && requiresManifestLoad[liveSupport]
+    const hasManifestBeenLoaded = transferFormat !== undefined
+
+    return (
+      (!hasManifestBeenLoaded || transferFormat === TransferFormats.HLS) &&
+      (windowType !== WindowTypes.STATIC || hasSegmentedSubtitles()) &&
+      isStartTimeAccurate[liveSupport]
+    )
   }
 
   function refresh(onSuccess, onError) {
