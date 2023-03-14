@@ -20,8 +20,6 @@ jest.mock("./plugins", () => ({
   },
 }))
 
-window.bigscreenPlayer = {}
-
 let mockTimeObject = { windowStartTime: 10, windowEndTime: 100, timeCorrection: 0 }
 
 const setupMockManifestLoaderSuccess = (transferFormat = TransferFormats.DASH) => {
@@ -37,22 +35,6 @@ const setupMockManifestLoaderFail = () => {
   ManifestLoader.load.mockImplementation((url, serverDate, callbacks) => callbacks.onError())
 }
 
-const setupMockManifestLoaderFailOnce = (transferFormat = TransferFormats.DASH) => {
-  let hasFailedOnce = false
-
-  jest.spyOn(ManifestLoader, "load").mockImplementation((url, serverDate, callbacks) => {
-    if (hasFailedOnce) {
-      callbacks.onSuccess({
-        transferFormat,
-        time: mockTimeObject,
-      })
-    } else {
-      hasFailedOnce = true
-      callbacks.onError()
-    }
-  })
-}
-
 describe("Media Sources", () => {
   const FAILOVER_RESET_TIMEOUT = 60000
   const SEGMENT_LENGTH = 3.84
@@ -63,10 +45,15 @@ describe("Media Sources", () => {
   let testMedia
   let testCallbacks
 
-  const currentStrategy = window.bigscreenPlayer.playbackStrategy
+  beforeAll(() => {
+    jest.useFakeTimers()
+  })
 
   beforeEach(() => {
-    jest.useFakeTimers()
+    jest.clearAllTimers()
+    jest.resetAllMocks()
+
+    mockTimeObject = { windowStartTime: 10, windowEndTime: 100, timeCorrection: 0 }
 
     testCallbacks = { onSuccess: jest.fn(), onError: jest.fn() }
 
@@ -74,6 +61,7 @@ describe("Media Sources", () => {
       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
     ]
+
     testSubtitlesSources = [
       { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
       { url: "http://subtitlessource2.com/", cdn: "http://supplier2.com/", segmentLength: SEGMENT_LENGTH },
@@ -88,13 +76,6 @@ describe("Media Sources", () => {
     }
 
     setupMockManifestLoaderSuccess()
-  })
-
-  afterEach(() => {
-    jest.resetAllMocks()
-    jest.useRealTimers()
-
-    window.bigscreenPlayer.playbackStrategy = currentStrategy
   })
 
   describe("init", () => {
@@ -134,32 +115,45 @@ describe("Media Sources", () => {
 
     it("calls onSuccess callback immediately for STATIC window content", () => {
       const mediaSources = MediaSources()
+
       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, testCallbacks)
 
-      expect(testCallbacks.onSuccess).toHaveBeenCalledWith()
+      expect(testCallbacks.onSuccess).toHaveBeenCalledTimes(1)
+      expect(mediaSources.time()).toEqual({})
     })
 
     it("calls onSuccess callback immediately for LIVE content on a PLAYABLE device", () => {
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.PLAYABLE, testCallbacks)
 
-      expect(testCallbacks.onSuccess).toHaveBeenCalledWith()
+      expect(testCallbacks.onSuccess).toHaveBeenCalledTimes(1)
+      expect(mediaSources.time()).toEqual({})
     })
 
     it("calls onSuccess callback when manifest loader returns on success for SLIDING window content", () => {
-      const mediaSources = MediaSources()
-      mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks)
-
-      expect(testCallbacks.onSuccess).toHaveBeenCalledWith()
-    })
-
-    it("calls onSuccess callback when manifest loader fails and there is a source to failover to that completes", () => {
-      setupMockManifestLoaderFailOnce()
+      setupMockManifestLoaderSuccess()
 
       const mediaSources = MediaSources()
       mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks)
 
       expect(testCallbacks.onSuccess).toHaveBeenCalledTimes(1)
+      expect(mediaSources.time()).toEqual(mockTimeObject)
+    })
+
+    it.todo("fetch start time off the manifest for media with segmented subtitles")
+
+    it.todo("calls onError when manifest fails to load for media with segmented subtitles")
+
+    it("fails over to next source when the first source fails to load", () => {
+      ManifestLoader.load.mockImplementationOnce((url, serverDate, callbacks) => callbacks.onError())
+
+      const mediaSources = MediaSources()
+
+      mediaSources.init(testMedia, new Date(), WindowTypes.SLIDING, LiveSupport.SEEKABLE, testCallbacks)
+
+      expect(testCallbacks.onSuccess).toHaveBeenCalledTimes(1)
+
+      expect(mediaSources.time()).toEqual(mockTimeObject)
     })
 
     it("calls onError callback when manifest loader fails and there are insufficent sources to failover to", () => {
