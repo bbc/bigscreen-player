@@ -14,16 +14,15 @@
     "CONTRIBUTING.md"
   ],
   "scripts": {
-    "prepare": "[ ! -d dist/ ] && npm run build || exit 0",
-    "docs": "npx jsdoc -c jsdoc.conf.json",
-    "build": "npm run build:clean && npm run build:bundle",
-    "build:clean": "rm -rf dist",
-    "build:bundle": "rollup -c rollup.config.js",
-    "watch": "rollup -c rollup.config.js -w",
-    "start": "rollup -c rollup.dev.config.js -w",
+    "start": "rollup --config rollup.dev.config.js --watch",
+    "watch": "rollup --config rollup.config.js --watch",
     "test": "jest",
+    "docs": "npx jsdoc --config jsdoc.conf.json",
+    "prebuild": "rm -rf dist",
+    "build": "rollup --config rollup.config.js",
     "coverage": "jest --coverage",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prepare": "[ ! -d dist/ ] && npm run build || exit 0"
   },
   "husky": {
     "hooks": {

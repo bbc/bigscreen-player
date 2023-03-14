@@ -1,12 +1,12 @@
-import MediaState from './models/mediastate'
-import WindowTypes from './models/windowtypes'
-import PauseTriggers from './models/pausetriggers'
-import Plugins from './plugins'
-import TransferFormats from './models/transferformats'
-import LiveSupport from './models/livesupport'
-import BigscreenPlayer from './bigscreenplayer'
-import Chronicle from './debugger/chronicle'
-import PlayerComponent from './playercomponent'
+import MediaState from "./models/mediastate"
+import WindowTypes from "./models/windowtypes"
+import PauseTriggers from "./models/pausetriggers"
+import Plugins from "./plugins"
+import TransferFormats from "./models/transferformats"
+import LiveSupport from "./models/livesupport"
+import BigscreenPlayer from "./bigscreenplayer"
+import Chronicle from "./debugger/chronicle"
+import PlayerComponent from "./playercomponent"
 
 let bigscreenPlayer
 let bigscreenPlayerData
@@ -22,7 +22,7 @@ let forceMediaSourcesConstructionFailure = false
 
 const mockMediaSources = {
   init: (media, serverDate, windowType, liveSupport, callbacks) => {
-    mediaSourcesCallbackErrorSpy = jest.spyOn(callbacks, 'onError')
+    mediaSourcesCallbackErrorSpy = jest.spyOn(callbacks, "onError")
     if (forceMediaSourcesConstructionFailure) {
       callbacks.onError()
     } else {
@@ -30,7 +30,7 @@ const mockMediaSources = {
     }
   },
   time: () => manifestData.time,
-  tearDown: jest.fn()
+  tearDown: jest.fn(),
 }
 
 const mockSubtitlesInstance = {
@@ -44,86 +44,99 @@ const mockSubtitlesInstance = {
   customise: jest.fn(),
   renderExample: jest.fn(),
   clearExample: jest.fn(),
-  tearDown: jest.fn()
+  tearDown: jest.fn(),
 }
 
 const mockResizer = {
   resize: jest.fn(),
   clear: jest.fn(),
-  isResized: jest.fn()
+  isResized: jest.fn(),
 }
 
-jest.mock('./mediasources', () => jest.fn(() => mockMediaSources))
-jest.mock('./playercomponent')
-jest.mock('./plugins')
-jest.mock('./debugger/debugtool')
-jest.mock('./resizer', () => jest.fn(() => mockResizer))
-jest.mock('./subtitles/subtitles', () => jest.fn(() => mockSubtitlesInstance))
+jest.mock("./mediasources", () => jest.fn(() => mockMediaSources))
+jest.mock("./playercomponent")
+jest.mock("./plugins")
+jest.mock("./debugger/debugtool")
+jest.mock("./resizer", () => jest.fn(() => mockResizer))
+jest.mock("./subtitles/subtitles", () => jest.fn(() => mockSubtitlesInstance))
 
-function setupManifestData (options) {
+function setupManifestData(options) {
   manifestData = {
-    time: options && options.time || {
+    time: (options && options.time) || {
       windowStartTime: 724000,
       windowEndTime: 4324000,
-      correction: 0
-    }
+      correction: 0,
+    },
   }
 }
 
 // options = subtitlesAvailable, windowType, windowStartTime, windowEndTime
-function initialiseBigscreenPlayer (options) {
-  options = options || {}
+function initialiseBigscreenPlayer(options = {}) {
+  playbackElement = document.createElement("div")
+  playbackElement.id = "app"
 
-  const windowType = options.windowType || WindowTypes.STATIC
-  const subtitlesEnabled = options.subtitlesEnabled || false
-
-  playbackElement = document.createElement('div')
-  playbackElement.id = 'app'
+  const {
+    mediaKind = "video",
+    subtitlesEnabled = false,
+    windowType = WindowTypes.STATIC,
+    initialPlaybackTime,
+    serverDate,
+    transferFormat,
+  } = options
 
   bigscreenPlayerData = {
+    initialPlaybackTime,
+    serverDate,
+    subtitlesEnabled,
+    windowType,
     media: {
-      codec: 'codec',
-      urls: [{ url: 'videoUrl', cdn: 'cdn' }],
-      kind: options.mediaKind || 'video',
-      type: 'mimeType',
-      bitrate: 'bitrate',
-      transferFormat: options.transferFormat
+      transferFormat,
+      kind: mediaKind,
+      codec: "codec",
+      type: "mimeType",
+      bitrate: "bitrate",
+      urls: [{ url: "videoUrl", cdn: "cdn" }],
     },
-    serverDate: options.serverDate,
-    initialPlaybackTime: options.initialPlaybackTime
   }
 
-  if (options.windowStartTime && options.windowEndTime) {
+  const { windowStartTime, windowEndTime } = options
+  if (windowStartTime && windowEndTime) {
     manifestData.time = {
-      windowStartTime: options.windowStartTime,
-      windowEndTime: options.windowEndTime
+      windowStartTime,
+      windowEndTime,
     }
   }
 
-  if (options.subtitlesAvailable) {
+  const { subtitlesAvailable } = options
+  if (subtitlesAvailable) {
     bigscreenPlayerData.media.captions = [
       {
-        url: 'captions1',
-        segmentLength: 3.84
+        url: "captions1",
+        segmentLength: 3.84,
       },
       {
-        url: 'captions2',
-        segmentLength: 3.84
-      }
+        url: "captions2",
+        segmentLength: 3.84,
+      },
     ]
   }
 
   let callbacks
-
   if (!noCallbacks) {
     callbacks = { onSuccess: successCallback, onError: errorCallback }
   }
 
-  bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, callbacks)
+  return new BigscreenPlayer(playbackElement, bigscreenPlayerData, callbacks)
 }
 
-describe('Bigscreen Player', () => {
+describe("Bigscreen Player", () => {
   beforeEach(() => {
+    // Cleanup
+    jest.clearAllMocks()
+    forceMediaSourcesConstructionFailure = false
+    bigscreenPlayer?.tearDown()
+    bigscreenPlayer = undefined
+
     setupManifestData()
 
     mockPlayerComponentInstance = {
@@ -140,10 +153,10 @@ describe('Bigscreen Player', () => {
       getWindowStartTime: jest.fn(),
       getWindowEndTime: jest.fn(),
       setPlaybackRate: jest.fn(),
-      getPlaybackRate: jest.fn()
+      getPlaybackRate: jest.fn(),
     }
 
-    jest.spyOn(PlayerComponent, 'getLiveSupport').mockReturnValue(LiveSupport.SEEKABLE)
+    jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
 
     PlayerComponent.mockImplementation((playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) => {
       mockEventHook = callback
@@ -153,22 +166,14 @@ describe('Bigscreen Player', () => {
     successCallback = jest.fn()
     errorCallback = jest.fn()
     noCallbacks = false
-
-    bigscreenPlayer = BigscreenPlayer()
   })
 
-  afterEach(() => {
-    jest.clearAllMocks()
-    forceMediaSourcesConstructionFailure = false
-    bigscreenPlayer.tearDown()
-    bigscreenPlayer = undefined
-  })
-
-  describe('init', () => {
-    it('should set endOfStream to true when playing live and no initial playback time is set', () => {
+  describe("init", () => {
+    it("should set endOfStream to true when playing live and no initial playback time is set", () => {
       const callback = jest.fn()
 
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+
       bigscreenPlayer.registerForTimeUpdates(callback)
 
       mockEventHook({ data: { currentTime: 30 }, timeUpdate: true, isBufferingTimeoutError: false })
@@ -176,10 +181,10 @@ describe('Bigscreen Player', () => {
       expect(callback).toHaveBeenCalledWith({ currentTime: 30, endOfStream: true })
     })
 
-    it('should set endOfStream to false when playing live and initialPlaybackTime is 0', () => {
+    it("should set endOfStream to false when playing live and initialPlaybackTime is 0", () => {
       const callback = jest.fn()
 
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING, initialPlaybackTime: 0 })
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING, initialPlaybackTime: 0 })
 
       bigscreenPlayer.registerForTimeUpdates(callback)
 
@@ -188,36 +193,38 @@ describe('Bigscreen Player', () => {
       expect(callback).toHaveBeenCalledWith({ currentTime: 0, endOfStream: false })
     })
 
-    it('should call the supplied error callback if manifest fails to load', () => {
+    it("should call the supplied error callback if manifest fails to load", () => {
       forceMediaSourcesConstructionFailure = true
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
       expect(mediaSourcesCallbackErrorSpy).toHaveBeenCalledTimes(1)
       expect(errorCallback).toHaveBeenCalledTimes(1)
       expect(successCallback).not.toHaveBeenCalled()
     })
 
-    it('should not attempt to call onSuccess callback if one is not provided', () => {
+    it("should not attempt to call onSuccess callback if one is not provided", () => {
       noCallbacks = true
-      initialiseBigscreenPlayer()
+
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       expect(successCallback).not.toHaveBeenCalled()
     })
 
-    it('should not attempt to call onError callback if one is not provided', () => {
+    it("should not attempt to call onError callback if one is not provided", () => {
       noCallbacks = true
 
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
       expect(errorCallback).not.toHaveBeenCalled()
     })
   })
 
-  describe('getPlayerElement', () => {
-    it('Should call through to getPlayerElement on the playback strategy', () => {
-      initialiseBigscreenPlayer()
+  describe("getPlayerElement", () => {
+    it("Should call through to getPlayerElement on the playback strategy", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
-      const mockedVideo = document.createElement('video')
+      const mockedVideo = document.createElement("video")
 
       mockPlayerComponentInstance.getPlayerElement.mockReturnValue(mockedVideo)
 
@@ -225,16 +232,16 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('registerForStateChanges', () => {
+  describe("registerForStateChanges", () => {
     let callback
 
     beforeEach(() => {
       callback = jest.fn()
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.registerForStateChanges(callback)
     })
 
-    it('should fire the callback when a state event comes back from the strategy', () => {
+    it("should fire the callback when a state event comes back from the strategy", () => {
       mockEventHook({ data: { state: MediaState.PLAYING } })
 
       expect(callback).toHaveBeenCalledWith({ state: MediaState.PLAYING, endOfStream: false })
@@ -246,7 +253,7 @@ describe('Bigscreen Player', () => {
       expect(callback).toHaveBeenCalledWith({ state: MediaState.WAITING, isSeeking: false, endOfStream: false })
     })
 
-    it('should set the isPaused flag to true when waiting after a setCurrentTime', () => {
+    it("should set the isPaused flag to true when waiting after a setCurrentTime", () => {
       mockEventHook({ data: { state: MediaState.PLAYING } })
 
       expect(callback).toHaveBeenCalledWith({ state: MediaState.PLAYING, endOfStream: false })
@@ -254,12 +261,13 @@ describe('Bigscreen Player', () => {
       callback.mockClear()
 
       bigscreenPlayer.setCurrentTime(60)
+
       mockEventHook({ data: { state: MediaState.WAITING } })
 
       expect(callback).toHaveBeenCalledWith({ state: MediaState.WAITING, isSeeking: true, endOfStream: false })
     })
 
-    it('should set clear the isPaused flag after a waiting event is fired', () => {
+    it("should set clear the isPaused flag after a waiting event is fired", () => {
       mockEventHook({ data: { state: MediaState.PLAYING } })
 
       bigscreenPlayer.setCurrentTime(60)
@@ -274,40 +282,59 @@ describe('Bigscreen Player', () => {
       expect(callback).toHaveBeenCalledWith({ state: MediaState.WAITING, isSeeking: false, endOfStream: false })
     })
 
-    it('should set the pause trigger to the one set when a pause event comes back from strategy', () => {
+    it("should set the pause trigger to the one set when a pause event comes back from strategy", () => {
       bigscreenPlayer.pause()
 
       mockEventHook({ data: { state: MediaState.PAUSED } })
 
-      expect(callback).toHaveBeenCalledWith({ state: MediaState.PAUSED, trigger: PauseTriggers.USER, endOfStream: false })
+      expect(callback).toHaveBeenCalledWith({
+        state: MediaState.PAUSED,
+        trigger: PauseTriggers.USER,
+        endOfStream: false,
+      })
     })
 
-    it('should set the pause trigger to device when a pause event comes back from strategy and a trigger is not set', () => {
+    it("should set the pause trigger to device when a pause event comes back from strategy and a trigger is not set", () => {
       mockEventHook({ data: { state: MediaState.PAUSED } })
 
-      expect(callback).toHaveBeenCalledWith({ state: MediaState.PAUSED, trigger: PauseTriggers.DEVICE, endOfStream: false })
+      expect(callback).toHaveBeenCalledWith({
+        state: MediaState.PAUSED,
+        trigger: PauseTriggers.DEVICE,
+        endOfStream: false,
+      })
     })
 
-    it('should set isBufferingTimeoutError when a fatal error event comes back from strategy', () => {
-      mockEventHook({ data: { state: MediaState.FATAL_ERROR }, isBufferingTimeoutError: false, code: 1, message: 'media-error-aborted' })
+    it("should set isBufferingTimeoutError when a fatal error event comes back from strategy", () => {
+      mockEventHook({
+        data: { state: MediaState.FATAL_ERROR },
+        isBufferingTimeoutError: false,
+        code: 1,
+        message: "media-error-aborted",
+      })
 
-      expect(callback).toHaveBeenCalledWith({ state: MediaState.FATAL_ERROR, isBufferingTimeoutError: false, code: 1, message: 'media-error-aborted', endOfStream: false })
+      expect(callback).toHaveBeenCalledWith({
+        state: MediaState.FATAL_ERROR,
+        isBufferingTimeoutError: false,
+        code: 1,
+        message: "media-error-aborted",
+        endOfStream: false,
+      })
     })
 
-    it('should return a reference to the callback passed in', () => {
+    it("should return a reference to the callback passed in", () => {
       const reference = bigscreenPlayer.registerForStateChanges(callback)
 
       expect(reference).toBe(callback)
     })
   })
 
-  describe('unregisterForStateChanges', () => {
-    it('should remove callback from stateChangeCallbacks', () => {
+  describe("unregisterForStateChanges", () => {
+    it("should remove callback from stateChangeCallbacks", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
+
       const listener1 = jest.fn()
       const listener2 = jest.fn()
       const listener3 = jest.fn()
-
-      initialiseBigscreenPlayer()
 
       bigscreenPlayer.registerForStateChanges(listener1)
       bigscreenPlayer.registerForStateChanges(listener2)
@@ -324,14 +351,14 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
-    it('should remove callback from stateChangeCallbacks when a callback removes itself', () => {
+    it("should remove callback from stateChangeCallbacks when a callback removes itself", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
+
       const listener1 = jest.fn()
       const listener2 = jest.fn().mockImplementation(() => {
         bigscreenPlayer.unregisterForStateChanges(listener2)
       })
       const listener3 = jest.fn()
-
-      initialiseBigscreenPlayer()
 
       bigscreenPlayer.registerForStateChanges(listener1)
       bigscreenPlayer.registerForStateChanges(listener2)
@@ -345,15 +372,15 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
-    it('should remove callback from stateChangeCallbacks when a callback unregisters another handler last', () => {
+    it("should remove callback from stateChangeCallbacks when a callback unregisters another handler last", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
+
       const listener1 = jest.fn()
       const listener2 = jest.fn()
       const listener3 = jest.fn().mockImplementation(() => {
         bigscreenPlayer.unregisterForStateChanges(listener1)
         bigscreenPlayer.unregisterForStateChanges(listener2)
       })
-
-      initialiseBigscreenPlayer()
 
       bigscreenPlayer.registerForStateChanges(listener1)
       bigscreenPlayer.registerForStateChanges(listener2)
@@ -367,15 +394,15 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
-    it('should remove callback from stateChangeCallbacks when a callback unregisters another handler first', () => {
+    it("should remove callback from stateChangeCallbacks when a callback unregisters another handler first", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
+
+      const listener3 = jest.fn()
+      const listener2 = jest.fn()
       const listener1 = jest.fn().mockImplementation(() => {
         bigscreenPlayer.unregisterForStateChanges(listener2)
         bigscreenPlayer.unregisterForStateChanges(listener3)
       })
-      const listener2 = jest.fn()
-      const listener3 = jest.fn()
-
-      initialiseBigscreenPlayer()
 
       bigscreenPlayer.registerForStateChanges(listener1)
       bigscreenPlayer.registerForStateChanges(listener2)
@@ -389,19 +416,19 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(1)
     })
 
-    it('should remove callbacks from stateChangeCallbacks when a callback unregisters multiple handlers in different places', () => {
+    it("should remove callbacks from stateChangeCallbacks when a callback unregisters multiple handlers in different places", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
+
+      const listener3 = jest.fn()
+      const listener2 = jest.fn()
       const listener1 = jest.fn().mockImplementation(() => {
         bigscreenPlayer.unregisterForStateChanges(listener1)
         bigscreenPlayer.unregisterForStateChanges(listener3)
       })
-      const listener2 = jest.fn()
-      const listener3 = jest.fn()
       const listener4 = jest.fn().mockImplementation(() => {
         bigscreenPlayer.unregisterForStateChanges(listener2)
         bigscreenPlayer.unregisterForStateChanges(listener4)
       })
-
-      initialiseBigscreenPlayer()
 
       bigscreenPlayer.registerForStateChanges(listener1)
       bigscreenPlayer.registerForStateChanges(listener2)
@@ -417,8 +444,8 @@ describe('Bigscreen Player', () => {
       expect(listener4).toHaveBeenCalledTimes(1)
     })
 
-    it('should only remove existing callbacks from stateChangeCallbacks', () => {
-      initialiseBigscreenPlayer()
+    it("should only remove existing callbacks from stateChangeCallbacks", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const listener1 = jest.fn()
       const listener2 = jest.fn()
@@ -432,24 +459,27 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('player ready callback', () => {
-    describe('on state change event', () => {
-      it('should not be called when it is a fatal error', () => {
-        initialiseBigscreenPlayer()
+  describe("player ready callback", () => {
+    describe("on state change event", () => {
+      it("should not be called when it is a fatal error", () => {
+        bigscreenPlayer = initialiseBigscreenPlayer()
+
         mockEventHook({ data: { state: MediaState.FATAL_ERROR } })
 
         expect(successCallback).not.toHaveBeenCalled()
       })
 
-      it('should be called if playing VOD and event time is valid', () => {
-        initialiseBigscreenPlayer()
+      it("should be called if playing VOD and event time is valid", () => {
+        bigscreenPlayer = initialiseBigscreenPlayer()
+
         mockEventHook({ data: { state: MediaState.WAITING, currentTime: 0 } })
 
         expect(successCallback).toHaveBeenCalledTimes(1)
       })
 
-      it('should be called if playing VOD with an initial start time and event time is valid', () => {
-        initialiseBigscreenPlayer({ initialPlaybackTime: 20 })
+      it("should be called if playing VOD with an initial start time and event time is valid", () => {
+        bigscreenPlayer = initialiseBigscreenPlayer({ initialPlaybackTime: 20 })
+
         mockEventHook({ data: { state: MediaState.WAITING, currentTime: 0 } })
 
         expect(successCallback).not.toHaveBeenCalled()
@@ -458,34 +488,34 @@ describe('Bigscreen Player', () => {
         expect(successCallback).toHaveBeenCalledTimes(1)
       })
 
-      it('should be called if playing Live and event time is valid', () => {
+      it("should be called if playing Live and event time is valid", () => {
         setupManifestData({
           transferFormat: TransferFormats.DASH,
           time: {
             windowStartTime: 10,
-            windowEndTime: 100
-          }
+            windowEndTime: 100,
+          },
         })
 
-        initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+        bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
         mockEventHook({
-          data:
-          {
+          data: {
             state: MediaState.PLAYING,
             currentTime: 10,
             seekableRange: {
               start: 10,
-              end: 100
-            }
-          }
+              end: 100,
+            },
+          },
         })
 
         expect(successCallback).toHaveBeenCalledTimes(1)
       })
 
-      it('after a valid state change should not be called on succesive valid state changes', () => {
-        initialiseBigscreenPlayer()
+      it("after a valid state change should not be called on succesive valid state changes", () => {
+        bigscreenPlayer = initialiseBigscreenPlayer()
+
         mockEventHook({ data: { state: MediaState.WAITING, currentTime: 0 } })
 
         expect(successCallback).toHaveBeenCalledTimes(1)
@@ -495,8 +525,9 @@ describe('Bigscreen Player', () => {
         expect(successCallback).not.toHaveBeenCalled()
       })
 
-      it('after a valid state change should not be called on succesive valid time updates', () => {
-        initialiseBigscreenPlayer()
+      it("after a valid state change should not be called on succesive valid time updates", () => {
+        bigscreenPlayer = initialiseBigscreenPlayer()
+
         mockEventHook({ data: { state: MediaState.WAITING, currentTime: 0 } })
 
         expect(successCallback).toHaveBeenCalledTimes(1)
@@ -507,16 +538,17 @@ describe('Bigscreen Player', () => {
       })
     })
 
-    describe('on time update', () => {
-      it('should be called if playing VOD and current time is valid', () => {
-        initialiseBigscreenPlayer()
+    describe("on time update", () => {
+      it("should be called if playing VOD and current time is valid", () => {
+        bigscreenPlayer = initialiseBigscreenPlayer()
+
         mockEventHook({ data: { currentTime: 0 }, timeUpdate: true })
 
         expect(successCallback).toHaveBeenCalledTimes(1)
       })
 
-      it('should be called if playing VOD with an initial start time and current time is valid', () => {
-        initialiseBigscreenPlayer({ initialPlaybackTime: 20 })
+      it("should be called if playing VOD with an initial start time and current time is valid", () => {
+        bigscreenPlayer = initialiseBigscreenPlayer({ initialPlaybackTime: 20 })
         mockEventHook({ data: { currentTime: 0 }, timeUpdate: true })
 
         expect(successCallback).not.toHaveBeenCalled()
@@ -525,33 +557,34 @@ describe('Bigscreen Player', () => {
         expect(successCallback).toHaveBeenCalledTimes(1)
       })
 
-      it('should be called if playing Live and current time is valid', () => {
+      it("should be called if playing Live and current time is valid", () => {
         setupManifestData({
           transferFormat: TransferFormats.DASH,
           time: {
             windowStartTime: 10,
-            windowEndTime: 100
-          }
+            windowEndTime: 100,
+          },
         })
-        initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+
+        bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
         mockEventHook({
-          data:
-          {
+          data: {
             currentTime: 10,
             seekableRange: {
               start: 10,
-              end: 100
-            }
+              end: 100,
+            },
           },
-          timeUpdate: true
+          timeUpdate: true,
         })
 
         expect(successCallback).toHaveBeenCalledTimes(1)
       })
 
-      it('after a valid time update should not be called on succesive valid time updates', () => {
-        initialiseBigscreenPlayer()
+      it("after a valid time update should not be called on succesive valid time updates", () => {
+        bigscreenPlayer = initialiseBigscreenPlayer()
+
         mockEventHook({ data: { currentTime: 0 }, timeUpdate: true })
 
         expect(successCallback).toHaveBeenCalledTimes(1)
@@ -561,8 +594,9 @@ describe('Bigscreen Player', () => {
         expect(successCallback).not.toHaveBeenCalled()
       })
 
-      it('after a valid time update should not be called on succesive valid state changes', () => {
-        initialiseBigscreenPlayer()
+      it("after a valid time update should not be called on succesive valid state changes", () => {
+        bigscreenPlayer = initialiseBigscreenPlayer()
+
         mockEventHook({ data: { currentTime: 0 }, timeUpdate: true })
 
         expect(successCallback).toHaveBeenCalledTimes(1)
@@ -574,10 +608,10 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('registerForTimeUpdates', () => {
-    it('should call the callback when we get a timeupdate event from the strategy', () => {
+  describe("registerForTimeUpdates", () => {
+    it("should call the callback when we get a timeupdate event from the strategy", () => {
       const callback = jest.fn()
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.registerForTimeUpdates(callback)
 
       expect(callback).not.toHaveBeenCalled()
@@ -587,9 +621,10 @@ describe('Bigscreen Player', () => {
       expect(callback).toHaveBeenCalledWith({ currentTime: 60, endOfStream: false })
     })
 
-    it('returns a reference to the callback passed in', () => {
+    it("returns a reference to the callback passed in", () => {
       const callback = jest.fn()
-      initialiseBigscreenPlayer()
+
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const reference = bigscreenPlayer.registerForTimeUpdates(callback)
 
@@ -597,9 +632,9 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('unregisterForTimeUpdates', () => {
-    it('should remove callback from timeUpdateCallbacks', () => {
-      initialiseBigscreenPlayer()
+  describe("unregisterForTimeUpdates", () => {
+    it("should remove callback from timeUpdateCallbacks", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const listener1 = jest.fn()
       const listener2 = jest.fn()
@@ -620,8 +655,8 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
-    it('should remove callback from timeUpdateCallbacks when a callback removes itself', () => {
-      initialiseBigscreenPlayer()
+    it("should remove callback from timeUpdateCallbacks when a callback removes itself", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const listener1 = jest.fn()
       const listener2 = jest.fn().mockImplementation(() => {
@@ -641,8 +676,8 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
-    it('should only remove existing callbacks from timeUpdateCallbacks', () => {
-      initialiseBigscreenPlayer()
+    it("should only remove existing callbacks from timeUpdateCallbacks", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const listener1 = jest.fn()
       const listener2 = jest.fn()
@@ -656,10 +691,12 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('registerForSubtitleChanges', () => {
-    it('should call the callback when subtitles are turned on/off', () => {
+  describe("registerForSubtitleChanges", () => {
+    it("should call the callback when subtitles are turned on/off", () => {
       const callback = jest.fn()
-      initialiseBigscreenPlayer()
+
+      bigscreenPlayer = initialiseBigscreenPlayer()
+
       bigscreenPlayer.registerForSubtitleChanges(callback)
 
       expect(callback).not.toHaveBeenCalled()
@@ -673,19 +710,20 @@ describe('Bigscreen Player', () => {
       expect(callback).toHaveBeenCalledWith({ enabled: false })
     })
 
-    it('returns a reference to the callback supplied', () => {
+    it("returns a reference to the callback supplied", () => {
       const callback = jest.fn()
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
+
       const reference = bigscreenPlayer.registerForSubtitleChanges(callback)
 
       expect(reference).toBe(callback)
     })
   })
 
-  describe('unregisterForSubtitleChanges', () => {
-    it('should remove callback from subtitleCallbacks', () => {
-      initialiseBigscreenPlayer()
+  describe("unregisterForSubtitleChanges", () => {
+    it("should remove callback from subtitleCallbacks", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const listener1 = jest.fn()
       const listener2 = jest.fn()
@@ -706,8 +744,8 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
-    it('should remove callback from subtitleCallbacks when a callback removes itself', () => {
-      initialiseBigscreenPlayer()
+    it("should remove callback from subtitleCallbacks when a callback removes itself", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const listener1 = jest.fn()
       const listener2 = jest.fn().mockImplementation(() => {
@@ -727,8 +765,8 @@ describe('Bigscreen Player', () => {
       expect(listener3).toHaveBeenCalledTimes(2)
     })
 
-    it('should only remove existing callbacks from subtitleCallbacks', () => {
-      initialiseBigscreenPlayer()
+    it("should only remove existing callbacks from subtitleCallbacks", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const listener1 = jest.fn()
       const listener2 = jest.fn()
@@ -742,38 +780,42 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('setCurrentTime', () => {
-    it('should setCurrentTime on the strategy/playerComponent', () => {
-      initialiseBigscreenPlayer()
+  describe("setCurrentTime", () => {
+    it("should setCurrentTime on the strategy/playerComponent", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       bigscreenPlayer.setCurrentTime(60)
 
       expect(mockPlayerComponentInstance.setCurrentTime).toHaveBeenCalledWith(60)
     })
 
-    it('should not set current time on the strategy/playerComponent if bigscreen player is not initialised', () => {
-      bigscreenPlayer.setCurrentTime(60)
-
+    it("should not set the current time if media is not mounted", () => {
+      forceMediaSourcesConstructionFailure = true
+      bigscreenPlayer = initialiseBigscreenPlayer()
+      bigscreenPlayer = bigscreenPlayer.setCurrentTime(60)
       expect(mockPlayerComponentInstance.setCurrentTime).not.toHaveBeenCalled()
     })
 
-    it('should set endOfStream to true when seeking to the end of a simulcast', () => {
+    it("should set endOfStream to true when seeking to the end of a simulcast", () => {
       setupManifestData({
         transferFormat: TransferFormats.DASH,
         time: {
           windowStartTime: 10,
-          windowEndTime: 100
-        }
+          windowEndTime: 100,
+        },
       })
 
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
       const callback = jest.fn()
       const endOfStreamWindow = bigscreenPlayerData.time.windowEndTime - 2
 
       bigscreenPlayer.registerForTimeUpdates(callback)
 
-      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: bigscreenPlayerData.time.windowStartTime, end: bigscreenPlayerData.time.windowEndTime })
+      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({
+        start: bigscreenPlayerData.time.windowStartTime,
+        end: bigscreenPlayerData.time.windowEndTime,
+      })
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(endOfStreamWindow)
 
       bigscreenPlayer.setCurrentTime(endOfStreamWindow)
@@ -783,23 +825,26 @@ describe('Bigscreen Player', () => {
       expect(callback).toHaveBeenCalledWith({ currentTime: endOfStreamWindow, endOfStream: true })
     })
 
-    it('should set endOfStream to false when seeking into a simulcast', () => {
+    it("should set endOfStream to false when seeking into a simulcast", () => {
       setupManifestData({
         transferFormat: TransferFormats.DASH,
         time: {
           windowStartTime: 10,
-          windowEndTime: 100
-        }
+          windowEndTime: 100,
+        },
       })
 
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
       const callback = jest.fn()
       bigscreenPlayer.registerForTimeUpdates(callback)
 
       const middleOfStreamWindow = bigscreenPlayerData.time.windowEndTime / 2
 
-      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: bigscreenPlayerData.time.windowStartTime, end: bigscreenPlayerData.time.windowEndTime })
+      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({
+        start: bigscreenPlayerData.time.windowStartTime,
+        end: bigscreenPlayerData.time.windowEndTime,
+      })
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(middleOfStreamWindow)
 
       bigscreenPlayer.setCurrentTime(middleOfStreamWindow)
@@ -810,210 +855,248 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('Playback Rate', () => {
-    it('should setPlaybackRate on the strategy/playerComponent', () => {
-      initialiseBigscreenPlayer()
+  describe("Playback Rate", () => {
+    it("should setPlaybackRate on the strategy/playerComponent", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       bigscreenPlayer.setPlaybackRate(2)
 
       expect(mockPlayerComponentInstance.setPlaybackRate).toHaveBeenCalledWith(2)
     })
 
-    it('should not set playback rate if playerComponent is not initialised', () => {
-      bigscreenPlayer.setPlaybackRate(2)
-
+    it("should not set playback rate if playback component is not initialised", () => {
+      forceMediaSourcesConstructionFailure = true
+      bigscreenPlayer = initialiseBigscreenPlayer()
+      bigscreenPlayer = bigscreenPlayer.setPlaybackRate(2)
       expect(mockPlayerComponentInstance.setPlaybackRate).not.toHaveBeenCalled()
     })
 
-    it('should call through to get the playback rate when requested', () => {
-      initialiseBigscreenPlayer()
+    it("should call through to get the playback rate when requested", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
+
       mockPlayerComponentInstance.getPlaybackRate.mockReturnValue(1.5)
 
       const rate = bigscreenPlayer.getPlaybackRate()
 
       expect(mockPlayerComponentInstance.getPlaybackRate).toHaveBeenCalled()
-      expect(rate).toEqual(1.5)
+      expect(rate).toBe(1.5)
     })
 
-    it('should not get playback rate if playerComponent is not initialised', () => {
-      bigscreenPlayer.getPlaybackRate()
-
+    it("does not get playback rate if playback component is not initialised", () => {
+      forceMediaSourcesConstructionFailure = true
+      bigscreenPlayer = initialiseBigscreenPlayer()
+      bigscreenPlayer = bigscreenPlayer.getPlaybackRate()
       expect(mockPlayerComponentInstance.getPlaybackRate).not.toHaveBeenCalled()
     })
   })
 
-  describe('getCurrentTime', () => {
-    it('should return the current time from the strategy', () => {
-      initialiseBigscreenPlayer()
+  describe("getCurrentTime", () => {
+    it("should return the current time from the strategy", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(10)
 
       expect(bigscreenPlayer.getCurrentTime()).toBe(10)
     })
 
-    it('should return 0 if bigscreenPlayer is not initialised', () => {
+    it("returns `0` if media is not mounted", () => {
+      forceMediaSourcesConstructionFailure = true
+      bigscreenPlayer = initialiseBigscreenPlayer()
       expect(bigscreenPlayer.getCurrentTime()).toBe(0)
     })
   })
 
-  describe('getMediaKind', () => {
-    it('should return the media kind', () => {
-      initialiseBigscreenPlayer({ mediaKind: 'audio' })
+  describe("getMediaKind", () => {
+    it("should return the media kind", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer({ mediaKind: "audio" })
 
-      expect(bigscreenPlayer.getMediaKind()).toBe('audio')
+      expect(bigscreenPlayer.getMediaKind()).toBe("audio")
     })
   })
 
-  describe('getWindowType', () => {
-    it('should return the window type', () => {
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+  describe("getWindowType", () => {
+    it("should return the window type", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
       expect(bigscreenPlayer.getWindowType()).toBe(WindowTypes.SLIDING)
     })
   })
 
-  describe('getSeekableRange', () => {
-    it('should return the seekable range from the strategy', () => {
-      initialiseBigscreenPlayer()
+  describe("getSeekableRange", () => {
+    it("should return the seekable range from the strategy", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 10 })
 
-      expect(bigscreenPlayer.getSeekableRange().start).toEqual(0)
-      expect(bigscreenPlayer.getSeekableRange().end).toEqual(10)
+      expect(bigscreenPlayer.getSeekableRange().start).toBe(0)
+      expect(bigscreenPlayer.getSeekableRange().end).toBe(10)
     })
 
-    it('should return an empty object when bigscreen player has not been initialised', () => {
+    it("returns `{}` if media is not mounted", () => {
+      forceMediaSourcesConstructionFailure = true
+      bigscreenPlayer = initialiseBigscreenPlayer()
       expect(bigscreenPlayer.getSeekableRange()).toEqual({})
     })
   })
 
-  describe('isAtLiveEdge', () => {
-    it('should return false when playing on demand content', () => {
-      initialiseBigscreenPlayer()
+  describe("isAtLiveEdge", () => {
+    it("should return false when playing on demand content", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
-      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false)
+      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
 
-    it('should return false when bigscreen-player has not been initialised', () => {
-      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false)
+    it("returns `false` if media is not mounted", () => {
+      forceMediaSourcesConstructionFailure = true
+      bigscreenPlayer = initialiseBigscreenPlayer()
+      bigscreenPlayer = expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
 
-    it('should return true when playing live and current time is within tolerance of seekable range end', () => {
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+    it("should return true when playing live and current time is within tolerance of seekable range end", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(100)
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 105 })
 
-      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(true)
+      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(true)
     })
 
-    it('should return false when playing live and current time is outside the tolerance of seekable range end', () => {
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+    it("should return false when playing live and current time is outside the tolerance of seekable range end", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(95)
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 105 })
 
-      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false)
+      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
   })
 
-  describe('getLiveWindowData', () => {
-    it('should return undefined values when windowType is static', () => {
-      initialiseBigscreenPlayer({ windowType: WindowTypes.STATIC })
+  describe("getLiveWindowData", () => {
+    it("should return undefined values when windowType is static", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer({ windowType: WindowTypes.STATIC })
 
       expect(bigscreenPlayer.getLiveWindowData()).toEqual({})
     })
 
-    it('should return liveWindowData when the windowType is sliding and manifest is loaded', () => {
+    it("should return liveWindowData when the windowType is sliding and manifest is loaded", () => {
       setupManifestData({
         transferFormat: TransferFormats.DASH,
         time: {
           windowStartTime: 1,
-          windowEndTime: 2
-        }
+          windowEndTime: 2,
+        },
       })
 
-      const initialisationData = { windowType: WindowTypes.SLIDING, serverDate: new Date(), initialPlaybackTime: new Date().getTime() }
-      initialiseBigscreenPlayer(initialisationData)
+      const initialisationData = {
+        windowType: WindowTypes.SLIDING,
+        serverDate: new Date(),
+        initialPlaybackTime: Date.now(),
+      }
 
-      expect(bigscreenPlayer.getLiveWindowData()).toEqual({ windowStartTime: 1, windowEndTime: 2, serverDate: initialisationData.serverDate, initialPlaybackTime: initialisationData.initialPlaybackTime })
+      bigscreenPlayer = initialiseBigscreenPlayer(initialisationData)
+
+      expect(bigscreenPlayer.getLiveWindowData()).toEqual({
+        windowStartTime: 1,
+        windowEndTime: 2,
+        serverDate: initialisationData.serverDate,
+        initialPlaybackTime: initialisationData.initialPlaybackTime,
+      })
     })
 
-    it('should return a subset of liveWindowData when the windowType is sliding and time block is provided', () => {
-      const initialisationData = { windowType: WindowTypes.SLIDING, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: new Date().getTime() }
-      initialiseBigscreenPlayer(initialisationData)
+    it("should return a subset of liveWindowData when the windowType is sliding and time block is provided", () => {
+      const initialisationData = {
+        windowType: WindowTypes.SLIDING,
+        windowStartTime: 1,
+        windowEndTime: 2,
+        initialPlaybackTime: Date.now(),
+      }
 
-      expect(bigscreenPlayer.getLiveWindowData()).toEqual({ serverDate: undefined, windowStartTime: 1, windowEndTime: 2, initialPlaybackTime: initialisationData.initialPlaybackTime })
+      bigscreenPlayer = initialiseBigscreenPlayer(initialisationData)
+
+      expect(bigscreenPlayer.getLiveWindowData()).toEqual({
+        serverDate: undefined,
+        windowStartTime: 1,
+        windowEndTime: 2,
+        initialPlaybackTime: initialisationData.initialPlaybackTime,
+      })
     })
   })
 
-  describe('getDuration', () => {
-    it('should get the duration from the strategy', () => {
-      initialiseBigscreenPlayer()
+  describe("getDuration", () => {
+    it("should get the duration from the strategy", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       mockPlayerComponentInstance.getDuration.mockReturnValue(10)
 
-      expect(bigscreenPlayer.getDuration()).toEqual(10)
+      expect(bigscreenPlayer.getDuration()).toBe(10)
     })
 
-    it('should return undefined when not initialised', () => {
+    it("returns `undefined` if media is not mounted", () => {
+      forceMediaSourcesConstructionFailure = true
+      bigscreenPlayer = initialiseBigscreenPlayer()
       expect(bigscreenPlayer.getDuration()).toBeUndefined()
     })
   })
 
-  describe('isPaused', () => {
-    it('should get the paused state from the strategy', () => {
-      initialiseBigscreenPlayer()
+  describe("isPaused", () => {
+    it("should get the paused state from the strategy", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       mockPlayerComponentInstance.isPaused.mockReturnValue(true)
 
       expect(bigscreenPlayer.isPaused()).toBe(true)
     })
 
-    it('should return true if bigscreenPlayer has not been initialised', () => {
+    it("returns `true` if media is not mounted", () => {
+      forceMediaSourcesConstructionFailure = true
+      bigscreenPlayer = initialiseBigscreenPlayer()
       expect(bigscreenPlayer.isPaused()).toBe(true)
     })
   })
 
-  describe('isEnded', () => {
-    it('should get the ended state from the strategy', () => {
-      initialiseBigscreenPlayer()
+  describe("isEnded", () => {
+    it("should get the ended state from the strategy", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       mockPlayerComponentInstance.isEnded.mockReturnValue(true)
 
       expect(bigscreenPlayer.isEnded()).toBe(true)
     })
 
-    it('should return false if bigscreenPlayer has not been initialised', () => {
+    it("returns `false` if media is not mounted", () => {
+      forceMediaSourcesConstructionFailure = true
+      bigscreenPlayer = initialiseBigscreenPlayer()
       expect(bigscreenPlayer.isEnded()).toBe(false)
     })
   })
 
-  describe('play', () => {
-    it('should call play on the strategy', () => {
-      initialiseBigscreenPlayer()
+  describe("play", () => {
+    it("should call play on the strategy", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
-      bigscreenPlayer.play()
+      bigscreenPlayer = bigscreenPlayer.play()
 
       expect(mockPlayerComponentInstance.play).toHaveBeenCalledWith()
     })
   })
 
-  describe('pause', () => {
-    it('should call pause on the strategy', () => {
+  describe("pause", () => {
+    it("should call pause on the strategy", () => {
       const opts = { disableAutoResume: true }
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       bigscreenPlayer.pause(opts)
 
-      expect(mockPlayerComponentInstance.pause).toHaveBeenCalledWith(expect.objectContaining({ disableAutoResume: true }))
+      expect(mockPlayerComponentInstance.pause).toHaveBeenCalledWith(
+        expect.objectContaining({ disableAutoResume: true })
+      )
     })
 
-    it('should set pauseTrigger to an app pause if user pause is false', () => {
+    it("should set pauseTrigger to an app pause if user pause is false", () => {
       const opts = { userPause: false }
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const callback = jest.fn()
 
@@ -1026,10 +1109,10 @@ describe('Bigscreen Player', () => {
       expect(callback).toHaveBeenCalledWith(expect.objectContaining({ trigger: PauseTriggers.APP }))
     })
 
-    it('should set pauseTrigger to a user pause if user pause is true', () => {
+    it("should set pauseTrigger to a user pause if user pause is true", () => {
       const opts = { userPause: true }
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       const callback = jest.fn()
 
@@ -1043,9 +1126,9 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('setSubtitlesEnabled', () => {
-    it('should turn subtitles on/off when a value is passed in', () => {
-      initialiseBigscreenPlayer()
+  describe("setSubtitlesEnabled", () => {
+    it("should turn subtitles on/off when a value is passed in", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.setSubtitlesEnabled(true)
 
       expect(mockSubtitlesInstance.enable).toHaveBeenCalledTimes(1)
@@ -1055,22 +1138,22 @@ describe('Bigscreen Player', () => {
       expect(mockSubtitlesInstance.disable).toHaveBeenCalledTimes(1)
     })
 
-    it('should show subtitles when called with true', () => {
-      initialiseBigscreenPlayer()
+    it("should show subtitles when called with true", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.setSubtitlesEnabled(true)
 
       expect(mockSubtitlesInstance.show).toHaveBeenCalledTimes(1)
     })
 
-    it('should hide subtitleswhen called with false', () => {
-      initialiseBigscreenPlayer()
+    it("should hide subtitleswhen called with false", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.setSubtitlesEnabled(false)
 
       expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1)
     })
 
-    it('should not show subtitles when resized', () => {
-      initialiseBigscreenPlayer()
+    it("should not show subtitles when resized", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       mockResizer.isResized.mockReturnValue(true)
 
       bigscreenPlayer.setSubtitlesEnabled(true)
@@ -1078,8 +1161,8 @@ describe('Bigscreen Player', () => {
       expect(mockSubtitlesInstance.show).not.toHaveBeenCalled()
     })
 
-    it('should not hide subtitles when resized', () => {
-      initialiseBigscreenPlayer()
+    it("should not hide subtitles when resized", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       mockResizer.isResized.mockReturnValue(true)
 
       bigscreenPlayer.setSubtitlesEnabled(true)
@@ -1088,9 +1171,9 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('isSubtitlesEnabled', () => {
-    it('calls through to Subtitles enabled when called', () => {
-      initialiseBigscreenPlayer()
+  describe("isSubtitlesEnabled", () => {
+    it("calls through to Subtitles enabled when called", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       bigscreenPlayer.isSubtitlesEnabled()
 
@@ -1098,9 +1181,9 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('isSubtitlesAvailable', () => {
-    it('calls through to Subtitles available when called', () => {
-      initialiseBigscreenPlayer()
+  describe("isSubtitlesAvailable", () => {
+    it("calls through to Subtitles available when called", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       bigscreenPlayer.isSubtitlesAvailable()
 
@@ -1108,9 +1191,9 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('customiseSubtitles', () => {
-    it('passes through custom styles to Subtitles customise', () => {
-      initialiseBigscreenPlayer()
+  describe("customiseSubtitles", () => {
+    it("passes through custom styles to Subtitles customise", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       const customStyleObj = { size: 0.7 }
       bigscreenPlayer.customiseSubtitles(customStyleObj)
 
@@ -1118,10 +1201,10 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('renderSubtitleExample', () => {
-    it('calls Subtitles renderExample with correct values', () => {
-      initialiseBigscreenPlayer()
-      const exampleUrl = ''
+  describe("renderSubtitleExample", () => {
+    it("calls Subtitles renderExample with correct values", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
+      const exampleUrl = ""
       const customStyleObj = { size: 0.7 }
       const safePosititon = { left: 30, top: 0 }
       bigscreenPlayer.renderSubtitleExample(exampleUrl, customStyleObj, safePosititon)
@@ -1130,120 +1213,120 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('clearSubtitleExample', () => {
-    it('calls Subtitles clearExample', () => {
-      initialiseBigscreenPlayer()
+  describe("clearSubtitleExample", () => {
+    it("calls Subtitles clearExample", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.clearSubtitleExample()
 
       expect(mockSubtitlesInstance.clearExample).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('setTransportControlsPosition', () => {
-    it('should call through to Subtitles setPosition function', () => {
-      initialiseBigscreenPlayer()
+  describe("setTransportControlsPosition", () => {
+    it("should call through to Subtitles setPosition function", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.setTransportControlsPosition()
 
       expect(mockSubtitlesInstance.setPosition).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('resize', () => {
-    it('calls resizer with correct values', () => {
-      initialiseBigscreenPlayer()
+  describe("resize", () => {
+    it("calls resizer with correct values", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.resize(10, 10, 160, 90, 100)
 
       expect(mockResizer.resize).toHaveBeenCalledWith(playbackElement, 10, 10, 160, 90, 100)
     })
 
-    it('hides subtitles when resized', () => {
-      initialiseBigscreenPlayer()
+    it("hides subtitles when resized", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.resize(10, 10, 160, 90, 100)
 
       expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('clearResize', () => {
-    it('calls resizers clear function', () => {
-      initialiseBigscreenPlayer()
+  describe("clearResize", () => {
+    it("calls resizers clear function", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.clearResize()
 
       expect(mockResizer.clear).toHaveBeenCalledWith(playbackElement)
     })
 
-    it('shows subtitles if subtitles are enabled', () => {
+    it("shows subtitles if subtitles are enabled", () => {
       mockSubtitlesInstance.enabled.mockReturnValue(true)
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.clearResize()
 
       expect(mockSubtitlesInstance.show).toHaveBeenCalledTimes(1)
     })
 
-    it('hides subtitles if subtitles are disabled', () => {
+    it("hides subtitles if subtitles are disabled", () => {
       mockSubtitlesInstance.enabled.mockReturnValue(false)
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.clearResize()
 
       expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('canSeek', () => {
-    it('should return true when in VOD playback', () => {
-      initialiseBigscreenPlayer()
+  describe("canSeek", () => {
+    it("should return true when in VOD playback", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       expect(bigscreenPlayer.canSeek()).toBe(true)
     })
 
-    describe('live', () => {
-      it('should return true when it can seek', () => {
+    describe("live", () => {
+      it("should return true when it can seek", () => {
         mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 60 })
 
-        initialiseBigscreenPlayer({
-          windowType: WindowTypes.SLIDING
+        bigscreenPlayer = initialiseBigscreenPlayer({
+          windowType: WindowTypes.SLIDING,
         })
 
         expect(bigscreenPlayer.canSeek()).toBe(true)
       })
 
-      it('should return false when seekable range is infinite', () => {
+      it("should return false when seekable range is infinite", () => {
         mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: Infinity })
 
-        initialiseBigscreenPlayer({
-          windowType: WindowTypes.SLIDING
+        bigscreenPlayer = initialiseBigscreenPlayer({
+          windowType: WindowTypes.SLIDING,
         })
 
         expect(bigscreenPlayer.canSeek()).toBe(false)
       })
 
-      it('should return false when window length less than four minutes', () => {
+      it("should return false when window length less than four minutes", () => {
         setupManifestData({
-          transferFormat: 'dash',
+          transferFormat: "dash",
           time: {
             windowStartTime: 0,
             windowEndTime: 239999,
-            correction: 0
-          }
+            correction: 0,
+          },
         })
         mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 60 })
 
-        initialiseBigscreenPlayer({
-          windowType: WindowTypes.SLIDING
+        bigscreenPlayer = initialiseBigscreenPlayer({
+          windowType: WindowTypes.SLIDING,
         })
 
         expect(bigscreenPlayer.canSeek()).toBe(false)
       })
 
-      it('should return false when device does not support seeking', () => {
+      it("should return false when device does not support seeking", () => {
         mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 60 })
 
-        jest.spyOn(PlayerComponent, 'getLiveSupport').mockReturnValue(LiveSupport.PLAYABLE)
+        jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.PLAYABLE)
 
-        initialiseBigscreenPlayer({
-          windowType: WindowTypes.SLIDING
+        bigscreenPlayer = initialiseBigscreenPlayer({
+          windowType: WindowTypes.SLIDING,
         })
 
         expect(bigscreenPlayer.canSeek()).toBe(false)
@@ -1251,47 +1334,47 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('canPause', () => {
-    it('VOD should return true', () => {
-      initialiseBigscreenPlayer()
+  describe("canPause", () => {
+    it("VOD should return true", () => {
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       expect(bigscreenPlayer.canPause()).toBe(true)
     })
 
-    describe('LIVE', () => {
-      it('should return true when it can pause', () => {
-        jest.spyOn(PlayerComponent, 'getLiveSupport').mockReturnValue(LiveSupport.RESTARTABLE)
+    describe("LIVE", () => {
+      it("should return true when it can pause", () => {
+        jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.RESTARTABLE)
 
-        initialiseBigscreenPlayer({
-          windowType: WindowTypes.SLIDING
+        bigscreenPlayer = initialiseBigscreenPlayer({
+          windowType: WindowTypes.SLIDING,
         })
 
         expect(bigscreenPlayer.canPause()).toBe(true)
       })
 
-      it('should be false when window length less than four minutes', () => {
+      it("should be false when window length less than four minutes", () => {
         setupManifestData({
           transferFormat: TransferFormats.DASH,
           time: {
             windowStartTime: 0,
             windowEndTime: 239999,
-            correction: 0
-          }
+            correction: 0,
+          },
         })
-        jest.spyOn(PlayerComponent, 'getLiveSupport').mockReturnValue(LiveSupport.RESTARTABLE)
+        jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.RESTARTABLE)
 
-        initialiseBigscreenPlayer({
-          windowType: WindowTypes.SLIDING
+        bigscreenPlayer = initialiseBigscreenPlayer({
+          windowType: WindowTypes.SLIDING,
         })
 
         expect(bigscreenPlayer.canPause()).toBe(false)
       })
 
-      it('should return false when device does not support pausing', () => {
-        jest.spyOn(PlayerComponent, 'getLiveSupport').mockReturnValue(LiveSupport.PLAYABLE)
+      it("should return false when device does not support pausing", () => {
+        jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.PLAYABLE)
 
-        initialiseBigscreenPlayer({
-          windowType: WindowTypes.SLIDING
+        bigscreenPlayer = initialiseBigscreenPlayer({
+          windowType: WindowTypes.SLIDING,
         })
 
         expect(bigscreenPlayer.canPause()).toBe(false)
@@ -1299,89 +1382,89 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('convertVideoTimeSecondsToEpochMs', () => {
-    it('converts video time to epoch time when windowStartTime is supplied', () => {
+  describe("convertVideoTimeSecondsToEpochMs", () => {
+    it("converts video time to epoch time when windowStartTime is supplied", () => {
       setupManifestData({
         time: {
           windowStartTime: 4200,
-          windowEndTime: 150000000
-        }
+          windowEndTime: 150000000,
+        },
       })
 
-      initialiseBigscreenPlayer({
-        windowType: WindowTypes.SLIDING
+      bigscreenPlayer = initialiseBigscreenPlayer({
+        windowType: WindowTypes.SLIDING,
       })
 
       expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(4200 + 1000000)
     })
 
-    it('does not convert video time to epoch time when windowStartTime is not supplied', () => {
+    it("does not convert video time to epoch time when windowStartTime is not supplied", () => {
       setupManifestData({
         time: {
           windowStartTime: undefined,
-          windowEndTime: undefined
-        }
+          windowEndTime: undefined,
+        },
       })
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
-      expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(null)
+      expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBeNull()
     })
   })
 
-  describe('covertEpochMsToVideoTimeSeconds', () => {
-    it('converts epoch time to video time when windowStartTime is available', () => {
+  describe("covertEpochMsToVideoTimeSeconds", () => {
+    it("converts epoch time to video time when windowStartTime is available", () => {
       // windowStartTime - 16 January 2019 12:00:00
       // windowEndTime - 16 January 2019 14:00:00
       setupManifestData({
         time: {
           windowStartTime: 1547640000000,
-          windowEndTime: 1547647200000
-        }
+          windowEndTime: 1547647200000,
+        },
       })
 
-      initialiseBigscreenPlayer({
-        windowType: WindowTypes.SLIDING
+      bigscreenPlayer = initialiseBigscreenPlayer({
+        windowType: WindowTypes.SLIDING,
       })
 
       // Time to convert - 16 January 2019 13:00:00 - one hour (3600 seconds)
       expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBe(3600)
     })
 
-    it('does not convert epoch time to video time when windowStartTime is not available', () => {
+    it("does not convert epoch time to video time when windowStartTime is not available", () => {
       setupManifestData({
         time: {
           windowStartTime: undefined,
-          windowEndTime: undefined
-        }
+          windowEndTime: undefined,
+        },
       })
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
-      expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBe(null)
+      expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBeNull()
     })
   })
 
-  describe('registerPlugin', () => {
-    it('should register a specific plugin', () => {
+  describe("registerPlugin", () => {
+    it("should register a specific plugin", () => {
       const mockPlugin = {
-        onError: jest.fn()
+        onError: jest.fn(),
       }
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
       bigscreenPlayer.registerPlugin(mockPlugin)
 
       expect(Plugins.registerPlugin).toHaveBeenCalledWith(mockPlugin)
     })
   })
 
-  describe('unregister plugin', () => {
-    it('should remove a specific plugin', () => {
+  describe("unregister plugin", () => {
+    it("should remove a specific plugin", () => {
       const mockPlugin = {
-        onError: jest.fn()
+        onError: jest.fn(),
       }
 
-      initialiseBigscreenPlayer()
+      bigscreenPlayer = initialiseBigscreenPlayer()
 
       bigscreenPlayer.unregisterPlugin(mockPlugin)
 
@@ -1389,37 +1472,11 @@ describe('Bigscreen Player', () => {
     })
   })
 
-  describe('getDebugLogs', () => {
+  describe("getDebugLogs", () => {
     it('should call "retrieve" on the Chronicle', () => {
-      jest.spyOn(Chronicle, 'retrieve')
-      bigscreenPlayer.getDebugLogs()
+      jest.spyOn(Chronicle, "retrieve")
+      BigscreenPlayer.getDebugLogs()
       expect(Chronicle.retrieve).toHaveBeenCalledTimes(1)
     })
   })
-
-  // describe('mock', () => {
-  //   afterEach(() => {
-  //     bigscreenPlayer.unmock()
-  //   })
-
-  //   it('should return a mock object with jasmine spies on the same interface as the main api', () => {
-  //     initialiseBigscreenPlayer()
-
-  //     const moduleKeys = Object.keys(bigscreenPlayer)
-  //     bigscreenPlayer.mockJasmine()
-  //     const mockKeys = Object.keys(bigscreenPlayer)
-
-  //     expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
-  //   })
-
-  //   it('should return a mock object on the same interface as the main api', () => {
-  //     initialiseBigscreenPlayer()
-
-  //     const moduleKeys = Object.keys(bigscreenPlayer)
-  //     bigscreenPlayer.mock()
-  //     const mockKeys = Object.keys(bigscreenPlayer)
-
-  //     expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
-  //   })
-  // })
 })

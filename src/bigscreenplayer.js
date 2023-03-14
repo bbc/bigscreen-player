@@ -1,632 +1,664 @@
 /**
  * @module bigscreenplayer/bigscreenplayer
  */
-import MediaState from './models/mediastate'
-import PlayerComponent from './playercomponent'
-import PauseTriggers from './models/pausetriggers'
-import DynamicWindowUtils from './dynamicwindowutils'
-import WindowTypes from './models/windowtypes'
-import MockBigscreenPlayer from './mockbigscreenplayer'
-import Plugins from './plugins'
-import Chronicle from './debugger/chronicle'
-import DebugTool from './debugger/debugtool'
-import SlidingWindowUtils from './utils/timeutils'
-import callCallbacks from './utils/callcallbacks'
-import MediaSources from './mediasources'
-import Version from './version'
-import Resizer from './resizer'
-import ReadyHelper from './readyhelper'
-import Subtitles from './subtitles/subtitles'
-import './typedefs'
+import MediaState from "./models/mediastate"
+import PlayerComponent from "./playercomponent"
+import PauseTriggers from "./models/pausetriggers"
+import DynamicWindowUtils from "./dynamicwindowutils"
+import WindowTypes from "./models/windowtypes"
+import MockBigscreenPlayer from "./mockbigscreenplayer"
+import Plugins from "./plugins"
+import Chronicle from "./debugger/chronicle"
+import DebugTool from "./debugger/debugtool"
+import SlidingWindowUtils from "./utils/timeutils"
+import callCallbacks from "./utils/callcallbacks"
+import MediaSources from "./mediasources"
+import Version from "./version"
+import Resizer from "./resizer"
+import ReadyHelper from "./readyhelper"
+import Subtitles from "./subtitles/subtitles"
 
-function BigscreenPlayer () {
-  let stateChangeCallbacks = []
-  let timeUpdateCallbacks = []
-  let subtitleCallbacks = []
+export default class BigscreenPlayer {
+  static version = Version
 
-  let playerReadyCallback
-  let playerErrorCallback
-  let mediaKind
-  let initialPlaybackTimeEpoch
-  let serverDate
-  let playerComponent
-  let resizer
-  let pauseTrigger
-  let isSeeking = false
-  let endOfStream
-  let windowType
-  let mediaSources
-  let playbackElement
-  let readyHelper
-  let subtitles
+  static END_OF_STREAM_TOLERANCE = 10
 
-  const END_OF_STREAM_TOLERANCE = 10
+  /**
+   * @return the live support of the device.
+   */
+  static getLiveSupport() {
+    return PlayerComponent.getLiveSupport()
+  }
 
-  function mediaStateUpdateCallback (evt) {
-    if (evt.timeUpdate) {
-      DebugTool.time(evt.data.currentTime)
-      callCallbacks(timeUpdateCallbacks, {
-        currentTime: evt.data.currentTime,
-        endOfStream: endOfStream
+  #stateChangeCallbacks = []
+  #timeUpdateCallbacks = []
+  #subtitleCallbacks = []
+  #playerReadyCallback
+  #playerErrorCallback
+  #mediaKind
+  #initialPlaybackTimeEpoch
+  #serverDate
+  #playerComponent
+  #resizer
+  #pauseTrigger
+  #isSeeking = false
+  #endOfStream
+  #windowType
+  #mediaSources
+  #playbackElement
+  #readyHelper
+  #subtitles
+
+  /**
+   * @typedef {Object} MediaConnection
+   * @property {String} url - media endpoint
+   * @property {String} cdn - identifier for the endpoint
+   */
+
+  /**
+   * Data required for playback
+   * @typedef {Object} BigscreenPlayerData
+   * @property {Object} media
+   * @property {string} media.type - source type e.g 'application/dash+xml'
+   * @property {string} media.mimeType - mimeType e.g 'video/mp4'
+   * @property {string} media.kind - 'video' or 'audio'
+   * @property {string} media.captionsUrl - 'Location for a captions file'
+   * @property {MediaConnection[]} media.urls - Media urls to use
+   * @property {Date} serverDate - Date object with server time offset
+   * @property {WindowTypes} windowType
+   * @property {boolean} subtitlesEnabled – Enable subtitles on initialisation
+   */
+
+  /**
+   *
+   * @typedef {object} ConstructionCallbacks
+   * @property {function} [callbacks.onSuccess] - Called after Bigscreen Player is initialised
+   * @property {function} [callbacks.onError] - Called when an error occurs during initialisation
+   */
+
+  /**
+   * Call first to initialise bigscreen player for playback.
+   * @param {HTMLDivElement} el - The Div element where content elements should be rendered
+   * @param {BigscreenPlayerData} data
+   * @param {ConstructionCallbacks} callbacks
+   */
+  constructor(el, data, callbacks) {
+    this.#playbackElement = el
+    this.#resizer = Resizer()
+    this.#windowType = data.windowType
+    this.#serverDate = data.serverDate
+    Chronicle.init()
+    DebugTool.setRootElement(this.#playbackElement)
+    DebugTool.keyValue({ key: "framework-version", value: Version })
+
+    this.#playerReadyCallback = callbacks?.onSuccess?.bind(this)
+    this.#playerErrorCallback = callbacks?.onError?.bind(this)
+
+    // Backwards compatibility with Old API; to be removed on Major Version Update
+    if (data.media && !data.media.captions && data.media.captionsUrl) {
+      data.media.captions = [
+        {
+          url: data.media.captionsUrl,
+        },
+      ]
+    }
+
+    this.#mediaSources = MediaSources()
+
+    const handleDataLoaded = this.#bigscreenPlayerDataLoaded.bind(this)
+
+    const mediaSourceCallbacks = {
+      onSuccess: () => handleDataLoaded(data),
+      onError: (error) => {
+        if (typeof callbacks?.onError === "function") {
+          callbacks.onError(error)
+        }
+      },
+    }
+
+    this.#mediaSources.init(
+      data.media,
+      this.#serverDate,
+      this.#windowType,
+      BigscreenPlayer.getLiveSupport(),
+      mediaSourceCallbacks
+    )
+  }
+
+  #bigscreenPlayerDataLoaded(data) {
+    if (this.#windowType !== WindowTypes.STATIC) {
+      data.time = this.#mediaSources.time()
+
+      this.#serverDate = data.serverDate
+      this.#initialPlaybackTimeEpoch = data.initialPlaybackTime
+
+      // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
+      data.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(
+        data.initialPlaybackTime,
+        data.time.windowStartTime
+      )
+    }
+
+    this.#mediaKind = data.media.kind
+    this.#endOfStream =
+      this.#windowType !== WindowTypes.STATIC && !data.initialPlaybackTime && data.initialPlaybackTime !== 0
+
+    this.#readyHelper = new ReadyHelper(
+      data.initialPlaybackTime,
+      this.#windowType,
+      PlayerComponent.getLiveSupport(),
+      this.#playerReadyCallback
+    )
+
+    this.#playerComponent = new PlayerComponent(
+      this.#playbackElement,
+      data,
+      this.#mediaSources,
+      this.#windowType,
+      this.#mediaStateUpdateCallback.bind(this),
+      this.#playerErrorCallback
+    )
+
+    this.#subtitles = Subtitles(
+      this.#playerComponent,
+      data.subtitlesEnabled,
+      this.#playbackElement,
+      data.media.subtitleCustomisation,
+      this.#mediaSources,
+      this.#callSubtitlesCallbacks.bind(this)
+    )
+  }
+
+  #mediaStateUpdateCallback(event) {
+    if (event.timeUpdate) {
+      DebugTool.time(event.data.currentTime)
+      callCallbacks(this.#timeUpdateCallbacks, {
+        currentTime: event.data.currentTime,
+        endOfStream: this.#endOfStream,
       })
     } else {
-      let stateObject = { state: evt.data.state }
+      let stateObject = { state: event.data.state }
 
-      if (evt.data.state === MediaState.PAUSED) {
-        endOfStream = false
-        stateObject.trigger = pauseTrigger || PauseTriggers.DEVICE
-        pauseTrigger = undefined
+      if (event.data.state === MediaState.PAUSED) {
+        this.#endOfStream = false
+        stateObject.trigger = this.#pauseTrigger || PauseTriggers.DEVICE
+        this.#pauseTrigger = undefined
       }
 
-      if (evt.data.state === MediaState.FATAL_ERROR) {
+      if (event.data.state === MediaState.FATAL_ERROR) {
         stateObject = {
           state: MediaState.FATAL_ERROR,
-          isBufferingTimeoutError: evt.isBufferingTimeoutError,
-          code: evt.code,
-          message: evt.message
+          isBufferingTimeoutError: event.isBufferingTimeoutError,
+          code: event.code,
+          message: event.message,
         }
       }
 
-      if (evt.data.state === MediaState.WAITING) {
-        stateObject.isSeeking = isSeeking
-        isSeeking = false
+      if (event.data.state === MediaState.WAITING) {
+        stateObject.isSeeking = this.#isSeeking
+        this.#isSeeking = false
       }
 
-      stateObject.endOfStream = endOfStream
+      stateObject.endOfStream = this.#endOfStream
       DebugTool.event(stateObject)
 
-      callCallbacks(stateChangeCallbacks, stateObject)
+      callCallbacks(this.#stateChangeCallbacks, stateObject)
     }
 
-    if (evt.data.seekableRange) {
-      DebugTool.keyValue({ key: 'seekableRangeStart', value: deviceTimeToDate(evt.data.seekableRange.start) })
-      DebugTool.keyValue({ key: 'seekableRangeEnd', value: deviceTimeToDate(evt.data.seekableRange.end) })
+    if (event.data.seekableRange) {
+      DebugTool.keyValue({ key: "seekableRangeStart", value: this.#deviceTimeToDate(event.data.seekableRange.start) })
+      DebugTool.keyValue({ key: "seekableRangeEnd", value: this.#deviceTimeToDate(event.data.seekableRange.end) })
     }
 
-    if (evt.data.duration) {
-      DebugTool.keyValue({ key: 'duration', value: evt.data.duration })
+    if (event.data.duration) {
+      DebugTool.keyValue({ key: "duration", value: event.data.duration })
     }
 
-    if (playerComponent && readyHelper) {
-      readyHelper.callbackWhenReady(evt)
-    }
-  }
-
-  function deviceTimeToDate (time) {
-    if (getWindowStartTime()) {
-      return new Date(convertVideoTimeSecondsToEpochMs(time))
-    } else {
-      return new Date(time * 1000)
+    if (this.#playerComponent && this.#readyHelper) {
+      this.#readyHelper.callbackWhenReady(event)
     }
   }
 
-  function convertVideoTimeSecondsToEpochMs (seconds) {
-    return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : null
+  #deviceTimeToDate(time) {
+    return this.#getWindowStartTime() ? new Date(this.convertVideoTimeSecondsToEpochMs(time)) : new Date(time * 1000)
   }
 
-  function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
-    if (windowType !== WindowTypes.STATIC) {
-      bigscreenPlayerData.time = mediaSources.time()
-      serverDate = bigscreenPlayerData.serverDate
+  #getWindowStartTime() {
+    return this.#mediaSources && this.#mediaSources.time().windowStartTime
+  }
 
-      initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
-      // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
-      bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(bigscreenPlayerData.initialPlaybackTime, bigscreenPlayerData.time.windowStartTime)
+  #getWindowEndTime() {
+    return this.#mediaSources && this.#mediaSources.time().windowEndTime
+  }
+
+  #callSubtitlesCallbacks(enabled) {
+    callCallbacks(this.#subtitleCallbacks, { enabled })
+  }
+
+  /**
+   * Should be called at the end of all playback sessions. Resets state and clears any UI.
+   */
+  tearDown() {
+    if (this.#subtitles) {
+      this.#subtitles.tearDown()
+      this.#subtitles = undefined
     }
 
-    mediaKind = bigscreenPlayerData.media.kind
-    endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0)
+    if (this.#playerComponent) {
+      this.#playerComponent.tearDown()
+      this.#playerComponent = undefined
+    }
 
-    readyHelper = new ReadyHelper(
-      bigscreenPlayerData.initialPlaybackTime,
-      windowType,
-      PlayerComponent.getLiveSupport(),
-      playerReadyCallback
+    if (this.#mediaSources) {
+      this.#mediaSources.tearDown()
+      this.#mediaSources = undefined
+    }
+
+    this.#stateChangeCallbacks = []
+    this.#timeUpdateCallbacks = []
+    this.#subtitleCallbacks = []
+    this.#endOfStream = undefined
+    this.#mediaKind = undefined
+    this.#pauseTrigger = undefined
+    this.#windowType = undefined
+    this.#resizer = undefined
+    this.unregisterPlugin()
+    DebugTool.tearDown()
+    Chronicle.tearDown()
+  }
+
+  /**
+   * Pass a function to call whenever the player transitions state.
+   * @see {@link module:models/mediastate}
+   * @param {Function} callback
+   */
+  registerForStateChanges(callback) {
+    this.#stateChangeCallbacks.push(callback)
+    return callback
+  }
+
+  /**
+   * Unregisters a previously registered callback.
+   * @param {Function} callback
+   */
+  unregisterForStateChanges(callback) {
+    const indexOf = this.#stateChangeCallbacks.indexOf(callback)
+    if (indexOf !== -1) {
+      this.#stateChangeCallbacks.splice(indexOf, 1)
+    }
+  }
+
+  /**
+   * Pass a function to call whenever the player issues a time update.
+   * @param {Function} callback
+   */
+  registerForTimeUpdates(callback) {
+    this.#timeUpdateCallbacks.push(callback)
+    return callback
+  }
+
+  /**
+   * Unregisters a previously registered callback.
+   * @param {Function} callback
+   */
+  unregisterForTimeUpdates(callback) {
+    const indexOf = this.#timeUpdateCallbacks.indexOf(callback)
+    if (indexOf !== -1) {
+      this.#timeUpdateCallbacks.splice(indexOf, 1)
+    }
+  }
+
+  /**
+   * Pass a function to be called whenever subtitles are enabled or disabled.
+   * @param {Function} callback
+   */
+  registerForSubtitleChanges(callback) {
+    this.#subtitleCallbacks.push(callback)
+    return callback
+  }
+
+  /**
+   * Unregisters a previously registered callback for changes to subtitles.
+   * @param {Function} callback
+   */
+  unregisterForSubtitleChanges(callback) {
+    const indexOf = this.#subtitleCallbacks.indexOf(callback)
+    if (indexOf !== -1) {
+      this.#subtitleCallbacks.splice(indexOf, 1)
+    }
+  }
+
+  /**
+   * Sets the current time of the media asset.
+   * @param {Number} time - In seconds
+   */
+  setCurrentTime(time) {
+    DebugTool.apicall("setCurrentTime")
+    if (this.#playerComponent) {
+      // this flag must be set before calling into playerComponent.setCurrentTime
+      // as this synchronously fires a WAITING event (when native strategy).
+      this.#isSeeking = true
+      this.#playerComponent.setCurrentTime(time)
+      this.#endOfStream =
+        this.#windowType !== WindowTypes.STATIC &&
+        Math.abs(this.getSeekableRange().end - time) < BigscreenPlayer.END_OF_STREAM_TOLERANCE
+    }
+  }
+
+  setPlaybackRate(rate) {
+    this.#playerComponent?.setPlaybackRate(rate)
+  }
+
+  getPlaybackRate() {
+    return this.#playerComponent?.getPlaybackRate()
+  }
+
+  /**
+   * Returns the media asset's current time in seconds.
+   */
+  getCurrentTime() {
+    return this.#playerComponent?.getCurrentTime() ?? 0
+  }
+
+  /**
+   * Returns the current media kind.
+   * 'audio' or 'video'
+   */
+  getMediaKind() {
+    return this.#mediaKind
+  }
+
+  /**
+   * Returns the current window type.
+   * @see {@link module:bigscreenplayer/models/windowtypes}
+   */
+  getWindowType() {
+    return this.#windowType
+  }
+
+  /**
+   * Returns an object including the current start and end times.
+   * @returns {Object} {start: Number, end: Number}
+   */
+  getSeekableRange() {
+    return this.#playerComponent?.getSeekableRange() ?? {}
+  }
+
+  /**
+   * @returns {boolean} Returns true if media is initialised and playing a live stream within a tolerance of the end of the seekable range (10 seconds).
+   */
+  isPlayingAtLiveEdge() {
+    return !!(
+      this.#playerComponent &&
+      this.#windowType !== WindowTypes.STATIC &&
+      Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < BigscreenPlayer.END_OF_STREAM_TOLERANCE
     )
-    playerComponent = new PlayerComponent(
-      playbackElement,
-      bigscreenPlayerData,
-      mediaSources,
-      windowType,
-      mediaStateUpdateCallback,
-      playerErrorCallback
+  }
+
+  /**
+   * @return {Object} An object of the shape {windowStartTime: Number, windowEndTime: Number, initialPlaybackTime: Number, serverDate: Date}
+   */
+  getLiveWindowData() {
+    if (this.#windowType === WindowTypes.STATIC) {
+      return {}
+    }
+
+    return {
+      windowStartTime: this.#getWindowStartTime(),
+      windowEndTime: this.#getWindowEndTime(),
+      initialPlaybackTime: this.#initialPlaybackTimeEpoch,
+      serverDate: this.#serverDate,
+    }
+  }
+
+  /**
+   * @returns the duration of the media asset.
+   */
+  getDuration() {
+    return this.#playerComponent?.getDuration()
+  }
+
+  /**
+   * @returns if the player is paused.
+   */
+  isPaused() {
+    return this.#playerComponent?.isPaused() ?? true
+  }
+
+  /**
+   * @returns if the media asset has ended.
+   */
+  isEnded() {
+    return this.#playerComponent?.isEnded() ?? false
+  }
+
+  /**
+   * Play the media assest from the current point in time.
+   */
+  play() {
+    DebugTool.apicall("play")
+    this.#playerComponent.play()
+  }
+
+  /**
+   * Pause the media asset.
+   * @param {*} opts
+   * @param {boolean} opts.userPause
+   * @param {boolean} opts.disableAutoResume
+   */
+  pause(opts) {
+    DebugTool.apicall("pause")
+    this.#pauseTrigger = opts?.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
+    this.#playerComponent.pause(opts)
+  }
+
+  resize(top, left, width, height, zIndex) {
+    this.#subtitles.hide()
+    this.#resizer.resize(this.#playbackElement, top, left, width, height, zIndex)
+  }
+
+  clearResize() {
+    if (this.#subtitles.enabled()) this.#subtitles.show()
+    else this.#subtitles.hide()
+
+    this.#resizer.clear(this.#playbackElement)
+  }
+
+  /**
+   * Set whether or not subtitles should be enabled.
+   * @param {boolean} value
+   */
+  setSubtitlesEnabled(enabled) {
+    if (enabled) this.#subtitles.enable()
+    else this.#subtitles.disable()
+
+    this.#callSubtitlesCallbacks(enabled)
+
+    if (this.#resizer.isResized()) {
+      return
+    }
+
+    if (enabled) this.#subtitles.show()
+    else this.#subtitles.hide()
+  }
+
+  /**
+   * @return if subtitles are currently enabled.
+   */
+  isSubtitlesEnabled() {
+    return this.#subtitles ? this.#subtitles.enabled() : false
+  }
+
+  /**
+   * @return Returns whether or not subtitles are currently enabled.
+   */
+  isSubtitlesAvailable() {
+    return this.#subtitles ? this.#subtitles.available() : false
+  }
+
+  areSubtitlesCustomisable() {
+    return !window.bigscreenPlayer?.overrides?.legacySubtitles
+  }
+
+  customiseSubtitles(styleOpts) {
+    if (this.#subtitles) {
+      this.#subtitles.customise(styleOpts)
+    }
+  }
+
+  renderSubtitleExample(xmlString, styleOpts, safePosition) {
+    if (this.#subtitles) {
+      this.#subtitles.renderExample(xmlString, styleOpts, safePosition)
+    }
+  }
+
+  clearSubtitleExample() {
+    if (this.#subtitles) {
+      this.#subtitles.clearExample()
+    }
+  }
+
+  /**
+   *
+   * An enum may be used to set the on-screen position of any transport controls
+   * (work in progress to remove this - UI concern).
+   * @param {*} position
+   */
+  setTransportControlsPosition(position) {
+    if (this.#subtitles) {
+      this.#subtitles.setPosition(position)
+    }
+  }
+
+  /**
+   * @return Returns whether the current media asset is seekable.
+   */
+  canSeek() {
+    return (
+      this.#windowType === WindowTypes.STATIC ||
+      DynamicWindowUtils.canSeek(
+        this.#getWindowStartTime(),
+        this.#getWindowEndTime(),
+        BigscreenPlayer.getLiveSupport(),
+        this.getSeekableRange()
+      )
     )
+  }
 
-    subtitles = Subtitles(
-      playerComponent,
-      enableSubtitles,
-      playbackElement,
-      bigscreenPlayerData.media.subtitleCustomisation,
-      mediaSources,
-      callSubtitlesCallbacks
+  /**
+   * @return Returns whether the current media asset is pausable.
+   */
+  canPause() {
+    return (
+      this.#windowType === WindowTypes.STATIC ||
+      DynamicWindowUtils.canPause(
+        this.#getWindowStartTime(),
+        this.#getWindowEndTime(),
+        BigscreenPlayer.getLiveSupport()
+      )
     )
   }
 
-  function getWindowStartTime () {
-    return mediaSources && mediaSources.time().windowStartTime
+  /**
+   * Return a mock for in place testing.
+   * @param {*} opts
+   */
+  mock(opts) {
+    MockBigscreenPlayer.mock(this, opts)
   }
 
-  function getWindowEndTime () {
-    return mediaSources && mediaSources.time().windowEndTime
+  /**
+   * Unmock the player.
+   */
+  unmock() {
+    MockBigscreenPlayer.unmock(this)
   }
 
-  function toggleDebug () {
-    if (playerComponent) {
+  /**
+   * Return a mock for unit tests.
+   * @param {*} opts
+   */
+  mockJasmine(opts) {
+    MockBigscreenPlayer.mockJasmine(this, opts)
+  }
+
+  /**
+   * Register a plugin for extended events.
+   * @param {*} plugin
+   */
+  registerPlugin(plugin) {
+    Plugins.registerPlugin(plugin)
+  }
+
+  /**
+   * Unregister a previously registered plugin.
+   * @param {*} plugin
+   */
+  unregisterPlugin(plugin) {
+    Plugins.unregisterPlugin(plugin)
+  }
+
+  /**
+   * Returns an object with a number of functions related to the ability to transition state
+   * given the current state and the playback strategy in use.
+   */
+  transitions() {
+    return this.#playerComponent?.transitions() ?? {}
+  }
+
+  /**
+   * @return The media element currently being used.
+   */
+  getPlayerElement() {
+    return this.#playerComponent?.getPlayerElement()
+  }
+
+  /**
+   * @param {Number} epochTime - Unix Epoch based time in milliseconds.
+   * @return the time in seconds within the current sliding window.
+   */
+  convertEpochMsToVideoTimeSeconds(epochTime) {
+    return this.#getWindowStartTime() ? Math.floor((epochTime - this.#getWindowStartTime()) / 1000) : null
+  }
+
+  /**
+   * @return The runtime version of the library.
+   */
+  getFrameworkVersion() {
+    return Version
+  }
+
+  /**
+   * @param {Number} time - Seconds
+   * @return the time in milliseconds within the current sliding window.
+   */
+  convertVideoTimeSecondsToEpochMs(seconds) {
+    return this.#getWindowStartTime() ? this.#getWindowStartTime() + seconds * 1000 : null
+  }
+
+  /**
+   * Toggle the visibility of the debug tool overlay.
+   */
+  toggleDebug() {
+    if (this.#playerComponent) {
       DebugTool.toggleVisibility()
     }
   }
 
-  function callSubtitlesCallbacks (enabled) {
-    callCallbacks(subtitleCallbacks, { enabled: enabled })
+  /**
+   * @return {Object} - Key value pairs of available log levels
+   */
+  static getLogLevels() {
+    return DebugTool.logLevels
   }
 
-  function setSubtitlesEnabled (enabled) {
-    enabled ? subtitles.enable() : subtitles.disable()
-    callSubtitlesCallbacks(enabled)
+  /**
+   * @borrows DebugTool.setLogLevel as setLogLevel
+   * @param logLevel -  log level to display @see getLogLevels
+   */
+  static setLogLevel = DebugTool.setLogLevel
 
-    if (!resizer.isResized()) {
-      enabled ? subtitles.show() : subtitles.hide()
-    }
-  }
-
-  function isSubtitlesEnabled () {
-    return subtitles ? subtitles.enabled() : false
-  }
-
-  function isSubtitlesAvailable () {
-    return subtitles ? subtitles.available() : false
-  }
-
-  return /** @alias module:bigscreenplayer/bigscreenplayer */{
-
-    /**
-     * Call first to initialise bigscreen player for playback.
-     * @function
-     * @name init
-     * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
-     * @param {BigscreenPlayerData} bigscreenPlayerData
-     * @param {WindowTypes} newWindowType
-     * @param {boolean} enableSubtitles - Enable subtitles on initialisation
-     * @param {InitCallbacks} callbacks
-     */
-    init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) => {
-      playbackElement = newPlaybackElement
-      Chronicle.init()
-      resizer = Resizer()
-      DebugTool.setRootElement(playbackElement)
-      DebugTool.keyValue({ key: 'framework-version', value: Version })
-      windowType = newWindowType
-      serverDate = bigscreenPlayerData.serverDate
-      if (!callbacks) {
-        callbacks = {}
-      }
-
-      playerReadyCallback = callbacks.onSuccess
-      playerErrorCallback = callbacks.onError
-
-      const mediaSourceCallbacks = {
-        onSuccess: () => bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles),
-        onError: (error) => {
-          if (callbacks.onError) {
-            callbacks.onError(error)
-          }
-        }
-      }
-
-      mediaSources = MediaSources()
-
-      // Backwards compatibility with Old API; to be removed on Major Version Update
-      if (bigscreenPlayerData.media && !bigscreenPlayerData.media.captions && bigscreenPlayerData.media.captionsUrl) {
-        bigscreenPlayerData.media.captions = [{
-          url: bigscreenPlayerData.media.captionsUrl
-        }]
-      }
-
-      mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks)
-    },
-
-    /**
-     * Should be called at the end of all playback sessions. Resets state and clears any UI.
-     * @function
-     * @name tearDown
-     */
-    tearDown: function () {
-      if (subtitles) {
-        subtitles.tearDown()
-        subtitles = undefined
-      }
-
-      if (playerComponent) {
-        playerComponent.tearDown()
-        playerComponent = undefined
-      }
-
-      if (mediaSources) {
-        mediaSources.tearDown()
-        mediaSources = undefined
-      }
-
-      stateChangeCallbacks = []
-      timeUpdateCallbacks = []
-      subtitleCallbacks = []
-      endOfStream = undefined
-      mediaKind = undefined
-      pauseTrigger = undefined
-      windowType = undefined
-      resizer = undefined
-      this.unregisterPlugin()
-      DebugTool.tearDown()
-      Chronicle.tearDown()
-    },
-
-    /**
-     * Pass a function to call whenever the player transitions state.
-     * @see {@link module:models/mediastate}
-     * @function
-     * @param {Function} callback
-     */
-    registerForStateChanges: (callback) => {
-      stateChangeCallbacks.push(callback)
-      return callback
-    },
-
-    /**
-     * Unregisters a previously registered callback.
-     * @function
-     * @param {Function} callback
-     */
-    unregisterForStateChanges: (callback) => {
-      const indexOf = stateChangeCallbacks.indexOf(callback)
-      if (indexOf !== -1) {
-        stateChangeCallbacks.splice(indexOf, 1)
-      }
-    },
-
-    /**
-     * Pass a function to call whenever the player issues a time update.
-     * @function
-     * @param {Function} callback
-     */
-    registerForTimeUpdates: (callback) => {
-      timeUpdateCallbacks.push(callback)
-      return callback
-    },
-
-    /**
-     * Unregisters a previously registered callback.
-     * @function
-     * @param {Function} callback
-     */
-    unregisterForTimeUpdates: (callback) => {
-      const indexOf = timeUpdateCallbacks.indexOf(callback)
-      if (indexOf !== -1) {
-        timeUpdateCallbacks.splice(indexOf, 1)
-      }
-    },
-
-    /**
-     * Pass a function to be called whenever subtitles are enabled or disabled.
-     * @function
-     * @param {Function} callback
-     */
-    registerForSubtitleChanges: (callback) => {
-      subtitleCallbacks.push(callback)
-      return callback
-    },
-
-    /**
-     * Unregisters a previously registered callback for changes to subtitles.
-     * @function
-     * @param {Function} callback
-     */
-    unregisterForSubtitleChanges: (callback) => {
-      const indexOf = subtitleCallbacks.indexOf(callback)
-      if (indexOf !== -1) {
-        subtitleCallbacks.splice(indexOf, 1)
-      }
-    },
-
-    /**
-     * Sets the current time of the media asset.
-     * @function
-     * @param {Number} time - In seconds
-     */
-    setCurrentTime: function (time) {
-      DebugTool.apicall('setCurrentTime')
-      if (playerComponent) {
-        // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
-        isSeeking = true
-        playerComponent.setCurrentTime(time)
-        endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
-      }
-    },
-
-    setPlaybackRate: (rate) => {
-      if (playerComponent) {
-        playerComponent.setPlaybackRate(rate)
-      }
-    },
-
-    getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
-
-    /**
-     * Returns the media asset's current time in seconds.
-     * @function
-     */
-    getCurrentTime: () => playerComponent && playerComponent.getCurrentTime() || 0,
-
-    /**
-     * Returns the current media kind.
-     * 'audio' or 'video'
-     * @function
-     */
-    getMediaKind: () => mediaKind,
-
-    /**
-     * Returns the current window type.
-     * @see {@link module:bigscreenplayer/models/windowtypes}
-     * @function
-     */
-    getWindowType: () => windowType,
-
-    /**
-     * Returns an object including the current start and end times.
-     * @function
-     * @returns {Object} {start: Number, end: Number}
-     */
-    getSeekableRange: () => playerComponent ? playerComponent.getSeekableRange() : {},
-
-    /**
-    * @function
-    * @returns {boolean} Returns true if media is initialised and playing a live stream within a tolerance of the end of the seekable range (10 seconds).
-    */
-    isPlayingAtLiveEdge: function () {
-      return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
-    },
-
-    /**
-     * @function
-     * @return {Object} An object of the shape {windowStartTime: Number, windowEndTime: Number, initialPlaybackTime: Number, serverDate: Date}
-     */
-    getLiveWindowData: () => {
-      if (windowType === WindowTypes.STATIC) {
-        return {}
-      }
-
-      return {
-        windowStartTime: getWindowStartTime(),
-        windowEndTime: getWindowEndTime(),
-        initialPlaybackTime: initialPlaybackTimeEpoch,
-        serverDate: serverDate
-      }
-    },
-
-    /**
-     * @function
-     * @returns the duration of the media asset.
-     */
-    getDuration: () => playerComponent && playerComponent.getDuration(),
-
-    /**
-     * @function
-     * @returns if the player is paused.
-     */
-    isPaused: () => playerComponent ? playerComponent.isPaused() : true,
-
-    /**
-     * @function
-     * @returns if the media asset has ended.
-     */
-    isEnded: () => playerComponent ? playerComponent.isEnded() : false,
-
-    /**
-     * Play the media assest from the current point in time.
-     * @function
-     */
-    play: () => {
-      DebugTool.apicall('play')
-      playerComponent.play()
-    },
-    /**
-     * Pause the media asset.
-     * @function
-     * @param {*} opts
-     * @param {boolean} opts.userPause
-     * @param {boolean} opts.disableAutoResume
-     */
-    pause: (opts) => {
-      DebugTool.apicall('pause')
-      pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
-      playerComponent.pause(opts)
-    },
-
-    resize: (top, left, width, height, zIndex) => {
-      subtitles.hide()
-      resizer.resize(playbackElement, top, left, width, height, zIndex)
-    },
-
-    clearResize: () => {
-      if (subtitles.enabled()) {
-        subtitles.show()
-      } else {
-        subtitles.hide()
-      }
-      resizer.clear(playbackElement)
-    },
-
-    /**
-     * Set whether or not subtitles should be enabled.
-     * @function
-     * @param {boolean} value
-     */
-    setSubtitlesEnabled: setSubtitlesEnabled,
-
-    /**
-     * @function
-     * @return if subtitles are currently enabled.
-     */
-    isSubtitlesEnabled: isSubtitlesEnabled,
-
-    /**
-     * @function
-     * @return Returns whether or not subtitles are currently enabled.
-     */
-    isSubtitlesAvailable: isSubtitlesAvailable,
-
-    areSubtitlesCustomisable: () => {
-      return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)
-    },
-
-    customiseSubtitles: (styleOpts) => {
-      if (subtitles) {
-        subtitles.customise(styleOpts)
-      }
-    },
-
-    renderSubtitleExample: (xmlString, styleOpts, safePosition) => {
-      if (subtitles) {
-        subtitles.renderExample(xmlString, styleOpts, safePosition)
-      }
-    },
-
-    clearSubtitleExample: () => {
-      if (subtitles) {
-        subtitles.clearExample()
-      }
-    },
-
-    /**
-     *
-     * An enum may be used to set the on-screen position of any transport controls
-     * (work in progress to remove this - UI concern).
-     * @function
-     * @param {*} position
-     */
-    setTransportControlsPosition: (position) => {
-      if (subtitles) {
-        subtitles.setPosition(position)
-      }
-    },
-
-    /**
-     * @function
-     * @return Returns whether the current media asset is seekable.
-     */
-    canSeek: function () {
-      return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
-    },
-
-    /**
-     * @function
-     * @return Returns whether the current media asset is pausable.
-     */
-    canPause: () => {
-      return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport())
-    },
-
-    /**
-     * Return a mock for in place testing.
-     * @function
-     * @param {*} opts
-     */
-    mock: function (opts) { MockBigscreenPlayer.mock(this, opts) },
-
-    /**
-     * Unmock the player.
-     * @function
-     */
-    unmock: function () { MockBigscreenPlayer.unmock(this) },
-
-    /**
-     * Return a mock for unit tests.
-     * @function
-     * @param {*} opts
-     */
-    mockJasmine: function (opts) { MockBigscreenPlayer.mockJasmine(this, opts) },
-
-    /**
-     * Register a plugin for extended events.
-     * @function
-     * @param {*} plugin
-     */
-    registerPlugin: (plugin) => Plugins.registerPlugin(plugin),
-
-    /**
-     * Unregister a previously registered plugin.
-     * @function
-     * @param {*} plugin
-     */
-    unregisterPlugin: (plugin) => Plugins.unregisterPlugin(plugin),
-
-    /**
-     * Returns an object with a number of functions related to the ability to transition state
-     * given the current state and the playback strategy in use.
-     * @function
-     */
-    transitions: () => playerComponent ? playerComponent.transitions() : {},
-
-    /**
-     * @function
-     * @return The media element currently being used.
-     */
-    getPlayerElement: () => playerComponent && playerComponent.getPlayerElement(),
-
-    /**
-     * @function
-     * @param {Number} epochTime - Unix Epoch based time in milliseconds.
-     * @return the time in seconds within the current sliding window.
-     */
-    convertEpochMsToVideoTimeSeconds: (epochTime) => {
-      return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : null
-    },
-
-    /**
-     * @function
-     * @return The runtime version of the library.
-     */
-    getFrameworkVersion: () => {
-      return Version
-    },
-
-    /**
-     * @function
-     * @param {Number} time - Seconds
-     * @return the time in milliseconds within the current sliding window.
-     */
-    convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
-
-    /**
-     * Toggle the visibility of the debug tool overlay.
-     * @function
-     */
-    toggleDebug: toggleDebug,
-
-    /**
-     * @function
-     * @return {Object} - Key value pairs of available log levels
-     */
-    getLogLevels: () => DebugTool.logLevels,
-
-    /**
-     * @function
-     * @param logLevel -  log level to display @see getLogLevels
-     */
-    setLogLevel: DebugTool.setLogLevel,
-    getDebugLogs: () => Chronicle.retrieve()
+  static getDebugLogs() {
+    return Chronicle.retrieve()
   }
 }
-
-/**
- * @function
- * @param {TALDevice} device
- * @return the live support of the device.
- */
-function getLiveSupport () {
-  return PlayerComponent.getLiveSupport()
-}
-
-BigscreenPlayer.getLiveSupport = getLiveSupport
-
-BigscreenPlayer.version = Version
-
-export default BigscreenPlayer
