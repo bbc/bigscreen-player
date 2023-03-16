@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-duplicate-string */
 const HLS_MANIFESTS = {
   INVALID_DATE:
     "#EXTM3U\n" +

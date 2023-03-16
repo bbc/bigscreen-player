@@ -181,7 +181,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       const manifest = event.data
       const representationOptions = window.bigscreenPlayer.representationOptions || {}
 
-      // eslint-disable-next-line unicorn/no-array-callback-reference, unicorn/no-array-method-this-argument
       ManifestModifier.filter(manifest, representationOptions)
       ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources())
 

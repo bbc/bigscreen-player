@@ -131,7 +131,10 @@ rules:
 
   # TV compatibility
   no-prototype-builtins: off
+  sonarjs/no-duplicate-string: off
+  unicorn/no-array-callback-reference: off
   unicorn/no-array-for-each: off
+  unicorn/no-array-method-this-argument: off
   unicorn/no-for-loop: off
   unicorn/numeric-separators-style: off
   unicorn/prefer-array-flat: off
