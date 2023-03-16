@@ -644,8 +644,7 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(LoadUrl).toHaveBeenCalledTimes(SEGMENT_BUFFER_SIZE)
         expect(LoadUrl).toHaveBeenCalledWith("mock://some.media/captions/420512812.m4s", expect.any(Object))
@@ -665,8 +664,7 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(LoadUrl).toHaveBeenCalledTimes(SEGMENT_BUFFER_SIZE)
 
@@ -717,8 +715,7 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(LoadUrl).toHaveBeenCalledTimes(3)
 
@@ -769,8 +766,7 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(LoadUrl).toHaveBeenCalledTimes(3)
 
@@ -795,8 +791,7 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(LoadUrl).not.toHaveBeenCalled()
       })
@@ -817,8 +812,7 @@ describe("IMSC Subtitles", () => {
 
         subtitles.start()
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(LoadUrl).toHaveBeenCalledTimes(3)
       })
@@ -837,8 +831,7 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>')
       })
@@ -855,8 +848,7 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(LoadUrl).toHaveBeenCalledTimes(3)
 
@@ -980,13 +972,11 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1)
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(LoadUrl).toHaveBeenCalledWith("mock://other.media/captions/420512812.m4s", expect.any(Object))
         expect(LoadUrl).toHaveBeenCalledWith("mock://other.media/captions/420512813.m4s", expect.any(Object))
@@ -1017,8 +1007,7 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(mockMediaSources.failoverSubtitles).not.toHaveBeenCalled()
       })
@@ -1047,13 +1036,11 @@ describe("IMSC Subtitles", () => {
 
         subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1)
 
-        progressTime(0.1) // currentTime > windowStartEpoch
-        // jest.advanceTimersByTime(UPDATE_INTERVAL)
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
 
         expect(LoadUrl).toHaveBeenCalledWith("mock://other.media/captions/420512812.m4s", expect.any(Object))
         expect(LoadUrl).toHaveBeenCalledWith("mock://other.media/captions/420512813.m4s", expect.any(Object))

@@ -4,14 +4,14 @@ import DebugTool from "../debugger/debugtool"
 import Plugins from "../plugins"
 import Utils from "../utils/playbackutils"
 import LoadURL from "../utils/loadurl"
-import TimeUtils from "../utils/timeutils"
 import findSegmentTemplate from "../utils/findtemplate"
 
 const SEGMENTS_BUFFER_SIZE = 3
 const LOAD_ERROR_COUNT_MAX = 3
 
 function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
-  const windowStartEpochSeconds = getWindowStartTime() / 1000
+  const windowStartEpochSeconds = mediaSources?.time().windowStartTime / 1000
+  const presentationTimeOffsetSeconds = mediaSources?.time().presentationTimeOffsetSeconds
 
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
   let currentSegmentRendered = {}
@@ -26,13 +26,27 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     start()
   }
 
+  function getTimeOffset() {
+    return presentationTimeOffsetSeconds || windowStartEpochSeconds
+  }
+
+  function calculateSegmentNumber() {
+    const segmentNumber = Math.floor(getCurrentTime() / mediaSources.currentSubtitlesSegmentLength())
+
+    // Add 1 as the PTO gives segment '0' relative to the presentation time.
+    // DASH segments use one-based indexing, so add 1 to the result of PTO.
+    // (Imagine PTO was 0)
+    if (typeof presentationTimeOffsetSeconds === "number" && isFinite(presentationTimeOffsetSeconds)) {
+      return segmentNumber + 1
+    }
+
+    return segmentNumber
+  }
+
   function loadAllRequiredSegments() {
     const segmentsToLoad = []
 
-    const currentSegmentNumber = TimeUtils.calculateSegmentNumber(
-      windowStartEpochSeconds + mediaPlayer.getCurrentTime(),
-      mediaSources.currentSubtitlesSegmentLength()
-    )
+    const currentSegmentNumber = calculateSegmentNumber()
 
     for (let offset = 0; offset < SEGMENTS_BUFFER_SIZE; offset++) {
       const segmentNumber = currentSegmentNumber + offset
@@ -287,15 +301,11 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function isValidTime(time) {
-    return time > windowStartEpochSeconds
+    return time >= getTimeOffset()
   }
 
   function getCurrentTime() {
-    return isSubtitlesWhole() ? mediaPlayer.getCurrentTime() : windowStartEpochSeconds + mediaPlayer.getCurrentTime()
-  }
-
-  function getWindowStartTime() {
-    return mediaSources?.time().windowStartTime
+    return isSubtitlesWhole() ? mediaPlayer.getCurrentTime() : getTimeOffset() + mediaPlayer.getCurrentTime()
   }
 
   function start() {
