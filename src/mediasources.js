@@ -53,7 +53,7 @@ function MediaSources() {
     updateDebugOutput()
 
     if (needToGetManifest(windowType, liveSupport)) {
-      loadManifest(serverDate, callbacks)
+      loadManifest(callbacks, { windowType, initialWallclockTime: serverDate })
     } else {
       callbacks.onSuccess()
     }
@@ -66,7 +66,10 @@ function MediaSources() {
       updateDebugOutput()
 
       if (needToGetManifest(windowType, liveSupport)) {
-        loadManifest(serverDate, { onSuccess: postFailoverAction, onError: failoverErrorAction })
+        loadManifest(
+          { onSuccess: postFailoverAction, onError: failoverErrorAction },
+          { windowType, initialWallclockTime: serverDate }
+        )
       } else {
         postFailoverAction()
       }
@@ -183,10 +186,10 @@ function MediaSources() {
   }
 
   function refresh(onSuccess, onError) {
-    loadManifest(serverDate, { onSuccess, onError })
+    loadManifest({ onSuccess, onError }, { windowType, initialWallclockTime: serverDate })
   }
 
-  function loadManifest(serverDate, callbacks) {
+  function loadManifest(callbacks, { initialWallclockTime, windowType } = {}) {
     const onManifestLoadSuccess = (manifestData) => {
       time = manifestData.time
       transferFormat = manifestData.transferFormat
@@ -206,7 +209,9 @@ function MediaSources() {
     }
 
     function load() {
-      ManifestLoader.load(getCurrentUrl(), serverDate, {
+      ManifestLoader.load(getCurrentUrl(), {
+        initialWallclockTime,
+        windowType,
         onSuccess: onManifestLoadSuccess,
         onError: onManifestLoadError,
       })

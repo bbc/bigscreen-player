@@ -23,8 +23,8 @@ jest.mock("./plugins", () => ({
 let mockTimeObject = { windowStartTime: 10, windowEndTime: 100, timeCorrection: 0 }
 
 const setupMockManifestLoaderSuccess = (transferFormat = TransferFormats.DASH) => {
-  ManifestLoader.load.mockImplementation((url, serverDate, callbacks) =>
-    callbacks.onSuccess({
+  ManifestLoader.load.mockImplementation((url, { onSuccess } = {}) =>
+    onSuccess({
       transferFormat,
       time: mockTimeObject,
     })
@@ -32,7 +32,7 @@ const setupMockManifestLoaderSuccess = (transferFormat = TransferFormats.DASH) =
 }
 
 const setupMockManifestLoaderFail = () => {
-  ManifestLoader.load.mockImplementation((url, serverDate, callbacks) => callbacks.onError())
+  ManifestLoader.load.mockImplementation((url, { onError } = {}) => onError())
 }
 
 describe("Media Sources", () => {
@@ -113,6 +113,17 @@ describe("Media Sources", () => {
       }).toThrow(new Error("Media Sources callbacks are undefined"))
     })
 
+    it.each([WindowTypes.GROWING, WindowTypes.SLIDING])(
+      "passes the '%s' window type to the manifest loader",
+      (windowType) => {
+        const mediaSources = MediaSources()
+
+        mediaSources.init(testMedia, new Date(), windowType, LiveSupport.SEEKABLE, testCallbacks)
+
+        expect(ManifestLoader.load).toHaveBeenCalledWith(testSources[0].url, expect.objectContaining({ windowType }))
+      }
+    )
+
     it("calls onSuccess callback immediately for STATIC window content", () => {
       const mediaSources = MediaSources()
 
@@ -171,7 +182,7 @@ describe("Media Sources", () => {
     })
 
     it("fails over to next source when the first source fails to load", () => {
-      ManifestLoader.load.mockImplementationOnce((url, serverDate, callbacks) => callbacks.onError())
+      ManifestLoader.load.mockImplementationOnce((url, { onError } = {}) => onError())
 
       const mediaSources = MediaSources()
 
@@ -230,7 +241,10 @@ describe("Media Sources", () => {
 
       mediaSources.failover(postFailoverAction, onFailureAction, failoverInfo)
 
-      expect(ManifestLoader.load).toHaveBeenCalledWith(testSources[1].url, serverDate, expect.anything())
+      expect(ManifestLoader.load).toHaveBeenCalledWith(
+        testSources[1].url,
+        expect.objectContaining({ initialWallclockTime: serverDate })
+      )
     })
 
     it("should fire onErrorHandled plugin with correct error code and message when failing to load manifest", () => {
