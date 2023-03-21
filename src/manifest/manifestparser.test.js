@@ -108,10 +108,10 @@ describe("ManifestParser", () => {
   })
 
   describe("HLS m3u8", () => {
-    it("returns correct data for sliding window hls manifest", () => {
+    it("returns time window for sliding window hls manifest", () => {
       const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds } = ManifestParser.parse(
-        HlsManifests.SLIDING_WINDOW,
-        { type: "m3u8" }
+        HlsManifests.VALID_PROGRAM_DATETIME,
+        { type: "m3u8", windowType: WindowTypes.SLIDING }
       )
 
       expect(windowStartTime).toBe(1436259310000)
@@ -119,9 +119,20 @@ describe("ManifestParser", () => {
       expect(presentationTimeOffsetSeconds).toBeNaN()
     })
 
+    it("returns presentation time offset for static window hls manifest", () => {
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds } = ManifestParser.parse(
+        HlsManifests.VALID_PROGRAM_DATETIME,
+        { type: "m3u8", windowType: WindowTypes.STATIC }
+      )
+
+      expect(presentationTimeOffsetSeconds).toBe(1436259310)
+      expect(windowStartTime).toBeNaN()
+      expect(windowEndTime).toBeNaN()
+    })
+
     it("returns fallback data if manifest has an invalid start date", () => {
       const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds } = ManifestParser.parse(
-        HlsManifests.INVALID_DATE,
+        HlsManifests.INVALID_PROGRAM_DATETIME,
         { type: "m3u8" }
       )
 
@@ -135,9 +146,7 @@ describe("ManifestParser", () => {
     it("returns fallback data if hls manifest data is malformed", () => {
       const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds } = ManifestParser.parse(
         "not an valid manifest",
-        {
-          type: "m3u8",
-        }
+        { type: "m3u8" }
       )
 
       expect(windowStartTime).toBeNaN()

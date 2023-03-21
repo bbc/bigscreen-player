@@ -27,7 +27,7 @@ function retrieveDashManifest(url, { windowType, initialWallclockTime, onError, 
   })
 }
 
-function retrieveHLSManifest(url, { initialWallclockTime, onError, onSuccess } = {}) {
+function retrieveHLSManifest(url, { windowType, initialWallclockTime, onError, onSuccess } = {}) {
   LoadUrl(url, {
     method: "GET",
     headers: {},
@@ -46,7 +46,7 @@ function retrieveHLSManifest(url, { initialWallclockTime, onError, onSuccess } =
           parts.push(streamUrl)
           streamUrl = parts.join("/")
         }
-        loadLivePlaylist(streamUrl, { initialWallclockTime, onError, onSuccess })
+        loadLivePlaylist(streamUrl, { windowType, initialWallclockTime, onError, onSuccess })
       } else {
         onError("Unable to retrieve HLS master playlist")
       }
@@ -57,7 +57,7 @@ function retrieveHLSManifest(url, { initialWallclockTime, onError, onSuccess } =
   })
 }
 
-function loadLivePlaylist(url, { initialWallclockTime, onError, onSuccess } = {}) {
+function loadLivePlaylist(url, { windowType, initialWallclockTime, onError, onSuccess } = {}) {
   LoadUrl(url, {
     method: "GET",
     headers: {},
@@ -70,7 +70,7 @@ function loadLivePlaylist(url, { initialWallclockTime, onError, onSuccess } = {}
 
       onSuccess({
         transferFormat: TransferFormats.HLS,
-        time: ManifestParser.parse(responseText, { initialWallclockTime, type: "m3u8" }),
+        time: ManifestParser.parse(responseText, { windowType, initialWallclockTime, type: "m3u8" }),
       })
     },
     onError: () => {
@@ -92,7 +92,7 @@ export default {
     if (/\.mpd($|\?.*$)/.test(mediaUrl)) {
       retrieveDashManifest(mediaUrl, { windowType, initialWallclockTime, onError, onSuccess })
     } else if (/\.m3u8($|\?.*$)/.test(mediaUrl)) {
-      retrieveHLSManifest(mediaUrl, { initialWallclockTime, onError, onSuccess })
+      retrieveHLSManifest(mediaUrl, { windowType, initialWallclockTime, onError, onSuccess })
     } else {
       onError("Invalid media url")
     }

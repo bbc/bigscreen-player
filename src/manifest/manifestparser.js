@@ -86,22 +86,24 @@ function parseMPD(manifest, { windowType, initialWallclockTime } = {}) {
   }
 }
 
-function parseM3U8(manifest) {
+function parseM3U8(manifest, { windowType } = {}) {
   try {
-    const windowStartTime = getM3U8ProgramDateTime(manifest)
+    const programDateTime = getM3U8ProgramDateTime(manifest)
     const duration = getM3U8WindowSizeInSeconds(manifest)
 
-    if (windowStartTime && duration) {
-      const windowEndTime = windowStartTime + duration * 1000
-
-      return {
-        windowStartTime,
-        windowEndTime,
-        presentationTimeOffsetSeconds: NaN,
-      }
+    if (!(programDateTime && duration)) {
+      throw new Error("manifest-hls-attributes-parse-error")
     }
 
-    throw new Error("manifest-hls-attributes-parse-error")
+    if (windowType === WindowTypes.STATIC) {
+      return { presentationTimeOffsetSeconds: programDateTime / 1000, windowStartTime: NaN, windowEndTime: NaN }
+    }
+
+    return {
+      windowStartTime: programDateTime,
+      windowEndTime: programDateTime + duration * 1000,
+      presentationTimeOffsetSeconds: NaN,
+    }
   } catch (error) {
     const errorWithCode = new Error(error.message || "manifest-hls-parse-error")
     errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
@@ -139,7 +141,7 @@ function parse(manifest, { type, windowType, initialWallclockTime } = {}) {
     if (type === "mpd") {
       return parseMPD(manifest, { windowType, initialWallclockTime })
     } else if (type === "m3u8") {
-      return parseM3U8(manifest)
+      return parseM3U8(manifest, { windowType })
     }
   } catch (error) {
     DebugTool.info(`Manifest Parse Error: ${error.code} ${error.message}`)

@@ -90,24 +90,27 @@ describe("ManifestLoader", () => {
         '#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=433540,CODECS="mp4a.40.2,avc1.66.30",RESOLUTION=384x216\n' +
         "bar.m3u8\n"
 
-      it("calls 'success' callback when network returns a HLS live playlist response", () => {
-        LoadUrl.mockImplementationOnce((url, config) => {
-          config.onLoad(undefined, hlsMasterResponse)
-        }).mockImplementationOnce((url, config) => {
-          config.onLoad(undefined, HlsManifests.SLIDING_WINDOW)
-        })
+      it.each(Object.values(WindowTypes))(
+        "calls 'success' callback when a valid HLS playlist is loaded for windowType '%s'",
+        (windowType) => {
+          LoadUrl.mockImplementationOnce((url, config) => {
+            config.onLoad(undefined, hlsMasterResponse)
+          }).mockImplementationOnce((url, config) => {
+            config.onLoad(undefined, HlsManifests.VALID_PROGRAM_DATETIME)
+          })
 
-        const onSuccessStub = jest.fn()
+          const onSuccessStub = jest.fn()
 
-        ManifestLoader.load("http://foo.bar/test.m3u8", { onSuccess: onSuccessStub })
+          ManifestLoader.load("http://foo.bar/test.m3u8", { windowType, onSuccess: onSuccessStub })
 
-        expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
+          expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
 
-        expect(onSuccessStub).toHaveBeenCalledWith({
-          transferFormat: TransferFormats.HLS,
-          time: expect.any(Object),
-        })
-      })
+          expect(onSuccessStub).toHaveBeenCalledWith({
+            transferFormat: TransferFormats.HLS,
+            time: expect.any(Object),
+          })
+        }
+      )
 
       it("calls error when network request fails", () => {
         LoadUrl.mockImplementation((url, config) => {

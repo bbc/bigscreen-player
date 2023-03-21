@@ -1,5 +1,5 @@
 const HLS_MANIFESTS = {
-  INVALID_DATE:
+  INVALID_PROGRAM_DATETIME:
     "#EXTM3U\n" +
     "#EXT-X-VERSION:2\n" +
     "#EXT-X-MEDIA-SEQUENCE:179532414\n" +
@@ -8,7 +8,7 @@ const HLS_MANIFESTS = {
     "#EXT-X-PROGRAM-DATE-TIME:invaliddatetime\n" +
     "#EXTINF:8, no desc\n" +
     "content-audio_2=96000-video=1374000-179532414.ts\n",
-  SLIDING_WINDOW:
+  VALID_PROGRAM_DATETIME:
     "#EXTM3U\n" +
     "#EXT-X-VERSION:2\n" +
     "#EXT-X-MEDIA-SEQUENCE:179532414\n" +
