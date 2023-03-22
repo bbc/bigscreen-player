@@ -1,4 +1,4 @@
-function DashManifests () {
+function DashManifests() {
   const slidingWindowString = `<?xml version="1.0" encoding="UTF-8"?>
                <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
                xmlns="urn:mpeg:dash:schema:mpd:2011" 
@@ -72,27 +72,27 @@ function DashManifests () {
                              <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="https://time.akamai.com/?iso"/>
                            </MPD>`
 
-  function slidingWindow () {
+  function slidingWindow() {
     return getXML(slidingWindowString)
   }
 
-  function growingWindow () {
+  function growingWindow() {
     return getXML(growingWindowString)
   }
 
-  function badAttributes () {
+  function badAttributes() {
     return getXML(badAttributesString)
   }
 
-  function getXML (string) {
+  function getXML(string) {
     const parser = new DOMParser()
-    return parser.parseFromString(string, 'application/xml')
+    return parser.parseFromString(string, "application/xml")
   }
 
   return {
     slidingWindow: slidingWindow,
     growingWindow: growingWindow,
-    badAttributes: badAttributes
+    badAttributes: badAttributes,
   }
 }
 

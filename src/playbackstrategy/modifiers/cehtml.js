@@ -1,6 +1,6 @@
-import MediaPlayerBase from '../modifiers/mediaplayerbase'
-import DebugTool from '../../debugger/debugtool'
-import DOMHelpers from '../../domhelpers'
+import MediaPlayerBase from "../modifiers/mediaplayerbase"
+import DebugTool from "../../debugger/debugtool"
+import DOMHelpers from "../../domhelpers"
 
 const STATE = {
   STOPPED: 0,
@@ -9,10 +9,10 @@ const STATE = {
   CONNECTING: 3,
   BUFFERING: 4,
   FINISHED: 5,
-  ERROR: 6
+  ERROR: 6,
 }
 
-function Cehtml () {
+function Cehtml() {
   let eventCallbacks = []
   let state = MediaPlayerBase.STATE.EMPTY
 
@@ -47,31 +47,31 @@ function Cehtml () {
       maximumAttempts: 2,
       successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
       failureEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE,
-      currentAttemptCount: 0
+      currentAttemptCount: 0,
     },
     seek: {
       maximumAttempts: 2,
       successEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK,
       failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
-      currentAttemptCount: 0
-    }
+      currentAttemptCount: 0,
+    },
   }
 
-  function addEventCallback (thisArg, callback) {
+  function addEventCallback(thisArg, callback) {
     const eventCallback = (event) => callback.call(thisArg, event)
 
     eventCallbacks.push({ from: callback, to: eventCallback })
   }
 
-  function removeEventCallback (_thisArg, callback) {
+  function removeEventCallback(_thisArg, callback) {
     eventCallbacks = eventCallbacks.filter((cb) => cb.from !== callback)
   }
 
-  function removeAllEventCallbacks () {
+  function removeAllEventCallbacks() {
     eventCallbacks = []
   }
 
-  function emitEvent (eventType, eventLabels) {
+  function emitEvent(eventType, eventLabels) {
     const event = {
       type: eventType,
       currentTime: getCurrentTime(),
@@ -79,7 +79,7 @@ function Cehtml () {
       duration: getDuration(),
       url: getSource(),
       mimeType: getMimeType(),
-      state: getState()
+      state: getState(),
     }
 
     if (eventLabels) {
@@ -93,7 +93,7 @@ function Cehtml () {
     eventCallbacks.forEach((callback) => callback.to(event))
   }
 
-  function getClampedTime (seconds) {
+  function getClampedTime(seconds) {
     const CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
     const range = getSeekableRange()
     const nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
@@ -107,24 +107,23 @@ function Cehtml () {
     }
   }
 
-  function isLiveMedia () {
-    return (mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO) ||
-      (mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO)
+  function isLiveMedia() {
+    return mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO
   }
 
-  function getSource () {
+  function getSource() {
     return source
   }
 
-  function getMimeType () {
+  function getMimeType() {
     return mimeType
   }
 
-  function getState () {
+  function getState() {
     return state
   }
 
-  function setSeekSentinelTolerance () {
+  function setSeekSentinelTolerance() {
     const ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15
     const LIVE_SEEK_SENTINEL_TOLERANCE = 30
 
@@ -134,8 +133,8 @@ function Cehtml () {
     }
   }
 
-  function initialiseMedia (type, url, mediaMimeType, sourceContainer, opts) {
-    opts = opts || { }
+  function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts) {
+    opts = opts || {}
     disableSentinels = opts.disableSentinels
     mediaType = type
     source = url
@@ -152,11 +151,11 @@ function Cehtml () {
       registerEventHandlers()
       toStopped()
     } else {
-      toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state')
+      toError("Cannot set source unless in the '" + MediaPlayerBase.STATE.EMPTY + "' state")
     }
   }
 
-  function resume () {
+  function resume() {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
     switch (getState()) {
       case MediaPlayerBase.STATE.PLAYING:
@@ -169,12 +168,12 @@ function Cehtml () {
         break
 
       default:
-        toError('Cannot resume while in the \'' + getState() + '\' state')
+        toError("Cannot resume while in the '" + getState() + "' state")
         break
     }
   }
 
-  function playFrom (seconds) {
+  function playFrom(seconds) {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
     sentinelLimits.seek.currentAttemptCount = 0
     switch (getState()) {
@@ -203,12 +202,12 @@ function Cehtml () {
         break
 
       default:
-        toError('Cannot playFrom while in the \'' + getState() + '\' state')
+        toError("Cannot playFrom while in the '" + getState() + "' state")
         break
     }
   }
 
-  function getDuration () {
+  function getDuration() {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
@@ -221,7 +220,7 @@ function Cehtml () {
     }
   }
 
-  function beginPlayback () {
+  function beginPlayback() {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
@@ -230,12 +229,12 @@ function Cehtml () {
         break
 
       default:
-        toError('Cannot beginPlayback while in the \'' + getState() + '\' state')
+        toError("Cannot beginPlayback while in the '" + getState() + "' state")
         break
     }
   }
 
-  function beginPlaybackFrom (seconds) {
+  function beginPlaybackFrom(seconds) {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
     sentinelLimits.seek.currentAttemptCount = 0
 
@@ -247,12 +246,12 @@ function Cehtml () {
         break
 
       default:
-        toError('Cannot beginPlayback while in the \'' + getState() + '\' state')
+        toError("Cannot beginPlayback while in the '" + getState() + "' state")
         break
     }
   }
 
-  function pause () {
+  function pause() {
     postBufferingState = MediaPlayerBase.STATE.PAUSED
     switch (getState()) {
       case MediaPlayerBase.STATE.BUFFERING:
@@ -265,12 +264,12 @@ function Cehtml () {
         break
 
       default:
-        toError('Cannot pause while in the \'' + getState() + '\' state')
+        toError("Cannot pause while in the '" + getState() + "' state")
         break
     }
   }
 
-  function stop () {
+  function stop() {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
         break
@@ -284,17 +283,17 @@ function Cehtml () {
           mediaElement.stop()
           toStopped()
         } else {
-          toError('mediaElement.stop is not a function : failed to stop the media player')
+          toError("mediaElement.stop is not a function : failed to stop the media player")
         }
         break
 
       default:
-        toError('Cannot stop while in the \'' + getState() + '\' state')
+        toError("Cannot stop while in the '" + getState() + "' state")
         break
     }
   }
 
-  function reset () {
+  function reset() {
     switch (getState()) {
       case MediaPlayerBase.STATE.EMPTY:
         break
@@ -305,12 +304,12 @@ function Cehtml () {
         break
 
       default:
-        toError('Cannot reset while in the \'' + getState() + '\' state')
+        toError("Cannot reset while in the '" + getState() + "' state")
         break
     }
   }
 
-  function getCurrentTime () {
+  function getCurrentTime() {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
@@ -331,7 +330,7 @@ function Cehtml () {
     return undefined
   }
 
-  function getSeekableRange () {
+  function getSeekableRange() {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
@@ -343,18 +342,18 @@ function Cehtml () {
     return undefined
   }
 
-  function getMediaDuration () {
+  function getMediaDuration() {
     if (range) {
       return range.end
     }
     return undefined
   }
 
-  function getPlayerElement () {
+  function getPlayerElement() {
     return mediaElement
   }
 
-  function onFinishedBuffering () {
+  function onFinishedBuffering() {
     cacheRange()
 
     if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
@@ -372,23 +371,23 @@ function Cehtml () {
     }
   }
 
-  function onDeviceError () {
-    reportError('Media element error code: ' + mediaElement.error)
+  function onDeviceError() {
+    reportError("Media element error code: " + mediaElement.error)
   }
 
-  function onDeviceBuffering () {
+  function onDeviceBuffering() {
     if (getState() === MediaPlayerBase.STATE.PLAYING) {
       toBuffering()
     }
   }
 
-  function onEndOfMedia () {
+  function onEndOfMedia() {
     if (getState() !== MediaPlayerBase.STATE.COMPLETE) {
       toComplete()
     }
   }
 
-  function emitSeekAttempted () {
+  function emitSeekAttempted() {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
       emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
       seekFinished = false
@@ -397,13 +396,15 @@ function Cehtml () {
     count = 0
     timeoutHappened = false
     if (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.restartTimeout) {
-      setTimeout(() => { timeoutHappened = true }, window.bigscreenPlayer.overrides.restartTimeout)
+      setTimeout(() => {
+        timeoutHappened = true
+      }, window.bigscreenPlayer.overrides.restartTimeout)
     } else {
       timeoutHappened = true
     }
   }
 
-  function emitSeekFinishedAtCorrectStartingPoint () {
+  function emitSeekFinishedAtCorrectStartingPoint() {
     let isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance
 
     if (sentinelSeekTime === undefined) {
@@ -422,7 +423,7 @@ function Cehtml () {
     }
   }
 
-  function onStatus () {
+  function onStatus() {
     if (getState() === MediaPlayerBase.STATE.PLAYING) {
       emitEvent(MediaPlayerBase.EVENT.STATUS)
     }
@@ -430,17 +431,17 @@ function Cehtml () {
     emitSeekFinishedAtCorrectStartingPoint()
   }
 
-  function createElement () {
-    mediaElement = document.createElement('object', 'mediaPlayer')
+  function createElement() {
+    mediaElement = document.createElement("object", "mediaPlayer")
     mediaElement.type = mimeType
-    mediaElement.style.position = 'absolute'
-    mediaElement.style.top = '0px'
-    mediaElement.style.left = '0px'
-    mediaElement.style.width = '100%'
-    mediaElement.style.height = '100%'
+    mediaElement.style.position = "absolute"
+    mediaElement.style.top = "0px"
+    mediaElement.style.left = "0px"
+    mediaElement.style.width = "100%"
+    mediaElement.style.height = "100%"
   }
 
-  function registerEventHandlers () {
+  function registerEventHandlers() {
     const DEVICE_UPDATE_PERIOD_MS = 500
 
     mediaElement.onPlayStateChange = () => {
@@ -472,52 +473,62 @@ function Cehtml () {
     updateInterval = setInterval(() => onStatus(), DEVICE_UPDATE_PERIOD_MS)
   }
 
-  function addElementToDOM () {
-    const body = document.getElementsByTagName('body')[0]
+  function addElementToDOM() {
+    const body = document.getElementsByTagName("body")[0]
     body.insertBefore(mediaElement, body.firstChild)
   }
 
-  function cacheRange () {
+  function cacheRange() {
     if (mediaElement) {
       range = {
         start: 0,
-        end: mediaElement.playTime / 1000
+        end: mediaElement.playTime / 1000,
       }
     }
   }
 
-  function playAndSetDeferredSeek (seconds) {
+  function playAndSetDeferredSeek(seconds) {
     mediaElement.play(1)
     if (seconds > 0) {
       deferSeekingTo = seconds
     }
   }
 
-  function waitingToSeek () {
-    return (deferSeekingTo !== undefined)
+  function waitingToSeek() {
+    return deferSeekingTo !== undefined
   }
 
-  function performDeferredSeek () {
+  function performDeferredSeek() {
     seekTo(deferSeekingTo)
     deferSeekingTo = undefined
   }
 
-  function seekTo (seconds) {
+  function seekTo(seconds) {
     const clampedTime = getClampedTime(seconds)
 
     if (clampedTime !== seconds) {
-      DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }')
+      DebugTool.info(
+        "playFrom " +
+          seconds +
+          " clamped to " +
+          clampedTime +
+          " - seekable range is { start: " +
+          range.start +
+          ", end: " +
+          range.end +
+          " }"
+      )
     }
 
     sentinelSeekTime = clampedTime
     return mediaElement.seek(clampedTime * 1000)
   }
 
-  function waitingToPause () {
-    return (postBufferingState === MediaPlayerBase.STATE.PAUSED)
+  function waitingToPause() {
+    return postBufferingState === MediaPlayerBase.STATE.PAUSED
   }
 
-  function wipe () {
+  function wipe() {
     mediaType = undefined
     source = undefined
     mimeType = undefined
@@ -531,18 +542,18 @@ function Cehtml () {
     }
   }
 
-  function destroyMediaElement () {
+  function destroyMediaElement() {
     delete mediaElement.onPlayStateChange
     DOMHelpers.safeRemoveElement(mediaElement)
     mediaElement = undefined
   }
 
-  function reportError (errorMessage) {
+  function reportError(errorMessage) {
     DebugTool.info(errorMessage)
-    emitEvent(MediaPlayerBase.EVENT.ERROR, { 'errorMessage': errorMessage })
+    emitEvent(MediaPlayerBase.EVENT.ERROR, { errorMessage: errorMessage })
   }
 
-  function toStopped () {
+  function toStopped() {
     state = MediaPlayerBase.STATE.STOPPED
     emitEvent(MediaPlayerBase.EVENT.STOPPED)
     if (sentinelInterval) {
@@ -550,54 +561,49 @@ function Cehtml () {
     }
   }
 
-  function toBuffering () {
+  function toBuffering() {
     state = MediaPlayerBase.STATE.BUFFERING
     emitEvent(MediaPlayerBase.EVENT.BUFFERING)
     setSentinels([exitBufferingSentinel])
   }
 
-  function toPlaying () {
+  function toPlaying() {
     state = MediaPlayerBase.STATE.PLAYING
     emitEvent(MediaPlayerBase.EVENT.PLAYING)
-    setSentinels([
-      shouldBeSeekedSentinel,
-      enterCompleteSentinel,
-      enterBufferingSentinel
-    ])
+    setSentinels([shouldBeSeekedSentinel, enterCompleteSentinel, enterBufferingSentinel])
   }
 
-  function toPaused () {
+  function toPaused() {
     state = MediaPlayerBase.STATE.PAUSED
     emitEvent(MediaPlayerBase.EVENT.PAUSED)
-    setSentinels([
-      shouldBePausedSentinel,
-      shouldBeSeekedSentinel
-    ])
+    setSentinels([shouldBePausedSentinel, shouldBeSeekedSentinel])
   }
 
-  function toComplete () {
+  function toComplete() {
     state = MediaPlayerBase.STATE.COMPLETE
     emitEvent(MediaPlayerBase.EVENT.COMPLETE)
     clearSentinels()
   }
 
-  function toEmpty () {
+  function toEmpty() {
     wipe()
     state = MediaPlayerBase.STATE.EMPTY
   }
 
-  function toError (errorMessage) {
+  function toError(errorMessage) {
     wipe()
     state = MediaPlayerBase.STATE.ERROR
     reportError(errorMessage)
   }
 
-  function isNearToEnd (seconds) {
-    return (getDuration() - seconds <= 1)
+  function isNearToEnd(seconds) {
+    return getDuration() - seconds <= 1
   }
 
-  function setSentinels (sentinels) {
-    if (disableSentinels) { return }
+  function setSentinels(sentinels) {
+    if (disableSentinels) {
+      return
+    }
 
     sentinelLimits.pause.currentAttemptCount = 0
     timeAtLastSentinelInterval = getCurrentTime()
@@ -607,24 +613,26 @@ function Cehtml () {
       const newTime = getCurrentTime()
       sentinelIntervalNumber++
 
-      timeHasAdvanced = newTime ? (newTime > (timeAtLastSentinelInterval + 0.2)) : false
+      timeHasAdvanced = newTime ? newTime > timeAtLastSentinelInterval + 0.2 : false
       sentinelTimeIsNearEnd = isNearToEnd(newTime || timeAtLastSentinelInterval)
 
       for (let i = 0; i < sentinels.length; i++) {
         const sentinelActionPerformed = sentinels[i].call(this)
-        if (sentinelActionPerformed) { break }
+        if (sentinelActionPerformed) {
+          break
+        }
       }
 
       timeAtLastSentinelInterval = newTime
     }, 1100)
   }
 
-  function clearSentinels () {
+  function clearSentinels() {
     clearInterval(sentinelInterval)
   }
 
-  function enterBufferingSentinel () {
-    const sentinelBufferingRequired = !timeHasAdvanced && !sentinelTimeIsNearEnd && (sentinelIntervalNumber > 1)
+  function enterBufferingSentinel() {
+    const sentinelBufferingRequired = !timeHasAdvanced && !sentinelTimeIsNearEnd && sentinelIntervalNumber > 1
 
     if (sentinelBufferingRequired) {
       emitEvent(MediaPlayerBase.EVENT.SENTINEL_ENTER_BUFFERING)
@@ -634,7 +642,7 @@ function Cehtml () {
     return sentinelBufferingRequired
   }
 
-  function exitBufferingSentinel () {
+  function exitBufferingSentinel() {
     const sentinelExitBufferingRequired = timeHasAdvanced
 
     if (sentinelExitBufferingRequired) {
@@ -645,7 +653,7 @@ function Cehtml () {
     return sentinelExitBufferingRequired
   }
 
-  function shouldBeSeekedSentinel () {
+  function shouldBeSeekedSentinel() {
     if (sentinelSeekTime === undefined) {
       return false
     }
@@ -670,7 +678,7 @@ function Cehtml () {
     return sentinelActionTaken
   }
 
-  function shouldBePausedSentinel () {
+  function shouldBePausedSentinel() {
     const sentinelPauseRequired = timeHasAdvanced
     let sentinelActionTaken = false
 
@@ -684,7 +692,7 @@ function Cehtml () {
     return sentinelActionTaken
   }
 
-  function enterCompleteSentinel () {
+  function enterCompleteSentinel() {
     const sentinelCompleteRequired = !timeHasAdvanced && sentinelTimeIsNearEnd
 
     if (sentinelCompleteRequired) {
@@ -695,7 +703,7 @@ function Cehtml () {
     return sentinelCompleteRequired
   }
 
-  function nextSentinelAttempt (sentinelInfo, attemptFn) {
+  function nextSentinelAttempt(sentinelInfo, attemptFn) {
     let currentAttemptCount, maxAttemptCount
 
     sentinelInfo.currentAttemptCount += 1
@@ -733,7 +741,7 @@ function Cehtml () {
     getMediaDuration: getMediaDuration,
     getState: getState,
     getPlayerElement: getPlayerElement,
-    getDuration: getDuration
+    getDuration: getDuration,
   }
 }
 

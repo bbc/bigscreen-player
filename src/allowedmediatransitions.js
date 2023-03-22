@@ -1,40 +1,31 @@
-function AllowedMediaTransitions (mediaplayer) {
+function AllowedMediaTransitions(mediaplayer) {
   const player = mediaplayer
 
   const MediaPlayerState = {
-    EMPTY: 'EMPTY', // No source set
-    STOPPED: 'STOPPED', // Source set but no playback
-    BUFFERING: 'BUFFERING', // Not enough data to play, waiting to download more
-    PLAYING: 'PLAYING', // Media is playing
-    PAUSED: 'PAUSED', // Media is paused
-    COMPLETE: 'COMPLETE', // Media has reached its end point
-    ERROR: 'ERROR' // An error occurred
+    EMPTY: "EMPTY", // No source set
+    STOPPED: "STOPPED", // Source set but no playback
+    BUFFERING: "BUFFERING", // Not enough data to play, waiting to download more
+    PLAYING: "PLAYING", // Media is playing
+    PAUSED: "PAUSED", // Media is paused
+    COMPLETE: "COMPLETE", // Media has reached its end point
+    ERROR: "ERROR", // An error occurred
   }
 
-  function canBePaused () {
-    const pausableStates = [
-      MediaPlayerState.BUFFERING,
-      MediaPlayerState.PLAYING
-    ]
+  function canBePaused() {
+    const pausableStates = [MediaPlayerState.BUFFERING, MediaPlayerState.PLAYING]
 
     return pausableStates.indexOf(player.getState()) !== -1
   }
 
-  function canBeStopped () {
-    const unstoppableStates = [
-      MediaPlayerState.EMPTY,
-      MediaPlayerState.ERROR
-    ]
+  function canBeStopped() {
+    const unstoppableStates = [MediaPlayerState.EMPTY, MediaPlayerState.ERROR]
 
     const stoppable = unstoppableStates.indexOf(player.getState()) === -1
     return stoppable
   }
 
-  function canBeginSeek () {
-    const unseekableStates = [
-      MediaPlayerState.EMPTY,
-      MediaPlayerState.ERROR
-    ]
+  function canBeginSeek() {
+    const unseekableStates = [MediaPlayerState.EMPTY, MediaPlayerState.ERROR]
 
     const state = player.getState()
     const seekable = state ? unseekableStates.indexOf(state) === -1 : false
@@ -42,7 +33,7 @@ function AllowedMediaTransitions (mediaplayer) {
     return seekable
   }
 
-  function canResume () {
+  function canResume() {
     return player.getState() === MediaPlayerState.PAUSED || player.getState() === MediaPlayerState.BUFFERING
   }
 
@@ -50,7 +41,7 @@ function AllowedMediaTransitions (mediaplayer) {
     canBePaused: canBePaused,
     canBeStopped: canBeStopped,
     canBeginSeek: canBeginSeek,
-    canResume: canResume
+    canResume: canResume,
   }
 }
 

@@ -1,8 +1,10 @@
-function DeferExceptions (cb) {
+function DeferExceptions(cb) {
   try {
     cb()
   } catch (e) {
-    setTimeout(() => { throw e }, 0)
+    setTimeout(() => {
+      throw e
+    }, 0)
   }
 }
 

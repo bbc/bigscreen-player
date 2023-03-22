@@ -1,23 +1,23 @@
-import Chronicle from './chronicle'
-import DebugPresenter from './debugpresenter'
-import DebugView from './debugview'
+import Chronicle from "./chronicle"
+import DebugPresenter from "./debugpresenter"
+import DebugView from "./debugview"
 
-function DebugTool () {
+function DebugTool() {
   const presenter = DebugPresenter
 
   const LOG_LEVELS = {
     ERROR: 0,
     INFO: 2,
-    VERBOSE: 3
+    VERBOSE: 3,
   }
 
   let visible = false
   let logLevel = LOG_LEVELS.INFO
-  let staticFieldValues = { }
+  let staticFieldValues = {}
 
   let rootElement, view
 
-  function toggleVisibility () {
+  function toggleVisibility() {
     if (visible) {
       hide()
     } else {
@@ -25,13 +25,13 @@ function DebugTool () {
     }
   }
 
-  function setLogLevel (newLogLevel) {
+  function setLogLevel(newLogLevel) {
     if (newLogLevel !== undefined) {
       logLevel = newLogLevel
     }
   }
 
-  function show () {
+  function show() {
     view = DebugView
     view.setRootElement(rootElement)
     view.init()
@@ -41,43 +41,43 @@ function DebugTool () {
     visible = true
   }
 
-  function hide () {
+  function hide() {
     view.tearDown()
     Chronicle.unregisterForUpdates(presenter.update)
     visible = false
   }
 
-  function info (log) {
+  function info(log) {
     if (logLevel >= LOG_LEVELS.INFO) {
       Chronicle.info(log)
     }
   }
 
-  function event (log) {
+  function event(log) {
     if (logLevel >= LOG_LEVELS.INFO) {
       Chronicle.event(log)
     }
   }
 
-  function time (log) {
+  function time(log) {
     if (logLevel >= LOG_LEVELS.INFO) {
       Chronicle.time(log)
     }
   }
 
-  function error (log) {
+  function error(log) {
     if (logLevel >= LOG_LEVELS.ERROR) {
       Chronicle.error(log)
     }
   }
 
-  function verbose (log) {
+  function verbose(log) {
     if (logLevel >= LOG_LEVELS.VERBOSE) {
       Chronicle.verbose(log)
     }
   }
 
-  function updateKeyValue (message) {
+  function updateKeyValue(message) {
     const staticFieldValue = staticFieldValues[message.key]
 
     if (staticFieldValue) {
@@ -92,11 +92,11 @@ function DebugTool () {
     }
   }
 
-  function setRootElement (element) {
+  function setRootElement(element) {
     rootElement = element
   }
 
-  function tearDown () {
+  function tearDown() {
     staticFieldValues = {}
     if (visible) {
       hide()
@@ -115,7 +115,7 @@ function DebugTool () {
     time: time,
     apicall: Chronicle.apicall,
     keyValue: updateKeyValue,
-    tearDown: tearDown
+    tearDown: tearDown,
   }
 }
 

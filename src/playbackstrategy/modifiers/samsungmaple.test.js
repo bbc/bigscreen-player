@@ -1,7 +1,7 @@
-import samsungMapleMediaPlayer from './samsungmaple'
-import MediaPlayerBase from './mediaplayerbase'
+import samsungMapleMediaPlayer from "./samsungmaple"
+import MediaPlayerBase from "./mediaplayerbase"
 
-describe('Samsung Maple', () => {
+describe("Samsung Maple", () => {
   const mockPlayerPlugin = {
     ResumePlay: () => {},
     SetDisplayArea: () => {},
@@ -11,26 +11,26 @@ describe('Samsung Maple', () => {
     Stop: () => {},
     JumpForward: () => {},
     JumpBackward: () => {},
-    GetDuration: () => {}
+    GetDuration: () => {},
   }
 
   let player
   let recentEvents
 
-  function eventCallbackReporter (event) {
+  function eventCallbackReporter(event) {
     recentEvents.push(event.type)
   }
 
   beforeEach(() => {
-    jest.spyOn(document, 'getElementById').mockReturnValue(mockPlayerPlugin)
-    jest.spyOn(mockPlayerPlugin, 'ResumePlay').mockImplementation(() => {})
-    jest.spyOn(mockPlayerPlugin, 'Play').mockImplementation(() => {})
-    jest.spyOn(mockPlayerPlugin, 'Pause').mockReturnValue(1)
-    jest.spyOn(mockPlayerPlugin, 'Stop').mockImplementation(() => {})
-    jest.spyOn(mockPlayerPlugin, 'JumpForward').mockReturnValue(1)
-    jest.spyOn(mockPlayerPlugin, 'JumpBackward').mockReturnValue(1)
-    jest.spyOn(mockPlayerPlugin, 'GetDuration').mockReturnValue(100000)
-    jest.spyOn(mockPlayerPlugin, 'Resume').mockImplementation(() => {})
+    jest.spyOn(document, "getElementById").mockReturnValue(mockPlayerPlugin)
+    jest.spyOn(mockPlayerPlugin, "ResumePlay").mockImplementation(() => {})
+    jest.spyOn(mockPlayerPlugin, "Play").mockImplementation(() => {})
+    jest.spyOn(mockPlayerPlugin, "Pause").mockReturnValue(1)
+    jest.spyOn(mockPlayerPlugin, "Stop").mockImplementation(() => {})
+    jest.spyOn(mockPlayerPlugin, "JumpForward").mockReturnValue(1)
+    jest.spyOn(mockPlayerPlugin, "JumpBackward").mockReturnValue(1)
+    jest.spyOn(mockPlayerPlugin, "GetDuration").mockReturnValue(100000)
+    jest.spyOn(mockPlayerPlugin, "Resume").mockImplementation(() => {})
 
     player = samsungMapleMediaPlayer()
     recentEvents = []
@@ -41,20 +41,20 @@ describe('Samsung Maple', () => {
     jest.clearAllMocks()
   })
 
-  describe('initialiseMedia', () => {
-    it('should set the source and mimeType and emit a stopped event', () => {
+  describe("initialiseMedia", () => {
+    it("should set the source and mimeType and emit a stopped event", () => {
       recentEvents = []
-      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
 
-      expect(player.getSource()).toEqual('testUrl')
-      expect(player.getMimeType()).toEqual('testMimeType')
+      expect(player.getSource()).toEqual("testUrl")
+      expect(player.getMimeType()).toEqual("testMimeType")
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.STOPPED)
     })
   })
 
-  describe('beginPlaybackFrom', () => {
-    it('should call ResumePlay on the player plugin if in a stopped state', () => {
-      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+  describe("beginPlaybackFrom", () => {
+    it("should call ResumePlay on the player plugin if in a stopped state", () => {
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
       recentEvents = []
       player.beginPlaybackFrom(0)
 
@@ -63,9 +63,9 @@ describe('Samsung Maple', () => {
     })
   })
 
-  describe('beginPlayback', () => {
-    it('should call Play on the player plugin if in a stopped state', () => {
-      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+  describe("beginPlayback", () => {
+    it("should call Play on the player plugin if in a stopped state", () => {
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
       recentEvents = []
       player.beginPlayback()
 
@@ -74,9 +74,9 @@ describe('Samsung Maple', () => {
     })
   })
 
-  describe('pause', () => {
-    it('should emit a paused event if in a playing state', () => {
-      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+  describe("pause", () => {
+    it("should emit a paused event if in a playing state", () => {
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
       player.beginPlayback()
       player.toPlaying()
       recentEvents = []
@@ -86,9 +86,9 @@ describe('Samsung Maple', () => {
     })
   })
 
-  describe('resume', () => {
-    it('should emit a playing event if in a paused state', () => {
-      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+  describe("resume", () => {
+    it("should emit a playing event if in a paused state", () => {
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
       player.beginPlayback()
       player.toPaused()
       recentEvents = []
@@ -98,9 +98,9 @@ describe('Samsung Maple', () => {
     })
   })
 
-  describe('stop', () => {
-    it('should emit a stopped event if in a playing state', () => {
-      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+  describe("stop", () => {
+    it("should emit a stopped event if in a playing state", () => {
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
       player.beginPlayback()
       player.toPlaying()
       recentEvents = []
@@ -111,19 +111,19 @@ describe('Samsung Maple', () => {
     })
   })
 
-  describe('reset', () => {
-    it('should call Stop on the player plugin if in a stopped state', () => {
-      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+  describe("reset", () => {
+    it("should call Stop on the player plugin if in a stopped state", () => {
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
       player.reset()
 
       expect(mockPlayerPlugin.Stop).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('playFrom', () => {
-    describe('in a playing state', () => {
-      it('should call JumpForward on the player plugin if seeking forwards', () => {
-        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+  describe("playFrom", () => {
+    describe("in a playing state", () => {
+      it("should call JumpForward on the player plugin if seeking forwards", () => {
+        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
         player.beginPlayback()
         window.SamsungMapleOnCurrentPlayTime(0)
         window.SamsungMapleOnStreamInfoReady()
@@ -135,8 +135,8 @@ describe('Samsung Maple', () => {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
 
-      it('should call JumpBackward on the player plugin if seeking backwards', () => {
-        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+      it("should call JumpBackward on the player plugin if seeking backwards", () => {
+        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
         player.beginPlaybackFrom(20)
         window.SamsungMapleOnCurrentPlayTime(20000)
         window.SamsungMapleOnStreamInfoReady()
@@ -148,8 +148,8 @@ describe('Samsung Maple', () => {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
 
-      it('should not attempt to seek if seeking close to current time', () => {
-        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+      it("should not attempt to seek if seeking close to current time", () => {
+        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
         player.beginPlayback()
         window.SamsungMapleOnCurrentPlayTime(0)
         window.SamsungMapleOnStreamInfoReady()
@@ -164,9 +164,9 @@ describe('Samsung Maple', () => {
       })
     })
 
-    describe('in a paused state', () => {
-      it('should call JumpForward and Resume on the player plugin if seeking forwards', () => {
-        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+    describe("in a paused state", () => {
+      it("should call JumpForward and Resume on the player plugin if seeking forwards", () => {
+        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
         player.beginPlayback()
         window.SamsungMapleOnCurrentPlayTime(0)
         window.SamsungMapleOnStreamInfoReady()
@@ -179,8 +179,8 @@ describe('Samsung Maple', () => {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
 
-      it('should call JumpBackward and Resume on the player plugin if seeking backwards', () => {
-        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+      it("should call JumpBackward and Resume on the player plugin if seeking backwards", () => {
+        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
         player.beginPlaybackFrom(20)
         window.SamsungMapleOnCurrentPlayTime(20000)
         window.SamsungMapleOnStreamInfoReady()
@@ -193,8 +193,8 @@ describe('Samsung Maple', () => {
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
 
-      it('should not attempt to seek and call Resume on the player plugin if seeking close to current time', () => {
-        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+      it("should not attempt to seek and call Resume on the player plugin if seeking close to current time", () => {
+        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
         player.beginPlayback()
         window.SamsungMapleOnCurrentPlayTime(0)
         window.SamsungMapleOnStreamInfoReady()
@@ -210,9 +210,9 @@ describe('Samsung Maple', () => {
       })
     })
 
-    describe('in a complete state', () => {
-      it('calls Stop and ResumePlay on the player plugin, and emits a buffering event', () => {
-        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType')
+    describe("in a complete state", () => {
+      it("calls Stop and ResumePlay on the player plugin, and emits a buffering event", () => {
+        player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
         player.beginPlayback()
         window.SamsungMapleOnCurrentPlayTime(0)
         window.SamsungMapleOnStreamInfoReady()

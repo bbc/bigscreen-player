@@ -1,58 +1,52 @@
 {
-    "tags": {
-        "allowUnknownTags": true,
-        "dictionaries": [
-            "jsdoc"
-        ]
-    },
-    "source": {
-        "include": [
-            "src"
-        ],
-        "includePattern": ".js$",
-        "excludePattern": "(node_modules/|docs)"
-    },
-    "plugins": [
-        "plugins/markdown"
-    ],
-    "templates": {
-        "cleverLinks": false,
-        "monospaceLinks": true,
-        "useLongnameInNav": true,
-        "showInheritedInNav": true,
-        "default": {
-            "includeDate": false,
-            "staticFiles": {
-                "include": ["./docs/static"]
-            }
-        }
-    },
-    "opts": {
-        "destination": "./docs/api",
-        "encoding": "utf8",
-        "recurse": true,
-        "hierarchy": true,
-        "readme": "README.md",
-        "tutorials": "./docs/tutorials",
-        "template": "node_modules/clean-jsdoc-theme",
-        "theme_opts": {
-            "theme": "dark",
-            "title": "<img src='bsp-logo.png'/>",
-            "footer": "",
-            "search": {
-                "shouldSort": true,
-                "threshold": 0.4,
-                "location": 0,
-                "distance": 100,
-                "maxPatternLength": 32,
-                "minMatchCharLength": 1
-            },
-            "meta": [
-                {
-                    "name": "description",
-                    "content": "Simplified media playback for bigscreen devices"
-                }
-            ]
-        }
+  "tags": {
+    "allowUnknownTags": true,
+    "dictionaries": ["jsdoc"]
+  },
+  "source": {
+    "include": ["src"],
+    "includePattern": ".js$",
+    "excludePattern": "(node_modules/|docs)"
+  },
+  "plugins": ["plugins/markdown"],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": true,
+    "useLongnameInNav": true,
+    "showInheritedInNav": true,
+    "default": {
+      "includeDate": false,
+      "staticFiles": {
+        "include": ["./docs/static"]
+      }
     }
+  },
+  "opts": {
+    "destination": "./docs/api",
+    "encoding": "utf8",
+    "recurse": true,
+    "hierarchy": true,
+    "readme": "README.md",
+    "tutorials": "./docs/tutorials",
+    "template": "node_modules/clean-jsdoc-theme",
+    "theme_opts": {
+      "theme": "dark",
+      "title": "<img src='bsp-logo.png'/>",
+      "footer": "",
+      "search": {
+        "shouldSort": true,
+        "threshold": 0.4,
+        "location": 0,
+        "distance": 100,
+        "maxPatternLength": 32,
+        "minMatchCharLength": 1
+      },
+      "meta": [
+        {
+          "name": "description",
+          "content": "Simplified media playback for bigscreen devices"
+        }
+      ]
+    }
+  }
 }

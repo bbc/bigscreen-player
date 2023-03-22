@@ -1,7 +1,7 @@
-import deferExceptions from './deferexceptions'
-import utils from './playbackutils'
+import deferExceptions from "./deferexceptions"
+import utils from "./playbackutils"
 
-function CallCallbacks (callbacks, data) {
+function CallCallbacks(callbacks, data) {
   var originalCallbacks = utils.deepClone(callbacks)
   for (var i = callbacks.length - 1; i >= 0; i--) {
     var originalLength = callbacks.length
@@ -11,7 +11,7 @@ function CallCallbacks (callbacks, data) {
     var newLength = callbacks.length
     var callbackRemovedSelf = callbacks.indexOf(originalCallbacks[i]) === -1
 
-    if ((originalLength !== newLength) && !callbackRemovedSelf) {
+    if (originalLength !== newLength && !callbackRemovedSelf) {
       i = i - (originalLength - newLength)
     }
   }

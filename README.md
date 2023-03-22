@@ -1,4 +1,4 @@
-<img src="https://user-images.githubusercontent.com/6772464/124460623-7f3d9d80-dd87-11eb-9833-456c9f20bab7.png" width="300" alt="Bigscreen Player logo"/>   
+<img src="https://user-images.githubusercontent.com/6772464/124460623-7f3d9d80-dd87-11eb-9833-456c9f20bab7.png" width="300" alt="Bigscreen Player logo"/>
 
 [![Build Status](https://github.com/bbc/bigscreen-player/actions/workflows/pull-requests.yml/badge.svg)](https://github.com/bbc/bigscreen-player/actions/workflows/npm-publish.yml) [![npm](https://img.shields.io/npm/v/bigscreen-player)](https://www.npmjs.com/package/bigscreen-player) [![GitHub](https://img.shields.io/github/license/bbc/bigscreen-player)](https://github.com/bbc/bigscreen-player/blob/master/LICENSE)
 
@@ -6,18 +6,20 @@
 
 ## Introduction
 
-*Bigscreen Player* is an open source project developed by the BBC to simplify video and audio playback on a wide range of 'bigscreen' devices (TVs, set-top boxes, games consoles, and streaming devices).
+_Bigscreen Player_ is an open source project developed by the BBC to simplify video and audio playback on a wide range of 'bigscreen' devices (TVs, set-top boxes, games consoles, and streaming devices).
 
 For documentation on using this library, please see our [Getting Started guide](https://bbc.github.io/bigscreen-player/api/tutorial-Getting%20Started.html).
 
 ## Running Locally
 
 Install dependencies:
+
 ```bash
 $ npm install
 ```
 
 You can run Bigscreen Player locally in a dev environment by running:
+
 ```bash
 $ npm run start
 ```
@@ -27,9 +29,11 @@ This will open a web page at `localhost:8080`.
 ## Testing
 
 The project is unit tested using [Jest](https://jestjs.io/). To run the tests:
+
 ```bash
 $ npm test
 ```
+
 This project currently has unit test coverage but no integration test suite. This is on our Roadmap to address.
 
 ## Releasing
@@ -44,6 +48,7 @@ This project currently has unit test coverage but no integration test suite. Thi
 ## Documentation
 
 Bigscreen Player uses JSDocs to autogenerate API documentation. To regenerate the documentation run:
+
 ```bash
 $ npm run docs
 ```

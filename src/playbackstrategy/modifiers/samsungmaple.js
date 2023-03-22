@@ -1,8 +1,8 @@
-import MediaPlayerBase from '../modifiers/mediaplayerbase'
-import DebugTool from '../../debugger/debugtool'
+import MediaPlayerBase from "../modifiers/mediaplayerbase"
+import DebugTool from "../../debugger/debugtool"
 
-function SamsungMaple () {
-  const playerPlugin = document.getElementById('playerPlugin')
+function SamsungMaple() {
+  const playerPlugin = document.getElementById("playerPlugin")
 
   let state = MediaPlayerBase.STATE.EMPTY
   let deferSeekingTo = null
@@ -20,7 +20,7 @@ function SamsungMaple () {
   let eventCallbacks = []
   let eventCallback
 
-  function initialiseMedia (type, url, mediaMimeType) {
+  function initialiseMedia(type, url, mediaMimeType) {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
       mediaType = type
       source = url
@@ -28,11 +28,11 @@ function SamsungMaple () {
       _registerEventHandlers()
       _toStopped()
     } else {
-      _toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state')
+      _toError("Cannot set source unless in the '" + MediaPlayerBase.STATE.EMPTY + "' state")
     }
   }
 
-  function resume () {
+  function resume() {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
     switch (getState()) {
       case MediaPlayerBase.STATE.PLAYING:
@@ -51,12 +51,12 @@ function SamsungMaple () {
         break
 
       default:
-        _toError('Cannot resume while in the \'' + getState() + '\' state')
+        _toError("Cannot resume while in the '" + getState() + "' state")
         break
     }
   }
 
-  function playFrom (seconds) {
+  function playFrom(seconds) {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
 
     const seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds
@@ -98,12 +98,12 @@ function SamsungMaple () {
         break
 
       default:
-        _toError('Cannot playFrom while in the \'' + getState() + '\' state')
+        _toError("Cannot playFrom while in the '" + getState() + "' state")
         break
     }
   }
 
-  function beginPlayback () {
+  function beginPlayback() {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
@@ -113,12 +113,12 @@ function SamsungMaple () {
         break
 
       default:
-        _toError('Cannot beginPlayback while in the \'' + getState() + '\' state')
+        _toError("Cannot beginPlayback while in the '" + getState() + "' state")
         break
     }
   }
 
-  function beginPlaybackFrom (seconds) {
+  function beginPlaybackFrom(seconds) {
     postBufferingState = MediaPlayerBase.STATE.PLAYING
 
     const seekingTo = range ? _getClampedTimeForPlayFrom(seconds) : seconds
@@ -131,12 +131,12 @@ function SamsungMaple () {
         break
 
       default:
-        _toError('Cannot beginPlayback while in the \'' + getState() + '\' state')
+        _toError("Cannot beginPlayback while in the '" + getState() + "' state")
         break
     }
   }
 
-  function pause () {
+  function pause() {
     postBufferingState = MediaPlayerBase.STATE.PAUSED
     switch (getState()) {
       case MediaPlayerBase.STATE.BUFFERING:
@@ -148,12 +148,12 @@ function SamsungMaple () {
         break
 
       default:
-        _toError('Cannot pause while in the \'' + getState() + '\' state')
+        _toError("Cannot pause while in the '" + getState() + "' state")
         break
     }
   }
 
-  function stop () {
+  function stop() {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
         break
@@ -167,12 +167,12 @@ function SamsungMaple () {
         break
 
       default:
-        _toError('Cannot stop while in the \'' + getState() + '\' state')
+        _toError("Cannot stop while in the '" + getState() + "' state")
         break
     }
   }
 
-  function reset () {
+  function reset() {
     switch (getState()) {
       case MediaPlayerBase.STATE.EMPTY:
         break
@@ -183,20 +183,20 @@ function SamsungMaple () {
         break
 
       default:
-        _toError('Cannot reset while in the \'' + getState() + '\' state')
+        _toError("Cannot reset while in the '" + getState() + "' state")
         break
     }
   }
 
-  function getSource () {
+  function getSource() {
     return source
   }
 
-  function getMimeType () {
+  function getMimeType() {
     return mimeType
   }
 
-  function getCurrentTime () {
+  function getCurrentTime() {
     if (getState() === MediaPlayerBase.STATE.STOPPED) {
       return undefined
     } else {
@@ -204,65 +204,65 @@ function SamsungMaple () {
     }
   }
 
-  function getSeekableRange () {
+  function getSeekableRange() {
     return range
   }
 
-  function getDuration () {
+  function getDuration() {
     if (range) {
       return range.end
     }
     return undefined
   }
 
-  function getState () {
+  function getState() {
     return state
   }
 
-  function getPlayerElement () {
+  function getPlayerElement() {
     return playerPlugin
   }
 
-  function toPlaying () {
+  function toPlaying() {
     state = MediaPlayerBase.STATE.PLAYING
     _emitEvent(MediaPlayerBase.EVENT.PLAYING)
   }
 
-  function toPaused () {
+  function toPaused() {
     state = MediaPlayerBase.STATE.PAUSED
     _emitEvent(MediaPlayerBase.EVENT.PAUSED)
   }
 
-  function _toStopped () {
+  function _toStopped() {
     currentTime = 0
     range = undefined
     state = MediaPlayerBase.STATE.STOPPED
     _emitEvent(MediaPlayerBase.EVENT.STOPPED)
   }
 
-  function _toBuffering () {
+  function _toBuffering() {
     state = MediaPlayerBase.STATE.BUFFERING
     _emitEvent(MediaPlayerBase.EVENT.BUFFERING)
   }
 
-  function _toComplete () {
+  function _toComplete() {
     state = MediaPlayerBase.STATE.COMPLETE
     _emitEvent(MediaPlayerBase.EVENT.COMPLETE)
   }
 
-  function _toEmpty () {
+  function _toEmpty() {
     _wipe()
     state = MediaPlayerBase.STATE.EMPTY
   }
 
-  function _toError (errorMessage) {
+  function _toError(errorMessage) {
     _wipe()
     state = MediaPlayerBase.STATE.ERROR
     _reportError(errorMessage)
-    throw new Error('ApiError: ' + errorMessage)
+    throw new Error("ApiError: " + errorMessage)
   }
 
-  function _onFinishedBuffering () {
+  function _onFinishedBuffering() {
     if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
       return
     }
@@ -276,26 +276,26 @@ function SamsungMaple () {
     }
   }
 
-  function _onDeviceError (message) {
+  function _onDeviceError(message) {
     _reportError(message)
   }
 
-  function _onDeviceBuffering () {
+  function _onDeviceBuffering() {
     if (getState() === MediaPlayerBase.STATE.PLAYING) {
       _toBuffering()
     }
   }
 
-  function _onEndOfMedia () {
+  function _onEndOfMedia() {
     _toComplete()
   }
 
-  function _stopPlayer () {
+  function _stopPlayer() {
     playerPlugin.Stop()
     currentTimeKnown = false
   }
 
-  function _tryPauseWithStateTransition () {
+  function _tryPauseWithStateTransition() {
     let success = _isSuccessCode(playerPlugin.Pause())
     if (success) {
       toPaused()
@@ -304,21 +304,21 @@ function SamsungMaple () {
     tryingToPause = !success
   }
 
-  function _onStatus () {
+  function _onStatus() {
     let state = getState()
     if (state === MediaPlayerBase.STATE.PLAYING) {
       _emitEvent(MediaPlayerBase.EVENT.STATUS)
     }
   }
 
-  function _onMetadata () {
+  function _onMetadata() {
     range = {
       start: 0,
-      end: playerPlugin.GetDuration() / 1000
+      end: playerPlugin.GetDuration() / 1000,
     }
   }
 
-  function _onCurrentTime (timeInMillis) {
+  function _onCurrentTime(timeInMillis) {
     currentTime = timeInMillis / 1000
     _onStatus()
     currentTimeKnown = true
@@ -332,7 +332,7 @@ function SamsungMaple () {
     }
   }
 
-  function _deferredSeek () {
+  function _deferredSeek() {
     const clampedTime = _getClampedTimeForPlayFrom(deferSeekingTo)
     const isNearCurrentTime = _isNearToCurrentTime(clampedTime)
 
@@ -348,86 +348,91 @@ function SamsungMaple () {
     }
   }
 
-  function _getClampedTimeForPlayFrom (seconds) {
+  function _getClampedTimeForPlayFrom(seconds) {
     const clampedTime = getClampedTime(seconds)
 
     if (clampedTime !== seconds) {
-      DebugTool.info('playFrom ' + seconds + ' clamped to ' + clampedTime + ' - seekable range is { start: ' + range.start + ', end: ' + range.end + ' }')
+      DebugTool.info(
+        "playFrom " +
+          seconds +
+          " clamped to " +
+          clampedTime +
+          " - seekable range is { start: " +
+          range.start +
+          ", end: " +
+          range.end +
+          " }"
+      )
     }
     return clampedTime
   }
 
-  function _onWindowHide () {
+  function _onWindowHide() {
     stop()
   }
 
-  function _registerEventHandlers () {
-    window.SamsungMapleOnRenderError = () =>
-      _onDeviceError('Media element emitted OnRenderError')
-    playerPlugin.OnRenderError = 'SamsungMapleOnRenderError'
+  function _registerEventHandlers() {
+    window.SamsungMapleOnRenderError = () => _onDeviceError("Media element emitted OnRenderError")
+    playerPlugin.OnRenderError = "SamsungMapleOnRenderError"
 
-    window.SamsungMapleOnConnectionFailed = () =>
-      _onDeviceError('Media element emitted OnConnectionFailed')
-    playerPlugin.OnConnectionFailed = 'SamsungMapleOnConnectionFailed'
+    window.SamsungMapleOnConnectionFailed = () => _onDeviceError("Media element emitted OnConnectionFailed")
+    playerPlugin.OnConnectionFailed = "SamsungMapleOnConnectionFailed"
 
-    window.SamsungMapleOnNetworkDisconnected = () =>
-      _onDeviceError('Media element emitted OnNetworkDisconnected')
-    playerPlugin.OnNetworkDisconnected = 'SamsungMapleOnNetworkDisconnected'
+    window.SamsungMapleOnNetworkDisconnected = () => _onDeviceError("Media element emitted OnNetworkDisconnected")
+    playerPlugin.OnNetworkDisconnected = "SamsungMapleOnNetworkDisconnected"
 
-    window.SamsungMapleOnStreamNotFound = () =>
-      _onDeviceError('Media element emitted OnStreamNotFound')
-    playerPlugin.OnStreamNotFound = 'SamsungMapleOnStreamNotFound'
+    window.SamsungMapleOnStreamNotFound = () => _onDeviceError("Media element emitted OnStreamNotFound")
+    playerPlugin.OnStreamNotFound = "SamsungMapleOnStreamNotFound"
 
-    window.SamsungMapleOnAuthenticationFailed = () =>
-      _onDeviceError('Media element emitted OnAuthenticationFailed')
-    playerPlugin.OnAuthenticationFailed = 'SamsungMapleOnAuthenticationFailed'
+    window.SamsungMapleOnAuthenticationFailed = () => _onDeviceError("Media element emitted OnAuthenticationFailed")
+    playerPlugin.OnAuthenticationFailed = "SamsungMapleOnAuthenticationFailed"
 
     window.SamsungMapleOnRenderingComplete = () => _onEndOfMedia()
-    playerPlugin.OnRenderingComplete = 'SamsungMapleOnRenderingComplete'
+    playerPlugin.OnRenderingComplete = "SamsungMapleOnRenderingComplete"
 
     window.SamsungMapleOnBufferingStart = () => _onDeviceBuffering()
-    playerPlugin.OnBufferingStart = 'SamsungMapleOnBufferingStart'
+    playerPlugin.OnBufferingStart = "SamsungMapleOnBufferingStart"
 
     window.SamsungMapleOnBufferingComplete = () => _onFinishedBuffering()
-    playerPlugin.OnBufferingComplete = 'SamsungMapleOnBufferingComplete'
+    playerPlugin.OnBufferingComplete = "SamsungMapleOnBufferingComplete"
 
     window.SamsungMapleOnStreamInfoReady = () => _onMetadata()
-    playerPlugin.OnStreamInfoReady = 'SamsungMapleOnStreamInfoReady'
+    playerPlugin.OnStreamInfoReady = "SamsungMapleOnStreamInfoReady"
 
     window.SamsungMapleOnCurrentPlayTime = (timeInMillis) => _onCurrentTime(timeInMillis)
-    playerPlugin.OnCurrentPlayTime = 'SamsungMapleOnCurrentPlayTime'
+    playerPlugin.OnCurrentPlayTime = "SamsungMapleOnCurrentPlayTime"
 
-    window.addEventListener('hide', _onWindowHide, false)
-    window.addEventListener('unload', _onWindowHide, false)
+    window.addEventListener("hide", _onWindowHide, false)
+    window.addEventListener("unload", _onWindowHide, false)
   }
 
-  function _unregisterEventHandlers () {
+  function _unregisterEventHandlers() {
     const eventHandlers = [
-      'SamsungMapleOnRenderError',
-      'SamsungMapleOnRenderingComplete',
-      'SamsungMapleOnBufferingStart',
-      'SamsungMapleOnBufferingComplete',
-      'SamsungMapleOnStreamInfoReady',
-      'SamsungMapleOnCurrentPlayTime',
-      'SamsungMapleOnConnectionFailed',
-      'SamsungMapleOnNetworkDisconnected',
-      'SamsungMapleOnStreamNotFound',
-      'SamsungMapleOnAuthenticationFailed'
+      "SamsungMapleOnRenderError",
+      "SamsungMapleOnRenderingComplete",
+      "SamsungMapleOnBufferingStart",
+      "SamsungMapleOnBufferingComplete",
+      "SamsungMapleOnStreamInfoReady",
+      "SamsungMapleOnCurrentPlayTime",
+      "SamsungMapleOnConnectionFailed",
+      "SamsungMapleOnNetworkDisconnected",
+      "SamsungMapleOnStreamNotFound",
+      "SamsungMapleOnAuthenticationFailed",
     ]
 
     for (let i = 0; i < eventHandlers.length; i++) {
       const handler = eventHandlers[i]
-      const hook = handler.substring('SamsungMaple'.length)
+      const hook = handler.substring("SamsungMaple".length)
 
       playerPlugin[hook] = undefined
       delete window[handler]
     }
 
-    window.removeEventListener('hide', _onWindowHide, false)
-    window.removeEventListener('unload', _onWindowHide, false)
+    window.removeEventListener("hide", _onWindowHide, false)
+    window.removeEventListener("unload", _onWindowHide, false)
   }
 
-  function _wipe () {
+  function _wipe() {
     _stopPlayer()
     mediaType = undefined
     source = undefined
@@ -440,7 +445,7 @@ function SamsungMaple () {
     _unregisterEventHandlers()
   }
 
-  function _seekTo (seconds) {
+  function _seekTo(seconds) {
     const offset = seconds - getCurrentTime()
     const success = _isSuccessCode(_jump(offset))
 
@@ -451,7 +456,7 @@ function SamsungMaple () {
     return success
   }
 
-  function _seekToWithFailureStateTransition (seconds) {
+  function _seekToWithFailureStateTransition(seconds) {
     const success = _seekTo(seconds)
 
     if (!success) {
@@ -459,7 +464,7 @@ function SamsungMaple () {
     }
   }
 
-  function _jump (offsetSeconds) {
+  function _jump(offsetSeconds) {
     if (offsetSeconds > 0) {
       return playerPlugin.JumpForward(offsetSeconds)
     } else {
@@ -467,37 +472,37 @@ function SamsungMaple () {
     }
   }
 
-  function _isHlsMimeType () {
+  function _isHlsMimeType() {
     const mime = mimeType.toLowerCase()
-    return mime === 'application/vnd.apple.mpegurl' || mime === 'application/x-mpegurl'
+    return mime === "application/vnd.apple.mpegurl" || mime === "application/x-mpegurl"
   }
 
-  function _wrappedSource () {
+  function _wrappedSource() {
     let wrappedSource = source
 
     if (_isHlsMimeType()) {
-      wrappedSource += '|COMPONENT=HLS'
+      wrappedSource += "|COMPONENT=HLS"
     }
 
     return wrappedSource
   }
 
-  function _reportError (errorMessage) {
+  function _reportError(errorMessage) {
     DebugTool.info(errorMessage)
-    _emitEvent(MediaPlayerBase.EVENT.ERROR, { 'errorMessage': errorMessage })
+    _emitEvent(MediaPlayerBase.EVENT.ERROR, { errorMessage: errorMessage })
   }
 
-  function _setDisplayFullScreenForVideo () {
+  function _setDisplayFullScreenForVideo() {
     if (mediaType === MediaPlayerBase.TYPE.VIDEO) {
       const dimensions = _getScreenSize()
       playerPlugin.SetDisplayArea(0, 0, dimensions.width, dimensions.height)
     }
   }
 
-  function _getScreenSize () {
+  function _getScreenSize() {
     let w, h
 
-    if (typeof (window.innerWidth) === 'number') {
+    if (typeof window.innerWidth === "number") {
       w = window.innerWidth
       h = window.innerHeight
     } else {
@@ -509,11 +514,11 @@ function SamsungMaple () {
 
     return {
       width: w,
-      height: h
+      height: h,
     }
   }
 
-  function _isSuccessCode (code) {
+  function _isSuccessCode(code) {
     const samsung2010ErrorCode = -1
     return code && code !== samsung2010ErrorCode
   }
@@ -525,14 +530,14 @@ function SamsungMaple () {
    */
   const CURRENT_TIME_TOLERANCE = 2.5
 
-  function _isNearToCurrentTime (seconds) {
+  function _isNearToCurrentTime(seconds) {
     const currentTime = getCurrentTime()
     const targetTime = getClampedTime(seconds)
 
     return Math.abs(currentTime - targetTime) <= CURRENT_TIME_TOLERANCE
   }
 
-  function getClampedTime (seconds) {
+  function getClampedTime(seconds) {
     const range = getSeekableRange()
     const CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
     const nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
@@ -546,7 +551,7 @@ function SamsungMaple () {
     }
   }
 
-  function _emitEvent (eventType, eventLabels) {
+  function _emitEvent(eventType, eventLabels) {
     const event = {
       type: eventType,
       currentTime: getCurrentTime(),
@@ -554,7 +559,7 @@ function SamsungMaple () {
       duration: getDuration(),
       url: getSource(),
       mimeType: getMimeType(),
-      state: getState()
+      state: getState(),
     }
 
     if (eventLabels) {
@@ -587,7 +592,9 @@ function SamsungMaple () {
       }
     },
 
-    removeAllEventCallbacks: () => { eventCallbacks = [] },
+    removeAllEventCallbacks: () => {
+      eventCallbacks = []
+    },
     initialiseMedia: initialiseMedia,
     playFrom: playFrom,
     beginPlayback: beginPlayback,
@@ -604,9 +611,8 @@ function SamsungMaple () {
     getCurrentTime: getCurrentTime,
     getDuration: getDuration,
     toPaused: toPaused,
-    toPlaying: toPlaying
+    toPlaying: toPlaying,
   }
 }
 
 export default SamsungMaple
-

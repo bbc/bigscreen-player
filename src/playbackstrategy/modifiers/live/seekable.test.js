@@ -1,15 +1,15 @@
-import MediaPlayerBase from '../mediaplayerbase'
-import SeekableMediaPlayer from './seekable'
-import WindowTypes from '../../../models/windowtypes'
+import MediaPlayerBase from "../mediaplayerbase"
+import SeekableMediaPlayer from "./seekable"
+import WindowTypes from "../../../models/windowtypes"
 
-describe('Seekable HMTL5 Live Player', () => {
-  const callback = () => { }
-  const sourceContainer = document.createElement('div')
+describe("Seekable HMTL5 Live Player", () => {
+  const callback = () => {}
+  const sourceContainer = document.createElement("div")
 
   let player
   let seekableMediaPlayer
 
-  function wrapperTests (action, expectedReturn) {
+  function wrapperTests(action, expectedReturn) {
     if (expectedReturn) {
       player[action].mockReturnValue(expectedReturn)
 
@@ -21,128 +21,128 @@ describe('Seekable HMTL5 Live Player', () => {
     }
   }
 
-  function initialiseSeekableMediaPlayer (windowType) {
+  function initialiseSeekableMediaPlayer(windowType) {
     seekableMediaPlayer = SeekableMediaPlayer(player, windowType)
   }
 
   beforeEach(() => {
     player = {
-      'beginPlayback': jest.fn(),
-      'initialiseMedia': jest.fn(),
-      'stop': jest.fn(),
-      'reset': jest.fn(),
-      'getState': jest.fn(),
-      'getSource': jest.fn(),
-      'getMimeType': jest.fn(),
-      'addEventCallback': jest.fn(),
-      'removeEventCallback': jest.fn(),
-      'removeAllEventCallbacks': jest.fn(),
-      'getPlayerElement': jest.fn(),
-      'pause': jest.fn(),
-      'resume': jest.fn(),
-      'beginPlaybackFrom': jest.fn(),
-      'playFrom': jest.fn(),
-      'getCurrentTime': jest.fn(),
-      'getSeekableRange': jest.fn(),
-      'toPaused': jest.fn(),
-      'toPlaying': jest.fn()
+      beginPlayback: jest.fn(),
+      initialiseMedia: jest.fn(),
+      stop: jest.fn(),
+      reset: jest.fn(),
+      getState: jest.fn(),
+      getSource: jest.fn(),
+      getMimeType: jest.fn(),
+      addEventCallback: jest.fn(),
+      removeEventCallback: jest.fn(),
+      removeAllEventCallbacks: jest.fn(),
+      getPlayerElement: jest.fn(),
+      pause: jest.fn(),
+      resume: jest.fn(),
+      beginPlaybackFrom: jest.fn(),
+      playFrom: jest.fn(),
+      getCurrentTime: jest.fn(),
+      getSeekableRange: jest.fn(),
+      toPaused: jest.fn(),
+      toPlaying: jest.fn(),
     }
   })
 
-  describe('methods call the appropriate media player methods', () => {
+  describe("methods call the appropriate media player methods", () => {
     beforeEach(() => {
       initialiseSeekableMediaPlayer()
     })
 
-    it('calls beginPlayback on the media player', () => {
-      wrapperTests('beginPlayback')
+    it("calls beginPlayback on the media player", () => {
+      wrapperTests("beginPlayback")
     })
 
-    it('calls initialiseMedia on the media player', () => {
-      wrapperTests('initialiseMedia')
+    it("calls initialiseMedia on the media player", () => {
+      wrapperTests("initialiseMedia")
     })
 
-    it('calls beginPlayingFrom on the media player', () => {
+    it("calls beginPlayingFrom on the media player", () => {
       const arg = 0
       seekableMediaPlayer.beginPlaybackFrom(arg)
 
       expect(player.beginPlaybackFrom).toHaveBeenCalledWith(arg)
     })
 
-    it('calls playFrom on the media player', () => {
+    it("calls playFrom on the media player", () => {
       const arg = 0
       seekableMediaPlayer.playFrom(arg)
 
       expect(player.playFrom).toHaveBeenCalledWith(arg)
     })
 
-    it('calls stop on the media player', () => {
-      wrapperTests('stop')
+    it("calls stop on the media player", () => {
+      wrapperTests("stop")
     })
 
-    it('calls reset on the media player', () => {
-      wrapperTests('reset')
+    it("calls reset on the media player", () => {
+      wrapperTests("reset")
     })
 
-    it('calls getState on the media player', () => {
-      wrapperTests('getState', 'thisState')
+    it("calls getState on the media player", () => {
+      wrapperTests("getState", "thisState")
     })
 
-    it('calls getSource on the media player', () => {
-      wrapperTests('getSource', 'thisSource')
+    it("calls getSource on the media player", () => {
+      wrapperTests("getSource", "thisSource")
     })
 
-    it('calls getMimeType on the media player', () => {
-      wrapperTests('getMimeType', 'thisMimeType')
+    it("calls getMimeType on the media player", () => {
+      wrapperTests("getMimeType", "thisMimeType")
     })
 
-    it('calls addEventCallback on the media player', () => {
-      const thisArg = 'arg'
+    it("calls addEventCallback on the media player", () => {
+      const thisArg = "arg"
       seekableMediaPlayer.addEventCallback(thisArg, callback)
 
       expect(player.addEventCallback).toHaveBeenCalledWith(thisArg, callback)
     })
 
-    it('calls removeEventCallback on the media player', () => {
-      const thisArg = 'arg'
+    it("calls removeEventCallback on the media player", () => {
+      const thisArg = "arg"
       seekableMediaPlayer.removeEventCallback(thisArg, callback)
 
       expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback)
     })
 
-    it('calls removeAllEventCallbacks on the media player', () => {
-      wrapperTests('removeAllEventCallbacks')
+    it("calls removeAllEventCallbacks on the media player", () => {
+      wrapperTests("removeAllEventCallbacks")
     })
 
-    it('calls getPlayerElement on the media player', () => {
-      wrapperTests('getPlayerElement')
+    it("calls getPlayerElement on the media player", () => {
+      wrapperTests("getPlayerElement")
     })
 
-    it('calls pause on the media player', () => {
+    it("calls pause on the media player", () => {
       player.getSeekableRange.mockReturnValue({ start: 0 })
 
-      wrapperTests('pause')
+      wrapperTests("pause")
     })
 
-    it('calls getCurrentTime on media player', () => {
-      wrapperTests('getCurrentTime', 'thisTime')
+    it("calls getCurrentTime on media player", () => {
+      wrapperTests("getCurrentTime", "thisTime")
     })
 
-    it('calls getSeekableRange on media player', () => {
-      wrapperTests('getSeekableRange', 'thisRange')
+    it("calls getSeekableRange on media player", () => {
+      wrapperTests("getSeekableRange", "thisRange")
     })
   })
 
-  describe('Seekable features', () => {
+  describe("Seekable features", () => {
     afterEach(() => {
       delete window.bigscreenPlayer
     })
 
-    it('should respect config forcing playback from the end of the window', () => {
+    it("should respect config forcing playback from the end of the window", () => {
       window.bigscreenPlayer = {
         overrides: {
-          forceBeginPlaybackToEndOfWindow: true
-        }
+          forceBeginPlaybackToEndOfWindow: true,
+        },
       }
 
       initialiseSeekableMediaPlayer()
@@ -153,34 +153,52 @@ describe('Seekable HMTL5 Live Player', () => {
     })
   })
 
-  describe('calls the mediaplayer with the correct media Type', () => {
+  describe("calls the mediaplayer with the correct media Type", () => {
     beforeEach(() => {
       initialiseSeekableMediaPlayer()
     })
 
-    it('for static video', () => {
-      seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, '', '', sourceContainer)
+    it("for static video", () => {
+      seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "", "", sourceContainer)
 
-      expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined)
+      expect(player.initialiseMedia).toHaveBeenCalledWith(
+        MediaPlayerBase.TYPE.LIVE_VIDEO,
+        "",
+        "",
+        sourceContainer,
+        undefined
+      )
     })
 
-    it('for live video', () => {
-      seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer)
+    it("for live video", () => {
+      seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, "", "", sourceContainer)
 
-      expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_VIDEO, '', '', sourceContainer, undefined)
+      expect(player.initialiseMedia).toHaveBeenCalledWith(
+        MediaPlayerBase.TYPE.LIVE_VIDEO,
+        "",
+        "",
+        sourceContainer,
+        undefined
+      )
     })
 
-    it('for static audio', () => {
-      seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, '', '', sourceContainer)
+    it("for static audio", () => {
+      seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, "", "", sourceContainer)
 
-      expect(player.initialiseMedia).toHaveBeenCalledWith(MediaPlayerBase.TYPE.LIVE_AUDIO, '', '', sourceContainer, undefined)
+      expect(player.initialiseMedia).toHaveBeenCalledWith(
+        MediaPlayerBase.TYPE.LIVE_AUDIO,
+        "",
+        "",
+        sourceContainer,
+        undefined
+      )
     })
   })
 
-  describe('Pausing and Auto-Resume', () => {
+  describe("Pausing and Auto-Resume", () => {
     let mockCallback = []
 
-    function startPlaybackAndPause (startTime, disableAutoResume) {
+    function startPlaybackAndPause(startTime, disableAutoResume) {
       seekableMediaPlayer.beginPlaybackFrom(startTime || 0)
       seekableMediaPlayer.pause({ disableAutoResume: disableAutoResume })
     }
@@ -203,7 +221,7 @@ describe('Seekable HMTL5 Live Player', () => {
       mockCallback = []
     })
 
-    it('calls resume when approaching the start of the buffer', () => {
+    it("calls resume when approaching the start of the buffer", () => {
       startPlaybackAndPause(20, false)
 
       jest.advanceTimersByTime(12 * 1000)
@@ -211,7 +229,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.resume).toHaveBeenCalledWith()
     })
 
-    it('does not call resume when approaching the start of the buffer with the disableAutoResume option', () => {
+    it("does not call resume when approaching the start of the buffer with the disableAutoResume option", () => {
       startPlaybackAndPause(20, true)
 
       jest.advanceTimersByTime(11 * 1000)
@@ -219,7 +237,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.resume).not.toHaveBeenCalledWith()
     })
 
-    it('does not call resume if paused after the auto resume point', () => {
+    it("does not call resume if paused after the auto resume point", () => {
       startPlaybackAndPause(20, false)
 
       jest.advanceTimersByTime(11 * 1000)
@@ -227,7 +245,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.resume).not.toHaveBeenCalledWith()
     })
 
-    it('does not auto-resume if the video is no longer paused', () => {
+    it("does not auto-resume if the video is no longer paused", () => {
       startPlaybackAndPause(20, false)
 
       for (let index = 0; index < mockCallback.length; index++) {
@@ -239,7 +257,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.resume).not.toHaveBeenCalled()
     })
 
-    it('Calls resume when paused is called multiple times', () => {
+    it("Calls resume when paused is called multiple times", () => {
       startPlaybackAndPause(0, false)
 
       const event = { state: MediaPlayerBase.STATE.PLAYING, currentTime: 25 }
@@ -262,7 +280,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.resume).toHaveBeenCalledTimes(1)
     })
 
-    it('calls auto-resume immeditetly if paused after an autoresume', () => {
+    it("calls auto-resume immeditetly if paused after an autoresume", () => {
       startPlaybackAndPause(20, false)
 
       jest.advanceTimersByTime(12 * 1000)
@@ -278,7 +296,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.toPlaying).toHaveBeenCalledTimes(1)
     })
 
-    it('does not calls autoresume immeditetly if paused after an auto-resume with disableAutoResume options', () => {
+    it("does not calls autoresume immeditetly if paused after an auto-resume with disableAutoResume options", () => {
       startPlaybackAndPause(20, true)
 
       jest.advanceTimersByTime(12 * 1000)
@@ -289,7 +307,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.resume).not.toHaveBeenCalledTimes(1)
     })
 
-    it('auto-resume is not cancelled by a paused event state', () => {
+    it("auto-resume is not cancelled by a paused event state", () => {
       startPlaybackAndPause(20, false)
 
       for (let index = 0; index < mockCallback.length; index++) {
@@ -301,7 +319,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.resume).toHaveBeenCalledTimes(1)
     })
 
-    it('auto-resume is not cancelled by a status event', () => {
+    it("auto-resume is not cancelled by a status event", () => {
       startPlaybackAndPause(20, false)
 
       for (let index = 0; index < mockCallback.length; index++) {
@@ -313,7 +331,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.resume).toHaveBeenCalledTimes(1)
     })
 
-    it('will fake pause if attempting to pause at the start of playback ', () => {
+    it("will fake pause if attempting to pause at the start of playback ", () => {
       player.getCurrentTime.mockReturnValue(0)
       startPlaybackAndPause(0, false)
 
@@ -321,7 +339,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.toPlaying).toHaveBeenCalledTimes(1)
     })
 
-    it('time spend buffering is deducted when considering time to auto-resume', () => {
+    it("time spend buffering is deducted when considering time to auto-resume", () => {
       startPlaybackAndPause(0, false)
 
       seekableMediaPlayer.resume()
@@ -345,7 +363,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.toPlaying).toHaveBeenCalledTimes(1)
     })
 
-    it('should not call autoresume immeditetly if paused after an auto-resume with disableAutoResume options', () => {
+    it("should not call autoresume immeditetly if paused after an auto-resume with disableAutoResume options", () => {
       startPlaybackAndPause(20, true)
 
       jest.advanceTimersByTime(12 * 1000)
@@ -355,7 +373,7 @@ describe('Seekable HMTL5 Live Player', () => {
       expect(player.resume).not.toHaveBeenCalledTimes(1)
     })
 
-    it('Should auto resume when paused after a seek', () => {
+    it("Should auto resume when paused after a seek", () => {
       player.getSeekableRange.mockReturnValue({ start: 0 })
       player.getCurrentTime.mockReturnValue(100)
 
@@ -374,4 +392,3 @@ describe('Seekable HMTL5 Live Player', () => {
     })
   })
 })
-

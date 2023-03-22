@@ -1,14 +1,21 @@
-import MediaState from './models/mediastate'
-import WindowTypes from './models/windowtypes'
-import PluginData from './plugindata'
-import PluginEnums from './pluginenums'
-import Plugins from './plugins'
-import TransferFormats from './models/transferformats'
-import LiveSupport from './models/livesupport'
-import PlaybackStrategyModel from './models/playbackstrategy'
-import StrategyPicker from './playbackstrategy/strategypicker'
+import MediaState from "./models/mediastate"
+import WindowTypes from "./models/windowtypes"
+import PluginData from "./plugindata"
+import PluginEnums from "./pluginenums"
+import Plugins from "./plugins"
+import TransferFormats from "./models/transferformats"
+import LiveSupport from "./models/livesupport"
+import PlaybackStrategyModel from "./models/playbackstrategy"
+import StrategyPicker from "./playbackstrategy/strategypicker"
 
-function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, windowType, stateUpdateCallback, errorCallback) {
+function PlayerComponent(
+  playbackElement,
+  bigscreenPlayerData,
+  mediaSources,
+  windowType,
+  stateUpdateCallback,
+  errorCallback
+) {
   const transferFormat = bigscreenPlayerData.media.transferFormat
 
   let mediaKind = bigscreenPlayerData.media.kind
@@ -20,36 +27,38 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
   let fatalErrorTimeout
   let fatalError
 
-  StrategyPicker(windowType, bigscreenPlayerData.media.isUHD).then((strategy) => {
-    playbackStrategy = strategy(
-      mediaSources,
-      windowType,
-      mediaKind,
-      playbackElement,
-      bigscreenPlayerData.media.isUHD,
-      bigscreenPlayerData.media.playerSettings
-    )
+  StrategyPicker(windowType, bigscreenPlayerData.media.isUHD)
+    .then((strategy) => {
+      playbackStrategy = strategy(
+        mediaSources,
+        windowType,
+        mediaKind,
+        playbackElement,
+        bigscreenPlayerData.media.isUHD,
+        bigscreenPlayerData.media.playerSettings
+      )
 
-    playbackStrategy.addEventCallback(this, eventCallback)
-    playbackStrategy.addErrorCallback(this, onError)
-    playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate)
+      playbackStrategy.addEventCallback(this, eventCallback)
+      playbackStrategy.addErrorCallback(this, onError)
+      playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate)
 
-    bubbleErrorCleared()
+      bubbleErrorCleared()
 
-    initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime)
-  }).catch((e) => {
-    errorCallback && errorCallback(e)
-  })
+      initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime)
+    })
+    .catch((e) => {
+      errorCallback && errorCallback(e)
+    })
 
-  function play () {
+  function play() {
     playbackStrategy && playbackStrategy.play()
   }
 
-  function isEnded () {
+  function isEnded() {
     return playbackStrategy && playbackStrategy.isEnded()
   }
 
-  function pause (opts) {
+  function pause(opts) {
     opts = opts || {}
     if (transitions().canBePaused()) {
       const disableAutoResume = windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
@@ -57,19 +66,19 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     }
   }
 
-  function getDuration () {
+  function getDuration() {
     return playbackStrategy && playbackStrategy.getDuration()
   }
 
-  function getWindowStartTime () {
+  function getWindowStartTime() {
     return mediaSources && mediaSources.time().windowStartTime
   }
 
-  function getWindowEndTime () {
+  function getWindowEndTime() {
     return mediaSources && mediaSources.time().windowEndTime
   }
 
-  function getPlayerElement () {
+  function getPlayerElement() {
     let element = null
     if (playbackStrategy && playbackStrategy.getPlayerElement) {
       element = playbackStrategy.getPlayerElement()
@@ -77,40 +86,42 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     return element
   }
 
-  function getCurrentTime () {
+  function getCurrentTime() {
     return playbackStrategy && playbackStrategy.getCurrentTime()
   }
 
-  function getSeekableRange () {
+  function getSeekableRange() {
     return playbackStrategy && playbackStrategy.getSeekableRange()
   }
 
-  function isPaused () {
+  function isPaused() {
     return playbackStrategy && playbackStrategy.isPaused()
   }
 
-  function setCurrentTime (time) {
+  function setCurrentTime(time) {
     if (transitions().canBeginSeek()) {
       isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy && playbackStrategy.setCurrentTime(time)
     }
   }
 
-  function setPlaybackRate (rate) {
+  function setPlaybackRate(rate) {
     playbackStrategy && playbackStrategy.setPlaybackRate(rate)
   }
 
-  function getPlaybackRate () {
+  function getPlaybackRate() {
     return playbackStrategy && playbackStrategy.getPlaybackRate()
   }
 
-  function isNativeHLSRestartable () {
-    return window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
-             transferFormat === TransferFormats.HLS &&
-             windowType !== WindowTypes.STATIC &&
-             getLiveSupport() === LiveSupport.RESTARTABLE
+  function isNativeHLSRestartable() {
+    return (
+      window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
+      transferFormat === TransferFormats.HLS &&
+      windowType !== WindowTypes.STATIC &&
+      getLiveSupport() === LiveSupport.RESTARTABLE
+    )
   }
 
-  function reloadMediaElement (time) {
+  function reloadMediaElement(time) {
     const originalWindowStartOffset = getWindowStartTime()
 
     const doSeek = () => {
@@ -131,22 +142,25 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
 
     const onError = () => {
       tearDownMediaElement()
-      bubbleFatalError(false, { code: PluginEnums.ERROR_CODES.MANIFEST_LOAD, message: PluginEnums.ERROR_MESSAGES.MANIFEST })
+      bubbleFatalError(false, {
+        code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
+        message: PluginEnums.ERROR_MESSAGES.MANIFEST,
+      })
     }
 
     mediaSources.refresh(doSeek, onError)
   }
 
-  function transitions () {
+  function transitions() {
     return playbackStrategy && playbackStrategy.transitions
   }
 
-  function tearDownMediaElement () {
+  function tearDownMediaElement() {
     clearTimeouts()
     playbackStrategy && playbackStrategy.reset()
   }
 
-  function eventCallback (mediaState) {
+  function eventCallback(mediaState) {
     switch (mediaState) {
       case MediaState.PLAYING:
         onPlaying()
@@ -163,55 +177,58 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     }
   }
 
-  function onPlaying () {
+  function onPlaying() {
     clearTimeouts()
     publishMediaStateUpdate(MediaState.PLAYING, {})
     isInitialPlay = false
   }
 
-  function onPaused () {
+  function onPaused() {
     publishMediaStateUpdate(MediaState.PAUSED)
     clearTimeouts()
   }
 
-  function onBuffering () {
+  function onBuffering() {
     publishMediaStateUpdate(MediaState.WAITING)
     startBufferingErrorTimeout()
     bubbleErrorCleared()
     bubbleBufferingRaised()
   }
 
-  function onEnded () {
+  function onEnded() {
     clearTimeouts()
     publishMediaStateUpdate(MediaState.ENDED)
   }
 
-  function onTimeUpdate () {
+  function onTimeUpdate() {
     publishMediaStateUpdate(undefined, { timeUpdate: true })
   }
 
-  function onError (mediaError) {
+  function onError(mediaError) {
     bubbleBufferingCleared()
     raiseError(mediaError)
   }
 
-  function startBufferingErrorTimeout () {
+  function startBufferingErrorTimeout() {
     const bufferingTimeout = isInitialPlay ? 30000 : 20000
     clearBufferingErrorTimeout()
     errorTimeoutID = setTimeout(() => {
       bubbleBufferingCleared()
-      attemptCdnFailover({ code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT, message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT })
+      attemptCdnFailover({
+        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+      })
     }, bufferingTimeout)
   }
 
-  function raiseError (mediaError) {
+  function raiseError(mediaError) {
     clearBufferingErrorTimeout()
     publishMediaStateUpdate(MediaState.WAITING)
     bubbleErrorRaised(mediaError)
     startFatalErrorTimeout(mediaError)
   }
 
-  function startFatalErrorTimeout (mediaError) {
+  function startFatalErrorTimeout(mediaError) {
     if (!fatalErrorTimeout && !fatalError) {
       fatalErrorTimeout = setTimeout(() => {
         fatalErrorTimeout = null
@@ -221,7 +238,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     }
   }
 
-  function attemptCdnFailover (mediaError) {
+  function attemptCdnFailover(mediaError) {
     const time = getCurrentTime()
     const oldWindowStartTime = getWindowStartTime()
     const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
@@ -231,7 +248,7 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
       currentTime: getCurrentTime(),
       duration: getDuration(),
       code: mediaError.code,
-      message: mediaError.message
+      message: mediaError.message,
     }
 
     const doLoadMedia = () => {
@@ -249,21 +266,21 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams)
   }
 
-  function clearFatalErrorTimeout () {
+  function clearFatalErrorTimeout() {
     if (fatalErrorTimeout !== null) {
       clearTimeout(fatalErrorTimeout)
       fatalErrorTimeout = null
     }
   }
 
-  function clearBufferingErrorTimeout () {
+  function clearBufferingErrorTimeout() {
     if (errorTimeoutID !== null) {
       clearTimeout(errorTimeoutID)
       errorTimeoutID = null
     }
   }
 
-  function clearTimeouts () {
+  function clearTimeouts() {
     clearBufferingErrorTimeout()
     clearFatalErrorTimeout()
     fatalError = false
@@ -271,42 +288,62 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     bubbleErrorCleared()
   }
 
-  function bubbleErrorCleared () {
+  function bubbleErrorCleared() {
     const evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.ERROR })
     Plugins.interface.onErrorCleared(evt)
   }
 
-  function bubbleErrorRaised (mediaError) {
-    const evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: false, code: mediaError.code, message: mediaError.message })
+  function bubbleErrorRaised(mediaError) {
+    const evt = new PluginData({
+      status: PluginEnums.STATUS.STARTED,
+      stateType: PluginEnums.TYPE.ERROR,
+      isBufferingTimeoutError: false,
+      code: mediaError.code,
+      message: mediaError.message,
+    })
     Plugins.interface.onError(evt)
   }
 
-  function bubbleBufferingRaised () {
+  function bubbleBufferingRaised() {
     const evt = new PluginData({ status: PluginEnums.STATUS.STARTED, stateType: PluginEnums.TYPE.BUFFERING })
     Plugins.interface.onBuffering(evt)
   }
 
-  function bubbleBufferingCleared () {
-    const evt = new PluginData({ status: PluginEnums.STATUS.DISMISSED, stateType: PluginEnums.TYPE.BUFFERING, isInitialPlay: isInitialPlay })
+  function bubbleBufferingCleared() {
+    const evt = new PluginData({
+      status: PluginEnums.STATUS.DISMISSED,
+      stateType: PluginEnums.TYPE.BUFFERING,
+      isInitialPlay: isInitialPlay,
+    })
     Plugins.interface.onBufferingCleared(evt)
   }
 
-  function bubbleFatalError (bufferingTimeoutError, mediaError) {
-    const evt = new PluginData({ status: PluginEnums.STATUS.FATAL, stateType: PluginEnums.TYPE.ERROR, isBufferingTimeoutError: bufferingTimeoutError, code: mediaError.code, message: mediaError.message })
+  function bubbleFatalError(bufferingTimeoutError, mediaError) {
+    const evt = new PluginData({
+      status: PluginEnums.STATUS.FATAL,
+      stateType: PluginEnums.TYPE.ERROR,
+      isBufferingTimeoutError: bufferingTimeoutError,
+      code: mediaError.code,
+      message: mediaError.message,
+    })
     Plugins.interface.onFatalError(evt)
-    publishMediaStateUpdate(MediaState.FATAL_ERROR, { isBufferingTimeoutError: bufferingTimeoutError, code: mediaError.code, message: mediaError.message })
+    publishMediaStateUpdate(MediaState.FATAL_ERROR, {
+      isBufferingTimeoutError: bufferingTimeoutError,
+      code: mediaError.code,
+      message: mediaError.message,
+    })
   }
 
-  function publishMediaStateUpdate (state, opts) {
+  function publishMediaStateUpdate(state, opts) {
     let stateUpdateData = {
       data: {
         currentTime: getCurrentTime(),
         seekableRange: getSeekableRange(),
         state: state,
-        duration: getDuration()
+        duration: getDuration(),
       },
       timeUpdate: opts && opts.timeUpdate,
-      isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError || false)
+      isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError) || false,
     }
 
     if (opts && opts.code > -1 && opts.message) {
@@ -317,19 +354,19 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     stateUpdateCallback(stateUpdateData)
   }
 
-  function initialMediaPlay (media, startTime) {
+  function initialMediaPlay(media, startTime) {
     mediaMetaData = media
     loadMedia(media.type, startTime)
   }
 
-  function loadMedia (type, startTime, thenPause) {
+  function loadMedia(type, startTime, thenPause) {
     playbackStrategy && playbackStrategy.load(type, startTime)
     if (thenPause) {
       pause()
     }
   }
 
-  function tearDown () {
+  function tearDown() {
     tearDownMediaElement()
     playbackStrategy && playbackStrategy.tearDown()
     playbackStrategy = null
@@ -358,14 +395,12 @@ function PlayerComponent (playbackElement, bigscreenPlayerData, mediaSources, wi
     getSeekableRange: getSeekableRange,
     getPlayerElement: getPlayerElement,
     isPaused: isPaused,
-    tearDown: tearDown
+    tearDown: tearDown,
   }
 }
 
-function getLiveSupport () {
-  return window.bigscreenPlayer &&
-    window.bigscreenPlayer.liveSupport ||
-    LiveSupport.SEEKABLE
+function getLiveSupport() {
+  return (window.bigscreenPlayer && window.bigscreenPlayer.liveSupport) || LiveSupport.SEEKABLE
 }
 
 PlayerComponent.getLiveSupport = getLiveSupport
