@@ -193,6 +193,10 @@ function MediaSources() {
     const onManifestLoadSuccess = (manifestData) => {
       time = manifestData.time
       transferFormat = manifestData.transferFormat
+
+      DebugTool.info(
+        `Loaded ${transferFormat} manifest with time window start: ${time.windowStartTime}, end: ${time.windowEndTime}, pto: ${time.presentationTimeOffsetSeconds}.`
+      )
       callbacks.onSuccess()
     }
 
