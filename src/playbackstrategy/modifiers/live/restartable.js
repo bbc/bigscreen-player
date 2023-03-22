@@ -4,7 +4,7 @@ import DynamicWindowUtils from "../../../dynamicwindowutils"
 
 function RestartableLivePlayer(mediaPlayer, windowType, mediaSources) {
   const fakeTimer = {}
-  const timeCorrection = mediaSources.time()?.windowStartTime / 1000 || 0
+  const timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
 
   let callbacksMap = []
   let startTime

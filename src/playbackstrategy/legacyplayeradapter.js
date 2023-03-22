@@ -9,14 +9,11 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
 
   const setSourceOpts = {
     disableSentinels:
-      !!isUHD &&
-      windowType !== WindowTypes.STATIC &&
-      window.bigscreenPlayer.overrides &&
-      window.bigscreenPlayer.overrides.liveUhdDisableSentinels,
-    disableSeekSentinel: window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableSeekSentinel,
+      !!isUHD && windowType !== WindowTypes.STATIC && window.bigscreenPlayer?.overrides?.liveUhdDisableSentinels,
+    disableSeekSentinel: window.bigscreenPlayer?.overrides?.disableSeekSentinel,
   }
 
-  const timeCorrection = mediaSources.time()?.windowStartTime / 1000 || 0
+  const timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
   const mediaPlayer = player
   const eventHistory = []
 
@@ -249,7 +246,8 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
       const isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime
 
       mediaPlayer.initialiseMedia("video", mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
-      if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
+
+      if (!isPlaybackFromLivePoint && typeof mediaPlayer.beginPlaybackFrom === "function") {
         currentTime = startTime
         DebugTool.keyValue({ key: "initial-playback-time", value: startTime + timeCorrection })
         mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0)

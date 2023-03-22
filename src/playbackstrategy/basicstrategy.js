@@ -15,7 +15,7 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
 
   let mediaElement
   let metaDataLoaded
-  let timeCorrection = mediaSources.time()?.windowStartTime / 1000 || 0
+  let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
 
   function publishMediaState(mediaState) {
     for (let index = 0; index < eventCallbacks.length; index++) {

@@ -21,6 +21,7 @@ function parseStaticMPD(mpd) {
 
   return {
     presentationTimeOffsetSeconds: presentationTimeOffset / timescale,
+    timeCorrectionSeconds: NaN,
     windowStartTime: NaN,
     windowEndTime: NaN,
   }
@@ -42,6 +43,7 @@ function parseSlidingMPD(mpd, initialWallclockTime) {
   return {
     windowStartTime,
     windowEndTime,
+    timeCorrectionSeconds: windowStartTime / 1000,
     presentationTimeOffsetSeconds: NaN,
   }
 }
@@ -59,6 +61,7 @@ function parseGrowingMPD(mpd, initialWallclockTime) {
     windowStartTime: Date.parse(availabilityStartTime),
     windowEndTime: initialWallclockTime - segmentLengthMillis,
     presentationTimeOffsetSeconds: NaN,
+    timeCorrectionSeconds: NaN,
   }
 }
 
@@ -96,13 +99,19 @@ function parseM3U8(manifest, { windowType } = {}) {
     }
 
     if (windowType === WindowTypes.STATIC) {
-      return { presentationTimeOffsetSeconds: programDateTime / 1000, windowStartTime: NaN, windowEndTime: NaN }
+      return {
+        presentationTimeOffsetSeconds: programDateTime / 1000,
+        timeCorrectionSeconds: NaN,
+        windowStartTime: NaN,
+        windowEndTime: NaN,
+      }
     }
 
     return {
       windowStartTime: programDateTime,
       windowEndTime: programDateTime + duration * 1000,
       presentationTimeOffsetSeconds: NaN,
+      timeCorrectionSeconds: NaN,
     }
   } catch (error) {
     const errorWithCode = new Error(error.message || "manifest-hls-parse-error")
@@ -151,6 +160,7 @@ function parse(manifest, { type, windowType, initialWallclockTime } = {}) {
       windowStartTime: NaN,
       windowEndTime: NaN,
       presentationTimeOffsetSeconds: NaN,
+      timeCorrectionSeconds: NaN,
     }
   }
 }

@@ -195,7 +195,7 @@ function MediaSources() {
       transferFormat = manifestData.transferFormat
 
       DebugTool.info(
-        `Loaded ${transferFormat} manifest with time window start: ${time.windowStartTime}, end: ${time.windowEndTime}, pto: ${time.presentationTimeOffsetSeconds}.`
+        `Loaded ${transferFormat} manifest with window start: ${time.windowStartTime}, window end: ${time.windowEndTime}, correction: ${time.timeCorrectionSeconds}, offset: ${time.presentationTimeOffsetSeconds}.`
       )
       callbacks.onSuccess()
     }

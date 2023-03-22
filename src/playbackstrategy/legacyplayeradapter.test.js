@@ -75,7 +75,7 @@ describe("Legacy Playback Adapter", () => {
   // Options = windowType, playableDevice, timeCorrection, deviceReplacement, isUHD
   function setUpLegacyAdaptor(opts) {
     const mockMediaSources = {
-      time: () => ({ windowStartTime: testTimeCorrection * 1000 }),
+      time: () => ({ timeCorrectionSeconds: testTimeCorrection }),
       currentSource: () => cdnArray[0].url,
     }
 

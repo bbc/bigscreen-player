@@ -19,7 +19,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   let errorCallback
   let timeUpdateCallback
 
-  let timeCorrection = mediaSources.time()?.windowStartTime / 1000 || 0
+  let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
   let failoverTime
   let refreshFailoverTime
   let slidingWindowPausedTime = 0
