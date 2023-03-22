@@ -1,22 +1,22 @@
-import MediaPlayerBase from '../modifiers/mediaplayerbase'
-import DOMHelpers from '../../domhelpers'
-import handlePlayPromise from '../../utils/handleplaypromise'
-import DebugTool from '../../debugger/debugtool'
+import MediaPlayerBase from "../modifiers/mediaplayerbase"
+import DOMHelpers from "../../domhelpers"
+import handlePlayPromise from "../../utils/handleplaypromise"
+import DebugTool from "../../debugger/debugtool"
 
-function Html5 () {
+function Html5() {
   const sentinelLimits = {
     pause: {
       maximumAttempts: 2,
       successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
       failureEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE,
-      currentAttemptCount: 0
+      currentAttemptCount: 0,
     },
     seek: {
       maximumAttempts: 2,
       successEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK,
       failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
-      currentAttemptCount: 0
-    }
+      currentAttemptCount: 0,
+    },
   }
 
   let eventCallback
@@ -55,7 +55,7 @@ function Html5 () {
   let cachedSeekableRange
   let readyToCache = true
 
-  function emitEvent (eventType, eventLabels) {
+  function emitEvent(eventType, eventLabels) {
     const event = {
       type: eventType,
       currentTime: getCurrentTime(),
@@ -63,7 +63,7 @@ function Html5 () {
       duration: getDuration(),
       url: getSource(),
       mimeType: getMimeType(),
-      state: getState()
+      state: getState(),
     }
 
     if (eventLabels) {
@@ -79,7 +79,7 @@ function Html5 () {
     }
   }
 
-  function getDuration () {
+  function getDuration() {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
@@ -92,23 +92,23 @@ function Html5 () {
     }
   }
 
-  function getSource () {
+  function getSource() {
     return source
   }
 
-  function getMimeType () {
+  function getMimeType() {
     return mimeType
   }
 
-  function getState () {
+  function getState() {
     return state
   }
 
-  function isLiveMedia () {
-    return (mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO) || (mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO)
+  function isLiveMedia() {
+    return mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO
   }
 
-  function setSeekSentinelTolerance () {
+  function setSeekSentinelTolerance() {
     const ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15
     const LIVE_SEEK_SENTINEL_TOLERANCE = 30
 
@@ -119,19 +119,19 @@ function Html5 () {
     }
   }
 
-  function generateSourceElement (url, mimeType) {
-    const sourceElement = document.createElement('source')
+  function generateSourceElement(url, mimeType) {
+    const sourceElement = document.createElement("source")
 
     sourceElement.src = url
     sourceElement.type = mimeType
     return sourceElement
   }
 
-  function appendChildElement (to, el) {
+  function appendChildElement(to, el) {
     to.appendChild(el)
   }
 
-  function prependChildElement (to, el) {
+  function prependChildElement(to, el) {
     if (to.childNodes.length > 0) {
       to.insertBefore(el, to.childNodes[0])
     } else {
@@ -139,13 +139,13 @@ function Html5 () {
     }
   }
 
-  function toStopped () {
+  function toStopped() {
     state = MediaPlayerBase.STATE.STOPPED
     emitEvent(MediaPlayerBase.EVENT.STOPPED)
     setSentinels([])
   }
 
-  function enterBufferingSentinel () {
+  function enterBufferingSentinel() {
     let sentinelShouldFire = !hasSentinelTimeChangedWithinTolerance && !nearEndOfMedia
 
     if (getCurrentTime() === 0) {
@@ -182,8 +182,8 @@ function Html5 () {
     return false
   }
 
-  function exitBufferingSentinel () {
-    function fireExitBufferingSentinel () {
+  function exitBufferingSentinel() {
+    function fireExitBufferingSentinel() {
       emitEvent(MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING)
       exitBuffering()
       return true
@@ -200,7 +200,7 @@ function Html5 () {
     return false
   }
 
-  function shouldBeSeekedSentinel () {
+  function shouldBeSeekedSentinel() {
     if (sentinelSeekTime === undefined || disableSeekSentinel) {
       return false
     }
@@ -221,7 +221,7 @@ function Html5 () {
     return sentinelActionTaken
   }
 
-  function shouldBePausedSentinel () {
+  function shouldBePausedSentinel() {
     let sentinelActionTaken = false
 
     if (hasSentinelTimeChangedWithinTolerance) {
@@ -233,7 +233,7 @@ function Html5 () {
     return sentinelActionTaken
   }
 
-  function nextSentinelAttempt (sentinelInfo, attemptFn) {
+  function nextSentinelAttempt(sentinelInfo, attemptFn) {
     let currentAttemptCount, maxAttemptCount
 
     sentinelInfo.currentAttemptCount += 1
@@ -253,7 +253,7 @@ function Html5 () {
     return false
   }
 
-  function endOfMediaSentinel () {
+  function endOfMediaSentinel() {
     if (!hasSentinelTimeChangedWithinTolerance && nearEndOfMedia) {
       emitEvent(MediaPlayerBase.EVENT.SENTINEL_COMPLETE)
       onEndOfMedia()
@@ -262,12 +262,14 @@ function Html5 () {
     return false
   }
 
-  function clearSentinels () {
+  function clearSentinels() {
     clearInterval(sentinelInterval)
   }
 
-  function setSentinels (sentinels) {
-    if (disableSentinels) { return }
+  function setSentinels(sentinels) {
+    if (disableSentinels) {
+      return
+    }
 
     clearSentinels()
     sentinelIntervalNumber = 0
@@ -276,8 +278,8 @@ function Html5 () {
       sentinelIntervalNumber += 1
       const newTime = getCurrentTime()
 
-      hasSentinelTimeChangedWithinTolerance = (Math.abs(newTime - lastSentinelTime) > 0.2)
-      nearEndOfMedia = (getDuration() - (newTime || lastSentinelTime)) <= 1
+      hasSentinelTimeChangedWithinTolerance = Math.abs(newTime - lastSentinelTime) > 0.2
+      nearEndOfMedia = getDuration() - (newTime || lastSentinelTime) <= 1
       lastSentinelTime = newTime
 
       for (let i = 0; i < sentinels.length; i++) {
@@ -294,42 +296,42 @@ function Html5 () {
     }, 1100)
   }
 
-  function reportError (errorString, mediaError) {
-    DebugTool.info('HTML5 Media Player error: ' + errorString)
+  function reportError(errorString, mediaError) {
+    DebugTool.info("HTML5 Media Player error: " + errorString)
     emitEvent(MediaPlayerBase.EVENT.ERROR, mediaError)
   }
 
-  function toBuffering () {
+  function toBuffering() {
     state = MediaPlayerBase.STATE.BUFFERING
     emitEvent(MediaPlayerBase.EVENT.BUFFERING)
     setSentinels([exitBufferingSentinel])
   }
 
-  function toComplete () {
+  function toComplete() {
     state = MediaPlayerBase.STATE.COMPLETE
     emitEvent(MediaPlayerBase.EVENT.COMPLETE)
     setSentinels([])
   }
 
-  function toEmpty () {
+  function toEmpty() {
     wipe()
     state = MediaPlayerBase.STATE.EMPTY
   }
 
-  function toError (errorMessage) {
+  function toError(errorMessage) {
     wipe()
     state = MediaPlayerBase.STATE.ERROR
     reportError(errorMessage)
   }
 
-  function isReadyToPlayFrom () {
+  function isReadyToPlayFrom() {
     if (readyToPlayFrom !== undefined) {
       return readyToPlayFrom
     }
     return false
   }
 
-  function getMediaDuration () {
+  function getMediaDuration() {
     if (mediaElement && isReadyToPlayFrom()) {
       return mediaElement.duration
     }
@@ -337,7 +339,7 @@ function Html5 () {
     return undefined
   }
 
-  function getCachedSeekableRange () {
+  function getCachedSeekableRange() {
     if (readyToCache) {
       cacheSeekableRange()
     }
@@ -345,7 +347,7 @@ function Html5 () {
     return cachedSeekableRange
   }
 
-  function cacheSeekableRange () {
+  function cacheSeekableRange() {
     readyToCache = false
     setTimeout(function () {
       readyToCache = true
@@ -354,23 +356,23 @@ function Html5 () {
     cachedSeekableRange = getElementSeekableRange()
   }
 
-  function getElementSeekableRange () {
+  function getElementSeekableRange() {
     if (mediaElement) {
       if (isReadyToPlayFrom() && mediaElement.seekable && mediaElement.seekable.length > 0) {
         return {
           start: mediaElement.seekable.start(0),
-          end: mediaElement.seekable.end(0)
+          end: mediaElement.seekable.end(0),
         }
       } else if (mediaElement.duration !== undefined) {
         return {
           start: 0,
-          end: mediaElement.duration
+          end: mediaElement.duration,
         }
       }
     }
   }
 
-  function getSeekableRange () {
+  function getSeekableRange() {
     if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.cacheSeekableRange) {
       return getCachedSeekableRange()
     } else {
@@ -378,16 +380,16 @@ function Html5 () {
     }
   }
 
-  function onFinishedBuffering () {
+  function onFinishedBuffering() {
     exitBuffering()
   }
 
-  function pauseMediaElement () {
+  function pauseMediaElement() {
     mediaElement.pause()
     ignoreNextPauseEvent = true
   }
 
-  function onPause () {
+  function onPause() {
     if (ignoreNextPauseEvent) {
       ignoreNextPauseEvent = false
       return
@@ -398,25 +400,28 @@ function Html5 () {
     }
   }
 
-  function onError () {
-    reportError('Media element error code: ' + mediaElement.error.code, { code: mediaElement.error.code, message: mediaElement.error.message })
+  function onError() {
+    reportError("Media element error code: " + mediaElement.error.code, {
+      code: mediaElement.error.code,
+      message: mediaElement.error.message,
+    })
   }
 
-  function onSourceError () {
-    reportError('Media source element error')
+  function onSourceError() {
+    reportError("Media source element error")
   }
 
-  function onDeviceBuffering () {
+  function onDeviceBuffering() {
     if (getState() === MediaPlayerBase.STATE.PLAYING) {
       toBuffering()
     }
   }
 
-  function onEndOfMedia () {
+  function onEndOfMedia() {
     toComplete()
   }
 
-  function emitSeekAttempted () {
+  function emitSeekAttempted() {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
       emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
       seekFinished = false
@@ -425,13 +430,15 @@ function Html5 () {
     count = 0
     timeoutHappened = false
     if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.restartTimeout) {
-      setTimeout(() => { timeoutHappened = true }, window.bigscreenPlayer.overrides.restartTimeout)
+      setTimeout(() => {
+        timeoutHappened = true
+      }, window.bigscreenPlayer.overrides.restartTimeout)
     } else {
       timeoutHappened = true
     }
   }
 
-  function emitSeekFinishedAtCorrectStartingPoint () {
+  function emitSeekFinishedAtCorrectStartingPoint() {
     let isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) <= seekSentinelTolerance
 
     if (sentinelSeekTime === undefined) {
@@ -450,7 +457,7 @@ function Html5 () {
     }
   }
 
-  function onStatus () {
+  function onStatus() {
     if (getState() === MediaPlayerBase.STATE.PLAYING) {
       emitEvent(MediaPlayerBase.EVENT.STATUS)
     }
@@ -458,11 +465,11 @@ function Html5 () {
     emitSeekFinishedAtCorrectStartingPoint()
   }
 
-  function onMetadata () {
+  function onMetadata() {
     metadataLoaded()
   }
 
-  function exitBuffering () {
+  function exitBuffering() {
     metadataLoaded()
 
     if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
@@ -474,7 +481,7 @@ function Html5 () {
     }
   }
 
-  function metadataLoaded () {
+  function metadataLoaded() {
     readyToPlayFrom = true
 
     if (waitingToPlayFrom()) {
@@ -482,7 +489,7 @@ function Html5 () {
     }
   }
 
-  function playFromIfReady () {
+  function playFromIfReady() {
     if (isReadyToPlayFrom()) {
       if (waitingToPlayFrom()) {
         deferredPlayFrom()
@@ -490,11 +497,11 @@ function Html5 () {
     }
   }
 
-  function waitingToPlayFrom () {
+  function waitingToPlayFrom() {
     return targetSeekTime !== undefined
   }
 
-  function deferredPlayFrom () {
+  function deferredPlayFrom() {
     if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.deferredPlayback) {
       handlePlayPromise(mediaElement.play())
       seekTo(targetSeekTime)
@@ -509,14 +516,14 @@ function Html5 () {
     targetSeekTime = undefined
   }
 
-  function seekTo (seconds) {
+  function seekTo(seconds) {
     const clampedTime = getClampedTimeForPlayFrom(seconds)
 
     mediaElement.currentTime = clampedTime
     sentinelSeekTime = clampedTime
   }
 
-  function getCurrentTime () {
+  function getCurrentTime() {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
@@ -529,17 +536,17 @@ function Html5 () {
   }
 
   /**
-    * Time (in seconds) compared to current time within which seeking has no effect.
-    * @constant {Number}
-  */
+   * Time (in seconds) compared to current time within which seeking has no effect.
+   * @constant {Number}
+   */
   const CURRENT_TIME_TOLERANCE = 1
 
   /**
-    * Check whether a time value is near to the current media play time.
-    * @param {Number} seconds The time value to test, in seconds from the start of the media
-    * @protected
-  */
-  function isNearToCurrentTime (seconds) {
+   * Check whether a time value is near to the current media play time.
+   * @param {Number} seconds The time value to test, in seconds from the start of the media
+   * @protected
+   */
+  function isNearToCurrentTime(seconds) {
     const currentTime = getCurrentTime()
     const targetTime = getClampedTime(seconds)
 
@@ -547,12 +554,12 @@ function Html5 () {
   }
 
   /**
-    * Clamp a time value so it does not exceed the current range.
-    * Clamps to near the end instead of the end itself to allow for devices that cannot seek to the very end of the media.
-    * @param {Number} seconds The time value to clamp in seconds from the start of the media
-    * @protected
-  */
-  function getClampedTime (seconds) {
+   * Clamp a time value so it does not exceed the current range.
+   * Clamps to near the end instead of the end itself to allow for devices that cannot seek to the very end of the media.
+   * @param {Number} seconds The time value to clamp in seconds from the start of the media
+   * @protected
+   */
+  function getClampedTime(seconds) {
     const CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
     const range = getSeekableRange()
     const nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
@@ -566,11 +573,11 @@ function Html5 () {
     }
   }
 
-  function getClampedTimeForPlayFrom (seconds) {
+  function getClampedTimeForPlayFrom(seconds) {
     return getClampedTime(seconds)
   }
 
-  function wipe () {
+  function wipe() {
     mediaType = undefined
     source = undefined
     mimeType = undefined
@@ -583,18 +590,18 @@ function Html5 () {
     readyToPlayFrom = false
   }
 
-  function destroyMediaElement () {
+  function destroyMediaElement() {
     if (mediaElement) {
-      mediaElement.removeEventListener('canplay', onFinishedBuffering, false)
-      mediaElement.removeEventListener('seeked', onFinishedBuffering, false)
-      mediaElement.removeEventListener('playing', onFinishedBuffering, false)
-      mediaElement.removeEventListener('error', onError, false)
-      mediaElement.removeEventListener('ended', onEndOfMedia, false)
-      mediaElement.removeEventListener('waiting', onDeviceBuffering, false)
-      mediaElement.removeEventListener('timeupdate', onStatus, false)
-      mediaElement.removeEventListener('loadedmetadata', onMetadata, false)
-      mediaElement.removeEventListener('pause', onPause, false)
-      sourceElement.removeEventListener('error', onSourceError, false)
+      mediaElement.removeEventListener("canplay", onFinishedBuffering, false)
+      mediaElement.removeEventListener("seeked", onFinishedBuffering, false)
+      mediaElement.removeEventListener("playing", onFinishedBuffering, false)
+      mediaElement.removeEventListener("error", onError, false)
+      mediaElement.removeEventListener("ended", onEndOfMedia, false)
+      mediaElement.removeEventListener("waiting", onDeviceBuffering, false)
+      mediaElement.removeEventListener("timeupdate", onStatus, false)
+      mediaElement.removeEventListener("loadedmetadata", onMetadata, false)
+      mediaElement.removeEventListener("pause", onPause, false)
+      sourceElement.removeEventListener("error", onSourceError, false)
 
       DOMHelpers.safeRemoveElement(sourceElement)
       unloadMediaSrc()
@@ -605,23 +612,23 @@ function Html5 () {
     }
   }
 
-  function unloadMediaSrc () {
+  function unloadMediaSrc() {
     if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableMediaSourceUnload) {
       return
     }
     // Reset source as advised by HTML5 video spec, section 4.8.10.15:
     // http://www.w3.org/TR/2011/WD-html5-20110405/video.html#best-practices-for-authors-using-media-elements
-    mediaElement.removeAttribute('src')
+    mediaElement.removeAttribute("src")
     mediaElement.load()
   }
 
-  function toPaused () {
+  function toPaused() {
     state = MediaPlayerBase.STATE.PAUSED
     emitEvent(MediaPlayerBase.EVENT.PAUSED)
     setSentinels([shouldBeSeekedSentinel, shouldBePausedSentinel])
   }
 
-  function toPlaying () {
+  function toPlaying() {
     state = MediaPlayerBase.STATE.PLAYING
     emitEvent(MediaPlayerBase.EVENT.PLAYING)
     setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel])
@@ -646,7 +653,7 @@ function Html5 () {
     },
 
     initialiseMedia: (type, url, mediaMimeType, sourceContainer, opts) => {
-      opts = opts || { }
+      opts = opts || {}
       disableSentinels = opts.disableSentinels
       disableSeekSentinel = opts.disableSeekSentinel
       mediaType = type
@@ -656,45 +663,45 @@ function Html5 () {
       emitSeekAttempted()
 
       if (getState() === MediaPlayerBase.STATE.EMPTY) {
-        let idSuffix = 'Video'
+        let idSuffix = "Video"
 
         if (mediaType === MediaPlayerBase.TYPE.AUDIO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO) {
-          idSuffix = 'Audio'
+          idSuffix = "Audio"
         }
 
         setSeekSentinelTolerance()
 
-        mediaElement = document.createElement(idSuffix.toLowerCase(), 'mediaPlayer' + idSuffix)
+        mediaElement = document.createElement(idSuffix.toLowerCase(), "mediaPlayer" + idSuffix)
         mediaElement.autoplay = false
-        mediaElement.style.position = 'absolute'
-        mediaElement.style.top = '0px'
-        mediaElement.style.left = '0px'
-        mediaElement.style.width = '100%'
-        mediaElement.style.height = '100%'
+        mediaElement.style.position = "absolute"
+        mediaElement.style.top = "0px"
+        mediaElement.style.left = "0px"
+        mediaElement.style.width = "100%"
+        mediaElement.style.height = "100%"
 
-        mediaElement.addEventListener('canplay', onFinishedBuffering, false)
-        mediaElement.addEventListener('seeked', onFinishedBuffering, false)
-        mediaElement.addEventListener('playing', onFinishedBuffering, false)
-        mediaElement.addEventListener('error', onError, false)
-        mediaElement.addEventListener('ended', onEndOfMedia, false)
-        mediaElement.addEventListener('waiting', onDeviceBuffering, false)
-        mediaElement.addEventListener('timeupdate', onStatus, false)
-        mediaElement.addEventListener('loadedmetadata', onMetadata, false)
-        mediaElement.addEventListener('pause', onPause, false)
+        mediaElement.addEventListener("canplay", onFinishedBuffering, false)
+        mediaElement.addEventListener("seeked", onFinishedBuffering, false)
+        mediaElement.addEventListener("playing", onFinishedBuffering, false)
+        mediaElement.addEventListener("error", onError, false)
+        mediaElement.addEventListener("ended", onEndOfMedia, false)
+        mediaElement.addEventListener("waiting", onDeviceBuffering, false)
+        mediaElement.addEventListener("timeupdate", onStatus, false)
+        mediaElement.addEventListener("loadedmetadata", onMetadata, false)
+        mediaElement.addEventListener("pause", onPause, false)
 
         prependChildElement(sourceContainer, mediaElement)
 
         sourceElement = generateSourceElement(url, mimeType)
-        sourceElement.addEventListener('error', onSourceError, false)
+        sourceElement.addEventListener("error", onSourceError, false)
 
-        mediaElement.preload = 'auto'
+        mediaElement.preload = "auto"
         appendChildElement(mediaElement, sourceElement)
 
         mediaElement.load()
 
         toStopped()
       } else {
-        toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state')
+        toError("Cannot set source unless in the '" + MediaPlayerBase.STATE.EMPTY + "' state")
       }
     },
 
@@ -734,7 +741,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot playFrom while in the \'' + getState() + '\' state')
+          toError("Cannot playFrom while in the '" + getState() + "' state")
           break
       }
     },
@@ -751,7 +758,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot beginPlayback while in the \'' + getState() + '\' state')
+          toError("Cannot beginPlayback while in the '" + getState() + "' state")
           break
       }
     },
@@ -769,7 +776,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot beginPlaybackFrom while in the \'' + getState() + '\' state')
+          toError("Cannot beginPlaybackFrom while in the '" + getState() + "' state")
           break
       }
     },
@@ -795,7 +802,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot pause while in the \'' + getState() + '\' state')
+          toError("Cannot pause while in the '" + getState() + "' state")
           break
       }
     },
@@ -819,7 +826,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot resume while in the \'' + getState() + '\' state')
+          toError("Cannot resume while in the '" + getState() + "' state")
           break
       }
     },
@@ -838,7 +845,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot stop while in the \'' + getState() + '\' state')
+          toError("Cannot stop while in the '" + getState() + "' state")
           break
       }
     },
@@ -854,7 +861,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot reset while in the \'' + getState() + '\' state')
+          toError("Cannot reset while in the '" + getState() + "' state")
           break
       }
     },
@@ -878,7 +885,7 @@ function Html5 () {
     getCurrentTime: getCurrentTime,
     getDuration: getDuration,
     toPaused: toPaused,
-    toPlaying: toPlaying
+    toPlaying: toPlaying,
   }
 }
 

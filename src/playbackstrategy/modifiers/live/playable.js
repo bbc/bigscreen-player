@@ -1,6 +1,6 @@
-import MediaPlayerBase from '../mediaplayerbase'
+import MediaPlayerBase from "../mediaplayerbase"
 
-function PlayableLivePlayer (mediaPlayer) {
+function PlayableLivePlayer(mediaPlayer) {
   return {
     initialiseMedia: (mediaType, sourceUrl, mimeType, sourceContainer, opts) => {
       if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
@@ -19,16 +19,13 @@ function PlayableLivePlayer (mediaPlayer) {
     getSource: () => mediaPlayer.getSource(),
     getMimeType: () => mediaPlayer.getMimeType(),
 
-    addEventCallback: (thisArg, callback) =>
-      mediaPlayer.addEventCallback(thisArg, callback),
+    addEventCallback: (thisArg, callback) => mediaPlayer.addEventCallback(thisArg, callback),
 
-    removeEventCallback: (thisArg, callback) =>
-      mediaPlayer.removeEventCallback(thisArg, callback),
+    removeEventCallback: (thisArg, callback) => mediaPlayer.removeEventCallback(thisArg, callback),
 
-    removeAllEventCallbacks: () =>
-      mediaPlayer.removeAllEventCallbacks(),
+    removeAllEventCallbacks: () => mediaPlayer.removeAllEventCallbacks(),
 
-    getPlayerElement: () => mediaPlayer.getPlayerElement()
+    getPlayerElement: () => mediaPlayer.getPlayerElement(),
   }
 }
 

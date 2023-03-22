@@ -10,10 +10,10 @@ const MediaState = {
   /** Media has ended. */
   ENDED: 5,
   /** Media has thrown a fatal error. */
-  FATAL_ERROR: 6
+  FATAL_ERROR: 6,
 }
 
 /**
-* Provides an enumeration of possible media states.
-*/
+ * Provides an enumeration of possible media states.
+ */
 export default MediaState

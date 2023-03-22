@@ -10,10 +10,10 @@ const TransportControlPosition = {
   /** The bottom-right onwards navigation carousel is visible. */
   BOTTOM_CAROUSEL: 8,
   /** The whole screen is obscured by a navigation menu. */
-  FULLSCREEN: 16
+  FULLSCREEN: 16,
 }
 
 /**
-* Provides an enumeration of on-screen transport control positions, which can be combined as flags.
-*/
+ * Provides an enumeration of on-screen transport control positions, which can be combined as flags.
+ */
 export default TransportControlPosition

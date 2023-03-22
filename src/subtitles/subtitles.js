@@ -1,77 +1,83 @@
-import Plugins from '../plugins'
+import Plugins from "../plugins"
 
-function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
+function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
-  const useLegacySubs = window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles || false
+  const useLegacySubs =
+    (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles) ||
+    false
 
   let subtitlesEnabled = autoStart
   let subtitlesContainer
 
   if (useLegacySubs) {
-    import('./legacysubtitles.js').then(({ default: LegacySubtitles }) => {
-      subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
-      callback(subtitlesEnabled)
-    }).catch(() => {
-      Plugins.interface.onSubtitlesDynamicLoadError()
-    })
+    import("./legacysubtitles.js")
+      .then(({ default: LegacySubtitles }) => {
+        subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+        callback(subtitlesEnabled)
+      })
+      .catch(() => {
+        Plugins.interface.onSubtitlesDynamicLoadError()
+      })
   } else {
-    import('./imscsubtitles.js').then(({ default: IMSCSubtitles }) => {
-      subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
-      callback(subtitlesEnabled)
-    }).catch(() => {
-      Plugins.interface.onSubtitlesDynamicLoadError()
-    })
+    import("./imscsubtitles.js")
+      .then(({ default: IMSCSubtitles }) => {
+        subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+        callback(subtitlesEnabled)
+      })
+      .catch(() => {
+        Plugins.interface.onSubtitlesDynamicLoadError()
+      })
   }
 
-  function enable () {
+  function enable() {
     subtitlesEnabled = true
   }
 
-  function disable () {
+  function disable() {
     subtitlesEnabled = false
   }
 
-  function show () {
+  function show() {
     if (available() && enabled()) {
       subtitlesContainer && subtitlesContainer.start()
     }
   }
 
-  function hide () {
+  function hide() {
     if (available()) {
       subtitlesContainer && subtitlesContainer.stop()
     }
   }
 
-  function enabled () {
+  function enabled() {
     return subtitlesEnabled
   }
 
-  function available () {
-    if (liveSubtitles && (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)) {
+  function available() {
+    if (liveSubtitles && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles) {
       return false
     } else {
       return !!mediaSources.currentSubtitlesSource()
     }
   }
 
-  function setPosition (position) {
+  function setPosition(position) {
     subtitlesContainer && subtitlesContainer.updatePosition(position)
   }
 
-  function customise (styleOpts) {
+  function customise(styleOpts) {
     subtitlesContainer && subtitlesContainer.customise(styleOpts, subtitlesEnabled)
   }
 
-  function renderExample (exampleXmlString, styleOpts, safePosition) {
+  function renderExample(exampleXmlString, styleOpts, safePosition) {
     subtitlesContainer && subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition)
   }
 
-  function clearExample () {
+  function clearExample() {
     subtitlesContainer && subtitlesContainer.clearExample()
   }
 
-  function tearDown () {
+  function tearDown() {
     subtitlesContainer && subtitlesContainer.tearDown()
   }
 
@@ -86,7 +92,7 @@ function Subtitles (mediaPlayer, autoStart, playbackElement, defaultStyleOpts, m
     customise: customise,
     renderExample: renderExample,
     clearExample: clearExample,
-    tearDown: tearDown
+    tearDown: tearDown,
   }
 }
 

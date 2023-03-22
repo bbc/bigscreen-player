@@ -1,13 +1,13 @@
-import BigscreenPlayer from './bigscreenplayer'
-import MockBigscreenPlayer from './mockbigscreenplayer'
-import LiveSupport from './models/livesupport'
-import MediaKinds from './models/mediakinds'
-import MediaState from './models/mediastate'
-import PauseTriggers from './models/pausetriggers'
-import PlaybackStrategy from './models/playbackstrategy'
-import TransferFormat from './models/transferformats'
-import TransportControlPosition from './models/transportcontrolposition'
-import WindowTypes from './models/windowtypes'
+import BigscreenPlayer from "./bigscreenplayer"
+import MockBigscreenPlayer from "./mockbigscreenplayer"
+import LiveSupport from "./models/livesupport"
+import MediaKinds from "./models/mediakinds"
+import MediaState from "./models/mediastate"
+import PauseTriggers from "./models/pausetriggers"
+import PlaybackStrategy from "./models/playbackstrategy"
+import TransferFormat from "./models/transferformats"
+import TransportControlPosition from "./models/transportcontrolposition"
+import WindowTypes from "./models/windowtypes"
 
 export {
   BigscreenPlayer,
@@ -19,5 +19,5 @@ export {
   PlaybackStrategy,
   TransferFormat,
   TransportControlPosition,
-  WindowTypes
+  WindowTypes,
 }

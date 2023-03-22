@@ -1,5 +1,5 @@
-import Transformer from './transformer'
-import Plugins from '../plugins'
+import Transformer from "./transformer"
+import Plugins from "../plugins"
 
 const ttml = `
         <tt xmlns="http://www.w3.org/2006/10/ttaf1" xmlns:ttp="http://www.w3.org/2006/10/ttaf1#parameter" ttp:timeBase="media" xmlns:tts="http://www.w3.org/2006/10/ttaf1#style" xml:lang="en" xmlns:ttm="http://www.w3.org/2006/10/ttaf1#metadata">
@@ -39,11 +39,11 @@ const ebuttd = `
               </tt:body>
           </tt:tt>`
 
-describe('Subtitle transformer', () => {
-  it('Should load a TTML document', () => {
+describe("Subtitle transformer", () => {
+  it("Should load a TTML document", () => {
     const docparser = new DOMParser()
 
-    const xmldoc = docparser.parseFromString(ttml, 'text/xml')
+    const xmldoc = docparser.parseFromString(ttml, "text/xml")
     const doc = Transformer().transformXML(xmldoc)
 
     const subtitlesForZero = doc.subtitlesForTime(0)
@@ -60,10 +60,10 @@ describe('Subtitle transformer', () => {
     expect(outOfRangeSubtitles.length).toBe(0)
   })
 
-  it('Should load an EBU-TT-D document', () => {
+  it("Should load an EBU-TT-D document", () => {
     const docparser = new DOMParser()
 
-    const xmldoc = docparser.parseFromString(ebuttd, 'text/xml')
+    const xmldoc = docparser.parseFromString(ebuttd, "text/xml")
     const doc = Transformer().transformXML(xmldoc)
     const subtitlesForZero = doc.subtitlesForTime(0)
     const singleSubtitle = doc.subtitlesForTime(33.6)
@@ -75,18 +75,18 @@ describe('Subtitle transformer', () => {
     expect(subtitlesForZero.length).toBe(0)
 
     expect(singleSubtitle.length).toBe(1)
-    expect(singleSubtitle[0]).toEqual(expect.objectContaining({ start: 33.560, end: 34.960 }))
+    expect(singleSubtitle[0]).toEqual(expect.objectContaining({ start: 33.56, end: 34.96 }))
 
     expect(cumulativeSubtitles.length).toBe(2)
-    expect(cumulativeSubtitles[0]).toEqual(expect.objectContaining({ start: 34.960, end: 37 }))
-    expect(cumulativeSubtitles[1]).toEqual(expect.objectContaining({ start: 35.200, end: 37 }))
+    expect(cumulativeSubtitles[0]).toEqual(expect.objectContaining({ start: 34.96, end: 37 }))
+    expect(cumulativeSubtitles[1]).toEqual(expect.objectContaining({ start: 35.2, end: 37 }))
 
     expect(outOfRangeSubtitles.length).toBe(0)
   })
 
-  it('Should fire a onSubtitlesTransformError on transform failure', () => {
-    jest.spyOn(Plugins.interface, 'onSubtitlesTransformError')
-    Transformer().transformXML('')
+  it("Should fire a onSubtitlesTransformError on transform failure", () => {
+    jest.spyOn(Plugins.interface, "onSubtitlesTransformError")
+    Transformer().transformXML("")
 
     expect(Plugins.interface.onSubtitlesTransformError).toHaveBeenCalledWith()
   })

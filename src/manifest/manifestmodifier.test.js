@@ -1,7 +1,7 @@
-import ManifestModifier from './manifestmodifier'
+import ManifestModifier from "./manifestmodifier"
 
-describe('ManifestModifier', () => {
-  describe('filter', () => {
+describe("ManifestModifier", () => {
+  describe("filter", () => {
     let manifest
 
     beforeEach(() => {
@@ -9,153 +9,153 @@ describe('ManifestModifier', () => {
         Period: {
           AdaptationSet: [
             {
-              contentType: 'video',
-              mimeType: 'video/mp4',
+              contentType: "video",
+              mimeType: "video/mp4",
               Representation_asArray: [
                 {
                   bandwidth: 438000,
                   frameRate: 25,
-                  codecs: 'avc3.4D401E',
-                  mimeType: 'video/mp4'
+                  codecs: "avc3.4D401E",
+                  mimeType: "video/mp4",
                 },
                 {
                   bandwidth: 827000,
                   frameRate: 30,
-                  codecs: 'avc3.4D401E',
-                  mimeType: 'video/mp4'
+                  codecs: "avc3.4D401E",
+                  mimeType: "video/mp4",
                 },
                 {
                   bandwidth: 1570000,
                   frameRate: 50,
-                  codecs: 'avc3.4D401E',
-                  mimeType: 'video/mp4'
+                  codecs: "avc3.4D401E",
+                  mimeType: "video/mp4",
                 },
                 {
                   bandwidth: 2812000,
                   frameRate: 50,
-                  codecs: 'avc3.4D401E',
-                  mimeType: 'video/mp4'
-                }
-              ]
+                  codecs: "avc3.4D401E",
+                  mimeType: "video/mp4",
+                },
+              ],
             },
             {
-              contentType: 'audio',
+              contentType: "audio",
               Representation_asArray: [
                 {
-                  bandwidth: 128000
-                }
-              ]
-            }
-          ]
-        }
+                  bandwidth: 128000,
+                },
+              ],
+            },
+          ],
+        },
       }
     })
 
-    it('should leave the manifest unchanged when the config is empty', () => {
+    it("should leave the manifest unchanged when the config is empty", () => {
       expect(ManifestModifier.filter(manifest, {})).toEqual(manifest)
     })
 
-    it('should remove representations with a higher frame rate than the max', () => {
+    it("should remove representations with a higher frame rate than the max", () => {
       const expectedManifest = {
         Period: {
           AdaptationSet: [
             {
-              contentType: 'video',
-              mimeType: 'video/mp4',
+              contentType: "video",
+              mimeType: "video/mp4",
               Representation_asArray: [
                 {
                   bandwidth: 438000,
                   frameRate: 25,
-                  codecs: 'avc3.4D401E',
-                  mimeType: 'video/mp4'
+                  codecs: "avc3.4D401E",
+                  mimeType: "video/mp4",
                 },
                 {
                   bandwidth: 827000,
                   frameRate: 30,
-                  codecs: 'avc3.4D401E',
-                  mimeType: 'video/mp4'
-                }
-              ]
+                  codecs: "avc3.4D401E",
+                  mimeType: "video/mp4",
+                },
+              ],
             },
             {
-              contentType: 'audio',
+              contentType: "audio",
               Representation_asArray: [
                 {
-                  bandwidth: 128000
-                }
-              ]
-            }
-          ]
-        }
+                  bandwidth: 128000,
+                },
+              ],
+            },
+          ],
+        },
       }
 
       expect(ManifestModifier.filter(manifest, { maxFps: 30 })).toEqual(expectedManifest)
     })
 
-    it('should remove representations that are lower than the highest if constantFps is set', () => {
+    it("should remove representations that are lower than the highest if constantFps is set", () => {
       const expectedManifest = {
         Period: {
           AdaptationSet: [
             {
-              contentType: 'video',
-              mimeType: 'video/mp4',
+              contentType: "video",
+              mimeType: "video/mp4",
               Representation_asArray: [
                 {
                   bandwidth: 1570000,
                   frameRate: 50,
-                  codecs: 'avc3.4D401E',
-                  mimeType: 'video/mp4'
+                  codecs: "avc3.4D401E",
+                  mimeType: "video/mp4",
                 },
                 {
                   bandwidth: 2812000,
                   frameRate: 50,
-                  codecs: 'avc3.4D401E',
-                  mimeType: 'video/mp4'
-                }
-              ]
+                  codecs: "avc3.4D401E",
+                  mimeType: "video/mp4",
+                },
+              ],
             },
             {
-              contentType: 'audio',
+              contentType: "audio",
               Representation_asArray: [
                 {
-                  bandwidth: 128000
-                }
-              ]
-            }
-          ]
-        }
+                  bandwidth: 128000,
+                },
+              ],
+            },
+          ],
+        },
       }
       const actualManifest = ManifestModifier.filter(manifest, { constantFps: true })
 
       expect(actualManifest).toEqual(expectedManifest)
     })
 
-    it('should only keep the highest framerate that is not higher than max', () => {
+    it("should only keep the highest framerate that is not higher than max", () => {
       const expectedManifest = {
         Period: {
           AdaptationSet: [
             {
-              contentType: 'video',
-              mimeType: 'video/mp4',
+              contentType: "video",
+              mimeType: "video/mp4",
               Representation_asArray: [
                 {
                   bandwidth: 827000,
                   frameRate: 30,
-                  codecs: 'avc3.4D401E',
-                  mimeType: 'video/mp4'
-                }
-              ]
+                  codecs: "avc3.4D401E",
+                  mimeType: "video/mp4",
+                },
+              ],
             },
             {
-              contentType: 'audio',
+              contentType: "audio",
               Representation_asArray: [
                 {
-                  bandwidth: 128000
-                }
-              ]
-            }
-          ]
-        }
+                  bandwidth: 128000,
+                },
+              ],
+            },
+          ],
+        },
       }
 
       const actualManifest = ManifestModifier.filter(manifest, { constantFps: true, maxFps: 30 })
@@ -163,72 +163,79 @@ describe('ManifestModifier', () => {
       expect(actualManifest).toEqual(expectedManifest)
     })
 
-    it('should filter all representations out if none are smaller than the max', () => {
+    it("should filter all representations out if none are smaller than the max", () => {
       const expectedManifest = {
         Period: {
           AdaptationSet: [
             {
-              contentType: 'video',
-              mimeType: 'video/mp4',
-              Representation_asArray: []
+              contentType: "video",
+              mimeType: "video/mp4",
+              Representation_asArray: [],
             },
             {
-              contentType: 'audio',
+              contentType: "audio",
               Representation_asArray: [
                 {
-                  bandwidth: 128000
-                }
-              ]
-            }
-          ]
-        }
+                  bandwidth: 128000,
+                },
+              ],
+            },
+          ],
+        },
       }
 
       expect(ManifestModifier.filter(manifest, { maxFps: 10, constantFps: true })).toEqual(expectedManifest)
     })
   })
 
-  describe('extractBaseUrl()', () => {
-    it('should return the base url from the period', () => {
+  describe("extractBaseUrl()", () => {
+    it("should return the base url from the period", () => {
       const manifest = {
         Period: {
-          BaseURL: 'dash/'
-        }
+          BaseURL: "dash/",
+        },
       }
 
-      expect(ManifestModifier.extractBaseUrl(manifest)).toBe('dash/')
+      expect(ManifestModifier.extractBaseUrl(manifest)).toBe("dash/")
     })
 
-    it('should return the base url from the root', () => {
+    it("should return the base url from the root", () => {
       const manifest = {
         BaseURL: {
-          __text: 'https://cdn/dash/'
-        }
+          __text: "https://cdn/dash/",
+        },
       }
 
-      expect(ManifestModifier.extractBaseUrl(manifest)).toBe('https://cdn/dash/')
+      expect(ManifestModifier.extractBaseUrl(manifest)).toBe("https://cdn/dash/")
     })
   })
 
-  describe('generateBaseUrls()', () => {
-    const sources = [
-      'https://cdn-a.com/',
-      'https://cdn-b.com/'
-    ]
+  describe("generateBaseUrls()", () => {
+    const sources = ["https://cdn-a.com/", "https://cdn-b.com/"]
 
-    it('should convert the sources into base urls', () => {
+    it("should convert the sources into base urls", () => {
       const manifest = {
         Period: {
-          BaseURL: 'dash/'
-        }
+          BaseURL: "dash/",
+        },
       }
 
       const expectedManifest = {
         BaseURL_asArray: [
-          { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' },
-          { __text: 'https://cdn-b.com/dash/', 'dvb:priority': 1, 'dvb:weight': 0, serviceLocation: 'https://cdn-b.com/' }
+          {
+            __text: "https://cdn-a.com/dash/",
+            "dvb:priority": 0,
+            "dvb:weight": 0,
+            serviceLocation: "https://cdn-a.com/",
+          },
+          {
+            __text: "https://cdn-b.com/dash/",
+            "dvb:priority": 1,
+            "dvb:weight": 0,
+            serviceLocation: "https://cdn-b.com/",
+          },
         ],
-        Period: {}
+        Period: {},
       }
 
       ManifestModifier.generateBaseUrls(manifest, sources)
@@ -236,19 +243,29 @@ describe('ManifestModifier', () => {
       expect(manifest).toEqual(expectedManifest)
     })
 
-    describe('should return a single base url object for absolute base urls', () => {
+    describe("should return a single base url object for absolute base urls", () => {
       const expectedManifest = {
         Period: {},
-        BaseURL: { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' },
+        BaseURL: {
+          __text: "https://cdn-a.com/dash/",
+          "dvb:priority": 0,
+          "dvb:weight": 0,
+          serviceLocation: "https://cdn-a.com/",
+        },
         BaseURL_asArray: [
-          { __text: 'https://cdn-a.com/dash/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' }
-        ]
+          {
+            __text: "https://cdn-a.com/dash/",
+            "dvb:priority": 0,
+            "dvb:weight": 0,
+            serviceLocation: "https://cdn-a.com/",
+          },
+        ],
       }
 
-      it('the url is on the manifest as a string', () => {
+      it("the url is on the manifest as a string", () => {
         const manifest = {
           Period: {},
-          BaseURL: 'https://cdn-a.com/dash/'
+          BaseURL: "https://cdn-a.com/dash/",
         }
 
         ManifestModifier.generateBaseUrls(manifest, sources)
@@ -256,12 +273,12 @@ describe('ManifestModifier', () => {
         expect(manifest).toEqual(expectedManifest)
       })
 
-      it('the url is on the manifest as an object', () => {
+      it("the url is on the manifest as an object", () => {
         const manifest = {
           Period: {},
           BaseURL: {
-            __text: 'https://cdn-a.com/dash/'
-          }
+            __text: "https://cdn-a.com/dash/",
+          },
         }
 
         ManifestModifier.generateBaseUrls(manifest, sources)
@@ -269,11 +286,11 @@ describe('ManifestModifier', () => {
         expect(manifest).toEqual(expectedManifest)
       })
 
-      it('the url is on the manifest in the period as a string', () => {
+      it("the url is on the manifest in the period as a string", () => {
         const manifest = {
           Period: {
-            BaseURL: 'https://cdn-a.com/dash/'
-          }
+            BaseURL: "https://cdn-a.com/dash/",
+          },
         }
 
         ManifestModifier.generateBaseUrls(manifest, sources)
@@ -281,13 +298,13 @@ describe('ManifestModifier', () => {
         expect(manifest).toEqual(expectedManifest)
       })
 
-      it('the url is on the manifest in the period as an object', () => {
+      it("the url is on the manifest in the period as an object", () => {
         const manifest = {
           Period: {
             BaseURL: {
-              __text: 'https://cdn-a.com/dash/'
-            }
-          }
+              __text: "https://cdn-a.com/dash/",
+            },
+          },
         }
 
         ManifestModifier.generateBaseUrls(manifest, sources)
@@ -295,18 +312,28 @@ describe('ManifestModifier', () => {
         expect(manifest).toEqual(expectedManifest)
       })
 
-      describe('no base url on manifest', () => {
-        it('should return base url objects', () => {
+      describe("no base url on manifest", () => {
+        it("should return base url objects", () => {
           const manifest = {
-            Period: {}
+            Period: {},
           }
 
           const expectedManifest = {
             Period: {},
             BaseURL_asArray: [
-              { __text: 'https://cdn-a.com/', 'dvb:priority': 0, 'dvb:weight': 0, serviceLocation: 'https://cdn-a.com/' },
-              { __text: 'https://cdn-b.com/', 'dvb:priority': 1, 'dvb:weight': 0, serviceLocation: 'https://cdn-b.com/' }
-            ]
+              {
+                __text: "https://cdn-a.com/",
+                "dvb:priority": 0,
+                "dvb:weight": 0,
+                serviceLocation: "https://cdn-a.com/",
+              },
+              {
+                __text: "https://cdn-b.com/",
+                "dvb:priority": 1,
+                "dvb:weight": 0,
+                serviceLocation: "https://cdn-b.com/",
+              },
+            ],
           }
 
           ManifestModifier.generateBaseUrls(manifest, sources)
@@ -317,4 +344,3 @@ describe('ManifestModifier', () => {
     })
   })
 })
-

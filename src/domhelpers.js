@@ -1,29 +1,29 @@
-function addClass (el, className) {
+function addClass(el, className) {
   if (el.classList) {
     el.classList.add(className)
   } else {
-    el.className += ' ' + className
+    el.className += " " + className
   }
 }
 
-function removeClass (el, className) {
+function removeClass(el, className) {
   if (el.classList) {
     el.classList.remove(className)
   } else {
-    el.className = el.className.replace(new RegExp('(^|\\b)' + className.split(' ').join('|') + '(\\b|$)', 'gi'), ' ')
+    el.className = el.className.replace(new RegExp("(^|\\b)" + className.split(" ").join("|") + "(\\b|$)", "gi"), " ")
   }
 }
 
-function hasClass (el, className) {
+function hasClass(el, className) {
   if (el.classList) {
     return el.classList.contains(className)
   } else {
-    return new RegExp('(^| )' + className + '( |$)', 'gi').test(el.className)
+    return new RegExp("(^| )" + className + "( |$)", "gi").test(el.className)
   }
 }
 
-function isRGBATuple (rgbaString) {
-  return new RegExp('^#([A-Fa-f0-9]{8})$').test(rgbaString)
+function isRGBATuple(rgbaString) {
+  return new RegExp("^#([A-Fa-f0-9]{8})$").test(rgbaString)
 }
 
 /**
@@ -31,7 +31,7 @@ function isRGBATuple (rgbaString) {
  *  A string that isn't an RGBA tuple will be returned to the caller.
  * @param {String} rgbaString
  */
-function rgbaToRGB (rgbaString) {
+function rgbaToRGB(rgbaString) {
   if (isRGBATuple(rgbaString)) {
     rgbaString = rgbaString.slice(0, 7)
   }
@@ -43,7 +43,7 @@ function rgbaToRGB (rgbaString) {
  * nothing if the node is detached (Has no parent).
  * @param {Element} el The Element to remove
  */
-function safeRemoveElement (el) {
+function safeRemoveElement(el) {
   if (el.parentNode) {
     el.parentNode.removeChild(el)
   }
@@ -55,5 +55,5 @@ export default {
   hasClass: hasClass,
   rgbaToRGB: rgbaToRGB,
   isRGBA: isRGBATuple,
-  safeRemoveElement: safeRemoveElement
+  safeRemoveElement: safeRemoveElement,
 }

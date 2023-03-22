@@ -3,29 +3,29 @@ let updateCallbacks = []
 let firstTimeElement, compressTime
 
 const TYPES = {
-  INFO: 'info',
-  ERROR: 'error',
-  EVENT: 'event',
-  APICALL: 'apicall',
-  TIME: 'time',
-  KEYVALUE: 'keyvalue'
+  INFO: "info",
+  ERROR: "error",
+  EVENT: "event",
+  APICALL: "apicall",
+  TIME: "time",
+  KEYVALUE: "keyvalue",
 }
 
-function init () {
+function init() {
   clear()
 }
 
-function clear () {
+function clear() {
   firstTimeElement = true
   compressTime = false
   chronicle = []
 }
 
-function registerForUpdates (callback) {
+function registerForUpdates(callback) {
   updateCallbacks.push(callback)
 }
 
-function unregisterForUpdates (callback) {
+function unregisterForUpdates(callback) {
   const indexOf = updateCallbacks.indexOf(callback)
 
   if (indexOf !== -1) {
@@ -33,23 +33,23 @@ function unregisterForUpdates (callback) {
   }
 }
 
-function info (message) {
+function info(message) {
   pushToChronicle({ type: TYPES.INFO, message: message })
 }
 
-function error (err) {
+function error(err) {
   pushToChronicle({ type: TYPES.ERROR, error: err })
 }
 
-function event (event) {
+function event(event) {
   pushToChronicle({ type: TYPES.EVENT, event: event })
 }
 
-function apicall (callType) {
+function apicall(callType) {
   pushToChronicle({ type: TYPES.APICALL, calltype: callType })
 }
 
-function time (time) {
+function time(time) {
   if (firstTimeElement) {
     pushToChronicle({ type: TYPES.TIME, currentTime: time })
     firstTimeElement = false
@@ -64,19 +64,19 @@ function time (time) {
   }
 }
 
-function keyValue (obj) {
+function keyValue(obj) {
   pushToChronicle({ type: TYPES.KEYVALUE, keyvalue: obj })
 }
 
-function retrieve () {
+function retrieve() {
   return chronicle.slice()
 }
 
-function timestamp (obj) {
+function timestamp(obj) {
   obj.timestamp = new Date().getTime()
 }
 
-function pushToChronicle (obj) {
+function pushToChronicle(obj) {
   if (obj.type !== TYPES.TIME) {
     firstTimeElement = true
     compressTime = false
@@ -87,11 +87,11 @@ function pushToChronicle (obj) {
   updates()
 }
 
-function updates () {
+function updates() {
   updateCallbacks.forEach((callback) => callback(retrieve()))
 }
 
-function tearDown () {
+function tearDown() {
   clear()
 }
 
@@ -109,5 +109,5 @@ export default {
   retrieve: retrieve,
   tearDown: tearDown,
   registerForUpdates: registerForUpdates,
-  unregisterForUpdates: unregisterForUpdates
+  unregisterForUpdates: unregisterForUpdates,
 }

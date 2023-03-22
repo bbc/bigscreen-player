@@ -1,9 +1,9 @@
-import MediaState from './models/mediastate'
-import ReadyHelper from './readyhelper'
-import WindowTypes from './models/windowtypes'
-import LiveSupport from './models/livesupport'
+import MediaState from "./models/mediastate"
+import ReadyHelper from "./readyhelper"
+import WindowTypes from "./models/windowtypes"
+import LiveSupport from "./models/livesupport"
 
-describe('readyHelper', () => {
+describe("readyHelper", () => {
   const callback = jest.fn()
   let readyHelper
 
@@ -11,44 +11,44 @@ describe('readyHelper', () => {
     callback.mockReset()
   })
 
-  describe('- Initialisation -', () => {
-    it('does not attempt to call callback if it is not supplied', () => {
+  describe("- Initialisation -", () => {
+    it("does not attempt to call callback if it is not supplied", () => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, undefined)
 
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
-          currentTime: 1
-        }
+          currentTime: 1,
+        },
       })
 
       expect(callback).not.toHaveBeenCalled()
     })
   })
 
-  describe('- Basic -', () => {
+  describe("- Basic -", () => {
     beforeEach(() => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
-    it('does not call the supplied callback in init', () => {
+    it("does not call the supplied callback in init", () => {
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('does not call the supplied callback if there is no event data', () => {
+    it("does not call the supplied callback if there is no event data", () => {
       readyHelper.callbackWhenReady({
-        timeUpdate: true
+        timeUpdate: true,
       })
 
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('only calls the supplied callback once when given multiple events containing a valid time', () => {
+    it("only calls the supplied callback once when given multiple events containing a valid time", () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
-          currentTime: 0
-        }
+          currentTime: 0,
+        },
       })
 
       expect(callback).toHaveBeenCalledTimes(1)
@@ -56,160 +56,160 @@ describe('readyHelper', () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
-          currentTime: 1
-        }
+          currentTime: 1,
+        },
       })
 
       expect(callback).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('- VoD, No Initial Time -', () => {
+  describe("- VoD, No Initial Time -", () => {
     beforeEach(() => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
-    it('calls the supplied callback when given event data containing a valid time', () => {
+    it("calls the supplied callback when given event data containing a valid time", () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
-          currentTime: 0
-        }
+          currentTime: 0,
+        },
       })
 
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
-    it('does not call the supplied callback when given event data containing an invalid time', () => {
+    it("does not call the supplied callback when given event data containing an invalid time", () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
-          currentTime: -1
-        }
+          currentTime: -1,
+        },
       })
 
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('does not call the supplied callback when media state transitions to FATAL_ERROR', () => {
+    it("does not call the supplied callback when media state transitions to FATAL_ERROR", () => {
       readyHelper.callbackWhenReady({
         data: {
-          state: MediaState.FATAL_ERROR
-        }
+          state: MediaState.FATAL_ERROR,
+        },
       })
 
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('does not call the supplied callback when media state is undefined', () => {
+    it("does not call the supplied callback when media state is undefined", () => {
       readyHelper.callbackWhenReady({
         data: {
-          state: undefined
-        }
+          state: undefined,
+        },
       })
 
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('calls the supplied callback when media state and time is valid', () => {
+    it("calls the supplied callback when media state and time is valid", () => {
       readyHelper.callbackWhenReady({
         data: {
           state: MediaState.PLAYING,
-          currentTime: 0
-        }
+          currentTime: 0,
+        },
       })
 
       expect(callback).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe('- VoD, Initial Time -', () => {
+  describe("- VoD, Initial Time -", () => {
     beforeEach(() => {
       readyHelper = new ReadyHelper(60, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
-    it('calls the supplied callback when current time exceeds intital time', () => {
+    it("calls the supplied callback when current time exceeds intital time", () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
-          currentTime: 61
-        }
+          currentTime: 61,
+        },
       })
 
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
-    it('does not call the supplied callback when current time is 0', () => {
+    it("does not call the supplied callback when current time is 0", () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
-          currentTime: 0
-        }
+          currentTime: 0,
+        },
       })
 
       expect(callback).not.toHaveBeenCalled()
     })
   })
 
-  describe('- Live -', () => {
+  describe("- Live -", () => {
     beforeEach(() => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.RESTARTABLE, callback)
     })
 
-    it('calls the supplied callback when given a valid seekable range and current time', () => {
+    it("calls the supplied callback when given a valid seekable range and current time", () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
           currentTime: 60,
           seekableRange: {
             start: 59,
-            end: 61
-          }
-        }
+            end: 61,
+          },
+        },
       })
 
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
-    it('does not call the supplied callback when the seekable range is undefined', () => {
+    it("does not call the supplied callback when the seekable range is undefined", () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
-          currentTime: 0
-        }
+          currentTime: 0,
+        },
       })
 
       expect(callback).not.toHaveBeenCalled()
     })
 
-    it('does not call the supplied callback when seekable range is 0 - 0', () => {
+    it("does not call the supplied callback when seekable range is 0 - 0", () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
           currentTime: 0,
           seekableRange: {
             start: 0,
-            end: 0
-          }
-        }
+            end: 0,
+          },
+        },
       })
 
       expect(callback).not.toHaveBeenCalled()
     })
   })
 
-  describe('- Live, Playable -', () => {
+  describe("- Live, Playable -", () => {
     beforeEach(() => {
       readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.PLAYABLE, callback)
     })
 
-    it('calls the supplied callback regardless of seekable range if current time is positive', () => {
+    it("calls the supplied callback regardless of seekable range if current time is positive", () => {
       readyHelper.callbackWhenReady({
         timeUpdate: true,
         data: {
           currentTime: 60,
-          seekableRange: {}
-        }
+          seekableRange: {},
+        },
       })
 
       expect(callback).toHaveBeenCalledTimes(1)

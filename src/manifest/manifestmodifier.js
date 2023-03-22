@@ -1,10 +1,10 @@
-function filter (manifest, representationOptions) {
+function filter(manifest, representationOptions) {
   const constantFps = representationOptions.constantFps
   const maxFps = representationOptions.maxFps
 
   if (constantFps || maxFps) {
     manifest.Period.AdaptationSet = manifest.Period.AdaptationSet.map((adaptationSet) => {
-      if (adaptationSet.contentType === 'video') {
+      if (adaptationSet.contentType === "video") {
         const frameRates = []
 
         adaptationSet.Representation_asArray = adaptationSet.Representation_asArray.filter((representation) => {
@@ -23,25 +23,25 @@ function filter (manifest, representationOptions) {
   return manifest
 }
 
-function extractBaseUrl (manifest) {
-  if (manifest.Period && typeof manifest.Period.BaseURL === 'string') {
+function extractBaseUrl(manifest) {
+  if (manifest.Period && typeof manifest.Period.BaseURL === "string") {
     return manifest.Period.BaseURL
   }
 
-  if (manifest.Period && manifest.Period.BaseURL && typeof manifest.Period.BaseURL.__text === 'string') {
+  if (manifest.Period && manifest.Period.BaseURL && typeof manifest.Period.BaseURL.__text === "string") {
     return manifest.Period.BaseURL.__text
   }
 
-  if (typeof manifest.BaseURL === 'string') {
+  if (typeof manifest.BaseURL === "string") {
     return manifest.BaseURL
   }
 
-  if (manifest.BaseURL && typeof manifest.BaseURL.__text === 'string') {
+  if (manifest.BaseURL && typeof manifest.BaseURL.__text === "string") {
     return manifest.BaseURL.__text
   }
 }
 
-function generateBaseUrls (manifest, sources) {
+function generateBaseUrls(manifest, sources) {
   if (!manifest) return
 
   const baseUrl = extractBaseUrl(manifest)
@@ -58,35 +58,35 @@ function generateBaseUrls (manifest, sources) {
 
   removeUnusedPeriodAttributes()
 
-  function generateBaseUrl (source, priority, serviceLocation) {
+  function generateBaseUrl(source, priority, serviceLocation) {
     return {
       __text: source,
-      'dvb:priority': priority,
-      'dvb:weight': isNaN(source.dpw) ? 0 : source.dpw,
-      serviceLocation: serviceLocation
+      "dvb:priority": priority,
+      "dvb:weight": isNaN(source.dpw) ? 0 : source.dpw,
+      serviceLocation: serviceLocation,
     }
   }
 
-  function removeUnusedPeriodAttributes () {
+  function removeUnusedPeriodAttributes() {
     if (manifest.Period && manifest.Period.BaseURL) delete manifest.Period.BaseURL
     if (manifest.Period && manifest.Period.BaseURL_asArray) delete manifest.Period.BaseURL_asArray
   }
 
-  function isBaseUrlAbsolute (baseUrl) {
+  function isBaseUrlAbsolute(baseUrl) {
     return baseUrl && baseUrl.match(/^https?:\/\//)
   }
 
-  function setAbsoluteBaseUrl (baseUrl) {
+  function setAbsoluteBaseUrl(baseUrl) {
     const newBaseUrl = generateBaseUrl(baseUrl, 0, sources[0])
 
     manifest.BaseURL_asArray = [newBaseUrl]
 
-    if (manifest.BaseURL || manifest.Period && manifest.Period.BaseURL) {
+    if (manifest.BaseURL || (manifest.Period && manifest.Period.BaseURL)) {
       manifest.BaseURL = newBaseUrl
     }
   }
 
-  function setBaseUrlsFromBaseUrl (baseUrl) {
+  function setBaseUrlsFromBaseUrl(baseUrl) {
     manifest.BaseURL_asArray = sources.map((source, priority) => {
       const sourceUrl = new URL(baseUrl, source)
 
@@ -94,7 +94,7 @@ function generateBaseUrls (manifest, sources) {
     })
   }
 
-  function setBaseUrlsFromSource () {
+  function setBaseUrlsFromSource() {
     manifest.BaseURL_asArray = sources.map((source, priority) => {
       return generateBaseUrl(source, priority, source)
     })
@@ -104,5 +104,5 @@ function generateBaseUrls (manifest, sources) {
 export default {
   filter: filter,
   extractBaseUrl: extractBaseUrl,
-  generateBaseUrls: generateBaseUrls
+  generateBaseUrls: generateBaseUrls,
 }
