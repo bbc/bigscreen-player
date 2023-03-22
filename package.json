@@ -1,6 +1,6 @@
 {
   "name": "bigscreen-player",
-  "version": "5.6.5",
+  "version": "5.6.6",
   "description": "Simplified media playback for bigscreen devices.",
   "main": "dist/esm/main.js",
   "browser": "dist/esm/main.js",
