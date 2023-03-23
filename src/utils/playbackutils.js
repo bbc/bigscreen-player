@@ -20,12 +20,12 @@ export default {
       propValue = objectToClone[propName]
 
       // check for date
-      if (propValue && Object.prototype.toString.call(propValue) === '[object Date]') {
+      if (propValue && Object.prototype.toString.call(propValue) === "[object Date]") {
         clone[propName] = new Date(propValue)
         continue
       }
 
-      clone[propName] = (typeof propValue === 'object') ? this.deepClone(propValue) : propValue
+      clone[propName] = typeof propValue === "object" ? this.deepClone(propValue) : propValue
     }
     return clone
   },
@@ -47,7 +47,7 @@ export default {
       const obj = arguments[i]
       for (const prop in obj) {
         if (obj.hasOwnProperty(prop)) {
-          if (Object.prototype.toString.call(obj[prop]) === '[object Object]') {
+          if (Object.prototype.toString.call(obj[prop]) === "[object Object]") {
             merged[prop] = this.merge(merged[prop], obj[prop])
           } else {
             merged[prop] = obj[prop]
@@ -116,7 +116,9 @@ export default {
   },
 
   contains: (arr, subset) => {
-    return [].concat(subset).every((item) => { return [].concat(arr).indexOf(item) > -1 })
+    return [].concat(subset).every((item) => {
+      return [].concat(arr).indexOf(item) > -1
+    })
   },
 
   pickRandomFromArray: (arr) => {
@@ -140,10 +142,10 @@ export default {
   generateUUID: () => {
     let d = new Date().getTime()
 
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
       const r = (d + Math.random() * 16) % 16 | 0
       d = Math.floor(d / 16)
-      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+      return (c === "x" ? r : (r & 0x3) | 0x8).toString(16)
     })
   },
 
@@ -151,5 +153,5 @@ export default {
     return (keys || []).reduce((accum, key) => {
       return (accum || {})[key]
     }, object || {})
-  }
+  },
 }

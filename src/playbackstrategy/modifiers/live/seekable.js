@@ -1,28 +1,28 @@
-import MediaPlayerBase from '../mediaplayerbase'
-import WindowTypes from '../../../models/windowtypes'
-import DynamicWindowUtils from '../../../dynamicwindowutils'
+import MediaPlayerBase from "../mediaplayerbase"
+import WindowTypes from "../../../models/windowtypes"
+import DynamicWindowUtils from "../../../dynamicwindowutils"
 
-function SeekableLivePlayer (mediaPlayer, windowType) {
+function SeekableLivePlayer(mediaPlayer, windowType) {
   const AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
 
-  function addEventCallback (thisArg, callback) {
+  function addEventCallback(thisArg, callback) {
     mediaPlayer.addEventCallback(thisArg, callback)
   }
 
-  function removeEventCallback (thisArg, callback) {
+  function removeEventCallback(thisArg, callback) {
     mediaPlayer.removeEventCallback(thisArg, callback)
   }
 
-  function removeAllEventCallbacks () {
+  function removeAllEventCallbacks() {
     mediaPlayer.removeAllEventCallbacks()
   }
 
-  function resume () {
+  function resume() {
     mediaPlayer.resume()
   }
 
-  return ({
-    initialiseMedia: function initialiseMedia (mediaType, sourceUrl, mimeType, sourceContainer, opts) {
+  return {
+    initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
       if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
         mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO
       } else {
@@ -32,23 +32,27 @@ function SeekableLivePlayer (mediaPlayer, windowType) {
       mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts)
     },
 
-    beginPlayback: function beginPlayback () {
-      if (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow) {
+    beginPlayback: function beginPlayback() {
+      if (
+        window.bigscreenPlayer &&
+        window.bigscreenPlayer.overrides &&
+        window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow
+      ) {
         mediaPlayer.beginPlaybackFrom(Infinity)
       } else {
         mediaPlayer.beginPlayback()
       }
     },
 
-    beginPlaybackFrom: function beginPlaybackFrom (offset) {
+    beginPlaybackFrom: function beginPlaybackFrom(offset) {
       mediaPlayer.beginPlaybackFrom(offset)
     },
 
-    playFrom: function playFrom (offset) {
+    playFrom: function playFrom(offset) {
       mediaPlayer.playFrom(offset)
     },
 
-    pause: function pause (opts) {
+    pause: function pause(opts) {
       const secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start
       opts = opts || {}
 
@@ -66,7 +70,8 @@ function SeekableLivePlayer (mediaPlayer, windowType) {
             addEventCallback,
             removeEventCallback,
             MediaPlayerBase.unpausedEventCheck,
-            resume)
+            resume
+          )
         }
       }
     },
@@ -83,8 +88,8 @@ function SeekableLivePlayer (mediaPlayer, windowType) {
     removeEventCallback: removeEventCallback,
     removeAllEventCallbacks: removeAllEventCallbacks,
     getPlayerElement: () => mediaPlayer.getPlayerElement(),
-    getLiveSupport: () => MediaPlayerBase.LIVE_SUPPORT.SEEKABLE
-  })
+    getLiveSupport: () => MediaPlayerBase.LIVE_SUPPORT.SEEKABLE,
+  }
 }
 
 export default SeekableLivePlayer

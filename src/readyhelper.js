@@ -1,8 +1,8 @@
-import MediaState from './models/mediastate'
-import WindowTypes from './models/windowtypes'
-import LiveSupport from './models/livesupport'
+import MediaState from "./models/mediastate"
+import WindowTypes from "./models/windowtypes"
+import LiveSupport from "./models/livesupport"
 
-function ReadyHelper (initialPlaybackTime, windowType, liveSupport, callback) {
+function ReadyHelper(initialPlaybackTime, windowType, liveSupport, callback) {
   let ready = false
 
   const callbackWhenReady = (evt) => {
@@ -21,11 +21,11 @@ function ReadyHelper (initialPlaybackTime, windowType, liveSupport, callback) {
     }
   }
 
-  function isValidState (evtData) {
+  function isValidState(evtData) {
     return evtData.state && evtData.state !== MediaState.FATAL_ERROR
   }
 
-  function isValidTime (evtData) {
+  function isValidTime(evtData) {
     const isStatic = windowType === WindowTypes.STATIC
 
     if (isStatic) {
@@ -35,7 +35,7 @@ function ReadyHelper (initialPlaybackTime, windowType, liveSupport, callback) {
     }
   }
 
-  function validateStaticTime (currentTime) {
+  function validateStaticTime(currentTime) {
     if (currentTime !== undefined) {
       if (initialPlaybackTime) {
         return currentTime > 0
@@ -46,7 +46,7 @@ function ReadyHelper (initialPlaybackTime, windowType, liveSupport, callback) {
     return false
   }
 
-  function validateLiveTime (currentTime, seekableRange) {
+  function validateLiveTime(currentTime, seekableRange) {
     if (liveSupport === LiveSupport.PLAYABLE) {
       return currentTime >= 0
     }
@@ -58,7 +58,7 @@ function ReadyHelper (initialPlaybackTime, windowType, liveSupport, callback) {
     return true
   }
 
-  function isValidSeekableRange (seekableRange) {
+  function isValidSeekableRange(seekableRange) {
     if (seekableRange) {
       if (seekableRange.start === 0 && seekableRange.end === 0) {
         return false
@@ -69,7 +69,7 @@ function ReadyHelper (initialPlaybackTime, windowType, liveSupport, callback) {
   }
 
   return {
-    callbackWhenReady: callbackWhenReady
+    callbackWhenReady: callbackWhenReady,
   }
 }
 

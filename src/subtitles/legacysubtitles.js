@@ -1,27 +1,27 @@
-import Renderer from './renderer'
-import TransportControlPosition from '../models/transportcontrolposition'
-import DOMHelpers from '../domhelpers'
-import LoadURL from '../utils/loadurl'
-import DebugTool from '../debugger/debugtool'
-import Plugins from '../plugins'
+import Renderer from "./renderer"
+import TransportControlPosition from "../models/transportcontrolposition"
+import DOMHelpers from "../domhelpers"
+import LoadURL from "../utils/loadurl"
+import DebugTool from "../debugger/debugtool"
+import Plugins from "../plugins"
 
-function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
-  const container = document.createElement('div')
+function LegacySubtitles(mediaPlayer, autoStart, parentElement, mediaSources) {
+  const container = document.createElement("div")
   let subtitlesRenderer
 
   if (autoStart) {
     start()
   }
 
-  function loadSubtitles () {
+  function loadSubtitles() {
     const url = mediaSources.currentSubtitlesSource()
 
-    if (url && url !== '') {
+    if (url && url !== "") {
       LoadURL(url, {
         timeout: mediaSources.subtitlesRequestTimeout(),
         onLoad: (responseXML, responseText, status) => {
           if (!responseXML) {
-            DebugTool.info('Error: responseXML is invalid.')
+            DebugTool.info("Error: responseXML is invalid.")
             Plugins.interface.onSubtitlesXMLError({ cdn: mediaSources.currentSubtitlesCdn() })
             return
           } else {
@@ -29,30 +29,32 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
           }
         },
         onError: ({ statusCode, ...rest } = {}) => {
-          const errorCase = () => { DebugTool.info('Failed to load from subtitles file from all available CDNs') }
-          DebugTool.info('Error loading subtitles data: ' + statusCode)
+          const errorCase = () => {
+            DebugTool.info("Failed to load from subtitles file from all available CDNs")
+          }
+          DebugTool.info("Error loading subtitles data: " + statusCode)
           mediaSources.failoverSubtitles(loadSubtitles, errorCase, { statusCode, ...rest })
         },
         onTimeout: () => {
-          DebugTool.info('Request timeout loading subtitles')
+          DebugTool.info("Request timeout loading subtitles")
           Plugins.interface.onSubtitlesTimeout({ cdn: mediaSources.currentSubtitlesCdn() })
-        }
+        },
       })
     }
   }
 
-  function createContainer (xml) {
-    container.id = 'playerCaptionsContainer'
-    DOMHelpers.addClass(container, 'playerCaptions')
+  function createContainer(xml) {
+    container.id = "playerCaptionsContainer"
+    DOMHelpers.addClass(container, "playerCaptions")
 
     // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
-    subtitlesRenderer = Renderer('playerCaptions', xml, mediaPlayer)
+    subtitlesRenderer = Renderer("playerCaptions", xml, mediaPlayer)
     container.appendChild(subtitlesRenderer.render())
 
     parentElement.appendChild(container)
   }
 
-  function start () {
+  function start() {
     if (subtitlesRenderer) {
       subtitlesRenderer.start()
     } else {
@@ -60,18 +62,18 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
     }
   }
 
-  function stop () {
+  function stop() {
     if (subtitlesRenderer) {
       subtitlesRenderer.stop()
     }
   }
 
-  function updatePosition (transportControlPosition) {
+  function updatePosition(transportControlPosition) {
     const classes = {
       controlsVisible: TransportControlPosition.CONTROLS_ONLY,
       controlsWithInfoVisible: TransportControlPosition.CONTROLS_WITH_INFO,
       leftCarouselVisible: TransportControlPosition.LEFT_CAROUSEL,
-      bottomCarouselVisible: TransportControlPosition.BOTTOM_CAROUSEL
+      bottomCarouselVisible: TransportControlPosition.BOTTOM_CAROUSEL,
     }
 
     for (const cssClassName in classes) {
@@ -86,7 +88,7 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
     }
   }
 
-  function tearDown () {
+  function tearDown() {
     stop()
     DOMHelpers.safeRemoveElement(container)
   }
@@ -98,7 +100,7 @@ function LegacySubtitles (mediaPlayer, autoStart, parentElement, mediaSources) {
     customise: () => {},
     renderExample: () => {},
     clearExample: () => {},
-    tearDown: tearDown
+    tearDown: tearDown,
   }
 }
 

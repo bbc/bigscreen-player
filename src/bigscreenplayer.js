@@ -1,25 +1,25 @@
 /**
  * @module bigscreenplayer/bigscreenplayer
  */
-import MediaState from './models/mediastate'
-import PlayerComponent from './playercomponent'
-import PauseTriggers from './models/pausetriggers'
-import DynamicWindowUtils from './dynamicwindowutils'
-import WindowTypes from './models/windowtypes'
-import MockBigscreenPlayer from './mockbigscreenplayer'
-import Plugins from './plugins'
-import Chronicle from './debugger/chronicle'
-import DebugTool from './debugger/debugtool'
-import SlidingWindowUtils from './utils/timeutils'
-import callCallbacks from './utils/callcallbacks'
-import MediaSources from './mediasources'
-import Version from './version'
-import Resizer from './resizer'
-import ReadyHelper from './readyhelper'
-import Subtitles from './subtitles/subtitles'
-import './typedefs'
+import MediaState from "./models/mediastate"
+import PlayerComponent from "./playercomponent"
+import PauseTriggers from "./models/pausetriggers"
+import DynamicWindowUtils from "./dynamicwindowutils"
+import WindowTypes from "./models/windowtypes"
+import MockBigscreenPlayer from "./mockbigscreenplayer"
+import Plugins from "./plugins"
+import Chronicle from "./debugger/chronicle"
+import DebugTool from "./debugger/debugtool"
+import SlidingWindowUtils from "./utils/timeutils"
+import callCallbacks from "./utils/callcallbacks"
+import MediaSources from "./mediasources"
+import Version from "./version"
+import Resizer from "./resizer"
+import ReadyHelper from "./readyhelper"
+import Subtitles from "./subtitles/subtitles"
+import "./typedefs"
 
-function BigscreenPlayer () {
+function BigscreenPlayer() {
   let stateChangeCallbacks = []
   let timeUpdateCallbacks = []
   let subtitleCallbacks = []
@@ -42,12 +42,12 @@ function BigscreenPlayer () {
 
   const END_OF_STREAM_TOLERANCE = 10
 
-  function mediaStateUpdateCallback (evt) {
+  function mediaStateUpdateCallback(evt) {
     if (evt.timeUpdate) {
       DebugTool.time(evt.data.currentTime)
       callCallbacks(timeUpdateCallbacks, {
         currentTime: evt.data.currentTime,
-        endOfStream: endOfStream
+        endOfStream: endOfStream,
       })
     } else {
       let stateObject = { state: evt.data.state }
@@ -63,7 +63,7 @@ function BigscreenPlayer () {
           state: MediaState.FATAL_ERROR,
           isBufferingTimeoutError: evt.isBufferingTimeoutError,
           code: evt.code,
-          message: evt.message
+          message: evt.message,
         }
       }
 
@@ -79,12 +79,12 @@ function BigscreenPlayer () {
     }
 
     if (evt.data.seekableRange) {
-      DebugTool.keyValue({ key: 'seekableRangeStart', value: deviceTimeToDate(evt.data.seekableRange.start) })
-      DebugTool.keyValue({ key: 'seekableRangeEnd', value: deviceTimeToDate(evt.data.seekableRange.end) })
+      DebugTool.keyValue({ key: "seekableRangeStart", value: deviceTimeToDate(evt.data.seekableRange.start) })
+      DebugTool.keyValue({ key: "seekableRangeEnd", value: deviceTimeToDate(evt.data.seekableRange.end) })
     }
 
     if (evt.data.duration) {
-      DebugTool.keyValue({ key: 'duration', value: evt.data.duration })
+      DebugTool.keyValue({ key: "duration", value: evt.data.duration })
     }
 
     if (playerComponent && readyHelper) {
@@ -92,7 +92,7 @@ function BigscreenPlayer () {
     }
   }
 
-  function deviceTimeToDate (time) {
+  function deviceTimeToDate(time) {
     if (getWindowStartTime()) {
       return new Date(convertVideoTimeSecondsToEpochMs(time))
     } else {
@@ -100,22 +100,28 @@ function BigscreenPlayer () {
     }
   }
 
-  function convertVideoTimeSecondsToEpochMs (seconds) {
-    return getWindowStartTime() ? getWindowStartTime() + (seconds * 1000) : null
+  function convertVideoTimeSecondsToEpochMs(seconds) {
+    return getWindowStartTime() ? getWindowStartTime() + seconds * 1000 : null
   }
 
-  function bigscreenPlayerDataLoaded (bigscreenPlayerData, enableSubtitles) {
+  function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
     if (windowType !== WindowTypes.STATIC) {
       bigscreenPlayerData.time = mediaSources.time()
       serverDate = bigscreenPlayerData.serverDate
 
       initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
       // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
-      bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(bigscreenPlayerData.initialPlaybackTime, bigscreenPlayerData.time.windowStartTime)
+      bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(
+        bigscreenPlayerData.initialPlaybackTime,
+        bigscreenPlayerData.time.windowStartTime
+      )
     }
 
     mediaKind = bigscreenPlayerData.media.kind
-    endOfStream = windowType !== WindowTypes.STATIC && (!bigscreenPlayerData.initialPlaybackTime && bigscreenPlayerData.initialPlaybackTime !== 0)
+    endOfStream =
+      windowType !== WindowTypes.STATIC &&
+      !bigscreenPlayerData.initialPlaybackTime &&
+      bigscreenPlayerData.initialPlaybackTime !== 0
 
     readyHelper = new ReadyHelper(
       bigscreenPlayerData.initialPlaybackTime,
@@ -142,25 +148,25 @@ function BigscreenPlayer () {
     )
   }
 
-  function getWindowStartTime () {
+  function getWindowStartTime() {
     return mediaSources && mediaSources.time().windowStartTime
   }
 
-  function getWindowEndTime () {
+  function getWindowEndTime() {
     return mediaSources && mediaSources.time().windowEndTime
   }
 
-  function toggleDebug () {
+  function toggleDebug() {
     if (playerComponent) {
       DebugTool.toggleVisibility()
     }
   }
 
-  function callSubtitlesCallbacks (enabled) {
+  function callSubtitlesCallbacks(enabled) {
     callCallbacks(subtitleCallbacks, { enabled: enabled })
   }
 
-  function setSubtitlesEnabled (enabled) {
+  function setSubtitlesEnabled(enabled) {
     enabled ? subtitles.enable() : subtitles.disable()
     callSubtitlesCallbacks(enabled)
 
@@ -169,16 +175,15 @@ function BigscreenPlayer () {
     }
   }
 
-  function isSubtitlesEnabled () {
+  function isSubtitlesEnabled() {
     return subtitles ? subtitles.enabled() : false
   }
 
-  function isSubtitlesAvailable () {
+  function isSubtitlesAvailable() {
     return subtitles ? subtitles.available() : false
   }
 
-  return /** @alias module:bigscreenplayer/bigscreenplayer */{
-
+  return /** @alias module:bigscreenplayer/bigscreenplayer */ {
     /**
      * Call first to initialise bigscreen player for playback.
      * @function
@@ -194,7 +199,7 @@ function BigscreenPlayer () {
       Chronicle.init()
       resizer = Resizer()
       DebugTool.setRootElement(playbackElement)
-      DebugTool.keyValue({ key: 'framework-version', value: Version })
+      DebugTool.keyValue({ key: "framework-version", value: Version })
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
       if (!callbacks) {
@@ -210,16 +215,18 @@ function BigscreenPlayer () {
           if (callbacks.onError) {
             callbacks.onError(error)
           }
-        }
+        },
       }
 
       mediaSources = MediaSources()
 
       // Backwards compatibility with Old API; to be removed on Major Version Update
       if (bigscreenPlayerData.media && !bigscreenPlayerData.media.captions && bigscreenPlayerData.media.captionsUrl) {
-        bigscreenPlayerData.media.captions = [{
-          url: bigscreenPlayerData.media.captionsUrl
-        }]
+        bigscreenPlayerData.media.captions = [
+          {
+            url: bigscreenPlayerData.media.captionsUrl,
+          },
+        ]
       }
 
       mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks)
@@ -332,12 +339,13 @@ function BigscreenPlayer () {
      * @param {Number} time - In seconds
      */
     setCurrentTime: function (time) {
-      DebugTool.apicall('setCurrentTime')
+      DebugTool.apicall("setCurrentTime")
       if (playerComponent) {
         // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
         isSeeking = true
         playerComponent.setCurrentTime(time)
-        endOfStream = windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
+        endOfStream =
+          windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
       }
     },
 
@@ -353,7 +361,7 @@ function BigscreenPlayer () {
      * Returns the media asset's current time in seconds.
      * @function
      */
-    getCurrentTime: () => playerComponent && playerComponent.getCurrentTime() || 0,
+    getCurrentTime: () => (playerComponent && playerComponent.getCurrentTime()) || 0,
 
     /**
      * Returns the current media kind.
@@ -374,14 +382,18 @@ function BigscreenPlayer () {
      * @function
      * @returns {Object} {start: Number, end: Number}
      */
-    getSeekableRange: () => playerComponent ? playerComponent.getSeekableRange() : {},
+    getSeekableRange: () => (playerComponent ? playerComponent.getSeekableRange() : {}),
 
     /**
-    * @function
-    * @returns {boolean} Returns true if media is initialised and playing a live stream within a tolerance of the end of the seekable range (10 seconds).
-    */
+     * @function
+     * @returns {boolean} Returns true if media is initialised and playing a live stream within a tolerance of the end of the seekable range (10 seconds).
+     */
     isPlayingAtLiveEdge: function () {
-      return !!playerComponent && windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
+      return (
+        !!playerComponent &&
+        windowType !== WindowTypes.STATIC &&
+        Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
+      )
     },
 
     /**
@@ -397,7 +409,7 @@ function BigscreenPlayer () {
         windowStartTime: getWindowStartTime(),
         windowEndTime: getWindowEndTime(),
         initialPlaybackTime: initialPlaybackTimeEpoch,
-        serverDate: serverDate
+        serverDate: serverDate,
       }
     },
 
@@ -411,20 +423,20 @@ function BigscreenPlayer () {
      * @function
      * @returns if the player is paused.
      */
-    isPaused: () => playerComponent ? playerComponent.isPaused() : true,
+    isPaused: () => (playerComponent ? playerComponent.isPaused() : true),
 
     /**
      * @function
      * @returns if the media asset has ended.
      */
-    isEnded: () => playerComponent ? playerComponent.isEnded() : false,
+    isEnded: () => (playerComponent ? playerComponent.isEnded() : false),
 
     /**
      * Play the media assest from the current point in time.
      * @function
      */
     play: () => {
-      DebugTool.apicall('play')
+      DebugTool.apicall("play")
       playerComponent.play()
     },
     /**
@@ -435,7 +447,7 @@ function BigscreenPlayer () {
      * @param {boolean} opts.disableAutoResume
      */
     pause: (opts) => {
-      DebugTool.apicall('pause')
+      DebugTool.apicall("pause")
       pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
       playerComponent.pause(opts)
     },
@@ -474,7 +486,11 @@ function BigscreenPlayer () {
     isSubtitlesAvailable: isSubtitlesAvailable,
 
     areSubtitlesCustomisable: () => {
-      return !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles)
+      return !(
+        window.bigscreenPlayer &&
+        window.bigscreenPlayer.overrides &&
+        window.bigscreenPlayer.overrides.legacySubtitles
+      )
     },
 
     customiseSubtitles: (styleOpts) => {
@@ -513,7 +529,10 @@ function BigscreenPlayer () {
      * @return Returns whether the current media asset is seekable.
      */
     canSeek: function () {
-      return windowType === WindowTypes.STATIC || DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
+      return (
+        windowType === WindowTypes.STATIC ||
+        DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
+      )
     },
 
     /**
@@ -521,7 +540,10 @@ function BigscreenPlayer () {
      * @return Returns whether the current media asset is pausable.
      */
     canPause: () => {
-      return windowType === WindowTypes.STATIC || DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport())
+      return (
+        windowType === WindowTypes.STATIC ||
+        DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport())
+      )
     },
 
     /**
@@ -529,20 +551,26 @@ function BigscreenPlayer () {
      * @function
      * @param {*} opts
      */
-    mock: function (opts) { MockBigscreenPlayer.mock(this, opts) },
+    mock: function (opts) {
+      MockBigscreenPlayer.mock(this, opts)
+    },
 
     /**
      * Unmock the player.
      * @function
      */
-    unmock: function () { MockBigscreenPlayer.unmock(this) },
+    unmock: function () {
+      MockBigscreenPlayer.unmock(this)
+    },
 
     /**
      * Return a mock for unit tests.
      * @function
      * @param {*} opts
      */
-    mockJasmine: function (opts) { MockBigscreenPlayer.mockJasmine(this, opts) },
+    mockJasmine: function (opts) {
+      MockBigscreenPlayer.mockJasmine(this, opts)
+    },
 
     /**
      * Register a plugin for extended events.
@@ -563,7 +591,7 @@ function BigscreenPlayer () {
      * given the current state and the playback strategy in use.
      * @function
      */
-    transitions: () => playerComponent ? playerComponent.transitions() : {},
+    transitions: () => (playerComponent ? playerComponent.transitions() : {}),
 
     /**
      * @function
@@ -612,7 +640,7 @@ function BigscreenPlayer () {
      * @param logLevel -  log level to display @see getLogLevels
      */
     setLogLevel: DebugTool.setLogLevel,
-    getDebugLogs: () => Chronicle.retrieve()
+    getDebugLogs: () => Chronicle.retrieve(),
   }
 }
 
@@ -621,7 +649,7 @@ function BigscreenPlayer () {
  * @param {TALDevice} device
  * @return the live support of the device.
  */
-function getLiveSupport () {
+function getLiveSupport() {
   return PlayerComponent.getLiveSupport()
 }
 

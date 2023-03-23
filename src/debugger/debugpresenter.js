@@ -1,62 +1,61 @@
-import MediaState from '../models/mediastate'
-import Chronicle from './chronicle'
+import MediaState from "../models/mediastate"
+import Chronicle from "./chronicle"
 
 let view
 
-function init (newView) {
+function init(newView) {
   view = newView
 }
 
-function update (logs) {
+function update(logs) {
   view.render({ static: parseStaticFields(logs), dynamic: parseDynamicFields(logs) })
 }
 
-function isStaticLog (log) {
+function isStaticLog(log) {
   return log.type === Chronicle.TYPES.KEYVALUE
 }
 
-function parseStaticFields (logs) {
+function parseStaticFields(logs) {
   const latestStaticFields = []
   const staticFields = logs.filter((log) => isStaticLog(log))
 
   const uniqueKeys = findUniqueKeys(staticFields)
   uniqueKeys.forEach((key) => {
-    const matchingStaticLogs =
-      staticFields.filter((log) => log.keyvalue.key === key)
+    const matchingStaticLogs = staticFields.filter((log) => log.keyvalue.key === key)
 
     latestStaticFields.push(matchingStaticLogs.pop())
   })
 
   return latestStaticFields.map((field) => ({
     key: sanitiseKeyString(field.keyvalue.key),
-    value: sanitiseValueString(field.keyvalue.value)
+    value: sanitiseValueString(field.keyvalue.value),
   }))
 }
 
-function parseByType (log) {
+function parseByType(log) {
   const dateString = new Date(log.timestamp).toISOString()
 
   switch (log.type) {
     case Chronicle.TYPES.INFO:
-      return dateString + ' - Info: ' + log.message
+      return dateString + " - Info: " + log.message
     case Chronicle.TYPES.TIME:
-      return dateString + ' - Video time: ' + parseFloat(log.currentTime).toFixed(2)
+      return dateString + " - Video time: " + parseFloat(log.currentTime).toFixed(2)
     case Chronicle.TYPES.EVENT:
-      return dateString + ' - Event: ' + convertToReadableEvent(log.event.state)
+      return dateString + " - Event: " + convertToReadableEvent(log.event.state)
     case Chronicle.TYPES.ERROR:
-      return dateString + ' - Error: ' + log.error.errorId + ' | ' + log.error.message
+      return dateString + " - Error: " + log.error.errorId + " | " + log.error.message
     case Chronicle.TYPES.APICALL:
-      return dateString + ' - Api call: ' + log.calltype
+      return dateString + " - Api call: " + log.calltype
     default:
-      return dateString + ' - Unknown log format'
+      return dateString + " - Unknown log format"
   }
 }
 
-function parseDynamicFields (logs) {
+function parseDynamicFields(logs) {
   return logs.filter((log) => !isStaticLog(log)).map((log) => parseByType(log))
 }
 
-function findUniqueKeys (logs) {
+function findUniqueKeys(logs) {
   const uniqueKeys = []
 
   logs.forEach((log) => {
@@ -68,27 +67,27 @@ function findUniqueKeys (logs) {
   return uniqueKeys
 }
 
-function sanitiseKeyString (key) {
-  return key.replace(/([A-Z])/g, ' $1').toLowerCase()
+function sanitiseKeyString(key) {
+  return key.replace(/([A-Z])/g, " $1").toLowerCase()
 }
 
-function sanitiseValueString (value) {
+function sanitiseValueString(value) {
   if (value instanceof Date) {
     const hours = zeroPadTimeUnits(value.getHours()) + value.getHours()
     const mins = zeroPadTimeUnits(value.getMinutes()) + value.getMinutes()
     const secs = zeroPadTimeUnits(value.getSeconds()) + value.getSeconds()
 
-    return hours + ':' + mins + ':' + secs
+    return hours + ":" + mins + ":" + secs
   }
 
   return value
 }
 
-function zeroPadTimeUnits (unit) {
-  return (unit < 10 ? '0' : '')
+function zeroPadTimeUnits(unit) {
+  return unit < 10 ? "0" : ""
 }
 
-function convertToReadableEvent (type) {
+function convertToReadableEvent(type) {
   for (const key in MediaState) {
     if (MediaState[key] === type) {
       return key
@@ -100,5 +99,5 @@ function convertToReadableEvent (type) {
 
 export default {
   init: init,
-  update: update
+  update: update,
 }

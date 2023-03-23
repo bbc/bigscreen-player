@@ -1,4 +1,4 @@
-function LoadUrl (url, opts) {
+function LoadUrl(url, opts) {
   const xhr = new XMLHttpRequest()
 
   if (opts.timeout) {
@@ -18,14 +18,14 @@ function LoadUrl (url, opts) {
         }
       } else {
         if (opts.onError) {
-          opts.onError({ errorType: 'NON_200_ERROR', statusCode: xhr.status })
+          opts.onError({ errorType: "NON_200_ERROR", statusCode: xhr.status })
         }
       }
     }
   }
 
   try {
-    xhr.open(opts.method || 'GET', url, true)
+    xhr.open(opts.method || "GET", url, true)
     // TODO The opts protection in the following expression is redundant as there are lots of other places an undefined opts will cause TypeError to be thrown
     if (opts && opts.headers) {
       for (const header in opts.headers) {

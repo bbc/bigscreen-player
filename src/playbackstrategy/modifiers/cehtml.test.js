@@ -1,14 +1,14 @@
-import CehtmlMediaPlayer from './cehtml'
-import MediaPlayerBase from './mediaplayerbase'
+import CehtmlMediaPlayer from "./cehtml"
+import MediaPlayerBase from "./mediaplayerbase"
 
-describe('cehtml Base', () => {
+describe("cehtml Base", () => {
   let player
   let mockMediaElement
   let sourceContainer
 
   let recentEvents
 
-  function eventCallbackReporter (event) {
+  function eventCallbackReporter(event) {
     recentEvents.push(event.type)
   }
 
@@ -16,40 +16,42 @@ describe('cehtml Base', () => {
     jest.useFakeTimers()
 
     mockMediaElement = {
-      'play': jest.fn(),
-      'seek': jest.fn(),
-      'remove': jest.fn(),
-      'stop': jest.fn()
+      play: jest.fn(),
+      seek: jest.fn(),
+      remove: jest.fn(),
+      stop: jest.fn(),
     }
     mockMediaElement.style = {}
-    jest.spyOn(document, 'createElement').mockReturnValue(mockMediaElement)
-    jest.spyOn(document, 'getElementsByTagName').mockReturnValue([{
-      'insertBefore': jest.fn()
-    }])
+    jest.spyOn(document, "createElement").mockReturnValue(mockMediaElement)
+    jest.spyOn(document, "getElementsByTagName").mockReturnValue([
+      {
+        insertBefore: jest.fn(),
+      },
+    ])
 
-    sourceContainer = document.createElement('div')
+    sourceContainer = document.createElement("div")
 
     recentEvents = []
 
     player = CehtmlMediaPlayer()
     player.addEventCallback(this, eventCallbackReporter)
-    player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
+    player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType", sourceContainer, {})
   })
 
   afterEach(() => {
     jest.useRealTimers()
   })
 
-  describe('Seek attempted and finished events', () => {
+  describe("Seek attempted and finished events", () => {
     afterEach(() => {
       delete window.bigscreenPlayer
     })
 
-    it('Seek Attempted Event Emitted On Initialise Media If The State Is Empty', () => {
+    it("Seek Attempted Event Emitted On Initialise Media If The State Is Empty", () => {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
     })
 
-    it('Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing', () => {
+    it("Seek Finished Event Emitted On Status Update When Time is Within Sentinel Threshold And The State is Playing", () => {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
 
       player.beginPlaybackFrom(0)
@@ -69,7 +71,7 @@ describe('cehtml Base', () => {
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
     })
 
-    it('Seek Finished Event Is Emitted Only Once', () => {
+    it("Seek Finished Event Is Emitted Only Once", () => {
       player.beginPlaybackFrom(0)
 
       mockMediaElement.playState = 4 // BUFFERING
@@ -93,16 +95,16 @@ describe('cehtml Base', () => {
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SEEK_FINISHED)
     })
 
-    it('Seek Finished Event Is Emitted After restartTimeout When Enabled', () => {
+    it("Seek Finished Event Is Emitted After restartTimeout When Enabled", () => {
       window.bigscreenPlayer = {
         overrides: {
-          restartTimeout: 10000
-        }
+          restartTimeout: 10000,
+        },
       }
 
       player = CehtmlMediaPlayer()
       player.addEventCallback(this, eventCallbackReporter)
-      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType", sourceContainer, {})
 
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
 
@@ -130,19 +132,19 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('addEventCallback', () => {
-    it('should call the callback on update', () => {
+  describe("addEventCallback", () => {
+    it("should call the callback on update", () => {
       const spy = jest.fn()
 
       player.addEventCallback(this, spy)
       player.beginPlayback()
 
-      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: 'buffering' }))
+      expect(spy).toHaveBeenCalledWith(expect.objectContaining({ type: "buffering" }))
     })
   })
 
-  describe('removeEventCallback', () => {
-    it('should remove the callback', () => {
+  describe("removeEventCallback", () => {
+    it("should remove the callback", () => {
       const spy = jest.fn()
 
       player.addEventCallback(this, spy)
@@ -153,8 +155,8 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('removeAllEventCallbacks', () => {
-    it('should remove all the callbacks', () => {
+  describe("removeAllEventCallbacks", () => {
+    it("should remove all the callbacks", () => {
       const spy = jest.fn()
 
       player.addEventCallback(this, spy)
@@ -165,8 +167,8 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('resume', () => {
-    it('should call through to play if paused', () => {
+  describe("resume", () => {
+    it("should call through to play if paused", () => {
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.onPlayStateChange()
@@ -181,7 +183,7 @@ describe('cehtml Base', () => {
       expect(mockMediaElement.play).toHaveBeenCalledWith(1)
     })
 
-    it('should do nothing if playing', () => {
+    it("should do nothing if playing", () => {
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.onPlayStateChange()
@@ -194,8 +196,8 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('playFrom', () => {
-    it('should seek to the required time', () => {
+  describe("playFrom", () => {
+    it("should seek to the required time", () => {
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.onPlayStateChange()
@@ -205,7 +207,7 @@ describe('cehtml Base', () => {
       expect(mockMediaElement.seek).toHaveBeenCalledWith(10000)
     })
 
-    it('should clamp to within the seekable range', () => {
+    it("should clamp to within the seekable range", () => {
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.playTime = 10000
@@ -217,14 +219,14 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('beginPlayback', () => {
-    it('should call play on the media element', () => {
+  describe("beginPlayback", () => {
+    it("should call play on the media element", () => {
       player.beginPlayback()
 
       expect(mockMediaElement.play).toHaveBeenCalledWith(1)
     })
 
-    it('should not call play if playing', () => {
+    it("should not call play if playing", () => {
       player.beginPlayback()
 
       mockMediaElement.play.mockClear()
@@ -235,8 +237,8 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('beginPlaybackFrom', () => {
-    it('should call play and then seek on the media element', () => {
+  describe("beginPlaybackFrom", () => {
+    it("should call play and then seek on the media element", () => {
       player.beginPlaybackFrom(10)
       mockMediaElement.playState = 1
       mockMediaElement.onPlayStateChange()
@@ -245,7 +247,7 @@ describe('cehtml Base', () => {
       expect(mockMediaElement.seek).toHaveBeenCalledWith(10000)
     })
 
-    it('should call play or seek if playing', () => {
+    it("should call play or seek if playing", () => {
       player.beginPlaybackFrom(10)
       mockMediaElement.playState = 1
       mockMediaElement.onPlayStateChange()
@@ -260,8 +262,8 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('pause', () => {
-    it('should call pause on the media element', () => {
+  describe("pause", () => {
+    it("should call pause on the media element", () => {
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.onPlayStateChange()
@@ -272,7 +274,7 @@ describe('cehtml Base', () => {
       expect(mockMediaElement.play).toHaveBeenCalledWith(0)
     })
 
-    it('should not call pause if paused', () => {
+    it("should not call pause if paused", () => {
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.onPlayStateChange()
@@ -286,21 +288,21 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('stop', () => {
-    it('should call stop on the media element', () => {
+  describe("stop", () => {
+    it("should call stop on the media element", () => {
       player.beginPlayback()
       player.stop()
 
       expect(mockMediaElement.stop).toHaveBeenCalledWith()
     })
 
-    it('should not call stop if playback has not started', () => {
+    it("should not call stop if playback has not started", () => {
       player.stop()
 
       expect(mockMediaElement.stop).not.toHaveBeenCalled()
     })
 
-    it('should not call stop if already stopped', () => {
+    it("should not call stop if already stopped", () => {
       player.beginPlayback()
       player.stop()
 
@@ -311,20 +313,20 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('getSource', () => {
-    it('should return the source', () => {
-      expect(player.getSource()).toBe('testUrl')
+  describe("getSource", () => {
+    it("should return the source", () => {
+      expect(player.getSource()).toBe("testUrl")
     })
   })
 
-  describe('getMimeType', () => {
-    it('should return the mimeType', () => {
-      expect(player.getMimeType()).toBe('testMimeType')
+  describe("getMimeType", () => {
+    it("should return the mimeType", () => {
+      expect(player.getMimeType()).toBe("testMimeType")
     })
   })
 
-  describe('getSeekableRange', () => {
-    it('should return the seekable range', () => {
+  describe("getSeekableRange", () => {
+    it("should return the seekable range", () => {
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.playTime = 10000
@@ -334,8 +336,8 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('getMediaDuration', () => {
-    it('should return the media duration', () => {
+  describe("getMediaDuration", () => {
+    it("should return the media duration", () => {
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.playTime = 10000
@@ -345,8 +347,8 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('getState', () => {
-    it('should return the state', () => {
+  describe("getState", () => {
+    it("should return the state", () => {
       expect(player.getState()).toEqual(MediaPlayerBase.STATE.STOPPED)
       player.beginPlayback()
       mockMediaElement.playState = 1
@@ -356,14 +358,14 @@ describe('cehtml Base', () => {
     })
   })
 
-  describe('getPlayerElement', () => {
-    it('should return the media element', () => {
+  describe("getPlayerElement", () => {
+    it("should return the media element", () => {
       expect(player.getPlayerElement()).toBe(mockMediaElement)
     })
   })
 
-  describe('getDuration', () => {
-    it('should retrun the media duration for vod', () => {
+  describe("getDuration", () => {
+    it("should retrun the media duration for vod", () => {
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.playTime = 10000
@@ -372,9 +374,9 @@ describe('cehtml Base', () => {
       expect(player.getDuration()).toBe(10)
     })
 
-    it('should retrun the inifinty for live', () => {
+    it("should retrun the inifinty for live", () => {
       player.reset()
-      player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, 'testUrl', 'testMimeType', sourceContainer, {})
+      player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, "testUrl", "testMimeType", sourceContainer, {})
       player.beginPlayback()
       mockMediaElement.playState = 1
       mockMediaElement.playTime = 10000

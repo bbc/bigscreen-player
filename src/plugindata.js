@@ -1,4 +1,4 @@
-function PluginData (args) {
+function PluginData(args) {
   this.status = args.status
   this.stateType = args.stateType
   this.isBufferingTimeoutError = args.isBufferingTimeoutError || false
