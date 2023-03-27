@@ -4,7 +4,7 @@
 
 [Add the jira ticket and/or the ADR to this PR]
 
-> Tickets: IPLAYERTVV1-XXXX
+> Tickets: BADGERS-XXXX
 
 🛠 How
 
