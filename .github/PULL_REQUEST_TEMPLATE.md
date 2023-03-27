@@ -2,10 +2,6 @@
 
 [Enter a brief description of what this pull request does]
 
-[Add the jira ticket and/or the ADR to this PR]
-
-> Tickets: BADGERS-XXXX
-
 🛠 How
 
 [How does this PR perform the features described in What, keep technical detail brief and/or high level - more detail can be requested in comments]
@@ -28,10 +24,3 @@
 ♿ Accessibility [optional]
 
 [Any accessibility features or considerations that this PR addresses should be listed here]
-
-✅ Acceptance criteria [Optional]
-
-[MANDATORY for cross-team reviews]
-
-- [x] [Add the acceptance criteria or some from the linked ticket number]
-- [ ] [Mark correctly if it is covered in this PR or not]
