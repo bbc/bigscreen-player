@@ -7,7 +7,7 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
   let subtitlesEnabled = autoStart
   let subtitlesContainer
 
-  if (useLegacySubs) {
+  if (useLegacySubs && available()) {
     import("./legacysubtitles.js")
       .then(({ default: LegacySubtitles }) => {
         subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
