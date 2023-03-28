@@ -7,15 +7,21 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
   let subtitlesEnabled = autoStart
   let subtitlesContainer
 
-  if (useLegacySubs && available()) {
-    import("./legacysubtitles.js")
-      .then(({ default: LegacySubtitles }) => {
-        subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+  if (useLegacySubs) {
+    if (available()) {
+      import("./legacysubtitles.js")
+        .then(({ default: LegacySubtitles }) => {
+          subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+          callback(subtitlesEnabled)
+        })
+        .catch(() => {
+          Plugins.interface.onSubtitlesDynamicLoadError()
+        })
+    } else {
+      new Promise((resolve) => resolve()).then(() => {
         callback(subtitlesEnabled)
       })
-      .catch(() => {
-        Plugins.interface.onSubtitlesDynamicLoadError()
-      })
+    }
   } else {
     import("./imscsubtitles.js")
       .then(({ default: IMSCSubtitles }) => {
