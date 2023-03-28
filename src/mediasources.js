@@ -52,11 +52,12 @@ function MediaSources() {
 
     updateDebugOutput()
 
-    if (needToGetManifest(windowType, liveSupport)) {
-      loadManifest(callbacks, { windowType, initialWallclockTime: serverDate })
-    } else {
+    if (!needToGetManifest(windowType, liveSupport)) {
       callbacks.onSuccess()
+      return
     }
+
+    loadManifest(callbacks, { windowType, initialWallclockTime: serverDate })
   }
 
   function failover(postFailoverAction, failoverErrorAction, failoverParams) {
@@ -194,9 +195,7 @@ function MediaSources() {
       time = manifestData.time
       transferFormat = manifestData.transferFormat
 
-      DebugTool.info(
-        `Loaded ${transferFormat} manifest with window start: ${time.windowStartTime}, window end: ${time.windowEndTime}, correction: ${time.timeCorrectionSeconds}, offset: ${time.presentationTimeOffsetSeconds}.`
-      )
+      logManifestParsed(transferFormat, time)
       callbacks.onSuccess()
     }
 
@@ -324,6 +323,30 @@ function MediaSources() {
 
   function availableSubtitlesCdns() {
     return subtitlesSources.map((subtitleSource) => subtitleSource.cdn)
+  }
+
+  function logManifestParsed(transferFormat, time) {
+    let logMessage = `Parsed ${transferFormat} manifest.`
+
+    const { presentationTimeOffsetSeconds, timeCorrectionSeconds, windowStartTime, windowEndTime } = time
+
+    if (!isNaN(windowStartTime)) {
+      logMessage += ` Window start time [ms]: ${windowStartTime}.`
+    }
+
+    if (!isNaN(windowEndTime)) {
+      logMessage += ` Window end time [ms]: ${windowEndTime}.`
+    }
+
+    if (!isNaN(timeCorrectionSeconds)) {
+      logMessage += ` Correction [s]: ${timeCorrectionSeconds}.`
+    }
+
+    if (!isNaN(presentationTimeOffsetSeconds)) {
+      logMessage += ` Offset [s]: ${presentationTimeOffsetSeconds}.`
+    }
+
+    DebugTool.info(logMessage)
   }
 
   function updateDebugOutput() {
