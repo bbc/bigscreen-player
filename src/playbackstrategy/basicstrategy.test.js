@@ -49,7 +49,7 @@ describe("HTML5 Strategy", () => {
     ]
 
     mockMediaSources = {
-      time: () => ({ correction: testTimeCorrection }),
+      time: () => ({ timeCorrectionSeconds: testTimeCorrection }),
       currentSource: () => cdnArray[0].url,
     }
   })
@@ -126,34 +126,34 @@ describe("HTML5 Strategy", () => {
       setUpStrategy(null, MediaKinds.VIDEO)
       basicStrategy.load(null, 25)
 
-      expect(videoElement.currentTime).toEqual(25)
+      expect(videoElement.currentTime).toBe(25)
     })
 
     it("should not set the currentTime to start time if one is not provided", () => {
       setUpStrategy(null, MediaKinds.VIDEO)
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
-      expect(videoElement.currentTime).toEqual(0)
+      expect(videoElement.currentTime).toBe(0)
     })
 
     it("should call load on the media element", () => {
       setUpStrategy()
 
       const videoLoadSpy = jest.spyOn(videoElement, "load")
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
       expect(videoLoadSpy).toHaveBeenCalled()
     })
 
     it("should update the media element source if load is when media element already exists", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
       expect(videoElement.src).toBe("http://testcdn1/test/")
 
       mockMediaSources.currentSource = () => cdnArray[1].url
 
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
       expect(videoElement.src).toBe("http://testcdn2/test/")
     })
@@ -162,28 +162,28 @@ describe("HTML5 Strategy", () => {
       setUpStrategy()
       basicStrategy.load(null, 25)
 
-      expect(videoElement.currentTime).toEqual(25)
+      expect(videoElement.currentTime).toBe(25)
 
       basicStrategy.load(null, 35)
 
-      expect(videoElement.currentTime).toEqual(35)
+      expect(videoElement.currentTime).toBe(35)
     })
 
     it("should not update the media element currentTime if load is called without a start time when media element already exists", () => {
       setUpStrategy()
       basicStrategy.load(null, 25)
 
-      expect(videoElement.currentTime).toEqual(25)
+      expect(videoElement.currentTime).toBe(25)
 
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
-      expect(videoElement.currentTime).toEqual(25)
+      expect(videoElement.currentTime).toBe(25)
     })
 
     it("should set up bindings to media element events correctly", () => {
       setUpStrategy()
       const addEventListenerSpy = jest.spyOn(videoElement, "addEventListener")
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
       expect(addEventListenerSpy).toHaveBeenCalledWith("timeupdate", expect.any(Function))
       expect(addEventListenerSpy).toHaveBeenCalledWith("playing", expect.any(Function))
@@ -253,15 +253,11 @@ describe("HTML5 Strategy", () => {
         start: (index) => {
           if (index === 0) {
             return 25
-          } else {
-            return undefined
           }
         },
         end: (index) => {
           if (index === 0) {
             return 100
-          } else {
-            return undefined
           }
         },
         length: 2,
@@ -276,14 +272,14 @@ describe("HTML5 Strategy", () => {
 
     it("returns the correct start and end time before meta data has loaded", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
       expect(basicStrategy.getSeekableRange()).toEqual({ start: 0, end: 0 })
     })
 
     it("returns the correct start and end time once meta data has loaded", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
       expect(basicStrategy.getSeekableRange()).toEqual({ start: 25, end: 100 })
@@ -292,7 +288,7 @@ describe("HTML5 Strategy", () => {
     it("returns the correct start and end time minus any time correction", () => {
       testTimeCorrection = 20
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
       expect(basicStrategy.getSeekableRange()).toEqual({ start: 5, end: 80 })
@@ -307,22 +303,22 @@ describe("HTML5 Strategy", () => {
     it("returns duration of zero before load has been called", () => {
       setUpStrategy()
 
-      expect(basicStrategy.getDuration()).toEqual(0)
+      expect(basicStrategy.getDuration()).toBe(0)
     })
 
     it("returns duration of zero before meta data has loaded", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
-      expect(basicStrategy.getDuration()).toEqual(0)
+      expect(basicStrategy.getDuration()).toBe(0)
     })
 
     it("returns the correct duration once meta data has loaded", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
-      expect(basicStrategy.getDuration()).toEqual(100)
+      expect(basicStrategy.getDuration()).toBe(100)
     })
   })
 
@@ -334,28 +330,28 @@ describe("HTML5 Strategy", () => {
     it("returns currentTime of zero before load has been called", () => {
       setUpStrategy()
 
-      expect(basicStrategy.getCurrentTime()).toEqual(0)
+      expect(basicStrategy.getCurrentTime()).toBe(0)
     })
 
     it("returns the correct currentTime once load has been called", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
-      expect(basicStrategy.getCurrentTime()).toEqual(5)
+      expect(basicStrategy.getCurrentTime()).toBe(5)
 
       videoElement.currentTime = 10
 
-      expect(basicStrategy.getCurrentTime()).toEqual(10)
+      expect(basicStrategy.getCurrentTime()).toBe(10)
     })
 
     it("subtracts any time correction from the media elements current time", () => {
       testTimeCorrection = 20
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
       videoElement.currentTime = 50
 
-      expect(basicStrategy.getCurrentTime()).toEqual(30)
+      expect(basicStrategy.getCurrentTime()).toBe(30)
     })
   })
 
@@ -376,36 +372,36 @@ describe("HTML5 Strategy", () => {
 
     it("sets the current time on the media element to that passed in", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
       basicStrategy.setCurrentTime(10)
 
-      expect(basicStrategy.getCurrentTime()).toEqual(10)
+      expect(basicStrategy.getCurrentTime()).toBe(10)
     })
 
     it("adds time correction from the media source onto the passed in seek time", () => {
       testTimeCorrection = 20
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
       basicStrategy.setCurrentTime(50)
 
-      expect(videoElement.currentTime).toEqual(70)
+      expect(videoElement.currentTime).toBe(70)
     })
 
     it("does not attempt to clamp time if meta data is not loaded", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
 
       // this is greater than expected seekable range. although range does not exist until meta data loaded
       basicStrategy.setCurrentTime(110)
 
-      expect(videoElement.currentTime).toEqual(110)
+      expect(videoElement.currentTime).toBe(110)
     })
 
     it("clamps to 1.1 seconds before seekable range end when seeking to end", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
       basicStrategy.setCurrentTime(seekableRange.end)
@@ -415,7 +411,7 @@ describe("HTML5 Strategy", () => {
 
     it("clamps to 1.1 seconds before seekable range end when seeking past end", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
       basicStrategy.setCurrentTime(seekableRange.end + 10)
@@ -425,7 +421,7 @@ describe("HTML5 Strategy", () => {
 
     it("clamps to 1.1 seconds before seekable range end when seeking prior to end", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
       basicStrategy.setCurrentTime(seekableRange.end - 1)
@@ -435,7 +431,7 @@ describe("HTML5 Strategy", () => {
 
     it("clamps to the start of seekable range when seeking before start of range", () => {
       setUpStrategy()
-      basicStrategy.load(null, undefined)
+      basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
       basicStrategy.setCurrentTime(seekableRange.start - 10)
@@ -450,7 +446,7 @@ describe("HTML5 Strategy", () => {
       basicStrategy.load(null, 0)
       basicStrategy.setPlaybackRate(2)
 
-      expect(videoElement.playbackRate).toEqual(2)
+      expect(videoElement.playbackRate).toBe(2)
     })
 
     it("gets the playback rate on the media element", () => {
@@ -531,7 +527,7 @@ describe("HTML5 Strategy", () => {
       expect(playbackElement.childElementCount).toBe(0)
     })
 
-    it("should empty the eventCallbacks ", () => {
+    it("should empty the eventCallbacks", () => {
       setUpStrategy()
 
       function tearDownAndError() {
@@ -542,7 +538,7 @@ describe("HTML5 Strategy", () => {
         videoElement.dispatchEvent(new Event("pause"))
       }
 
-      expect(tearDownAndError).not.toThrowError()
+      expect(tearDownAndError).not.toThrow()
     })
 
     it("should undefine the error callback", () => {
@@ -574,7 +570,7 @@ describe("HTML5 Strategy", () => {
       basicStrategy.load(null, 0)
       basicStrategy.tearDown()
 
-      expect(basicStrategy.getPlayerElement()).toBe(undefined)
+      expect(basicStrategy.getPlayerElement()).toBeUndefined()
     })
   })
 

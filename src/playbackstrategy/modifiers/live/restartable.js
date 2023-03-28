@@ -4,7 +4,7 @@ import DynamicWindowUtils from "../../../dynamicwindowutils"
 
 function RestartableLivePlayer(mediaPlayer, windowType, mediaSources) {
   const fakeTimer = {}
-  const timeCorrection = mediaSources.time().correction || 0
+  const timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
 
   let callbacksMap = []
   let startTime
@@ -45,8 +45,7 @@ function RestartableLivePlayer(mediaPlayer, windowType, mediaSources) {
     mediaPlayer.removeAllEventCallbacks()
   }
 
-  function pause(opts) {
-    opts = opts || {}
+  function pause(opts = {}) {
     mediaPlayer.pause()
 
     if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
@@ -102,28 +101,25 @@ function RestartableLivePlayer(mediaPlayer, windowType, mediaSources) {
     },
 
     initialiseMedia: (mediaType, sourceUrl, mimeType, sourceContainer, opts) => {
-      if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
-        mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO
-      } else {
-        mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO
-      }
+      const mediaSubType =
+        mediaType === MediaPlayerBase.TYPE.AUDIO ? MediaPlayerBase.TYPE.LIVE_AUDIO : MediaPlayerBase.TYPE.LIVE_VIDEO
 
-      mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts)
+      mediaPlayer.initialiseMedia(mediaSubType, sourceUrl, mimeType, sourceContainer, opts)
     },
 
-    pause: pause,
-    resume: resume,
+    pause,
+    resume,
     stop: () => mediaPlayer.stop(),
     reset: () => mediaPlayer.reset(),
     getState: () => mediaPlayer.getState(),
     getSource: () => mediaPlayer.getSource(),
     getMimeType: () => mediaPlayer.getMimeType(),
-    addEventCallback: addEventCallback,
-    removeEventCallback: removeEventCallback,
-    removeAllEventCallbacks: removeAllEventCallbacks,
+    addEventCallback,
+    removeEventCallback,
+    removeAllEventCallbacks,
     getPlayerElement: () => mediaPlayer.getPlayerElement(),
-    getCurrentTime: getCurrentTime,
-    getSeekableRange: getSeekableRange,
+    getCurrentTime,
+    getSeekableRange,
   }
 }
 

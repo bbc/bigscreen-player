@@ -6,7 +6,7 @@ import DynamicWindowUtils from "../dynamicwindowutils"
 import DOMHelpers from "../domhelpers"
 import handlePlayPromise from "../utils/handleplaypromise"
 
-function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, device) {
+function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
   const CLAMP_OFFSET_SECONDS = 1.1
 
   let eventCallbacks = []
@@ -15,7 +15,7 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement, isU
 
   let mediaElement
   let metaDataLoaded
-  let timeCorrection = (mediaSources.time() && mediaSources.time().correction) || 0
+  let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
 
   function publishMediaState(mediaState) {
     for (let index = 0; index < eventCallbacks.length; index++) {
@@ -47,11 +47,7 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement, isU
   }
 
   function setUpMediaElement(startTime) {
-    if (mediaKind === MediaKinds.AUDIO) {
-      mediaElement = document.createElement("audio")
-    } else {
-      mediaElement = document.createElement("video")
-    }
+    mediaElement = mediaKind === MediaKinds.AUDIO ? document.createElement("audio") : document.createElement("video")
 
     mediaElement.style.position = "absolute"
     mediaElement.style.width = "100%"
@@ -121,7 +117,7 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement, isU
   }
 
   function onError(_event) {
-    let mediaError = {
+    const mediaError = {
       code: (mediaElement && mediaElement.error && mediaElement.error.code) || 0,
       message: (mediaElement && mediaElement.error && mediaElement.error.message) || "unknown",
     }
@@ -142,11 +138,10 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement, isU
         start: mediaElement.seekable.start(0) - timeCorrection,
         end: mediaElement.seekable.end(0) - timeCorrection,
       }
-    } else {
-      return {
-        start: 0,
-        end: 0,
-      }
+    }
+    return {
+      start: 0,
+      end: 0,
     }
   }
 
@@ -192,11 +187,9 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement, isU
 
   function setCurrentTime(time) {
     // Without metadata we cannot clamp to seekableRange
-    if (metaDataLoaded) {
-      mediaElement.currentTime = getClampedTime(time, getSeekableRange()) + timeCorrection
-    } else {
-      mediaElement.currentTime = time + timeCorrection
-    }
+    mediaElement.currentTime = metaDataLoaded
+      ? getClampedTime(time, getSeekableRange()) + timeCorrection
+      : time + timeCorrection
   }
 
   function setPlaybackRate(rate) {
@@ -244,17 +237,13 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement, isU
     timeCorrection = undefined
   }
 
-  function reset() {
-    return
-  }
+  function reset() {}
 
   function isEnded() {
     return mediaElement.ended
   }
 
-  function pause(opts) {
-    opts = opts || {}
-
+  function pause(opts = {}) {
     mediaElement.pause()
     if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
       startAutoResumeTimeout()
@@ -270,24 +259,24 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement, isU
       canBePaused: () => true,
       canBeginSeek: () => true,
     },
-    addEventCallback: addEventCallback,
-    removeEventCallback: removeEventCallback,
-    addErrorCallback: addErrorCallback,
-    addTimeUpdateCallback: addTimeUpdateCallback,
-    load: load,
-    getSeekableRange: getSeekableRange,
-    getCurrentTime: getCurrentTime,
-    getDuration: getDuration,
-    tearDown: tearDown,
-    reset: reset,
-    isEnded: isEnded,
-    isPaused: isPaused,
-    pause: pause,
-    play: play,
-    setCurrentTime: setCurrentTime,
-    setPlaybackRate: setPlaybackRate,
-    getPlaybackRate: getPlaybackRate,
-    getPlayerElement: getPlayerElement,
+    addEventCallback,
+    removeEventCallback,
+    addErrorCallback,
+    addTimeUpdateCallback,
+    load,
+    getSeekableRange,
+    getCurrentTime,
+    getDuration,
+    tearDown,
+    reset,
+    isEnded,
+    isPaused,
+    pause,
+    play,
+    setCurrentTime,
+    setPlaybackRate,
+    getPlaybackRate,
+    getPlayerElement,
   }
 }
 

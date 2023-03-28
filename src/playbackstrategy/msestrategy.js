@@ -19,7 +19,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   let errorCallback
   let timeUpdateCallback
 
-  let timeCorrection = (mediaSources.time() && mediaSources.time().correction) || 0
+  let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
   let failoverTime
   let refreshFailoverTime
   let slidingWindowPausedTime = 0
@@ -40,7 +40,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     },
   }
 
-  let playerSettings = Utils.merge(
+  const playerSettings = Utils.merge(
     {
       debug: {
         logLevel: 2,
@@ -135,7 +135,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     if (event.error && event.error.message) {
-      DebugTool.info("MSE Error: " + event.error.message + " Code: " + event.error.code)
+      DebugTool.info(`MSE Error: ${event.error.message} Code: ${event.error.code}`)
       lastError = event.error
 
       // Don't raise an error on fragment download error
@@ -175,7 +175,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onManifestLoaded(event) {
-    DebugTool.info("Manifest loaded. Duration is: " + event.data.mediaPresentationDuration)
+    DebugTool.info(`Manifest loaded. Duration is: ${event.data.mediaPresentationDuration}`)
 
     if (event.data) {
       const manifest = event.data
@@ -193,7 +193,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onManifestValidityChange(event) {
-    DebugTool.info("Manifest validity changed. Duration is: " + event.newDuration)
+    DebugTool.info(`Manifest validity changed. Duration is: ${event.newDuration}`)
   }
 
   function onStreamInitialised() {
@@ -208,14 +208,12 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function emitPlayerInfo() {
-    if (mediaKind === MediaKinds.VIDEO) {
-      playerMetadata.playbackBitrate =
-        currentPlaybackBitrate(MediaKinds.VIDEO) + currentPlaybackBitrate(MediaKinds.AUDIO)
-    } else {
-      playerMetadata.playbackBitrate = currentPlaybackBitrate(MediaKinds.AUDIO)
-    }
+    playerMetadata.playbackBitrate =
+      mediaKind === MediaKinds.VIDEO
+        ? currentPlaybackBitrate(MediaKinds.VIDEO) + currentPlaybackBitrate(MediaKinds.AUDIO)
+        : currentPlaybackBitrate(MediaKinds.AUDIO)
 
-    DebugTool.keyValue({ key: "playback bitrate", value: playerMetadata.playbackBitrate + " kbps" })
+    DebugTool.keyValue({ key: "playback bitrate", value: `${playerMetadata.playbackBitrate} kbps` })
 
     Plugins.interface.onPlayerInfoUpdated({
       bufferLength: playerMetadata.bufferLength,
@@ -246,13 +244,15 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       const oldBitrate = isNaN(event.oldQuality)
         ? "--"
         : playbackBitrateForRepresentationIndex(event.oldQuality, mediaKind)
-      const oldRepresentation = isNaN(event.oldQuality) ? "Start" : event.oldQuality + " (" + oldBitrate + " kbps)"
-      const newRepresentation =
-        event.newQuality + " (" + playbackBitrateForRepresentationIndex(event.newQuality, mediaKind) + " kbps)"
+      const oldRepresentation = isNaN(event.oldQuality) ? "Start" : `${event.oldQuality} (${oldBitrate} kbps)`
+      const newRepresentation = `${event.newQuality} (${playbackBitrateForRepresentationIndex(
+        event.newQuality,
+        mediaKind
+      )} kbps)`
 
-      DebugTool.keyValue({ key: event.mediaType + " Representation", value: newRepresentation })
+      DebugTool.keyValue({ key: `${event.mediaType} Representation`, value: newRepresentation })
       DebugTool.info(
-        mediaKind + " ABR Change Rendered From Representation " + oldRepresentation + " To " + newRepresentation
+        `${mediaKind} ABR Change Rendered From Representation ${oldRepresentation} To ${newRepresentation}`
       )
     }
 
@@ -277,7 +277,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     function log() {
-      DebugTool.info("BaseUrl selected: " + event.baseUrl.url)
+      DebugTool.info(`BaseUrl selected: ${event.baseUrl.url}`)
       lastError = undefined
     }
 
@@ -286,7 +286,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onServiceLocationAvailable(event) {
-    DebugTool.info("Service Location available: " + event.entry)
+    DebugTool.info(`Service Location available: ${event.entry}`)
   }
 
   function onURLResolutionFailed() {
@@ -294,10 +294,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onMetricAdded(event) {
-    if (event.mediaType === "video") {
-      if (event.metric === "DroppedFrames") {
-        DebugTool.keyValue({ key: "Dropped Frames", value: event.value.droppedFrames })
-      }
+    if (event.mediaType === "video" && event.metric === "DroppedFrames") {
+      DebugTool.keyValue({ key: "Dropped Frames", value: event.value.droppedFrames })
     }
     if (event.mediaType === mediaKind && event.metric === "BufferLevel") {
       dashMetrics = mediaPlayer.getDashMetrics()
@@ -324,8 +322,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
   }
 
-  function onDebugLog(e) {
-    DebugTool.verbose(e.message)
+  function onDebugLog(event) {
+    DebugTool.verbose(event.message)
   }
 
   function publishMediaState(mediaState) {
@@ -366,11 +364,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function setUpMediaElement(playbackElement) {
-    if (mediaKind === MediaKinds.AUDIO) {
-      mediaElement = document.createElement("audio")
-    } else {
-      mediaElement = document.createElement("video")
-    }
+    mediaElement = mediaKind === MediaKinds.AUDIO ? document.createElement("audio") : document.createElement("video")
 
     mediaElement.style.position = "absolute"
     mediaElement.style.width = "100%"
@@ -420,22 +414,21 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
    * @param {Number} startTime
    */
   function calculateSourceAnchor(source, startTime) {
-    if (startTime === undefined || isNaN(startTime)) {
+    if (startTime == null || isNaN(startTime)) {
       return source
     }
 
-    startTime = parseInt(startTime)
+    const parsedStartTime = parseInt(startTime)
 
     if (windowType === WindowTypes.STATIC) {
-      return startTime === 0 ? source : source + "#t=" + startTime
-    } else {
-      const windowStartTimeSeconds = mediaSources.time().windowStartTime / 1000
-      const srcWithTimeAnchor = source + "#t=posix:"
-
-      return startTime === 0
-        ? srcWithTimeAnchor + (windowStartTimeSeconds + 1)
-        : srcWithTimeAnchor + (windowStartTimeSeconds + startTime)
+      return parsedStartTime === 0 ? source : `${source}#t=${parsedStartTime}`
     }
+    const windowStartTimeSeconds = mediaSources.time().windowStartTime / 1000
+    const srcWithTimeAnchor = `${source}#t=posix:`
+
+    return parsedStartTime === 0
+      ? srcWithTimeAnchor + (windowStartTimeSeconds + 1)
+      : srcWithTimeAnchor + (windowStartTimeSeconds + parsedStartTime)
   }
 
   function getSeekableRange() {
@@ -527,21 +520,19 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       canBePaused: () => true,
       canBeginSeek: () => true,
     },
-    addEventCallback: addEventCallback,
-    removeEventCallback: removeEventCallback,
+    addEventCallback,
+    removeEventCallback,
     addErrorCallback: (thisArg, newErrorCallback) => {
       errorCallback = (event) => newErrorCallback.call(thisArg, event)
     },
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    load: load,
-    getSeekableRange: getSeekableRange,
-    getCurrentTime: getCurrentTime,
-    getDuration: getDuration,
-    getPlayerElement: () => {
-      return mediaElement
-    },
+    load,
+    getSeekableRange,
+    getCurrentTime,
+    getDuration,
+    getPlayerElement: () => mediaElement,
     tearDown: () => {
       mediaPlayer.reset()
 
@@ -586,14 +577,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     },
     reset: () => {},
     isEnded: () => isEnded,
-    isPaused: isPaused,
-    pause: (opts) => {
+    isPaused,
+    pause: (opts = {}) => {
       if (windowType === WindowTypes.SLIDING) {
         slidingWindowPausedTime = Date.now()
       }
 
       mediaPlayer.pause()
-      opts = opts || {}
       if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
         startAutoResumeTimeout()
       }
@@ -613,9 +603,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     setPlaybackRate: (rate) => {
       mediaPlayer.setPlaybackRate(rate)
     },
-    getPlaybackRate: () => {
-      return mediaPlayer.getPlaybackRate()
-    },
+    getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
   }
 }
 

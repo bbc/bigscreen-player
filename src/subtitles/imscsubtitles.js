@@ -4,13 +4,14 @@ import DebugTool from "../debugger/debugtool"
 import Plugins from "../plugins"
 import Utils from "../utils/playbackutils"
 import LoadURL from "../utils/loadurl"
-import TimeUtils from "../utils/timeutils"
+import findSegmentTemplate from "../utils/findtemplate"
+
+const SEGMENTS_BUFFER_SIZE = 3
+const LOAD_ERROR_COUNT_MAX = 3
 
 function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
-  const SEGMENTS_TO_KEEP = 3
-  const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
-  const LOAD_ERROR_COUNT_MAX = 3
-  const windowStartEpochSeconds = getWindowStartTime() / 1000
+  const windowStartEpochSeconds = mediaSources?.time().windowStartTime / 1000
+  const presentationTimeOffsetSeconds = mediaSources?.time().presentationTimeOffsetSeconds
 
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
   let currentSegmentRendered = {}
@@ -25,14 +26,30 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     start()
   }
 
+  function getTimeOffset() {
+    return presentationTimeOffsetSeconds || windowStartEpochSeconds
+  }
+
+  function calculateSegmentNumber() {
+    const segmentNumber = Math.floor(getCurrentTime() / mediaSources.currentSubtitlesSegmentLength())
+
+    // Add 1 as the PTO gives segment '0' relative to the presentation time.
+    // DASH segments use one-based indexing, so add 1 to the result of PTO.
+    // (Imagine PTO was 0)
+    if (typeof presentationTimeOffsetSeconds === "number" && isFinite(presentationTimeOffsetSeconds)) {
+      return segmentNumber + 1
+    }
+
+    return segmentNumber
+  }
+
   function loadAllRequiredSegments() {
     const segmentsToLoad = []
-    const currentSegment = TimeUtils.calculateSegmentNumber(
-      windowStartEpochSeconds + mediaPlayer.getCurrentTime(),
-      mediaSources.currentSubtitlesSegmentLength()
-    )
-    for (let index = 0; index < SEGMENTS_TO_KEEP; index++) {
-      const segmentNumber = currentSegment + index
+
+    const currentSegmentNumber = calculateSegmentNumber()
+
+    for (let offset = 0; offset < SEGMENTS_BUFFER_SIZE; offset++) {
+      const segmentNumber = currentSegmentNumber + offset
       const alreadyLoaded = segments.some((segment) => segment.number === segmentNumber)
 
       if (!alreadyLoaded) {
@@ -40,24 +57,25 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       }
     }
 
-    if (SEGMENTS_TO_KEEP === segmentsToLoad.length) {
+    if (SEGMENTS_BUFFER_SIZE === segmentsToLoad.length) {
       // This is to ensure when seeking to a point with no subtitles, don't leave previous subtitle displayed.
       removeCurrentSubtitlesElement()
     }
 
+    const segmentsUrlTemplate = mediaSources.currentSubtitlesSource()
+    const segmentsTemplate = findSegmentTemplate(segmentsUrlTemplate)
+
     segmentsToLoad.forEach((segmentNumber) => {
-      const url = mediaSources.currentSubtitlesSource()
-      loadSegment(url, segmentNumber)
+      loadSegment(segmentsUrlTemplate.replace(segmentsTemplate, segmentNumber), segmentNumber)
     })
   }
 
   function loadSegment(url, segmentNumber) {
-    const segmentUrl = url.replace("$segment$", segmentNumber)
-    LoadURL(segmentUrl, {
+    LoadURL(url, {
       timeout: mediaSources.subtitlesRequestTimeout(),
       onLoad: (responseXML, responseText) => {
         resetLoadErrorCount()
-        if (!responseXML && !liveSubtitles) {
+        if (!responseXML && isSubtitlesWhole()) {
           DebugTool.info("Error: responseXML is invalid.")
           Plugins.interface.onSubtitlesXMLError({ cdn: mediaSources.currentSubtitlesCdn() })
           stop()
@@ -75,7 +93,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
             number: segmentNumber,
           })
 
-          if (segments.length > SEGMENTS_TO_KEEP) {
+          if (segments.length > SEGMENTS_BUFFER_SIZE) {
             pruneSegments()
           }
         } catch (error) {
@@ -113,7 +131,9 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       DebugTool.info("No more CDNs available for subtitle failover")
     }
 
-    if ((liveSubtitles && loadErrorLimit()) || !liveSubtitles) {
+    const isWhole = isSubtitlesWhole()
+
+    if (isWhole || (!isWhole && loadErrorLimit())) {
       stop()
       segments = []
       mediaSources.failoverSubtitles(start, errorCase, opts)
@@ -122,7 +142,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
   function pruneSegments() {
     // Before sorting, check if we've gone back in time, so we know whether to prune from front or back of array
-    const seekedBack = segments[SEGMENTS_TO_KEEP].number < segments[SEGMENTS_TO_KEEP - 1].number
+    const seekedBack = segments[SEGMENTS_BUFFER_SIZE].number < segments[SEGMENTS_BUFFER_SIZE - 1].number
 
     segments.sort((someSegment, otherSegment) => someSegment.number - otherSegment.number)
 
@@ -158,10 +178,6 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     return customStyles
   }
 
-  function isCurrentTimeBehindCurrentSubtitles(currentTime, segments, segmentIndex) {
-    return currentTime < segments[segmentIndex].times[currentSegmentRendered.previousSubtitleIndex]
-  }
-
   function removeCurrentSubtitlesElement() {
     if (currentSubtitlesElement) {
       DOMHelpers.safeRemoveElement(currentSubtitlesElement)
@@ -176,22 +192,10 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     }
   }
 
-  function update(currentTime) {
-    const segment = getSegmentToRender(currentTime)
-
-    if (segment) {
-      render(currentTime, segment.xml)
-    }
-  }
-
   function getSegmentToRender(currentTime) {
     let segment
 
     for (let segmentIndex = 0; segmentIndex < segments.length; segmentIndex++) {
-      if (isCurrentTimeBehindCurrentSubtitles(currentTime, segments, segmentIndex)) {
-        removeCurrentSubtitlesElement()
-      }
-
       for (let timesIndex = 0; timesIndex < segments[segmentIndex].times.length; timesIndex++) {
         const lastOne = segments[segmentIndex].times.length === timesIndex + 1
 
@@ -271,37 +275,49 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function modifyStyling(xml) {
-    if (liveSubtitles && xml && xml.head && xml.head.styling) {
+    if (!isSubtitlesWhole() && xml?.head?.styling) {
       xml.head.styling.initials = defaultStyleOpts.initials
     }
+
     return xml
   }
 
-  function timeIsValid(time) {
-    return time > windowStartEpochSeconds
+  function isSubtitlesWhole() {
+    const subtitlesUrl = mediaSources.currentSubtitlesSource()
+
+    if (typeof subtitlesUrl !== "string") {
+      return false
+    }
+
+    return findSegmentTemplate(subtitlesUrl) == null
+  }
+
+  function isValidTime(time) {
+    return time >= getTimeOffset()
   }
 
   function getCurrentTime() {
-    return liveSubtitles ? windowStartEpochSeconds + mediaPlayer.getCurrentTime() : mediaPlayer.getCurrentTime()
-  }
-
-  function getWindowStartTime() {
-    return mediaSources && mediaSources.time().windowStartTime
+    return isSubtitlesWhole() ? mediaPlayer.getCurrentTime() : getTimeOffset() + mediaPlayer.getCurrentTime()
   }
 
   function start() {
     stop()
+
     const url = mediaSources.currentSubtitlesSource()
+    const isWhole = isSubtitlesWhole()
+
     if (url && url !== "") {
-      if (!liveSubtitles && segments.length === 0) {
+      if (isWhole && segments.length === 0) {
         loadSegment(url)
       }
 
       updateInterval = setInterval(() => {
         const time = getCurrentTime()
-        if (liveSubtitles && timeIsValid(time)) {
+
+        if (!isWhole && isValidTime(time)) {
           loadAllRequiredSegments()
         }
+
         update(time)
       }, 750)
     }
@@ -310,6 +326,14 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   function stop() {
     clearInterval(updateInterval)
     removeCurrentSubtitlesElement()
+  }
+
+  function update(currentTime) {
+    const segment = getSegmentToRender(currentTime)
+
+    if (segment) {
+      render(currentTime, segment.xml)
+    }
   }
 
   function customise(styleOpts, enabled) {

@@ -2,32 +2,32 @@ import ManifestParser from "./manifestparser"
 import TransferFormats from "../models/transferformats"
 import LoadUrl from "../utils/loadurl"
 
-function retrieveDashManifest(url, dateWithOffset, callbacks) {
+function retrieveDashManifest(url, { windowType, initialWallclockTime, onError, onSuccess } = {}) {
   LoadUrl(url, {
     method: "GET",
     headers: {},
     timeout: 10000,
     onLoad: (responseXML, _responseText, _status) => {
       try {
-        if (responseXML) {
-          callbacks.onSuccess({
-            transferFormat: TransferFormats.DASH,
-            time: ManifestParser.parse(responseXML, "mpd", dateWithOffset),
-          })
-        } else {
-          callbacks.onError("Unable to retrieve DASH XML response")
+        if (responseXML == null) {
+          onError("Unable to retrieve DASH XML response")
+          return
         }
-      } catch (ex) {
-        callbacks.onError("Unable to retrieve DASH XML response")
+        onSuccess({
+          transferFormat: TransferFormats.DASH,
+          time: ManifestParser.parse(responseXML, { initialWallclockTime, windowType, type: "mpd" }),
+        })
+      } catch {
+        onError("Unable to retrieve DASH XML response")
       }
     },
     onError: () => {
-      callbacks.onError("Network error: Unable to retrieve DASH manifest")
+      onError("Network error: Unable to retrieve DASH manifest")
     },
   })
 }
 
-function retrieveHLSManifest(url, dateWithOffset, callbacks) {
+function retrieveHLSManifest(url, { windowType, initialWallclockTime, onError, onSuccess } = {}) {
   LoadUrl(url, {
     method: "GET",
     headers: {},
@@ -39,41 +39,42 @@ function retrieveHLSManifest(url, dateWithOffset, callbacks) {
         streamUrl = getStreamUrl(responseText)
       }
       if (streamUrl) {
-        if (!/^http/.test(streamUrl)) {
+        if (streamUrl.indexOf("http") !== 0) {
           const parts = url.split("/")
 
           parts.pop()
           parts.push(streamUrl)
           streamUrl = parts.join("/")
         }
-        loadLivePlaylist(streamUrl, dateWithOffset, callbacks)
+        loadLivePlaylist(streamUrl, { windowType, initialWallclockTime, onError, onSuccess })
       } else {
-        callbacks.onError("Unable to retrieve HLS master playlist")
+        onError("Unable to retrieve HLS master playlist")
       }
     },
     onError: () => {
-      callbacks.onError("Network error: Unable to retrieve HLS master playlist")
+      onError("Network error: Unable to retrieve HLS master playlist")
     },
   })
 }
 
-function loadLivePlaylist(url, dateWithOffset, callbacks) {
+function loadLivePlaylist(url, { windowType, initialWallclockTime, onError, onSuccess } = {}) {
   LoadUrl(url, {
     method: "GET",
     headers: {},
     timeout: 10000,
     onLoad: (_responseXML, responseText) => {
-      if (responseText) {
-        callbacks.onSuccess({
-          transferFormat: TransferFormats.HLS,
-          time: ManifestParser.parse(responseText, "m3u8", dateWithOffset),
-        })
-      } else {
-        callbacks.onError("Unable to retrieve HLS live playlist")
+      if (!responseText) {
+        onError("Unable to retrieve HLS live playlist")
+        return
       }
+
+      onSuccess({
+        transferFormat: TransferFormats.HLS,
+        time: ManifestParser.parse(responseText, { windowType, initialWallclockTime, type: "m3u8" }),
+      })
     },
     onError: () => {
-      callbacks.onError("Network error: Unable to retrieve HLS live playlist")
+      onError("Network error: Unable to retrieve HLS live playlist")
     },
   })
 }
@@ -87,13 +88,13 @@ function getStreamUrl(data) {
 }
 
 export default {
-  load: (mediaUrl, serverDate, callbacks) => {
-    if (/\.m3u8($|\?.*$)/.test(mediaUrl)) {
-      retrieveHLSManifest(mediaUrl, serverDate, callbacks)
-    } else if (/\.mpd($|\?.*$)/.test(mediaUrl)) {
-      retrieveDashManifest(mediaUrl, serverDate, callbacks)
+  load: (mediaUrl, { windowType, initialWallclockTime, onError, onSuccess } = {}) => {
+    if (/\.mpd($|\?.*$)/.test(mediaUrl)) {
+      retrieveDashManifest(mediaUrl, { windowType, initialWallclockTime, onError, onSuccess })
+    } else if (/\.m3u8($|\?.*$)/.test(mediaUrl)) {
+      retrieveHLSManifest(mediaUrl, { windowType, initialWallclockTime, onError, onSuccess })
     } else {
-      callbacks.onError("Invalid media url")
+      onError("Invalid media url")
     }
   },
 }

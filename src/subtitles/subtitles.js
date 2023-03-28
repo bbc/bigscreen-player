@@ -1,10 +1,8 @@
 import Plugins from "../plugins"
+import findSegmentTemplate from "../utils/findtemplate"
 
 function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
-  const liveSubtitles = !!mediaSources.currentSubtitlesSegmentLength()
-  const useLegacySubs =
-    (window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles) ||
-    false
+  const useLegacySubs = window.bigscreenPlayer?.overrides?.legacySubtitles ?? false
 
   let subtitlesEnabled = autoStart
   let subtitlesContainer
@@ -39,13 +37,13 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
 
   function show() {
     if (available() && enabled()) {
-      subtitlesContainer && subtitlesContainer.start()
+      subtitlesContainer?.start()
     }
   }
 
   function hide() {
     if (available()) {
-      subtitlesContainer && subtitlesContainer.stop()
+      subtitlesContainer?.stop()
     }
   }
 
@@ -54,45 +52,49 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
   }
 
   function available() {
-    if (liveSubtitles && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles) {
+    const url = mediaSources.currentSubtitlesSource()
+
+    if (!(typeof url === "string" && url !== "")) {
       return false
-    } else {
-      return !!mediaSources.currentSubtitlesSource()
     }
+
+    const isWhole = findSegmentTemplate(url) == null
+
+    return isWhole || !useLegacySubs
   }
 
   function setPosition(position) {
-    subtitlesContainer && subtitlesContainer.updatePosition(position)
+    subtitlesContainer?.updatePosition(position)
   }
 
   function customise(styleOpts) {
-    subtitlesContainer && subtitlesContainer.customise(styleOpts, subtitlesEnabled)
+    subtitlesContainer?.customise(styleOpts, subtitlesEnabled)
   }
 
   function renderExample(exampleXmlString, styleOpts, safePosition) {
-    subtitlesContainer && subtitlesContainer.renderExample(exampleXmlString, styleOpts, safePosition)
+    subtitlesContainer?.renderExample(exampleXmlString, styleOpts, safePosition)
   }
 
   function clearExample() {
-    subtitlesContainer && subtitlesContainer.clearExample()
+    subtitlesContainer?.clearExample()
   }
 
   function tearDown() {
-    subtitlesContainer && subtitlesContainer.tearDown()
+    subtitlesContainer?.tearDown()
   }
 
   return {
-    enable: enable,
-    disable: disable,
-    show: show,
-    hide: hide,
-    enabled: enabled,
-    available: available,
-    setPosition: setPosition,
-    customise: customise,
-    renderExample: renderExample,
-    clearExample: clearExample,
-    tearDown: tearDown,
+    enable,
+    disable,
+    show,
+    hide,
+    enabled,
+    available,
+    setPosition,
+    customise,
+    renderExample,
+    clearExample,
+    tearDown,
   }
 }
 

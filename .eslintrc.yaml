@@ -44,7 +44,7 @@ rules:
   default-param-last: error
   dot-notation: error
   eqeqeq: [error, allow-null]
-  id-length: [error, { min: 2 }]
+  id-length: [error, { min: 2, exceptions: ["_"] }]
   max-nested-callbacks: [error, 3]
   new-cap: [error, { newIsCap: true, capIsNew: false }]
   no-else-return: error
@@ -112,7 +112,7 @@ rules:
   no-unneeded-ternary: error
   no-unreachable-loop: error
   no-unused-private-class-members: error
-  no-unused-vars: [error, { argsIgnorePattern: "^_" }]
+  no-unused-vars: [error, { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }]
   no-useless-call: error
   no-useless-constructor: error
   no-useless-return: error
@@ -131,7 +131,10 @@ rules:
 
   # TV compatibility
   no-prototype-builtins: off
+  sonarjs/no-duplicate-string: off
+  unicorn/no-array-callback-reference: off
   unicorn/no-array-for-each: off
+  unicorn/no-array-method-this-argument: off
   unicorn/no-for-loop: off
   unicorn/numeric-separators-style: off
   unicorn/prefer-array-flat: off

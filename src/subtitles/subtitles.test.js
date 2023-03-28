@@ -1,41 +1,41 @@
+/* eslint-disable jest/no-done-callback */
+import IMSCSubtitles from "./imscsubtitles"
+import LegacySubtitles from "./legacysubtitles"
 import Subtitles from "./subtitles"
 
-const mockLegacySubtitles = jest.fn()
-jest.mock("./legacysubtitles", () => {
-  return mockLegacySubtitles
-})
-
-const mockImscSubtitles = jest.fn()
-jest.mock("./imscsubtitles", () => {
-  return mockImscSubtitles
-})
+jest.mock("./imscsubtitles")
+jest.mock("./legacysubtitles")
 
 describe("Subtitles", () => {
-  let mediaSourcesMock
-  let subtitlesAvailable
-  let live
+  let isAvailable
+  let isSegmented
 
-  mediaSourcesMock = {
+  let playbackElement = null
+
+  const mockMediaSources = {
     subtitlesRequestTimeout: jest.fn(),
-    currentSubtitlesSource: () => {
-      if (subtitlesAvailable) {
-        return "http://subtitles.example.test"
-      } else {
+    currentSubtitlesSource: jest.fn(() => {
+      if (!isAvailable) {
         return ""
       }
-    },
-    currentSubtitlesSegmentLength: () => {
-      return live ? 3.84 : undefined
-    },
+
+      return isSegmented ? "mock://some.media/captions/$segment$.m4s" : "mock://some.media/captions/subtitles.xml"
+    }),
+    currentSubtitlesSegmentLength: jest.fn(() => (isSegmented ? 3.84 : null)),
   }
 
   beforeEach(() => {
-    subtitlesAvailable = true
-    live = false
-  })
-
-  afterEach(() => {
+    // Clean up settings on window
     window.bigscreenPlayer = {}
+
+    // Clean up and initialise playback element
+    playbackElement?.remove()
+    playbackElement = document.createElement("div")
+    document.body.append(playbackElement)
+
+    // Reset captions state
+    isAvailable = true
+    isSegmented = false
   })
 
   describe("strategy construction", () => {
@@ -51,14 +51,12 @@ describe("Subtitles", () => {
       it("implementation is available when legacy subtitles override is true", (done) => {
         const mockMediaPlayer = {}
         const autoStart = true
-        const mockPlaybackElement = document.createElement("div")
-        const mockCallback = (result) => {
-          expect(result).toBe(true)
-          expect(mockLegacySubtitles).toHaveBeenCalledTimes(1)
-          done()
-        }
 
-        Subtitles(mockMediaPlayer, autoStart, mockPlaybackElement, null, mediaSourcesMock, mockCallback)
+        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
+          expect(result).toBe(true)
+          expect(LegacySubtitles).toHaveBeenCalledTimes(1)
+          done()
+        })
       })
     })
 
@@ -66,420 +64,376 @@ describe("Subtitles", () => {
       it("implementation is available when legacy subtitles override is false", (done) => {
         const mockMediaPlayer = {}
         const autoStart = true
-        const mockPlaybackElement = document.createElement("div")
-        const mockCallback = (result) => {
-          expect(result).toBe(true)
-          expect(mockImscSubtitles).toHaveBeenCalledTimes(1)
-          done()
-        }
 
-        Subtitles(mockMediaPlayer, autoStart, mockPlaybackElement, null, mediaSourcesMock, mockCallback)
+        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
+          expect(result).toBe(true)
+          expect(IMSCSubtitles).toHaveBeenCalledTimes(1)
+          done()
+        })
       })
     })
   })
 
   describe("generic calls", () => {
-    let subtitlesContainerSpies
-    let subtitlesContainer
+    const mockSubtitlesInterface = {
+      start: jest.fn(),
+      stop: jest.fn(),
+      updatePosition: jest.fn(),
+      customise: jest.fn(),
+      renderExample: jest.fn(),
+      clearExample: jest.fn(),
+      tearDown: jest.fn(),
+    }
 
     const mockMediaPlayer = {}
     const autoStart = true
-    const mockPlaybackElement = document.createElement("div")
     const customDefaultStyle = {}
 
-    beforeEach(() => {
-      subtitlesContainerSpies = {
-        start: jest.fn(),
-        stop: jest.fn(),
-        updatePosition: jest.fn(),
-        customise: jest.fn(),
-        renderExample: jest.fn(),
-        clearExample: jest.fn(),
-        tearDown: jest.fn(),
-      }
-      subtitlesContainer = mockImscSubtitles
-      subtitlesContainer.mockImplementation(() => {
-        return subtitlesContainerSpies
-      })
+    beforeAll(() => {
+      // Mock one of the subtitle strategies with the interface
+      IMSCSubtitles.mockReturnValue(mockSubtitlesInterface)
     })
 
-    afterEach(() => {
-      subtitlesContainerSpies.start.mockReset()
-      subtitlesContainerSpies.stop.mockReset()
-      subtitlesContainerSpies.updatePosition.mockReset()
-      subtitlesContainerSpies.tearDown.mockReset()
+    beforeEach(() => {
+      mockSubtitlesInterface.start.mockReset()
+      mockSubtitlesInterface.stop.mockReset()
+      mockSubtitlesInterface.tearDown.mockReset()
+      mockSubtitlesInterface.updatePosition.mockReset()
     })
 
     describe("construction", () => {
       it("calls subtitles strategy with the correct arguments", (done) => {
-        const mockCallback = (result) => {
+        Subtitles(mockMediaPlayer, autoStart, playbackElement, customDefaultStyle, mockMediaSources, (result) => {
           expect(result).toBe(true)
-          expect(subtitlesContainer).toHaveBeenCalledWith(
+          expect(IMSCSubtitles).toHaveBeenCalledWith(
             mockMediaPlayer,
             autoStart,
-            mockPlaybackElement,
-            mediaSourcesMock,
+            playbackElement,
+            mockMediaSources,
             customDefaultStyle
           )
           done()
-        }
-
-        Subtitles(mockMediaPlayer, autoStart, mockPlaybackElement, customDefaultStyle, mediaSourcesMock, mockCallback)
+        })
       })
     })
 
     describe("show", () => {
       it("should start subtitles when enabled and available", (done) => {
-        const mockCallback = () => {
-          subtitles.enable()
-          subtitles.show()
-
-          expect(subtitlesContainerSpies.start).toHaveBeenCalledTimes(1)
-          done()
-        }
-
         const subtitles = Subtitles(
           mockMediaPlayer,
           autoStart,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.enable()
+            subtitles.show()
+
+            expect(mockSubtitlesInterface.start).toHaveBeenCalledTimes(1)
+            done()
+          }
         )
       })
 
       it("should not start subtitles when disabled and available", (done) => {
-        const mockCallback = () => {
-          subtitles.disable()
-          subtitles.show()
-
-          expect(subtitlesContainerSpies.start).not.toHaveBeenCalled()
-          done()
-        }
         const subtitles = Subtitles(
           mockMediaPlayer,
           autoStart,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.disable()
+            subtitles.show()
+
+            expect(mockSubtitlesInterface.start).not.toHaveBeenCalled()
+            done()
+          }
         )
       })
 
       it("should not start subtitles when enabled and unavailable", (done) => {
-        const mockCallback = () => {
-          subtitles.enable()
-          subtitles.show()
+        isAvailable = false
 
-          expect(subtitlesContainerSpies.start).not.toHaveBeenCalled()
-          done()
-        }
-
-        subtitlesAvailable = false
         const subtitles = Subtitles(
           mockMediaPlayer,
           autoStart,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.enable()
+            subtitles.show()
+
+            expect(mockSubtitlesInterface.start).not.toHaveBeenCalled()
+            done()
+          }
         )
       })
 
       it("should not start subtitles when disabled and unavailable", (done) => {
-        const mockCallback = () => {
-          subtitles.disable()
-          subtitles.show()
+        isAvailable = false
 
-          expect(subtitlesContainerSpies.start).not.toHaveBeenCalled()
-          done()
-        }
-
-        subtitlesAvailable = false
         const subtitles = Subtitles(
           mockMediaPlayer,
           autoStart,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.disable()
+            subtitles.show()
+
+            expect(mockSubtitlesInterface.start).not.toHaveBeenCalled()
+            done()
+          }
         )
       })
     })
 
     describe("hide", () => {
       it("should stop subtitles when available", (done) => {
-        const mockCallback = () => {
-          subtitles.hide()
+        isAvailable = true
 
-          expect(subtitlesContainerSpies.stop).toHaveBeenCalledTimes(1)
-          done()
-        }
-
-        subtitlesAvailable = true
         const subtitles = Subtitles(
           mockMediaPlayer,
           autoStart,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.hide()
+
+            expect(mockSubtitlesInterface.stop).toHaveBeenCalledTimes(1)
+            done()
+          }
         )
       })
     })
 
     describe("enable", () => {
       it("should set enabled state to true", (done) => {
-        const mockCallback = () => {
-          subtitles.enable()
+        isAvailable = true
 
-          expect(subtitles.enabled()).toEqual(true)
-          done()
-        }
-
-        subtitlesAvailable = true
         const subtitles = Subtitles(
           mockMediaPlayer,
           autoStart,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.enable()
+
+            expect(subtitles.enabled()).toBe(true)
+            done()
+          }
         )
       })
     })
 
     describe("disable", () => {
       it("should set enabled state to false", (done) => {
-        const mockCallback = () => {
-          subtitles.disable()
+        isAvailable = true
 
-          expect(subtitlesContainerSpies.stop).not.toHaveBeenCalled()
-          expect(subtitles.enabled()).toEqual(false)
-          done()
-        }
-
-        subtitlesAvailable = true
         const subtitles = Subtitles(
           mockMediaPlayer,
           autoStart,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.disable()
+
+            expect(mockSubtitlesInterface.stop).not.toHaveBeenCalled()
+            expect(subtitles.enabled()).toBe(false)
+            done()
+          }
         )
       })
     })
 
     describe("enabled", () => {
       it("should return true if subtitles are enabled at construction", (done) => {
-        const mockCallback = () => {
-          expect(subtitles.enabled()).toEqual(true)
-          done()
-        }
+        isAvailable = true
 
-        subtitlesAvailable = true
         const subtitles = Subtitles(
           mockMediaPlayer,
           autoStart,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            expect(subtitles.enabled()).toBe(true)
+            done()
+          }
         )
       })
 
       it("should return true if subtitles are enabled by an api call", (done) => {
-        const mockCallback = () => {
-          subtitles.enable()
+        isAvailable = true
 
-          expect(subtitles.enabled()).toEqual(true)
-          done()
-        }
-
-        subtitlesAvailable = true
         const subtitles = Subtitles(
           mockMediaPlayer,
           false,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.enable()
+
+            expect(subtitles.enabled()).toBe(true)
+            done()
+          }
         )
       })
 
       it("should return false if subtitles are disabled at construction", (done) => {
-        const mockCallback = () => {
-          expect(subtitles.enabled()).toEqual(false)
-          done()
-        }
+        isAvailable = true
 
-        subtitlesAvailable = true
         const subtitles = Subtitles(
           mockMediaPlayer,
           false,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            expect(subtitles.enabled()).toBe(false)
+            done()
+          }
         )
       })
 
       it("should return true if subtitles are disabled by an api call", (done) => {
-        const mockCallback = () => {
-          subtitles.disable()
+        isAvailable = true
 
-          expect(subtitles.enabled()).toEqual(false)
-          done()
-        }
-
-        subtitlesAvailable = true
         const subtitles = Subtitles(
           mockMediaPlayer,
           true,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.disable()
+
+            expect(subtitles.enabled()).toBe(false)
+            done()
+          }
         )
       })
     })
 
     describe("available", () => {
-      it("should return true if VOD and url exists", (done) => {
-        const mockCallback = () => {
-          subtitles.enable()
+      it("returns true if url to subtitles delivered as a whole exists", (done) => {
+        isAvailable = true
+        isSegmented = false
 
-          expect(subtitles.available()).toEqual(true)
-          done()
-        }
-
-        subtitlesAvailable = true
         const subtitles = Subtitles(
           mockMediaPlayer,
           true,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            expect(subtitles.available()).toBe(true)
+            done()
+          }
         )
       })
 
-      it("should return true if LIVE, url exists and no override", (done) => {
-        const mockCallback = () => {
-          expect(subtitles.available()).toEqual(true)
-          done()
-        }
+      it("returns true if url to subtitles delivered as segments exists for imsc", (done) => {
+        isAvailable = true
+        isSegmented = true
 
-        subtitlesAvailable = true
         const subtitles = Subtitles(
           mockMediaPlayer,
           true,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            expect(subtitles.available()).toBe(true)
+            done()
+          }
         )
       })
 
-      it("should return true if VOD, url exists and legacy override exists", (done) => {
-        window.bigscreenPlayer = {
-          overrides: {
-            legacySubtitles: true,
-          },
-        }
-        const mockCallback = () => {
-          expect(subtitles.available()).toEqual(true)
-          done()
-        }
-
-        subtitlesAvailable = true
-        const subtitles = Subtitles(
-          mockMediaPlayer,
-          true,
-          mockPlaybackElement,
-          customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
-        )
-      })
-
-      it("should return false if LIVE, url exists and legacy override exists", (done) => {
-        live = true
+      it("returns true for whole subtitles when legacy strategy is forced", (done) => {
         window.bigscreenPlayer = {
           overrides: {
             legacySubtitles: true,
           },
         }
 
-        const mockCallback = () => {
-          expect(subtitles.available()).toEqual(false)
-          done()
-        }
+        isAvailable = true
+        isSegmented = false
 
         const subtitles = Subtitles(
           mockMediaPlayer,
           true,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            expect(subtitles.available()).toBe(true)
+            done()
+          }
         )
       })
 
-      it("should return false if VOD and no url exists", (done) => {
-        const mockCallback = () => {
-          expect(subtitles.available()).toEqual(false)
-          done()
+      it("returns false for segmented subtitles when the legacy strategy is forced", (done) => {
+        window.bigscreenPlayer = {
+          overrides: {
+            legacySubtitles: true,
+          },
         }
 
-        subtitlesAvailable = false
+        isAvailable = true
+        isSegmented = true
+
+        const subtitles = Subtitles(
+          mockMediaPlayer,
+          true,
+          playbackElement,
+          customDefaultStyle,
+          mockMediaSources,
+          () => {
+            expect(subtitles.available()).toBe(false)
+            done()
+          }
+        )
+      })
+
+      it("should return false when no url exists", (done) => {
+        isAvailable = false
+
         const subtitles = Subtitles(
           mockMediaPlayer,
           false,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
-        )
-      })
-
-      it("should return false if LIVE and no url exists", (done) => {
-        subtitlesAvailable = false
-        live = true
-
-        const mockCallback = () => {
-          expect(subtitles.available()).toEqual(false)
-          done()
-        }
-
-        const subtitles = Subtitles(
-          mockMediaPlayer,
-          true,
-          mockPlaybackElement,
-          customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            expect(subtitles.available()).toBe(false)
+            done()
+          }
         )
       })
     })
 
     describe("setPosition", () => {
       it("calls through to subtitlesContainer updatePosition", (done) => {
-        const mockCallback = () => {
-          subtitles.setPosition("center")
-
-          expect(subtitlesContainerSpies.updatePosition).toHaveBeenCalledWith("center")
-          done()
-        }
-
         const subtitles = Subtitles(
           mockMediaPlayer,
           true,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.setPosition("center")
+
+            expect(mockSubtitlesInterface.updatePosition).toHaveBeenCalledWith("center")
+            done()
+          }
         )
       })
     })
@@ -488,87 +442,79 @@ describe("Subtitles", () => {
       it("passes through custom style object and enabled state to subtitlesContainer customise function", (done) => {
         const customStyleObj = { size: 0.7 }
 
-        const mockCallback = () => {
-          subtitles.customise(customStyleObj)
-
-          expect(subtitlesContainerSpies.customise).toHaveBeenCalledWith(customStyleObj, true)
-          done()
-        }
-
         const subtitles = Subtitles(
           mockMediaPlayer,
           true,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.customise(customStyleObj)
+
+            expect(mockSubtitlesInterface.customise).toHaveBeenCalledWith(customStyleObj, true)
+            done()
+          }
         )
       })
     })
 
     describe("renderExample", () => {
       it("calls subtitlesContainer renderExample function with correct values", (done) => {
-        const mockCallback = () => {
-          const exampleXMLString = "<tt></tt>"
-          const customStyleObj = { size: 0.7 }
-          const safePosition = { top: 0, right: 0, bottom: 0, left: 30 }
-          subtitles.renderExample(exampleXMLString, customStyleObj, safePosition)
-
-          expect(subtitlesContainerSpies.renderExample).toHaveBeenCalledWith(
-            exampleXMLString,
-            customStyleObj,
-            safePosition
-          )
-          done()
-        }
-
         const subtitles = Subtitles(
           mockMediaPlayer,
           true,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            const exampleXMLString = "<tt></tt>"
+            const customStyleObj = { size: 0.7 }
+            const safePosition = { top: 0, right: 0, bottom: 0, left: 30 }
+            subtitles.renderExample(exampleXMLString, customStyleObj, safePosition)
+
+            expect(mockSubtitlesInterface.renderExample).toHaveBeenCalledWith(
+              exampleXMLString,
+              customStyleObj,
+              safePosition
+            )
+            done()
+          }
         )
       })
     })
 
     describe("clearExample", () => {
-      it("calls subtitlesContainer clearExample function ", (done) => {
-        const mockCallback = () => {
-          subtitles.clearExample()
-
-          expect(subtitlesContainerSpies.clearExample).toHaveBeenCalledTimes(1)
-          done()
-        }
-
+      it("calls subtitlesContainer clearExample function", (done) => {
         const subtitles = Subtitles(
           mockMediaPlayer,
           true,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.clearExample()
+
+            expect(mockSubtitlesInterface.clearExample).toHaveBeenCalledTimes(1)
+            done()
+          }
         )
       })
     })
 
     describe("tearDown", () => {
       it("calls through to subtitlesContainer tearDown", (done) => {
-        const mockCallback = () => {
-          subtitles.tearDown()
-
-          expect(subtitlesContainerSpies.tearDown).toHaveBeenCalledTimes(1)
-          done()
-        }
-
         const subtitles = Subtitles(
           mockMediaPlayer,
           true,
-          mockPlaybackElement,
+          playbackElement,
           customDefaultStyle,
-          mediaSourcesMock,
-          mockCallback
+          mockMediaSources,
+          () => {
+            subtitles.tearDown()
+
+            expect(mockSubtitlesInterface.tearDown).toHaveBeenCalledTimes(1)
+            done()
+          }
         )
       })
     })

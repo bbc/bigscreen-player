@@ -9,14 +9,11 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
 
   const setSourceOpts = {
     disableSentinels:
-      !!isUHD &&
-      windowType !== WindowTypes.STATIC &&
-      window.bigscreenPlayer.overrides &&
-      window.bigscreenPlayer.overrides.liveUhdDisableSentinels,
-    disableSeekSentinel: window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.disableSeekSentinel,
+      !!isUHD && windowType !== WindowTypes.STATIC && window.bigscreenPlayer?.overrides?.liveUhdDisableSentinels,
+    disableSeekSentinel: window.bigscreenPlayer?.overrides?.disableSeekSentinel,
   }
 
-  const timeCorrection = (mediaSources.time() && mediaSources.time().correction) || 0
+  const timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
   const mediaPlayer = player
   const eventHistory = []
 
@@ -62,7 +59,7 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
     if (handleEvent.hasOwnProperty(event.type)) {
       handleEvent[event.type].call(this, event)
     } else {
-      DebugTool.info(getSelection() + " Event:" + event.type)
+      DebugTool.info(`${getSelection()} Event:${event.type}`)
     }
 
     if (event.type !== "status") {
@@ -70,7 +67,7 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
         eventHistory.pop()
       }
 
-      eventHistory.unshift({ type: event.type, time: new Date().getTime() })
+      eventHistory.unshift({ type: event.type, time: Date.now() })
     }
   }
 
@@ -120,7 +117,7 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
     if (handleErrorOnExitingSeek && exitingSeek) {
       restartMediaPlayer()
     } else {
-      let mediaError = {
+      const mediaError = {
         code: error.code || 0,
         message: error.message || "unknown",
       }
@@ -149,11 +146,9 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
     }
   }
 
-  function onSeekFinished(event) {
-    if (requiresLiveCurtain()) {
-      if (liveGlitchCurtain) {
-        liveGlitchCurtain.hideCurtain()
-      }
+  function onSeekFinished() {
+    if (requiresLiveCurtain() && liveGlitchCurtain) {
+      liveGlitchCurtain.hideCurtain()
     }
   }
 
@@ -233,7 +228,7 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
   }
 
   return {
-    transitions: transitions,
+    transitions,
     addEventCallback: (thisArg, newCallback) => {
       eventCallback = (event) => newCallback.call(thisArg, event)
     },
@@ -251,7 +246,8 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
       const isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime
 
       mediaPlayer.initialiseMedia("video", mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
-      if (mediaPlayer.beginPlaybackFrom && !isPlaybackFromLivePoint) {
+
+      if (!isPlaybackFromLivePoint && typeof mediaPlayer.beginPlaybackFrom === "function") {
         currentTime = startTime
         DebugTool.keyValue({ key: "initial-playback-time", value: startTime + timeCorrection })
         mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0)
@@ -293,16 +289,15 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
           start: 0,
           end: duration,
         }
-      } else {
-        const seekableRange = (mediaPlayer.getSeekableRange && mediaPlayer.getSeekableRange()) || {}
-        if (seekableRange.hasOwnProperty("start")) {
-          seekableRange.start = seekableRange.start - timeCorrection
-        }
-        if (seekableRange.hasOwnProperty("end")) {
-          seekableRange.end = seekableRange.end - timeCorrection
-        }
-        return seekableRange
       }
+      const seekableRange = (mediaPlayer.getSeekableRange && mediaPlayer.getSeekableRange()) || {}
+      if (seekableRange.hasOwnProperty("start")) {
+        seekableRange.start = seekableRange.start - timeCorrection
+      }
+      if (seekableRange.hasOwnProperty("end")) {
+        seekableRange.end = seekableRange.end - timeCorrection
+      }
+      return seekableRange
     },
     setPlaybackRate: (rate) => {
       if (typeof mediaPlayer.setPlaybackRate === "function") {
@@ -313,29 +308,27 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
       if (typeof mediaPlayer.getPlaybackRate === "function") {
         return mediaPlayer.getPlaybackRate()
       }
-      return 1.0
+      return 1
     },
-    getCurrentTime: () => {
-      return currentTime
-    },
+    getCurrentTime: () => currentTime,
     setCurrentTime: (seekToTime) => {
       isEnded = false
       currentTime = seekToTime
-      seekToTime += timeCorrection
+      const correctedSeekToTime = seekToTime + timeCorrection
 
       if (handleErrorOnExitingSeek || delayPauseOnExitSeek) {
-        targetSeekToTime = seekToTime
+        targetSeekToTime = correctedSeekToTime
         exitingSeek = true
         pauseOnExitSeek = isPaused
       }
 
-      mediaPlayer.playFrom && mediaPlayer.playFrom(seekToTime)
+      mediaPlayer.playFrom && mediaPlayer.playFrom(correctedSeekToTime)
       if (isPaused && !delayPauseOnExitSeek) {
         mediaPlayer.pause()
       }
     },
     getStrategy: getStrategy(),
-    reset: reset,
+    reset,
     tearDown: () => {
       mediaPlayer.removeAllEventCallbacks()
       pauseOnExitSeek = false

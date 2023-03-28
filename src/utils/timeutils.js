@@ -1,5 +1,5 @@
 function durationToSeconds(duration) {
-  const matches = duration.match(/^PT(\d+(?:[,\.]\d+)?H)?(\d+(?:[,\.]\d+)?M)?(\d+(?:[,\.]\d+)?S)?/) || []
+  const matches = duration.match(/^PT(\d+(?:[,.]\d+)?H)?(\d+(?:[,.]\d+)?M)?(\d+(?:[,.]\d+)?S)?/) || []
 
   const hours = parseFloat(matches[1] || 0) * 60 * 60
   const mins = parseFloat(matches[2] || 0) * 60
@@ -31,14 +31,9 @@ function calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrectio
   return dashRelativeTime - (Date.now() - slidingWindowPausedTime) / 1000
 }
 
-function calculateSegmentNumber(epochTimeInSeconds, segmentLength) {
-  return Math.floor(epochTimeInSeconds / segmentLength)
-}
-
 export default {
-  durationToSeconds: durationToSeconds,
-  convertToSeekableVideoTime: convertToSeekableVideoTime,
-  convertToVideoTime: convertToVideoTime,
-  calculateSlidingWindowSeekOffset: calculateSlidingWindowSeekOffset,
-  calculateSegmentNumber: calculateSegmentNumber,
+  durationToSeconds,
+  convertToSeekableVideoTime,
+  convertToVideoTime,
+  calculateSlidingWindowSeekOffset,
 }
