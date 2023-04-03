@@ -8,6 +8,7 @@
     "includePattern": ".js$",
     "excludePattern": "(node_modules/|docs)"
   },
+  "sourceType": "module",
   "plugins": ["plugins/markdown"],
   "templates": {
     "cleverLinks": false,
@@ -22,17 +23,30 @@
     }
   },
   "opts": {
-    "destination": "./docs/api",
+    "template": "node_modules/clean-jsdoc-theme",
     "encoding": "utf8",
+    "destination": "./docs/api",
     "recurse": true,
     "hierarchy": true,
     "readme": "README.md",
     "tutorials": "./docs/tutorials",
-    "template": "node_modules/clean-jsdoc-theme",
     "theme_opts": {
-      "theme": "dark",
+      "default_theme": "dark",
+      "base_url": "https://bbc.github.io/bigscreen-player/api/",
+      "favicon": "favicon.ico",
+      "homepageTitle": "Docs: Bigscreen Player",
       "title": "<img src='bsp-logo.png'/>",
-      "footer": "",
+      "menu": [
+        { "title": "Home", "link": "index.html" },
+        { "title": "Repo", "link": "https://github.com/bbc/bigscreen-player" }
+      ],
+      "sections": ["Tutorials", "Modules"],
+      "meta": [
+        {
+          "name": "description",
+          "content": "Simplified media playback for bigscreen devices"
+        }
+      ],
       "search": {
         "shouldSort": true,
         "threshold": 0.4,
@@ -41,12 +55,12 @@
         "maxPatternLength": 32,
         "minMatchCharLength": 1
       },
-      "meta": [
-        {
-          "name": "description",
-          "content": "Simplified media playback for bigscreen devices"
-        }
-      ]
+      "footer": ""
     }
+  },
+  "markdown": {
+    "$comment": "Important for `clean-jsdoc-theme`",
+    "hardwrap": false,
+    "idInHeadings": true
   }
 }
