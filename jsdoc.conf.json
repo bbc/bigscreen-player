@@ -35,7 +35,7 @@
       "base_url": "https://bbc.github.io/bigscreen-player/api/",
       "favicon": "favicon.ico",
       "homepageTitle": "Docs: Bigscreen Player",
-      "title": "<img src='bsp-logo.png'/>",
+      "title": "<a href='index.html'><img alt='The logo for bigscreen player' src='bsp-logo.png'/></a>",
       "menu": [
         { "title": "Home", "link": "index.html" },
         { "title": "Repo", "link": "https://github.com/bbc/bigscreen-player" }
