@@ -6,7 +6,7 @@ TL;DR
 
 You provide your subtitles to BigscreenPlayer in `media.captions` of the data object calling `.init()`. `media.captions` is an array. Each object in the captions array __must__ have a property `url`: A valid hyperlink to a subtitles resource.
 
-Any subtitles resource you provide to BigscreenPlayer must be encoded with MIME type `application/ttml+xml` or `application/ttaf+xml`.
+Any subtitles resource you provide to BigscreenPlayer __must__ be encoded with MIME type `application/ttml+xml` or `application/ttaf+xml`.
 
 There are different requirements for subtitles delivered _as a whole_ and subtitles delivered _as segments_:
 
@@ -26,7 +26,7 @@ Subtitles delivered as a whole do not require any additional metadata in the man
 
 ### As Segments
 
-Subtitles are delivered "as segments" when the captions' `url` is an URL template. An URL is considered a segment template when it ends with a `$...$` block. For example:
+Subtitles are delivered "as segments" when the captions' `url` is an URL template. An URL is considered a segment template when it contains a `$...$` block. For example:
 
 ```js
 const captions = [
@@ -42,7 +42,7 @@ const captions = [
 ];
 ```
 
-The segment number is calculated from the presentation timeline. You must your subtitle segments are enumerated to match your media segments and you account for offsets such as:
+The segment number is calculated from the presentation timeline. You __must__ ensure your subtitle segments are enumerated to match your media segments and you account for offsets such as:
 
 1. The availability window (sliding, growing window)
 2. The presentation time offset (static window)
