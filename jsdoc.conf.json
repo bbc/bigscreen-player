@@ -41,6 +41,7 @@
         { "title": "Repo", "link": "https://github.com/bbc/bigscreen-player" }
       ],
       "sections": ["Tutorials", "Modules"],
+      "displayModuleHeader": true,
       "meta": [
         {
           "name": "description",
