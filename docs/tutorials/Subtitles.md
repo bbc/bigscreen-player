@@ -12,9 +12,7 @@ You provide subtitles to BigscreenPlayer by setting `media.captions` in the `.in
 2. Each object in the captions array MUST have a property `url`.
 3. Each `url` SHOULD be a valid hyperlink to a subtitles resource.
 
-Any subtitles resource you provide to BigscreenPlayer MUST be encoded with MIME type `application/ttml+xml` or `application/ttaf+xml`.
-
-You SHOULD NOT provide your subtitles in the manifest.
+Any subtitles resource you provide to BigscreenPlayer MUST be encoded with MIME type `application/ttml+xml` or `application/ttaf+xml`. You SHOULD NOT provide your subtitles in the manifest.
 
 There are different requirements for subtitles delivered _as a whole_ and subtitles delivered _as segments_:
 
