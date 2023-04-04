@@ -59,6 +59,12 @@ The subtitles segment length MUST match the media's segment length.
 
 You can style the subtitles by setting `media.subtitleCustomisation` in the `.init()` data. `media.subtitleCustomisation` should be a key-value object containing valid TTML or HTML styles. If you use the legacy subtitles renderer TTML styles may not be supported.
 
+####  Styling: Example
+
+```js
+const subtitleCustomisation = { lineHeight: 1.5, size: 1 };
+```
+
 ##  Design
 
 ### Why not include subtitles in the manifest?
