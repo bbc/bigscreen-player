@@ -1,12 +1,14 @@
 #  Subtitles
 
-TL;DR
+You cannot provide subtitles to BigscreenPlayer as you would using f.ex. Dash.js. This page explains how to provide subtitles, and why it is designed this way.
 
 ##  Usage
 
 You provide your subtitles to BigscreenPlayer in `media.captions` of the data object calling `.init()`. `media.captions` is an array. Each object in the captions array __must__ have a property `url`: A valid hyperlink to a subtitles resource.
 
 Any subtitles resource you provide to BigscreenPlayer __must__ be encoded with MIME type `application/ttml+xml` or `application/ttaf+xml`.
+
+You __should not__ provide your subtitles in the manifest.
 
 There are different requirements for subtitles delivered _as a whole_ and subtitles delivered _as segments_:
 
@@ -51,8 +53,17 @@ The subtitles segment length __must__ match the media's segment length.
 
 ##  Design
 
-- Why do we sidecar subtitles?
+### Why not include subtitles in the manifest?
+
+It is not recommended to include subtitles in the manifest(s) because the experience will not be consistent across devices. Timing models across devices are inconsistent. For example, there are devices where you cannot rely on the DOM media element to access the correct current time or seekable range (see Playable/Restartable/Seekable devices). Subtitles will be presented inaccurately when the current time is incorrect.
+
+BigscreenPlayer mitigates inaccurate text tracks on devices using custom logic to present subtitles. Subtitles are in other words "side-cared". So you __must__ provide subtitles in the `captions` block (if any), and __should not__ include your in the manifest.
 
 ## Architecture
 
-![An architecture diagram of the logic to render legacy subtitles.](subtitles.drawio.svg)
+BigscreenPlayer's subtitles presentation interface is implemented by:
+
+- IMSC Subtitles (default)
+- Legacy Subtitles
+
+If you suspect a device is struggling to display subtitles for performance reasons, you can try to use the legacy subtitles renderer instead by setting: `window.bigscreenPlayer.overrides.legacySubtitles = true`.
