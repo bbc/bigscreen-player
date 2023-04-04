@@ -4,11 +4,11 @@ You cannot provide subtitles to BigscreenPlayer as you would using f.ex. Dash.js
 
 ##  Usage
 
-You provide your subtitles to BigscreenPlayer in `media.captions` of the data object calling `.init()`. `media.captions` is an array. Each object in the captions array __must__ have a property `url`: A valid hyperlink to a subtitles resource.
+You provide your subtitles to BigscreenPlayer in `media.captions` of the data object calling `.init()`. `media.captions` is an array. Each object in the captions array MUST have a property `url`: A valid hyperlink to a subtitles resource.
 
-Any subtitles resource you provide to BigscreenPlayer __must__ be encoded with MIME type `application/ttml+xml` or `application/ttaf+xml`.
+Any subtitles resource you provide to BigscreenPlayer MUST be encoded with MIME type `application/ttml+xml` or `application/ttaf+xml`.
 
-You __should not__ provide your subtitles in the manifest.
+You SHOULD NOT provide your subtitles in the manifest.
 
 There are different requirements for subtitles delivered _as a whole_ and subtitles delivered _as segments_:
 
@@ -44,12 +44,12 @@ const captions = [
 ];
 ```
 
-The segment number is calculated from the presentation timeline. You __must__ ensure your subtitle segments are enumerated to match your media segments and you account for offsets such as:
+The segment number is calculated from the presentation timeline. You MUST ensure your subtitle segments are enumerated to match your media segments and you account for offsets such as:
 
 1. The availability window (sliding, growing window)
 2. The presentation time offset (static window)
 
-The subtitles segment length __must__ match the media's segment length.
+The subtitles segment length MUST match the media's segment length.
 
 ##  Design
 
@@ -57,7 +57,7 @@ The subtitles segment length __must__ match the media's segment length.
 
 It is not recommended to include subtitles in the manifest(s) because the experience will not be consistent across devices. Timing models across devices are inconsistent. For example, there are devices where you cannot rely on the DOM media element to access the correct current time or seekable range (see Playable/Restartable/Seekable devices). Subtitles will be presented inaccurately when the current time is incorrect.
 
-BigscreenPlayer mitigates inaccurate text tracks on devices using custom logic to present subtitles. Subtitles are in other words "side-cared". So you __must__ provide subtitles in the `captions` block (if any), and __should not__ include your in the manifest.
+BigscreenPlayer mitigates inaccurate text tracks on devices using custom logic to present subtitles. Subtitles are in other words "side-cared". So you MUST provide subtitles in the `captions` block (if any), and SHOULD NOT include your in the manifest.
 
 ## Architecture
 
