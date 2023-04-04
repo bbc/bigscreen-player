@@ -87,3 +87,5 @@ BigscreenPlayer's subtitles presentation interface is implemented by:
 - Legacy Subtitles
 
 If you suspect a device is struggling to display subtitles for performance reasons, you can try to use the legacy subtitles renderer instead by setting: `window.bigscreenPlayer.overrides.legacySubtitles = true`.
+
+Live/segmented subtitles are not supported by the legacy subtitles renderer.
