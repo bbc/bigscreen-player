@@ -4,7 +4,11 @@ You cannot provide subtitles to BigscreenPlayer as you would using f.ex. Dash.js
 
 ##  Usage
 
-You provide your subtitles to BigscreenPlayer in `media.captions` of the data object calling `.init()`. `media.captions` is an array. Each object in the captions array MUST have a property `url`: A valid hyperlink to a subtitles resource.
+You provide subtitles to BigscreenPlayer by setting `media.captions` in the `.init()` data:
+
+1. `media.captions` MUST be an array containing at least one object.
+2. Each object in the captions array MUST have a property `url`.
+3. Each `url` SHOULD be a valid hyperlink to a subtitles resource.
 
 Any subtitles resource you provide to BigscreenPlayer MUST be encoded with MIME type `application/ttml+xml` or `application/ttaf+xml`.
 
@@ -50,6 +54,10 @@ The segment number is calculated from the presentation timeline. You MUST ensure
 2. The presentation time offset (static window)
 
 The subtitles segment length MUST match the media's segment length.
+
+###  Styling
+
+You can style the subtitles by setting `media.subtitleCustomisation` in the `.init()` data. `media.subtitleCustomisation` should be a key-value object containing valid TTML or HTML styles. If you use the legacy subtitles renderer TTML styles may not be supported.
 
 ##  Design
 
