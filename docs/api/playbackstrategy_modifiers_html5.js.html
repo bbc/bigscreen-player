@@ -1,132 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Adding meta -->
-    
-    
-    <meta name="description" content="Simplified media playback for bigscreen devices" />
-    
-    
-
-    <!-- Adding external script-->
-    
-
-    <!-- Adding external style-->
-    
-
-    <!-- Adding scripts-->
-    
-
-    <!-- Adding style-->
-    
-
-    <!-- Adding overlay script-->
-    
-
-    <!-- Adding overlay style-->
-    
-
-
-    <title>
-      playbackstrategy/modifiers/html5.js
-    </title>
-
-    <!--[if lt IE 9]>
+<!DOCTYPE html><html lang="en" style="font-size:16px"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="favicon.ico"><meta name="description" content="Simplified media playback for bigscreen devices"><title>Source: playbackstrategy/modifiers/html5.js</title><!--[if lt IE 9]>
       <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link type="text/css" rel="stylesheet" href="styles/third-party/ionicons.min.css">
-    <link type="text/css" rel="stylesheet" href="styles/third-party/prettify-tomorrow.css">
-    <link type="text/css" rel="stylesheet" href="styles/reset.css">
-    <link type="text/css" rel="stylesheet" href="styles/clean-jsdoc-theme-base.css">
-    <link type="text/css" rel="stylesheet" href="styles/clean-jsdoc-theme-dark.css">
-    
-    <svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
-    style="display:none">
-    <defs>
-        <symbol id="copy-icon" viewbox="0 0 488.3 488.3">
-            <g>
-                <path
-                    d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z" />
-                <path
-                    d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z" />
-            </g>
-        </symbol>
-        <symbol id='search-icon' viewBox="0 0 512 512">
-            <g>
-                <g>
-                    <path
-                        d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z" />
-                </g>
-            </g>
-            <g>
-                <g>
-                    <path
-                        d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z" />
-                </g>
-            </g>
-        </symbol>
-        <symbol id="down-icon" viewBox="0 0 16 16">
-            <path 
-                fill-rule="evenodd" 
-                clip-rule="evenodd" 
-                d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"
-            >
-            </path>
-        </symbol>
-    </defs>
-</svg>
-  </head>
+    <![endif]--><script src="scripts/third-party/hljs.js" defer="defer"></script><script src="scripts/third-party/hljs-line-num.js" defer="defer"></script><script src="scripts/third-party/popper.js" defer="defer"></script><script src="scripts/third-party/tippy.js" defer="defer"></script><script src="scripts/third-party/tocbot.min.js"></script><script>var baseURL="/",locationPathname="";baseURL=(baseURL=(baseURL="https://bbc.github.io/bigscreen-player/api/").replace(/https?:\/\//i,"")).substr(baseURL.indexOf("/"))</script><link rel="stylesheet" href="styles/clean-jsdoc-theme.min.css"><svg aria-hidden="true" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="display:none"><defs><symbol id="copy-icon" viewbox="0 0 488.3 488.3"><g><path d="M314.25,85.4h-227c-21.3,0-38.6,17.3-38.6,38.6v325.7c0,21.3,17.3,38.6,38.6,38.6h227c21.3,0,38.6-17.3,38.6-38.6V124    C352.75,102.7,335.45,85.4,314.25,85.4z M325.75,449.6c0,6.4-5.2,11.6-11.6,11.6h-227c-6.4,0-11.6-5.2-11.6-11.6V124    c0-6.4,5.2-11.6,11.6-11.6h227c6.4,0,11.6,5.2,11.6,11.6V449.6z"/><path d="M401.05,0h-227c-21.3,0-38.6,17.3-38.6,38.6c0,7.5,6,13.5,13.5,13.5s13.5-6,13.5-13.5c0-6.4,5.2-11.6,11.6-11.6h227    c6.4,0,11.6,5.2,11.6,11.6v325.7c0,6.4-5.2,11.6-11.6,11.6c-7.5,0-13.5,6-13.5,13.5s6,13.5,13.5,13.5c21.3,0,38.6-17.3,38.6-38.6    V38.6C439.65,17.3,422.35,0,401.05,0z"/></g></symbol><symbol id="search-icon" viewBox="0 0 512 512"><g><g><path d="M225.474,0C101.151,0,0,101.151,0,225.474c0,124.33,101.151,225.474,225.474,225.474    c124.33,0,225.474-101.144,225.474-225.474C450.948,101.151,349.804,0,225.474,0z M225.474,409.323    c-101.373,0-183.848-82.475-183.848-183.848S124.101,41.626,225.474,41.626s183.848,82.475,183.848,183.848    S326.847,409.323,225.474,409.323z"/></g></g><g><g><path d="M505.902,476.472L386.574,357.144c-8.131-8.131-21.299-8.131-29.43,0c-8.131,8.124-8.131,21.306,0,29.43l119.328,119.328    c4.065,4.065,9.387,6.098,14.715,6.098c5.321,0,10.649-2.033,14.715-6.098C514.033,497.778,514.033,484.596,505.902,476.472z"/></g></g></symbol><symbol id="font-size-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11.246 15H4.754l-2 5H.6L7 4h2l6.4 16h-2.154l-2-5zm-.8-2L8 6.885 5.554 13h4.892zM21 12.535V12h2v8h-2v-.535a4 4 0 1 1 0-6.93zM19 18a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol><symbol id="add-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2z"/></symbol><symbol id="minus-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M5 11h14v2H5z"/></symbol><symbol id="dark-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M10 7a7 7 0 0 0 12 4.9v.1c0 5.523-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2h.1A6.979 6.979 0 0 0 10 7zm-6 5a8 8 0 0 0 15.062 3.762A9 9 0 0 1 8.238 4.938 7.999 7.999 0 0 0 4 12z"/></symbol><symbol id="light-theme-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-2a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 1h2v3h-2V1zm0 19h2v3h-2v-3zM3.515 4.929l1.414-1.414L7.05 5.636 5.636 7.05 3.515 4.93zM16.95 18.364l1.414-1.414 2.121 2.121-1.414 1.414-2.121-2.121zm2.121-14.85l1.414 1.415-2.121 2.121-1.414-1.414 2.121-2.121zM5.636 16.95l1.414 1.414-2.121 2.121-1.414-1.414 2.121-2.121zM23 11v2h-3v-2h3zM4 11v2H1v-2h3z"/></symbol><symbol id="reset-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M18.537 19.567A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10c0 2.136-.67 4.116-1.81 5.74L17 12h3a8 8 0 1 0-2.46 5.772l.997 1.795z"/></symbol><symbol id="down-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M12.7803 6.21967C13.0732 6.51256 13.0732 6.98744 12.7803 7.28033L8.53033 11.5303C8.23744 11.8232 7.76256 11.8232 7.46967 11.5303L3.21967 7.28033C2.92678 6.98744 2.92678 6.51256 3.21967 6.21967C3.51256 5.92678 3.98744 5.92678 4.28033 6.21967L8 9.93934L11.7197 6.21967C12.0126 5.92678 12.4874 5.92678 12.7803 6.21967Z"></path></symbol><symbol id="codepen-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M16.5 13.202L13 15.535v3.596L19.197 15 16.5 13.202zM14.697 12L12 10.202 9.303 12 12 13.798 14.697 12zM20 10.869L18.303 12 20 13.131V10.87zM19.197 9L13 4.869v3.596l3.5 2.333L19.197 9zM7.5 10.798L11 8.465V4.869L4.803 9 7.5 10.798zM4.803 15L11 19.131v-3.596l-3.5-2.333L4.803 15zM4 13.131L5.697 12 4 10.869v2.262zM2 9a1 1 0 0 1 .445-.832l9-6a1 1 0 0 1 1.11 0l9 6A1 1 0 0 1 22 9v6a1 1 0 0 1-.445.832l-9 6a1 1 0 0 1-1.11 0l-9-6A1 1 0 0 1 2 15V9z"/></symbol><symbol id="close-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></symbol><symbol id="menu-icon" viewBox="0 0 24 24"><path fill="none" d="M0 0h24v24H0z"/><path d="M3 4h18v2H3V4zm0 7h18v2H3v-2zm0 7h18v2H3v-2z"/></symbol></defs></svg></head><body class="dark" data-theme="dark"><div class="sidebar-container"><div class="sidebar" id="sidebar"><a href="index.html"><img alt="The logo for bigscreen player" src="bsp-logo.png"></a><div class="sidebar-items-container"><div class="sidebar-section-title with-arrow" data-isopen="false" id="-UtLxZv1dXngIM_4dKVqj"><div>Tutorials</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="tutorial-00-getting-started.html">Getting Started</a></div><div class="sidebar-section-children"><a href="tutorial-CDN Failover.html">CDN Failover</a></div><div class="sidebar-section-children"><a href="tutorial-Configuration.html">Configuration</a></div><div class="sidebar-section-children"><a href="tutorial-Debugging.html">Debugging</a></div><div class="sidebar-section-children"><a href="tutorial-Design.html">Design</a></div><div class="sidebar-section-children"><a href="tutorial-Events.html">Events</a></div><div class="sidebar-section-children"><a href="tutorial-Mocking Playback.html">Mocking Playback</a></div><div class="sidebar-section-children"><a href="tutorial-Playback Strategies.html">Playback Strategies</a></div><div class="sidebar-section-children"><a href="tutorial-Plugins.html">Plugins</a></div><div class="sidebar-section-children"><a href="tutorial-State Changes.html">State Changes</a></div><div class="sidebar-section-children"><a href="tutorial-Subtitles.html">Subtitles</a></div><div class="sidebar-section-children"><a href="tutorial-Testing.html">Testing</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="TIem7SJ_kVMYH0PIvf473"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-bigscreenplayer_bigscreenplayer.html">bigscreenplayer/bigscreenplayer</a></div></div></div></div></div><div class="navbar-container" id="VuAckcnZhf"><nav class="navbar"><div class="navbar-left-items"><div class="navbar-item"><a id="" href="index.html" target="">Home</a></div><div class="navbar-item"><a id="" href="https://github.com/bbc/bigscreen-player" target="">Repo</a></div></div><div class="navbar-right-items"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div><nav></nav></nav></div><div class="toc-container"><div class="toc-content"><span class="bold">On this page</span><div id="eed4d2a0bfd64539bb9df78095dec881"></div></div></div><div class="body-wrapper"><div class="main-content"><div class="main-wrapper"><section id="source-page" class="source-page"><header><h1 id="title" class="has-anchor">playbackstrategy_modifiers_html5.js</h1></header><article><pre class="prettyprint source lang-js"><code>import MediaPlayerBase from "../modifiers/mediaplayerbase"
+import DOMHelpers from "../../domhelpers"
+import handlePlayPromise from "../../utils/handleplaypromise"
+import DebugTool from "../../debugger/debugtool"
 
-  <body>
-
-    <nav class="navbar" id="navbar">
-      <h2><a href="index.html"><img src='bsp-logo.png'/></a></h2><div class="search-box" id="search-box"><div class="search-box-input-container"><input class="search-box-input" type="text" placeholder="Search..." id="search-box-input" /><svg class="search-icon" alt="search-icon"><use xlink:href="#search-icon"></use></svg></div><div class="search-item-container" id="search-item-container"><ul class="search-item-ul" id="search-item-ul"></ul></div></div><div class="sidebar-main-content" id="sidebar-main-content"><div class="accordion collapsed" id="9479511" > <h3 class="accordion-heading">Tutorials<svg><use xlink:href="#down-icon"></use></svg></h3><ul class="accordion-content"><li class="accordion-list" id=""><a href="tutorial-CDN Failover.html">CDN Failover</a></li><li class="accordion-list" id=""><a href="tutorial-Configuration.html">Configuration</a></li><li class="accordion-list" id=""><a href="tutorial-Debugging.html">Debugging</a></li><li class="accordion-list" id=""><a href="tutorial-Design.html">Design</a></li><li class="accordion-list" id=""><a href="tutorial-Events.html">Events</a></li><li class="accordion-list" id=""><a href="tutorial-Getting Started.html">Getting Started</a></li><li class="accordion-list" id=""><a href="tutorial-Mocking Playback.html">Mocking Playback</a></li><li class="accordion-list" id=""><a href="tutorial-Playback Strategies.html">Playback Strategies</a></li><li class="accordion-list" id=""><a href="tutorial-Plugins.html">Plugins</a></li><li class="accordion-list" id=""><a href="tutorial-State Changes.html">State Changes</a></li><li class="accordion-list" id=""><a href="tutorial-Testing.html">Testing</a></li></ul> </div><div class="accordion collapsed" id="5504982" > <h3 class="accordion-heading">Modules<svg><use xlink:href="#down-icon"></use></svg></h3><ul class="accordion-content"><li class="accordion collapsed child" id=7161792><div class="accordion-heading child"><a href="module-bigscreenplayer_bigscreenplayer.html">bigscreenplayer/bigscreenplayer</a><svg><use xlink:href="#down-icon"></use></svg></div><ul class='methods accordion-content'><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.canPause">canPause</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.canSeek">canSeek</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.convertEpochMsToVideoTimeSeconds">convertEpochMsToVideoTimeSeconds</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.convertVideoTimeSecondsToEpochMs">convertVideoTimeSecondsToEpochMs</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getCurrentTime">getCurrentTime</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getDuration">getDuration</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getFrameworkVersion">getFrameworkVersion</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getLiveWindowData">getLiveWindowData</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getLogLevels">getLogLevels</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getMediaKind">getMediaKind</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getPlayerElement">getPlayerElement</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getSeekableRange">getSeekableRange</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.getWindowType">getWindowType</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isEnded">isEnded</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isPaused">isPaused</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isPlayingAtLiveEdge">isPlayingAtLiveEdge</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesAvailable">isSubtitlesAvailable</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesEnabled">isSubtitlesEnabled</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.mock">mock</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.mockJasmine">mockJasmine</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.pause">pause</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.play">play</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerForStateChanges">registerForStateChanges</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerForSubtitleChanges">registerForSubtitleChanges</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerForTimeUpdates">registerForTimeUpdates</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.registerPlugin">registerPlugin</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.setCurrentTime">setCurrentTime</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.setLogLevel">setLogLevel</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.setSubtitlesEnabled">setSubtitlesEnabled</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.setTransportControlsPosition">setTransportControlsPosition</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.toggleDebug">toggleDebug</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.transitions">transitions</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unmock">unmock</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterForStateChanges">unregisterForStateChanges</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterForSubtitleChanges">unregisterForSubtitleChanges</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterForTimeUpdates">unregisterForTimeUpdates</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#.unregisterPlugin">unregisterPlugin</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#~getLiveSupport">getLiveSupport</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#~init">init</a></li><li data-type='method'><a href="module-bigscreenplayer_bigscreenplayer.html#~tearDown">tearDown</a></li></ul></li></ul> </div><div class="accordion collapsed" id="9066824" > <h3 class="accordion-heading">Global<svg><use xlink:href="#down-icon"></use></svg></h3><ul class="accordion-content"><li class="accordion-list" id=""><a href="global.html#BigscreenPlayerData">BigscreenPlayerData</a></li><li class="accordion-list" id=""><a href="global.html#hasAttribute">hasAttribute</a></li><li class="accordion-list" id=""><a href="global.html#InitCallbacks">InitCallbacks</a></li><li class="accordion-list" id=""><a href="global.html#MediaUrl">MediaUrl</a></li><li class="accordion-list" id=""><a href="global.html#rgbaToRGB">rgbaToRGB</a></li><li class="accordion-list" id=""><a href="global.html#safeRemoveElement">safeRemoveElement</a></li><li class="accordion-list" id=""><a href="global.html#Time">Time</a></li><li class="accordion-list" id=""><a href="global.html#WindowTypes">WindowTypes</a></li></ul> </div></div>
-      
-
-    </nav>
-    <div class="navbar-ham" id="navbar-ham">
-      <div>
-        <div class="first"></div>
-        <div class="second"></div>
-        <div class="third"></div>
-      </div>
-    </div>
-
-    <div id="main" class="main-content">
-      
-      <h1 id='page-title' class="page-title">
-        playbackstrategy/modifiers/html5.js
-      </h1>
-      
-
-      
-
-
-
-    
-    <section>
-        <article>
-            <pre class="prettyprint source linenums"><code>import MediaPlayerBase from '../modifiers/mediaplayerbase'
-import DOMHelpers from '../../domhelpers'
-
-function Html5 () {
+function Html5() {
   const sentinelLimits = {
     pause: {
       maximumAttempts: 2,
       successEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE,
       failureEvent: MediaPlayerBase.EVENT.SENTINEL_PAUSE_FAILURE,
-      currentAttemptCount: 0
+      currentAttemptCount: 0,
     },
     seek: {
       maximumAttempts: 2,
       successEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK,
       failureEvent: MediaPlayerBase.EVENT.SENTINEL_SEEK_FAILURE,
-      currentAttemptCount: 0
-    }
+      currentAttemptCount: 0,
+    },
   }
 
   let eventCallback
@@ -165,7 +57,7 @@ function Html5 () {
   let cachedSeekableRange
   let readyToCache = true
 
-  function emitEvent (eventType, eventLabels) {
+  function emitEvent(eventType, eventLabels) {
     const event = {
       type: eventType,
       currentTime: getCurrentTime(),
@@ -173,7 +65,7 @@ function Html5 () {
       duration: getDuration(),
       url: getSource(),
       mimeType: getMimeType(),
-      state: getState()
+      state: getState(),
     }
 
     if (eventLabels) {
@@ -189,7 +81,7 @@ function Html5 () {
     }
   }
 
-  function getDuration () {
+  function getDuration() {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
@@ -202,23 +94,23 @@ function Html5 () {
     }
   }
 
-  function getSource () {
+  function getSource() {
     return source
   }
 
-  function getMimeType () {
+  function getMimeType() {
     return mimeType
   }
 
-  function getState () {
+  function getState() {
     return state
   }
 
-  function isLiveMedia () {
-    return (mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO) || (mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO)
+  function isLiveMedia() {
+    return mediaType === MediaPlayerBase.TYPE.LIVE_VIDEO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO
   }
 
-  function setSeekSentinelTolerance () {
+  function setSeekSentinelTolerance() {
     const ON_DEMAND_SEEK_SENTINEL_TOLERANCE = 15
     const LIVE_SEEK_SENTINEL_TOLERANCE = 30
 
@@ -229,19 +121,19 @@ function Html5 () {
     }
   }
 
-  function generateSourceElement (url, mimeType) {
-    const sourceElement = document.createElement('source')
+  function generateSourceElement(url, mimeType) {
+    const sourceElement = document.createElement("source")
 
     sourceElement.src = url
     sourceElement.type = mimeType
     return sourceElement
   }
 
-  function appendChildElement (to, el) {
+  function appendChildElement(to, el) {
     to.appendChild(el)
   }
 
-  function prependChildElement (to, el) {
+  function prependChildElement(to, el) {
     if (to.childNodes.length > 0) {
       to.insertBefore(el, to.childNodes[0])
     } else {
@@ -249,13 +141,13 @@ function Html5 () {
     }
   }
 
-  function toStopped () {
+  function toStopped() {
     state = MediaPlayerBase.STATE.STOPPED
     emitEvent(MediaPlayerBase.EVENT.STOPPED)
     setSentinels([])
   }
 
-  function enterBufferingSentinel () {
+  function enterBufferingSentinel() {
     let sentinelShouldFire = !hasSentinelTimeChangedWithinTolerance &amp;&amp; !nearEndOfMedia
 
     if (getCurrentTime() === 0) {
@@ -292,8 +184,8 @@ function Html5 () {
     return false
   }
 
-  function exitBufferingSentinel () {
-    function fireExitBufferingSentinel () {
+  function exitBufferingSentinel() {
+    function fireExitBufferingSentinel() {
       emitEvent(MediaPlayerBase.EVENT.SENTINEL_EXIT_BUFFERING)
       exitBuffering()
       return true
@@ -310,7 +202,7 @@ function Html5 () {
     return false
   }
 
-  function shouldBeSeekedSentinel () {
+  function shouldBeSeekedSentinel() {
     if (sentinelSeekTime === undefined || disableSeekSentinel) {
       return false
     }
@@ -331,7 +223,7 @@ function Html5 () {
     return sentinelActionTaken
   }
 
-  function shouldBePausedSentinel () {
+  function shouldBePausedSentinel() {
     let sentinelActionTaken = false
 
     if (hasSentinelTimeChangedWithinTolerance) {
@@ -343,7 +235,7 @@ function Html5 () {
     return sentinelActionTaken
   }
 
-  function nextSentinelAttempt (sentinelInfo, attemptFn) {
+  function nextSentinelAttempt(sentinelInfo, attemptFn) {
     let currentAttemptCount, maxAttemptCount
 
     sentinelInfo.currentAttemptCount += 1
@@ -363,7 +255,7 @@ function Html5 () {
     return false
   }
 
-  function endOfMediaSentinel () {
+  function endOfMediaSentinel() {
     if (!hasSentinelTimeChangedWithinTolerance &amp;&amp; nearEndOfMedia) {
       emitEvent(MediaPlayerBase.EVENT.SENTINEL_COMPLETE)
       onEndOfMedia()
@@ -372,12 +264,14 @@ function Html5 () {
     return false
   }
 
-  function clearSentinels () {
+  function clearSentinels() {
     clearInterval(sentinelInterval)
   }
 
-  function setSentinels (sentinels) {
-    if (disableSentinels) { return }
+  function setSentinels(sentinels) {
+    if (disableSentinels) {
+      return
+    }
 
     clearSentinels()
     sentinelIntervalNumber = 0
@@ -386,8 +280,8 @@ function Html5 () {
       sentinelIntervalNumber += 1
       const newTime = getCurrentTime()
 
-      hasSentinelTimeChangedWithinTolerance = (Math.abs(newTime - lastSentinelTime) > 0.2)
-      nearEndOfMedia = (getDuration() - (newTime || lastSentinelTime)) &lt;= 1
+      hasSentinelTimeChangedWithinTolerance = Math.abs(newTime - lastSentinelTime) > 0.2
+      nearEndOfMedia = getDuration() - (newTime || lastSentinelTime) &lt;= 1
       lastSentinelTime = newTime
 
       for (let i = 0; i &lt; sentinels.length; i++) {
@@ -404,41 +298,42 @@ function Html5 () {
     }, 1100)
   }
 
-  function reportError (_errorMessage) {
-    emitEvent(MediaPlayerBase.EVENT.ERROR)
+  function reportError(errorString, mediaError) {
+    DebugTool.info("HTML5 Media Player error: " + errorString)
+    emitEvent(MediaPlayerBase.EVENT.ERROR, mediaError)
   }
 
-  function toBuffering () {
+  function toBuffering() {
     state = MediaPlayerBase.STATE.BUFFERING
     emitEvent(MediaPlayerBase.EVENT.BUFFERING)
     setSentinels([exitBufferingSentinel])
   }
 
-  function toComplete () {
+  function toComplete() {
     state = MediaPlayerBase.STATE.COMPLETE
     emitEvent(MediaPlayerBase.EVENT.COMPLETE)
     setSentinels([])
   }
 
-  function toEmpty () {
+  function toEmpty() {
     wipe()
     state = MediaPlayerBase.STATE.EMPTY
   }
 
-  function toError (errorMessage) {
+  function toError(errorMessage) {
     wipe()
     state = MediaPlayerBase.STATE.ERROR
     reportError(errorMessage)
   }
 
-  function isReadyToPlayFrom () {
+  function isReadyToPlayFrom() {
     if (readyToPlayFrom !== undefined) {
       return readyToPlayFrom
     }
     return false
   }
 
-  function getMediaDuration () {
+  function getMediaDuration() {
     if (mediaElement &amp;&amp; isReadyToPlayFrom()) {
       return mediaElement.duration
     }
@@ -446,7 +341,7 @@ function Html5 () {
     return undefined
   }
 
-  function getCachedSeekableRange () {
+  function getCachedSeekableRange() {
     if (readyToCache) {
       cacheSeekableRange()
     }
@@ -454,49 +349,49 @@ function Html5 () {
     return cachedSeekableRange
   }
 
-  function cacheSeekableRange () {
+  function cacheSeekableRange() {
     readyToCache = false
     setTimeout(function () {
       readyToCache = true
     }, 250)
 
-    cachedSeekableRange = {
-      start: mediaElement.seekable.start(0),
-      end: mediaElement.seekable.end(0)
-    }
+    cachedSeekableRange = getElementSeekableRange()
   }
 
-  function getSeekableRange () {
+  function getElementSeekableRange() {
     if (mediaElement) {
       if (isReadyToPlayFrom() &amp;&amp; mediaElement.seekable &amp;&amp; mediaElement.seekable.length > 0) {
-        if (window.bigscreenPlayer.overrides &amp;&amp; window.bigscreenPlayer.overrides.cacheSeekableRange) {
-          return getCachedSeekableRange()
-        } else {
-          return {
-            start: mediaElement.seekable.start(0),
-            end: mediaElement.seekable.end(0)
-          }
+        return {
+          start: mediaElement.seekable.start(0),
+          end: mediaElement.seekable.end(0),
         }
       } else if (mediaElement.duration !== undefined) {
         return {
           start: 0,
-          end: mediaElement.duration
+          end: mediaElement.duration,
         }
       }
     }
-    return undefined
   }
 
-  function onFinishedBuffering () {
+  function getSeekableRange() {
+    if (window.bigscreenPlayer.overrides &amp;&amp; window.bigscreenPlayer.overrides.cacheSeekableRange) {
+      return getCachedSeekableRange()
+    } else {
+      return getElementSeekableRange()
+    }
+  }
+
+  function onFinishedBuffering() {
     exitBuffering()
   }
 
-  function pauseMediaElement () {
+  function pauseMediaElement() {
     mediaElement.pause()
     ignoreNextPauseEvent = true
   }
 
-  function onPause () {
+  function onPause() {
     if (ignoreNextPauseEvent) {
       ignoreNextPauseEvent = false
       return
@@ -507,25 +402,28 @@ function Html5 () {
     }
   }
 
-  function onError () {
-    reportError('Media element error code: ' + mediaElement.error.code)
+  function onError() {
+    reportError("Media element error code: " + mediaElement.error.code, {
+      code: mediaElement.error.code,
+      message: mediaElement.error.message,
+    })
   }
 
-  function onSourceError () {
-    reportError('Media source element error')
+  function onSourceError() {
+    reportError("Media source element error")
   }
 
-  function onDeviceBuffering () {
+  function onDeviceBuffering() {
     if (getState() === MediaPlayerBase.STATE.PLAYING) {
       toBuffering()
     }
   }
 
-  function onEndOfMedia () {
+  function onEndOfMedia() {
     toComplete()
   }
 
-  function emitSeekAttempted () {
+  function emitSeekAttempted() {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
       emitEvent(MediaPlayerBase.EVENT.SEEK_ATTEMPTED)
       seekFinished = false
@@ -534,13 +432,15 @@ function Html5 () {
     count = 0
     timeoutHappened = false
     if (window.bigscreenPlayer.overrides &amp;&amp; window.bigscreenPlayer.overrides.restartTimeout) {
-      setTimeout(() => { timeoutHappened = true }, window.bigscreenPlayer.overrides.restartTimeout)
+      setTimeout(() => {
+        timeoutHappened = true
+      }, window.bigscreenPlayer.overrides.restartTimeout)
     } else {
       timeoutHappened = true
     }
   }
 
-  function emitSeekFinishedAtCorrectStartingPoint () {
+  function emitSeekFinishedAtCorrectStartingPoint() {
     let isAtCorrectStartingPoint = Math.abs(getCurrentTime() - sentinelSeekTime) &lt;= seekSentinelTolerance
 
     if (sentinelSeekTime === undefined) {
@@ -559,7 +459,7 @@ function Html5 () {
     }
   }
 
-  function onStatus () {
+  function onStatus() {
     if (getState() === MediaPlayerBase.STATE.PLAYING) {
       emitEvent(MediaPlayerBase.EVENT.STATUS)
     }
@@ -567,11 +467,11 @@ function Html5 () {
     emitSeekFinishedAtCorrectStartingPoint()
   }
 
-  function onMetadata () {
+  function onMetadata() {
     metadataLoaded()
   }
 
-  function exitBuffering () {
+  function exitBuffering() {
     metadataLoaded()
 
     if (getState() !== MediaPlayerBase.STATE.BUFFERING) {
@@ -583,7 +483,7 @@ function Html5 () {
     }
   }
 
-  function metadataLoaded () {
+  function metadataLoaded() {
     readyToPlayFrom = true
 
     if (waitingToPlayFrom()) {
@@ -591,7 +491,7 @@ function Html5 () {
     }
   }
 
-  function playFromIfReady () {
+  function playFromIfReady() {
     if (isReadyToPlayFrom()) {
       if (waitingToPlayFrom()) {
         deferredPlayFrom()
@@ -599,17 +499,17 @@ function Html5 () {
     }
   }
 
-  function waitingToPlayFrom () {
+  function waitingToPlayFrom() {
     return targetSeekTime !== undefined
   }
 
-  function deferredPlayFrom () {
+  function deferredPlayFrom() {
     if (window.bigscreenPlayer.overrides &amp;&amp; window.bigscreenPlayer.overrides.deferredPlayback) {
-      mediaElement.play()
+      handlePlayPromise(mediaElement.play())
       seekTo(targetSeekTime)
     } else {
       seekTo(targetSeekTime)
-      mediaElement.play()
+      handlePlayPromise(mediaElement.play())
     }
 
     if (postBufferingState === MediaPlayerBase.STATE.PAUSED) {
@@ -618,14 +518,14 @@ function Html5 () {
     targetSeekTime = undefined
   }
 
-  function seekTo (seconds) {
+  function seekTo(seconds) {
     const clampedTime = getClampedTimeForPlayFrom(seconds)
 
     mediaElement.currentTime = clampedTime
     sentinelSeekTime = clampedTime
   }
 
-  function getCurrentTime () {
+  function getCurrentTime() {
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
       case MediaPlayerBase.STATE.ERROR:
@@ -638,17 +538,17 @@ function Html5 () {
   }
 
   /**
-    * Time (in seconds) compared to current time within which seeking has no effect.
-    * @constant {Number}
-  */
+   * Time (in seconds) compared to current time within which seeking has no effect.
+   * @constant {Number}
+   */
   const CURRENT_TIME_TOLERANCE = 1
 
   /**
-    * Check whether a time value is near to the current media play time.
-    * @param {Number} seconds The time value to test, in seconds from the start of the media
-    * @protected
-  */
-  function isNearToCurrentTime (seconds) {
+   * Check whether a time value is near to the current media play time.
+   * @param {Number} seconds The time value to test, in seconds from the start of the media
+   * @protected
+   */
+  function isNearToCurrentTime(seconds) {
     const currentTime = getCurrentTime()
     const targetTime = getClampedTime(seconds)
 
@@ -656,12 +556,12 @@ function Html5 () {
   }
 
   /**
-    * Clamp a time value so it does not exceed the current range.
-    * Clamps to near the end instead of the end itself to allow for devices that cannot seek to the very end of the media.
-    * @param {Number} seconds The time value to clamp in seconds from the start of the media
-    * @protected
-  */
-  function getClampedTime (seconds) {
+   * Clamp a time value so it does not exceed the current range.
+   * Clamps to near the end instead of the end itself to allow for devices that cannot seek to the very end of the media.
+   * @param {Number} seconds The time value to clamp in seconds from the start of the media
+   * @protected
+   */
+  function getClampedTime(seconds) {
     const CLAMP_OFFSET_FROM_END_OF_RANGE = 1.1
     const range = getSeekableRange()
     const nearToEnd = Math.max(range.end - CLAMP_OFFSET_FROM_END_OF_RANGE, range.start)
@@ -675,11 +575,11 @@ function Html5 () {
     }
   }
 
-  function getClampedTimeForPlayFrom (seconds) {
+  function getClampedTimeForPlayFrom(seconds) {
     return getClampedTime(seconds)
   }
 
-  function wipe () {
+  function wipe() {
     mediaType = undefined
     source = undefined
     mimeType = undefined
@@ -692,18 +592,18 @@ function Html5 () {
     readyToPlayFrom = false
   }
 
-  function destroyMediaElement () {
+  function destroyMediaElement() {
     if (mediaElement) {
-      mediaElement.removeEventListener('canplay', onFinishedBuffering, false)
-      mediaElement.removeEventListener('seeked', onFinishedBuffering, false)
-      mediaElement.removeEventListener('playing', onFinishedBuffering, false)
-      mediaElement.removeEventListener('error', onError, false)
-      mediaElement.removeEventListener('ended', onEndOfMedia, false)
-      mediaElement.removeEventListener('waiting', onDeviceBuffering, false)
-      mediaElement.removeEventListener('timeupdate', onStatus, false)
-      mediaElement.removeEventListener('loadedmetadata', onMetadata, false)
-      mediaElement.removeEventListener('pause', onPause, false)
-      sourceElement.removeEventListener('error', onSourceError, false)
+      mediaElement.removeEventListener("canplay", onFinishedBuffering, false)
+      mediaElement.removeEventListener("seeked", onFinishedBuffering, false)
+      mediaElement.removeEventListener("playing", onFinishedBuffering, false)
+      mediaElement.removeEventListener("error", onError, false)
+      mediaElement.removeEventListener("ended", onEndOfMedia, false)
+      mediaElement.removeEventListener("waiting", onDeviceBuffering, false)
+      mediaElement.removeEventListener("timeupdate", onStatus, false)
+      mediaElement.removeEventListener("loadedmetadata", onMetadata, false)
+      mediaElement.removeEventListener("pause", onPause, false)
+      sourceElement.removeEventListener("error", onSourceError, false)
 
       DOMHelpers.safeRemoveElement(sourceElement)
       unloadMediaSrc()
@@ -714,23 +614,23 @@ function Html5 () {
     }
   }
 
-  function unloadMediaSrc () {
+  function unloadMediaSrc() {
     if (window.bigscreenPlayer.overrides &amp;&amp; window.bigscreenPlayer.overrides.disableMediaSourceUnload) {
       return
     }
     // Reset source as advised by HTML5 video spec, section 4.8.10.15:
     // http://www.w3.org/TR/2011/WD-html5-20110405/video.html#best-practices-for-authors-using-media-elements
-    mediaElement.removeAttribute('src')
+    mediaElement.removeAttribute("src")
     mediaElement.load()
   }
 
-  function toPaused () {
+  function toPaused() {
     state = MediaPlayerBase.STATE.PAUSED
     emitEvent(MediaPlayerBase.EVENT.PAUSED)
     setSentinels([shouldBeSeekedSentinel, shouldBePausedSentinel])
   }
 
-  function toPlaying () {
+  function toPlaying() {
     state = MediaPlayerBase.STATE.PLAYING
     emitEvent(MediaPlayerBase.EVENT.PLAYING)
     setSentinels([endOfMediaSentinel, shouldBeSeekedSentinel, enterBufferingSentinel])
@@ -755,7 +655,7 @@ function Html5 () {
     },
 
     initialiseMedia: (type, url, mediaMimeType, sourceContainer, opts) => {
-      opts = opts || { }
+      opts = opts || {}
       disableSentinels = opts.disableSentinels
       disableSeekSentinel = opts.disableSeekSentinel
       mediaType = type
@@ -765,45 +665,45 @@ function Html5 () {
       emitSeekAttempted()
 
       if (getState() === MediaPlayerBase.STATE.EMPTY) {
-        let idSuffix = 'Video'
+        let idSuffix = "Video"
 
         if (mediaType === MediaPlayerBase.TYPE.AUDIO || mediaType === MediaPlayerBase.TYPE.LIVE_AUDIO) {
-          idSuffix = 'Audio'
+          idSuffix = "Audio"
         }
 
         setSeekSentinelTolerance()
 
-        mediaElement = document.createElement(idSuffix.toLowerCase(), 'mediaPlayer' + idSuffix)
+        mediaElement = document.createElement(idSuffix.toLowerCase(), "mediaPlayer" + idSuffix)
         mediaElement.autoplay = false
-        mediaElement.style.position = 'absolute'
-        mediaElement.style.top = '0px'
-        mediaElement.style.left = '0px'
-        mediaElement.style.width = '100%'
-        mediaElement.style.height = '100%'
+        mediaElement.style.position = "absolute"
+        mediaElement.style.top = "0px"
+        mediaElement.style.left = "0px"
+        mediaElement.style.width = "100%"
+        mediaElement.style.height = "100%"
 
-        mediaElement.addEventListener('canplay', onFinishedBuffering, false)
-        mediaElement.addEventListener('seeked', onFinishedBuffering, false)
-        mediaElement.addEventListener('playing', onFinishedBuffering, false)
-        mediaElement.addEventListener('error', onError, false)
-        mediaElement.addEventListener('ended', onEndOfMedia, false)
-        mediaElement.addEventListener('waiting', onDeviceBuffering, false)
-        mediaElement.addEventListener('timeupdate', onStatus, false)
-        mediaElement.addEventListener('loadedmetadata', onMetadata, false)
-        mediaElement.addEventListener('pause', onPause, false)
+        mediaElement.addEventListener("canplay", onFinishedBuffering, false)
+        mediaElement.addEventListener("seeked", onFinishedBuffering, false)
+        mediaElement.addEventListener("playing", onFinishedBuffering, false)
+        mediaElement.addEventListener("error", onError, false)
+        mediaElement.addEventListener("ended", onEndOfMedia, false)
+        mediaElement.addEventListener("waiting", onDeviceBuffering, false)
+        mediaElement.addEventListener("timeupdate", onStatus, false)
+        mediaElement.addEventListener("loadedmetadata", onMetadata, false)
+        mediaElement.addEventListener("pause", onPause, false)
 
         prependChildElement(sourceContainer, mediaElement)
 
         sourceElement = generateSourceElement(url, mimeType)
-        sourceElement.addEventListener('error', onSourceError, false)
+        sourceElement.addEventListener("error", onSourceError, false)
 
-        mediaElement.preload = 'auto'
+        mediaElement.preload = "auto"
         appendChildElement(mediaElement, sourceElement)
 
         mediaElement.load()
 
         toStopped()
       } else {
-        toError('Cannot set source unless in the \'' + MediaPlayerBase.STATE.EMPTY + '\' state')
+        toError("Cannot set source unless in the '" + MediaPlayerBase.STATE.EMPTY + "' state")
       }
     },
 
@@ -843,7 +743,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot playFrom while in the \'' + getState() + '\' state')
+          toError("Cannot playFrom while in the '" + getState() + "' state")
           break
       }
     },
@@ -856,11 +756,11 @@ function Html5 () {
         case MediaPlayerBase.STATE.STOPPED:
           trustZeroes = true
           toBuffering()
-          mediaElement.play()
+          handlePlayPromise(mediaElement.play())
           break
 
         default:
-          toError('Cannot beginPlayback while in the \'' + getState() + '\' state')
+          toError("Cannot beginPlayback while in the '" + getState() + "' state")
           break
       }
     },
@@ -878,7 +778,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot beginPlaybackFrom while in the \'' + getState() + '\' state')
+          toError("Cannot beginPlaybackFrom while in the '" + getState() + "' state")
           break
       }
     },
@@ -904,7 +804,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot pause while in the \'' + getState() + '\' state')
+          toError("Cannot pause while in the '" + getState() + "' state")
           break
       }
     },
@@ -918,17 +818,17 @@ function Html5 () {
         case MediaPlayerBase.STATE.BUFFERING:
           if (isReadyToPlayFrom()) {
             // If we are not ready to playFrom, then calling play would seek to the start of media, which we might not want.
-            mediaElement.play()
+            handlePlayPromise(mediaElement.play())
           }
           break
 
         case MediaPlayerBase.STATE.PAUSED:
-          mediaElement.play()
+          handlePlayPromise(mediaElement.play())
           toPlaying()
           break
 
         default:
-          toError('Cannot resume while in the \'' + getState() + '\' state')
+          toError("Cannot resume while in the '" + getState() + "' state")
           break
       }
     },
@@ -947,7 +847,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot stop while in the \'' + getState() + '\' state')
+          toError("Cannot stop while in the '" + getState() + "' state")
           break
       }
     },
@@ -963,7 +863,7 @@ function Html5 () {
           break
 
         default:
-          toError('Cannot reset while in the \'' + getState() + '\' state')
+          toError("Cannot reset while in the '" + getState() + "' state")
           break
       }
     },
@@ -987,51 +887,9 @@ function Html5 () {
     getCurrentTime: getCurrentTime,
     getDuration: getDuration,
     toPaused: toPaused,
-    toPlaying: toPlaying
+    toPlaying: toPlaying,
   }
 }
 
 export default Html5
-</code></pre>
-        </article>
-    </section>
-
-
-
-
-    </div>
-
-    <footer class="footer" id="footer">
-      
-    </footer>
-
-    <script src="scripts/third-party/prettify.js"></script>
-    <script src="scripts/third-party/lang-css.js"></script>
-    <script type="text/javascript" src="scripts/misc.js"></script>
-
-    <script>prettyPrint();</script>
-    <script src="scripts/linenumber.js"></script>
-    <script src="scripts/fix-code-block.js"></script>
-    <script src="scripts/fix-navbar.js"></script>
-    
-      <script src="scripts/search.js"></script>
-      <script src="scripts/third-party/fuse.js"></script>
-      <script>
-        var list = [{"title":"CDN Failover","link":"CDN Failover"},{"title":"Configuration","link":"Configuration"},{"title":"Debugging","link":"Debugging"},{"title":"Design","link":"Design"},{"title":"Events","link":"Events"},{"title":"Getting Started","link":"Getting Started"},{"title":"Mocking Playback","link":"Mocking Playback"},{"title":"Playback Strategies","link":"Playback Strategies"},{"title":"Plugins","link":"Plugins"},{"title":"State Changes","link":"State Changes"},{"title":"Testing","link":"Testing"},{"title":"bigscreenplayer/bigscreenplayer","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html\">bigscreenplayer/bigscreenplayer</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.canPause","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.canPause\">module:bigscreenplayer/bigscreenplayer.canPause &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.canSeek","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.canSeek\">module:bigscreenplayer/bigscreenplayer.canSeek &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.convertEpochMsToVideoTimeSeconds","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.convertEpochMsToVideoTimeSeconds\">module:bigscreenplayer/bigscreenplayer.convertEpochMsToVideoTimeSeconds &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.convertVideoTimeSecondsToEpochMs","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.convertVideoTimeSecondsToEpochMs\">module:bigscreenplayer/bigscreenplayer.convertVideoTimeSecondsToEpochMs &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getCurrentTime","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getCurrentTime\">module:bigscreenplayer/bigscreenplayer.getCurrentTime &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getDuration","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getDuration\">module:bigscreenplayer/bigscreenplayer.getDuration &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getFrameworkVersion","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getFrameworkVersion\">module:bigscreenplayer/bigscreenplayer.getFrameworkVersion &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getLiveWindowData","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getLiveWindowData\">module:bigscreenplayer/bigscreenplayer.getLiveWindowData &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getLogLevels","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getLogLevels\">module:bigscreenplayer/bigscreenplayer.getLogLevels &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getMediaKind","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getMediaKind\">module:bigscreenplayer/bigscreenplayer.getMediaKind &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getPlayerElement","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getPlayerElement\">module:bigscreenplayer/bigscreenplayer.getPlayerElement &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getSeekableRange","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getSeekableRange\">module:bigscreenplayer/bigscreenplayer.getSeekableRange &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.getWindowType","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.getWindowType\">module:bigscreenplayer/bigscreenplayer.getWindowType &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isEnded","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isEnded\">module:bigscreenplayer/bigscreenplayer.isEnded &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isPaused","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isPaused\">module:bigscreenplayer/bigscreenplayer.isPaused &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isPlayingAtLiveEdge","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isPlayingAtLiveEdge\">module:bigscreenplayer/bigscreenplayer.isPlayingAtLiveEdge &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isSubtitlesAvailable","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesAvailable\">module:bigscreenplayer/bigscreenplayer.isSubtitlesAvailable &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.isSubtitlesEnabled","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.isSubtitlesEnabled\">module:bigscreenplayer/bigscreenplayer.isSubtitlesEnabled &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.mock","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.mock\">module:bigscreenplayer/bigscreenplayer.mock &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.mockJasmine","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.mockJasmine\">module:bigscreenplayer/bigscreenplayer.mockJasmine &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.pause","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.pause\">module:bigscreenplayer/bigscreenplayer.pause &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.play","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.play\">module:bigscreenplayer/bigscreenplayer.play &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.registerForStateChanges","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.registerForStateChanges\">module:bigscreenplayer/bigscreenplayer.registerForStateChanges &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.registerForSubtitleChanges","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.registerForSubtitleChanges\">module:bigscreenplayer/bigscreenplayer.registerForSubtitleChanges &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.registerForTimeUpdates","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.registerForTimeUpdates\">module:bigscreenplayer/bigscreenplayer.registerForTimeUpdates &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.registerPlugin","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.registerPlugin\">module:bigscreenplayer/bigscreenplayer.registerPlugin &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.setCurrentTime","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.setCurrentTime\">module:bigscreenplayer/bigscreenplayer.setCurrentTime &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.setLogLevel","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.setLogLevel\">module:bigscreenplayer/bigscreenplayer.setLogLevel &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.setSubtitlesEnabled","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.setSubtitlesEnabled\">module:bigscreenplayer/bigscreenplayer.setSubtitlesEnabled &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.setTransportControlsPosition","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.setTransportControlsPosition\">module:bigscreenplayer/bigscreenplayer.setTransportControlsPosition &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.toggleDebug","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.toggleDebug\">module:bigscreenplayer/bigscreenplayer.toggleDebug &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.transitions","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.transitions\">module:bigscreenplayer/bigscreenplayer.transitions &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unmock","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unmock\">module:bigscreenplayer/bigscreenplayer.unmock &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unregisterForStateChanges","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unregisterForStateChanges\">module:bigscreenplayer/bigscreenplayer.unregisterForStateChanges &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unregisterForSubtitleChanges","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unregisterForSubtitleChanges\">module:bigscreenplayer/bigscreenplayer.unregisterForSubtitleChanges &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unregisterForTimeUpdates","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unregisterForTimeUpdates\">module:bigscreenplayer/bigscreenplayer.unregisterForTimeUpdates &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer.unregisterPlugin","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#.unregisterPlugin\">module:bigscreenplayer/bigscreenplayer.unregisterPlugin &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer~getLiveSupport","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#~getLiveSupport\">module:bigscreenplayer/bigscreenplayer~getLiveSupport &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer~init","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#~init\">module:bigscreenplayer/bigscreenplayer~init &rtrif; undefined</a>"},{"title":"module:bigscreenplayer/bigscreenplayer~tearDown","link":"<a href=\"module-bigscreenplayer_bigscreenplayer.html#~tearDown\">module:bigscreenplayer/bigscreenplayer~tearDown &rtrif; undefined</a>"},{"title":"BigscreenPlayerData","link":"<a href=\"global.html#BigscreenPlayerData\">BigscreenPlayerData</a>"},{"title":"hasAttribute","link":"<a href=\"global.html#hasAttribute\">hasAttribute</a>"},{"title":"InitCallbacks","link":"<a href=\"global.html#InitCallbacks\">InitCallbacks</a>"},{"title":"MediaUrl","link":"<a href=\"global.html#MediaUrl\">MediaUrl</a>"},{"title":"rgbaToRGB","link":"<a href=\"global.html#rgbaToRGB\">rgbaToRGB</a>"},{"title":"safeRemoveElement","link":"<a href=\"global.html#safeRemoveElement\">safeRemoveElement</a>"},{"title":"Time","link":"<a href=\"global.html#Time\">Time</a>"},{"title":"WindowTypes","link":"<a href=\"global.html#WindowTypes\">WindowTypes</a>"}];
-        var options = {"shouldSort":true,"threshold":0.4,"location":0,"distance":100,"maxPatternLength":32,"minMatchCharLength":1}
-          setupSearch(list, options)
-      </script>
-    
-
-    
-
-    
-
-    
-
-    
-
-
-  </body>
-
-</html>
+</code></pre></article></section></div></div></div><div class="search-container" id="PkfLWpAbet" style="display:none"><div class="wrapper" id="iCxFxjkHbP"><button class="icon-button search-close-button" id="VjLlGakifb" aria-label="close search"><svg><use xlink:href="#close-icon"></use></svg></button><div class="search-box-c"><svg><use xlink:href="#search-icon"></use></svg> <input type="text" id="vpcKVYIppa" class="search-input" placeholder="Search..." autofocus></div><div class="search-result-c" id="fWwVHRuDuN"><span class="search-result-c-text">Type anything to view search result</span></div></div></div><div class="mobile-menu-icon-container"><button class="icon-button" id="mobile-menu" data-isopen="false" aria-label="menu"><svg><use xlink:href="#menu-icon"></use></svg></button></div><div id="mobile-sidebar" class="mobile-sidebar-container"><div class="mobile-sidebar-wrapper"><a href="index.html"><img alt="The logo for bigscreen player" src="bsp-logo.png"></a><div class="mobile-nav-links"><div class="navbar-item"><a id="" href="index.html" target="">Home</a></div><div class="navbar-item"><a id="" href="https://github.com/bbc/bigscreen-player" target="">Repo</a></div></div><div class="mobile-sidebar-items-c"><div class="sidebar-section-title with-arrow" data-isopen="false" id="-UtLxZv1dXngIM_4dKVqj"><div>Tutorials</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="tutorial-00-getting-started.html">Getting Started</a></div><div class="sidebar-section-children"><a href="tutorial-CDN Failover.html">CDN Failover</a></div><div class="sidebar-section-children"><a href="tutorial-Configuration.html">Configuration</a></div><div class="sidebar-section-children"><a href="tutorial-Debugging.html">Debugging</a></div><div class="sidebar-section-children"><a href="tutorial-Design.html">Design</a></div><div class="sidebar-section-children"><a href="tutorial-Events.html">Events</a></div><div class="sidebar-section-children"><a href="tutorial-Mocking Playback.html">Mocking Playback</a></div><div class="sidebar-section-children"><a href="tutorial-Playback Strategies.html">Playback Strategies</a></div><div class="sidebar-section-children"><a href="tutorial-Plugins.html">Plugins</a></div><div class="sidebar-section-children"><a href="tutorial-State Changes.html">State Changes</a></div><div class="sidebar-section-children"><a href="tutorial-Subtitles.html">Subtitles</a></div><div class="sidebar-section-children"><a href="tutorial-Testing.html">Testing</a></div></div><div class="sidebar-section-title with-arrow" data-isopen="false" id="TIem7SJ_kVMYH0PIvf473"><div>Modules</div><svg><use xlink:href="#down-icon"></use></svg></div><div class="sidebar-section-children-container"><div class="sidebar-section-children"><a href="module-bigscreenplayer_bigscreenplayer.html">bigscreenplayer/bigscreenplayer</a></div></div></div><div class="mobile-navbar-actions"><div class="navbar-right-item"><button class="icon-button search-button" aria-label="open-search"><svg><use xlink:href="#search-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button theme-toggle" aria-label="toggle-theme"><svg><use class="theme-svg-use" xlink:href="#light-theme-icon"></use></svg></button></div><div class="navbar-right-item"><button class="icon-button font-size" aria-label="change-font-size"><svg><use xlink:href="#font-size-icon"></use></svg></button></div></div></div></div><script type="text/javascript" src="scripts/core.min.js"></script><script src="scripts/search.min.js" defer="defer"></script><script src="scripts/third-party/fuse.js" defer="defer"></script><script type="text/javascript">var tocbotInstance=tocbot.init({tocSelector:"#eed4d2a0bfd64539bb9df78095dec881",contentSelector:".main-content",headingSelector:"h1, h2, h3",hasInnerContainers:!0,scrollContainer:".main-content",headingsOffset:130,onClick:bringLinkToView})</script></body></html>
