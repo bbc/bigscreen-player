@@ -1,12 +1,20 @@
 #  Subtitles
 
-BigscreenPlayer aims to provide a consistent experience across all devices regardless of the underlying playback strategy and native functionality. The player can render subtitles with on-demand and live content. You can also customise the appearance of your subtitles using this library.
+BigscreenPlayer aims to provide a consistent experience across all devices regardless of the underlying playback strategy and native functionality. The player can render subtitles (aka captions) with on-demand and live content. You can also customise the appearance of your subtitles using this library.
 
 To achieve that consistent experience BigscreenPlayer cannot render subtitles as you would using f.ex. Dash.js. Some devices do not support text tracks natively, others do not present cues accurately ([more detail here](#why-not-include-subtitles-in-the-manifest)). For this reason you SHOULD NOT specify subtitles in your manifest. Instead you SHOULD provide subtitles separately to make use of the capabilities BigscreenPlayer provides.
 
 ##  Usage
 
 You provide subtitles to BigscreenPlayer by setting `media.captions` in the `.init()` data:
+
+```js
+// 1️⃣ Add an array of caption blocks to your playback data.
+playbackData.media.captions = [/* caption blocks... */];
+
+// 2️⃣ Pass playback data that contains captions to the player.
+player.init(document.querySelector("video"), playbackData, /* other opts */);
+```
 
 1. `media.captions` MUST be an array containing at least one object.
 2. Each object in the captions array MUST have a property `url`.
@@ -21,6 +29,7 @@ There are different requirements for subtitles delivered _as a whole_ and subtit
 Subtitles are delivered "as a whole" when the captions' `url` refers to a single file that contains all subtitles for the programme. For example:
 
 ```js
+// Each resource specifies subtitles for the whole media experience.
 const captions = [
   { url: "https://some.cdn/subtitles.xml" },
   { url: "https://other.cdn/subtitles.xml" },
@@ -35,6 +44,7 @@ Subtitles delivered as a whole do not require any additional metadata in the man
 Subtitles are delivered "as segments" when the captions' `url` is an URL template. An URL is considered a segment template when it contains a `$...$` block. For example:
 
 ```js
+// Each segment specifies subtitles for a segment of the media experience.
 const captions = [
   { 
     url: "https://some.cdn/subtitles/$segment$.m4s",
@@ -62,10 +72,10 @@ You can style the subtitles by setting `media.subtitleCustomisation` in the `.in
 ####  Styling: Example
 
 ```js
-const subtitleCustomisation = { lineHeight: 1.5, size: 1 };
+// 1️⃣ Create an object mapping out styles for your subtitles.
+playbackData.media.subtitleCustomisation = { lineHeight: 1.5, size: 1 };
 
-playbackData.media.subtitleCustomisation = subtitleCustomisation;
-
+// 2️⃣ Pass playback data that contains subtitle customisation (and captions) to the player.
 player.init(document.querySelector("video"), playbackData, /* other opts */);
 ```
 
