@@ -63,6 +63,10 @@ You can style the subtitles by setting `media.subtitleCustomisation` in the `.in
 
 ```js
 const subtitleCustomisation = { lineHeight: 1.5, size: 1 };
+
+playbackData.media.subtitleCustomisation = subtitleCustomisation;
+
+player.init(document.querySelector("video"), playbackData, /* other opts */);
 ```
 
 ##  Design
