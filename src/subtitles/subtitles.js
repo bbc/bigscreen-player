@@ -7,28 +7,24 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
   let subtitlesEnabled = autoStart
   let subtitlesContainer
 
-  if (useLegacySubs) {
-    if (available()) {
-      import("./legacysubtitles.js")
-        .then(({ default: LegacySubtitles }) => {
-          subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
-          callback(subtitlesEnabled)
-        })
-        .catch(() => {
-          Plugins.interface.onSubtitlesDynamicLoadError()
-        })
-    } else {
-      /* This is needed to deal with a race condition wherein the Subtitles Callback runs before the Subtitles object
-       * has finished construction. This is leveraging a feature of the Javascript Event Loop, specifically how it interacts
-       * with Promises, called Microtasks.
-       *
-       * For more information, please see:
-       * https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide
-       */
-      new Promise((resolve) => resolve()).then(() => {
+  if (useLegacySubs && available()) {
+    import("./legacysubtitles.js")
+      .then(({ default: LegacySubtitles }) => {
+        subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
         callback(subtitlesEnabled)
       })
-    }
+      .catch(() => {
+        Plugins.interface.onSubtitlesDynamicLoadError()
+      })
+  } else if (useLegacySubs) {
+    /* This is needed to deal with a race condition wherein the Subtitles Callback runs before the Subtitles object
+     * has finished construction. This is leveraging a feature of the Javascript Event Loop, specifically how it interacts
+     * with Promises, called Microtasks.
+     *
+     * For more information, please see:
+     * https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide
+     */
+    Promise.resolve().then(() => callback(subtitlesEnabled))
   } else {
     import("./imscsubtitles.js")
       .then(({ default: IMSCSubtitles }) => {
