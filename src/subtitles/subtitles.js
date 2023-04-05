@@ -18,6 +18,13 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
           Plugins.interface.onSubtitlesDynamicLoadError()
         })
     } else {
+      /* This is needed to deal with a race condition wherein the Subtitles Callback runs before the Subtitles object
+       * has finished construction. This is leveraging a feature of the Javascript Event Loop, specifically how it interacts
+       * with Promises, called Microtasks.
+       *
+       * For more information, please see:
+       * https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide
+       */
       new Promise((resolve) => resolve()).then(() => {
         callback(subtitlesEnabled)
       })
