@@ -1,9 +1,12 @@
-# Installation
+# Getting Started
+
+## Installation
+
 ```bash
-$ npm install bigscreen-player --save
+npm install bigscreen-player --save
 ```
 
-# Configuration
+## Configuration
 
 Bigscreen Player has some global configuration that is needed before initialisation. A *playback strategy* must be configured:
 
@@ -11,12 +14,11 @@ Bigscreen Player has some global configuration that is needed before initialisat
 window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'basicstrategy'
 ```
 
-# Initialisation
+## Initialisation
 
 A playback session can be initialised by simply calling the `init()` function with some initial data.
 
 The player will render itself into a supplied parent element, and playback will begin as soon as enough data has buffered.
-
 
 ```javascript
 import { BigscreenPlayer, MediaKinds, WindowTypes } from 'bigscreen-player'
@@ -94,4 +96,3 @@ const enableSubtitles = false
 
 bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles)
 ```
-
