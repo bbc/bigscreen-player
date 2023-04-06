@@ -46,6 +46,8 @@ describe("Subtitles", () => {
             legacySubtitles: true,
           },
         }
+
+        LegacySubtitles.mockReset()
       })
 
       it("implementation is available when legacy subtitles override is true", (done) => {
@@ -55,6 +57,18 @@ describe("Subtitles", () => {
         Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
           expect(result).toBe(true)
           expect(LegacySubtitles).toHaveBeenCalledTimes(1)
+          done()
+        })
+      })
+
+      it("implementation is not available when legacy subtitles override is true, but subtitles are segmented", (done) => {
+        isSegmented = true
+        const mockMediaPlayer = {}
+        const autoStart = true
+
+        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
+          expect(LegacySubtitles).not.toHaveBeenCalled()
+          expect(IMSCSubtitles).not.toHaveBeenCalled()
           done()
         })
       })
