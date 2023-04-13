@@ -46,7 +46,7 @@
     "babel-jest": "^27.0.6",
     "clean-jsdoc-theme": "^4.2.7",
     "eslint": "^8.27.0",
-    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-jest": "^27.1.4",
     "eslint-plugin-json": "^3.1.0",
     "eslint-plugin-sonarjs": "^0.16.0",
