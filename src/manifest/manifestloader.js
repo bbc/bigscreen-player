@@ -80,10 +80,10 @@ function loadLivePlaylist(url, { windowType, initialWallclockTime, onError, onSu
 }
 
 function getStreamUrl(data) {
-  const match = /#EXT-X-STREAM-INF:.*[\n\r]+(.*)[\n\r]?/.exec(data)
+  const match = /.*$/.exec(data.slice(0, -1))
 
   if (match) {
-    return match[1]
+    return match[0]
   }
 }
 
