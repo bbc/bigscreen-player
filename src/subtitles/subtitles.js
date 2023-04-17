@@ -3,6 +3,9 @@ import findSegmentTemplate from "../utils/findtemplate"
 
 function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   const useLegacySubs = window.bigscreenPlayer?.overrides?.legacySubtitles ?? false
+  const isSeekableLiveSupport = window.bigscreenPlayer.liveSupport
+    ? window.bigscreenPlayer.liveSupport === "seekable"
+    : true
 
   let subtitlesEnabled = autoStart
   let subtitlesContainer
@@ -69,7 +72,7 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
 
     const isWhole = findSegmentTemplate(url) == null
 
-    return isWhole || !useLegacySubs
+    return isWhole || (!useLegacySubs && isSeekableLiveSupport)
   }
 
   function setPosition(position) {
