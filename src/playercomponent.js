@@ -27,7 +27,7 @@ function PlayerComponent(
   let fatalErrorTimeout
   let fatalError
 
-  StrategyPicker(windowType, bigscreenPlayerData.media.isUHD)
+  StrategyPicker()
     .then((strategy) => {
       playbackStrategy = strategy(
         mediaSources,
@@ -46,8 +46,8 @@ function PlayerComponent(
 
       initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime)
     })
-    .catch((e) => {
-      errorCallback && errorCallback(e)
+    .catch((error) => {
+      errorCallback && errorCallback(error)
     })
 
   function play() {
@@ -58,11 +58,10 @@ function PlayerComponent(
     return playbackStrategy && playbackStrategy.isEnded()
   }
 
-  function pause(opts) {
-    opts = opts || {}
+  function pause(opts = {}) {
     if (transitions().canBePaused()) {
       const disableAutoResume = windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
-      playbackStrategy && playbackStrategy.pause({ disableAutoResume: disableAutoResume })
+      playbackStrategy && playbackStrategy.pause({ disableAutoResume })
     }
   }
 
@@ -162,18 +161,26 @@ function PlayerComponent(
 
   function eventCallback(mediaState) {
     switch (mediaState) {
-      case MediaState.PLAYING:
+      case MediaState.PLAYING: {
         onPlaying()
         break
-      case MediaState.PAUSED:
+      }
+      case MediaState.PAUSED: {
         onPaused()
         break
-      case MediaState.WAITING:
+      }
+      case MediaState.WAITING: {
         onBuffering()
         break
-      case MediaState.ENDED:
+      }
+      case MediaState.ENDED: {
         onEnded()
         break
+      }
+
+      default: {
+        break
+      }
     }
   }
 
@@ -313,7 +320,7 @@ function PlayerComponent(
     const evt = new PluginData({
       status: PluginEnums.STATUS.DISMISSED,
       stateType: PluginEnums.TYPE.BUFFERING,
-      isInitialPlay: isInitialPlay,
+      isInitialPlay,
     })
     Plugins.interface.onBufferingCleared(evt)
   }
@@ -335,11 +342,11 @@ function PlayerComponent(
   }
 
   function publishMediaStateUpdate(state, opts) {
-    let stateUpdateData = {
+    const stateUpdateData = {
       data: {
         currentTime: getCurrentTime(),
         seekableRange: getSeekableRange(),
-        state: state,
+        state,
         duration: getDuration(),
       },
       timeUpdate: opts && opts.timeUpdate,
@@ -381,21 +388,21 @@ function PlayerComponent(
   }
 
   return {
-    play: play,
-    pause: pause,
-    transitions: transitions,
-    isEnded: isEnded,
-    setPlaybackRate: setPlaybackRate,
-    getPlaybackRate: getPlaybackRate,
-    setCurrentTime: setCurrentTime,
-    getCurrentTime: getCurrentTime,
-    getDuration: getDuration,
-    getWindowStartTime: getWindowStartTime,
-    getWindowEndTime: getWindowEndTime,
-    getSeekableRange: getSeekableRange,
-    getPlayerElement: getPlayerElement,
-    isPaused: isPaused,
-    tearDown: tearDown,
+    play,
+    pause,
+    transitions,
+    isEnded,
+    setPlaybackRate,
+    getPlaybackRate,
+    setCurrentTime,
+    getCurrentTime,
+    getDuration,
+    getWindowStartTime,
+    getWindowEndTime,
+    getSeekableRange,
+    getPlayerElement,
+    isPaused,
+    tearDown,
   }
 }
 
