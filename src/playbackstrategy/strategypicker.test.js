@@ -18,7 +18,7 @@ describe("Strategy Picker", () => {
   })
 
   it("should default to native strategy", () =>
-    StrategyPicker().then((strategy) => {
+    return StrategyPicker().then((strategy) => {
       expect(strategy).toEqual(NativeStrategy)
     }))
 
