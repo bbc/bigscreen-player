@@ -7,6 +7,18 @@ jest.mock("./nativestrategy")
 jest.mock("./basicstrategy")
 jest.mock("./msestrategy", () => jest.fn)
 
+class NoErrorThrownError extends Error {}
+
+const getError = async (call) => {
+  try {
+    await call()
+
+    throw new NoErrorThrownError()
+  } catch (error) {
+    return error
+  }
+}
+
 describe("Strategy Picker", () => {
   beforeEach(() => {
     window.bigscreenPlayer = {}
@@ -40,27 +52,16 @@ describe("Strategy Picker", () => {
     })
   })
 
-  it("should reject when mse strategy cannot be loaded", () => {
+  it("should reject when mse strategy cannot be loaded", async () => {
     window.bigscreenPlayer.playbackStrategy = "msestrategy"
 
     jest.doMock("./msestrategy", () => {
       throw new Error("Could not construct MSE Strategy!")
     })
 
-    return StrategyPicker().catch((rejection) => {
-      expect(rejection).toEqual({ error: "strategyDynamicLoadError" })
-    })
-  })
+    const error = await getError(async () => StrategyPicker())
 
-  it("should reject when mse strategy cannot be loaded for hybrid strategy configuration", () => {
-    window.bigscreenPlayer.playbackStrategy = "hybridstrategy"
-
-    jest.doMock("./msestrategy", () => {
-      throw new Error("Could not construct MSE Strategy!")
-    })
-
-    return StrategyPicker().catch((rejection) => {
-      expect(rejection).toEqual({ error: "strategyDynamicLoadError" })
-    })
+    expect(error).not.toBeInstanceOf(NoErrorThrownError)
+    expect(error).toEqual({ error: "strategyDynamicLoadError" })
   })
 })

@@ -1,5 +1,5 @@
 import MediaState from "./models/mediastate"
-import WindowTypes from "./models/windowtypes"
+import windowTypes from "./models/windowtypes"
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
@@ -18,6 +18,9 @@ function PlayerComponent(
 ) {
   const transferFormat = bigscreenPlayerData.media.transferFormat
 
+  let _windowType = windowType
+  let _stateUpdateCallback = stateUpdateCallback
+
   let mediaKind = bigscreenPlayerData.media.kind
   let isInitialPlay = true
   let errorTimeoutID = null
@@ -31,7 +34,7 @@ function PlayerComponent(
     .then((strategy) => {
       playbackStrategy = strategy(
         mediaSources,
-        windowType,
+        _windowType,
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
@@ -60,7 +63,7 @@ function PlayerComponent(
 
   function pause(opts = {}) {
     if (transitions().canBePaused()) {
-      const disableAutoResume = windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
+      const disableAutoResume = _windowType === windowTypes.GROWING ? true : opts.disableAutoResume
       playbackStrategy && playbackStrategy.pause({ disableAutoResume })
     }
   }
@@ -115,7 +118,7 @@ function PlayerComponent(
     return (
       window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
       transferFormat === TransferFormats.HLS &&
-      windowType !== WindowTypes.STATIC &&
+      _windowType !== windowTypes.STATIC &&
       getLiveSupport() === LiveSupport.RESTARTABLE
     )
   }
@@ -358,9 +361,8 @@ function PlayerComponent(
       stateUpdateData.message = opts.message
     }
 
-    stateUpdateCallback(stateUpdateData)
+    _stateUpdateCallback(stateUpdateData)
   }
-
   function initialMediaPlay(media, startTime) {
     mediaMetaData = media
     loadMedia(media.type, startTime)
@@ -379,9 +381,9 @@ function PlayerComponent(
     playbackStrategy = null
     isInitialPlay = true
     errorTimeoutID = undefined
-    windowType = undefined
+    _windowType = undefined
     mediaKind = undefined
-    stateUpdateCallback = undefined
+    _stateUpdateCallback = undefined
     mediaMetaData = undefined
     fatalErrorTimeout = undefined
     fatalError = undefined

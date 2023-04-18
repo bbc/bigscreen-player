@@ -36,7 +36,6 @@ rules:
   unicorn/no-array-reduce: off
   unicorn/prevent-abbreviations: off
   unicorn/catch-error-name: off
-  no-param-reassign: off
 
   # Style
   arrow-body-style: [error, as-needed]
@@ -104,6 +103,7 @@ rules:
   no-new-object: error
   no-new-wrappers: error
   no-octal-escape: error
+  no-param-reassign: error
   no-proto: error
   no-return-assign: error
   no-return-await: error
@@ -166,4 +166,3 @@ overrides:
     rules:
       jest/prefer-each: "error"
       jest/prefer-spy-on: "error"
-      jest/no-conditional-expect: off
