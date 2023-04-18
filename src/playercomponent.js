@@ -1,5 +1,5 @@
 import MediaState from "./models/mediastate"
-import windowTypes from "./models/windowtypes"
+import WindowTypes from "./models/windowtypes"
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
@@ -63,7 +63,7 @@ function PlayerComponent(
 
   function pause(opts = {}) {
     if (transitions().canBePaused()) {
-      const disableAutoResume = _windowType === windowTypes.GROWING ? true : opts.disableAutoResume
+      const disableAutoResume = _windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
       playbackStrategy && playbackStrategy.pause({ disableAutoResume })
     }
   }
@@ -118,7 +118,7 @@ function PlayerComponent(
     return (
       window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
       transferFormat === TransferFormats.HLS &&
-      _windowType !== windowTypes.STATIC &&
+      _windowType !== WindowTypes.STATIC &&
       getLiveSupport() === LiveSupport.RESTARTABLE
     )
   }
