@@ -1,6 +1,5 @@
 const PlaybackStrategy = {
   MSE: "msestrategy",
-  HYBRID: "hybridstrategy",
   NATIVE: "nativestrategy",
   BASIC: "basicstrategy",
 }
