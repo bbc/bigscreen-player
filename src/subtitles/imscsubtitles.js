@@ -266,8 +266,26 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
   function renderSubtitle(xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
     try {
+      const errorHandler = {
+        info(message) {
+          DebugTool.info(`Info: ${message}`)
+          return false
+        },
+        warning(message) {
+          DebugTool.info(`Warning: ${message}`)
+          return false
+        },
+        error(message) {
+          DebugTool.info(`Error: ${message}`)
+          return false
+        },
+        fatal(message) {
+          DebugTool.info(`Fatal: ${message}`)
+          return false
+        },
+      }
       const isd = generateISD(xml, currentTime)
-      renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
+      renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, errorHandler, null, false, styleOpts)
     } catch (error) {
       DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
