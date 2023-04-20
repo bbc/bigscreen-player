@@ -71,7 +71,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function convertEpochToVideoTimeSeconds(epochTime) {
-    return Math.floor(epochTime - windowStartEpochSeconds)
+    return (epochTime - windowStartEpochSeconds).toFixed(2)
   }
 
   function loadSegment(url, segmentNumber) {
