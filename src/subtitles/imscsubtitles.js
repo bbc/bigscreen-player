@@ -98,22 +98,26 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
           })
 
           // hacky rendering of subs in debug tool for testing only
-          const regex = new RegExp('"text":"(.*?)"', "g")
-          const str = JSON.stringify(xml.body)
-          let myArray
-          let toPrint = ""
-          while ((myArray = regex.exec(str)) !== null) {
-            toPrint += `${myArray[1]}`
+          try {
+            const regex = new RegExp('"text":"(.*?)"', "g")
+            const str = JSON.stringify(xml.body)
+            let myArray
+            let toPrint = ""
+            while ((myArray = regex.exec(str)) !== null) {
+              toPrint += `${myArray[1]}`
+            }
+
+            const videoTimes = []
+            times.forEach((time) => {
+              videoTimes.push(convertEpochToVideoTimeSeconds(time))
+            })
+            videoTimes.splice(0, 1)
+            toPrint += ` ${videoTimes}`
+
+            DebugTool.info(toPrint)
+          } catch {
+            // no-op
           }
-
-          const videoTimes = []
-          times.forEach((time) => {
-            videoTimes.push(convertEpochToVideoTimeSeconds(time))
-          })
-          videoTimes.splice(0, 1)
-          toPrint += ` ${videoTimes}`
-
-          DebugTool.info(toPrint)
 
           if (segments.length > SEGMENTS_BUFFER_SIZE) {
             pruneSegments()
