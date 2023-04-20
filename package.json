@@ -15,9 +15,7 @@
   ],
   "scripts": {
     "prepare": "[ ! -d dist/ ] && npm run build || exit 0",
-    "docs": "npm run docs:clean && npm run docs:build",
-    "docs:clean": "rm -r ./docs/api",
-    "docs:build": "jsdoc -c jsdoc.conf.json",
+    "docs": "jsdoc -c jsdoc.conf.json",
     "build": "npm run build:clean && npm run build:bundle",
     "build:clean": "rm -rf dist",
     "build:bundle": "rollup -c rollup.config.js",
