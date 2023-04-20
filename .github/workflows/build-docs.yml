@@ -2,8 +2,8 @@ name: Build Docs
 
 on:
   push:
-    tags:
-      - "*.*.*"
+    branches:
+      - master
 
 jobs:
   build:
