@@ -66,6 +66,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     const segmentsTemplate = findSegmentTemplate(segmentsUrlTemplate)
 
     segmentsToLoad.forEach((segmentNumber) => {
+      DebugTool.info(`loadAllRequiredSegments - About to load segment ${segmentNumber}`)
       loadSegment(segmentsUrlTemplate.replace(segmentsTemplate, segmentNumber), segmentNumber)
     })
   }
@@ -142,6 +143,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
   function resetLoadErrorCount() {
     loadErrorCount = 0
+    DebugTool.info("Reset Load Error Count")
   }
 
   function loadErrorLimit() {
@@ -160,6 +162,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     const isWhole = isSubtitlesWhole()
 
     if (isWhole || (!isWhole && loadErrorLimit())) {
+      DebugTool.info("Stopping subs before attempting failover")
       stop()
       segments = []
       mediaSources.failoverSubtitles(start, errorCase, opts)
@@ -345,6 +348,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function start() {
+    DebugTool.info("start")
     stop()
 
     const url = mediaSources.currentSubtitlesSource()
