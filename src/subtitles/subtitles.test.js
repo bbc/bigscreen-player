@@ -394,11 +394,71 @@ describe("Subtitles", () => {
         )
       })
 
-      it("returns false for segmented subtitles when the legacy strategy is forced", (done) => {
+      it("returns true for segmented subtitles when no live support is defined in config", (done) => {
+        isAvailable = true
+        isSegmented = true
+
+        const subtitles = Subtitles(
+          mockMediaPlayer,
+          true,
+          playbackElement,
+          customDefaultStyle,
+          mockMediaSources,
+          () => {
+            expect(subtitles.available()).toBe(true)
+            done()
+          }
+        )
+      })
+
+      it("returns false for segmented subtitles when the device is seekable but also legacy subs", (done) => {
         window.bigscreenPlayer = {
+          liveSupport: "seekable",
           overrides: {
             legacySubtitles: true,
           },
+        }
+
+        isAvailable = true
+        isSegmented = true
+
+        const subtitles = Subtitles(
+          mockMediaPlayer,
+          true,
+          playbackElement,
+          customDefaultStyle,
+          mockMediaSources,
+          () => {
+            expect(subtitles.available()).toBe(false)
+            done()
+          }
+        )
+      })
+
+      it("returns false for segmented subtitles when the device is playable", (done) => {
+        window.bigscreenPlayer = {
+          liveSupport: "playable",
+        }
+
+        isAvailable = true
+        isSegmented = true
+
+        const subtitles = Subtitles(
+          mockMediaPlayer,
+          true,
+          playbackElement,
+          customDefaultStyle,
+          mockMediaSources,
+          () => {
+            expect(subtitles.available()).toBe(false)
+            done()
+          }
+        )
+      })
+
+      it("returns false for segmented subtitles when the device is restartable", (done) => {
+        window.bigscreenPlayer = {
+          liveSupport: "restartable",
         }
 
         isAvailable = true
