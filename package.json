@@ -25,12 +25,6 @@
     "coverage": "jest --coverage",
     "lint": "eslint ."
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "./scripts/lint-staged.sh && ./scripts/format-staged.sh",
-      "pre-push": "npm test"
-    }
-  },
   "devDependencies": {
     "@babel/core": "^7.16.12",
     "@babel/eslint-parser": "^7.14.7",
