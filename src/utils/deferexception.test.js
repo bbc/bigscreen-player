@@ -12,17 +12,17 @@ describe("deferExceptions", () => {
   it("does not let an exception through", () => {
     jest.useFakeTimers()
 
-    const error = new Error("oops")
+    const newError = new Error("oops")
 
     try {
       expect(() => {
         deferExceptions(() => {
-          throw error
+          throw newError
         })
       }).not.toThrow()
       jest.advanceTimersByTime(1)
-    } catch (e) {
-      expect(e).toBe(error)
+    } catch (error) {
+      expect(error).toBe(newError)
     }
 
     jest.useRealTimers()

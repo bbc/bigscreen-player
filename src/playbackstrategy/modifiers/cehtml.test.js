@@ -63,7 +63,7 @@ describe("cehtml Base", () => {
       mockMediaElement.onPlayStateChange()
 
       mockMediaElement.playPosition = 0
-      for (let i = 0; i < 6; i++) {
+      for (let idx = 0; idx < 6; idx++) {
         mockMediaElement.playPosition += 500
         jest.advanceTimersByTime(500)
       }
@@ -81,7 +81,7 @@ describe("cehtml Base", () => {
       mockMediaElement.onPlayStateChange()
 
       mockMediaElement.playPosition = 0
-      for (let i = 0; i < 6; i++) {
+      for (let idx = 0; idx < 6; idx++) {
         mockMediaElement.playPosition += 500
         jest.advanceTimersByTime(500)
       }
@@ -118,7 +118,7 @@ describe("cehtml Base", () => {
 
       mockMediaElement.playPosition = 0
       const numberOfLoops = 10000 / 500
-      for (let i = 0; i < numberOfLoops - 1; i++) {
+      for (let idx = 0; idx < numberOfLoops - 1; idx++) {
         mockMediaElement.playPosition += 500
         jest.advanceTimersByTime(500)
 
@@ -343,7 +343,7 @@ describe("cehtml Base", () => {
       mockMediaElement.playTime = 10000
       mockMediaElement.onPlayStateChange()
 
-      expect(player.getMediaDuration()).toEqual(10)
+      expect(player.getMediaDuration()).toBe(10)
     })
   })
 

@@ -46,8 +46,8 @@ describe("Samsung Maple", () => {
       recentEvents = []
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
 
-      expect(player.getSource()).toEqual("testUrl")
-      expect(player.getMimeType()).toEqual("testMimeType")
+      expect(player.getSource()).toBe("testUrl")
+      expect(player.getMimeType()).toBe("testMimeType")
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.STOPPED)
     })
   })

@@ -31,9 +31,9 @@ describe("Samsung Streaming", () => {
     jest.spyOn(mockPlayerPlugin, "Execute").mockImplementation((command) => {
       if (command === "GetDuration") {
         return 100000
-      } else {
+      } 
         return 1
-      }
+      
     })
     jest.spyOn(mockPlayerPlugin, "Close").mockImplementation(() => {})
     jest.spyOn(mockPlayerPlugin, "Open").mockImplementation(() => {})
@@ -52,8 +52,8 @@ describe("Samsung Streaming", () => {
       recentEvents = []
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
 
-      expect(player.getSource()).toEqual("testUrl")
-      expect(player.getMimeType()).toEqual("testMimeType")
+      expect(player.getSource()).toBe("testUrl")
+      expect(player.getMimeType()).toBe("testMimeType")
       expect(recentEvents).toContain(MediaPlayerBase.EVENT.STOPPED)
     })
 
@@ -66,13 +66,13 @@ describe("Samsung Streaming", () => {
     it("should modify the source if mimeType is HLS", () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "application/vnd.apple.mpegurl")
 
-      expect(player.getSource()).toEqual("testUrl|COMPONENT=HLS")
+      expect(player.getSource()).toBe("testUrl|COMPONENT=HLS")
     })
 
     it("should modify the source if mimeType is HLS and is live media", () => {
       player.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, "testUrl", "application/vnd.apple.mpegurl")
 
-      expect(player.getSource()).toEqual("testUrl|HLSSLIDING|COMPONENT=HLS")
+      expect(player.getSource()).toBe("testUrl|HLSSLIDING|COMPONENT=HLS")
     })
 
     it("should open the streaming player plugin if mimeType is HLS", () => {

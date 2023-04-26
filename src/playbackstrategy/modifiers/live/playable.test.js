@@ -21,7 +21,7 @@ describe("Playable HMTL5 Live Player", () => {
   }
 
   function isUndefined(action) {
-    expect(playableMediaPlayer[action]).not.toBeDefined()
+    expect(playableMediaPlayer[action]).toBeUndefined()
   }
 
   beforeEach(() => {

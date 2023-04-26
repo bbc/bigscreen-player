@@ -16,7 +16,7 @@ describe("Time utils", () => {
     }
 
     for (const duration in testCases) {
-      it("Converts duration of " + duration + " to " + testCases[duration] + " seconds", () => {
+      it(`Converts duration of ${ duration } to ${ testCases[duration] } seconds`, () => {
         expect(TimeUtils.durationToSeconds(duration)).toBe(testCases[duration])
       })
     }
