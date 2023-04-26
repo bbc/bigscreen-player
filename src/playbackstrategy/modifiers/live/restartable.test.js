@@ -13,14 +13,13 @@ describe("restartable HMTL5 Live Player", () => {
 
   const mockMediaSources = {
     time: () => testTime,
-    refresh: (success, error) => success(),
+    refresh: (success) => success(),
   }
 
   let player
   let restartableMediaPlayer
 
-  function initialiseRestartableMediaPlayer(windowType) {
-    windowType = windowType || WindowTypes.SLIDING
+  function initialiseRestartableMediaPlayer(windowType = WindowTypes.SLIDING) {
     restartableMediaPlayer = RestartableMediaPlayer(player, windowType, mockMediaSources)
   }
 
@@ -120,7 +119,7 @@ describe("restartable HMTL5 Live Player", () => {
 
   describe("should not have methods for", () => {
     function isUndefined(action) {
-      expect(restartableMediaPlayer[action]).not.toBeDefined()
+      expect(restartableMediaPlayer[action]).toBeUndefined()
     }
 
     beforeEach(() => {
@@ -306,7 +305,7 @@ describe("restartable HMTL5 Live Player", () => {
         mockCallback[index]({ state: MediaPlayerBase.STATE.PLAYING })
       }
 
-      restartableMediaPlayer.pause({ disableAutoResume: disableAutoResume })
+      restartableMediaPlayer.pause({ disableAutoResume })
 
       for (let index = 0; index < mockCallback.length; index++) {
         mockCallback[index]({ state: MediaPlayerBase.STATE.PAUSED })
@@ -409,7 +408,7 @@ describe("restartable HMTL5 Live Player", () => {
       expect(player.resume).toHaveBeenCalledTimes(1)
     })
 
-    it("will fake pause if attempting to pause at the start of playback ", () => {
+    it("will fake pause if attempting to pause at the start of playback", () => {
       startPlaybackAndPause(0, false)
 
       jest.advanceTimersByTime(1)

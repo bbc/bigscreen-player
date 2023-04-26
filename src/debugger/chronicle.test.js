@@ -105,7 +105,7 @@ describe("Chronicle", () => {
     Chronicle.time(2)
     const chronicle = Chronicle.retrieve()
 
-    expect(chronicle.length).toEqual(2)
+    expect(chronicle).toHaveLength(2)
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
@@ -121,7 +121,7 @@ describe("Chronicle", () => {
     Chronicle.time(3)
     const chronicle = Chronicle.retrieve()
 
-    expect(chronicle.length).toEqual(4)
+    expect(chronicle).toHaveLength(4)
     expect(chronicle.pop()).toEqual(expectedObject)
   })
 
@@ -146,7 +146,7 @@ describe("Chronicle", () => {
     Chronicle.time(6)
     const chronicle = Chronicle.retrieve()
 
-    expect(chronicle.length).toEqual(7)
+    expect(chronicle).toHaveLength(7)
     expect(chronicle).toEqual(expectedArray)
   })
 
@@ -161,7 +161,7 @@ describe("Chronicle", () => {
     Chronicle.time(3)
     const chronicle = Chronicle.retrieve()
 
-    expect(chronicle.length).toEqual(2)
+    expect(chronicle).toHaveLength(2)
     expect(chronicle).toEqual(expectedArray)
   })
 
@@ -176,7 +176,7 @@ describe("Chronicle", () => {
 
     const chronicle = Chronicle.retrieve()
 
-    expect(chronicle.length).toEqual(2)
+    expect(chronicle).toHaveLength(2)
     expect(chronicle).toEqual(expectedArray)
   })
 })

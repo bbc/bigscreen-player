@@ -3,13 +3,9 @@ import DebugTool from "./debugtool"
 
 describe("Debug Tool, when intercepting keyValue calls,", () => {
   beforeEach(() => {
-    jest.spyOn(global, "Date").mockImplementation(() => {
-      return {
-        getTime: () => {
-          return 1234
-        },
-      }
-    })
+    jest.spyOn(global, "Date").mockImplementation(() => ({
+        getTime: () => 1234,
+      }))
     Chronicle.init()
   })
 

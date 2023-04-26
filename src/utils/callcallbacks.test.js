@@ -28,7 +28,7 @@ describe("callCallbacks", () => {
       jest.advanceTimersByTime(1)
     }
 
-    expect(failingCallCallbacks).toThrowError()
+    expect(failingCallCallbacks).toThrow()
 
     expect(callback).toHaveBeenCalledTimes(1)
     jest.useRealTimers()
