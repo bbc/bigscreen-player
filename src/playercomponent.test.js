@@ -343,7 +343,7 @@ describe("Player Component", () => {
     })
 
     it("calls into the strategy to get the playback rate", () => {
-      jest.spyOn(mockStrategy, 'getPlaybackRate').mockImplementation(() => 1.5)
+      mockStrategy.getPlaybackRate = jest.fn(() => 1.5)
 
       setUpPlayerComponent()
 
