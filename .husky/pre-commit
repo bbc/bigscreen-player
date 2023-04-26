@@ -1,1 +1,4 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
 ./scripts/lint-staged.sh && ./scripts/format-staged.sh
