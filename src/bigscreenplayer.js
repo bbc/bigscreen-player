@@ -47,7 +47,7 @@ function BigscreenPlayer() {
       DebugTool.time(evt.data.currentTime)
       callCallbacks(timeUpdateCallbacks, {
         currentTime: evt.data.currentTime,
-        endOfStream: endOfStream,
+        endOfStream,
       })
     } else {
       let stateObject = { state: evt.data.state }
@@ -93,11 +93,7 @@ function BigscreenPlayer() {
   }
 
   function deviceTimeToDate(time) {
-    if (getWindowStartTime()) {
-      return new Date(convertVideoTimeSecondsToEpochMs(time))
-    } else {
-      return new Date(time * 1000)
-    }
+    return getWindowStartTime() ? new Date(convertVideoTimeSecondsToEpochMs(time)) : new Date(time * 1000)
   }
 
   function convertVideoTimeSecondsToEpochMs(seconds) {
@@ -163,7 +159,7 @@ function BigscreenPlayer() {
   }
 
   function callSubtitlesCallbacks(enabled) {
-    callCallbacks(subtitleCallbacks, { enabled: enabled })
+    callCallbacks(subtitleCallbacks, { enabled })
   }
 
   function setSubtitlesEnabled(enabled) {
@@ -194,7 +190,7 @@ function BigscreenPlayer() {
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
      * @param {InitCallbacks} callbacks
      */
-    init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) => {
+    init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks = {}) => {
       playbackElement = newPlaybackElement
       Chronicle.init()
       resizer = Resizer()
@@ -202,9 +198,6 @@ function BigscreenPlayer() {
       DebugTool.keyValue({ key: "framework-version", value: Version })
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
-      if (!callbacks) {
-        callbacks = {}
-      }
 
       playerReadyCallback = callbacks.onSuccess
       playerErrorCallback = callbacks.onError
@@ -220,15 +213,6 @@ function BigscreenPlayer() {
 
       mediaSources = MediaSources()
 
-      // Backwards compatibility with Old API; to be removed on Major Version Update
-      if (bigscreenPlayerData.media && !bigscreenPlayerData.media.captions && bigscreenPlayerData.media.captionsUrl) {
-        bigscreenPlayerData.media.captions = [
-          {
-            url: bigscreenPlayerData.media.captionsUrl,
-          },
-        ]
-      }
-
       mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks)
     },
 
@@ -237,7 +221,7 @@ function BigscreenPlayer() {
      * @function
      * @name tearDown
      */
-    tearDown: function () {
+    tearDown() {
       if (subtitles) {
         subtitles.tearDown()
         subtitles = undefined
@@ -338,7 +322,7 @@ function BigscreenPlayer() {
      * @function
      * @param {Number} time - In seconds
      */
-    setCurrentTime: function (time) {
+    setCurrentTime(time) {
       DebugTool.apicall("setCurrentTime")
       if (playerComponent) {
         // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
@@ -388,7 +372,7 @@ function BigscreenPlayer() {
      * @function
      * @returns {boolean} Returns true if media is initialised and playing a live stream within a tolerance of the end of the seekable range (10 seconds).
      */
-    isPlayingAtLiveEdge: function () {
+    isPlayingAtLiveEdge() {
       return (
         !!playerComponent &&
         windowType !== WindowTypes.STATIC &&
@@ -409,7 +393,7 @@ function BigscreenPlayer() {
         windowStartTime: getWindowStartTime(),
         windowEndTime: getWindowEndTime(),
         initialPlaybackTime: initialPlaybackTimeEpoch,
-        serverDate: serverDate,
+        serverDate,
       }
     },
 
@@ -471,27 +455,22 @@ function BigscreenPlayer() {
      * @function
      * @param {boolean} value
      */
-    setSubtitlesEnabled: setSubtitlesEnabled,
+    setSubtitlesEnabled,
 
     /**
      * @function
      * @return if subtitles are currently enabled.
      */
-    isSubtitlesEnabled: isSubtitlesEnabled,
+    isSubtitlesEnabled,
 
     /**
      * @function
      * @return Returns whether or not subtitles are currently enabled.
      */
-    isSubtitlesAvailable: isSubtitlesAvailable,
+    isSubtitlesAvailable,
 
-    areSubtitlesCustomisable: () => {
-      return !(
-        window.bigscreenPlayer &&
-        window.bigscreenPlayer.overrides &&
-        window.bigscreenPlayer.overrides.legacySubtitles
-      )
-    },
+    areSubtitlesCustomisable: () =>
+      !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles),
 
     customiseSubtitles: (styleOpts) => {
       if (subtitles) {
@@ -528,7 +507,7 @@ function BigscreenPlayer() {
      * @function
      * @return Returns whether the current media asset is seekable.
      */
-    canSeek: function () {
+    canSeek() {
       return (
         windowType === WindowTypes.STATIC ||
         DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
@@ -539,19 +518,16 @@ function BigscreenPlayer() {
      * @function
      * @return Returns whether the current media asset is pausable.
      */
-    canPause: () => {
-      return (
-        windowType === WindowTypes.STATIC ||
-        DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport())
-      )
-    },
+    canPause: () =>
+      windowType === WindowTypes.STATIC ||
+      DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport()),
 
     /**
      * Return a mock for in place testing.
      * @function
      * @param {*} opts
      */
-    mock: function (opts) {
+    mock(opts) {
       MockBigscreenPlayer.mock(this, opts)
     },
 
@@ -559,7 +535,7 @@ function BigscreenPlayer() {
      * Unmock the player.
      * @function
      */
-    unmock: function () {
+    unmock() {
       MockBigscreenPlayer.unmock(this)
     },
 
@@ -568,7 +544,7 @@ function BigscreenPlayer() {
      * @function
      * @param {*} opts
      */
-    mockJasmine: function (opts) {
+    mockJasmine(opts) {
       MockBigscreenPlayer.mockJasmine(this, opts)
     },
 
@@ -604,30 +580,27 @@ function BigscreenPlayer() {
      * @param {Number} epochTime - Unix Epoch based time in milliseconds.
      * @return the time in seconds within the current sliding window.
      */
-    convertEpochMsToVideoTimeSeconds: (epochTime) => {
-      return getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : null
-    },
+    convertEpochMsToVideoTimeSeconds: (epochTime) =>
+      getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : null,
 
     /**
      * @function
      * @return The runtime version of the library.
      */
-    getFrameworkVersion: () => {
-      return Version
-    },
+    getFrameworkVersion: () => Version,
 
     /**
      * @function
      * @param {Number} time - Seconds
      * @return the time in milliseconds within the current sliding window.
      */
-    convertVideoTimeSecondsToEpochMs: convertVideoTimeSecondsToEpochMs,
+    convertVideoTimeSecondsToEpochMs,
 
     /**
      * Toggle the visibility of the debug tool overlay.
      * @function
      */
-    toggleDebug: toggleDebug,
+    toggleDebug,
 
     /**
      * @function
