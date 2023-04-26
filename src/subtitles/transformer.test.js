@@ -52,12 +52,12 @@ describe("Subtitle transformer", () => {
 
     expect(doc.baseStyle).toEqual(expect.any(String))
 
-    expect(subtitlesForZero).toHaveLength(0)
+    expect(subtitlesForZero.length).toBe(0)
 
-    expect(singleSubtitle).toHaveLength(1)
+    expect(singleSubtitle.length).toBe(1)
     expect(singleSubtitle[0]).toEqual(expect.objectContaining({ start: 14.04, end: 16.16 }))
 
-    expect(outOfRangeSubtitles).toHaveLength(0)
+    expect(outOfRangeSubtitles.length).toBe(0)
   })
 
   it("Should load an EBU-TT-D document", () => {
@@ -72,16 +72,16 @@ describe("Subtitle transformer", () => {
 
     expect(doc.baseStyle).toEqual(expect.any(String))
 
-    expect(subtitlesForZero).toHaveLength(0)
+    expect(subtitlesForZero.length).toBe(0)
 
-    expect(singleSubtitle).toHaveLength(1)
+    expect(singleSubtitle.length).toBe(1)
     expect(singleSubtitle[0]).toEqual(expect.objectContaining({ start: 33.56, end: 34.96 }))
 
-    expect(cumulativeSubtitles).toHaveLength(2)
+    expect(cumulativeSubtitles.length).toBe(2)
     expect(cumulativeSubtitles[0]).toEqual(expect.objectContaining({ start: 34.96, end: 37 }))
     expect(cumulativeSubtitles[1]).toEqual(expect.objectContaining({ start: 35.2, end: 37 }))
 
-    expect(outOfRangeSubtitles).toHaveLength(0)
+    expect(outOfRangeSubtitles.length).toBe(0)
   })
 
   it("Should fire a onSubtitlesTransformError on transform failure", () => {
