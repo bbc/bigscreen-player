@@ -15,6 +15,7 @@
   ],
   "scripts": {
     "prepare": "[ ! -d dist/ ] && npm run build || exit 0",
+    "postinstall": "husky install",
     "docs": "jsdoc -c jsdoc.conf.json",
     "build": "npm run build:clean && npm run build:bundle",
     "build:clean": "rm -rf dist",
@@ -24,12 +25,6 @@
     "test": "jest",
     "coverage": "jest --coverage",
     "lint": "eslint ."
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "./scripts/lint-staged.sh && ./scripts/format-staged.sh",
-      "pre-push": "npm test"
-    }
   },
   "devDependencies": {
     "@babel/core": "^7.16.12",
@@ -49,7 +44,7 @@
     "eslint-plugin-json": "^3.1.0",
     "eslint-plugin-sonarjs": "^0.16.0",
     "eslint-plugin-unicorn": "^44.0.2",
-    "husky": "^4.2.5",
+    "husky": "^8.0.3",
     "jest": "^27.0.6",
     "jsdoc": "^3.6.4",
     "prettier": "^2.7.1",
