@@ -10,7 +10,8 @@ import * as StrategyPicker from "./playbackstrategy/strategypicker"
 
 window.bigscreenPlayer = {}
 
-jest.mock("./plugins", () => ({
+jest.mock("./plugins", () => {
+  return {
     interface: {
       onErrorCleared: jest.fn(),
       onBuffering: jest.fn(),
@@ -20,7 +21,8 @@ jest.mock("./plugins", () => ({
       onErrorHandled: jest.fn(),
       onSubtitlesLoadError: jest.fn(),
     },
-  }))
+  }
+})
 
 const mockLiveSupport = LiveSupport.SEEKABLE
 
@@ -30,14 +32,14 @@ const mockStrategy = (() => {
   let eventCallback, errorCallback, timeUpdateCallback
 
   return {
-    addEventCallback: (that, cb) => {
-      eventCallback = (ev) => cb.call(that, ev)
+    addEventCallback: (t, cb) => {
+      eventCallback = (ev) => cb.call(t, ev)
     },
-    addErrorCallback: (that, cb) => {
-      errorCallback = (ev) => cb.call(that, ev)
+    addErrorCallback: (t, cb) => {
+      errorCallback = (ev) => cb.call(t, ev)
     },
-    addTimeUpdateCallback: (that, cb) => {
-      timeUpdateCallback = () => cb.call(that)
+    addTimeUpdateCallback: (t, cb) => {
+      timeUpdateCallback = () => cb.call(t)
     },
 
     mockingHooks: {
@@ -80,7 +82,9 @@ describe("Player Component", () => {
   })
 
   // opts = streamType, playbackType, mediaType, disableUi
-  function setUpPlayerComponent(opts = {}) {
+  function setUpPlayerComponent(opts) {
+    opts = opts || {}
+
     errorCallback = opts.errorCallback || undefined
 
     playbackElement = document.createElement("div")
@@ -143,7 +147,11 @@ describe("Player Component", () => {
   }
 
   beforeEach(() => {
-    jest.spyOn(StrategyPicker, "default").mockImplementation(() => new Promise((resolve) => resolve(() => mockStrategy)))
+    jest.spyOn(StrategyPicker, "default").mockImplementation(function () {
+      return new Promise(function (resolve, reject) {
+        return resolve(() => mockStrategy)
+      })
+    })
     forceMediaSourcesError = false
     testTime = {
       windowStartTime: 724000,
@@ -177,9 +185,13 @@ describe("Player Component", () => {
     })
 
     it("should trigger the error callback when strategyPicker rejects", (done) => {
-      jest.spyOn(StrategyPicker, "default").mockImplementationOnce(() => new Promise((resolve, reject) => reject({ error: "strategydynamicloaderror" })))
+      jest.spyOn(StrategyPicker, "default").mockImplementationOnce(function () {
+        return new Promise(function (resolve, reject) {
+          return reject({ error: "strategydynamicloaderror" })
+        })
+      })
 
-      const errorCallbackSpy = jest.fn(() => {
+      let errorCallbackSpy = jest.fn(() => {
         expect(errorCallbackSpy).toHaveBeenCalledWith({ error: "strategydynamicloaderror" })
         done()
       })
@@ -239,7 +251,7 @@ describe("Player Component", () => {
       setUpPlayerComponent()
 
       const playerElement = document.createElement("video")
-      jest.spyOn(mockStrategy, 'getPlayerElement').mockImplementation(() => playerElement)
+      mockStrategy.getPlayerElement = jest.fn(() => playerElement)
 
       return StrategyPicker.default().then(() => {
         expect(playerComponent.getPlayerElement()).toEqual(playerElement)
@@ -252,7 +264,7 @@ describe("Player Component", () => {
       mockStrategy.getPlayerElement = undefined
 
       return StrategyPicker.default().then(() => {
-        expect(playerComponent.getPlayerElement()).toBeNull()
+        expect(playerComponent.getPlayerElement()).toEqual(null)
       })
     })
   })
@@ -269,7 +281,7 @@ describe("Player Component", () => {
     })
 
     it("should setCurrentTime on the strategy when in a seekable state", () => {
-      jest.spyOn(mockStrategy, 'getSeekableRange').mockImplementation(() => ({ start: 0, end: 100 }))
+      mockStrategy.getSeekableRange = jest.fn(() => ({ start: 0, end: 100 }))
       setUpPlayerComponent()
 
       return StrategyPicker.default().then(() => {
@@ -285,7 +297,7 @@ describe("Player Component", () => {
       window.bigscreenPlayer.playbackStrategy = "nativestrategy"
       window.bigscreenPlayer.liveSupport = LiveSupport.RESTARTABLE
 
-      jest.spyOn(mockStrategy, 'getSeekableRange').mockImplementation(() => ({ start: 0, end: 100 }))
+      mockStrategy.getSeekableRange = jest.fn(() => ({ start: 0, end: 100 }))
 
       setUpPlayerComponent({
         windowType: WindowTypes.SLIDING,
@@ -306,7 +318,7 @@ describe("Player Component", () => {
     it("should reload the element with no time if the new time is within 30 seconds of the end of the window", () => {
       window.bigscreenPlayer.playbackStrategy = "nativestrategy"
 
-      jest.spyOn(mockStrategy, 'getSeekableRange').mockImplementation(() => ({ start: 0, end: 70 }))
+      mockStrategy.getSeekableRange = jest.fn(() => ({ start: 0, end: 70 }))
       mockStrategy.liveSupport = LiveSupport.RESTARTABLE
 
       setUpPlayerComponent({
@@ -351,7 +363,7 @@ describe("Player Component", () => {
         const rate = playerComponent.getPlaybackRate()
 
         expect(mockStrategy.getPlaybackRate).toHaveBeenCalled()
-        expect(rate).toBe(1.5)
+        expect(rate).toEqual(1.5)
       })
     })
   })
@@ -711,7 +723,7 @@ describe("Player Component", () => {
         return StrategyPicker.default().then(() => {
           mockStrategy.mockingHooks.fireTimeUpdate()
 
-          expect(mockStateUpdateCallback.mock.calls[0][0].timeUpdate).toBe(true)
+          expect(mockStateUpdateCallback.mock.calls[0][0].timeUpdate).toEqual(true)
         })
       })
     })
@@ -819,8 +831,8 @@ describe("Player Component", () => {
       currentTime = 50
       type = "application/dash+xml"
 
-      jest.spyOn(mockStrategy, 'getSeekableRange').mockImplementation(() => ({ start: 0, end: 100 }))
-      jest.spyOn(mockStrategy, 'getCurrentTime').mockImplementation(() => currentTime)
+      mockStrategy.getSeekableRange = jest.fn(() => ({ start: 0, end: 100 }))
+      mockStrategy.getCurrentTime = jest.fn(() => currentTime)
       currentStrategy = window.bigscreenPlayer.playbackStrategy
     })
 
@@ -930,8 +942,8 @@ describe("Player Component", () => {
 
         expect(mockStrategy.load).toHaveBeenCalledTimes(1)
         expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.FATAL_ERROR)
-        expect(mockStateUpdateCallback.mock.calls[0][0].code).toBe(0)
-        expect(mockStateUpdateCallback.mock.calls[0][0].message).toBe("unknown")
+        expect(mockStateUpdateCallback.mock.calls[0][0].code).toEqual(0)
+        expect(mockStateUpdateCallback.mock.calls[0][0].message).toEqual("unknown")
       })
     })
 
