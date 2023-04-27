@@ -309,17 +309,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         })
       }
     }
-    if (event.mediaType === mediaKind && event.metric === "HttpList" && event.value._tfinish && event.value.trequest) {
-      playerMetadata.fragmentInfo.requestTime = Math.floor(
-        Math.abs(event.value._tfinish.getTime() - event.value.trequest.getTime())
-      )
-      playerMetadata.fragmentInfo.numDownloaded = playerMetadata.fragmentInfo.numDownloaded
-        ? ++playerMetadata.fragmentInfo.numDownloaded
-        : 1
-      Plugins.interface.onPlayerInfoUpdated({
-        fragmentInfo: playerMetadata.fragmentInfo,
-      })
-    }
   }
 
   function onDebugLog(event) {
