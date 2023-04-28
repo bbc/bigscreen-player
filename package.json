@@ -8,13 +8,11 @@
   "type": "module",
   "files": [
     "dist",
-    "package.json",
-    "README.md",
-    "LICENSE",
     "CONTRIBUTING.md"
   ],
   "scripts": {
-    "prepare": "[ ! -d dist/ ] && husky install && npm run build || exit 0",
+    "prepare": "husky install",
+    "postinstall": "npm run build",
     "docs": "jsdoc -c jsdoc.conf.json",
     "build": "npm run build:clean && npm run build:bundle",
     "build:clean": "rm -rf dist",
