@@ -10,7 +10,7 @@ _Bigscreen Player_ is an open source project developed by the BBC to simplify vi
 
 For documentation on using this library, please see our [Getting Started guide](https://bbc.github.io/bigscreen-player/api/tutorial-00-getting-started.html).
 
-## Running Locally
+## Getting Started
 
 Install dependencies:
 
@@ -18,13 +18,21 @@ Install dependencies:
 npm install
 ```
 
+Install Git hooks:
+
+```bash
+npm setup
+```
+
+## Running Locally
+
 You can run Bigscreen Player locally in a dev environment by running:
 
 ```bash
 npm run start
 ```
 
-This will open a web page at `localhost:8080`.
+This will open a web page at `localhost:10001`.
 
 ## Testing
 
@@ -34,7 +42,15 @@ The project is unit tested using [Jest](https://jestjs.io/). To run the tests:
 npm test
 ```
 
-This project currently has unit test coverage but no integration test suite. This is on our Roadmap to address.
+> This project currently has unit test coverage but no integration test suite. This is on our Roadmap to address.
+
+## Linting
+
+This project is linted using [ESLint](https://eslint.org/). To run the linter:
+
+```bash
+npm run lint
+```
 
 ## Releasing
 

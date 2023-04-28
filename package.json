@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "prepare": "[ ! -d dist/ ] && npm run build || exit 0",
-    "postinstall": "husky install",
+    "setup": "husky install",
     "docs": "jsdoc -c jsdoc.conf.json",
     "build": "npm run build:clean && npm run build:bundle",
     "build:clean": "rm -rf dist",
