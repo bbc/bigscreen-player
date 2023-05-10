@@ -31,6 +31,6 @@ Don't worry if you are unable to meet all these guidelines, even a rough idea co
 - Developer maintainers will code review and may request changes
 - Once approved by a developer, test engineer maintainers will run manual tests on a range of connected TV devices appropriate for the changes made
   - Our test guidelines are documented [here](https://bbc.github.io/bigscreen-player/api/tutorial-Testing.html)
-- Maintainers will bump the npm version, tag, and create a GitHub release, triggering a CI build which publishes the new version to npm
+- CI will bump the npm version, tag in git, create a GitHub release and publish the new version to NPM
 
 **Note:** Other BBC teams may wish to test and release their contributions themselves. In these cases, please reference your Jira ticket and add your test plan (in line with our [test guidelines](https://bbc.github.io/bigscreen-player/api/tutorial-Testing.html)) to the Pull Request for review.
