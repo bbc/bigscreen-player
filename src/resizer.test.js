@@ -16,12 +16,12 @@ describe("Resizer", () => {
     it("Resizes and positions the element with the correct values", () => {
       resizer.resize(element, 10, 20, 3, 4, 5)
 
-      expect(element.style.top).toEqual("10px")
-      expect(element.style.left).toEqual("20px")
-      expect(element.style.width).toEqual("3px")
-      expect(element.style.height).toEqual("4px")
-      expect(element.style.zIndex).toEqual("5")
-      expect(element.style.position).toEqual("absolute")
+      expect(element.style.top).toBe("10px")
+      expect(element.style.left).toBe("20px")
+      expect(element.style.width).toBe("3px")
+      expect(element.style.height).toBe("4px")
+      expect(element.style.zIndex).toBe("5")
+      expect(element.style.position).toBe("absolute")
     })
   })
 
@@ -30,12 +30,12 @@ describe("Resizer", () => {
       resizer.resize(element, 1, 2, 3, 4, 5)
       resizer.clear(element)
 
-      expect(element.style.top).toEqual("")
-      expect(element.style.left).toEqual("")
-      expect(element.style.width).toEqual("")
-      expect(element.style.height).toEqual("")
-      expect(element.style.zIndex).toEqual("")
-      expect(element.style.position).toEqual("")
+      expect(element.style.top).toBe("")
+      expect(element.style.left).toBe("")
+      expect(element.style.width).toBe("")
+      expect(element.style.height).toBe("")
+      expect(element.style.zIndex).toBe("")
+      expect(element.style.position).toBe("")
     })
   })
 

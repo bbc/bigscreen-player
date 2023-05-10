@@ -82,7 +82,6 @@ rules:
   no-array-constructor: error
   no-await-in-loop: error
   no-caller: error
-  no-confusing-arrow: error
   no-console: error
   no-constant-binary-expression: error
   no-constructor-return: error

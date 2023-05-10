@@ -71,9 +71,7 @@ function setupManifestData(options) {
 }
 
 // options = subtitlesAvailable, windowType, windowStartTime, windowEndTime
-function initialiseBigscreenPlayer(options) {
-  options = options || {}
-
+function initialiseBigscreenPlayer(options = {}) {
   const windowType = options.windowType || WindowTypes.STATIC
   const subtitlesEnabled = options.subtitlesEnabled || false
 
@@ -387,12 +385,13 @@ describe("Bigscreen Player", () => {
     })
 
     it("should remove callback from stateChangeCallbacks when a callback unregisters another handler first", () => {
+      const listener2 = jest.fn()
+      const listener3 = jest.fn()
+
       const listener1 = jest.fn().mockImplementation(() => {
         bigscreenPlayer.unregisterForStateChanges(listener2)
         bigscreenPlayer.unregisterForStateChanges(listener3)
       })
-      const listener2 = jest.fn()
-      const listener3 = jest.fn()
 
       initialiseBigscreenPlayer()
 
@@ -409,12 +408,13 @@ describe("Bigscreen Player", () => {
     })
 
     it("should remove callbacks from stateChangeCallbacks when a callback unregisters multiple handlers in different places", () => {
+      const listener3 = jest.fn()
+
       const listener1 = jest.fn().mockImplementation(() => {
         bigscreenPlayer.unregisterForStateChanges(listener1)
         bigscreenPlayer.unregisterForStateChanges(listener3)
       })
       const listener2 = jest.fn()
-      const listener3 = jest.fn()
       const listener4 = jest.fn().mockImplementation(() => {
         bigscreenPlayer.unregisterForStateChanges(listener2)
         bigscreenPlayer.unregisterForStateChanges(listener4)
@@ -855,7 +855,7 @@ describe("Bigscreen Player", () => {
       const rate = bigscreenPlayer.getPlaybackRate()
 
       expect(mockPlayerComponentInstance.getPlaybackRate).toHaveBeenCalled()
-      expect(rate).toEqual(1.5)
+      expect(rate).toBe(1.5)
     })
 
     it("should not get playback rate if playerComponent is not initialised", () => {
@@ -901,8 +901,8 @@ describe("Bigscreen Player", () => {
 
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 10 })
 
-      expect(bigscreenPlayer.getSeekableRange().start).toEqual(0)
-      expect(bigscreenPlayer.getSeekableRange().end).toEqual(10)
+      expect(bigscreenPlayer.getSeekableRange().start).toBe(0)
+      expect(bigscreenPlayer.getSeekableRange().end).toBe(10)
     })
 
     it("should return an empty object when bigscreen player has not been initialised", () => {
@@ -914,11 +914,11 @@ describe("Bigscreen Player", () => {
     it("should return false when playing on demand content", () => {
       initialiseBigscreenPlayer()
 
-      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false)
+      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
 
     it("should return false when bigscreen-player has not been initialised", () => {
-      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false)
+      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
 
     it("should return true when playing live and current time is within tolerance of seekable range end", () => {
@@ -927,7 +927,7 @@ describe("Bigscreen Player", () => {
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(100)
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 105 })
 
-      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(true)
+      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(true)
     })
 
     it("should return false when playing live and current time is outside the tolerance of seekable range end", () => {
@@ -936,7 +936,7 @@ describe("Bigscreen Player", () => {
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(95)
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 105 })
 
-      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toEqual(false)
+      expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
   })
 
@@ -959,7 +959,7 @@ describe("Bigscreen Player", () => {
       const initialisationData = {
         windowType: WindowTypes.SLIDING,
         serverDate: new Date(),
-        initialPlaybackTime: new Date().getTime(),
+        initialPlaybackTime: Date.now(),
       }
       initialiseBigscreenPlayer(initialisationData)
 
@@ -976,7 +976,7 @@ describe("Bigscreen Player", () => {
         windowType: WindowTypes.SLIDING,
         windowStartTime: 1,
         windowEndTime: 2,
-        initialPlaybackTime: new Date().getTime(),
+        initialPlaybackTime: Date.now(),
       }
       initialiseBigscreenPlayer(initialisationData)
 
@@ -995,7 +995,7 @@ describe("Bigscreen Player", () => {
 
       mockPlayerComponentInstance.getDuration.mockReturnValue(10)
 
-      expect(bigscreenPlayer.getDuration()).toEqual(10)
+      expect(bigscreenPlayer.getDuration()).toBe(10)
     })
 
     it("should return undefined when not initialised", () => {
@@ -1369,7 +1369,7 @@ describe("Bigscreen Player", () => {
 
       initialiseBigscreenPlayer()
 
-      expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(null)
+      expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBeNull()
     })
   })
 
@@ -1402,7 +1402,7 @@ describe("Bigscreen Player", () => {
 
       initialiseBigscreenPlayer()
 
-      expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBe(null)
+      expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBeNull()
     })
   })
 
@@ -1440,30 +1440,4 @@ describe("Bigscreen Player", () => {
       expect(Chronicle.retrieve).toHaveBeenCalledTimes(1)
     })
   })
-
-  // describe('mock', () => {
-  //   afterEach(() => {
-  //     bigscreenPlayer.unmock()
-  //   })
-
-  //   it('should return a mock object with jasmine spies on the same interface as the main api', () => {
-  //     initialiseBigscreenPlayer()
-
-  //     const moduleKeys = Object.keys(bigscreenPlayer)
-  //     bigscreenPlayer.mockJasmine()
-  //     const mockKeys = Object.keys(bigscreenPlayer)
-
-  //     expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
-  //   })
-
-  //   it('should return a mock object on the same interface as the main api', () => {
-  //     initialiseBigscreenPlayer()
-
-  //     const moduleKeys = Object.keys(bigscreenPlayer)
-  //     bigscreenPlayer.mock()
-  //     const mockKeys = Object.keys(bigscreenPlayer)
-
-  //     expect(mockKeys).toEqual(expect.objectContaining(moduleKeys))
-  //   })
-  // })
 })

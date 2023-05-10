@@ -6,33 +6,27 @@ import Renderer from "./renderer"
 
 jest.mock("../utils/loadurl")
 
-jest.mock("../plugins", () => {
-  return {
+jest.mock("../plugins", () => ({
     interface: {
       onSubtitlesTimeout: jest.fn(),
       onSubtitlesXMLError: jest.fn(),
       onSubtitlesRenderError: jest.fn(),
       onSubtitlesTransformError: jest.fn(),
     },
-  }
-})
+  }))
 
-const mockRender = () => {
-  return document.createElement("div")
-}
+const mockRender = () => document.createElement("div")
 
 jest.mock("./renderer")
 
 const mockStart = jest.fn()
 const mockStop = jest.fn()
 
-Renderer.mockImplementation(() => {
-  return {
+Renderer.mockImplementation(() => ({
     start: mockStart,
     stop: mockStop,
     render: mockRender,
-  }
-})
+  }))
 
 describe("Legacy Subtitles", () => {
   const mockMediaPlayer = {

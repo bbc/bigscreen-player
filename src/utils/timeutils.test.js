@@ -2,24 +2,22 @@ import TimeUtils from "./timeutils"
 
 describe("Time utils", () => {
   describe("Duration to seconds", () => {
-    const testCases = {
-      PT2H: 7200,
-      PT2H30S: 7230,
-      PT2H30M30S: 9030,
-      PT30M30S: 1830,
-      PT30S: 30,
-      "PT58M59.640S": 3539.64,
-      P1DT12H: undefined, // Technically valid, but code does not handle days
-      PT1D: undefined,
-      "": undefined,
-      foobar: undefined,
-    }
+    const testCases = [
+      ["PT2H", 7200],
+      ["PT2H30S", 7230],
+      ["PT2H30M30S", 9030],
+      ["PT30M30S", 1830],
+      ["PT30S", 30],
+      ["PT58M59.640S", 3539.64],
+      ["P1DT12H", undefined], // Technically valid, but code does not handle days
+      ["PT1D", undefined],
+      ["", undefined],
+      ["foobar", undefined],
+    ]
 
-    for (const duration in testCases) {
-      it("Converts duration of " + duration + " to " + testCases[duration] + " seconds", () => {
-        expect(TimeUtils.durationToSeconds(duration)).toBe(testCases[duration])
-      })
-    }
+    it.each(testCases)("Converts duration of %s to %s seconds", (duration, expected) => {
+      expect(TimeUtils.durationToSeconds(duration)).toBe(expected)
+    })
   })
 
   describe("Calculate Sliding Window Seek Offset", () => {

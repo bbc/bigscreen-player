@@ -200,7 +200,7 @@ describe("Seekable HMTL5 Live Player", () => {
 
     function startPlaybackAndPause(startTime, disableAutoResume) {
       seekableMediaPlayer.beginPlaybackFrom(startTime || 0)
-      seekableMediaPlayer.pause({ disableAutoResume: disableAutoResume })
+      seekableMediaPlayer.pause({ disableAutoResume })
     }
 
     beforeEach(() => {
@@ -331,7 +331,7 @@ describe("Seekable HMTL5 Live Player", () => {
       expect(player.resume).toHaveBeenCalledTimes(1)
     })
 
-    it("will fake pause if attempting to pause at the start of playback ", () => {
+    it("will fake pause if attempting to pause at the start of playback", () => {
       player.getCurrentTime.mockReturnValue(0)
       startPlaybackAndPause(0, false)
 
