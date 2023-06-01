@@ -255,7 +255,7 @@ function PlayerComponent(
 
     const failoverParams = {
       isBufferingTimeoutError: bufferingTimeoutError,
-      currentTime: getCurrentTime(),
+      currentTime: time,
       duration: getDuration(),
       code: mediaError.code,
       message: mediaError.message,
@@ -263,8 +263,11 @@ function PlayerComponent(
 
     const doLoadMedia = () => {
       const thenPause = isPaused()
-      const windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000
+      const windowOffset = (getWindowStartTime() - oldWindowStartTime) / 1000
       const failoverTime = time - (windowOffset || 0)
+
+      console.log({windowOffset, failoverTime})
+
       tearDownMediaElement()
       loadMedia(mediaMetaData.type, failoverTime, thenPause)
     }
