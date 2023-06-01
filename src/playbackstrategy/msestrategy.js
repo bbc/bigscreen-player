@@ -412,7 +412,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     if (windowType === WindowTypes.STATIC) {
       return parsedStartTime === 0 ? source : `${source}#t=${parsedStartTime}`
     }
-    const windowStartTimeSeconds = mediaSources.time().windowStartTime / 1000
+    const windowStartTimeSeconds = parseInt(mediaSources.time().windowStartTime / 1000)
     const srcWithTimeAnchor = `${source}#t=posix:`
 
     return parsedStartTime === 0
