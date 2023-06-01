@@ -412,12 +412,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     if (windowType === WindowTypes.STATIC) {
       return parsedStartTime === 0 ? source : `${source}#t=${parsedStartTime}`
     }
+    const oneMinute = 60
     const windowStartTimeSeconds = mediaSources.time().windowStartTime / 1000
     const srcWithTimeAnchor = `${source}#t=posix:`
 
     return parsedStartTime === 0
-      ? srcWithTimeAnchor + (windowStartTimeSeconds + 1)
-      : srcWithTimeAnchor + (windowStartTimeSeconds + parsedStartTime)
+      ? srcWithTimeAnchor + (windowStartTimeSeconds + 1 + oneMinute)
+      : srcWithTimeAnchor + (windowStartTimeSeconds + parsedStartTime + oneMinute)
   }
 
   function getSeekableRange() {
