@@ -128,7 +128,7 @@ function parseGrowingMPD(mpd, initialWallclockTime) {
 }
 
 function parseM3U8(manifest, { windowType } = {}) {
-  try {
+  return new Promise((resolve) => {
     const programDateTime = getM3U8ProgramDateTime(manifest)
     const duration = getM3U8WindowSizeInSeconds(manifest)
 
@@ -137,25 +137,20 @@ function parseM3U8(manifest, { windowType } = {}) {
     }
 
     if (windowType === WindowTypes.STATIC) {
-      return {
+      return resolve({
         presentationTimeOffsetSeconds: programDateTime / 1000,
-        timeCorrectionSeconds: NaN,
-        windowStartTime: NaN,
-        windowEndTime: NaN,
-      }
+      })
     }
 
-    return {
+    return resolve({
       windowStartTime: programDateTime,
       windowEndTime: programDateTime + duration * 1000,
-      presentationTimeOffsetSeconds: NaN,
-      timeCorrectionSeconds: NaN,
-    }
-  } catch (error) {
+    })
+  }).catch((error) => {
     const errorWithCode = new Error(error.message || "manifest-hls-parse-error")
     errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
     throw errorWithCode
-  }
+  })
 }
 
 function getM3U8ProgramDateTime(data) {

@@ -45,8 +45,12 @@ describe("ManifestParser", () => {
         expect(presentationTimeOffsetSeconds).toBeNaN()
       }))
 
-    it("returns the time window for a manifest with a growing window", () =>
-      ManifestParser.parse(DashManifests.GROWING_WINDOW(), {
+    it("returns the time window for a manifest with a growing window", () => {
+      const manifest = DashManifests.GROWING_WINDOW()
+
+      setAvailabilityStartTime(manifest, "2018-12-13T10:00:00.000Z")
+
+      return ManifestParser.parse(manifest, {
         type: "mpd",
         windowType: WindowTypes.GROWING,
         initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
@@ -61,7 +65,8 @@ describe("ManifestParser", () => {
 
         expect(presentationTimeOffsetSeconds).toBeNaN()
         expect(timeCorrectionSeconds).toBeNaN()
-      }))
+      })
+    })
 
     it("returns the time window for a manifest with a static window", () =>
       ManifestParser.parse(DashManifests.STATIC_WINDOW(), {
@@ -94,7 +99,7 @@ describe("ManifestParser", () => {
     it("returns a fallback time window when the manifest is malformed", () =>
       ManifestParser.parse("not an MPD", {
         type: "mpd",
-        windowType: WindowTypes.STATIC(),
+        windowType: WindowTypes.STATIC,
         initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
       }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
         expect(windowStartTime).toBeNaN()
