@@ -10,7 +10,6 @@ const DASH_MANIFEST_STRINGS = {
         <Representation id="1920x1080i25" codecs="avc3.640028" height="1080" width="1920" frameRate="25" scanType="interlaced" bandwidth="8606480" />
       </AdaptationSet>
     </Period>
-    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="https://time.akamai.com/?iso"/>
   </MPD>`,
   GROWING_WINDOW: `<?xml version="1.0" encoding="UTF-8"?>
   <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
@@ -39,6 +38,7 @@ const DASH_MANIFEST_STRINGS = {
         <Representation id="3" bandwidth="64000" audioSamplingRate="48000" codecs="mp4a.40.2"/>
       </AdaptationSet>
     </Period>
+    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="https://time.akamai.com/?iso"/>
   </MPD>`,
   SLIDING_WINDOW: `<?xml version="1.0" encoding="UTF-8"?>
   <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
