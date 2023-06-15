@@ -23,9 +23,9 @@ const dashParsingStrategyByWindowType = {
   [WindowTypes.STATIC]: parseStaticMPD,
 }
 
-function parseMPD(manifest, { windowType, initialWallclockTime } = {}) {
-  try {
-    const mpd = manifest.querySelectorAll("MPD")[0]
+function parseMPD(manifestEl, { windowType, initialWallclockTime } = {}) {
+  return new Promise((resolve) => {
+    const mpd = manifestEl.querySelector("MPD")
 
     const parse = dashParsingStrategyByWindowType[windowType]
 
@@ -33,12 +33,12 @@ function parseMPD(manifest, { windowType, initialWallclockTime } = {}) {
       throw new Error(`Could not find a DASH parsing strategy for window type ${windowType}`)
     }
 
-    return parse(mpd, initialWallclockTime)
-  } catch (error) {
+    return resolve(parse(mpd, initialWallclockTime))
+  }).catch((error) => {
     const errorWithCode = new Error(error.message ?? "manifest-dash-parse-error")
     errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
     throw errorWithCode
-  }
+  })
 }
 
 function fetchWallclockTime(mpd, initialWallclockTime) {
@@ -52,7 +52,7 @@ function fetchWallclockTime(mpd, initialWallclockTime) {
   return new Promise((resolveFetch, rejectFetch) => {
     const timingResource = mpd.querySelector("UTCTiming")?.getAttribute("value")
 
-    if (typeof timingResource !== "string") {
+    if (!timingResource && typeof timingResource !== "string") {
       throw new TypeError("manifest-dash-timing-error")
     }
 
@@ -85,8 +85,8 @@ function parseStaticMPD(mpd) {
   })
 }
 
-function parseSlidingMPD(mpd) {
-  return fetchWallclockTime(mpd).then((wallclockTime) => {
+function parseSlidingMPD(mpd, initialWallclockTime) {
+  return fetchWallclockTime(mpd, initialWallclockTime).then((wallclockTime) => {
     const { duration, timescale } = getSegmentTemplate(mpd)
     const availabilityStartTime = mpd.getAttribute("availabilityStartTime")
     const segmentLengthMillis = (1000 * duration) / timescale

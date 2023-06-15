@@ -1,6 +1,6 @@
 import Plugins from "../plugins"
 import WindowTypes from "../models/windowtypes"
-import DashManifests from "./stubData/dashmanifests"
+import DashManifests, { appendTimingResource, setAvailabilityStartTime } from "./stubData/dashmanifests"
 import HlsManifests from "./stubData/hlsmanifests"
 import ManifestParser from "./manifestparser"
 import LoadUrl from "../utils/loadurl"
@@ -14,16 +14,17 @@ describe("ManifestParser", () => {
 
     jest.spyOn(Plugins.interface, "onManifestParseError")
 
-    LoadUrl.mockImplementation((_, { onLoad }) => onLoad(Date.now()))
+    LoadUrl.mockImplementation((_, { onLoad }) => onLoad(null, new Date().toISOString()))
   })
 
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.clearAllTimers()
   })
 
   describe("parsing a DASH manifests", () => {
     it("returns the time window for a manifest with a sliding window", () =>
-      ManifestParser.parse(DashManifests.SLIDING_WINDOW, {
+      ManifestParser.parse(DashManifests.SLIDING_WINDOW(), {
         type: "mpd",
         windowType: WindowTypes.SLIDING,
         initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
@@ -45,7 +46,7 @@ describe("ManifestParser", () => {
       }))
 
     it("returns the time window for a manifest with a growing window", () =>
-      ManifestParser.parse(DashManifests.GROWING_WINDOW, {
+      ManifestParser.parse(DashManifests.GROWING_WINDOW(), {
         type: "mpd",
         windowType: WindowTypes.GROWING,
         initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
@@ -63,7 +64,7 @@ describe("ManifestParser", () => {
       }))
 
     it("returns the time window for a manifest with a static window", () =>
-      ManifestParser.parse(DashManifests.STATIC_WINDOW, {
+      ManifestParser.parse(DashManifests.STATIC_WINDOW(), {
         type: "mpd",
         windowType: WindowTypes.STATIC,
       }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
@@ -77,7 +78,7 @@ describe("ManifestParser", () => {
       }))
 
     it("returns a fallback time window when the manifest has bad data in the attributes", () =>
-      ManifestParser.parse(DashManifests.BAD_ATTRIBUTES, {
+      ManifestParser.parse(DashManifests.BAD_ATTRIBUTES(), {
         type: "mpd",
         windowType: WindowTypes.GROWING,
         initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
@@ -93,7 +94,7 @@ describe("ManifestParser", () => {
     it("returns a fallback time window when the manifest is malformed", () =>
       ManifestParser.parse("not an MPD", {
         type: "mpd",
-        windowType: WindowTypes.STATIC,
+        windowType: WindowTypes.STATIC(),
         initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
       }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
         expect(windowStartTime).toBeNaN()
@@ -104,16 +105,58 @@ describe("ManifestParser", () => {
         expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
       }))
 
-    it("fetches wallclock time from a timing resource for a manifest with a growing window when a wallclock time is not provided", () => {
-      jest.setSystemTime(0)
+    it("fetches wallclock time from a timing resource for a manifest with a sliding window when a wallclock time is not provided", () => {
+      jest.setSystemTime(new Date("1970-01-01T02:01:03.840Z"))
 
-      return ManifestParser.parse(DashManifests.GROWING_WINDOW, { type: "mpd", windowType: WindowTypes.GROWING }).then(
-        // eslint-disable-next-line no-unused-vars
+      const manifest = DashManifests.SLIDING_WINDOW()
+
+      appendTimingResource(manifest, "https://time.some-cdn.com/?iso")
+
+      return ManifestParser.parse(manifest, {
+        type: "mpd",
+        windowType: WindowTypes.SLIDING,
+      }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
+        expect(windowStartTime).toBe(new Date("1970-01-01T00:00:00Z").getTime())
+        expect(windowEndTime).toBe(new Date("1970-01-01T02:00:00Z").getTime())
+        expect(timeCorrectionSeconds).toBe(0)
+
+        expect(presentationTimeOffsetSeconds).toBeNaN()
+      })
+    })
+
+    it("fetches wallclock time from a timing resource for a manifest with a growing window when a wallclock time is not provided", () => {
+      const manifest = DashManifests.GROWING_WINDOW()
+
+      appendTimingResource(manifest, "https://time.some-cdn.com/?iso")
+      setAvailabilityStartTime(manifest, "2018-12-13T11:00:00Z")
+      jest.setSystemTime(new Date("2018-12-13T12:45:03.840Z"))
+
+      return ManifestParser.parse(manifest, { type: "mpd", windowType: WindowTypes.GROWING }).then(
         ({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
+          expect(windowStartTime).toBe(new Date("2018-12-13T11:00:00").getTime())
+          expect(windowEndTime).toBe(new Date("2018-12-13T12:45:00Z").getTime())
+
           expect(presentationTimeOffsetSeconds).toBeNaN()
+          expect(timeCorrectionSeconds).toBeNaN()
         }
       )
     })
+
+    it.each([
+      [WindowTypes.GROWING, DashManifests.GROWING_WINDOW()],
+      [WindowTypes.SLIDING, DashManifests.SLIDING_WINDOW()],
+    ])("emits error when a %s manifest does not include a timing resource", (windowType, manifestEl) =>
+      ManifestParser.parse(manifestEl, { windowType, type: "mpd" }).then(
+        ({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
+          expect(windowStartTime).toBeNaN()
+          expect(windowEndTime).toBeNaN()
+          expect(presentationTimeOffsetSeconds).toBeNaN()
+          expect(timeCorrectionSeconds).toBeNaN()
+
+          expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
+        }
+      )
+    )
   })
 
   describe("HLS m3u8", () => {

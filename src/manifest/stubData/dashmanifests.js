@@ -18,8 +18,8 @@ const DASH_MANIFEST_STRINGS = {
   xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" 
   type="dynamic" 
   publishTime="2018-12-01T00:28:35Z" 
-  minimumUpdatePeriod="PT30S" 
-  availabilityStartTime="2018-12-13T10:00:00.000Z"
+  minimumUpdatePeriod="PT30S"
+  availabilityStartTime="1970-01-01T00:00:00.000Z"
   minBufferTime="PT4S" 
   suggestedPresentationDelay="PT20S"
   profiles="urn:mpeg:dash:profile:isoff-live:2011">
@@ -38,7 +38,6 @@ const DASH_MANIFEST_STRINGS = {
         <Representation id="3" bandwidth="64000" audioSamplingRate="48000" codecs="mp4a.40.2"/>
       </AdaptationSet>
     </Period>
-    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="https://time.akamai.com/?iso"/>
   </MPD>`,
   SLIDING_WINDOW: `<?xml version="1.0" encoding="UTF-8"?>
   <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
@@ -101,16 +100,27 @@ const DASH_MANIFEST_STRINGS = {
   </MPD>`,
 }
 
-function getXML(string) {
-  const parser = new DOMParser()
-  return parser.parseFromString(string, "application/xml")
-}
-
 const DashManifests = Object.fromEntries(
   Object.entries(DASH_MANIFEST_STRINGS).map(([currentManifestName, currentManifestString]) => [
     currentManifestName,
-    getXML(currentManifestString),
+    () => new DOMParser().parseFromString(currentManifestString, "application/xml"),
   ])
 )
 
+/** @param {Document} manifestEl */
+function appendTimingResource(manifestEl, timingResource) {
+  // <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="https://time.akamai.com/?iso"/>
+  const timingEl = manifestEl.createElement("UTCTiming")
+  timingEl.setAttribute("schemeIdUri", "urn:mpeg:dash:utc:http-xsdate:2014")
+  timingEl.setAttribute("value", timingResource ?? "https://time.akamai.com/?iso")
+
+  manifestEl.querySelector("MPD").append(timingEl)
+}
+
+/** @param {Document} manifestEl */
+function setAvailabilityStartTime(manifestEl, date) {
+  manifestEl.querySelector("MPD").setAttribute("availabilityStartTime", new Date(date).toISOString())
+}
+
 export default DashManifests
+export { appendTimingResource, setAvailabilityStartTime }
