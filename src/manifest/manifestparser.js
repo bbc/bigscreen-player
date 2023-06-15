@@ -103,7 +103,6 @@ function parseSlidingMPD(mpd, initialWallclockTime) {
       windowStartTime,
       windowEndTime,
       timeCorrectionSeconds: windowStartTime / 1000,
-      presentationTimeOffsetSeconds: NaN,
     }
   })
 }
@@ -121,8 +120,6 @@ function parseGrowingMPD(mpd, initialWallclockTime) {
     return {
       windowStartTime: Date.parse(availabilityStartTime),
       windowEndTime: wallclockTime - segmentLengthMillis,
-      presentationTimeOffsetSeconds: NaN,
-      timeCorrectionSeconds: NaN,
     }
   })
 }
