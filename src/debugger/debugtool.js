@@ -7,6 +7,7 @@ function DebugTool() {
 
   const LOG_LEVELS = {
     ERROR: 0,
+    WARN: 1,
     INFO: 2,
     VERBOSE: 3,
   }
@@ -70,7 +71,17 @@ function DebugTool() {
       return
     }
 
-    Chronicle.error(typeof log === "object" && log.message ? log.message : log)
+    const error = typeof log === "object" && log.message ? log : new Error(log)
+
+    Chronicle.error(error)
+  }
+
+  function warn(log) {
+    if (logLevel < LOG_LEVELS.WARN) {
+      return
+    }
+
+    Chronicle.warn(log)
   }
 
   function verbose(log) {
@@ -116,6 +127,7 @@ function DebugTool() {
     time,
     toggleVisibility,
     verbose,
+    warn,
     apicall: Chronicle.apicall,
     keyValue: updateKeyValue,
   }

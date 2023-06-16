@@ -74,19 +74,15 @@ describe("Debug Presenter", () => {
     presenter.update([
       {
         type: "error",
-        error: {
-          errorId: "1",
-          message: "An error has occurred",
-        },
+        error: new TypeError("Oh no that's wrong"),
         timestamp: 1518018558259,
       },
     ])
-    const expectedObject = {
-      static: [],
-      dynamic: ["2018-02-07T15:49:18.259Z - Error: 1 | An error has occurred"],
-    }
 
-    expect(viewMock.render).toHaveBeenCalledWith(expectedObject)
+    expect(viewMock.render).toHaveBeenCalledWith({
+      static: [],
+      dynamic: ["2018-02-07T15:49:18.259Z - TypeError: Oh no that's wrong"],
+    })
   })
 
   it("parses events to readable representation", () => {

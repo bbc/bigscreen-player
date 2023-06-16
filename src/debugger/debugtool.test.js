@@ -1,10 +1,17 @@
 import Chronicle from "./chronicle"
 import DebugTool from "./debugtool"
+import DebugView from "./debugview"
+
+jest.mock("./debugview")
 
 describe("Debug Tool", () => {
-  jest.useFakeTimers({ now: 1234 })
+  beforeAll(() => {
+    jest.useFakeTimers({ now: 1234 })
+  })
 
   beforeEach(() => {
+    jest.clearAllMocks()
+
     DebugTool.tearDown()
     Chronicle.tearDown()
 
@@ -15,13 +22,51 @@ describe("Debug Tool", () => {
     it("takes a string", () => {
       DebugTool.error("something went wrong")
 
-      expect(Chronicle.retrieve()).toEqual([{ type: "error", error: "something went wrong", timestamp: 1234 }])
+      expect(Chronicle.retrieve()).toEqual([
+        { type: "error", error: new Error("something went wrong"), timestamp: 1234 },
+      ])
+
+      DebugTool.toggleVisibility()
+
+      expect(DebugView.render).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dynamic: [expect.stringContaining("Error: something went wrong")],
+        })
+      )
     })
 
     it("takes an Error", () => {
-      DebugTool.error(new Error("something went REALLY wrong"))
+      DebugTool.error(new TypeError("something went REALLY wrong"))
 
-      expect(Chronicle.retrieve()).toEqual([{ type: "error", error: "something went REALLY wrong", timestamp: 1234 }])
+      expect(Chronicle.retrieve()).toEqual([
+        { type: "error", error: new TypeError("something went REALLY wrong"), timestamp: 1234 },
+      ])
+
+      DebugTool.toggleVisibility()
+
+      expect(DebugView.render).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dynamic: [expect.stringContaining("TypeError: something went REALLY wrong")],
+        })
+      )
+    })
+  })
+
+  describe("logging a warning", () => {
+    it("takes a string", () => {
+      DebugTool.warn("you're using a deprecated thingie!")
+
+      expect(Chronicle.retrieve()).toEqual([
+        { type: "warning", warning: "you're using a deprecated thingie!", timestamp: 1234 },
+      ])
+
+      DebugTool.toggleVisibility()
+
+      expect(DebugView.render).toHaveBeenCalledWith(
+        expect.objectContaining({
+          dynamic: [expect.stringContaining("Warning: you're using a deprecated thingie!")],
+        })
+      )
     })
   })
 

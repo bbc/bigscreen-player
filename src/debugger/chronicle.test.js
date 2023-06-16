@@ -1,13 +1,13 @@
 import Chronicle from "./chronicle"
 
 describe("Chronicle", () => {
-  beforeEach(() => {
-    jest.spyOn(global, "Date").mockImplementation(() => ({ getTime: () => 1234 }))
-    Chronicle.init()
+  beforeAll(() => {
+    jest.useFakeTimers({ now: 1234 })
   })
 
-  afterEach(() => {
+  beforeEach(() => {
     Chronicle.clear()
+    Chronicle.init()
   })
 
   it("stores an info message with type and message", () => {
