@@ -180,7 +180,7 @@ describe("Media Sources", () => {
       expect(error).toEqual({ error: "manifest" })
     })
 
-    it.skip("fails over to next source when the first source fails to load", async () => {
+    it("fails over to next source when the first source fails to load", async () => {
       testMedia.urls = [
         { url: "http://source1.com/", cdn: "http://supplier1.com/" },
         { url: "http://source2.com/", cdn: "http://supplier2.com/" },

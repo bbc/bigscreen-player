@@ -191,24 +191,25 @@ function MediaSources() {
   }
 
   function loadManifest(callbacks, { initialWallclockTime, windowType } = {}) {
-    const load = () =>
-      ManifestLoader.load(getCurrentUrl(), { initialWallclockTime, windowType })
-        .then(({ time: newTime, transferFormat: newTransferFormat } = {}) => {
-          time = newTime
-          transferFormat = newTransferFormat
+    return ManifestLoader.load(getCurrentUrl(), { initialWallclockTime, windowType })
+      .then(({ time: newTime, transferFormat: newTransferFormat } = {}) => {
+        time = newTime
+        transferFormat = newTransferFormat
 
-          logManifestParsed(transferFormat, time)
-          callbacks.onSuccess()
-        })
-        .catch(() => {
-          failover(load, () => callbacks.onError({ error: "manifest" }), {
+        logManifestParsed(transferFormat, time)
+        callbacks.onSuccess()
+      })
+      .catch(() => {
+        failover(
+          () => callbacks.onSuccess(),
+          () => callbacks.onError({ error: "manifest" }),
+          {
             isBufferingTimeoutError: false,
             code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
             message: PluginEnums.ERROR_MESSAGES.MANIFEST,
-          })
-        })
-
-    return load()
+          }
+        )
+      })
   }
 
   function getCurrentUrl() {
