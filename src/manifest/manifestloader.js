@@ -8,7 +8,7 @@ function retrieveDashManifest(url, { windowType, initialWallclockTime } = {}) {
       method: "GET",
       headers: {},
       timeout: 10000,
-      onLoad: (responseXML, _responseText, _status) => resolveLoad(responseXML),
+      onLoad: (responseXML) => resolveLoad(responseXML),
       onError: () => rejectLoad(new Error("Network error: Unable to retrieve DASH manifest")),
     })
   )
