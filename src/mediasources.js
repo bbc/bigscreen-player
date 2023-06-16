@@ -198,7 +198,7 @@ function MediaSources() {
         callbacks.onSuccess()
       })
       .catch((error) => {
-        DebugTool.error(`Failed to load manifest: ${error.message}`)
+        DebugTool.error(`Failed to load manifest: ${error?.message ?? "cause n/a"}`)
 
         failover(
           () => callbacks.onSuccess(),
