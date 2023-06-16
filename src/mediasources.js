@@ -194,10 +194,12 @@ function MediaSources() {
         time = newTime
         transferFormat = newTransferFormat
 
-        logManifestParsed(transferFormat, time)
+        logManifestLoaded(transferFormat, time)
         callbacks.onSuccess()
       })
-      .catch(() => {
+      .catch((error) => {
+        DebugTool.error(`Failed to load manifest: ${error.message}`)
+
         failover(
           () => callbacks.onSuccess(),
           () => callbacks.onError({ error: "manifest" }),
@@ -312,8 +314,8 @@ function MediaSources() {
     return subtitlesSources.map((subtitleSource) => subtitleSource.cdn)
   }
 
-  function logManifestParsed(transferFormat, time) {
-    let logMessage = `Parsed ${transferFormat} manifest.`
+  function logManifestLoaded(transferFormat, time) {
+    let logMessage = `Loaded ${transferFormat} manifest.`
 
     const { presentationTimeOffsetSeconds, timeCorrectionSeconds, windowStartTime, windowEndTime } = time
 
