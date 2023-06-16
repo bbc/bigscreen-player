@@ -23,192 +23,207 @@ describe("ManifestParser", () => {
   })
 
   describe("parsing a DASH manifests", () => {
-    it("returns the time window for a manifest with a sliding window", () =>
-      ManifestParser.parse(DashManifests.SLIDING_WINDOW(), {
-        type: "mpd",
-        windowType: WindowTypes.SLIDING,
-        initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
-      }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-        // End time of the window is:
-        //  provided time [millis] - availability start time [millis] - (segment.duration / segment.timescale) [millis]
-        //  1,544,698,800,000 - 60,000 - (1000 * 768 / 200)
-        expect(windowEndTime).toBe(1544698736160)
+    it("returns the time window for a manifest with a sliding window", async () => {
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse(DashManifests.SLIDING_WINDOW(), {
+          type: "mpd",
+          windowType: WindowTypes.SLIDING,
+          initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
+        })
 
-        // Start time of the window is:
-        //  window.endtime [millis] - time shift buffer depth [millis]
-        expect(windowStartTime).toBe(1544691536160)
+      // End time of the window is:
+      //  provided time [millis] - availability start time [millis] - (segment.duration / segment.timescale) [millis]
+      //  1,544,698,800,000 - 60,000 - (1000 * 768 / 200)
+      expect(windowEndTime).toBe(1544698736160)
 
-        // Time correction is:
-        //  window.start_time [seconds]
-        expect(timeCorrectionSeconds).toBe(1544691536.16)
+      // Start time of the window is:
+      //  window.endtime [millis] - time shift buffer depth [millis]
+      expect(windowStartTime).toBe(1544691536160)
 
-        expect(presentationTimeOffsetSeconds).toBeNaN()
-      }))
+      // Time correction is:
+      //  window.start_time [seconds]
+      expect(timeCorrectionSeconds).toBe(1544691536.16)
 
-    it("returns the time window for a manifest with a growing window", () => {
+      expect(presentationTimeOffsetSeconds).toBeNaN()
+    })
+
+    it("returns the time window for a manifest with a growing window", async () => {
       const manifest = DashManifests.GROWING_WINDOW()
 
       setAvailabilityStartTime(manifest, "2018-12-13T10:00:00.000Z")
 
-      return ManifestParser.parse(manifest, {
-        type: "mpd",
-        windowType: WindowTypes.GROWING,
-        initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
-      }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-        // End time of the window is:
-        //  provided time [millis] - (segment.duration / segment.timescale) [millis]
-        expect(windowEndTime).toBe(1544698796160)
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse(manifest, {
+          type: "mpd",
+          windowType: WindowTypes.GROWING,
+          initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
+        })
 
-        // Start time of the window is:
-        //  availability start time [millis]
-        expect(windowStartTime).toBe(1544695200000)
+      // End time of the window is:
+      //  provided time [millis] - (segment.duration / segment.timescale) [millis]
+      expect(windowEndTime).toBe(1544698796160)
 
-        expect(presentationTimeOffsetSeconds).toBeNaN()
-        expect(timeCorrectionSeconds).toBeNaN()
-      })
+      // Start time of the window is:
+      //  availability start time [millis]
+      expect(windowStartTime).toBe(1544695200000)
+
+      expect(presentationTimeOffsetSeconds).toBeNaN()
+      expect(timeCorrectionSeconds).toBeNaN()
     })
 
-    it("returns the time window for a manifest with a static window", () =>
-      ManifestParser.parse(DashManifests.STATIC_WINDOW(), {
-        type: "mpd",
-        windowType: WindowTypes.STATIC,
-      }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-        // Presentation time offset is:
-        //  segment.presentation_time_offset [seconds] / segment.timescale [sample/seconds] => [milliseconds]
-        expect(presentationTimeOffsetSeconds).toBe(1678431601.92)
+    it("returns the time window for a manifest with a static window", async () => {
+      const { presentationTimeOffsetSeconds, ...otherTimes } = await ManifestParser.parse(
+        DashManifests.STATIC_WINDOW(),
+        {
+          type: "mpd",
+          windowType: WindowTypes.STATIC,
+        }
+      )
 
-        expect(timeCorrectionSeconds).toBeNaN()
-        expect(windowStartTime).toBeNaN()
-        expect(windowEndTime).toBeNaN()
-      }))
+      // Presentation time offset is:
+      //  segment.presentation_time_offset [seconds] / segment.timescale [sample/seconds] => [milliseconds]
+      expect(presentationTimeOffsetSeconds).toBe(1678431601.92)
 
-    it("returns a fallback time window when the manifest has bad data in the attributes", () =>
-      ManifestParser.parse(DashManifests.BAD_ATTRIBUTES(), {
-        type: "mpd",
-        windowType: WindowTypes.GROWING,
-        initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
-      }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-        expect(windowStartTime).toBeNaN()
-        expect(windowEndTime).toBeNaN()
-        expect(timeCorrectionSeconds).toBeNaN()
-        expect(presentationTimeOffsetSeconds).toBeNaN()
+      expect(Object.values(otherTimes)).toEqual([NaN, NaN, NaN])
+    })
 
-        expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
-      }))
+    it("returns a fallback time window when the manifest has bad data in the attributes", async () => {
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse(DashManifests.BAD_ATTRIBUTES(), {
+          type: "mpd",
+          windowType: WindowTypes.GROWING,
+          initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
+        })
 
-    it("returns a fallback time window when the manifest is malformed", () =>
-      ManifestParser.parse("not an MPD", {
-        type: "mpd",
-        windowType: WindowTypes.STATIC,
-        initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
-      }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-        expect(windowStartTime).toBeNaN()
-        expect(windowEndTime).toBeNaN()
-        expect(timeCorrectionSeconds).toBeNaN()
-        expect(presentationTimeOffsetSeconds).toBeNaN()
+      expect(windowStartTime).toBeNaN()
+      expect(windowEndTime).toBeNaN()
+      expect(timeCorrectionSeconds).toBeNaN()
+      expect(presentationTimeOffsetSeconds).toBeNaN()
 
-        expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
-      }))
+      expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
+    })
 
-    it("fetches wallclock time from a timing resource for a manifest with a sliding window when a wallclock time is not provided", () => {
+    it("returns a fallback time window when the manifest is malformed", async () => {
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse("not an MPD", {
+          type: "mpd",
+          windowType: WindowTypes.STATIC,
+          initialWallclockTime: new Date("2018-12-13T11:00:00.000000Z"),
+        })
+
+      expect(windowStartTime).toBeNaN()
+      expect(windowEndTime).toBeNaN()
+      expect(timeCorrectionSeconds).toBeNaN()
+      expect(presentationTimeOffsetSeconds).toBeNaN()
+
+      expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
+    })
+
+    it("fetches wallclock time from a timing resource for a manifest with a sliding window when a wallclock time is not provided", async () => {
       jest.setSystemTime(new Date("1970-01-01T02:01:03.840Z"))
 
       const manifest = DashManifests.SLIDING_WINDOW()
 
       appendTimingResource(manifest, "https://time.some-cdn.com/?iso")
 
-      return ManifestParser.parse(manifest, {
-        type: "mpd",
-        windowType: WindowTypes.SLIDING,
-      }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-        expect(windowStartTime).toBe(new Date("1970-01-01T00:00:00Z").getTime())
-        expect(windowEndTime).toBe(new Date("1970-01-01T02:00:00Z").getTime())
-        expect(timeCorrectionSeconds).toBe(0)
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse(manifest, {
+          type: "mpd",
+          windowType: WindowTypes.SLIDING,
+        })
 
-        expect(presentationTimeOffsetSeconds).toBeNaN()
-      })
+      expect(windowStartTime).toBe(new Date("1970-01-01T00:00:00Z").getTime())
+      expect(windowEndTime).toBe(new Date("1970-01-01T02:00:00Z").getTime())
+      expect(timeCorrectionSeconds).toBe(0)
+
+      expect(presentationTimeOffsetSeconds).toBeNaN()
     })
 
-    it("fetches wallclock time from a timing resource for a manifest with a growing window when a wallclock time is not provided", () => {
+    it("fetches wallclock time from a timing resource for a manifest with a growing window when a wallclock time is not provided", async () => {
       const manifest = DashManifests.GROWING_WINDOW()
 
       appendTimingResource(manifest, "https://time.some-cdn.com/?iso")
       setAvailabilityStartTime(manifest, "2018-12-13T11:00:00Z")
       jest.setSystemTime(new Date("2018-12-13T12:45:03.840Z"))
 
-      return ManifestParser.parse(manifest, { type: "mpd", windowType: WindowTypes.GROWING }).then(
-        ({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-          expect(windowStartTime).toBe(new Date("2018-12-13T11:00:00").getTime())
-          expect(windowEndTime).toBe(new Date("2018-12-13T12:45:00Z").getTime())
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse(manifest, {
+          type: "mpd",
+          windowType: WindowTypes.GROWING,
+        })
 
-          expect(presentationTimeOffsetSeconds).toBeNaN()
-          expect(timeCorrectionSeconds).toBeNaN()
-        }
-      )
+      expect(windowStartTime).toBe(new Date("2018-12-13T11:00:00").getTime())
+      expect(windowEndTime).toBe(new Date("2018-12-13T12:45:00Z").getTime())
+
+      expect(presentationTimeOffsetSeconds).toBeNaN()
+      expect(timeCorrectionSeconds).toBeNaN()
     })
 
     it.each([
       [WindowTypes.GROWING, DashManifests.GROWING_WINDOW()],
       [WindowTypes.SLIDING, DashManifests.SLIDING_WINDOW()],
-    ])("emits error when a %s manifest does not include a timing resource", (windowType, manifestEl) =>
-      ManifestParser.parse(manifestEl, { windowType, type: "mpd" }).then(
-        ({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-          expect(windowStartTime).toBeNaN()
-          expect(windowEndTime).toBeNaN()
-          expect(presentationTimeOffsetSeconds).toBeNaN()
-          expect(timeCorrectionSeconds).toBeNaN()
+    ])("emits error when a %s manifest does not include a timing resource", async (windowType, manifestEl) => {
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse(manifestEl, { windowType, type: "mpd" })
 
-          expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
-        }
-      )
-    )
+      expect(windowStartTime).toBeNaN()
+      expect(windowEndTime).toBeNaN()
+      expect(presentationTimeOffsetSeconds).toBeNaN()
+      expect(timeCorrectionSeconds).toBeNaN()
+
+      expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
+    })
   })
 
   describe("HLS m3u8", () => {
-    it("returns time window for sliding window hls manifest", () =>
-      ManifestParser.parse(HlsManifests.VALID_PROGRAM_DATETIME, {
-        type: "m3u8",
-        windowType: WindowTypes.SLIDING,
-      }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-        expect(windowStartTime).toBe(1436259310000)
-        expect(windowEndTime).toBe(1436259342000)
-        expect(presentationTimeOffsetSeconds).toBeNaN()
-        expect(timeCorrectionSeconds).toBeNaN()
-      }))
+    it("returns time window for sliding window hls manifest", async () => {
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse(HlsManifests.VALID_PROGRAM_DATETIME, {
+          type: "m3u8",
+          windowType: WindowTypes.SLIDING,
+        })
 
-    it("returns presentation time offset for static window hls manifest", () =>
-      ManifestParser.parse(HlsManifests.VALID_PROGRAM_DATETIME, {
-        type: "m3u8",
-        windowType: WindowTypes.STATIC,
-      }).then(({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-        expect(presentationTimeOffsetSeconds).toBe(1436259310)
-        expect(timeCorrectionSeconds).toBeNaN()
-        expect(windowStartTime).toBeNaN()
-        expect(windowEndTime).toBeNaN()
-      }))
+      expect(windowStartTime).toBe(1436259310000)
+      expect(windowEndTime).toBe(1436259342000)
+      expect(presentationTimeOffsetSeconds).toBeNaN()
+      expect(timeCorrectionSeconds).toBeNaN()
+    })
 
-    it("returns fallback data if manifest has an invalid start date", () =>
-      ManifestParser.parse(HlsManifests.INVALID_PROGRAM_DATETIME, { type: "m3u8" }).then(
-        ({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-          expect(windowStartTime).toBeNaN()
-          expect(windowEndTime).toBeNaN()
-          expect(presentationTimeOffsetSeconds).toBeNaN()
-          expect(timeCorrectionSeconds).toBeNaN()
+    it("returns presentation time offset for static window hls manifest", async () => {
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse(HlsManifests.VALID_PROGRAM_DATETIME, {
+          type: "m3u8",
+          windowType: WindowTypes.STATIC,
+        })
 
-          expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
-        }
-      ))
+      expect(presentationTimeOffsetSeconds).toBe(1436259310)
+      expect(timeCorrectionSeconds).toBeNaN()
+      expect(windowStartTime).toBeNaN()
+      expect(windowEndTime).toBeNaN()
+    })
 
-    it("returns fallback data if hls manifest data is malformed", () =>
-      ManifestParser.parse("not an valid manifest", { type: "m3u8" }).then(
-        ({ windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds }) => {
-          expect(windowStartTime).toBeNaN()
-          expect(windowEndTime).toBeNaN()
-          expect(presentationTimeOffsetSeconds).toBeNaN()
-          expect(timeCorrectionSeconds).toBeNaN()
+    it("returns fallback data if manifest has an invalid start date", async () => {
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse(HlsManifests.INVALID_PROGRAM_DATETIME, { type: "m3u8" })
 
-          expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
-        }
-      ))
+      expect(windowStartTime).toBeNaN()
+      expect(windowEndTime).toBeNaN()
+      expect(presentationTimeOffsetSeconds).toBeNaN()
+      expect(timeCorrectionSeconds).toBeNaN()
+
+      expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
+    })
+
+    it("returns fallback data if hls manifest data is malformed", async () => {
+      const { windowStartTime, windowEndTime, presentationTimeOffsetSeconds, timeCorrectionSeconds } =
+        await ManifestParser.parse("not an valid manifest", { type: "m3u8" })
+
+      expect(windowStartTime).toBeNaN()
+      expect(windowEndTime).toBeNaN()
+      expect(presentationTimeOffsetSeconds).toBeNaN()
+      expect(timeCorrectionSeconds).toBeNaN()
+
+      expect(Plugins.interface.onManifestParseError).toHaveBeenCalled()
+    })
   })
 })
