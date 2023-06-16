@@ -1,3 +1,5 @@
+/* eslint-disable unicorn/no-empty-file */
+
 /**
  * Data required for playback
  * @typedef {Object} BigscreenPlayerData
@@ -7,7 +9,7 @@
  * @property {String} media.kind - 'video' or 'audio'
  * @property {String} media.captionsUrl - 'Location for a captions file'
  * @property {MediaUrl[]} media.urls - Media urls to use
- * @property {Date} serverDate - Date object with server time offset
+ * @property {Date} serverDate - DEPRECATED: Date object with server time offset
  */
 
 /**
