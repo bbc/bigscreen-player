@@ -191,10 +191,8 @@ function MediaSources() {
   }
 
   function loadManifest(callbacks, { initialWallclockTime, windowType } = {}) {
-    const load = () => {
-      const loading = ManifestLoader.load(getCurrentUrl(), { initialWallclockTime, windowType })
-      // console.log(loading)
-      loading
+    const load = () =>
+      ManifestLoader.load(getCurrentUrl(), { initialWallclockTime, windowType })
         .then(({ time: newTime, transferFormat: newTransferFormat } = {}) => {
           time = newTime
           transferFormat = newTransferFormat
@@ -209,9 +207,8 @@ function MediaSources() {
             message: PluginEnums.ERROR_MESSAGES.MANIFEST,
           })
         })
-    }
 
-    load()
+    return load()
   }
 
   function getCurrentUrl() {
