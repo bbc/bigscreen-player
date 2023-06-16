@@ -14,7 +14,7 @@ function MediaSources() {
   let failoverResetTokens = []
   let windowType
   let liveSupport
-  let serverDate
+  let initialWallclockTime
   let time = {}
   let transferFormat
   let subtitlesSources
@@ -46,7 +46,7 @@ function MediaSources() {
 
     windowType = newWindowType
     liveSupport = newLiveSupport
-    serverDate = newServerDate
+    initialWallclockTime = newServerDate
     mediaSources = media.urls ? PlaybackUtils.cloneArray(media.urls) : []
     subtitlesSources = media.captions ? PlaybackUtils.cloneArray(media.captions) : []
 
@@ -57,25 +57,22 @@ function MediaSources() {
       return
     }
 
-    loadManifest(callbacks, { windowType, initialWallclockTime: serverDate })
+    loadManifest(callbacks, { initialWallclockTime, windowType })
   }
 
-  function failover(postFailoverAction, failoverErrorAction, failoverParams) {
+  function failover(onFailoverSuccess, onFailoverError, failoverParams) {
     if (shouldFailover(failoverParams)) {
       emitCdnFailover(failoverParams)
       updateCdns(failoverParams.serviceLocation)
       updateDebugOutput()
 
       if (needToGetManifest(windowType, liveSupport)) {
-        loadManifest(
-          { onSuccess: postFailoverAction, onError: failoverErrorAction },
-          { windowType, initialWallclockTime: serverDate }
-        )
+        loadManifest({ onSuccess: onFailoverSuccess, onError: onFailoverError }, { windowType })
       } else {
-        postFailoverAction()
+        onFailoverSuccess()
       }
     } else {
-      failoverErrorAction()
+      onFailoverError()
     }
   }
 
@@ -187,9 +184,10 @@ function MediaSources() {
   }
 
   function refresh(onSuccess, onError) {
-    loadManifest({ onSuccess, onError }, { windowType, initialWallclockTime: serverDate })
+    loadManifest({ onSuccess, onError }, { windowType })
   }
 
+  // [tag:ServerDate]
   function loadManifest(callbacks, { initialWallclockTime, windowType } = {}) {
     return ManifestLoader.load(getCurrentUrl(), { initialWallclockTime, windowType })
       .then(({ time: newTime, transferFormat: newTransferFormat } = {}) => {
@@ -351,7 +349,7 @@ function MediaSources() {
 
     windowType = undefined
     liveSupport = undefined
-    serverDate = undefined
+    initialWallclockTime = undefined
     time = {}
     transferFormat = undefined
     mediaSources = []

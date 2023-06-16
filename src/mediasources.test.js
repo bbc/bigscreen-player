@@ -265,11 +265,35 @@ describe("Media Sources", () => {
       mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: true })
 
       expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
+      expect(ManifestLoader.load).toHaveBeenNthCalledWith(2, "http://source2.com/", expect.any(Object))
+    })
 
+    // [tag:ServerDate]
+    it("does not provide initial wallclock time to the loader", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+        { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+      ]
+
+      // HLS manifests must be reloaded on failover to fetch accurate start time
+      ManifestLoader.load.mockResolvedValueOnce({
+        time: {},
+        transferFormat: TransferFormats.HLS,
+      })
+
+      const mediaSources = await initMediaSources(testMedia, {
+        initialWallclockTime: Date.now(),
+        windowType: WindowTypes.SLIDING,
+        liveSupport: LiveSupport.SEEKABLE,
+      })
+
+      mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: true })
+
+      expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
       expect(ManifestLoader.load).toHaveBeenNthCalledWith(
         2,
         "http://source2.com/",
-        expect.objectContaining({ windowType: WindowTypes.SLIDING })
+        expect.not.objectContaining({ initialWallclockTime: expect.anything() })
       )
     })
 
@@ -834,8 +858,29 @@ describe("Media Sources", () => {
       )
 
       expect(mediaSources.currentSource()).toEqual(existingSource)
+    })
 
-      expect(mediaSources.time()).toEqual({ windowStartTime: 6000, windowEndTime: 16000, timeCorrectionSeconds: 6 })
+    // [tag:ServerDate]
+    it("does not pass initial wall-clock time to the manifest loader", async () => {
+      const mediaSources = await initMediaSources(testMedia, {
+        initialWallclockTime: Date.now(),
+        liveSupport: LiveSupport.SEEKABLE,
+        windowType: WindowTypes.SLIDING,
+      })
+
+      await new Promise((resolve, reject) =>
+        mediaSources.refresh(
+          () => resolve(),
+          () => reject()
+        )
+      )
+
+      expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
+      expect(ManifestLoader.load).toHaveBeenNthCalledWith(
+        2,
+        "http://source1.com/",
+        expect.not.objectContaining({ initialWallclockTime: expect.anything() })
+      )
     })
   })
 
