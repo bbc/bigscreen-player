@@ -66,9 +66,11 @@ function DebugTool() {
   }
 
   function error(log) {
-    if (logLevel >= LOG_LEVELS.ERROR) {
-      Chronicle.error(log)
+    if (logLevel < LOG_LEVELS.ERROR) {
+      return
     }
+
+    Chronicle.error(typeof log === "object" && log.message ? log.message : log)
   }
 
   function verbose(log) {
@@ -104,21 +106,22 @@ function DebugTool() {
   }
 
   return {
-    toggleVisibility: toggleVisibility,
-    setRootElement: setRootElement,
-    setLogLevel: setLogLevel,
     logLevels: LOG_LEVELS,
-    verbose: verbose,
-    info: info,
-    error: error,
-    event: event,
-    time: time,
+    error,
+    event,
+    info,
+    setLogLevel,
+    setRootElement,
+    tearDown,
+    time,
+    toggleVisibility,
+    verbose,
     apicall: Chronicle.apicall,
     keyValue: updateKeyValue,
-    tearDown: tearDown,
   }
 }
 
+// eslint-disable-next-line import/no-mutable-exports
 let instance
 
 if (instance === undefined) {
