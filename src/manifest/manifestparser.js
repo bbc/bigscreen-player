@@ -52,7 +52,7 @@ function fetchWallclockTime(mpd, initialWallclockTime) {
   return new Promise((resolveFetch, rejectFetch) => {
     const timingResource = mpd.querySelector("UTCTiming")?.getAttribute("value")
 
-    if (!timingResource && typeof timingResource !== "string") {
+    if (!timingResource || typeof timingResource !== "string") {
       throw new TypeError("manifest-dash-timing-error")
     }
 
