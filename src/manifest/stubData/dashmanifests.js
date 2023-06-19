@@ -109,7 +109,6 @@ const DashManifests = Object.fromEntries(
 
 /** @param {Document} manifestEl */
 function appendTimingResource(manifestEl, timingResource) {
-  // <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="https://time.akamai.com/?iso"/>
   const timingEl = manifestEl.createElement("UTCTiming")
   timingEl.setAttribute("schemeIdUri", "urn:mpeg:dash:utc:http-xsdate:2014")
   timingEl.setAttribute("value", timingResource ?? "https://time.akamai.com/?iso")
