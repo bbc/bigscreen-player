@@ -133,11 +133,6 @@ function DebugTool() {
   }
 }
 
-// eslint-disable-next-line import/no-mutable-exports
-let instance
+const DebugToolInstance = DebugTool()
 
-if (instance === undefined) {
-  instance = new DebugTool()
-}
-
-export default instance
+export default DebugToolInstance
