@@ -47,9 +47,9 @@
                 onSuccess: function () {
                     player.toggleDebug()
                 },
-                onError: function () {
+                onError: function (error) {
                     player.toggleDebug()
-                    DebugTool.info("Initialisation failed.")
+                    throw new Error("Initialisation failed.", { cause: error })
                 },
             })
         </script>

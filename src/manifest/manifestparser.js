@@ -3,6 +3,65 @@ import DebugTool from "../debugger/debugtool"
 import WindowTypes from "../models/windowtypes"
 import Plugins from "../plugins"
 import PluginEnums from "../pluginenums"
+import LoadUrl from "../utils/loadurl"
+
+const parsingStrategyByManifestType = {
+  mpd: parseMPD,
+  m3u8: parseM3U8,
+}
+
+const placeholders = {
+  windowStartTime: NaN,
+  windowEndTime: NaN,
+  presentationTimeOffsetSeconds: NaN,
+  timeCorrectionSeconds: NaN,
+}
+
+const dashParsingStrategyByWindowType = {
+  [WindowTypes.GROWING]: parseGrowingMPD,
+  [WindowTypes.SLIDING]: parseSlidingMPD,
+  [WindowTypes.STATIC]: parseStaticMPD,
+}
+
+function parseMPD(manifestEl, { windowType, initialWallclockTime } = {}) {
+  return new Promise((resolve) => {
+    const mpd = manifestEl.querySelector("MPD")
+
+    const parse = dashParsingStrategyByWindowType[windowType]
+
+    if (parse == null) {
+      throw new Error(`Could not find a DASH parsing strategy for window type ${windowType}`)
+    }
+
+    return resolve(parse(mpd, initialWallclockTime))
+  }).catch((error) => {
+    const errorWithCode = new Error(error.message ?? "manifest-dash-parse-error")
+    errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
+    throw errorWithCode
+  })
+}
+
+function fetchWallclockTime(mpd, initialWallclockTime) {
+  // TODO: `serverDate`/`initialWallClockTime` is deprecated. Remove this.
+  // [tag:ServerDate]
+  if (initialWallclockTime) {
+    // console.warn("Deprecated")
+    return Promise.resolve(initialWallclockTime)
+  }
+
+  return new Promise((resolveFetch, rejectFetch) => {
+    const timingResource = mpd.querySelector("UTCTiming")?.getAttribute("value")
+
+    if (!timingResource || typeof timingResource !== "string") {
+      throw new TypeError("manifest-dash-timing-error")
+    }
+
+    LoadUrl(timingResource, {
+      onLoad: (_, utcTimeString) => resolveFetch(Date.parse(utcTimeString)),
+      onError: () => rejectFetch(new Error("manifest-dash-timing-error")),
+    })
+  })
+}
 
 function getSegmentTemplate(mpd) {
   // Can be either audio or video data.
@@ -17,80 +76,56 @@ function getSegmentTemplate(mpd) {
 }
 
 function parseStaticMPD(mpd) {
-  const { presentationTimeOffset, timescale } = getSegmentTemplate(mpd)
+  return new Promise((resolveParse) => {
+    const { presentationTimeOffset, timescale } = getSegmentTemplate(mpd)
 
-  return {
-    presentationTimeOffsetSeconds: presentationTimeOffset / timescale,
-    timeCorrectionSeconds: NaN,
-    windowStartTime: NaN,
-    windowEndTime: NaN,
-  }
+    return resolveParse({
+      presentationTimeOffsetSeconds: presentationTimeOffset / timescale,
+    })
+  })
 }
 
 function parseSlidingMPD(mpd, initialWallclockTime) {
-  const { duration, timescale } = getSegmentTemplate(mpd)
-  const availabilityStartTime = mpd.getAttribute("availabilityStartTime")
-  const segmentLengthMillis = (1000 * duration) / timescale
+  return fetchWallclockTime(mpd, initialWallclockTime).then((wallclockTime) => {
+    const { duration, timescale } = getSegmentTemplate(mpd)
+    const availabilityStartTime = mpd.getAttribute("availabilityStartTime")
+    const segmentLengthMillis = (1000 * duration) / timescale
 
-  if (!availabilityStartTime || !segmentLengthMillis) {
-    throw new Error("manifest-dash-attributes-parse-error")
-  }
+    if (!availabilityStartTime || !segmentLengthMillis) {
+      throw new Error("manifest-dash-attributes-parse-error")
+    }
 
-  const timeShiftBufferDepthMillis = 1000 * TimeUtils.durationToSeconds(mpd.getAttribute("timeShiftBufferDepth"))
-  const windowEndTime = initialWallclockTime - Date.parse(availabilityStartTime) - segmentLengthMillis
-  const windowStartTime = windowEndTime - timeShiftBufferDepthMillis
+    const timeShiftBufferDepthMillis = 1000 * TimeUtils.durationToSeconds(mpd.getAttribute("timeShiftBufferDepth"))
+    const windowEndTime = wallclockTime - Date.parse(availabilityStartTime) - segmentLengthMillis
+    const windowStartTime = windowEndTime - timeShiftBufferDepthMillis
 
-  return {
-    windowStartTime,
-    windowEndTime,
-    timeCorrectionSeconds: windowStartTime / 1000,
-    presentationTimeOffsetSeconds: NaN,
-  }
+    return {
+      windowStartTime,
+      windowEndTime,
+      timeCorrectionSeconds: windowStartTime / 1000,
+    }
+  })
 }
 
 function parseGrowingMPD(mpd, initialWallclockTime) {
-  const { duration, timescale } = getSegmentTemplate(mpd)
-  const availabilityStartTime = mpd.getAttribute("availabilityStartTime")
-  const segmentLengthMillis = (1000 * duration) / timescale
+  return fetchWallclockTime(mpd, initialWallclockTime).then((wallclockTime) => {
+    const { duration, timescale } = getSegmentTemplate(mpd)
+    const availabilityStartTime = mpd.getAttribute("availabilityStartTime")
+    const segmentLengthMillis = (1000 * duration) / timescale
 
-  if (!availabilityStartTime || !segmentLengthMillis) {
-    throw new Error("manifest-dash-attributes-parse-error")
-  }
-
-  return {
-    windowStartTime: Date.parse(availabilityStartTime),
-    windowEndTime: initialWallclockTime - segmentLengthMillis,
-    presentationTimeOffsetSeconds: NaN,
-    timeCorrectionSeconds: NaN,
-  }
-}
-
-const parsingStrategyByWindowType = {
-  [WindowTypes.GROWING]: parseGrowingMPD,
-  [WindowTypes.SLIDING]: parseSlidingMPD,
-  [WindowTypes.STATIC]: parseStaticMPD,
-}
-
-function parseMPD(manifest, { windowType, initialWallclockTime } = {}) {
-  try {
-    const mpd = manifest.querySelectorAll("MPD")[0]
-
-    const parse = parsingStrategyByWindowType[windowType]
-
-    if (parse == null) {
-      throw new Error(`Could not find a DASH parsing strategy for window type ${windowType}`)
+    if (!availabilityStartTime || !segmentLengthMillis) {
+      throw new Error("manifest-dash-attributes-parse-error")
     }
 
-    return parse(mpd, initialWallclockTime)
-  } catch (error) {
-    const errorWithCode = new Error(error.message ?? "manifest-dash-parse-error")
-    errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
-    throw errorWithCode
-  }
+    return {
+      windowStartTime: Date.parse(availabilityStartTime),
+      windowEndTime: wallclockTime - segmentLengthMillis,
+    }
+  })
 }
 
 function parseM3U8(manifest, { windowType } = {}) {
-  try {
+  return new Promise((resolve) => {
     const programDateTime = getM3U8ProgramDateTime(manifest)
     const duration = getM3U8WindowSizeInSeconds(manifest)
 
@@ -99,25 +134,20 @@ function parseM3U8(manifest, { windowType } = {}) {
     }
 
     if (windowType === WindowTypes.STATIC) {
-      return {
+      return resolve({
         presentationTimeOffsetSeconds: programDateTime / 1000,
-        timeCorrectionSeconds: NaN,
-        windowStartTime: NaN,
-        windowEndTime: NaN,
-      }
+      })
     }
 
-    return {
+    return resolve({
       windowStartTime: programDateTime,
       windowEndTime: programDateTime + duration * 1000,
-      presentationTimeOffsetSeconds: NaN,
-      timeCorrectionSeconds: NaN,
-    }
-  } catch (error) {
+    })
+  }).catch((error) => {
     const errorWithCode = new Error(error.message || "manifest-hls-parse-error")
     errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
     throw errorWithCode
-  }
+  })
 }
 
 function getM3U8ProgramDateTime(data) {
@@ -146,23 +176,16 @@ function getM3U8WindowSizeInSeconds(data) {
 }
 
 function parse(manifest, { type, windowType, initialWallclockTime } = {}) {
-  try {
-    if (type === "mpd") {
-      return parseMPD(manifest, { windowType, initialWallclockTime })
-    } else if (type === "m3u8") {
-      return parseM3U8(manifest, { windowType })
-    }
-  } catch (error) {
-    DebugTool.info(`Manifest Parse Error: ${error.code} ${error.message}`)
-    Plugins.interface.onManifestParseError({ code: error.code, message: error.message })
+  const parseManifest = parsingStrategyByManifestType[type]
 
-    return {
-      windowStartTime: NaN,
-      windowEndTime: NaN,
-      presentationTimeOffsetSeconds: NaN,
-      timeCorrectionSeconds: NaN,
-    }
-  }
+  return parseManifest(manifest, { windowType, initialWallclockTime })
+    .then((values) => ({ ...placeholders, ...values }))
+    .catch((error) => {
+      DebugTool.info(`Manifest Parse Error: ${error.code} ${error.message}`)
+      Plugins.interface.onManifestParseError({ code: error.code, message: error.message })
+
+      return { ...placeholders }
+    })
 }
 
 export default {

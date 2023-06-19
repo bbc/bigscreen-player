@@ -1,14 +1,15 @@
+const updateCallbacks = []
 let chronicle = []
-let updateCallbacks = []
 let firstTimeElement, compressTime
 
 const TYPES = {
-  INFO: "info",
+  APICALL: "apicall",
   ERROR: "error",
   EVENT: "event",
-  APICALL: "apicall",
-  TIME: "time",
+  INFO: "info",
   KEYVALUE: "keyvalue",
+  TIME: "time",
+  WARNING: "warning",
 }
 
 function init() {
@@ -34,15 +35,20 @@ function unregisterForUpdates(callback) {
 }
 
 function info(message) {
-  pushToChronicle({ type: TYPES.INFO, message: message })
+  pushToChronicle({ type: TYPES.INFO, message })
 }
 
+/** @param {Error} err */
 function error(err) {
   pushToChronicle({ type: TYPES.ERROR, error: err })
 }
 
+function warn(warning) {
+  pushToChronicle({ type: TYPES.WARNING, warning })
+}
+
 function event(event) {
-  pushToChronicle({ type: TYPES.EVENT, event: event })
+  pushToChronicle({ type: TYPES.EVENT, event })
 }
 
 function apicall(callType) {
@@ -69,11 +75,11 @@ function keyValue(obj) {
 }
 
 function retrieve() {
-  return chronicle.slice()
+  return [...chronicle]
 }
 
 function timestamp(obj) {
-  obj.timestamp = new Date().getTime()
+  obj.timestamp = Date.now()
 }
 
 function pushToChronicle(obj) {
@@ -96,18 +102,19 @@ function tearDown() {
 }
 
 export default {
-  init: init,
-  TYPES: TYPES,
-  clear: clear,
-  info: info,
+  TYPES,
+  init,
+  clear,
+  tearDown,
+  apicall,
+  error,
+  event,
+  info,
+  keyValue,
+  time,
+  warn,
   verbose: info,
-  error: error,
-  event: event,
-  apicall: apicall,
-  time: time,
-  keyValue: keyValue,
-  retrieve: retrieve,
-  tearDown: tearDown,
-  registerForUpdates: registerForUpdates,
-  unregisterForUpdates: unregisterForUpdates,
+  retrieve,
+  registerForUpdates,
+  unregisterForUpdates,
 }

@@ -199,6 +199,10 @@ function BigscreenPlayer() {
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
 
+      if (serverDate) {
+        DebugTool.warn("Passing in server date is deprecated. Use <UTCTiming> on manifest.")
+      }
+
       playerReadyCallback = callbacks.onSuccess
       playerErrorCallback = callbacks.onError
 
