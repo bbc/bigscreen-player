@@ -1,9 +1,10 @@
 As part of the configuration of Bigscreen Player, a 'playback strategy' should be provided.
 
 There are three options available:
-* `msestrategy`
-* `nativestrategy`
-* `basicstrategy`
+
+- `msestrategy`
+- `nativestrategy`
+- `basicstrategy`
 
 Your app should write this globally to the window before initialising Bigscreen Player. This enables only the required media player code to be loaded. For example, if MSE playback is not needed, the *dashjs* library does not have to be loaded.
 
@@ -20,13 +21,15 @@ The MSE strategy utilises the open source [*dashjs*](https://github.com/Dash-Ind
 ## Native Strategy
 
 We have migrated TAL media player implementations into the Native Strategy, so that you can play media on devices that do not support Media Source Extensions without TAL. So far there is support for playback via:
-- `HTHML5`
+
+- `HTML5`
 - `CEHTML`
 - `SAMSUNG_MAPLE`
 - `SAMSUNG_STREAMING`
 - `SAMSUNG_STREAMING_2015`
 
 This requires additional config, to select which implementation to use and indicate the device's live playback capability:
+
 ```javascript
 window.bigscreenPlayer.liveSupport: 'seekable', // OR 'none' OR 'playable' OR 'restartable'; defaults to 'playable'
 window.bigscreenPlayer.mediaPlayer: 'html5' // OR 'cehtml'; defaults to 'html5'

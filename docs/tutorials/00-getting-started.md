@@ -1,17 +1,40 @@
-# Getting Started
-
 ## Installation
 
 ```bash
 npm install bigscreen-player --save
 ```
 
-## Configuration
+## Get To Playback
 
-Bigscreen Player has some global configuration that is needed before initialisation. A *playback strategy* must be configured:
+For a start, let's play back an on-demand video.
+
+To start a playback session you must minimally provide:
+
+- Some configuration. See [Configuration](#configuration)
+- A streaming manifest. See [Minimal Data](#minimal-data)
+- A HTML element to render playback. See [Initialisation](#initialisation)
+
+### Configuration
+
+You must provide a *playback strategy* to use BigscreenPlayer:
 
 ```javascript
-window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'basicstrategy'
+window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'basicstrategy'
+```
+
+The MSEStrategy uses DASH. It is most likely what you want. More detail in the [documentation on playback strategies](<https://bbc.github.io/bigscreen-player/api/tutorial-playback-strategies.html>).
+
+### Minimal Data
+
+You must provide a manifest and its MIME type.
+
+```javascript
+const minimalData = {
+  media: {
+    type: 'application/dash+xml',
+    urls: [{ url: 'https://example.com/video.mpd' }]
+  }
+}
 ```
 
 ## Initialisation
@@ -23,30 +46,31 @@ The player will render itself into a supplied parent element, and playback will 
 ```javascript
 import { BigscreenPlayer, MediaKinds, WindowTypes } from 'bigscreen-player'
 
-// configure the media player that will be used before loading
-// see below for further details of ths config
+// See Configuration
+window.bigscreenPlayer.playbackStrategy
 
-// options are: msestrategy, nativestrategy, hybridstrategy, basicstrategy
-window.bigscreenPlayer.playbackStrategy = 'msestrategy'
+// See Minimal Data
+const minimalData
 
 const bigscreenPlayer = BigscreenPlayer()
-const playbackElement = document.createElement('div')
-const body = document.getElementByTagName('body')[0]
 
+const body = document.querySelector('body')
+
+const playbackElement = document.createElement('div')
 playbackElement.id = 'BigscreenPlayback'
+
 body.appendChild(playbackElement)
 
-const minimalData = {
-  media: {
-    type: 'application/dash+xml',
-    urls: [
-      {
-        url: 'https://example.com/video.mpd'
-      }
-    ]
-  }
-}
+const enableSubtitles = false
 
+bigscreenPlayer.init(playbackElement, optionalData, WindowTypes.STATIC, enableSubtitles)
+```
+
+## All Options
+
+The full set of options for BigscreenPlayer is:
+
+```javascript
 const optionalData = {
   initialPlaybackTime: 0, // Time (in seconds) to begin playback from
   media: {
@@ -89,10 +113,4 @@ const optionalData = {
     }
   }
 }
-
-// STATIC for VOD content, GROWING/SLIDING for LIVE content
-const windowType = WindowTypes.STATIC
-const enableSubtitles = false
-
-bigscreenPlayer.init(playbackElement, optionalData, windowType, enableSubtitles)
 ```
