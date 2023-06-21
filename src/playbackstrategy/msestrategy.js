@@ -338,7 +338,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    return Math.min(Math.max(time, range.start), range.end - playerSettings.streaming.liveDelay)
+    return Math.min(Math.max(time, range.start), range.end)
   }
 
   function load(mimeType, playbackTime) {
