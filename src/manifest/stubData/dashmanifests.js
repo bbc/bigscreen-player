@@ -111,7 +111,7 @@ const DashManifests = Object.fromEntries(
 function appendTimingResource(manifestEl, timingResource) {
   const timingEl = manifestEl.createElement("UTCTiming")
   timingEl.setAttribute("schemeIdUri", "urn:mpeg:dash:utc:http-xsdate:2014")
-  timingEl.setAttribute("value", timingResource ?? "https://time.akamai.com/?iso")
+  timingEl.setAttribute("value", timingResource ?? "https://time.some-cdn.com/?iso")
 
   manifestEl.querySelector("MPD").append(timingEl)
 }
