@@ -117,7 +117,7 @@ function initialiseBigscreenPlayer(options = {}) {
     callbacks = { onSuccess: successCallback, onError: errorCallback }
   }
 
-  bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, callbacks)
+  bigscreenPlayer.init(playbackElement, { ...bigscreenPlayerData }, windowType, subtitlesEnabled, callbacks)
 }
 
 describe("Bigscreen Player", () => {
@@ -786,14 +786,12 @@ describe("Bigscreen Player", () => {
       initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
       const callback = jest.fn()
-      const endOfStreamWindow = bigscreenPlayerData.time.windowEndTime - 2
+      const endOfStreamWindow = 100 - 2
 
       bigscreenPlayer.registerForTimeUpdates(callback)
 
-      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({
-        start: bigscreenPlayerData.time.windowStartTime,
-        end: bigscreenPlayerData.time.windowEndTime,
-      })
+      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 10, end: 100 })
+
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(endOfStreamWindow)
 
       bigscreenPlayer.setCurrentTime(endOfStreamWindow)
@@ -817,12 +815,10 @@ describe("Bigscreen Player", () => {
       const callback = jest.fn()
       bigscreenPlayer.registerForTimeUpdates(callback)
 
-      const middleOfStreamWindow = bigscreenPlayerData.time.windowEndTime / 2
+      const middleOfStreamWindow = 100 / 2
 
-      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({
-        start: bigscreenPlayerData.time.windowStartTime,
-        end: bigscreenPlayerData.time.windowEndTime,
-      })
+      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 10, end: 100 })
+
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(middleOfStreamWindow)
 
       bigscreenPlayer.setCurrentTime(middleOfStreamWindow)
