@@ -16,7 +16,7 @@ const TimelineZeroPoints = {
  * #t=posix:<time> - Seeks availability timeline.
  *
  * @param {number} seconds
- * @param {TimelineZeroPoints} [zeroPoint = TimelineZeroPoints.VIDEO]
+ * @param {string} [zeroPoint = TimelineZeroPoints.VIDEO]
  * @returns {string}
  */
 export default function buildSourceAnchor(
