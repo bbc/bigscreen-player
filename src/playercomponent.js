@@ -30,6 +30,8 @@ function PlayerComponent(
   let fatalErrorTimeout
   let fatalError
 
+  let timeoutFailoverObserver
+
   StrategyPicker()
     .then((strategy) => {
       playbackStrategy = strategy(
@@ -52,6 +54,31 @@ function PlayerComponent(
     .catch((error) => {
       errorCallback && errorCallback(error)
     })
+
+    function TimeoutFailoverObserver( hooks, failoverTriggerFunc ) {
+      const interval = setInterval(()=> {
+        if (hooks.timeoutFailover === true) {
+          failoverTriggerFunc()
+          hooks.timeoutFailover = false
+        }
+      }, 500);
+
+      return {
+        tearDown: ()=> {
+          clearInterval(interval);
+        }
+      }
+    }
+
+    if (bigscreenPlayerData.hooks) {
+      // Add debug triggers
+      const failoverTrigger = attemptCdnFailover.bind(this, {
+        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+      });
+
+      timeoutFailoverObserver = TimeoutFailoverObserver(bigscreenPlayerData.hooks, failoverTrigger)
+    }
 
   function play() {
     playbackStrategy && playbackStrategy.play()
@@ -377,6 +404,7 @@ function PlayerComponent(
 
   function tearDown() {
     tearDownMediaElement()
+    timeoutFailoverObserver && timeoutFailoverObserver.tearDown()
     playbackStrategy && playbackStrategy.tearDown()
     playbackStrategy = null
     isInitialPlay = true

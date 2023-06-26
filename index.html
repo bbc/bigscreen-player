@@ -25,8 +25,26 @@
             let windowType = "staticWindow"
             let enableSubtitles = false
 
+
+            function errorPlugin() {
+                return {
+                    onErrorHandled: (err) => {
+                        console.log(err)
+                    }
+                }
+            }
+
+            
+
+            let hooks = {
+                timeoutFailover: false,
+                failover: true
+            }
+
+            window.hooks = hooks
+
             let minimalData = {
-                initialPlaybackTime: 30,
+                hooks: hooks,
                 media: {
                     captions: [],
                     type: "application/dash+xml",
@@ -46,6 +64,7 @@
             player.init(playbackElement, minimalData, windowType, enableSubtitles, {
                 onSuccess: function () {
                     player.toggleDebug()
+                    player.registerPlugin(errorPlugin())
                 },
                 onError: function () {
                     player.toggleDebug()

@@ -14,6 +14,7 @@ function callOnAllPlugins(funcKey, evt) {
 
 export default {
   registerPlugin: (plugin) => {
+    console.log('registering:' + plugin)
     plugins.push(plugin)
   },
 
