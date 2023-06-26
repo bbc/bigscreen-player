@@ -102,14 +102,13 @@ function BigscreenPlayer() {
 
   function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
     if (windowType !== WindowTypes.STATIC) {
-      bigscreenPlayerData.time = mediaSources.time()
       serverDate = bigscreenPlayerData.serverDate
 
       initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
       // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
       bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(
         bigscreenPlayerData.initialPlaybackTime,
-        bigscreenPlayerData.time.windowStartTime
+        mediaSources.time().windowStartTime
       )
     }
 

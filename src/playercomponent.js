@@ -47,7 +47,9 @@ function PlayerComponent(
 
       bubbleErrorCleared()
 
-      initialMediaPlay(bigscreenPlayerData.media, bigscreenPlayerData.initialPlaybackTime)
+      mediaMetaData = bigscreenPlayerData.media
+
+      loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime)
     })
     .catch((error) => {
       errorCallback && errorCallback(error)
@@ -139,6 +141,7 @@ function PlayerComponent(
         seekToTime = undefined
         thenPause = false
       }
+
       loadMedia(mediaMetaData.type, seekToTime, thenPause)
     }
 
@@ -362,10 +365,6 @@ function PlayerComponent(
     }
 
     _stateUpdateCallback(stateUpdateData)
-  }
-  function initialMediaPlay(media, startTime) {
-    mediaMetaData = media
-    loadMedia(media.type, startTime)
   }
 
   function loadMedia(type, startTime, thenPause) {
