@@ -7,14 +7,34 @@
     </head>
     <body>
         <script type="module">
-            import { BigscreenPlayer } from "./dist-local/esm/main.js"
+            import { BigscreenPlayer, WindowTypes } from "./dist-local/esm/main.js"
 
             window.bigscreenPlayer = { playbackStrategy: "msestrategy" }
 
-            let player = BigscreenPlayer()
-            let playbackElement = document.createElement("div")
+            const player = BigscreenPlayer()
+            const playbackElement = document.createElement("div")
+
+            const DebugController = class {
+                constructor() {
+                    this.signal = document.createDocumentFragment()
+                }
+
+                failover() {
+                    this.signal.dispatchEvent(new Event("triggerfailover"))
+                }
+
+                reload(seconds) {
+                    const event = new Event("triggerreload")
+                    const detail = { time: seconds }
+                    event.detail = detail
+                    this.signal.dispatchEvent(event)
+                }
+            }
+
+            const controller = new DebugController()
 
             window.bsp_player = player
+            window.debug_controller = controller
 
             document.body.appendChild(playbackElement)
 
@@ -26,6 +46,7 @@
             let enableSubtitles = false
 
             let minimalData = {
+                signal: controller.signal,
                 initialPlaybackTime: 30,
                 media: {
                     captions: [],
@@ -39,6 +60,12 @@
                             url: "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd",
                             cdn: "dash.akamaized.net",
                         },
+                        {
+                            // Content from DASH IF testing assests (used in their reference player)
+                            // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
+                            url: "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd",
+                            cdn: "dash.akamaized.net2",
+                        },
                     ],
                 },
             }
@@ -46,6 +73,10 @@
             player.init(playbackElement, minimalData, windowType, enableSubtitles, {
                 onSuccess: function () {
                     player.toggleDebug()
+                    player.registerPlugin({
+                        onErrorHandled: (err) => console.error(err),
+                        onManifestLoaded: (manifest) => console.log(manifest),
+                    })
                 },
                 onError: function () {
                     player.toggleDebug()
