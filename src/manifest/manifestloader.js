@@ -91,11 +91,11 @@ function getStreamUrl(data) {
 
 export default {
   load: (mediaUrl, { windowType, initialWallclockTime } = {}) => {
-    if (/\.mpd($|\?.*$)/.test(mediaUrl)) {
+    if (/\.mpd(\?.*)?$/.test(mediaUrl)) {
       return retrieveDashManifest(mediaUrl, { windowType, initialWallclockTime })
     }
 
-    if (/\.m3u8($|\?.*$)/.test(mediaUrl)) {
+    if (/\.m3u8(\?.*)?$/.test(mediaUrl)) {
       return retrieveHLSManifest(mediaUrl, { windowType, initialWallclockTime })
     }
 
