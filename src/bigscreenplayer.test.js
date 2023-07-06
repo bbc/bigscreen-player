@@ -117,7 +117,7 @@ function initialiseBigscreenPlayer(options = {}) {
     callbacks = { onSuccess: successCallback, onError: errorCallback }
   }
 
-  bigscreenPlayer.init(playbackElement, bigscreenPlayerData, windowType, subtitlesEnabled, callbacks)
+  bigscreenPlayer.init(playbackElement, { ...bigscreenPlayerData }, windowType, subtitlesEnabled, callbacks)
 }
 
 describe("Bigscreen Player", () => {
@@ -478,12 +478,12 @@ describe("Bigscreen Player", () => {
       })
 
       it("should be called if playing Live and event time is valid", () => {
+        const windowStartTime = 10
+        const windowEndTime = 100
+
         setupManifestData({
           transferFormat: TransferFormats.DASH,
-          time: {
-            windowStartTime: 10,
-            windowEndTime: 100,
-          },
+          time: { windowStartTime, windowEndTime },
         })
 
         initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
@@ -493,8 +493,8 @@ describe("Bigscreen Player", () => {
             state: MediaState.PLAYING,
             currentTime: 10,
             seekableRange: {
-              start: 10,
-              end: 100,
+              start: windowStartTime,
+              end: windowEndTime,
             },
           },
         })
@@ -544,21 +544,22 @@ describe("Bigscreen Player", () => {
       })
 
       it("should be called if playing Live and current time is valid", () => {
+        const windowStartTime = 10
+        const windowEndTime = 100
+
         setupManifestData({
           transferFormat: TransferFormats.DASH,
-          time: {
-            windowStartTime: 10,
-            windowEndTime: 100,
-          },
+          time: { windowStartTime, windowEndTime },
         })
+
         initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
         mockEventHook({
           data: {
             currentTime: 10,
             seekableRange: {
-              start: 10,
-              end: 100,
+              start: windowStartTime,
+              end: windowEndTime,
             },
           },
           timeUpdate: true,
@@ -775,41 +776,40 @@ describe("Bigscreen Player", () => {
     })
 
     it("should set endOfStream to true when seeking to the end of a simulcast", () => {
+      const windowStartTime = 10
+      const windowEndTime = 100
+
       setupManifestData({
         transferFormat: TransferFormats.DASH,
-        time: {
-          windowStartTime: 10,
-          windowEndTime: 100,
-        },
+        time: { windowStartTime, windowEndTime },
       })
 
       initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
-      const callback = jest.fn()
-      const endOfStreamWindow = bigscreenPlayerData.time.windowEndTime - 2
+      const onTimeUpdateStub = jest.fn()
 
-      bigscreenPlayer.registerForTimeUpdates(callback)
+      const endOfStreamWindow = windowEndTime - 2
 
-      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({
-        start: bigscreenPlayerData.time.windowStartTime,
-        end: bigscreenPlayerData.time.windowEndTime,
-      })
+      bigscreenPlayer.registerForTimeUpdates(onTimeUpdateStub)
+
+      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: windowStartTime, end: windowEndTime })
+
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(endOfStreamWindow)
 
       bigscreenPlayer.setCurrentTime(endOfStreamWindow)
 
       mockEventHook({ data: { currentTime: endOfStreamWindow }, timeUpdate: true })
 
-      expect(callback).toHaveBeenCalledWith({ currentTime: endOfStreamWindow, endOfStream: true })
+      expect(onTimeUpdateStub).toHaveBeenCalledWith({ currentTime: endOfStreamWindow, endOfStream: true })
     })
 
     it("should set endOfStream to false when seeking into a simulcast", () => {
+      const windowStartTime = 10
+      const windowEndTime = 100
+
       setupManifestData({
         transferFormat: TransferFormats.DASH,
-        time: {
-          windowStartTime: 10,
-          windowEndTime: 100,
-        },
+        time: { windowStartTime, windowEndTime },
       })
 
       initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
@@ -817,12 +817,10 @@ describe("Bigscreen Player", () => {
       const callback = jest.fn()
       bigscreenPlayer.registerForTimeUpdates(callback)
 
-      const middleOfStreamWindow = bigscreenPlayerData.time.windowEndTime / 2
+      const middleOfStreamWindow = windowEndTime / 2
 
-      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({
-        start: bigscreenPlayerData.time.windowStartTime,
-        end: bigscreenPlayerData.time.windowEndTime,
-      })
+      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: windowStartTime, end: windowEndTime })
+
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(middleOfStreamWindow)
 
       bigscreenPlayer.setCurrentTime(middleOfStreamWindow)

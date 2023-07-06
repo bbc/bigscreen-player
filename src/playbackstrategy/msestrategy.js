@@ -10,6 +10,7 @@ import TimeUtils from "../utils/timeutils"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
+import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
 
 function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
   let mediaPlayer
@@ -21,6 +22,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
   let failoverTime
+  let failoverZeroPoint
   let refreshFailoverTime
   let slidingWindowPausedTime = 0
   let isEnded = false
@@ -110,20 +112,21 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onTimeUpdate() {
-    const IN_STREAM_BUFFERING_SECONDS = 20
-    const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo("video")
+    const currentMpdTimeSeconds =
+      windowType === WindowTypes.SLIDING
+        ? mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)?.time
+        : mediaElement.currentTime
 
-    if (dvrInfo && windowType === WindowTypes.SLIDING) {
-      failoverTime = Math.max(0, parseInt(dvrInfo.time - dvrInfo.range.start) - IN_STREAM_BUFFERING_SECONDS)
-    } else {
-      const time = mediaElement.currentTime
-
-      // Note: Multiple consecutive CDN failover logic
-      // A newly loaded video element will always report a 0 time update
-      // This is slightly unhelpful if we want to continue from a later point but consult failoverTime as the source of truth.
-      if (parseInt(time) !== 0) {
-        failoverTime = time
-      }
+    // Note: Multiple consecutive CDN failover logic
+    // A newly loaded video element will always report a 0 time update
+    // This is slightly unhelpful if we want to continue from a later point but consult failoverTime as the source of truth.
+    if (
+      typeof currentMpdTimeSeconds === "number" &&
+      isFinite(currentMpdTimeSeconds) &&
+      parseInt(currentMpdTimeSeconds) > 0
+    ) {
+      failoverTime = currentMpdTimeSeconds
+      failoverZeroPoint = TimelineZeroPoints.MPD
     }
 
     publishTimeUpdate()
@@ -348,7 +351,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       setUpMediaPlayer(playbackTime)
       setUpMediaListeners()
     } else {
-      modifySource(refreshFailoverTime || failoverTime)
+      modifySource(refreshFailoverTime || failoverTime, failoverZeroPoint)
     }
   }
 
@@ -369,8 +372,14 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     modifySource(playbackTime)
   }
 
-  function modifySource(playbackTime) {
-    mediaPlayer.attachSource(calculateSourceAnchor(mediaSources.currentSource(), playbackTime))
+  function modifySource(playbackTime, zeroPoint) {
+    const source = mediaSources.currentSource()
+    const anchor = buildSourceAnchor(playbackTime, zeroPoint, {
+      windowType,
+      initialSeekableRangeStartSeconds: mediaSources.time().windowStartTime / 1000,
+    })
+
+    mediaPlayer.attachSource(`${source}${anchor}`)
   }
 
   function setUpMediaListeners() {
@@ -391,33 +400,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.LOG, onDebugLog)
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
-  }
-
-  /**
-   * Calculates a source url with anchor tags for playback within dashjs
-   *
-   * Anchor tags applied to the MPD source for playback:
-   *
-   * #t - time since the beginning of the first period defined in the DASH manifest
-   * @param {String} source
-   * @param {Number} startTime
-   */
-  function calculateSourceAnchor(source, startTime) {
-    if (startTime == null || isNaN(startTime)) {
-      return source
-    }
-
-    const parsedStartTime = parseInt(startTime)
-
-    if (windowType === WindowTypes.STATIC) {
-      return parsedStartTime === 0 ? source : `${source}#t=${parsedStartTime}`
-    }
-    const windowStartTimeSeconds = mediaSources.time().windowStartTime / 1000
-    const srcWithTimeAnchor = `${source}#t=posix:`
-
-    return parsedStartTime === 0
-      ? srcWithTimeAnchor + (windowStartTimeSeconds + 1)
-      : srcWithTimeAnchor + (windowStartTimeSeconds + parsedStartTime)
   }
 
   function getSeekableRange() {
@@ -553,6 +535,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       timeUpdateCallback = undefined
       timeCorrection = undefined
       failoverTime = undefined
+      failoverZeroPoint = undefined
       isEnded = undefined
       dashMetrics = undefined
       playerMetadata = {

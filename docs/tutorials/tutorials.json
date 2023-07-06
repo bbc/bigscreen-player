@@ -1,5 +1,11 @@
 {
   "00-getting-started": {
     "title": "Getting Started"
+  },
+  "live-streaming": {
+    "title": "Live"
+  },
+  "playback-strategies": {
+    "title": "Playback Strategies"
   }
 }

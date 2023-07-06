@@ -102,14 +102,13 @@ function BigscreenPlayer() {
 
   function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
     if (windowType !== WindowTypes.STATIC) {
-      bigscreenPlayerData.time = mediaSources.time()
       serverDate = bigscreenPlayerData.serverDate
 
       initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
       // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
       bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(
         bigscreenPlayerData.initialPlaybackTime,
-        bigscreenPlayerData.time.windowStartTime
+        mediaSources.time().windowStartTime
       )
     }
 
@@ -198,6 +197,10 @@ function BigscreenPlayer() {
       DebugTool.keyValue({ key: "framework-version", value: Version })
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
+
+      if (serverDate) {
+        DebugTool.warn("Passing in server date is deprecated. Use <UTCTiming> on manifest.")
+      }
 
       playerReadyCallback = callbacks.onSuccess
       playerErrorCallback = callbacks.onError

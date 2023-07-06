@@ -7,6 +7,7 @@ function DebugTool() {
 
   const LOG_LEVELS = {
     ERROR: 0,
+    WARN: 1,
     INFO: 2,
     VERBOSE: 3,
   }
@@ -66,9 +67,21 @@ function DebugTool() {
   }
 
   function error(log) {
-    if (logLevel >= LOG_LEVELS.ERROR) {
-      Chronicle.error(log)
+    if (logLevel < LOG_LEVELS.ERROR) {
+      return
     }
+
+    const error = typeof log === "object" && log.message ? log : new Error(log)
+
+    Chronicle.error(error)
+  }
+
+  function warn(log) {
+    if (logLevel < LOG_LEVELS.WARN) {
+      return
+    }
+
+    Chronicle.warn(log)
   }
 
   function verbose(log) {
@@ -104,25 +117,22 @@ function DebugTool() {
   }
 
   return {
-    toggleVisibility: toggleVisibility,
-    setRootElement: setRootElement,
-    setLogLevel: setLogLevel,
     logLevels: LOG_LEVELS,
-    verbose: verbose,
-    info: info,
-    error: error,
-    event: event,
-    time: time,
+    error,
+    event,
+    info,
+    setLogLevel,
+    setRootElement,
+    tearDown,
+    time,
+    toggleVisibility,
+    verbose,
+    warn,
     apicall: Chronicle.apicall,
     keyValue: updateKeyValue,
-    tearDown: tearDown,
   }
 }
 
-let instance
+const DebugToolInstance = DebugTool()
 
-if (instance === undefined) {
-  instance = new DebugTool()
-}
-
-export default instance
+export default DebugToolInstance

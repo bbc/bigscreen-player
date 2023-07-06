@@ -14,7 +14,7 @@ function MediaSources() {
   let failoverResetTokens = []
   let windowType
   let liveSupport
-  let serverDate
+  let initialWallclockTime
   let time = {}
   let transferFormat
   let subtitlesSources
@@ -46,7 +46,7 @@ function MediaSources() {
 
     windowType = newWindowType
     liveSupport = newLiveSupport
-    serverDate = newServerDate
+    initialWallclockTime = newServerDate
     mediaSources = media.urls ? PlaybackUtils.cloneArray(media.urls) : []
     subtitlesSources = media.captions ? PlaybackUtils.cloneArray(media.captions) : []
 
@@ -57,25 +57,22 @@ function MediaSources() {
       return
     }
 
-    loadManifest(callbacks, { windowType, initialWallclockTime: serverDate })
+    loadManifest(callbacks, { initialWallclockTime, windowType })
   }
 
-  function failover(postFailoverAction, failoverErrorAction, failoverParams) {
+  function failover(onFailoverSuccess, onFailoverError, failoverParams) {
     if (shouldFailover(failoverParams)) {
       emitCdnFailover(failoverParams)
       updateCdns(failoverParams.serviceLocation)
       updateDebugOutput()
 
       if (needToGetManifest(windowType, liveSupport)) {
-        loadManifest(
-          { onSuccess: postFailoverAction, onError: failoverErrorAction },
-          { windowType, initialWallclockTime: serverDate }
-        )
+        loadManifest({ onSuccess: onFailoverSuccess, onError: onFailoverError }, { windowType })
       } else {
-        postFailoverAction()
+        onFailoverSuccess()
       }
     } else {
-      failoverErrorAction()
+      onFailoverError()
     }
   }
 
@@ -187,40 +184,32 @@ function MediaSources() {
   }
 
   function refresh(onSuccess, onError) {
-    loadManifest({ onSuccess, onError }, { windowType, initialWallclockTime: serverDate })
+    loadManifest({ onSuccess, onError }, { windowType })
   }
 
+  // [tag:ServerDate]
   function loadManifest(callbacks, { initialWallclockTime, windowType } = {}) {
-    const onManifestLoadSuccess = (manifestData) => {
-      time = manifestData.time
-      transferFormat = manifestData.transferFormat
+    return ManifestLoader.load(getCurrentUrl(), { initialWallclockTime, windowType })
+      .then(({ time: newTime, transferFormat: newTransferFormat } = {}) => {
+        time = newTime
+        transferFormat = newTransferFormat
 
-      logManifestParsed(transferFormat, time)
-      callbacks.onSuccess()
-    }
-
-    const failoverError = () => {
-      callbacks.onError({ error: "manifest" })
-    }
-
-    const onManifestLoadError = () => {
-      failover(load, failoverError, {
-        isBufferingTimeoutError: false,
-        code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
-        message: PluginEnums.ERROR_MESSAGES.MANIFEST,
+        logManifestLoaded(transferFormat, time)
+        callbacks.onSuccess()
       })
-    }
+      .catch((error) => {
+        DebugTool.error(`Failed to load manifest: ${error?.message ?? "cause n/a"}`)
 
-    function load() {
-      ManifestLoader.load(getCurrentUrl(), {
-        initialWallclockTime,
-        windowType,
-        onSuccess: onManifestLoadSuccess,
-        onError: onManifestLoadError,
+        failover(
+          () => callbacks.onSuccess(),
+          () => callbacks.onError({ error: "manifest" }),
+          {
+            isBufferingTimeoutError: false,
+            code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
+            message: PluginEnums.ERROR_MESSAGES.MANIFEST,
+          }
+        )
       })
-    }
-
-    load()
   }
 
   function getCurrentUrl() {
@@ -325,8 +314,8 @@ function MediaSources() {
     return subtitlesSources.map((subtitleSource) => subtitleSource.cdn)
   }
 
-  function logManifestParsed(transferFormat, time) {
-    let logMessage = `Parsed ${transferFormat} manifest.`
+  function logManifestLoaded(transferFormat, time) {
+    let logMessage = `Loaded ${transferFormat} manifest.`
 
     const { presentationTimeOffsetSeconds, timeCorrectionSeconds, windowStartTime, windowEndTime } = time
 
@@ -362,7 +351,7 @@ function MediaSources() {
 
     windowType = undefined
     liveSupport = undefined
-    serverDate = undefined
+    initialWallclockTime = undefined
     time = {}
     transferFormat = undefined
     mediaSources = []

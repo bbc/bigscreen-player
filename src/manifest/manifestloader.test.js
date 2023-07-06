@@ -1,29 +1,38 @@
 import TransferFormats from "../models/transferformats"
 import WindowTypes from "../models/windowtypes"
 import Plugins from "../plugins"
+import getError from "../testutils/geterror"
 import LoadUrl from "../utils/loadurl"
-import DashManifests from "./stubData/dashmanifests"
+import DashManifests, { appendTimingResource } from "./stubData/dashmanifests"
 import HlsManifests from "./stubData/hlsmanifests"
 import ManifestLoader from "./manifestloader"
 
 jest.mock("../utils/loadurl")
 
 describe("ManifestLoader", () => {
-  it.each(["m3u8", "mpd"])("fetches %s manifests", (fileExt) => {
+  it.each(["m3u8", "mpd"])("fetches a .%s manifest", (fileExt) => {
     const url = `mock://some.manifest.${fileExt}`
 
     ManifestLoader.load(url)
 
-    expect(LoadUrl).toHaveBeenCalledWith(url, expect.anything())
+    expect(LoadUrl).toHaveBeenCalledWith(url, expect.any(Object))
   })
 
-  it("calls 'error' callback for a bad manifest url", () => {
-    const onErrorStub = jest.fn()
+  it.each([
+    ["m3u8", "p=q"],
+    ["mpd", "p=q"],
+    ["m3u8", "a=x", "b=y"],
+    ["mpd", "u=v", "q=p"],
+  ])("fetches a .%s manifest with query params ?%s", (fileExt, ...queryParams) => {
+    const url = `mock://some.manifest.${fileExt}?${queryParams.join("&")}?`
 
-    ManifestLoader.load("mock://some.url/", { onError: onErrorStub })
+    ManifestLoader.load(url)
 
-    expect(onErrorStub).toHaveBeenCalledWith("Invalid media url")
+    expect(LoadUrl).toHaveBeenCalledWith(url, expect.any(Object))
   })
+
+  it("rejects when resource is not a recognised manifest type", () =>
+    expect(ManifestLoader.load("mock://some.url/")).rejects.toThrow("Invalid media url"))
 
   describe("handling manifests", () => {
     beforeAll(() => {
@@ -35,49 +44,66 @@ describe("ManifestLoader", () => {
     })
 
     describe("fetching DASH manifests", () => {
+      it.each([[WindowTypes.STATIC, DashManifests.STATIC_WINDOW()]])(
+        "resolves to parsed metadata for a valid DASH '%s' manifest",
+        async (windowType, manifestEl) => {
+          LoadUrl.mockImplementationOnce((url, config) => {
+            config.onLoad(manifestEl)
+          })
+
+          const { transferFormat, time } = await ManifestLoader.load("mock://some.manifest/test.mpd", {
+            windowType,
+          })
+
+          expect(transferFormat).toBe(TransferFormats.DASH)
+          expect(time).toEqual(expect.any(Object))
+
+          expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
+        }
+      )
+
       it.each([
-        [WindowTypes.GROWING, DashManifests.GROWING_WINDOW],
-        [WindowTypes.SLIDING, DashManifests.SLIDING_WINDOW],
-        [WindowTypes.STATIC, DashManifests.STATIC_WINDOW],
-      ])("calls 'success' callback for a valid DASH %s manifest", (windowType, manifestDocument) => {
+        [WindowTypes.GROWING, DashManifests.GROWING_WINDOW()],
+        [WindowTypes.SLIDING, DashManifests.SLIDING_WINDOW()],
+      ])("resolves to parsed metadata for a valid DASH '%s' manifest", async (windowType, manifestEl) => {
+        appendTimingResource(manifestEl, "https://time.some-cdn.com/?iso")
+
         LoadUrl.mockImplementationOnce((url, config) => {
-          config.onLoad(manifestDocument)
+          config.onLoad(manifestEl)
         })
 
-        const onSuccessStub = jest.fn()
+        LoadUrl.mockImplementationOnce((url, config) => {
+          config.onLoad(new Date().toISOString())
+        })
 
-        ManifestLoader.load("mock://some.manifest/test.mpd", { windowType, onSuccess: onSuccessStub })
+        const { transferFormat, time } = await ManifestLoader.load("mock://some.manifest/test.mpd", {
+          windowType,
+        })
+
+        expect(transferFormat).toBe(TransferFormats.DASH)
+        expect(time).toEqual(expect.any(Object))
 
         expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
-
-        expect(onSuccessStub).toHaveBeenCalledWith({
-          transferFormat: TransferFormats.DASH,
-          time: expect.any(Object),
-        })
       })
 
-      it("calls 'error' callback when response is invalid", () => {
+      it("rejects when response is invalid", async () => {
         LoadUrl.mockImplementationOnce((url, config) => {
           config.onLoad()
         })
 
-        const onErrorStub = jest.fn()
-
-        ManifestLoader.load("http://foo.bar/test.mpd", { onError: onErrorStub })
-
-        expect(onErrorStub).toHaveBeenCalledWith("Unable to retrieve DASH XML response")
+        expect(await getError(async () => ManifestLoader.load("http://foo.bar/test.mpd"))).toEqual(
+          new Error("Unable to retrieve DASH XML response")
+        )
       })
 
-      it("calls 'error' callback when network request fails", () => {
+      it("rejects when network request fails", async () => {
         LoadUrl.mockImplementationOnce((url, config) => {
           config.onError()
         })
 
-        const onErrorStub = jest.fn()
-
-        ManifestLoader.load("http://foo.bar/test.mpd", { onError: onErrorStub })
-
-        expect(onErrorStub).toHaveBeenCalledWith("Network error: Unable to retrieve DASH manifest")
+        expect(await getError(async () => ManifestLoader.load("http://foo.bar/test.mpd"))).toEqual(
+          new Error("Network error: Unable to retrieve DASH manifest")
+        )
       })
     })
 
@@ -91,77 +117,65 @@ describe("ManifestLoader", () => {
         "bar.m3u8\n"
 
       it.each(Object.values(WindowTypes))(
-        "calls 'success' callback when a valid HLS playlist is loaded for windowType '%s'",
-        (windowType) => {
+        "resolves to parsed metadata for a valid HLS '%s' playlist",
+        async (windowType) => {
           LoadUrl.mockImplementationOnce((url, config) => {
             config.onLoad(undefined, hlsMasterResponse)
           }).mockImplementationOnce((url, config) => {
             config.onLoad(undefined, HlsManifests.VALID_PROGRAM_DATETIME)
           })
 
-          const onSuccessStub = jest.fn()
+          const { transferFormat, time } = await ManifestLoader.load("http://foo.bar/test.m3u8", { windowType })
 
-          ManifestLoader.load("http://foo.bar/test.m3u8", { windowType, onSuccess: onSuccessStub })
+          expect(transferFormat).toBe(TransferFormats.HLS)
+          expect(time).toEqual(expect.any(Object))
 
           expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
-
-          expect(onSuccessStub).toHaveBeenCalledWith({
-            transferFormat: TransferFormats.HLS,
-            time: expect.any(Object),
-          })
         }
       )
 
-      it("calls error when network request fails", () => {
+      it("rejects when network request fails", async () => {
         LoadUrl.mockImplementation((url, config) => {
           config.onError()
         })
 
-        const onErrorStub = jest.fn()
-
-        ManifestLoader.load("http://foo.bar/test.m3u8", { onError: onErrorStub })
-
-        expect(onErrorStub).toHaveBeenCalledWith("Network error: Unable to retrieve HLS master playlist")
+        expect(await getError(async () => ManifestLoader.load("http://foo.bar/test.m3u8"))).toEqual(
+          new Error("Network error: Unable to retrieve HLS master playlist")
+        )
       })
 
-      it("calls error if not valid HLS response", () => {
+      it("calls error if not valid HLS response", async () => {
         LoadUrl.mockImplementation((url, config) => {
           config.onLoad()
         })
 
-        const onErrorStub = jest.fn()
-
-        ManifestLoader.load("http://foo.bar/test.m3u8", { onError: onErrorStub })
-
-        expect(onErrorStub).toHaveBeenCalledWith("Unable to retrieve HLS master playlist")
+        expect(await getError(async () => ManifestLoader.load("http://foo.bar/test.m3u8"))).toEqual(
+          new Error("Unable to retrieve HLS master playlist")
+        )
       })
 
-      it("calls error when HLS live playlist response is invalid", () => {
+      it("rejects when HLS live playlist response is invalid", async () => {
         LoadUrl.mockImplementationOnce((url, config) => {
           config.onLoad(undefined, hlsMasterResponse)
         }).mockImplementationOnce((url, config) => {
           config.onLoad()
         })
 
-        const onErrorStub = jest.fn()
-
-        ManifestLoader.load("http://foo.bar/test.m3u8", { onError: onErrorStub })
-
-        expect(onErrorStub).toHaveBeenCalledWith("Unable to retrieve HLS live playlist")
+        expect(await getError(async () => ManifestLoader.load("http://foo.bar/test.m3u8"))).toEqual(
+          new Error("Unable to retrieve HLS live playlist")
+        )
       })
 
-      it("calls error when network request for HLS live playlist fails", () => {
+      it("calls error when network request for HLS live playlist fails", async () => {
         LoadUrl.mockImplementationOnce((url, config) => {
           config.onLoad(undefined, hlsMasterResponse)
         }).mockImplementationOnce((url, config) => {
           config.onError()
         })
 
-        const onErrorStub = jest.fn()
-
-        ManifestLoader.load("http://foo.bar/test.m3u8", { onError: onErrorStub })
-
-        expect(onErrorStub).toHaveBeenCalledWith("Network error: Unable to retrieve HLS live playlist")
+        expect(await getError(async () => ManifestLoader.load("http://foo.bar/test.m3u8"))).toEqual(
+          new Error("Network error: Unable to retrieve HLS live playlist")
+        )
       })
     })
   })
