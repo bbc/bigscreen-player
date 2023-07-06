@@ -10,8 +10,21 @@ import ManifestLoader from "./manifestloader"
 jest.mock("../utils/loadurl")
 
 describe("ManifestLoader", () => {
-  it.each(["m3u8", "mpd"])("fetches %s manifests", (fileExt) => {
+  it.each(["m3u8", "mpd"])("fetches a .%s manifest", (fileExt) => {
     const url = `mock://some.manifest.${fileExt}`
+
+    ManifestLoader.load(url)
+
+    expect(LoadUrl).toHaveBeenCalledWith(url, expect.any(Object))
+  })
+
+  it.each([
+    ["m3u8", "p=q"],
+    ["mpd", "p=q"],
+    ["m3u8", "a=x", "b=y"],
+    ["mpd", "u=v", "q=p"],
+  ])("fetches a .%s manifest with query params ?%s", (fileExt, ...queryParams) => {
+    const url = `mock://some.manifest.${fileExt}?${queryParams.join("&")}?`
 
     ManifestLoader.load(url)
 
