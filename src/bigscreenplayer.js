@@ -336,17 +336,29 @@ function BigscreenPlayer() {
       }
     },
 
+    /**
+     * Set the media element playback rate
+     *
+     * @function
+     * @param {Number} rate
+     */
     setPlaybackRate: (rate) => {
       if (playerComponent) {
         playerComponent.setPlaybackRate(rate)
       }
     },
 
+    /**
+     * Get the current playback rate
+     * @function
+     * @returns {Number} the current media playback rate
+     */
     getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
 
     /**
      * Returns the media asset's current time in seconds.
      * @function
+     * @returns {Number}
      */
     getCurrentTime: () => (playerComponent && playerComponent.getCurrentTime()) || 0,
 
@@ -439,11 +451,25 @@ function BigscreenPlayer() {
       playerComponent.pause(opts)
     },
 
+    /**
+     * Resize the video container div in the most compatible way
+     *
+     * @function
+     * @param {Number} top - px
+     * @param {Number} left -  px
+     * @param {Number} width -  px
+     * @param {Number} height -  px
+     * @param {Number} zIndex
+     */
     resize: (top, left, width, height, zIndex) => {
       subtitles.hide()
       resizer.resize(playbackElement, top, left, width, height, zIndex)
     },
 
+    /**
+     * Clear any resize properties added with `resize`
+     * @function
+     */
     clearResize: () => {
       if (subtitles.enabled()) {
         subtitles.show()
@@ -472,21 +498,41 @@ function BigscreenPlayer() {
      */
     isSubtitlesAvailable,
 
+    /**
+     * Returns if a device supports the customisation of subtitles
+     *
+     * @returns boolean
+     */
     areSubtitlesCustomisable: () =>
       !(window.bigscreenPlayer && window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.legacySubtitles),
 
+    /**
+     * Customise the rendered subitles style
+     *
+     * @param {SubtitlesCustomisationOptions} styleOpts
+     */
     customiseSubtitles: (styleOpts) => {
       if (subtitles) {
         subtitles.customise(styleOpts)
       }
     },
 
+    /**
+     * Render an example subtitles string with a given style and location
+     *
+     * @param {String} xmlString - EBU-TT-D compliant XML String
+     * @param {SubtitlesCustomisationOptions} styleOpts - {@link SubtitlesCustomisationOptions}
+     * @param {SubtitlesSafePosition} safePosition - {@link SubtitlesSafePosition}
+     */
     renderSubtitleExample: (xmlString, styleOpts, safePosition) => {
       if (subtitles) {
         subtitles.renderExample(xmlString, styleOpts, safePosition)
       }
     },
 
+    /**
+     * Clear the example subtitle string
+     */
     clearSubtitleExample: () => {
       if (subtitles) {
         subtitles.clearExample()

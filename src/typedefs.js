@@ -24,3 +24,19 @@
  * @property {function} [callbacks.onSuccess] - Called after Bigscreen Player is initialised
  * @property {function} [callbacks.onError] - Called when an error occurs during initialisation
  */
+
+/**
+ * @typedef {Object} SubtitlesCustomisationOptions
+ * @property {String} backgroundColour - CSS background-color string or hex string
+ * @property {String} fontFamily - CSS font-family string
+ * @property {Number} size - size multiplier to authored subtitles
+ * @property {Number} lineHeight - lineHeight multiplier to authored subtitles
+ */
+
+/**
+ * @typedef {Object} SubtitlesSafePosition
+ * @property {Number} top - in px
+ * @property {Number} left - in px
+ * @property {Number} right - in px
+ * @property {Number} bottom - in px
+ */
