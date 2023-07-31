@@ -48,10 +48,14 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         logLevel: 2,
       },
       streaming: {
-        liveDelay: 1.1,
-        bufferToKeep: 4,
-        bufferTimeAtTopQuality: 12,
-        bufferTimeAtTopQualityLongForm: 15,
+        buffer: {
+          bufferToKeep: 4,
+          bufferTimeAtTopQuality: 12,
+          bufferTimeAtTopQualityLongForm: 15,
+        },
+        delay: {
+          liveDelay: 1.1,
+        },
       },
     },
     customPlayerSettings
@@ -341,7 +345,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    return Math.min(Math.max(time, range.start), range.end - playerSettings.streaming.liveDelay)
+    return Math.min(Math.max(time, range.start), range.end - playerSettings.streaming.delay.liveDelay)
   }
 
   function load(mimeType, playbackTime) {
@@ -408,7 +412,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       if (dvrInfo) {
         return {
           start: dvrInfo.range.start - timeCorrection,
-          end: dvrInfo.range.end - timeCorrection - playerSettings.streaming.liveDelay,
+          end: dvrInfo.range.end - timeCorrection - playerSettings.streaming.delay.liveDelay,
         }
       }
     }
@@ -445,7 +449,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function calculateSeekOffset(time) {
     function getClampedTimeForLive(time) {
-      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - playerSettings.streaming.liveDelay)
+      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - playerSettings.streaming.delay.liveDelay)
     }
 
     if (windowType === WindowTypes.SLIDING) {
