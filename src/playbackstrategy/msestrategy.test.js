@@ -40,7 +40,7 @@ const mockDashMediaPlayer = {
   create: jest.fn(() => mockDashInstance),
 }
 
-jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
+jest.mock("dashjs/dist/dash.mediaplayer.min.js", () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
 jest.mock("../dynamicwindowutils")
 
 describe("Media Source Extensions Playback Strategy", () => {

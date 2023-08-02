@@ -1,3 +1,4 @@
+import { MediaPlayer } from "dashjs/dist/dash.mediaplayer.min.js"
 import MediaState from "../models/mediastate"
 import WindowTypes from "../models/windowtypes"
 import DebugTool from "../debugger/debugtool"
@@ -9,7 +10,6 @@ import DynamicWindowUtils from "../dynamicwindowutils"
 import TimeUtils from "../utils/timeutils"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
-import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
 import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
 
 function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
