@@ -1,4 +1,4 @@
-import { MediaPlayer } from "dashjs/dist/dash.mediaplayer.min.js"
+import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
 import MediaState from "../models/mediastate"
 import WindowTypes from "../models/windowtypes"
 import DebugTool from "../debugger/debugtool"
