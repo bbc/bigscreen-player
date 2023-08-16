@@ -73,7 +73,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
-    FRAGMENT_CONTENT_LENGTH_MISMATCH: "loadContentLengthMismatch",
+    FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
   }
 
   function onPlaying() {
