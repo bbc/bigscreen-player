@@ -73,6 +73,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
+    FRAGMENT_CONTENT_LENGTH_MISMATCH: "loadContentLengthMismatch",
   }
 
   function onPlaying() {
@@ -296,6 +297,18 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DebugTool.info("URL Resolution failed")
   }
 
+  function onFragmentContentLengthMismatch(event) {
+    const notFound = "Not Found"
+    const responseUrl = event.responseUrl ?? notFound
+    const headerLength = event.headerLength ?? notFound
+    const bodyLength = event.bodyLength ?? notFound
+    const mediaType = event.mediaType ?? notFound
+
+    DebugTool.warn(
+      `${responseUrl} (${mediaType}) Content-Length Header (${headerLength}) did not match Body Length ${bodyLength}`
+    )
+  }
+
   function onMetricAdded(event) {
     if (event.mediaType === "video" && event.metric === "DroppedFrames") {
       DebugTool.keyValue({ key: "Dropped Frames", value: event.value.droppedFrames })
@@ -400,6 +413,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.LOG, onDebugLog)
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
+    mediaPlayer.on(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
   }
 
   function getSeekableRange() {
@@ -524,6 +538,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.off(DashJSEvents.LOG, onDebugLog)
       mediaPlayer.off(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
       mediaPlayer.off(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
+      mediaPlayer.off(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
 
       DOMHelpers.safeRemoveElement(mediaElement)
 
