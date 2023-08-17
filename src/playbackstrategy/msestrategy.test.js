@@ -30,7 +30,7 @@ const mockDashInstance = {
   getAverageThroughput: jest.fn(),
   getDVRWindowSize: jest.fn(),
   updateSettings: jest.fn(),
-  setDuration: jest.fn(),
+  setMediaDuration: jest.fn(),
   setPlaybackRate: jest.fn(),
   getPlaybackRate: jest.fn(),
   setBlacklistExpiryTime: jest.fn(),
@@ -908,7 +908,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     afterEach(() => {
-      mockDashInstance.setDuration.mockReset()
+      mockDashInstance.setMediaDuration.mockReset()
     })
 
     describe("overrides dynamic stream duration", () => {
@@ -922,7 +922,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
 
       it("when mseDurationOverride configration property is true and window type is growing", () => {
@@ -935,7 +935,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
     })
 
@@ -950,7 +950,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
 
       it("when mseDurationOverride configration property is false and window type is static", () => {
@@ -963,7 +963,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
 
       it("when mseDurationOverride configration property is false and window type is sliding", () => {
@@ -976,7 +976,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
 
       it("when mseDurationOverride configration property is false and window type is growing", () => {
@@ -989,7 +989,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
     })
   })
