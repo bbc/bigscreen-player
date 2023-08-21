@@ -768,13 +768,13 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(0)
     })
 
-    it("should clamp the seek to 1.1s before the end of the seekable range", () => {
+    it("should clamp the seek to the end of the seekable range", () => {
       setUpMSE()
       mseStrategy.load(null, 0)
 
-      mseStrategy.setCurrentTime(101)
+      mseStrategy.setCurrentTime(1000)
 
-      expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(101)
     })
 
     describe("sliding window", () => {
@@ -796,7 +796,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         expect(mediaElement.currentTime).toBe(0)
       })
 
-      it("should always clamp the seek to 1.1s before the end of the seekable range", () => {
+      it("should always clamp the seek to value of live delay before the end of the seekable range", () => {
         mseStrategy.setCurrentTime(101)
 
         expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
@@ -876,7 +876,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         mseStrategy.setCurrentTime(90)
 
-        expect(mockDashInstance.seek).toHaveBeenCalledWith(78.9)
+        expect(mockDashInstance.seek).toHaveBeenCalledWith(80)
       })
     })
   })
