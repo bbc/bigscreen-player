@@ -48,6 +48,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         logLevel: 2,
       },
       streaming: {
+        blacklistExpiryTime: mediaSources.failoverResetTime(),
         buffer: {
           bufferToKeep: 4,
           bufferTimeAtTopQuality: 12,
@@ -210,7 +211,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
-    mediaPlayer.setBlacklistExpiryTime(mediaSources.failoverResetTime())
     emitPlayerInfo()
   }
 
