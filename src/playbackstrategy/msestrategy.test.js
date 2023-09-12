@@ -762,8 +762,11 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(0)
     })
 
-    it("should clamp the seek to 1.1s before the end of the seekable range", () => {
-      setUpMSE()
+    it("should clamp the seek to <live delay> before the end of the seekable range", () => {
+      const liveDelay = 1.1
+
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { delay: { liveDelay } } })
+
       mseStrategy.load(null, 0)
 
       mseStrategy.setCurrentTime(101)
@@ -771,9 +774,19 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
     })
 
+    it("does not clamp the seek when live delay isn't set", () => {
+      setUpMSE()
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(101)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(101)
+    })
+
     describe("sliding window", () => {
       beforeEach(() => {
-        setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000)
+        setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000, { streaming: { delay: { liveDelay: 1.1 } } })
         mseStrategy.load(null, 0)
         mockDashInstance.play.mockReset()
       })
@@ -843,7 +856,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     describe("growing window", () => {
       beforeEach(() => {
-        setUpMSE(0, WindowTypes.GROWING)
+        setUpMSE(0, WindowTypes.GROWING, undefined, undefined, undefined, { streaming: { delay: { liveDelay: 1.1 } } })
+
         mseStrategy.load(null, 0)
         mediaElement.currentTime = 50
         mockDashInstance.refreshManifest.mockReset()

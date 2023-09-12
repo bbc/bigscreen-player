@@ -16,11 +16,29 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   let mediaPlayer
   let mediaElement
 
+  const playerSettings = Utils.merge(
+    {
+      debug: {
+        logLevel: 2,
+      },
+      streaming: {
+        blacklistExpiryTime: mediaSources.failoverResetTime(),
+        buffer: {
+          bufferToKeep: 4,
+          bufferTimeAtTopQuality: 12,
+          bufferTimeAtTopQualityLongForm: 15,
+        },
+      },
+    },
+    customPlayerSettings
+  )
+
   let eventCallbacks = []
   let errorCallback
   let timeUpdateCallback
 
   let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
+  const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay) ? 0 : playerSettings.streaming?.delay?.liveDelay
   let failoverTime
   let failoverZeroPoint
   let refreshFailoverTime
@@ -41,26 +59,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       numDownloaded: undefined,
     },
   }
-
-  const playerSettings = Utils.merge(
-    {
-      debug: {
-        logLevel: 2,
-      },
-      streaming: {
-        blacklistExpiryTime: mediaSources.failoverResetTime(),
-        buffer: {
-          bufferToKeep: 4,
-          bufferTimeAtTopQuality: 12,
-          bufferTimeAtTopQualityLongForm: 15,
-        },
-        delay: {
-          liveDelay: 1.1,
-        },
-      },
-    },
-    customPlayerSettings
-  )
 
   const DashJSEvents = {
     LOG: "log",
@@ -345,7 +343,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    return Math.min(Math.max(time, range.start), range.end - playerSettings.streaming.delay.liveDelay)
+    return Math.min(Math.max(time, range.start), range.end - liveDelay)
   }
 
   function load(mimeType, playbackTime) {
@@ -412,7 +410,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       if (dvrInfo) {
         return {
           start: dvrInfo.range.start - timeCorrection,
-          end: dvrInfo.range.end - timeCorrection - playerSettings.streaming.delay.liveDelay,
+          end: dvrInfo.range.end - timeCorrection - liveDelay,
         }
       }
     }
@@ -449,7 +447,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function calculateSeekOffset(time) {
     function getClampedTimeForLive(time) {
-      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - playerSettings.streaming.delay.liveDelay)
+      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - liveDelay)
     }
 
     if (windowType === WindowTypes.SLIDING) {
