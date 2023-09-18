@@ -8,6 +8,17 @@ The full interface is as follows:
 - `onBuffering`
 - `onBufferingCleared`
 - `onScreenCapabilityDetermined`
+- `onPlayerInfoUpdated`
+- `onManifestLoaded`
+- `onManifestParseError`
+- `onQualityChangedRendered`
+- `onSubtitlesLoadError`
+- `onSubtitlesTimeout`
+- `onSubtitlesXMLError`
+- `onSubtitlesTransformError`
+- `onSubtitlesRenderError`
+- `onSubtitlesDynamicLoadError`
+- `onFragmentContentLengthMismatch`
 
 An example plugin may look like:
 
