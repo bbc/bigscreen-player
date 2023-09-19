@@ -52,6 +52,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     BASE_URL_SELECTED: "baseUrlSelected",
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
+    FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
   }
 
   let mseStrategy
@@ -1319,6 +1320,31 @@ describe("Media Source Extensions Playback Strategy", () => {
       eventCallbacks("waiting")
 
       expect(eventCallbackSpy).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe("plugins", () => {
+    it("fires onFragmentContentLengthMismatch when dash.js fires FRAGMENT_CONTENT_LENGTH_MISMATCH", () => {
+      const mockFragmentContentLengthMismatchEvent = {
+        responseUrl: "example.com",
+        mediaType: "video/mp4",
+        headerLength: 12,
+        bodyLength: 13,
+      }
+
+      jest.spyOn(Plugins.interface, "onFragmentContentLengthMismatch")
+
+      setUpMSE()
+      mseStrategy.load(null, 0)
+
+      dashEventCallback(
+        dashjsMediaPlayerEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH,
+        mockFragmentContentLengthMismatchEvent
+      )
+
+      expect(Plugins.interface.onFragmentContentLengthMismatch).toHaveBeenCalledWith(
+        mockFragmentContentLengthMismatchEvent
+      )
     })
   })
 })

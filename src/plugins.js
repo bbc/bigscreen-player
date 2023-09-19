@@ -5,9 +5,9 @@ let plugins = []
 function callOnAllPlugins(funcKey, evt) {
   const clonedEvent = PlaybackUtils.deepClone(evt)
 
-  for (const i in plugins) {
-    if (plugins[i][funcKey]) {
-      plugins[i][funcKey](clonedEvent)
+  for (const plugin in plugins) {
+    if (plugins[plugin][funcKey]) {
+      plugins[plugin][funcKey](clonedEvent)
     }
   }
 }
@@ -21,9 +21,9 @@ export default {
     if (!plugin && plugins.length > 0) {
       plugins = []
     } else {
-      for (let i = plugins.length - 1; i >= 0; i--) {
-        if (plugins[i] === plugin) {
-          plugins.splice(i, 1)
+      for (let pluginsIndex = plugins.length - 1; pluginsIndex >= 0; pluginsIndex--) {
+        if (plugins[pluginsIndex] === plugin) {
+          plugins.splice(pluginsIndex, 1)
         }
       }
     }
@@ -47,5 +47,6 @@ export default {
     onSubtitlesTransformError: (evt) => callOnAllPlugins("onSubtitlesTransformError", evt),
     onSubtitlesRenderError: (evt) => callOnAllPlugins("onSubtitlesRenderError", evt),
     onSubtitlesDynamicLoadError: (evt) => callOnAllPlugins("onSubtitlesDynamicLoadError", evt),
+    onFragmentContentLengthMismatch: (evt) => callOnAllPlugins("onFragmentContentLengthMismatch", evt),
   },
 }

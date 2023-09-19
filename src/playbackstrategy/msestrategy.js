@@ -76,6 +76,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
+    FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
   }
 
   function onPlaying() {
@@ -320,6 +321,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DebugTool.verbose(event.message)
   }
 
+  function onFragmentContentLengthMismatch(event) {
+    DebugTool.info(`Fragment Content Length Mismatch: ${event.responseUrl} (${event.mediaType})`)
+    DebugTool.info(`Header Length ${event.headerLength}`)
+    DebugTool.info(`Body Length ${event.bodyLength})`)
+    Plugins.interface.onFragmentContentLengthMismatch(event)
+  }
+
   function publishMediaState(mediaState) {
     for (let index = 0; index < eventCallbacks.length; index++) {
       eventCallbacks[index](mediaState)
@@ -402,6 +410,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.LOG, onDebugLog)
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
+    mediaPlayer.on(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
   }
 
   function getSeekableRange() {
