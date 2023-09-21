@@ -38,6 +38,12 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   let timeUpdateCallback
 
   let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
+
+  // seekable range end padding
+  // end padding = 0.1
+  // if liveDelay and liveDelay is greater than end padding
+  //   then end padding = live delay
+
   const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay) ? 0 : playerSettings.streaming?.delay?.liveDelay
   let failoverTime
   let failoverZeroPoint

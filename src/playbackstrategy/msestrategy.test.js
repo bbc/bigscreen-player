@@ -774,14 +774,26 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
     })
 
-    it("does not clamp the seek when live delay isn't set", () => {
+    it("clamps the seek to <end padding> before the end of the seekable range when live delay isn't set", () => {
       setUpMSE()
 
       mseStrategy.load(null, 0)
 
       mseStrategy.setCurrentTime(101)
 
-      expect(mockDashInstance.seek).toHaveBeenCalledWith(101)
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
+    })
+
+    it("clamps the seek to the greatest of <end padding> and <live delay>", () => {
+      const liveDelay = mseStrategy.SEEK_END_PADDING - Number.EPSILON
+
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { delay: { liveDelay } } })
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(101)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
     })
 
     describe("sliding window", () => {
