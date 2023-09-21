@@ -785,7 +785,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("clamps the seek to the greatest of <end padding> and <live delay>", () => {
-      const liveDelay = mseStrategy.SEEK_END_PADDING - Number.EPSILON
+      const liveDelay = MSEStrategy.getSeekEndPadding() - 0.01
 
       setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { delay: { liveDelay } } })
 
