@@ -54,7 +54,7 @@
     "rollup-plugin-visualizer": "^5.5.2"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v4.7",
+    "dashjs": "github:bbc/dash.js#e272c812d8ecdf7cd37c7e8c110acefb5b24f264",
     "smp-imsc": "github:bbc/imscJS#v1.0.3"
   },
   "repository": {
