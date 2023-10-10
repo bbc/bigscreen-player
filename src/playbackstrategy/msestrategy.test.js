@@ -762,7 +762,19 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(0)
     })
 
-    it("should clamp the seek to <live delay> before the end of the seekable range", () => {
+    it("clamps a seek to the end of the seekable range by seekable range padding", () => {
+      const seekDurationPadding = 0.1
+
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { seekDurationPadding } })
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(101)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
+    })
+
+    it("clamps a seek to the end of the seekable range by live delay", () => {
       const liveDelay = 1.1
 
       setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { delay: { liveDelay } } })
@@ -774,24 +786,12 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
     })
 
-    it("clamps a seek to <seek padding.end> before the end of the seekable range when live delay isn't set", () => {
-      const seekPadding = { end: 1.1 }
-
-      setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { seekPadding } })
-
-      mseStrategy.load(null, 0)
-
-      mseStrategy.setCurrentTime(101)
-
-      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
-    })
-
-    it("clamps a seek to end to the greatest of <seek padding.end> and <live delay>", () => {
-      const seekPadding = { end: 1.1 }
-      const liveDelay = seekPadding.end - 0.01
+    it("clamps a seek to end by the greatest value of seekable range padding and live delay", () => {
+      const seekDurationPadding = 1.1
+      const liveDelay = seekDurationPadding - 0.01
 
       setUpMSE(undefined, undefined, undefined, undefined, undefined, {
-        streaming: { seekPadding, delay: { liveDelay } },
+        streaming: { seekDurationPadding, delay: { liveDelay } },
       })
 
       mseStrategy.load(null, 0)
