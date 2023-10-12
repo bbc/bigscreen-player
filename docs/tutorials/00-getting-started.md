@@ -104,11 +104,12 @@ const optionalData = {
       fontFamily: 'Arial',
       backgroundColour: 'black' // (css colour, hex)
     },
-    playerSettings: { // This currently can be used to customise settings for the msestrategy. It is a pass through of all the dash.js player settings.
-      failoverSort: failoverSort, // Post failover custom sorting algorithm
+    playerSettings: { // See settings documentation for more details
       failoverResetTime: 60000,
       streaming: {
-        bufferToKeep: 8
+        buffer: {
+          bufferToKeep: 8
+        }
       }
     }
   }
