@@ -1,23 +1,10 @@
-# Configuration
-
-Configuration for bigscreen-player can be set using an object on the window:
-```
-window.bigscreenPlayer
-```
-
-## Playback Strategy
-
-As mentioned in the "Getting Started" guide, bigscreen-player requires a `playbackStrategy` to be set:
-
-```javascript
-window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'hybridstrategy' OR 'basicstrategy'
-```
+BigscreenPlayer can be configured past playback strategy and live support. You can also provide [player settings](#player-settings) and [playback overrides](#overrides).
 
 ## Overrides
 
 This library works across a multitude of different devices. But in order to do so, different configuration options are available to ensure the experience is good on those devices.
 
-In order to add an override, simply add an `overiddes` object to the object above. 
+In order to add an override, simply add an `overiddes` object to the object above.
 
 | Name                | Description                                                                                                                                                                                                                        | Values     |
 | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
@@ -32,3 +19,18 @@ In order to add an override, simply add an `overiddes` object to the object abov
 | `legacySubtitles` | This can be used to render subtitles using our legacy method, rather than the new method which utilises the third party imscJS library. | boolean |
 | `liveUhdDisableSentinels` | Disables any sentinels when consuming live UHD content | boolean |
 | `cacheSeekableRange` | Caches the seekable range so it can't be requested more than every 250ms for devices that struggle. | boolean |
+
+## Player Settings
+
+Player settings only apply to the MSE strategy.
+
+Player settings are provided to BigscreenPlayer during initialisation through the `.init()` function. They extend the player settings provided by Dash.js: (<http://cdn.dashjs.org/latest/jsdoc/module-Settings.html>). The default values are our recommendations to prevent various device issues.
+
+### `seekDurationPadding`
+
+Adds a padding that prevents seeking too close to the media's duration.
+
+Fixes:
+
+- Media element seeking back to start when end of stream is signalled during a seek to duration.
+- Media element failing to complete a seek to a time close to the duration when end of stream is signalled during the seek because of media tracks with unequal length. The padding prevents seeking into the time range up to the duration where only some tracks have data.
