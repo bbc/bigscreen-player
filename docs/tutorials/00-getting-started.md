@@ -16,6 +16,12 @@ To start a playback session you must minimally provide:
 
 ### Configuration
 
+Configuration for bigscreen-player can be set using an object on the window:
+
+```javascript
+window.bigscreenPlayer
+```
+
 You must provide a *playback strategy* to use BigscreenPlayer:
 
 ```javascript
