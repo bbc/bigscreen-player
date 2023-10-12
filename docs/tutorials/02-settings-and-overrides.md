@@ -26,7 +26,7 @@ Player settings only apply to the MSE strategy.
 
 Player settings are provided to BigscreenPlayer during initialisation through the `.init()` function. They extend the player settings provided by Dash.js: (<http://cdn.dashjs.org/latest/jsdoc/module-Settings.html>). The default values are our recommendations to prevent various device issues.
 
-### `seekDurationPadding`
+### `streaming.seekDurationPadding`
 
 Adds a padding that prevents seeking too close to the media's duration.
 
