@@ -1050,6 +1050,7 @@ describe("Player Component", () => {
       jest.useFakeTimers()
 
       setUpPlayerComponent()
+      forceMediaSourcesError = true
 
       return StrategyPicker.default().then(() => {
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
@@ -1058,7 +1059,9 @@ describe("Player Component", () => {
 
         jest.advanceTimersByTime(30000)
 
-        expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toBe(MediaState.FATAL_ERROR)
+        // expect 1 call as player goes into WAITING when event is fired above, but should not
+        // have a call after the time advances as the timer will have been cleared
+        expect(mockStateUpdateCallback.mock.calls).toHaveLength(1)
 
         jest.useRealTimers()
       })
@@ -1068,6 +1071,7 @@ describe("Player Component", () => {
       jest.useFakeTimers()
 
       setUpPlayerComponent()
+      forceMediaSourcesError = true
 
       return StrategyPicker.default().then(() => {
         // trigger a error event to start the fatal error timeout,
@@ -1079,7 +1083,9 @@ describe("Player Component", () => {
 
         jest.advanceTimersByTime(5000)
 
-        expect(mockStateUpdateCallback.mock.calls[0][0].data.state).not.toBe(MediaState.FATAL_ERROR)
+        // expect 1 call as player goes into WAITING when fireError is called above, but should not
+        // have a call after the time advances as the timer will have been cleared
+        expect(mockStateUpdateCallback.mock.calls).toHaveLength(1)
 
         jest.useRealTimers()
       })
