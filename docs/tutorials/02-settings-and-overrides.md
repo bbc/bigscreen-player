@@ -26,9 +26,29 @@ Player settings only apply to the MSE strategy.
 
 Player settings are provided to BigscreenPlayer during initialisation through the `.init()` function. They extend the player settings provided by Dash.js: (<http://cdn.dashjs.org/latest/jsdoc/module-Settings.html>). The default values are our recommendations to prevent various device issues.
 
+### `failoverResetTime`
+
+Specify the time (in milliseconds) til a media source is added back to the list of available media sources after it has been failed over.
+
+```ts
+type failoverResetTime = number is FiniteNumber
+```
+
+### `failoverSort`
+
+Provide a sorting algorithm to reorder the available media sources after a failover.
+
+```ts
+type failoverSort = (...sources: [...string]) => [...string]
+```
+
 ### `streaming.seekDurationPadding`
 
-Adds a padding that prevents seeking too close to the media's duration.
+Add a padding to prevent seeking too close to the duration of the media.
+
+```ts
+type seekDurationPadding = number is FiniteNumber
+```
 
 Fixes:
 
