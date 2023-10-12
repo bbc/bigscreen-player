@@ -8,6 +8,9 @@
   "02-settings-and-overrides": {
     "title": "Settings And Overrides"
   },
+  "cdn-failover": {
+    "title": "CDN Failover"
+  },
   "live-streaming": {
     "title": "Live"
   }

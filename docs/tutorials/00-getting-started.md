@@ -28,7 +28,7 @@ You must provide a *playback strategy* to use BigscreenPlayer:
 window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'basicstrategy'
 ```
 
-The MSEStrategy uses DASH. It is most likely what you want. More detail in the [documentation on playback strategies](<https://bbc.github.io/bigscreen-player/api/tutorial-playback-strategies.html>).
+The MSEStrategy uses DASH. It is most likely what you want. More detail in the [documentation on playback strategies](<https://bbc.github.io/bigscreen-player/api/tutorial-01-playback-strategies.html>). You should also have a peek at the [documentation on settings and overrides](https://bbc.github.io/bigscreen-player/api/tutorial-02-settings-and-overrides.html)
 
 ### Minimal Data
 

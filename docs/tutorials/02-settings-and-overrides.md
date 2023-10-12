@@ -22,13 +22,13 @@ In order to add an override, simply add an `overiddes` object to the object abov
 
 ## Player Settings
 
-Player settings only apply to the MSE strategy.
+Player settings are provided to BigscreenPlayer during initialisation through the `.init()` function. They extend the player settings provided by Dash.js: (<http://cdn.dashjs.org/latest/jsdoc/module-Settings.html>).
 
-Player settings are provided to BigscreenPlayer during initialisation through the `.init()` function. They extend the player settings provided by Dash.js: (<http://cdn.dashjs.org/latest/jsdoc/module-Settings.html>). The default values are our recommendations to prevent various device issues.
+In the case where a setting is called out as alleviating a known device issue, we picked the default value to do so across all devices we test.
 
 ### `failoverResetTime`
 
-Specify the time (in milliseconds) til a media source is added back to the list of available media sources after it has been failed over.
+Specify the time (in milliseconds) til a media source is added back to the list of available media sources after it has been failed over. What is a failover? See [the failover documentation](https://bbc.github.io/bigscreen-player/api/tutorial-cdn-failover.html)
 
 ```ts
 type failoverResetTime = number is FiniteNumber
