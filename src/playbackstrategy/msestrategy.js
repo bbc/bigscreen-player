@@ -12,7 +12,7 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
 
-const RECOMMENDED_DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS = {
   liveDelay: 0,
   seekDurationPadding: 1.1,
 }
@@ -45,10 +45,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
 
   const seekDurationPadding = isNaN(playerSettings.streaming?.seekDurationPadding)
-    ? RECOMMENDED_DEFAULT_SETTINGS.seekDurationPadding
+    ? DEFAULT_SETTINGS.seekDurationPadding
     : playerSettings.streaming?.seekDurationPadding
   const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay)
-    ? RECOMMENDED_DEFAULT_SETTINGS.liveDelay
+    ? DEFAULT_SETTINGS.liveDelay
     : playerSettings.streaming?.delay?.liveDelay
   let failoverTime
   let failoverZeroPoint
