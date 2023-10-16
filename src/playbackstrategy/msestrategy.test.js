@@ -763,7 +763,19 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(0)
     })
 
-    it("should clamp the seek to <live delay> before the end of the seekable range", () => {
+    it("clamps a seek to the end of the seekable range by seek duration padding", () => {
+      const seekDurationPadding = 0.1
+
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { seekDurationPadding } })
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(101)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
+    })
+
+    it("clamps a seek to the end of the seekable range by live delay", () => {
       const liveDelay = 1.1
 
       setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { delay: { liveDelay } } })
@@ -775,14 +787,29 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
     })
 
-    it("does not clamp the seek when live delay isn't set", () => {
+    it("clamps a seek to end by the greatest value of seek duration padding and live delay", () => {
+      const seekDurationPadding = 0.1
+      const liveDelay = seekDurationPadding - 0.01
+
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, {
+        streaming: { seekDurationPadding, delay: { liveDelay } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(101)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
+    })
+
+    it("clamps a seek to end using the default seek duration padding when not passed in", () => {
       setUpMSE()
 
       mseStrategy.load(null, 0)
 
       mseStrategy.setCurrentTime(101)
 
-      expect(mockDashInstance.seek).toHaveBeenCalledWith(101)
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
     })
 
     describe("sliding window", () => {

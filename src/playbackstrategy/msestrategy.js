@@ -12,6 +12,11 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
 
+const DEFAULT_SETTINGS = {
+  liveDelay: 0,
+  seekDurationPadding: 1.1,
+}
+
 function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
   let mediaPlayer
   let mediaElement
@@ -38,7 +43,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   let timeUpdateCallback
 
   let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
-  const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay) ? 0 : playerSettings.streaming?.delay?.liveDelay
+
+  const seekDurationPadding = isNaN(playerSettings.streaming?.seekDurationPadding)
+    ? DEFAULT_SETTINGS.seekDurationPadding
+    : playerSettings.streaming?.seekDurationPadding
+  const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay)
+    ? DEFAULT_SETTINGS.liveDelay
+    : playerSettings.streaming?.delay?.liveDelay
   let failoverTime
   let failoverZeroPoint
   let refreshFailoverTime
@@ -351,7 +362,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    return Math.min(Math.max(time, range.start), range.end - liveDelay)
+    return Math.min(Math.max(time, range.start), range.end - Math.max(liveDelay, seekDurationPadding))
   }
 
   function load(mimeType, playbackTime) {
@@ -456,7 +467,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function calculateSeekOffset(time) {
     function getClampedTimeForLive(time) {
-      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - liveDelay)
+      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - Math.max(liveDelay, seekDurationPadding))
     }
 
     if (windowType === WindowTypes.SLIDING) {
