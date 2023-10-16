@@ -1061,7 +1061,7 @@ describe("Player Component", () => {
 
         // expect 1 call as player goes into WAITING when event is fired above, but should not
         // have a call after the time advances as the timer will have been cleared
-        expect(mockStateUpdateCallback.mock.calls).toHaveLength(1)
+        expect(mockStateUpdateCallback).toHaveBeenCalledTimes(1)
 
         jest.useRealTimers()
       })
@@ -1085,7 +1085,7 @@ describe("Player Component", () => {
 
         // expect 1 call as player goes into WAITING when fireError is called above, but should not
         // have a call after the time advances as the timer will have been cleared
-        expect(mockStateUpdateCallback.mock.calls).toHaveLength(1)
+        expect(mockStateUpdateCallback).toHaveBeenCalledTimes(1)
 
         jest.useRealTimers()
       })
