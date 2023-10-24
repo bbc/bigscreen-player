@@ -179,10 +179,14 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function removeCurrentSubtitlesElement() {
-    if (currentSubtitlesElement) {
-      DOMHelpers.safeRemoveElement(currentSubtitlesElement)
-      currentSubtitlesElement = undefined
+    if (currentSubtitlesElement == null) {
+      return
     }
+
+    DOMHelpers.safeRemoveElement(currentSubtitlesElement)
+    currentSubtitlesElement = undefined
+
+    DebugTool.info("Removed previous subtitle cue.")
   }
 
   function removeExampleSubtitlesElement() {
@@ -267,7 +271,14 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   function renderSubtitle(xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
     try {
       const isd = generateISD(xml, currentTime)
+
+      if (isd == null) {
+        DebugTool.error("No subtitles cue available at current time")
+      }
+
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
+
+      DebugTool.info("Added new subtitle cue")
     } catch (error) {
       DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
@@ -331,9 +342,13 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   function update(currentTime) {
     const segment = getSegmentToRender(currentTime)
 
-    if (segment) {
-      render(currentTime, segment.xml)
+    if (!segment) {
+      DebugTool.error("No presentable subtitles segment at current time")
+
+      return
     }
+
+    render(currentTime, segment.xml)
   }
 
   function customise(styleOpts, enabled) {
