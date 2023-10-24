@@ -22,6 +22,10 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   let currentSubtitlesElement
   let updateInterval
 
+  DebugTool.info(
+    parentElement?.style.zIndex ? `Parent element has z-index: ${parentElement.style.zIndex}` : "No z-index on parent"
+  )
+
   if (autoStart) {
     start()
   }
@@ -226,6 +230,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     currentSubtitlesElement = document.createElement("div")
     currentSubtitlesElement.id = "bsp_subtitles"
     currentSubtitlesElement.style.position = "absolute"
+    currentSubtitlesElement.style.zIndex = "99"
+
     parentElement.appendChild(currentSubtitlesElement)
 
     renderSubtitle(
