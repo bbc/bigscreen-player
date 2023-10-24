@@ -14,7 +14,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   const presentationTimeOffsetSeconds = mediaSources?.time().presentationTimeOffsetSeconds
 
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
-  let currentSegmentRendered = {}
+  let currentSegmentRendered
   let loadErrorCount = 0
   let segments = []
 
@@ -273,7 +273,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       const isd = generateISD(xml, currentTime)
 
       if (isd == null) {
-        DebugTool.error("No subtitles cue available at current time")
+        DebugTool.error("No presentable subtitles cue at current time")
       }
 
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
@@ -342,8 +342,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   function update(currentTime) {
     const segment = getSegmentToRender(currentTime)
 
-    if (!segment) {
-      DebugTool.error("No presentable subtitles segment at current time")
+    if (segment == null) {
+      if (currentSegmentRendered == null) DebugTool.error("No presentable subtitles segment")
 
       return
     }
