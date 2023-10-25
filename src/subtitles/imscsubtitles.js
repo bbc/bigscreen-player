@@ -22,9 +22,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   let currentSubtitlesElement
   let updateInterval
 
-  DebugTool.info(
-    parentElement?.style.zIndex ? `Parent element has z-index: ${parentElement.style.zIndex}` : "No z-index on parent"
-  )
+  DebugTool.info(`Subtitles parent element has z-index: ${parentElement.style.zIndex}`)
 
   if (autoStart) {
     start()
@@ -89,6 +87,12 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
         try {
           const xml = fromXML(responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText)
           const times = xml.getMediaTimeEvents()
+
+          if (!times?.length) {
+            DebugTool.error("No media time events in subtitles file")
+          } else {
+            DebugTool.info(`Media times: ${times.join(", ")}`)
+          }
 
           segments.push({
             xml: modifyStyling(xml),
@@ -279,12 +283,12 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       const isd = generateISD(xml, currentTime)
 
       if (isd == null) {
-        DebugTool.error("No presentable subtitles cue at current time")
+        DebugTool.error(`No presentable subtitles cue at time ${currentTime}`)
       }
 
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
 
-      DebugTool.info("Added new subtitle cue")
+      DebugTool.info(`Added new subtitle cue at time ${currentTime}`)
     } catch (error) {
       DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
@@ -349,7 +353,10 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     const segment = getSegmentToRender(currentTime)
 
     if (segment == null) {
-      if (currentSegmentRendered == null) DebugTool.error("No presentable subtitles segment")
+      if (currentSegmentRendered == null) {
+        DebugTool.error(`No presentable subtitles segment for time: ${currentTime}`)
+        DebugTool.info(`Number of subtitle segments: ${segments.length}`)
+      }
 
       return
     }
