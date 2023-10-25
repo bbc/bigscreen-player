@@ -286,7 +286,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
 
-      DebugTool.info(`Added new subtitle cue at time ${currentTime}`)
+      DebugTool.info(`Added new subtitle cue: ${getContents(isd)}`)
 
       const { top, left } = getAbsPosition(subsElement)
       const { top: topBound, left: leftBound, width, height } = subsElement.getBoundingClientRect()
@@ -298,6 +298,16 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
     }
+  }
+
+  function getContents(isd) {
+    const { contents } = isd
+
+    if (contents[0].text) {
+      return contents.map(({ text }) => text).join(" \n ")
+    }
+
+    return getContents(contents[0])
   }
 
   function getAbsPosition(element) {
