@@ -288,12 +288,41 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
       DebugTool.info(`Added new subtitle cue: ${getContents(isd)}`)
 
-      const { top, left } = getAbsPosition(subsElement)
-      const { top: topBound, left: leftBound, width, height } = subsElement.getBoundingClientRect()
+      const { width, height } = subsElement.getBoundingClientRect()
 
-      DebugTool.info(`Subtitle cue x: ${left} y: ${top}`)
-      DebugTool.info(`Subtitle cue width: ${width} height ${height}`)
-      DebugTool.info(`Subtitle cue x: ${leftBound} y: ${topBound} (according to boundingRect)`)
+      DebugTool.info(`Subtitle cue wrapper width: ${width} height: ${height}`)
+
+      const cueEl = subsElement.firstChild?.firstChild
+
+      if (cueEl == null) {
+        DebugTool.info("Subtitle cue not actually rendered")
+        return
+      }
+
+      const cueRect = cueEl.getBoundingClientRect()
+
+      DebugTool.info(
+        `Subtitle cue x: ${cueRect.left} y: ${cueRect.top} width: ${parseInt(cueRect.width)} height: ${parseInt(
+          cueRect.height
+        )}`
+      )
+
+      const firstLineEl = cueEl.firstChild.firstChild?.firstChild?.firstChild
+
+      if (firstLineEl == null) {
+        DebugTool.info("No lines of subtitles in cue")
+        return
+      }
+
+      const lineRect = firstLineEl.getBoundingClientRect()
+
+      DebugTool.info(
+        `Subtitle line ` +
+          `x: ${parseInt(lineRect.left)} ` +
+          `y: ${parseInt(lineRect.top)} ` +
+          `width: ${parseInt(lineRect.width)} ` +
+          `height: ${parseInt(lineRect.height)}`
+      )
     } catch (error) {
       DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
@@ -308,20 +337,6 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     }
 
     return getContents(contents[0])
-  }
-
-  function getAbsPosition(element) {
-    let _x = 0
-    let _y = 0
-    let currentElement = element
-
-    while (currentElement && !isNaN(currentElement.offsetLeft) && !isNaN(currentElement.offsetTop)) {
-      _x += currentElement.offsetLeft - currentElement.scrollLeft
-      _y += currentElement.offsetTop - currentElement.scrollTop
-      currentElement = currentElement.offsetParent
-    }
-
-    return { top: _y, left: _x }
   }
 
   function modifyStyling(xml) {
