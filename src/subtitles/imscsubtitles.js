@@ -24,6 +24,15 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
   DebugTool.info(`Subtitles parent element has z-index: ${parentElement.style.zIndex}`)
 
+  const playbackEl = document.querySelector("#CorePlayback")
+
+  if (playbackEl) {
+    const video = playbackEl.querySelector("video")
+    video.style.top = "-100%"
+
+    DebugTool.info("Schmoved video out of the way")
+  }
+
   if (autoStart) {
     start()
   }
