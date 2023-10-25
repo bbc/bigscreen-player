@@ -90,8 +90,6 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
           if (!times?.length) {
             DebugTool.error("No media time events in subtitles file")
-          } else {
-            DebugTool.info(`Media times: ${times.join(", ")}`)
           }
 
           segments.push({
@@ -289,10 +287,31 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
 
       DebugTool.info(`Added new subtitle cue at time ${currentTime}`)
+
+      const { top, left } = getAbsPosition(subsElement)
+      const { top: topBound, left: leftBound, width, height } = subsElement.getBoundingClientRect()
+
+      DebugTool.info(`Subtitle cue x: ${left} y: ${top}`)
+      DebugTool.info(`Subtitle cue width: ${width} height ${height}`)
+      DebugTool.info(`Subtitle cue x: ${leftBound} y: ${topBound} (according to boundingRect)`)
     } catch (error) {
       DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
     }
+  }
+
+  function getAbsPosition(element) {
+    let _x = 0
+    let _y = 0
+    let currentElement = element
+
+    while (currentElement && !isNaN(currentElement.offsetLeft) && !isNaN(currentElement.offsetTop)) {
+      _x += currentElement.offsetLeft - currentElement.scrollLeft
+      _y += currentElement.offsetTop - currentElement.scrollTop
+      currentElement = currentElement.offsetParent
+    }
+
+    return { top: _y, left: _x }
   }
 
   function modifyStyling(xml) {
