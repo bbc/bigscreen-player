@@ -20,6 +20,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
   let exampleSubtitlesElement
   let currentSubtitlesElement
+  let currentTrackingElement
   let updateInterval
 
   DebugTool.info(`Subtitles parent element has z-index: ${parentElement.style.zIndex}`)
@@ -31,6 +32,12 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     video.style.top = "-100%"
 
     DebugTool.info("Schmoved video out of the way")
+  }
+
+  const html = document.querySelector("html")
+
+  if (html) {
+    html.style.backgroundColor = "transparent"
   }
 
   if (autoStart) {
@@ -332,6 +339,16 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
           `width: ${parseInt(lineRect.width)} ` +
           `height: ${parseInt(lineRect.height)}`
       )
+
+      currentTrackingElement = document.createElement("div")
+      currentTrackingElement.style.position = "absolute"
+      currentTrackingElement.style.top = `${lineRect.top}px`
+      currentTrackingElement.style.left = `${lineRect.left}px`
+      currentTrackingElement.style.width = `${lineRect.width}px`
+      currentTrackingElement.style.height = `${lineRect.height}px`
+      currentTrackingElement.style.backgroundColor = "red"
+
+      parentElement.appendChild(currentTrackingElement)
     } catch (error) {
       DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
@@ -412,6 +429,11 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       }
 
       return
+    }
+
+    if (currentTrackingElement) {
+      DOMHelpers.safeRemoveElement(currentTrackingElement)
+      currentTrackingElement = null
     }
 
     render(currentTime, segment.xml)
