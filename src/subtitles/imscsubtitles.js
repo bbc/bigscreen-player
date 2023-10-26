@@ -354,9 +354,11 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       currentTrackingElement = createTrackingEl(firstLineEl)
       parentElement.appendChild(currentTrackingElement)
 
-      DebugTool.info("Stripping styles")
+      const stylesToRemove = ["visibility", "opacity", "display"]
 
-      cleanStylesDown(subsElement.firstChild)
+      sanitiseStylesDown(subsElement.firstChild, ...stylesToRemove)
+
+      DebugTool.info(`Styles sanitised. Removed ${stylesToRemove.join(", ")}`)
     } catch (error) {
       DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
@@ -397,7 +399,27 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     return trackingEl
   }
 
-  function cleanStylesDown(element) {
+  function sanitiseStylesDown(element, ...styles) {
+    if (!(element instanceof HTMLElement)) {
+      throw new TypeError("must be html")
+    }
+
+    for (const style of styles) {
+      element.style.removeProperty(style)
+    }
+
+    if (!element.hasChildNodes()) {
+      return
+    }
+
+    const children = [...element.childNodes].filter((node) => node.nodeType === 1)
+
+    for (const child of children) {
+      sanitiseStylesDown(child, ...styles)
+    }
+  }
+
+  function stripStylesDown(element) {
     if (!(element instanceof HTMLElement)) {
       throw new TypeError("must be html")
     }
@@ -416,7 +438,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     const children = [...element.childNodes].filter((node) => node.nodeType === 1)
 
     for (const child of children) {
-      cleanStylesDown(child)
+      stripStylesDown(child)
     }
   }
 
