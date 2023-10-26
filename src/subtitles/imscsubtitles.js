@@ -23,6 +23,13 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   let currentTrackingElement
   let updateInterval
 
+  const IMSCErrorHandler = {
+    info: (...args) => DebugTool.info(`IMSC: ${args.join("--")}`),
+    warn: (...args) => DebugTool.warn(`IMSC: ${args.join("--")}`),
+    error: (...args) => DebugTool.error(`IMSC: ${args.join("--")}`),
+    fatal: (...args) => DebugTool.error(`IMSC fatal: ${args.join("--")}`),
+  }
+
   DebugTool.info(`Subtitles parent element has z-index: ${parentElement.style.zIndex}`)
 
   const playbackEl = document.querySelector("#CorePlayback")
@@ -101,7 +108,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
         }
 
         try {
-          const xml = fromXML(responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText)
+          const xml = fromXML(responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText, IMSCErrorHandler)
           const times = xml.getMediaTimeEvents()
 
           if (!times?.length) {
@@ -294,15 +301,19 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
   function renderSubtitle(xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
     try {
-      const isd = generateISD(xml, currentTime)
+      const isd = generateISD(xml, currentTime, IMSCErrorHandler)
 
       if (isd == null) {
         DebugTool.error(`No presentable subtitles cue at time ${currentTime}`)
       }
 
-      renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
+      renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, IMSCErrorHandler, null, false, styleOpts)
 
-      DebugTool.info(`Added new subtitle cue: ${getContents(isd)}`)
+      const contents = getContents(isd)
+
+      if (contents) {
+        DebugTool.info(`Added new subtitle cue: ${contents}`)
+      }
 
       const { width, height } = subsElement.getBoundingClientRect()
 
@@ -340,15 +351,12 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
           `height: ${parseInt(lineRect.height)}`
       )
 
-      currentTrackingElement = document.createElement("div")
-      currentTrackingElement.style.position = "absolute"
-      currentTrackingElement.style.top = `${lineRect.top}px`
-      currentTrackingElement.style.left = `${lineRect.left}px`
-      currentTrackingElement.style.width = `${lineRect.width}px`
-      currentTrackingElement.style.height = `${lineRect.height}px`
-      currentTrackingElement.style.backgroundColor = "red"
-
+      currentTrackingElement = createTrackingEl(firstLineEl)
       parentElement.appendChild(currentTrackingElement)
+
+      DebugTool.info("Stripping styles")
+
+      cleanStylesDown(subsElement.firstChild)
     } catch (error) {
       DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
@@ -358,11 +366,58 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   function getContents(isd) {
     const { contents } = isd
 
+    if (!contents?.length) {
+      return
+    }
+
     if (contents[0].text) {
       return contents.map(({ text }) => text).join(" \n ")
     }
 
     return getContents(contents[0])
+  }
+
+  function createTrackingEl(el) {
+    const { top, left, width, height } = el.getBoundingClientRect()
+
+    const trackingEl = document.createElement("div")
+
+    trackingEl.style.position = "absolute"
+
+    trackingEl.style.top = `${top}px`
+    trackingEl.style.left = `${left}px`
+    trackingEl.style.width = `${width}px`
+    trackingEl.style.height = `${height}px`
+
+    // currentTrackingElement.style.backgroundColor = "red"
+    trackingEl.style.borderColor = "red"
+    trackingEl.style.borderStyle = "solid"
+    trackingEl.style.borderWidth = "4px"
+
+    return trackingEl
+  }
+
+  function cleanStylesDown(element) {
+    if (!(element instanceof HTMLElement)) {
+      throw new TypeError("must be html")
+    }
+
+    if (element.textContent?.length === 1) {
+      element.setAttribute("style", "background-color: white; color: black; font-size: 24px;")
+      return
+    }
+
+    element.removeAttribute("style")
+
+    if (!element.hasChildNodes()) {
+      return
+    }
+
+    const children = [...element.childNodes].filter((node) => node.nodeType === 1)
+
+    for (const child of children) {
+      cleanStylesDown(child)
+    }
   }
 
   function modifyStyling(xml) {
