@@ -391,10 +391,12 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     trackingEl.style.width = `${width}px`
     trackingEl.style.height = `${height}px`
 
-    // currentTrackingElement.style.backgroundColor = "red"
     trackingEl.style.borderColor = "red"
     trackingEl.style.borderStyle = "solid"
     trackingEl.style.borderWidth = "4px"
+
+    trackingEl.style.visibility = "visible"
+    trackingEl.style.opacity = "1"
 
     return trackingEl
   }
