@@ -32,6 +32,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
   DebugTool.info(`Subtitles parent element has z-index: ${parentElement.style.zIndex}`)
 
+  parentElement.appendChild(createTestEl())
+
   const playbackEl = document.querySelector("#CorePlayback")
 
   if (playbackEl) {
@@ -354,7 +356,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       currentTrackingElement = createTrackingEl(firstLineEl)
       parentElement.appendChild(currentTrackingElement)
 
-      const stylesToRemove = ["visibility", "opacity", "display"]
+      const stylesToRemove = ["display", "flex-direction", "justify-content", "padding", "margin", "border"]
 
       sanitiseStylesDown(subsElement.firstChild, ...stylesToRemove)
 
@@ -384,21 +386,33 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
     const trackingEl = document.createElement("div")
 
+    const border = 4
+
     trackingEl.style.position = "absolute"
 
-    trackingEl.style.top = `${top}px`
-    trackingEl.style.left = `${left}px`
-    trackingEl.style.width = `${width}px`
-    trackingEl.style.height = `${height}px`
+    trackingEl.style.top = `${top - border / 2}px`
+    trackingEl.style.left = `${left - border / 2}px`
+    trackingEl.style.width = `${width + border}px`
+    trackingEl.style.height = `${height + border}px`
 
+    trackingEl.style.boxSizing = "border-box"
     trackingEl.style.borderColor = "red"
     trackingEl.style.borderStyle = "solid"
-    trackingEl.style.borderWidth = "4px"
-
-    trackingEl.style.visibility = "visible"
-    trackingEl.style.opacity = "1"
+    trackingEl.style.borderWidth = `${border}px`
 
     return trackingEl
+  }
+
+  function createTestEl() {
+    const el = document.createElement("div")
+
+    el.style.position = "absolute"
+    el.style.backgroundColor = "rgb(0, 0, 0)"
+    el.style.color = "rgb(255, 255, 255)"
+
+    el.textContent = "If you can see me 'rgb' colours are supported"
+
+    return el
   }
 
   function sanitiseStylesDown(element, ...styles) {
@@ -408,6 +422,14 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
     for (const style of styles) {
       element.style.removeProperty(style)
+    }
+
+    if (element.style.backgroundColor.includes("rgb")) {
+      element.style.setProperty("background-color", "black")
+    }
+
+    if (element.style.color.includes("rgb")) {
+      element.style.setProperty("color", "white")
     }
 
     if (!element.hasChildNodes()) {
