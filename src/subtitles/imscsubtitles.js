@@ -356,7 +356,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       currentTrackingElement = createTrackingEl(firstLineEl)
       parentElement.appendChild(currentTrackingElement)
 
-      const stylesToRemove = ["display", "flex-direction", "justify-content", "padding", "margin", "border"]
+      const stylesToRemove = ["display", "flex-direction", "justify-content", "padding", "margin", "border", "z-index"]
 
       sanitiseStylesDown(subsElement.firstChild, ...stylesToRemove)
 
