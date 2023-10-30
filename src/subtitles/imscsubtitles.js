@@ -375,7 +375,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     }
 
     if (contents[0].text) {
-      return contents.map(({ text }) => text).join(" \n ")
+      return `\n${contents.map(({ text }) => text).join(" \\")}`
     }
 
     return getContents(contents[0])
