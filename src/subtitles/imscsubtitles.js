@@ -424,11 +424,11 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       element.style.removeProperty(style)
     }
 
-    if (element.style.backgroundColor.includes("rgb")) {
+    if (element.style.backgroundColor.indexOf("rgb") !== 0) {
       element.style.setProperty("background-color", "black")
     }
 
-    if (element.style.color.includes("rgb")) {
+    if (element.style.color.indexOf("rgb") !== 0) {
       element.style.setProperty("color", "white")
     }
 
