@@ -356,7 +356,22 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       currentTrackingElement = createTrackingEl(firstLineEl)
       parentElement.appendChild(currentTrackingElement)
 
-      const stylesToRemove = ["display", "flex-direction", "justify-content", "padding", "margin", "border", "z-index"]
+      const stylesToRemove = [
+        "display",
+        "flex-direction",
+        "justify-content",
+        "direction",
+        "font-family",
+        "font-style",
+        "font-weight",
+        "text-align",
+        "text-decoration",
+        "text-emphasis-style",
+        "text-combine-upright",
+        "unicode-bidi",
+        "white-space",
+        "writing-mode",
+      ]
 
       sanitiseStylesDown(subsElement.firstChild, ...stylesToRemove)
 
@@ -409,6 +424,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     el.style.position = "absolute"
     el.style.backgroundColor = "rgb(0, 0, 0)"
     el.style.color = "rgb(255, 255, 255)"
+    el.style.fontFamily =
+      'ReithSans, Arial, Roboto, Arial, Helvetica, "Liberation Sans", sans-serif, Arial, Helvetica, "Liberation Sans", sans-serif'
 
     el.textContent = "If you can see me 'rgb' colours are supported"
 
@@ -424,11 +441,11 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       element.style.removeProperty(style)
     }
 
-    if (element.style.backgroundColor.indexOf("rgb") !== 0) {
+    if (element.style.backgroundColor.indexOf("rgb") !== -1) {
       element.style.setProperty("background-color", "black")
     }
 
-    if (element.style.color.indexOf("rgb") !== 0) {
+    if (element.style.color.indexOf("rgb") !== -1) {
       element.style.setProperty("color", "white")
     }
 
