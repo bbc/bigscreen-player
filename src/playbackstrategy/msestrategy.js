@@ -1,3 +1,4 @@
+import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
 import MediaState from "../models/mediastate"
 import WindowTypes from "../models/windowtypes"
 import DebugTool from "../debugger/debugtool"
@@ -9,18 +10,46 @@ import DynamicWindowUtils from "../dynamicwindowutils"
 import TimeUtils from "../utils/timeutils"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
-import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
 import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
+
+const DEFAULT_SETTINGS = {
+  liveDelay: 0,
+  seekDurationPadding: 1.1,
+}
 
 function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
   let mediaPlayer
   let mediaElement
+
+  const playerSettings = Utils.merge(
+    {
+      debug: {
+        logLevel: 2,
+      },
+      streaming: {
+        blacklistExpiryTime: mediaSources.failoverResetTime(),
+        buffer: {
+          bufferToKeep: 4,
+          bufferTimeAtTopQuality: 12,
+          bufferTimeAtTopQualityLongForm: 15,
+        },
+      },
+    },
+    customPlayerSettings
+  )
 
   let eventCallbacks = []
   let errorCallback
   let timeUpdateCallback
 
   let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
+
+  const seekDurationPadding = isNaN(playerSettings.streaming?.seekDurationPadding)
+    ? DEFAULT_SETTINGS.seekDurationPadding
+    : playerSettings.streaming?.seekDurationPadding
+  const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay)
+    ? DEFAULT_SETTINGS.liveDelay
+    : playerSettings.streaming?.delay?.liveDelay
   let failoverTime
   let failoverZeroPoint
   let refreshFailoverTime
@@ -42,21 +71,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     },
   }
 
-  const playerSettings = Utils.merge(
-    {
-      debug: {
-        logLevel: 2,
-      },
-      streaming: {
-        liveDelay: 1.1,
-        bufferToKeep: 4,
-        bufferTimeAtTopQuality: 12,
-        bufferTimeAtTopQualityLongForm: 15,
-      },
-    },
-    customPlayerSettings
-  )
-
   const DashJSEvents = {
     LOG: "log",
     ERROR: "error",
@@ -73,6 +87,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
+    FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
   }
 
   function onPlaying() {
@@ -203,10 +218,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     const setMseDuration = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.mseDurationOverride
     if (setMseDuration && (windowType === WindowTypes.SLIDING || windowType === WindowTypes.GROWING)) {
       // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
-      mediaPlayer.setDuration(Number.MAX_SAFE_INTEGER)
+      mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
-    mediaPlayer.setBlacklistExpiryTime(mediaSources.failoverResetTime())
     emitPlayerInfo()
   }
 
@@ -318,6 +332,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DebugTool.verbose(event.message)
   }
 
+  function onFragmentContentLengthMismatch(event) {
+    DebugTool.info(`Fragment Content Length Mismatch: ${event.responseUrl} (${event.mediaType})`)
+    DebugTool.info(`Header Length ${event.headerLength}`)
+    DebugTool.info(`Body Length ${event.bodyLength})`)
+    Plugins.interface.onFragmentContentLengthMismatch(event)
+  }
+
   function publishMediaState(mediaState) {
     for (let index = 0; index < eventCallbacks.length; index++) {
       eventCallbacks[index](mediaState)
@@ -341,17 +362,17 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    return Math.min(Math.max(time, range.start), range.end - playerSettings.streaming.liveDelay)
+    return Math.min(Math.max(time, range.start), range.end - Math.max(liveDelay, seekDurationPadding))
   }
 
   function load(mimeType, playbackTime) {
-    if (!mediaPlayer) {
+    if (mediaPlayer) {
+      modifySource(refreshFailoverTime || failoverTime, failoverZeroPoint)
+    } else {
       failoverTime = playbackTime
       setUpMediaElement(playbackElement)
       setUpMediaPlayer(playbackTime)
       setUpMediaListeners()
-    } else {
-      modifySource(refreshFailoverTime || failoverTime, failoverZeroPoint)
     }
   }
 
@@ -400,6 +421,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.LOG, onDebugLog)
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
+    mediaPlayer.on(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
   }
 
   function getSeekableRange() {
@@ -408,7 +430,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       if (dvrInfo) {
         return {
           start: dvrInfo.range.start - timeCorrection,
-          end: dvrInfo.range.end - timeCorrection - playerSettings.streaming.liveDelay,
+          end: dvrInfo.range.end - timeCorrection - liveDelay,
         }
       }
     }
@@ -432,20 +454,20 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
     mediaPlayer.refreshManifest((manifest) => {
       const mediaPresentationDuration = manifest && manifest.mediaPresentationDuration
-      if (!isNaN(mediaPresentationDuration)) {
+      if (isNaN(mediaPresentationDuration)) {
+        mediaPlayer.seek(seekToTime)
+      } else {
         DebugTool.info("Stream ended. Clamping seek point to end of stream")
         mediaPlayer.seek(
           getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration })
         )
-      } else {
-        mediaPlayer.seek(seekToTime)
       }
     })
   }
 
   function calculateSeekOffset(time) {
     function getClampedTimeForLive(time) {
-      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - playerSettings.streaming.liveDelay)
+      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - Math.max(liveDelay, seekDurationPadding))
     }
 
     if (windowType === WindowTypes.SLIDING) {

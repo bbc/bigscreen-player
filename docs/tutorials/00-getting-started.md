@@ -16,13 +16,19 @@ To start a playback session you must minimally provide:
 
 ### Configuration
 
+Configuration for bigscreen-player can be set using an object on the window:
+
+```javascript
+window.bigscreenPlayer
+```
+
 You must provide a *playback strategy* to use BigscreenPlayer:
 
 ```javascript
 window.bigscreenPlayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'basicstrategy'
 ```
 
-The MSEStrategy uses DASH. It is most likely what you want. More detail in the [documentation on playback strategies](<https://bbc.github.io/bigscreen-player/api/tutorial-playback-strategies.html>).
+The MSEStrategy uses DASH. It is most likely what you want. More detail in the [documentation on playback strategies](<https://bbc.github.io/bigscreen-player/api/tutorial-01-playback-strategies.html>). You should also have a peek at the [documentation on settings and overrides](https://bbc.github.io/bigscreen-player/api/tutorial-02-settings-and-overrides.html)
 
 ### Minimal Data
 
@@ -104,11 +110,12 @@ const optionalData = {
       fontFamily: 'Arial',
       backgroundColour: 'black' // (css colour, hex)
     },
-    playerSettings: { // This currently can be used to customise settings for the msestrategy. It is a pass through of all the dash.js player settings.
-      failoverSort: failoverSort, // Post failover custom sorting algorithm
+    playerSettings: { // See settings documentation for more details
       failoverResetTime: 60000,
       streaming: {
-        bufferToKeep: 8
+        buffer: {
+          bufferToKeep: 8
+        }
       }
     }
   }

@@ -30,7 +30,7 @@ const mockDashInstance = {
   getAverageThroughput: jest.fn(),
   getDVRWindowSize: jest.fn(),
   updateSettings: jest.fn(),
-  setDuration: jest.fn(),
+  setMediaDuration: jest.fn(),
   setPlaybackRate: jest.fn(),
   getPlaybackRate: jest.fn(),
   setBlacklistExpiryTime: jest.fn(),
@@ -52,6 +52,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     BASE_URL_SELECTED: "baseUrlSelected",
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
+    FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
   }
 
   let mseStrategy
@@ -518,11 +519,8 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("returns the end time taking the live delay into account for a live stream", () => {
-      const customPlayerSettings = {
-        streaming: {
-          liveDelay: 20,
-        },
-      }
+      const customPlayerSettings = { streaming: { delay: { liveDelay: 20 } } }
+
       setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
       mseStrategy.load(null, 45)
 
@@ -530,11 +528,8 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("returns the end time ignoring the live delay for an on demand stream", () => {
-      const customPlayerSettings = {
-        streaming: {
-          liveDelay: 20,
-        },
-      }
+      const customPlayerSettings = { streaming: { delay: { liveDelay: 20 } } }
+
       setUpMSE(0, WindowTypes.STATIC, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
       mseStrategy.load(null, 45)
 
@@ -768,8 +763,48 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(0)
     })
 
-    it("should clamp the seek to 1.1s before the end of the seekable range", () => {
+    it("clamps a seek to the end of the seekable range by seek duration padding", () => {
+      const seekDurationPadding = 0.1
+
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { seekDurationPadding } })
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(101)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
+    })
+
+    it("clamps a seek to the end of the seekable range by live delay", () => {
+      const liveDelay = 1.1
+
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { delay: { liveDelay } } })
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(101)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
+    })
+
+    it("clamps a seek to end by the greatest value of seek duration padding and live delay", () => {
+      const seekDurationPadding = 0.1
+      const liveDelay = seekDurationPadding - 0.01
+
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, {
+        streaming: { seekDurationPadding, delay: { liveDelay } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(101)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
+    })
+
+    it("clamps a seek to end using the default seek duration padding when not passed in", () => {
       setUpMSE()
+
       mseStrategy.load(null, 0)
 
       mseStrategy.setCurrentTime(101)
@@ -779,7 +814,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     describe("sliding window", () => {
       beforeEach(() => {
-        setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000)
+        setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000, { streaming: { delay: { liveDelay: 1.1 } } })
         mseStrategy.load(null, 0)
         mockDashInstance.play.mockReset()
       })
@@ -849,7 +884,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     describe("growing window", () => {
       beforeEach(() => {
-        setUpMSE(0, WindowTypes.GROWING)
+        setUpMSE(0, WindowTypes.GROWING, undefined, undefined, undefined, { streaming: { delay: { liveDelay: 1.1 } } })
+
         mseStrategy.load(null, 0)
         mediaElement.currentTime = 50
         mockDashInstance.refreshManifest.mockReset()
@@ -914,7 +950,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     afterEach(() => {
-      mockDashInstance.setDuration.mockReset()
+      mockDashInstance.setMediaDuration.mockReset()
     })
 
     describe("overrides dynamic stream duration", () => {
@@ -928,7 +964,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
 
       it("when mseDurationOverride configration property is true and window type is growing", () => {
@@ -941,7 +977,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
     })
 
@@ -956,7 +992,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
 
       it("when mseDurationOverride configration property is false and window type is static", () => {
@@ -969,7 +1005,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
 
       it("when mseDurationOverride configration property is false and window type is sliding", () => {
@@ -982,7 +1018,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
 
       it("when mseDurationOverride configration property is false and window type is growing", () => {
@@ -995,7 +1031,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         eventHandlers.streamInitialized()
 
-        expect(mockDashInstance.setDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
       })
     })
   })
@@ -1311,6 +1347,31 @@ describe("Media Source Extensions Playback Strategy", () => {
       eventCallbacks("waiting")
 
       expect(eventCallbackSpy).toHaveBeenCalledTimes(2)
+    })
+  })
+
+  describe("plugins", () => {
+    it("fires onFragmentContentLengthMismatch when dash.js fires FRAGMENT_CONTENT_LENGTH_MISMATCH", () => {
+      const mockFragmentContentLengthMismatchEvent = {
+        responseUrl: "example.com",
+        mediaType: "video/mp4",
+        headerLength: 12,
+        bodyLength: 13,
+      }
+
+      jest.spyOn(Plugins.interface, "onFragmentContentLengthMismatch")
+
+      setUpMSE()
+      mseStrategy.load(null, 0)
+
+      dashEventCallback(
+        dashjsMediaPlayerEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH,
+        mockFragmentContentLengthMismatchEvent
+      )
+
+      expect(Plugins.interface.onFragmentContentLengthMismatch).toHaveBeenCalledWith(
+        mockFragmentContentLengthMismatchEvent
+      )
     })
   })
 })
