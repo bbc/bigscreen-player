@@ -366,13 +366,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function load(mimeType, playbackTime) {
-    if (!mediaPlayer) {
+    if (mediaPlayer) {
+      modifySource(refreshFailoverTime || failoverTime, failoverZeroPoint)
+    } else {
       failoverTime = playbackTime
       setUpMediaElement(playbackElement)
       setUpMediaPlayer(playbackTime)
       setUpMediaListeners()
-    } else {
-      modifySource(refreshFailoverTime || failoverTime, failoverZeroPoint)
     }
   }
 
@@ -454,13 +454,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
     mediaPlayer.refreshManifest((manifest) => {
       const mediaPresentationDuration = manifest && manifest.mediaPresentationDuration
-      if (!isNaN(mediaPresentationDuration)) {
+      if (isNaN(mediaPresentationDuration)) {
+        mediaPlayer.seek(seekToTime)
+      } else {
         DebugTool.info("Stream ended. Clamping seek point to end of stream")
         mediaPlayer.seek(
           getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration })
         )
-      } else {
-        mediaPlayer.seek(seekToTime)
       }
     })
   }
