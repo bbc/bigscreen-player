@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS = {
   seekDurationPadding: 1.1,
 }
 
-function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
+function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings, protData) {
   let mediaPlayer
   let mediaElement
 
@@ -390,6 +390,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(playerSettings)
     mediaPlayer.initialize(mediaElement, null, true)
+
+    protData ?? mediaPlayer.setProtectionData(protData)
+
     modifySource(playbackTime)
   }
 

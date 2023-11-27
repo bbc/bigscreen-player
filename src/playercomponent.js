@@ -38,7 +38,8 @@ function PlayerComponent(
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        bigscreenPlayerData.media.playerSettings
+        bigscreenPlayerData.media.playerSettings,
+        bigscreenPlayerData.protectionData
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)
