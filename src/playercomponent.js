@@ -392,6 +392,17 @@ function PlayerComponent(
     fatalError = undefined
   }
 
+  function setAudioTrack(index) {
+    playbackStrategy && playbackStrategy.setAudioTrack && playbackStrategy.setAudioTrack(index)
+  }
+
+  function getAudioTrackIds() {
+    if (playbackStrategy && playbackStrategy.getAudioTrackIds) {
+      return playbackStrategy.getAudioTrackIds()
+    }
+    return []
+  }
+
   return {
     play,
     pause,
@@ -408,6 +419,8 @@ function PlayerComponent(
     getPlayerElement,
     isPaused,
     tearDown,
+    setAudioTrack,
+    getAudioTrackIds,
   }
 }
 

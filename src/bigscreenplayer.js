@@ -663,6 +663,8 @@ function BigscreenPlayer() {
      */
     setLogLevel: DebugTool.setLogLevel,
     getDebugLogs: () => Chronicle.retrieve(),
+    setAudioTrack: (index) => playerComponent && playerComponent.setAudioTrack(index),
+    getAudioTrackIds: () => playerComponent && playerComponent.getAudioTrackIds(),
   }
 }
 

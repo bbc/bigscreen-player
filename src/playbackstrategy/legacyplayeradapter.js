@@ -329,6 +329,27 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
     },
     getStrategy: getStrategy(),
     reset,
+    setAudioTrack: (index) => {
+      const el = mediaPlayer.getPlayerElement && mediaPlayer.getPlayerElement()
+
+      for (let track = 0; track < el.audioTracks.length; track += 1) {
+        if (track !== index) {
+          el.audioTracks[track].enabled = false
+        } else {
+          el.audioTracks[track].enabled = true
+        }
+      }
+    },
+    getAudioTrackIds: () => {
+      const el = mediaPlayer.getPlayerElement && mediaPlayer.getPlayerElement()
+      const tracks = []
+
+      for (let track = 0; track < el.audioTracks.length; track += 1) {
+        tracks.push(el.audioTracks[track].id)
+      }
+
+      return tracks
+    },
     tearDown: () => {
       mediaPlayer.removeAllEventCallbacks()
       pauseOnExitSeek = false
