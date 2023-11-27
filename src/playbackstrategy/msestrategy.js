@@ -1,4 +1,4 @@
-import { MediaPlayer } from "dashjs"
+import { MediaPlayer } from "dashjs/index"
 import MediaState from "../models/mediastate"
 import WindowTypes from "../models/windowtypes"
 import DebugTool from "../debugger/debugtool"
@@ -391,9 +391,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.updateSettings(playerSettings)
     mediaPlayer.initialize(mediaElement, null, true)
 
-    protData ?? mediaPlayer.setProtectionData(protData)
-
     modifySource(playbackTime)
+
+    if (protData) {
+      mediaPlayer.setProtectionData(protData)
+    }
   }
 
   function modifySource(playbackTime, zeroPoint) {
