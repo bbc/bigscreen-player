@@ -26,8 +26,17 @@
             let enableSubtitles = false
 
             let minimalData = {
-                initialPlaybackTime: 30,
+                initialPlaybackTime: 0,
                 media: {
+                    playerSettings: {
+                        streaming: {
+                            buffer: {
+                                bufferToKeep: 12000,
+                                bufferTimeAtTopQuality: 6000,
+                                bufferTimeAtTopQualityLongForm: 6000,
+                            },
+                        },
+                    },
                     captions: [],
                     type: "application/dash+xml",
                     mimeType: "video/mp4",

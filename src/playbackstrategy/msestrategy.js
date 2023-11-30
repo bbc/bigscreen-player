@@ -29,9 +29,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       streaming: {
         blacklistExpiryTime: mediaSources.failoverResetTime(),
         buffer: {
-          bufferToKeep: 4,
-          bufferTimeAtTopQuality: 12,
-          bufferTimeAtTopQualityLongForm: 15,
+          bufferToKeep: 12000,
+          bufferTimeAtTopQuality: 6000,
+          bufferTimeAtTopQualityLongForm: 6000,
         },
       },
     },
@@ -79,6 +79,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DOWNLOAD_CONTENT_ERROR_CODE: 27,
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
     UNSUPPORTED_CODEC: 30,
+    QUOTA_EXCEEDED_ERROR: "quotaExceeded",
     MANIFEST_VALIDITY_CHANGED: "manifestValidityChanged",
     QUALITY_CHANGE_RENDERED: "qualityChangeRendered",
     BASE_URL_SELECTED: "baseUrlSelected",
@@ -145,6 +146,12 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     publishTimeUpdate()
+  }
+
+  function onQuotaExceeded(event) {
+    DebugTool.info(
+      `QuotaExceededError: critialBufferLevel: ${event.criticalBufferLevel} time: ${event.quotaExceededTime}`
+    )
   }
 
   function onError(event) {
@@ -412,6 +419,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaElement.addEventListener("seeked", onSeeked)
     mediaElement.addEventListener("ended", onEnded)
     mediaPlayer.on(DashJSEvents.ERROR, onError)
+    mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED_ERROR, onQuotaExceeded)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
     mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
@@ -537,6 +545,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaElement.removeEventListener("seeked", onSeeked)
       mediaElement.removeEventListener("ended", onEnded)
       mediaPlayer.off(DashJSEvents.ERROR, onError)
+      mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED_ERROR, onQuotaExceeded)
       mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
       mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
