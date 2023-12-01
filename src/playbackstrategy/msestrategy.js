@@ -79,6 +79,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DOWNLOAD_CONTENT_ERROR_CODE: 27,
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
     UNSUPPORTED_CODEC: 30,
+    QUOTA_EXCEEDED_ERROR: "quotaExceeded",
     MANIFEST_VALIDITY_CHANGED: "manifestValidityChanged",
     QUALITY_CHANGE_RENDERED: "qualityChangeRendered",
     BASE_URL_SELECTED: "baseUrlSelected",
@@ -90,16 +91,36 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
   }
 
+  function onQuotaExceeded(event) {
+    DebugTool.info(
+      `QuotaExceededError: critialBufferLevel: ${event.criticalBufferLevel} time: ${event.quotaExceededTime}`
+    )
+  }
+
+  function onRateChange() {
+    const playbackRate = mediaElement.playbackRate
+    DebugTool.info(`ratechange: playbackRate: ${playbackRate}`)
+    DebugTool.keyValue({ key: "playback-rate", value: playbackRate })
+  }
+
+  function updateReadyState() {
+    const readyState = mediaElement?.readyState || 0
+    DebugTool.keyValue({ key: "readyState", value: readyState })
+  }
+
   function onPlaying() {
+    DebugTool.info("video element playback event: playing")
     isEnded = false
     publishMediaState(MediaState.PLAYING)
   }
 
   function onPaused() {
+    DebugTool.info("video element playback event: paused")
     publishMediaState(MediaState.PAUSED)
   }
 
   function onBuffering() {
+    DebugTool.info("video element playback event: waiting")
     isEnded = false
     if (!isSeeking || !publishedSeekEvent) {
       publishMediaState(MediaState.WAITING)
@@ -109,7 +130,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function onSeeked() {
     isSeeking = false
-    DebugTool.info("Seeked Event")
+    DebugTool.info("video element playback event: seeked")
 
     if (isPaused()) {
       if (windowType === WindowTypes.SLIDING) {
@@ -122,6 +143,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onEnded() {
+    DebugTool.info("video element playback event: ended")
     isEnded = true
     publishMediaState(MediaState.ENDED)
   }
@@ -148,6 +170,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onError(event) {
+    DebugTool.info("video element playback event: error")
     if (event.error && event.error.data) {
       delete event.error.data
     }
@@ -340,18 +363,24 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function publishMediaState(mediaState) {
+    updateReadyState()
+
     for (let index = 0; index < eventCallbacks.length; index++) {
       eventCallbacks[index](mediaState)
     }
   }
 
   function publishTimeUpdate() {
+    updateReadyState()
+
     if (timeUpdateCallback) {
       timeUpdateCallback()
     }
   }
 
   function publishError(mediaError) {
+    updateReadyState()
+
     if (errorCallback) {
       errorCallback(mediaError)
     }
@@ -411,7 +440,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaElement.addEventListener("seeking", onBuffering)
     mediaElement.addEventListener("seeked", onSeeked)
     mediaElement.addEventListener("ended", onEnded)
+    mediaElement.addEventListener("ratechange", onRateChange)
     mediaPlayer.on(DashJSEvents.ERROR, onError)
+    mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED_ERROR, onQuotaExceeded)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
     mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
@@ -536,7 +567,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaElement.removeEventListener("seeking", onBuffering)
       mediaElement.removeEventListener("seeked", onSeeked)
       mediaElement.removeEventListener("ended", onEnded)
+      mediaElement.removeEventListener("ratechange", onRateChange)
       mediaPlayer.off(DashJSEvents.ERROR, onError)
+      mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED_ERROR, onQuotaExceeded)
       mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
       mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
