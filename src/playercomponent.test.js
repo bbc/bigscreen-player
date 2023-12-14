@@ -940,6 +940,25 @@ describe("Player Component", () => {
       })
     })
 
+    it.only("should continue to throw buffering timeout FATAL_ERROR when the onFatalError plugin breaks", () => {
+      setUpPlayerComponent()
+      forceMediaSourcesError = true
+
+      return StrategyPicker.default().then(() => {
+        mockStateUpdateCallback.mockReset()
+        mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
+        Plugins.interface.onFatalError.mockImplementationOnce(() => {
+          throw new Error('oops')
+        })
+
+        jest.advanceTimersByTime(30001)
+
+        expect(mockStateUpdateCallback.mock.calls[0][0].data.state).toEqual(MediaState.FATAL_ERROR)
+        expect(mockStateUpdateCallback.mock.calls[0][0].code).toBe(0)
+        expect(mockStateUpdateCallback.mock.calls[0][0].message).toBe("unknown")
+      })
+    })
+
     it("should failover for with updated failover time when window time data has changed", () => {
       setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormats.HLS })
       updateTestTime = true
