@@ -5,6 +5,7 @@ import babel from "@rollup/plugin-babel"
 import serve from "rollup-plugin-serve"
 import liveReload from "rollup-plugin-livereload"
 import json from "@rollup/plugin-json"
+import typescript from "@rollup/plugin-typescript"
 
 export default {
   input: "src/main.js",
@@ -20,6 +21,11 @@ export default {
     commonjs(),
     json(),
     nodePolyfills(),
+    typescript({
+      compilerOptions: {
+        sourceMap: true,
+      },
+    }),
     babel({ babelHelpers: "bundled", presets: ["@babel/preset-env"] }),
     serve({
       open: true,

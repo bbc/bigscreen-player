@@ -1,4 +1,4 @@
-import Chronicle from "./chronicle"
+import Chronicle from "./chronicle.ts"
 import DebugPresenter from "./debugpresenter"
 import DebugView from "./debugview"
 

@@ -1,4 +1,4 @@
-import Chronicle from "./chronicle"
+import Chronicle from "./chronicle.ts"
 
 describe("Chronicle", () => {
   beforeAll(() => {

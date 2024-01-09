@@ -1,7 +1,3 @@
-const updateCallbacks = []
-let chronicle = []
-let firstTimeElement, compressTime
-
 const TYPES = {
   APICALL: "apicall",
   ERROR: "error",
@@ -10,7 +6,23 @@ const TYPES = {
   KEYVALUE: "keyvalue",
   TIME: "time",
   WARNING: "warning",
-}
+} as const
+
+type ChronicleLog = { type: string; currentTime?: number; timestamp?: number } & (
+  | { type: typeof TYPES.APICALL; calltype: string }
+  | { type: typeof TYPES.EVENT; event: object | string }
+  | { type: typeof TYPES.WARNING; warning: object | string }
+  | { type: typeof TYPES.INFO; message: object | string }
+  | { type: typeof TYPES.ERROR; error: Error }
+  | { type: typeof TYPES.TIME; currentTime: number }
+  | { type: typeof TYPES.KEYVALUE; keyvalue: object }
+)
+
+type ChronicleUpdateCallback = (chronicle: ChronicleLog[]) => void
+
+const updateCallbacks: ChronicleUpdateCallback[] = []
+let chronicle: ChronicleLog[] = []
+let firstTimeElement: boolean, compressTime: boolean
 
 function init() {
   clear()
@@ -22,11 +34,11 @@ function clear() {
   chronicle = []
 }
 
-function registerForUpdates(callback) {
+function registerForUpdates(callback: ChronicleUpdateCallback) {
   updateCallbacks.push(callback)
 }
 
-function unregisterForUpdates(callback) {
+function unregisterForUpdates(callback: ChronicleUpdateCallback) {
   const indexOf = updateCallbacks.indexOf(callback)
 
   if (indexOf !== -1) {
@@ -34,43 +46,42 @@ function unregisterForUpdates(callback) {
   }
 }
 
-function info(message) {
+function info(message: object | string) {
   pushToChronicle({ type: TYPES.INFO, message })
 }
 
-/** @param {Error} err */
-function error(err) {
+function error(err: Error) {
   pushToChronicle({ type: TYPES.ERROR, error: err })
 }
 
-function warn(warning) {
+function warn(warning: object | string) {
   pushToChronicle({ type: TYPES.WARNING, warning })
 }
 
-function event(event) {
+function event(event: object | string) {
   pushToChronicle({ type: TYPES.EVENT, event })
 }
 
-function apicall(callType) {
+function apicall(callType: string) {
   pushToChronicle({ type: TYPES.APICALL, calltype: callType })
 }
 
-function time(time) {
+function time(time: number) {
   if (firstTimeElement) {
     pushToChronicle({ type: TYPES.TIME, currentTime: time })
     firstTimeElement = false
-  } else if (!compressTime) {
-    pushToChronicle({ type: TYPES.TIME, currentTime: time })
-    compressTime = true
-  } else {
+  } else if (compressTime) {
     const lastElement = chronicle.pop()
 
-    lastElement.currentTime = time
-    pushToChronicle(lastElement)
+    lastElement!.currentTime = time
+    pushToChronicle(lastElement!)
+  } else {
+    pushToChronicle({ type: TYPES.TIME, currentTime: time })
+    compressTime = true
   }
 }
 
-function keyValue(obj) {
+function keyValue(obj: object) {
   pushToChronicle({ type: TYPES.KEYVALUE, keyvalue: obj })
 }
 
@@ -78,12 +89,12 @@ function retrieve() {
   return [...chronicle]
 }
 
-function timestamp(obj) {
+function timestamp(obj: ChronicleLog) {
   obj.timestamp = Date.now()
 }
 
-function pushToChronicle(obj) {
-  if (obj.type !== TYPES.TIME) {
+function pushToChronicle(obj: ChronicleLog) {
+  if (obj.type !== "time") {
     firstTimeElement = true
     compressTime = false
   }

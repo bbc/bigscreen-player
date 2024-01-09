@@ -5,7 +5,7 @@ env:
   es6: true
   node: true
 
-parser: "@babel/eslint-parser"
+parser: "@typescript-eslint/parser"
 
 parserOptions:
   ecmaVersion: 2015
@@ -18,16 +18,16 @@ ignorePatterns:
 
 extends:
   - eslint:recommended
-  - plugin:import/recommended
+  - plugin:@typescript-eslint/recommended
   - plugin:json/recommended
   - plugin:sonarjs/recommended
   - plugin:unicorn/recommended
 
 plugins:
-  - import
   - json
   - sonarjs
   - unicorn
+  - "@typescript-eslint"
 
 rules:
   # Discuss these!
@@ -60,7 +60,6 @@ rules:
   prefer-spread: error
   quote-props: [error, as-needed]
   yoda: [error, never]
-  import/prefer-default-export: error
   unicorn/no-null: off
 
   spaced-comment:
@@ -111,7 +110,6 @@ rules:
   no-unneeded-ternary: error
   no-unreachable-loop: error
   no-unused-private-class-members: error
-  no-unused-vars: [error, { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }]
   no-useless-call: error
   no-useless-constructor: error
   no-useless-return: error
@@ -119,14 +117,6 @@ rules:
   no-with: error
   use-isnan: error
   wrap-iife: [error, any]
-  import/first: error
-  import/no-mutable-exports: error
-
-  import/no-unused-modules:
-    - error
-    - unusedExports: true
-      ignoreExports:
-        - "src/main.js"
 
   # TV compatibility
   no-prototype-builtins: off
@@ -141,6 +131,10 @@ rules:
   unicorn/prefer-dom-node-append: off
   unicorn/prefer-number-properties: off
   unicorn/prefer-math-trunc: off
+  unicorn/prefer-string-replace-all: off
+
+  # Typescript
+  "@typescript-eslint/no-unused-vars": [error, { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }]
 
 overrides:
   # General test overrides

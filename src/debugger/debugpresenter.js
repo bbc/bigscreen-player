@@ -1,5 +1,5 @@
 import MediaState from "../models/mediastate"
-import Chronicle from "./chronicle"
+import Chronicle from "./chronicle.ts"
 
 let view
 

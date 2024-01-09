@@ -5,7 +5,7 @@ import Plugins from "./plugins"
 import TransferFormats from "./models/transferformats"
 import LiveSupport from "./models/livesupport"
 import BigscreenPlayer from "./bigscreenplayer"
-import Chronicle from "./debugger/chronicle"
+import Chronicle from "./debugger/chronicle.ts"
 import PlayerComponent from "./playercomponent"
 
 let bigscreenPlayer
