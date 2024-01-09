@@ -8,6 +8,42 @@ const TYPES = {
   WARNING: "warning",
 } as const
 
+type Message = { level: string } & (
+  | { level: "error"; error: Error }
+  | { level: "info"; body: string }
+  | { level: "warning"; body: string }
+  | {
+      level: "trace"
+      kind: "api-call"
+      functionName: string
+      functionParameters: any[]
+    }
+  | { level: "trace"; kind: "event"; eventType: string }
+)
+
+type Metric = { key: string; value: object | string | number } & (
+  | { key: "auto-resume"; value: number }
+  | { key: "bitrate"; value: number }
+  | { key: "buffer-length"; value: number }
+  | { key: "cdns-available"; value: string[] }
+  | { key: "current-time"; value: number }
+  | { key: "current-url"; value: string }
+  | { key: "duration"; value: number }
+  | { key: "frames-dropped"; value: number }
+  | { key: "initial-playback-time"; value: number }
+  | { key: "seekable-range"; value: { start: number; end: number } }
+  | { key: "strategy"; value: string }
+  | { key: "subtitle-cdns-available"; value: string[] }
+  | { key: "subtitle-current-url"; value: string }
+  | { key: "representation-audio"; value: { qualityIndex: number; bitrate: number } }
+  | { key: "representation-video"; value: { qualityIndex: number; bitrate: number } }
+  | { key: "version"; value: string }
+)
+
+type ChronicleEntry = { type: string } & ({ type: "metric"; data: Metric } | { type: "message"; data: Message })
+
+type _ChronicleLogButElectric = ChronicleEntry[]
+
 type ChronicleLog = { type: string; currentTime?: number; timestamp?: number } & (
   | { type: typeof TYPES.APICALL; calltype: string }
   | { type: typeof TYPES.EVENT; event: object | string }
