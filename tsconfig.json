@@ -4,7 +4,7 @@
     "target": "es6",
     "moduleResolution": "bundler",
     "noImplicitReturns": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "strict": true
   },
   "compileOnSave": true,
