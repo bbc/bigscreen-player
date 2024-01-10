@@ -342,6 +342,8 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
     },
     getAudioTrackIds: () => {
       const el = mediaPlayer.getPlayerElement && mediaPlayer.getPlayerElement()
+      DebugTool.info(`element: ${el}`)
+
       const tracks = []
 
       for (let track = 0; track < el.audioTracks.length; track += 1) {
