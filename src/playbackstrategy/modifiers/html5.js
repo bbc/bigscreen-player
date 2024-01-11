@@ -466,6 +466,7 @@ function Html5() {
   }
 
   function onMetadata() {
+    DebugTool.info("Native strategy - metadataloaded")
     metadataLoaded()
   }
 
