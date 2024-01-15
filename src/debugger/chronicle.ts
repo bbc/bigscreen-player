@@ -8,44 +8,60 @@ const TYPES = {
   WARNING: "warning",
 } as const
 
-type Message = { level: string } & (
-  | { level: "error"; error: Error }
-  | { level: "info"; body: string }
-  | { level: "warning"; body: string }
-  | {
-      level: "trace"
-      kind: "api-call"
-      functionName: string
-      functionParameters: any[]
-    }
-  | { level: "trace"; kind: "event"; eventType: string }
-)
+enum ChronicleEntryType {
+  METRIC = "metric",
+  MESSAGE = "message",
+}
 
-type Metric = { key: string; value: object | string | number } & (
-  | { key: "auto-resume"; value: number }
-  | { key: "bitrate"; value: number }
-  | { key: "buffer-length"; value: number }
-  | { key: "cdns-available"; value: string[] }
-  | { key: "current-time"; value: HTMLMediaElement["currentTime"] }
-  | { key: "current-url"; value: string }
-  | { key: "duration"; value: number }
-  | { key: "frames-dropped"; value: number }
-  | { key: "initial-playback-time"; value: number }
-  | { key: "paused"; value: HTMLMediaElement["paused"] }
-  | { key: "ready-state"; value: HTMLMediaElement["readyState"] }
-  | { key: "representation-audio"; value: { qualityIndex: number; bitrate: number } }
-  | { key: "representation-video"; value: { qualityIndex: number; bitrate: number } }
-  | { key: "seekable-range"; value: { start: number; end: number } }
-  | { key: "seeking"; value: HTMLMediaElement["seeking"] }
-  | { key: "strategy"; value: string }
-  | { key: "subtitle-cdns-available"; value: string[] }
-  | { key: "subtitle-current-url"; value: string }
-  | { key: "version"; value: string }
-)
+enum ChronicleMessageLevel {
+  ERROR = "error",
+  INFO = "info",
+  WARNING = "warning",
+  TRACE = "trace",
+}
 
-type ChronicleEntry = { data: object; sessionTime: number; currentTime: number; type: string } & (
-  | { type: "metric"; data: Metric }
-  | { type: "message"; data: Message }
+type ChronicleEntry = { type: ChronicleEntryType; sessionTime: number; currentTime: number; data: object } & (
+  | ({ type: "message"; level: ChronicleMessageLevel; data: string } & (
+      | { type: "message"; level: "error"; data: Error }
+      | { type: "message"; level: "info"; data: string }
+      | { type: "message"; level: "warning"; data: string }
+      | {
+          type: "message"
+          level: "trace"
+          data: {
+            kind: "api-call"
+            functionName: string
+            functionParameters: any[]
+          }
+        }
+      | {
+          type: "message"
+          level: "trace"
+          data: {
+            kind: "event"
+            eventType: string
+          }
+        }
+    ))
+  | { type: "metric"; key: "auto-resume"; data: number }
+  | { type: "metric"; key: "bitrate"; data: number }
+  | { type: "metric"; key: "buffer-length"; data: number }
+  | { type: "metric"; key: "cdns-available"; data: string[] }
+  | { type: "metric"; key: "current-time"; data: HTMLMediaElement["currentTime"] }
+  | { type: "metric"; key: "current-url"; data: string }
+  | { type: "metric"; key: "duration"; data: number }
+  | { type: "metric"; key: "frames-dropped"; data: number }
+  | { type: "metric"; key: "initial-playback-time"; data: number }
+  | { type: "metric"; key: "paused"; data: HTMLMediaElement["paused"] }
+  | { type: "metric"; key: "ready-state"; data: HTMLMediaElement["readyState"] }
+  | { type: "metric"; key: "representation-audio"; data: { qualityIndex: number; bitrate: number } }
+  | { type: "metric"; key: "representation-video"; data: { qualityIndex: number; bitrate: number } }
+  | { type: "metric"; key: "seekable-range"; data: { start: number; end: number } }
+  | { type: "metric"; key: "seeking"; data: HTMLMediaElement["seeking"] }
+  | { type: "metric"; key: "strategy"; data: string }
+  | { type: "metric"; key: "subtitle-cdns-available"; data: string[] }
+  | { type: "metric"; key: "subtitle-current-url"; data: string }
+  | { type: "metric"; key: "version"; data: string }
 )
 
 type _ChronicleLogButElectric = ChronicleEntry[]

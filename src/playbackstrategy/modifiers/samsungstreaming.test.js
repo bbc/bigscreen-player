@@ -31,9 +31,8 @@ describe("Samsung Streaming", () => {
     jest.spyOn(mockPlayerPlugin, "Execute").mockImplementation((command) => {
       if (command === "GetDuration") {
         return 100000
-      } 
-        return 1
-      
+      }
+      return 1
     })
     jest.spyOn(mockPlayerPlugin, "Close").mockImplementation(() => {})
     jest.spyOn(mockPlayerPlugin, "Open").mockImplementation(() => {})

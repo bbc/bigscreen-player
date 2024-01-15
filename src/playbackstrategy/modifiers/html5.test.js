@@ -58,90 +58,89 @@ describe("HTML5 Base", () => {
 
     jest.spyOn(document, "createElement").mockImplementation((type) => {
       switch (type) {
-      case "source": {
-        return mockSourceElement
+        case "source": {
+          return mockSourceElement
+        }
+        case "video": {
+          return mockVideoMediaElement
+        }
+        case "audio": {
+          return mockAudioMediaElement
+        }
+        // No default
       }
-      case "video": {
-        return mockVideoMediaElement
-      }
-      case "audio": {
-        return mockAudioMediaElement
-      }
-      // No default
-      } 
-        return sourceContainer
-      
+      return sourceContainer
     })
 
     jest.spyOn(mockVideoMediaElement, "addEventListener").mockImplementation((name, methodCall) => {
       switch (name) {
-      case "loadedmetadata": {
-        metaDataCallback = methodCall
-      
-      break;
-      }
-      case "canplay": {
-        finishedBufferingCallback = methodCall
-      
-      break;
-      }
-      case "error": {
-        errorCallback = methodCall
-      
-      break;
-      }
-      case "ended": {
-        endedCallback = methodCall
-      
-      break;
-      }
-      case "waiting": {
-        waitingCallback = methodCall
-      
-      break;
-      }
-      case "playing": {
-        playingCallback = methodCall
-      
-      break;
-      }
-      case "timeupdate": {
-        timeupdateCallback = methodCall
-      
-      break;
-      }
-      // No default
+        case "loadedmetadata": {
+          metaDataCallback = methodCall
+
+          break
+        }
+        case "canplay": {
+          finishedBufferingCallback = methodCall
+
+          break
+        }
+        case "error": {
+          errorCallback = methodCall
+
+          break
+        }
+        case "ended": {
+          endedCallback = methodCall
+
+          break
+        }
+        case "waiting": {
+          waitingCallback = methodCall
+
+          break
+        }
+        case "playing": {
+          playingCallback = methodCall
+
+          break
+        }
+        case "timeupdate": {
+          timeupdateCallback = methodCall
+
+          break
+        }
+        // No default
       }
     })
 
     jest.spyOn(mockAudioMediaElement, "addEventListener").mockImplementation((name, methodCall) => {
       switch (name) {
-      case "loadedmetadata": {
-        metaDataCallback = methodCall
-      
-      break;
-      }
-      case "canplay": {
-        finishedBufferingCallback = methodCall
-      
-      break;
-      }
-      case "error": {
-        errorCallback = methodCall
-      
-      break;
-      }
-      case "ended": {
-        endedCallback = methodCall
-      
-      break;
-      }
-      case "waiting": {
-        waitingCallback = methodCall
-      
-      break;
-      }
-      // No default
+        case "loadedmetadata": {
+          metaDataCallback = methodCall
+
+          break
+        }
+        case "canplay": {
+          finishedBufferingCallback = methodCall
+
+          break
+        }
+        case "error": {
+          errorCallback = methodCall
+
+          break
+        }
+        case "ended": {
+          endedCallback = methodCall
+
+          break
+        }
+        case "waiting": {
+          waitingCallback = methodCall
+
+          break
+        }
+        // No default
       }
     })
 
