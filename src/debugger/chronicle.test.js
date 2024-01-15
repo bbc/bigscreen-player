@@ -1,13 +1,14 @@
 import Chronicle from "./chronicle.ts"
 
 describe("Chronicle", () => {
+  let chronicle
+
   beforeAll(() => {
     jest.useFakeTimers({ now: 1234 })
   })
 
   beforeEach(() => {
-    Chronicle.clear()
-    Chronicle.init()
+    chronicle = new Chronicle()
   })
 
   it("stores an info message with type and message", () => {
@@ -17,10 +18,11 @@ describe("Chronicle", () => {
       message: testInfoMessage,
       timestamp: 1234,
     }
-    Chronicle.info(testInfoMessage)
-    const chronicle = Chronicle.retrieve()
 
-    expect(chronicle.pop()).toEqual(expectedObject)
+    chronicle.info(testInfoMessage)
+    const chronicleLogs = chronicle.retrieve()
+
+    expect(chronicleLogs.pop()).toEqual(expectedObject)
   })
 
   it("pushes subsequent info message to array", () => {
@@ -31,11 +33,12 @@ describe("Chronicle", () => {
       message: secondMessage,
       timestamp: 1234,
     }
-    Chronicle.info(firstMessage)
-    Chronicle.info(secondMessage)
-    const chronicle = Chronicle.retrieve()
 
-    expect(chronicle.pop()).toEqual(expectedObject)
+    chronicle.info(firstMessage)
+    chronicle.info(secondMessage)
+    const chronicleLogs = chronicle.retrieve()
+
+    expect(chronicleLogs.pop()).toEqual(expectedObject)
   })
 
   it("stores an error with type and error", () => {
@@ -48,10 +51,10 @@ describe("Chronicle", () => {
       error: testErrorObject,
       timestamp: 1234,
     }
-    Chronicle.error(testErrorObject)
-    const chronicle = Chronicle.retrieve()
+    chronicle.error(testErrorObject)
+    const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicle.pop()).toEqual(expectedObject)
+    expect(chronicleLogs.pop()).toEqual(expectedObject)
   })
 
   it("stores an event with type and event", () => {
@@ -64,10 +67,10 @@ describe("Chronicle", () => {
       event: testEventObject,
       timestamp: 1234,
     }
-    Chronicle.event(testEventObject)
-    const chronicle = Chronicle.retrieve()
+    chronicle.event(testEventObject)
+    const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicle.pop()).toEqual(expectedObject)
+    expect(chronicleLogs.pop()).toEqual(expectedObject)
   })
 
   it("stores an apicall with type and the call type", () => {
@@ -77,10 +80,10 @@ describe("Chronicle", () => {
       calltype: testApiCallType,
       timestamp: 1234,
     }
-    Chronicle.apicall(testApiCallType)
-    const chronicle = Chronicle.retrieve()
+    chronicle.apicall(testApiCallType)
+    const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicle.pop()).toEqual(expectedObject)
+    expect(chronicleLogs.pop()).toEqual(expectedObject)
   })
 
   it("pushes the first time event to the array", () => {
@@ -89,10 +92,10 @@ describe("Chronicle", () => {
       currentTime: 1,
       timestamp: 1234,
     }
-    Chronicle.time(1)
-    const chronicle = Chronicle.retrieve()
+    chronicle.time(1)
+    const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicle.pop()).toEqual(expectedObject)
+    expect(chronicleLogs.pop()).toEqual(expectedObject)
   })
 
   it("subsequenty time event overwrites the previous in the array", () => {
@@ -101,12 +104,12 @@ describe("Chronicle", () => {
       currentTime: 2,
       timestamp: 1234,
     }
-    Chronicle.time(1)
-    Chronicle.time(2)
-    const chronicle = Chronicle.retrieve()
+    chronicle.time(1)
+    chronicle.time(2)
+    const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicle).toHaveLength(2)
-    expect(chronicle.pop()).toEqual(expectedObject)
+    expect(chronicleLogs).toHaveLength(2)
+    expect(chronicleLogs.pop()).toEqual(expectedObject)
   })
 
   it("time followed by info followed by time doesnt compress second time event", () => {
@@ -115,14 +118,14 @@ describe("Chronicle", () => {
       currentTime: 3,
       timestamp: 1234,
     }
-    Chronicle.time(1)
-    Chronicle.time(2)
-    Chronicle.info("An info message")
-    Chronicle.time(3)
-    const chronicle = Chronicle.retrieve()
+    chronicle.time(1)
+    chronicle.time(2)
+    chronicle.info("An info message")
+    chronicle.time(3)
+    const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicle).toHaveLength(4)
-    expect(chronicle.pop()).toEqual(expectedObject)
+    expect(chronicleLogs).toHaveLength(4)
+    expect(chronicleLogs.pop()).toEqual(expectedObject)
   })
 
   it("stores compressed time info and error events", () => {
@@ -136,18 +139,18 @@ describe("Chronicle", () => {
       { type: "time", currentTime: 6, timestamp: 1234 },
     ]
 
-    Chronicle.time(1)
-    Chronicle.time(2)
-    Chronicle.info("An info message")
-    Chronicle.time(3)
-    Chronicle.error({ message: "Something went wrong" })
-    Chronicle.time(4)
-    Chronicle.time(5)
-    Chronicle.time(6)
-    const chronicle = Chronicle.retrieve()
+    chronicle.time(1)
+    chronicle.time(2)
+    chronicle.info("An info message")
+    chronicle.time(3)
+    chronicle.error({ message: "Something went wrong" })
+    chronicle.time(4)
+    chronicle.time(5)
+    chronicle.time(6)
+    const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicle).toHaveLength(7)
-    expect(chronicle).toEqual(expectedArray)
+    expect(chronicleLogs).toHaveLength(7)
+    expect(chronicleLogs).toEqual(expectedArray)
   })
 
   it("stores first and last time events", () => {
@@ -156,13 +159,13 @@ describe("Chronicle", () => {
       { type: "time", currentTime: 3, timestamp: 1234 },
     ]
 
-    Chronicle.time(1)
-    Chronicle.time(2)
-    Chronicle.time(3)
-    const chronicle = Chronicle.retrieve()
+    chronicle.time(1)
+    chronicle.time(2)
+    chronicle.time(3)
+    const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicle).toHaveLength(2)
-    expect(chronicle).toEqual(expectedArray)
+    expect(chronicleLogs).toHaveLength(2)
+    expect(chronicleLogs).toEqual(expectedArray)
   })
 
   it("stores key value events", () => {
@@ -171,12 +174,12 @@ describe("Chronicle", () => {
       { type: "keyvalue", keyvalue: { Duration: "1345" }, timestamp: 1234 },
     ]
 
-    Chronicle.keyValue({ Bitrate: "1000" })
-    Chronicle.keyValue({ Duration: "1345" })
+    chronicle.keyValue({ Bitrate: "1000" })
+    chronicle.keyValue({ Duration: "1345" })
 
-    const chronicle = Chronicle.retrieve()
+    const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicle).toHaveLength(2)
-    expect(chronicle).toEqual(expectedArray)
+    expect(chronicleLogs).toHaveLength(2)
+    expect(chronicleLogs).toEqual(expectedArray)
   })
 })
