@@ -1,13 +1,3 @@
-const TYPES = {
-  APICALL: "apicall",
-  ERROR: "error",
-  EVENT: "event",
-  INFO: "info",
-  KEYVALUE: "keyvalue",
-  TIME: "time",
-  WARNING: "warning",
-} as const
-
 enum ChronicleEntryType {
   METRIC = "metric",
   MESSAGE = "message",
@@ -20,7 +10,7 @@ enum ChronicleMessageLevel {
   TRACE = "trace",
 }
 
-type ChronicleEntry = { type: ChronicleEntryType; sessionTime: number; currentTime: number; data: object } & (
+type _ChronicleEntry = { type: ChronicleEntryType; sessionTime: number; currentTime: number; data: object } & (
   | ({ type: "message"; level: ChronicleMessageLevel; data: string } & (
       | { type: "message"; level: "error"; data: Error }
       | { type: "message"; level: "info"; data: string }
@@ -64,7 +54,16 @@ type ChronicleEntry = { type: ChronicleEntryType; sessionTime: number; currentTi
   | { type: "metric"; key: "version"; data: string }
 )
 
-type _ChronicleLogButElectric = ChronicleEntry[]
+// type _ChronicleLogButElectric = ChronicleEntry[]
+const TYPES = {
+  APICALL: "apicall",
+  ERROR: "error",
+  EVENT: "event",
+  INFO: "info",
+  KEYVALUE: "keyvalue",
+  TIME: "time",
+  WARNING: "warning",
+} as const
 
 type ChronicleLog = { type: string; currentTime?: number; timestamp?: number } & (
   | { type: typeof TYPES.APICALL; calltype: string }
@@ -78,112 +77,102 @@ type ChronicleLog = { type: string; currentTime?: number; timestamp?: number } &
 
 type ChronicleUpdateCallback = (chronicle: ChronicleLog[]) => void
 
-const updateCallbacks: ChronicleUpdateCallback[] = []
-let chronicle: ChronicleLog[] = []
-let firstTimeElement: boolean, compressTime: boolean
+class Chronicle {
+  static TYPES = TYPES
 
-function init() {
-  clear()
-}
+  private updateCallbacks: ChronicleUpdateCallback[] = []
+  private chronicle: ChronicleLog[] = []
+  private firstTimeElement: boolean = true
+  private compressTime: boolean = false
 
-function clear() {
-  firstTimeElement = true
-  compressTime = false
-  chronicle = []
-}
+  constructor() {
+    this.clear()
+  }
 
-function registerForUpdates(callback: ChronicleUpdateCallback) {
-  updateCallbacks.push(callback)
-}
+  public clear() {
+    this.firstTimeElement = true
+    this.compressTime = false
+    this.chronicle = []
+  }
 
-function unregisterForUpdates(callback: ChronicleUpdateCallback) {
-  const indexOf = updateCallbacks.indexOf(callback)
+  public registerForUpdates(callback: ChronicleUpdateCallback) {
+    this.updateCallbacks.push(callback)
+  }
 
-  if (indexOf !== -1) {
-    updateCallbacks.splice(indexOf, 1)
+  public unregisterForUpdates(callback: ChronicleUpdateCallback) {
+    const indexOf = this.updateCallbacks.indexOf(callback)
+
+    if (indexOf !== -1) {
+      this.updateCallbacks.splice(indexOf, 1)
+    }
+  }
+
+  public info(message: object | string) {
+    this.pushToChronicle({ type: TYPES.INFO, message })
+  }
+
+  public verbose(message: object | string) {
+    this.info(message)
+  }
+
+  public error(err: Error) {
+    this.pushToChronicle({ type: TYPES.ERROR, error: err })
+  }
+
+  public warn(warning: object | string) {
+    this.pushToChronicle({ type: TYPES.WARNING, warning })
+  }
+
+  public event(event: object | string) {
+    this.pushToChronicle({ type: TYPES.EVENT, event })
+  }
+
+  public apicall(callType: string) {
+    this.pushToChronicle({ type: TYPES.APICALL, calltype: callType })
+  }
+
+  public time(time: number) {
+    if (this.firstTimeElement) {
+      this.pushToChronicle({ type: TYPES.TIME, currentTime: time })
+      this.firstTimeElement = false
+    } else if (this.compressTime) {
+      const lastElement = this.chronicle.pop()
+
+      lastElement!.currentTime = time
+      this.pushToChronicle(lastElement!)
+    } else {
+      this.pushToChronicle({ type: TYPES.TIME, currentTime: time })
+      this.compressTime = true
+    }
+  }
+
+  public keyValue(obj: object) {
+    this.pushToChronicle({ type: TYPES.KEYVALUE, keyvalue: obj })
+  }
+
+  public retrieve() {
+    return [...this.chronicle]
+  }
+
+  public timestamp(obj: ChronicleLog) {
+    obj.timestamp = Date.now()
+  }
+
+  public pushToChronicle(obj: ChronicleLog) {
+    if (obj.type !== "time") {
+      this.firstTimeElement = true
+      this.compressTime = false
+    }
+
+    this.timestamp(obj)
+    this.chronicle.push(obj)
+    this.updates()
+  }
+
+  private updates() {
+    const chronicleSoFar = this.retrieve()
+    this.updateCallbacks.forEach((callback) => callback(chronicleSoFar))
   }
 }
 
-function info(message: object | string) {
-  pushToChronicle({ type: TYPES.INFO, message })
-}
-
-function error(err: Error) {
-  pushToChronicle({ type: TYPES.ERROR, error: err })
-}
-
-function warn(warning: object | string) {
-  pushToChronicle({ type: TYPES.WARNING, warning })
-}
-
-function event(event: object | string) {
-  pushToChronicle({ type: TYPES.EVENT, event })
-}
-
-function apicall(callType: string) {
-  pushToChronicle({ type: TYPES.APICALL, calltype: callType })
-}
-
-function time(time: number) {
-  if (firstTimeElement) {
-    pushToChronicle({ type: TYPES.TIME, currentTime: time })
-    firstTimeElement = false
-  } else if (compressTime) {
-    const lastElement = chronicle.pop()
-
-    lastElement!.currentTime = time
-    pushToChronicle(lastElement!)
-  } else {
-    pushToChronicle({ type: TYPES.TIME, currentTime: time })
-    compressTime = true
-  }
-}
-
-function keyValue(obj: object) {
-  pushToChronicle({ type: TYPES.KEYVALUE, keyvalue: obj })
-}
-
-function retrieve() {
-  return [...chronicle]
-}
-
-function timestamp(obj: ChronicleLog) {
-  obj.timestamp = Date.now()
-}
-
-function pushToChronicle(obj: ChronicleLog) {
-  if (obj.type !== "time") {
-    firstTimeElement = true
-    compressTime = false
-  }
-
-  timestamp(obj)
-  chronicle.push(obj)
-  updates()
-}
-
-function updates() {
-  updateCallbacks.forEach((callback) => callback(retrieve()))
-}
-
-function tearDown() {
-  clear()
-}
-
-export default {
-  TYPES,
-  init,
-  clear,
-  tearDown,
-  apicall,
-  error,
-  event,
-  info,
-  keyValue,
-  time,
-  warn,
-  verbose: info,
-  retrieve,
-  registerForUpdates,
-  unregisterForUpdates,
-}
+export default Chronicle
