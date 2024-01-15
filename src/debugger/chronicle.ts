@@ -26,21 +26,27 @@ type Metric = { key: string; value: object | string | number } & (
   | { key: "bitrate"; value: number }
   | { key: "buffer-length"; value: number }
   | { key: "cdns-available"; value: string[] }
-  | { key: "current-time"; value: number }
+  | { key: "current-time"; value: HTMLMediaElement["currentTime"] }
   | { key: "current-url"; value: string }
   | { key: "duration"; value: number }
   | { key: "frames-dropped"; value: number }
   | { key: "initial-playback-time"; value: number }
+  | { key: "paused"; value: HTMLMediaElement["paused"] }
+  | { key: "ready-state"; value: HTMLMediaElement["readyState"] }
+  | { key: "representation-audio"; value: { qualityIndex: number; bitrate: number } }
+  | { key: "representation-video"; value: { qualityIndex: number; bitrate: number } }
   | { key: "seekable-range"; value: { start: number; end: number } }
+  | { key: "seeking"; value: HTMLMediaElement["seeking"] }
   | { key: "strategy"; value: string }
   | { key: "subtitle-cdns-available"; value: string[] }
   | { key: "subtitle-current-url"; value: string }
-  | { key: "representation-audio"; value: { qualityIndex: number; bitrate: number } }
-  | { key: "representation-video"; value: { qualityIndex: number; bitrate: number } }
   | { key: "version"; value: string }
 )
 
-type ChronicleEntry = { type: string } & ({ type: "metric"; data: Metric } | { type: "message"; data: Message })
+type ChronicleEntry = { data: object; sessionTime: number; currentTime: number; type: string } & (
+  | { type: "metric"; data: Metric }
+  | { type: "message"; data: Message }
+)
 
 type _ChronicleLogButElectric = ChronicleEntry[]
 
