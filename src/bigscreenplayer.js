@@ -8,7 +8,6 @@ import DynamicWindowUtils from "./dynamicwindowutils"
 import WindowTypes from "./models/windowtypes"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
-import Chronicle from "./debugger/chronicle"
 import DebugTool from "./debugger/debugtool"
 import SlidingWindowUtils from "./utils/timeutils"
 import callCallbacks from "./utils/callcallbacks"
@@ -191,7 +190,6 @@ function BigscreenPlayer() {
      */
     init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks = {}) => {
       playbackElement = newPlaybackElement
-      Chronicle.init()
       resizer = Resizer()
       DebugTool.setRootElement(playbackElement)
       DebugTool.keyValue({ key: "framework-version", value: Version })
@@ -250,7 +248,6 @@ function BigscreenPlayer() {
       resizer = undefined
       this.unregisterPlugin()
       DebugTool.tearDown()
-      Chronicle.tearDown()
     },
 
     /**
@@ -662,7 +659,7 @@ function BigscreenPlayer() {
      * @param logLevel -  log level to display @see getLogLevels
      */
     setLogLevel: DebugTool.setLogLevel,
-    getDebugLogs: () => Chronicle.retrieve(),
+    getDebugLogs: () => DebugTool.getDebugLogs(),
   }
 }
 

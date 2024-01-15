@@ -85,16 +85,6 @@ class Chronicle {
   private firstTimeElement: boolean = true
   private compressTime: boolean = false
 
-  constructor() {
-    this.clear()
-  }
-
-  public clear() {
-    this.firstTimeElement = true
-    this.compressTime = false
-    this.chronicle = []
-  }
-
   public registerForUpdates(callback: ChronicleUpdateCallback) {
     this.updateCallbacks.push(callback)
   }

@@ -1,4 +1,3 @@
-import Chronicle from "./chronicle.ts"
 import DebugTool from "./debugtool"
 import DebugView from "./debugview"
 
@@ -13,16 +12,13 @@ describe("Debug Tool", () => {
     jest.clearAllMocks()
 
     DebugTool.tearDown()
-    Chronicle.tearDown()
-
-    Chronicle.init()
   })
 
   describe("logging an error", () => {
     it("takes a string", () => {
       DebugTool.error("something went wrong")
 
-      expect(Chronicle.retrieve()).toEqual([
+      expect(DebugTool.getDebugLogs()).toEqual([
         { type: "error", error: new Error("something went wrong"), timestamp: 1234 },
       ])
 
@@ -38,7 +34,7 @@ describe("Debug Tool", () => {
     it("takes an Error", () => {
       DebugTool.error(new TypeError("something went REALLY wrong"))
 
-      expect(Chronicle.retrieve()).toEqual([
+      expect(DebugTool.getDebugLogs()).toEqual([
         { type: "error", error: new TypeError("something went REALLY wrong"), timestamp: 1234 },
       ])
 
@@ -56,7 +52,7 @@ describe("Debug Tool", () => {
     it("takes a string", () => {
       DebugTool.warn("you're using a deprecated thingie!")
 
-      expect(Chronicle.retrieve()).toEqual([
+      expect(DebugTool.getDebugLogs()).toEqual([
         { type: "warning", warning: "you're using a deprecated thingie!", timestamp: 1234 },
       ])
 
@@ -71,7 +67,7 @@ describe("Debug Tool", () => {
   })
 
   describe("intercepting keyvalue calls", () => {
-    it("should always add entry to chronicle if the key does not match one of the defined static keys", () => {
+    it("should always add entry to debugLogs if the key does not match one of the defined static keys", () => {
       const testObj1 = { key: "bitrate", value: "1000" }
       const testObj2 = { key: "imNotSpecial", value: "nobodylovesme" }
       const testObj3 = { key: "idontmatch", value: "pleaseaddme" }
@@ -86,12 +82,12 @@ describe("Debug Tool", () => {
       DebugTool.keyValue(testObj2)
       DebugTool.keyValue(testObj3)
 
-      const chronicle = Chronicle.retrieve()
+      const debugLogs = DebugTool.getDebugLogs()
 
-      expect(chronicle).toEqual(expectedArray)
+      expect(debugLogs).toEqual(expectedArray)
     })
 
-    it("overwrites a keyvalue entry to the chronicle if that keyvalue already exists", () => {
+    it("overwrites a keyvalue entry to the debugLogs if that keyvalue already exists", () => {
       const testObj = { key: "akey", value: "something" }
       const testObj1 = { key: "bitrate", value: "1000" }
       const testObj2 = { key: "bitrate", value: "1001" }
@@ -105,9 +101,9 @@ describe("Debug Tool", () => {
       DebugTool.keyValue(testObj1)
       DebugTool.keyValue(testObj2)
 
-      const chronicle = Chronicle.retrieve()
+      const debugLogs = DebugTool.getDebugLogs()
 
-      expect(chronicle).toEqual(expectedArray)
+      expect(debugLogs).toEqual(expectedArray)
     })
   })
 })
