@@ -1,20 +1,21 @@
-export enum ChronicleEntryType {
+export enum EntryType {
   METRIC = "metric",
   MESSAGE = "message",
 }
 
-enum ChronicleMessageLevel {
+export enum MessageLevel {
   ERROR = "error",
   INFO = "info",
   WARNING = "warning",
   TRACE = "trace",
 }
 
-type _ChronicleMessage = { type: ChronicleEntryType.MESSAGE } & (
-  | { level: ChronicleMessageLevel.ERROR; data: Error }
-  | { level: ChronicleMessageLevel.INFO; data: string }
+type Message = { type: EntryType.MESSAGE } & (
+  | { level: MessageLevel.ERROR; data: Error }
+  | { level: MessageLevel.INFO; data: string }
+  | { level: MessageLevel.TRACE; data: string }
   | {
-      level: ChronicleMessageLevel.TRACE
+      level: MessageLevel.TRACE
       data: {
         kind: "api-call"
         functionName: string
@@ -22,13 +23,13 @@ type _ChronicleMessage = { type: ChronicleEntryType.MESSAGE } & (
       }
     }
   | {
-      level: ChronicleMessageLevel.TRACE
+      level: MessageLevel.TRACE
       data: {
         kind: "event"
         eventType: string
       }
     }
-  | { level: ChronicleMessageLevel.WARNING; data: string }
+  | { level: MessageLevel.WARNING; data: string }
 )
 
 export enum MetricKey {
@@ -52,7 +53,7 @@ export enum MetricKey {
   VERSION = "version",
 }
 
-type ChronicleMetric = { type: ChronicleEntryType.METRIC } & (
+type Metric = { type: EntryType.METRIC } & (
   | { key: MetricKey.AUTO_RESUME; data: number }
   | { key: MetricKey.BITRATE; data: number }
   | { key: MetricKey.BUFFER_LENGTH; data: number }
@@ -76,7 +77,12 @@ type ChronicleMetric = { type: ChronicleEntryType.METRIC } & (
   | { key: MetricKey.VERSION; data: string }
 )
 
-export type MetricForKey<Key extends MetricKey> = Extract<ChronicleMetric, { key: Key }>
+type Entry = Message | Metric
+
+type History = Entry[]
+
+export type MessageForLevel<Level extends MessageLevel> = Extract<Message, { level: Level }>
+export type MetricForKey<Key extends MetricKey> = Extract<Metric, { key: Key }>
 
 // type _ChronicleLogButElectric = ChronicleEntry[]
 const TYPES = {
@@ -99,19 +105,46 @@ type ChronicleLog = { type: string; currentTime?: number; timestamp?: number } &
   | { type: typeof TYPES.KEYVALUE; keyvalue: object }
 )
 
-type ChronicleUpdateCallback = (chronicle: ChronicleLog[]) => void
+type ChronicleUpdateCallback = (chronicle: History) => void
 
 class Chronicle {
   static TYPES = TYPES
 
   private updateCallbacks: ChronicleUpdateCallback[] = []
-  private chronicle: ChronicleLog[] = []
+  private chronicle: History = []
   private firstTimeElement: boolean = true
   private compressTime: boolean = false
 
   private updates() {
     const chronicleSoFar = this.retrieve()
     this.updateCallbacks.forEach((callback) => callback(chronicleSoFar))
+  }
+
+  public retrieve() {
+    return [...this.chronicle]
+  }
+
+  public registerForUpdates(callback: ChronicleUpdateCallback) {
+    this.updateCallbacks.push(callback)
+  }
+
+  public unregisterForUpdates(callback: ChronicleUpdateCallback) {
+    const indexOf = this.updateCallbacks.indexOf(callback)
+
+    if (indexOf !== -1) {
+      this.updateCallbacks.splice(indexOf, 1)
+    }
+  }
+
+  public pushToChronicle(obj: ChronicleLog) {
+    if (obj.type !== "time") {
+      this.firstTimeElement = true
+      this.compressTime = false
+    }
+
+    this.timestamp(obj)
+    this.chronicle.push(obj)
+    this.updates()
   }
 
   public getElementTime() {
@@ -130,78 +163,28 @@ class Chronicle {
     return null as unknown as MetricForKey<Key>
   }
 
-  public registerForUpdates(callback: ChronicleUpdateCallback) {
-    this.updateCallbacks.push(callback)
+  public error(_err: MessageForLevel<MessageLevel.ERROR>["data"]) {
+    // empty
   }
 
-  public unregisterForUpdates(callback: ChronicleUpdateCallback) {
-    const indexOf = this.updateCallbacks.indexOf(callback)
-
-    if (indexOf !== -1) {
-      this.updateCallbacks.splice(indexOf, 1)
-    }
+  public info(_message: MessageForLevel<MessageLevel.INFO>["data"]) {
+    // stub
   }
 
-  public info(message: object | string) {
-    this.pushToChronicle({ type: TYPES.INFO, message })
+  public trace(_message: MessageForLevel<MessageLevel.TRACE>["data"]) {
+    // stub
   }
 
-  public verbose(message: object | string) {
-    this.info(message)
+  public warn(_message: MessageForLevel<MessageLevel.WARNING>["data"]) {
+    // stub
   }
 
-  public error(err: Error) {
-    this.pushToChronicle({ type: TYPES.ERROR, error: err })
+  public apicall(name: string, args: any[]) {
+    // stub
   }
 
-  public warn(warning: object | string) {
-    this.pushToChronicle({ type: TYPES.WARNING, warning })
-  }
-
-  public event(event: object | string) {
-    this.pushToChronicle({ type: TYPES.EVENT, event })
-  }
-
-  public apicall(callType: string) {
-    this.pushToChronicle({ type: TYPES.APICALL, calltype: callType })
-  }
-
-  public time(time: number) {
-    if (this.firstTimeElement) {
-      this.pushToChronicle({ type: TYPES.TIME, currentTime: time })
-      this.firstTimeElement = false
-    } else if (this.compressTime) {
-      const lastElement = this.chronicle.pop()
-
-      lastElement!.currentTime = time
-      this.pushToChronicle(lastElement!)
-    } else {
-      this.pushToChronicle({ type: TYPES.TIME, currentTime: time })
-      this.compressTime = true
-    }
-  }
-
-  public keyValue(obj: object) {
-    this.pushToChronicle({ type: TYPES.KEYVALUE, keyvalue: obj })
-  }
-
-  public retrieve() {
-    return [...this.chronicle]
-  }
-
-  public timestamp(obj: ChronicleLog) {
-    obj.timestamp = Date.now()
-  }
-
-  public pushToChronicle(obj: ChronicleLog) {
-    if (obj.type !== "time") {
-      this.firstTimeElement = true
-      this.compressTime = false
-    }
-
-    this.timestamp(obj)
-    this.chronicle.push(obj)
-    this.updates()
+  public event(type: string) {
+    // stub
   }
 }
 
