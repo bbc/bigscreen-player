@@ -31,7 +31,7 @@ type _ChronicleMessage = { type: ChronicleEntryType.MESSAGE } & (
   | { level: ChronicleMessageLevel.WARNING; data: string }
 )
 
-enum ChronicleMetricKey {
+export enum MetricKey {
   AUTO_RESUME = "auto-resume",
   BITRATE = "bitrate",
   BUFFER_LENGTH = "buffer-length",
@@ -53,38 +53,30 @@ enum ChronicleMetricKey {
 }
 
 type ChronicleMetric = { type: ChronicleEntryType.METRIC } & (
-  | { key: ChronicleMetricKey.AUTO_RESUME; data: number }
-  | { key: ChronicleMetricKey.BITRATE; data: number }
-  | { key: ChronicleMetricKey.BUFFER_LENGTH; data: number }
+  | { key: MetricKey.AUTO_RESUME; data: number }
+  | { key: MetricKey.BITRATE; data: number }
+  | { key: MetricKey.BUFFER_LENGTH; data: number }
   | {
-      key: ChronicleMetricKey.READY_STATE
+      key: MetricKey.READY_STATE
       data: HTMLMediaElement["readyState"]
     }
-  | { key: ChronicleMetricKey.CDNS_AVAILABLE; data: string[] }
-  | { key: ChronicleMetricKey.CURRENT_URL; data: string }
-  | { key: ChronicleMetricKey.DURATION; data: number }
-  | { key: ChronicleMetricKey.FRAMES_DROPPED; data: number }
-  | { key: ChronicleMetricKey.INITIAL_PLAYBACK_TIME; data: number }
-  | { key: ChronicleMetricKey.PAUSED; data: HTMLMediaElement["paused"] }
-  | { key: ChronicleMetricKey.REPRESENTATION_AUDIO; data: { qualityIndex: number; bitrate: number } }
-  | { key: ChronicleMetricKey.REPRESENTATION_VIDEO; data: { qualityIndex: number; bitrate: number } }
-  | { key: ChronicleMetricKey.SEEKABLE_RANGE; data: { start: number; end: number } }
-  | { key: ChronicleMetricKey.SEEKING; data: HTMLMediaElement["seeking"] }
-  | { key: ChronicleMetricKey.STRATEGY; data: string }
-  | { key: ChronicleMetricKey.SUBTITLE_CDNS_AVAILABLE; data: string[] }
-  | { key: ChronicleMetricKey.SUBTITLE_CURRENT_URL; data: string }
-  | { key: ChronicleMetricKey.VERSION; data: string }
+  | { key: MetricKey.CDNS_AVAILABLE; data: string[] }
+  | { key: MetricKey.CURRENT_URL; data: string }
+  | { key: MetricKey.DURATION; data: number }
+  | { key: MetricKey.FRAMES_DROPPED; data: number }
+  | { key: MetricKey.INITIAL_PLAYBACK_TIME; data: number }
+  | { key: MetricKey.PAUSED; data: HTMLMediaElement["paused"] }
+  | { key: MetricKey.REPRESENTATION_AUDIO; data: { qualityIndex: number; bitrate: number } }
+  | { key: MetricKey.REPRESENTATION_VIDEO; data: { qualityIndex: number; bitrate: number } }
+  | { key: MetricKey.SEEKABLE_RANGE; data: { start: number; end: number } }
+  | { key: MetricKey.SEEKING; data: HTMLMediaElement["seeking"] }
+  | { key: MetricKey.STRATEGY; data: string }
+  | { key: MetricKey.SUBTITLE_CDNS_AVAILABLE; data: string[] }
+  | { key: MetricKey.SUBTITLE_CURRENT_URL; data: string }
+  | { key: MetricKey.VERSION; data: string }
 )
 
-type ChronicleMetricDataForKey<Key extends ChronicleMetricKey> = Extract<ChronicleMetric, { key: Key }>["data"]
-
-function testExtract<Key extends ChronicleMetricKey>(_key: Key): ChronicleMetricDataForKey<Key> {
-  return undefined as any as ChronicleMetricDataForKey<Key>
-}
-
-function _testExtractConsume<Key extends ChronicleMetricKey>(_key: Key) {
-  testExtract(ChronicleMetricKey.REPRESENTATION_AUDIO)
-}
+export type MetricForKey<Key extends MetricKey> = Extract<ChronicleMetric, { key: Key }>
 
 // type _ChronicleLogButElectric = ChronicleEntry[]
 const TYPES = {
@@ -130,12 +122,12 @@ class Chronicle {
     // stubbed
   }
 
-  public pushMetric<Metric extends ChronicleMetric>(_key: Metric["key"], _value: Metric["data"]) {
+  public pushMetric<Key extends MetricKey>(_key: Key, _value: MetricForKey<Key>["data"]) {
     // stubbed
   }
 
-  public getLatestMetric<Metric extends ChronicleMetric>(_key: Metric["key"]): Metric {
-    return null as unknown as Metric
+  public getLatestMetric<Key extends MetricKey>(_key: Key): MetricForKey<Key> {
+    return null as unknown as MetricForKey<Key>
   }
 
   public registerForUpdates(callback: ChronicleUpdateCallback) {

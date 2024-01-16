@@ -1,4 +1,4 @@
-import Chronicle, { ChronicleEntryType } from "./chronicle"
+import Chronicle, { ChronicleEntryType, MetricKey } from "./chronicle"
 
 describe("Chronicle", () => {
   beforeAll(() => {
@@ -19,7 +19,7 @@ describe("Chronicle", () => {
     it("add a metric", () => {
       const chronicle = new Chronicle()
 
-      chronicle.pushMetric("ready-state", 1)
+      chronicle.pushMetric(MetricKey.READY_STATE, 1)
 
       expect(chronicle.retrieve()).toEqual([
         { type: ChronicleEntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 1 },
@@ -31,7 +31,7 @@ describe("Chronicle", () => {
 
       chronicle.setElementTime(32)
 
-      chronicle.pushMetric("bitrate", 16)
+      chronicle.pushMetric(MetricKey.BITRATE, 16)
 
       expect(chronicle.retrieve()).toEqual([
         { type: ChronicleEntryType.METRIC, currentElementTime: 32, sessionTime: 0, key: "bitrate", data: 16 },
@@ -43,7 +43,7 @@ describe("Chronicle", () => {
 
       jest.advanceTimersByTime(2345)
 
-      chronicle.pushMetric("duration", 300)
+      chronicle.pushMetric(MetricKey.DURATION, 300)
 
       expect(chronicle.retrieve()).toEqual([
         { type: ChronicleEntryType.METRIC, currentElementTime: 0, sessionTime: 1111, key: "duration", data: 300 },
@@ -53,16 +53,16 @@ describe("Chronicle", () => {
     it("records changes in metrics over time", () => {
       const chronicle = new Chronicle()
 
-      chronicle.pushMetric("ready-state", 0)
+      chronicle.pushMetric(MetricKey.READY_STATE, 0)
 
       jest.advanceTimersByTime(2345)
 
-      chronicle.pushMetric("ready-state", 1)
+      chronicle.pushMetric(MetricKey.READY_STATE, 1)
 
       jest.advanceTimersByTime(3456)
       chronicle.setElementTime(0.3)
 
-      chronicle.pushMetric("ready-state", 4)
+      chronicle.pushMetric(MetricKey.READY_STATE, 4)
 
       expect(chronicle.retrieve()).toEqual([
         expect.objectContaining({ key: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
@@ -70,7 +70,7 @@ describe("Chronicle", () => {
         expect.objectContaining({ key: "ready-state", data: 4, sessionTime: 4567, currentElementTime: 0.3 }),
       ])
 
-      expect(chronicle.getLatestMetric("ready-state")).toEqual({
+      expect(chronicle.getLatestMetric(MetricKey.READY_STATE)).toEqual({
         key: "ready-state",
         data: 4,
       })
