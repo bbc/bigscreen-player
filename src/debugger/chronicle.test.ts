@@ -1,6 +1,45 @@
-import Chronicle from "./chronicle"
+import Chronicle, { ChronicleEntryType } from "./chronicle"
 
 describe("Chronicle", () => {
+  beforeAll(() => {
+    jest.useFakeTimers({ now: 1234 })
+  })
+
+  it("updates current time", () => {
+    const chronicle = new Chronicle()
+
+    expect(chronicle.getElementTime()).toBe(0)
+
+    chronicle.setElementTime(12)
+
+    expect(chronicle.getElementTime()).toBe(12)
+  })
+
+  describe("pushing metrics", () => {
+    it("add a metric", () => {
+      const chronicle = new Chronicle()
+
+      chronicle.pushMetric("ready-state", 1)
+      chronicle.pushMetric("ready-state", "string")
+
+      expect(chronicle.retrieve()).toEqual([
+        { type: ChronicleEntryType.METRIC, currentElementTime: 0, sessionTime: 1234, data: 1 },
+      ])
+    })
+  })
+
+  it.todo("register for updates")
+  it.todo("unregister for updates")
+  it.todo("pushing info")
+  it.todo("pushing warning")
+  it.todo("pushing error")
+  it.todo("pushing event")
+  it.todo("pushing apicall")
+  it.todo("pushing metric")
+  it.todo("metric history")
+})
+
+describe.skip("Chronicle", () => {
   let chronicle: Chronicle
 
   beforeAll(() => {

@@ -1,4 +1,4 @@
-enum ChronicleEntryType {
+export enum ChronicleEntryType {
   METRIC = "metric",
   MESSAGE = "message",
 }
@@ -10,7 +10,7 @@ enum ChronicleMessageLevel {
   TRACE = "trace",
 }
 
-type _ChronicleEntry = { type: ChronicleEntryType; sessionTime: number; currentTime: number; data: object } & (
+type ChronicleEntry =
   | ({ type: "message"; level: ChronicleMessageLevel; data: string } & (
       | { type: "message"; level: "error"; data: Error }
       | { type: "message"; level: "info"; data: string }
@@ -52,7 +52,6 @@ type _ChronicleEntry = { type: ChronicleEntryType; sessionTime: number; currentT
   | { type: "metric"; key: "subtitle-cdns-available"; data: string[] }
   | { type: "metric"; key: "subtitle-current-url"; data: string }
   | { type: "metric"; key: "version"; data: string }
-)
 
 // type _ChronicleLogButElectric = ChronicleEntry[]
 const TYPES = {
@@ -84,6 +83,23 @@ class Chronicle {
   private chronicle: ChronicleLog[] = []
   private firstTimeElement: boolean = true
   private compressTime: boolean = false
+
+  private updates() {
+    const chronicleSoFar = this.retrieve()
+    this.updateCallbacks.forEach((callback) => callback(chronicleSoFar))
+  }
+
+  public getElementTime() {
+    return 0
+  }
+
+  public setElementTime(_seconds: number) {
+    // stubbed
+  }
+
+  public pushMetric(_key: ChronicleEntry["key"], _value: ChronicleEntry["data"]) {
+    // stubbed
+  }
 
   public registerForUpdates(callback: ChronicleUpdateCallback) {
     this.updateCallbacks.push(callback)
@@ -157,11 +173,6 @@ class Chronicle {
     this.timestamp(obj)
     this.chronicle.push(obj)
     this.updates()
-  }
-
-  private updates() {
-    const chronicleSoFar = this.retrieve()
-    this.updateCallbacks.forEach((callback) => callback(chronicleSoFar))
   }
 }
 
