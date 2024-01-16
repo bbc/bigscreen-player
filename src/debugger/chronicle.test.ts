@@ -1,7 +1,7 @@
-import Chronicle from "./chronicle.ts"
+import Chronicle from "./chronicle"
 
 describe("Chronicle", () => {
-  let chronicle
+  let chronicle: Chronicle
 
   beforeAll(() => {
     jest.useFakeTimers({ now: 1234 })
@@ -42,19 +42,10 @@ describe("Chronicle", () => {
   })
 
   it("stores an error with type and error", () => {
-    const testErrorObject = {
-      message: "an error message",
-      code: 1,
-    }
-    const expectedObject = {
-      type: "error",
-      error: testErrorObject,
-      timestamp: 1234,
-    }
-    chronicle.error(testErrorObject)
+    chronicle.error(new Error("An error message"))
     const chronicleLogs = chronicle.retrieve()
 
-    expect(chronicleLogs.pop()).toEqual(expectedObject)
+    expect(chronicleLogs.pop()).toEqual({ type: "error", error: new Error("An error message"), timestamp: 1234 })
   })
 
   it("stores an event with type and event", () => {
@@ -134,7 +125,7 @@ describe("Chronicle", () => {
       { type: "time", currentTime: 2, timestamp: 1234 },
       { type: "info", message: "An info message", timestamp: 1234 },
       { type: "time", currentTime: 3, timestamp: 1234 },
-      { type: "error", error: { message: "Something went wrong" }, timestamp: 1234 },
+      { type: "error", error: new Error("S0m3th1ng w3nt wr0ng"), timestamp: 1234 },
       { type: "time", currentTime: 4, timestamp: 1234 },
       { type: "time", currentTime: 6, timestamp: 1234 },
     ]
@@ -143,7 +134,7 @@ describe("Chronicle", () => {
     chronicle.time(2)
     chronicle.info("An info message")
     chronicle.time(3)
-    chronicle.error({ message: "Something went wrong" })
+    chronicle.error(new Error("S0m3th1ng w3nt wr0ng"))
     chronicle.time(4)
     chronicle.time(5)
     chronicle.time(6)
