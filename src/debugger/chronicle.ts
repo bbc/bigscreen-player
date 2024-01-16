@@ -31,31 +31,60 @@ type _ChronicleMessage = { type: ChronicleEntryType.MESSAGE } & (
   | { level: ChronicleMessageLevel.WARNING; data: string }
 )
 
+enum ChronicleMetricKey {
+  AUTO_RESUME = "auto-resume",
+  BITRATE = "bitrate",
+  BUFFER_LENGTH = "buffer-length",
+  READY_STATE = "ready-state",
+  CDNS_AVAILABLE = "cdns-available",
+  CURRENT_URL = "current-url",
+  DURATION = "duration",
+  FRAMES_DROPPED = "frames-dropped",
+  INITIAL_PLAYBACK_TIME = "initial-playback-time",
+  PAUSED = "paused",
+  REPRESENTATION_AUDIO = "representation-audio",
+  REPRESENTATION_VIDEO = "representation-video",
+  SEEKABLE_RANGE = "seekable-range",
+  SEEKING = "seeking",
+  STRATEGY = "strategy",
+  SUBTITLE_CDNS_AVAILABLE = "subtitle-cdns-available",
+  SUBTITLE_CURRENT_URL = "subtitle-current-url",
+  VERSION = "version",
+}
+
 type ChronicleMetric = { type: ChronicleEntryType.METRIC } & (
-  | { key: "auto-resume"; data: number }
-  | { key: "bitrate"; data: number }
-  | { key: "buffer-length"; data: number }
+  | { key: ChronicleMetricKey.AUTO_RESUME; data: number }
+  | { key: ChronicleMetricKey.BITRATE; data: number }
+  | { key: ChronicleMetricKey.BUFFER_LENGTH; data: number }
   | {
-      key: "ready-state"
+      key: ChronicleMetricKey.READY_STATE
       data: HTMLMediaElement["readyState"]
     }
-  | { key: "buffer-length"; data: number }
-  | { key: "cdns-available"; data: string[] }
-  | { key: "current-url"; data: string }
-  | { key: "duration"; data: number }
-  | { key: "frames-dropped"; data: number }
-  | { key: "initial-playback-time"; data: number }
-  | { key: "paused"; data: HTMLMediaElement["paused"] }
-  | { key: "ready-state"; data: HTMLMediaElement["readyState"] }
-  | { key: "representation-audio"; data: { qualityIndex: number; bitrate: number } }
-  | { key: "representation-video"; data: { qualityIndex: number; bitrate: number } }
-  | { key: "seekable-range"; data: { start: number; end: number } }
-  | { key: "seeking"; data: HTMLMediaElement["seeking"] }
-  | { key: "strategy"; data: string }
-  | { key: "subtitle-cdns-available"; data: string[] }
-  | { key: "subtitle-current-url"; data: string }
-  | { key: "version"; data: string }
+  | { key: ChronicleMetricKey.CDNS_AVAILABLE; data: string[] }
+  | { key: ChronicleMetricKey.CURRENT_URL; data: string }
+  | { key: ChronicleMetricKey.DURATION; data: number }
+  | { key: ChronicleMetricKey.FRAMES_DROPPED; data: number }
+  | { key: ChronicleMetricKey.INITIAL_PLAYBACK_TIME; data: number }
+  | { key: ChronicleMetricKey.PAUSED; data: HTMLMediaElement["paused"] }
+  | { key: ChronicleMetricKey.REPRESENTATION_AUDIO; data: { qualityIndex: number; bitrate: number } }
+  | { key: ChronicleMetricKey.REPRESENTATION_VIDEO; data: { qualityIndex: number; bitrate: number } }
+  | { key: ChronicleMetricKey.SEEKABLE_RANGE; data: { start: number; end: number } }
+  | { key: ChronicleMetricKey.SEEKING; data: HTMLMediaElement["seeking"] }
+  | { key: ChronicleMetricKey.STRATEGY; data: string }
+  | { key: ChronicleMetricKey.SUBTITLE_CDNS_AVAILABLE; data: string[] }
+  | { key: ChronicleMetricKey.SUBTITLE_CURRENT_URL; data: string }
+  | { key: ChronicleMetricKey.VERSION; data: string }
 )
+
+type ChronicleMetricDataForKey<Key extends ChronicleMetricKey> = Extract<ChronicleMetric, { key: Key }>["data"]
+
+function testExtract<Key extends ChronicleMetricKey>(_key: Key): ChronicleMetricDataForKey<Key> {
+  return undefined as any as ChronicleMetricDataForKey<Key>
+}
+
+function _testExtractConsume<Key extends ChronicleMetricKey>(_key: Key) {
+  testExtract(ChronicleMetricKey.REPRESENTATION_AUDIO)
+}
 
 // type _ChronicleLogButElectric = ChronicleEntry[]
 const TYPES = {
