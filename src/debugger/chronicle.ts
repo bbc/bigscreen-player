@@ -10,48 +10,52 @@ enum ChronicleMessageLevel {
   TRACE = "trace",
 }
 
-type ChronicleEntry =
-  | ({ type: "message"; level: ChronicleMessageLevel; data: string } & (
-      | { type: "message"; level: "error"; data: Error }
-      | { type: "message"; level: "info"; data: string }
-      | { type: "message"; level: "warning"; data: string }
-      | {
-          type: "message"
-          level: "trace"
-          data: {
-            kind: "api-call"
-            functionName: string
-            functionParameters: any[]
-          }
-        }
-      | {
-          type: "message"
-          level: "trace"
-          data: {
-            kind: "event"
-            eventType: string
-          }
-        }
-    ))
-  | { type: "metric"; key: "auto-resume"; data: number }
-  | { type: "metric"; key: "bitrate"; data: number }
-  | { type: "metric"; key: "buffer-length"; data: number }
-  | { type: "metric"; key: "cdns-available"; data: string[] }
-  | { type: "metric"; key: "current-time"; data: HTMLMediaElement["currentTime"] }
-  | { type: "metric"; key: "current-url"; data: string }
-  | { type: "metric"; key: "duration"; data: number }
-  | { type: "metric"; key: "frames-dropped"; data: number }
-  | { type: "metric"; key: "initial-playback-time"; data: number }
-  | { type: "metric"; key: "paused"; data: HTMLMediaElement["paused"] }
-  | { type: "metric"; key: "ready-state"; data: HTMLMediaElement["readyState"] }
-  | { type: "metric"; key: "representation-audio"; data: { qualityIndex: number; bitrate: number } }
-  | { type: "metric"; key: "representation-video"; data: { qualityIndex: number; bitrate: number } }
-  | { type: "metric"; key: "seekable-range"; data: { start: number; end: number } }
-  | { type: "metric"; key: "seeking"; data: HTMLMediaElement["seeking"] }
-  | { type: "metric"; key: "strategy"; data: string }
-  | { type: "metric"; key: "subtitle-cdns-available"; data: string[] }
-  | { type: "metric"; key: "subtitle-current-url"; data: string }
-  | { type: "metric"; key: "version"; data: string }
+type _ChronicleMessage = { type: ChronicleEntryType.MESSAGE } & (
+  | { level: ChronicleMessageLevel.ERROR; data: Error }
+  | { level: ChronicleMessageLevel.INFO; data: string }
+  | {
+      level: ChronicleMessageLevel.TRACE
+      data: {
+        kind: "api-call"
+        functionName: string
+        functionParameters: any[]
+      }
+    }
+  | {
+      level: ChronicleMessageLevel.TRACE
+      data: {
+        kind: "event"
+        eventType: string
+      }
+    }
+  | { level: ChronicleMessageLevel.WARNING; data: string }
+)
+
+type ChronicleMetric = { type: ChronicleEntryType.METRIC } & (
+  | { key: "auto-resume"; data: number }
+  | { key: "bitrate"; data: number }
+  | { key: "buffer-length"; data: number }
+  | {
+      key: "ready-state"
+      data: HTMLMediaElement["readyState"]
+    }
+  | { key: "buffer-length"; data: number }
+  | { key: "cdns-available"; data: string[] }
+  | { key: "current-url"; data: string }
+  | { key: "duration"; data: number }
+  | { key: "frames-dropped"; data: number }
+  | { key: "initial-playback-time"; data: number }
+  | { key: "paused"; data: HTMLMediaElement["paused"] }
+  | { key: "ready-state"; data: HTMLMediaElement["readyState"] }
+  | { key: "representation-audio"; data: { qualityIndex: number; bitrate: number } }
+  | { key: "representation-video"; data: { qualityIndex: number; bitrate: number } }
+  | { key: "seekable-range"; data: { start: number; end: number } }
+  | { key: "seeking"; data: HTMLMediaElement["seeking"] }
+  | { key: "strategy"; data: string }
+  | { key: "subtitle-cdns-available"; data: string[] }
+  | { key: "subtitle-current-url"; data: string }
+  | { key: "version"; data: string }
+)
 
 // type _ChronicleLogButElectric = ChronicleEntry[]
 const TYPES = {
@@ -97,8 +101,12 @@ class Chronicle {
     // stubbed
   }
 
-  public pushMetric(_key: ChronicleEntry["key"], _value: ChronicleEntry["data"]) {
+  public pushMetric<Metric extends ChronicleMetric>(_key: Metric["key"], _value: Metric["data"]) {
     // stubbed
+  }
+
+  public getLatestMetric<Metric extends ChronicleMetric>(_key: Metric["key"]): Metric {
+    return null as unknown as Metric
   }
 
   public registerForUpdates(callback: ChronicleUpdateCallback) {
