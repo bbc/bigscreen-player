@@ -71,10 +71,10 @@ type Entry = Message | Metric
 
 type History = Entry[]
 
-export type MessageForLevel<Level extends MessageLevel> = Extract<Message, { level: Level }>
-export type MetricForKey<Key extends MetricKey> = Extract<Metric, { key: Key }>
+type MessageForLevel<Level extends MessageLevel> = Extract<Message, { level: Level }>
+type MetricForKey<Key extends MetricKey> = Extract<Metric, { key: Key }>
 
-type EntryForIdentifier<I extends MessageLevel | MetricKey> = I extends MessageLevel
+export type EntryForIdentifier<I extends MessageLevel | MetricKey> = I extends MessageLevel
   ? MessageForLevel<I>
   : I extends MetricKey
     ? MetricForKey<I>
