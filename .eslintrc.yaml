@@ -126,6 +126,7 @@ rules:
   unicorn/no-array-method-this-argument: off
   unicorn/no-for-loop: off
   unicorn/numeric-separators-style: off
+  unicorn/prefer-at: off
   unicorn/prefer-array-flat: off
   unicorn/prefer-includes: off
   unicorn/prefer-dom-node-append: off
