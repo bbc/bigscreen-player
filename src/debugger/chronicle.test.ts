@@ -1,4 +1,4 @@
-import Chronicle, { EntryType, MessageLevel, MetricKey } from "./chronicle"
+import Chronicle, { EntryType, MessageLevel } from "./chronicle"
 
 describe("Chronicle", () => {
   beforeAll(() => {
@@ -22,7 +22,7 @@ describe("Chronicle", () => {
 
     chronicle.registerForUpdates(handleUpdate)
 
-    chronicle.pushMetric(MetricKey.READY_STATE, 0)
+    chronicle.pushMetric("ready-state", 0)
     chronicle.error(new DOMException("Operation timed out", "timeout"))
 
     expect(handleUpdate).toHaveBeenCalledTimes(2)
@@ -48,7 +48,7 @@ describe("Chronicle", () => {
 
     chronicle.registerForUpdates(handleUpdate)
 
-    chronicle.pushMetric(MetricKey.READY_STATE, 0)
+    chronicle.pushMetric("ready-state", 0)
 
     expect(handleUpdate).toHaveBeenCalledTimes(1)
 
@@ -66,7 +66,7 @@ describe("Chronicle", () => {
     it("add a metric", () => {
       const chronicle = new Chronicle()
 
-      chronicle.pushMetric(MetricKey.READY_STATE, 1)
+      chronicle.pushMetric("ready-state", 1)
 
       expect(chronicle.retrieve()).toEqual([
         { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 1 },
@@ -78,7 +78,7 @@ describe("Chronicle", () => {
 
       chronicle.currentElementTime = 32
 
-      chronicle.pushMetric(MetricKey.BITRATE, 16)
+      chronicle.pushMetric("bitrate", 16)
 
       expect(chronicle.retrieve()).toEqual([
         { type: EntryType.METRIC, currentElementTime: 32, sessionTime: 0, key: "bitrate", data: 16 },
@@ -90,7 +90,7 @@ describe("Chronicle", () => {
 
       jest.advanceTimersByTime(2345)
 
-      chronicle.pushMetric(MetricKey.DURATION, 300)
+      chronicle.pushMetric("duration", 300)
 
       expect(chronicle.retrieve()).toEqual([
         { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 1111, key: "duration", data: 300 },
@@ -100,16 +100,16 @@ describe("Chronicle", () => {
     it("records changes in metrics over time", () => {
       const chronicle = new Chronicle()
 
-      chronicle.pushMetric(MetricKey.READY_STATE, 0)
+      chronicle.pushMetric("ready-state", 0)
 
       jest.advanceTimersByTime(2345)
 
-      chronicle.pushMetric(MetricKey.READY_STATE, 1)
+      chronicle.pushMetric("ready-state", 1)
 
       jest.advanceTimersByTime(3456)
       chronicle.currentElementTime = 0.3
 
-      chronicle.pushMetric(MetricKey.READY_STATE, 4)
+      chronicle.pushMetric("ready-state", 4)
 
       expect(chronicle.retrieve()).toEqual([
         expect.objectContaining({ key: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
@@ -117,7 +117,7 @@ describe("Chronicle", () => {
         expect.objectContaining({ key: "ready-state", data: 4, sessionTime: 4567, currentElementTime: 0.3 }),
       ])
 
-      expect(chronicle.getLatestMetric(MetricKey.READY_STATE)).toEqual({
+      expect(chronicle.getLatestMetric("ready-state")).toEqual({
         key: "ready-state",
         data: 4,
       })
