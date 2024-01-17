@@ -24,16 +24,16 @@ describe("Chronicle", () => {
 
     const handleUpdate = jest.fn()
 
-    chronicle.registerForUpdates(handleUpdate)
+    chronicle.on("update", handleUpdate)
 
     chronicle.pushMetric("ready-state", 0)
     chronicle.error(new DOMException("Operation timed out", "timeout"))
 
     expect(handleUpdate).toHaveBeenCalledTimes(2)
-    expect(handleUpdate).toHaveBeenNthCalledWith(0, [
+    expect(handleUpdate).toHaveBeenNthCalledWith(1, [
       { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 0 },
     ])
-    expect(handleUpdate).toHaveBeenNthCalledWith(1, [
+    expect(handleUpdate).toHaveBeenNthCalledWith(2, [
       { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 0 },
       {
         type: EntryType.MESSAGE,
@@ -50,18 +50,18 @@ describe("Chronicle", () => {
 
     const handleUpdate = jest.fn()
 
-    chronicle.registerForUpdates(handleUpdate)
+    chronicle.on("update", handleUpdate)
 
     chronicle.pushMetric("ready-state", 0)
 
     expect(handleUpdate).toHaveBeenCalledTimes(1)
 
-    chronicle.unregisterForUpdates(handleUpdate)
+    chronicle.off("update", handleUpdate)
 
     chronicle.error(new DOMException("Operation timed out", "timeout"))
 
     expect(handleUpdate).toHaveBeenCalledTimes(1)
-    expect(handleUpdate).toHaveBeenNthCalledWith(0, [
+    expect(handleUpdate).toHaveBeenNthCalledWith(1, [
       { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 0 },
     ])
   })

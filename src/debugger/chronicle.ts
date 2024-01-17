@@ -58,14 +58,16 @@ export type EntryForIdentifier<I extends EntryIdentifier> = I extends Message["l
     ? MetricForKey<I>
     : never
 
-type ChronicleUpdateCallback = (chronicle: History) => void
+type EventTypes = "update"
+
+type UpdateHandler = (chronicle: History) => void
 
 class Chronicle {
   public currentElementTime: number = 0
 
-  private updateCallbacks: ChronicleUpdateCallback[] = []
   private chronicle: History = []
-  private sessionStartTime = Date.now()
+  private sessionStartTime: number = Date.now()
+  private listeners: Record<EventTypes, UpdateHandler[]> = { update: [] }
 
   private getSessionTimeSoFar() {
     return Date.now() - this.sessionStartTime
@@ -77,27 +79,26 @@ class Chronicle {
       currentElementTime: this.currentElementTime,
       sessionTime: this.getSessionTimeSoFar(),
     })
+
+    this.triggerUpdateListeners()
   }
 
-  private _updates() {
+  private triggerUpdateListeners() {
     const chronicleSoFar = this.retrieve()
-    this.updateCallbacks.forEach((callback) => callback(chronicleSoFar))
+
+    this.listeners.update.forEach((callback) => callback(chronicleSoFar))
   }
 
   public retrieve() {
     return [...this.chronicle]
   }
 
-  public registerForUpdates(callback: ChronicleUpdateCallback) {
-    this.updateCallbacks.push(callback)
+  public on(type: EventTypes, listener: UpdateHandler) {
+    this.listeners[type].push(listener)
   }
 
-  public unregisterForUpdates(callback: ChronicleUpdateCallback) {
-    const indexOf = this.updateCallbacks.indexOf(callback)
-
-    if (indexOf !== -1) {
-      this.updateCallbacks.splice(indexOf, 1)
-    }
+  public off(type: EventTypes, listener: UpdateHandler) {
+    this.listeners[type] = this.listeners[type].filter((callback) => callback !== listener)
   }
 
   public pushMetric<Key extends Metric["key"]>(key: Key, data: MetricForKey<Key>["data"]) {
@@ -111,7 +112,7 @@ class Chronicle {
 
     const filtered = (this.chronicle as Entry[]).filter(isMetricForKey)
 
-    return filtered.length > 0 ? filtered.at(-1) : undefined
+    return filtered.length > 0 ? filtered[filtered.length - 1] : undefined
   }
 
   public error(err: EntryForIdentifier<MessageLevel.ERROR>["data"]) {
