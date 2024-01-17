@@ -10,27 +10,34 @@ export enum MessageLevel {
   TRACE = "trace",
 }
 
-type Message = { type: EntryType.MESSAGE } & (
-  | { level: MessageLevel.ERROR; data: Error }
-  | { level: MessageLevel.INFO; data: string }
-  | { level: MessageLevel.TRACE; data: string }
-  | {
-      level: MessageLevel.TRACE
-      data: {
-        kind: "api-call"
-        functionName: string
-        functionParameters: any[]
-      }
-    }
-  | {
-      level: MessageLevel.TRACE
-      data: {
-        kind: "event"
-        eventType: string
-      }
-    }
-  | { level: MessageLevel.WARNING; data: string }
-)
+export enum TraceKind {
+  API_CALL = "api-call",
+  EVENT = "event",
+}
+
+type ErrorMessage = { type: EntryType.MESSAGE; level: MessageLevel.ERROR; data: Error }
+type InfoMessage = { type: EntryType.MESSAGE; level: MessageLevel.INFO; data: string }
+type WarningMessage = { type: EntryType.MESSAGE; level: MessageLevel.WARNING; data: string }
+type TraceMessage = { type: EntryType.MESSAGE; level: MessageLevel.TRACE; data: string }
+type ApiCallMessage = {
+  type: EntryType.MESSAGE
+  level: MessageLevel.TRACE
+  data: {
+    kind: TraceKind.API_CALL
+    functionName: string
+    functionParameters: any[]
+  }
+}
+type EventMessage = {
+  type: EntryType.MESSAGE
+  level: MessageLevel.TRACE
+  data: {
+    kind: TraceKind.EVENT
+    eventType: string
+  }
+}
+
+type Message = ErrorMessage | InfoMessage | WarningMessage | TraceMessage | ApiCallMessage | EventMessage
 
 export enum MetricKey {
   AUTO_RESUME = "auto-resume",
@@ -53,29 +60,29 @@ export enum MetricKey {
   VERSION = "version",
 }
 
-type Metric = { type: EntryType.METRIC } & (
-  | { key: MetricKey.AUTO_RESUME; data: number }
-  | { key: MetricKey.BITRATE; data: number }
-  | { key: MetricKey.BUFFER_LENGTH; data: number }
+type Metric =
+  | { type: EntryType.METRIC; key: MetricKey.AUTO_RESUME; data: number }
+  | { type: EntryType.METRIC; key: MetricKey.BITRATE; data: number }
+  | { type: EntryType.METRIC; key: MetricKey.BUFFER_LENGTH; data: number }
   | {
+      type: EntryType.METRIC
       key: MetricKey.READY_STATE
       data: HTMLMediaElement["readyState"]
     }
-  | { key: MetricKey.CDNS_AVAILABLE; data: string[] }
-  | { key: MetricKey.CURRENT_URL; data: string }
-  | { key: MetricKey.DURATION; data: number }
-  | { key: MetricKey.FRAMES_DROPPED; data: number }
-  | { key: MetricKey.INITIAL_PLAYBACK_TIME; data: number }
-  | { key: MetricKey.PAUSED; data: HTMLMediaElement["paused"] }
-  | { key: MetricKey.REPRESENTATION_AUDIO; data: { qualityIndex: number; bitrate: number } }
-  | { key: MetricKey.REPRESENTATION_VIDEO; data: { qualityIndex: number; bitrate: number } }
-  | { key: MetricKey.SEEKABLE_RANGE; data: { start: number; end: number } }
-  | { key: MetricKey.SEEKING; data: HTMLMediaElement["seeking"] }
-  | { key: MetricKey.STRATEGY; data: string }
-  | { key: MetricKey.SUBTITLE_CDNS_AVAILABLE; data: string[] }
-  | { key: MetricKey.SUBTITLE_CURRENT_URL; data: string }
-  | { key: MetricKey.VERSION; data: string }
-)
+  | { type: EntryType.METRIC; key: MetricKey.CDNS_AVAILABLE; data: string[] }
+  | { type: EntryType.METRIC; key: MetricKey.CURRENT_URL; data: string }
+  | { type: EntryType.METRIC; key: MetricKey.DURATION; data: number }
+  | { type: EntryType.METRIC; key: MetricKey.FRAMES_DROPPED; data: number }
+  | { type: EntryType.METRIC; key: MetricKey.INITIAL_PLAYBACK_TIME; data: number }
+  | { type: EntryType.METRIC; key: MetricKey.PAUSED; data: HTMLMediaElement["paused"] }
+  | { type: EntryType.METRIC; key: MetricKey.REPRESENTATION_AUDIO; data: { qualityIndex: number; bitrate: number } }
+  | { type: EntryType.METRIC; key: MetricKey.REPRESENTATION_VIDEO; data: { qualityIndex: number; bitrate: number } }
+  | { type: EntryType.METRIC; key: MetricKey.SEEKABLE_RANGE; data: { start: number; end: number } }
+  | { type: EntryType.METRIC; key: MetricKey.SEEKING; data: HTMLMediaElement["seeking"] }
+  | { type: EntryType.METRIC; key: MetricKey.STRATEGY; data: string }
+  | { type: EntryType.METRIC; key: MetricKey.SUBTITLE_CDNS_AVAILABLE; data: string[] }
+  | { type: EntryType.METRIC; key: MetricKey.SUBTITLE_CURRENT_URL; data: string }
+  | { type: EntryType.METRIC; key: MetricKey.VERSION; data: string }
 
 type Entry = Message | Metric
 
@@ -83,6 +90,12 @@ type History = Entry[]
 
 export type MessageForLevel<Level extends MessageLevel> = Extract<Message, { level: Level }>
 export type MetricForKey<Key extends MetricKey> = Extract<Metric, { key: Key }>
+
+type EntryForIdentifier<I extends MessageLevel | MetricKey> = I extends MessageLevel
+  ? MessageForLevel<I>
+  : I extends MetricKey
+    ? MetricForKey<I>
+    : never
 
 // type _ChronicleLogButElectric = ChronicleEntry[]
 const TYPES = {
@@ -95,27 +108,19 @@ const TYPES = {
   WARNING: "warning",
 } as const
 
-type ChronicleLog = { type: string; currentTime?: number; timestamp?: number } & (
-  | { type: typeof TYPES.APICALL; calltype: string }
-  | { type: typeof TYPES.EVENT; event: object | string }
-  | { type: typeof TYPES.WARNING; warning: object | string }
-  | { type: typeof TYPES.INFO; message: object | string }
-  | { type: typeof TYPES.ERROR; error: Error }
-  | { type: typeof TYPES.TIME; currentTime: number }
-  | { type: typeof TYPES.KEYVALUE; keyvalue: object }
-)
-
 type ChronicleUpdateCallback = (chronicle: History) => void
 
 class Chronicle {
   static TYPES = TYPES
 
+  public elementTime: number = 0
+
   private updateCallbacks: ChronicleUpdateCallback[] = []
   private chronicle: History = []
-  private firstTimeElement: boolean = true
-  private compressTime: boolean = false
+  // private firstTimeElement: boolean = true
+  // private compressTime: boolean = false
 
-  private updates() {
+  private _updates() {
     const chronicleSoFar = this.retrieve()
     this.updateCallbacks.forEach((callback) => callback(chronicleSoFar))
   }
@@ -136,25 +141,6 @@ class Chronicle {
     }
   }
 
-  public pushToChronicle(obj: ChronicleLog) {
-    if (obj.type !== "time") {
-      this.firstTimeElement = true
-      this.compressTime = false
-    }
-
-    this.timestamp(obj)
-    this.chronicle.push(obj)
-    this.updates()
-  }
-
-  public getElementTime() {
-    return 0
-  }
-
-  public setElementTime(_seconds: number) {
-    // stubbed
-  }
-
   public pushMetric<Key extends MetricKey>(_key: Key, _value: MetricForKey<Key>["data"]) {
     // stubbed
   }
@@ -163,28 +149,72 @@ class Chronicle {
     return null as unknown as MetricForKey<Key>
   }
 
-  public error(_err: MessageForLevel<MessageLevel.ERROR>["data"]) {
-    // empty
+  public error(err: EntryForIdentifier<MessageLevel.ERROR>["data"]) {
+    const entry: ErrorMessage = {
+      type: EntryType.MESSAGE,
+      level: MessageLevel.ERROR,
+      data: err,
+    }
+
+    this.chronicle.push(entry)
   }
 
-  public info(_message: MessageForLevel<MessageLevel.INFO>["data"]) {
-    // stub
+  public info(message: EntryForIdentifier<MessageLevel.INFO>["data"]) {
+    const entry: InfoMessage = {
+      type: EntryType.MESSAGE,
+      level: MessageLevel.INFO,
+      data: message,
+    }
+
+    this.chronicle.push(entry)
   }
 
-  public trace(_message: MessageForLevel<MessageLevel.TRACE>["data"]) {
-    // stub
+  // TODO: Disamg Trace Type
+  public trace(message: EntryForIdentifier<MessageLevel.TRACE>["data"]) {
+    const entry: TraceMessage = {
+      type: EntryType.MESSAGE,
+      level: MessageLevel.TRACE,
+      data: message,
+    }
+
+    this.chronicle.push(entry)
   }
 
-  public warn(_message: MessageForLevel<MessageLevel.WARNING>["data"]) {
-    // stub
+  public warn(message: EntryForIdentifier<MessageLevel.WARNING>["data"]) {
+    const entry: WarningMessage = {
+      type: EntryType.MESSAGE,
+      level: MessageLevel.WARNING,
+      data: message,
+    }
+
+    this.chronicle.push(entry)
   }
 
   public apicall(name: string, args: any[]) {
-    // stub
+    const entry: ApiCallMessage = {
+      type: EntryType.MESSAGE,
+      level: MessageLevel.TRACE,
+      data: {
+        kind: TraceKind.API_CALL,
+        functionName: name,
+        functionParameters: args,
+      },
+    }
+
+    this.chronicle.push(entry)
   }
 
   public event(type: string) {
-    // stub
+    const entry: EventMessage = {
+      type: EntryType.MESSAGE,
+      level: MessageLevel.TRACE,
+      data: {
+        kind: TraceKind.EVENT,
+        eventType: type,
+      },
+    }
+
+    this.chronicle.push(entry)
   }
 }
 
