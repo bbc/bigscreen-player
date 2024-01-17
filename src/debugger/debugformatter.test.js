@@ -1,4 +1,4 @@
-import DebugPresenter from "./debugpresenter"
+import DebugFormatter from "./debugformatter"
 import MediaState from "../models/mediastate"
 
 describe("Debug Presenter", () => {
@@ -9,7 +9,7 @@ describe("Debug Presenter", () => {
     viewMock = {
       render: jest.fn(),
     }
-    presenter = DebugPresenter
+    presenter = DebugFormatter
     presenter.init(viewMock)
   })
 

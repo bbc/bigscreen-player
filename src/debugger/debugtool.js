@@ -1,9 +1,9 @@
 import Chronicle from "./chronicle.ts"
-import DebugPresenter from "./debugpresenter"
+import DebugFormatter from "./debugformatter.js"
 import DebugView from "./debugview"
 
 function DebugTool() {
-  const presenter = DebugPresenter
+  const presenter = DebugFormatter
   let chronicle = new Chronicle()
 
   const LOG_LEVELS = {

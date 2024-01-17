@@ -1,4 +1,4 @@
-import MediaState from "../models/mediastate"
+import MediaState from "../models/mediastate.js"
 import Chronicle from "./chronicle.ts"
 
 let view
