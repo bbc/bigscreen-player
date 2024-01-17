@@ -3,7 +3,7 @@ import DebugFormatter from "./debugformatter.js"
 import DebugView from "./debugview"
 
 function DebugTool() {
-  const presenter = DebugFormatter
+  const formatter = DebugFormatter
   let chronicle = new Chronicle()
 
   const LOG_LEVELS = {
@@ -37,15 +37,15 @@ function DebugTool() {
     view = DebugView
     view.setRootElement(rootElement)
     view.init()
-    presenter.init(view)
-    presenter.update(chronicle.retrieve())
-    chronicle.registerForUpdates(presenter.update)
+    formatter.init(view)
+    formatter.update(chronicle.retrieve())
+    chronicle.registerForUpdates(formatter.update)
     visible = true
   }
 
   function hide() {
     view.tearDown()
-    chronicle.unregisterForUpdates(presenter.update)
+    chronicle.unregisterForUpdates(formatter.update)
     visible = false
   }
 

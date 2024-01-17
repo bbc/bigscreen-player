@@ -75,8 +75,8 @@ function render(logData) {
 }
 
 function updateStaticElements(log) {
-  const existingElement = document.getElementById(log.key)
-  const text = log.key + ": " + log.value
+  const existingElement = document.querySelector(log.key)
+  const text = `${log.key}: ${log.value}`
 
   if (existingElement) {
     if (text !== existingElement.textContent) {
@@ -93,7 +93,7 @@ function createNewStaticElement(key, value) {
   staticLog.id = key
   staticLog.style.paddingBottom = "1%"
   staticLog.style.borderBottom = "1px solid white"
-  staticLog.textContent = key + ": " + value
+  staticLog.textContent = `${key}: ${value}`
 
   staticContainer.appendChild(staticLog)
 }
@@ -109,8 +109,8 @@ function tearDown() {
 }
 
 export default {
-  init: init,
-  setRootElement: setRootElement,
-  render: render,
-  tearDown: tearDown,
+  init,
+  setRootElement,
+  render,
+  tearDown,
 }
