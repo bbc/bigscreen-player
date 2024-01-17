@@ -19,25 +19,8 @@ type ErrorMessage = { type: EntryType.MESSAGE; level: MessageLevel.ERROR; data: 
 type InfoMessage = { type: EntryType.MESSAGE; level: MessageLevel.INFO; data: string }
 type WarningMessage = { type: EntryType.MESSAGE; level: MessageLevel.WARNING; data: string }
 type TraceMessage = { type: EntryType.MESSAGE; level: MessageLevel.TRACE; data: string }
-type ApiCallMessage = {
-  type: EntryType.MESSAGE
-  level: MessageLevel.TRACE
-  data: {
-    kind: TraceKind.API_CALL
-    functionName: string
-    functionParameters: any[]
-  }
-}
-type EventMessage = {
-  type: EntryType.MESSAGE
-  level: MessageLevel.TRACE
-  data: {
-    kind: TraceKind.EVENT
-    eventType: string
-  }
-}
 
-type Message = ErrorMessage | InfoMessage | WarningMessage | TraceMessage | ApiCallMessage | EventMessage
+type Message = ErrorMessage | InfoMessage | WarningMessage | TraceMessage
 
 export enum MetricKey {
   AUTO_RESUME = "auto-resume",
@@ -113,7 +96,7 @@ type ChronicleUpdateCallback = (chronicle: History) => void
 class Chronicle {
   static TYPES = TYPES
 
-  public elementTime: number = 0
+  public currentElementTime: number = 0
 
   private updateCallbacks: ChronicleUpdateCallback[] = []
   private chronicle: History = []
@@ -185,33 +168,6 @@ class Chronicle {
       type: EntryType.MESSAGE,
       level: MessageLevel.WARNING,
       data: message,
-    }
-
-    this.chronicle.push(entry)
-  }
-
-  public apicall(name: string, args: any[]) {
-    const entry: ApiCallMessage = {
-      type: EntryType.MESSAGE,
-      level: MessageLevel.TRACE,
-      data: {
-        kind: TraceKind.API_CALL,
-        functionName: name,
-        functionParameters: args,
-      },
-    }
-
-    this.chronicle.push(entry)
-  }
-
-  public event(type: string) {
-    const entry: EventMessage = {
-      type: EntryType.MESSAGE,
-      level: MessageLevel.TRACE,
-      data: {
-        kind: TraceKind.EVENT,
-        eventType: type,
-      },
     }
 
     this.chronicle.push(entry)

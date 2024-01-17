@@ -8,11 +8,11 @@ describe("Chronicle", () => {
   it("updates current time", () => {
     const chronicle = new Chronicle()
 
-    expect(chronicle.getElementTime()).toBe(0)
+    expect(chronicle.currentElementTime).toBe(0)
 
-    chronicle.setElementTime(12)
+    chronicle.currentElementTime = 12
 
-    expect(chronicle.getElementTime()).toBe(12)
+    expect(chronicle.currentElementTime).toBe(12)
   })
 
   it("notifies update listeners", () => {
@@ -76,7 +76,7 @@ describe("Chronicle", () => {
     it("associates a metric with the current element time", () => {
       const chronicle = new Chronicle()
 
-      chronicle.setElementTime(32)
+      chronicle.currentElementTime = 32
 
       chronicle.pushMetric(MetricKey.BITRATE, 16)
 
@@ -107,7 +107,7 @@ describe("Chronicle", () => {
       chronicle.pushMetric(MetricKey.READY_STATE, 1)
 
       jest.advanceTimersByTime(3456)
-      chronicle.setElementTime(0.3)
+      chronicle.currentElementTime = 0.3
 
       chronicle.pushMetric(MetricKey.READY_STATE, 4)
 
@@ -181,41 +181,9 @@ describe("Chronicle", () => {
       expect(chronicle.retrieve()).toEqual([
         {
           type: EntryType.MESSAGE,
-          level: MessageLevel.INFO,
+          level: MessageLevel.WARNING,
           data: "😱",
           sessionTime: 0,
-          currentElementTime: 0,
-        },
-      ])
-    })
-
-    it("logs api calls", () => {
-      const chronicle = new Chronicle()
-
-      chronicle.apicall("foo", ["bar", "baz"])
-
-      expect(chronicle.retrieve()).toEqual([
-        {
-          type: EntryType.MESSAGE,
-          level: MessageLevel.TRACE,
-          data: { kind: "apicall", functionName: "foo", functionParameters: ["bar", "baz"] },
-          sessionTime: 0,
-          currentElementTime: 0,
-        },
-      ])
-    })
-
-    it("logs events", () => {
-      const chronicle = new Chronicle()
-
-      chronicle.event("timeupdate")
-
-      expect(chronicle.retrieve()).toEqual([
-        {
-          type: EntryType.MESSAGE,
-          level: MessageLevel.TRACE,
-          data: { kind: "event", eventType: "timeupdate" },
-          sessionTime: 1234,
           currentElementTime: 0,
         },
       ])
