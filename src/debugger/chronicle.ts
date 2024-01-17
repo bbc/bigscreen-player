@@ -37,13 +37,8 @@ type Metric = { type: EntryType.METRIC } & (
   | { key: "subtitle-current-url"; data: string }
   | { key: "version"; data: string }
 )
-
-type ChronicleEntry = { currentElementTime: number; sessionTime: number } & (Message | Metric)
 type EntryIdentifier = Message["level"] | Metric["key"]
 
-type History = ChronicleEntry[]
-
-export type EntryForType<Type extends EntryType> = Extract<Message | Metric, { type: Type }>
 type MessageForLevel<Level extends Message["level"]> = Extract<Message, { level: Level }>
 type MetricForKey<Key extends Metric["key"]> = Extract<Metric, { key: Key }>
 
@@ -52,6 +47,11 @@ export type EntryForIdentifier<I extends EntryIdentifier> = I extends Message["l
   : I extends Metric["key"]
     ? MetricForKey<I>
     : never
+
+type ChronicleEntry = { currentElementTime: number; sessionTime: number } & (Message | Metric)
+export type EntryForType<Type extends EntryType> = Extract<ChronicleEntry, { type: Type }>
+
+type History = ChronicleEntry[]
 
 type ChronicleUpdateCallback = (chronicle: History) => void
 
@@ -99,8 +99,14 @@ class Chronicle {
     this.pushEntry({ key, data, type: EntryType.METRIC } as ChronicleEntry)
   }
 
-  public getLatestMetric<Key extends Metric["key"]>(_key: Key): MetricForKey<Key> {
-    return null as unknown as MetricForKey<Key>
+  public getLatestMetric<Key extends Metric["key"]>(key: Key): MetricForKey<Key> | undefined {
+    const isMetricForKey = function (entry: Message | Metric): entry is MetricForKey<Key> {
+      return entry.type === EntryType.METRIC && entry.key === key
+    }
+
+    const filtered = (this.chronicle as (Message | Metric)[]).filter(isMetricForKey)
+
+    return filtered.length > 0 ? filtered.at(-1) : undefined
   }
 
   public error(err: EntryForIdentifier<MessageLevel.ERROR>["data"]) {

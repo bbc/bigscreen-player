@@ -2,7 +2,11 @@ import Chronicle, { EntryType, MessageLevel } from "./chronicle"
 
 describe("Chronicle", () => {
   beforeAll(() => {
-    jest.useFakeTimers({ now: 1234 })
+    jest.useFakeTimers()
+  })
+
+  beforeEach(() => {
+    jest.setSystemTime(1234)
   })
 
   it("updates current time", () => {
@@ -93,7 +97,7 @@ describe("Chronicle", () => {
       chronicle.pushMetric("duration", 300)
 
       expect(chronicle.retrieve()).toEqual([
-        { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 1111, key: "duration", data: 300 },
+        { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 2345, key: "duration", data: 300 },
       ])
     })
 
@@ -113,11 +117,11 @@ describe("Chronicle", () => {
 
       expect(chronicle.retrieve()).toEqual([
         expect.objectContaining({ key: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
-        expect.objectContaining({ key: "ready-state", data: 1, sessionTime: 1111, currentElementTime: 0 }),
-        expect.objectContaining({ key: "ready-state", data: 4, sessionTime: 4567, currentElementTime: 0.3 }),
+        expect.objectContaining({ key: "ready-state", data: 1, sessionTime: 2345, currentElementTime: 0 }),
+        expect.objectContaining({ key: "ready-state", data: 4, sessionTime: 2345 + 3456, currentElementTime: 0.3 }),
       ])
 
-      expect(chronicle.getLatestMetric("ready-state")).toEqual({
+      expect(chronicle.getLatestMetric("ready-state")).toMatchObject({
         key: "ready-state",
         data: 4,
       })
