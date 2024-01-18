@@ -24,7 +24,7 @@ export type Metric = { type: EntryType.METRIC } & (
   | { key: "paused"; data: HTMLMediaElement["paused"] }
   | { key: "representation-audio"; data: { qualityIndex: number; bitrate: number } }
   | { key: "representation-video"; data: { qualityIndex: number; bitrate: number } }
-  | { key: "seekable-range"; data: { start: number; end: number } }
+  | { key: "seekable-range"; data: { start: Date; end: Date } }
   | { key: "seeking"; data: HTMLMediaElement["seeking"] }
   | { key: "strategy"; data: string }
   | { key: "subtitle-cdns-available"; data: string[] }
@@ -35,14 +35,15 @@ export type Metric = { type: EntryType.METRIC } & (
 export type Trace = { type: EntryType.TRACE } & { kind: "event"; eventType: string; eventTarget: string }
 
 export type Entry = Message | Metric | Trace
-export type EntryForType<Type extends EntryType> = Extract<Entry, { type: Type }>
 
 export type MessageLevel = Message["level"]
 export type MetricKey = Metric["key"]
+export type MetricValue = Metric["data"]
 export type TraceKind = Trace["kind"]
 export type EntryIdentifier = MessageLevel | MetricKey | TraceKind
 
 export type TimestampedEntry = { currentElementTime: number; sessionTime: number } & Entry
+export type EntryForType<Type extends EntryType> = Extract<TimestampedEntry, { type: Type }>
 export type History = TimestampedEntry[]
 
 export type MessageForLevel<Level extends MessageLevel> = Extract<Message, { level: Level }>
@@ -54,47 +55,69 @@ export type EntryForIdentifier<I extends EntryIdentifier> = I extends Message["l
     ? MetricForKey<I>
     : never
 
-type EventTypes = "update"
-
-type UpdateHandler = (chronicle: History) => void
+type EventListeners =
+  | { type: "update"; listener: (change: Readonly<TimestampedEntry>) => void }
+  | { type: "timeupdate"; listener: (seconds: number) => void }
+type EventTypes = EventListeners["type"]
+type EventListenerForType<Type extends EventTypes> = Extract<EventListeners, { type: Type }>["listener"]
 
 class Chronicle {
-  public currentElementTime: number = 0
+  private currentElementTime: number = 0
 
   private chronicle: History = []
   private sessionStartTime: number = Date.now()
-  private listeners: Record<EventTypes, UpdateHandler[]> = { update: [] }
+  private listeners: { [Type in EventTypes]: EventListenerForType<Type>[] } = { update: [], timeupdate: [] }
 
-  private getSessionTimeSoFar() {
+  private pushEntry(partial: Entry) {
+    const entry = {
+      ...partial,
+      currentElementTime: this.currentElementTime,
+      sessionTime: this.getSessionTime(),
+    }
+
+    this.chronicle.push(entry)
+
+    this.triggerUpdate(entry)
+  }
+
+  private triggerUpdate(entry: TimestampedEntry) {
+    this.listeners.update.forEach((callback) => callback(entry))
+  }
+
+  private triggerTimeUpdate(seconds: number) {
+    this.listeners.timeupdate.forEach((callback) => callback(seconds))
+  }
+
+  public getCurrentElementTime(): number {
+    return this.currentElementTime
+  }
+
+  public setCurrentElementTime(seconds: number) {
+    this.currentElementTime = seconds
+
+    this.triggerTimeUpdate(seconds)
+  }
+
+  public getSessionTime() {
     return Date.now() - this.sessionStartTime
   }
 
-  private pushEntry(partial: Entry) {
-    this.chronicle.push({
-      ...partial,
-      currentElementTime: this.currentElementTime,
-      sessionTime: this.getSessionTimeSoFar(),
-    })
-
-    this.triggerUpdateListeners()
+  public on<Type extends EventTypes>(type: Type, listener: EventListenerForType<Type>) {
+    this.listeners[type].push(listener)
   }
 
-  private triggerUpdateListeners() {
-    const chronicleSoFar = this.retrieve()
+  public off<Type extends EventTypes>(type: Type, listener: EventListenerForType<Type>) {
+    const index = this.listeners[type].indexOf(listener)
 
-    this.listeners.update.forEach((callback) => callback(chronicleSoFar))
+    if (index === -1) {
+      return
+    }
+
+    this.listeners[type].splice(index, 1)
   }
 
   public retrieve() {
     return [...this.chronicle]
-  }
-
-  public on(type: EventTypes, listener: UpdateHandler) {
-    this.listeners[type].push(listener)
-  }
-
-  public off(type: EventTypes, listener: UpdateHandler) {
-    this.listeners[type] = this.listeners[type].filter((callback) => callback !== listener)
   }
 
   public pushMetric<Key extends Metric["key"]>(key: Key, data: MetricForKey<Key>["data"]) {

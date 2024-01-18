@@ -1,141 +1,175 @@
-import Chronicle from "./chronicle.ts"
-import DebugFormatter from "./debugformatter.js"
-import DebugView from "./debugview.js"
+import Chronicle, { History, MetricForKey, MetricKey, TimestampedEntry } from "./chronicle"
+import DebugViewController from "./debugviewcontroller"
+
+export const LogLevels = {
+  ERROR: 0,
+  WARN: 1,
+  INFO: 2,
+  DEBUG: 3,
+} as const
+
+type LogLevel = (typeof LogLevels)[keyof typeof LogLevels]
+
+interface DebugTool {
+  getDebugLogs(): History
+  setLogLevel(level: LogLevel | undefined): void
+  setRootElement(el: HTMLElement): void
+  tearDown(): void
+  updateElementTime(seconds: number): void
+  // chronicle
+  apicall(functionName: string, functionArgs: any[]): void
+  debug(...parts: any[]): void
+  error(...parts: any[]): void
+  event(eventType: string): void
+  info(...parts: any[]): void
+  metric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
+  warn(...parts: any[]): void
+  // view
+  hide(): void
+  show(): void
+  toggleVisibility(): void
+}
 
 function DebugTool() {
-  const formatter = DebugFormatter
+  const viewController = new DebugViewController()
   let chronicle = new Chronicle()
+  let currentLogLevel: LogLevel = LogLevels.INFO
 
-  const LOG_LEVELS = {
-    ERROR: 0,
-    WARN: 1,
-    INFO: 2,
-    VERBOSE: 3,
+  function getDebugLogs() {
+    return chronicle.retrieve()
   }
 
-  let visible = false
-  let logLevel = LOG_LEVELS.INFO
-  let staticFieldValues = {}
-
-  let rootElement, view
-
-  function toggleVisibility() {
-    if (visible) {
-      hide()
-    } else {
-      show()
-    }
-  }
-
-  function setLogLevel(newLogLevel) {
-    if (newLogLevel !== undefined) {
-      logLevel = newLogLevel
-    }
-  }
-
-  function show() {
-    view = DebugView
-    view.setRootElement(rootElement)
-    view.init()
-    formatter.init(view)
-    formatter.update(chronicle.retrieve())
-    chronicle.registerForUpdates(formatter.update)
-    visible = true
-  }
-
-  function hide() {
-    view.tearDown()
-    chronicle.unregisterForUpdates(formatter.update)
-    visible = false
-  }
-
-  function info(log) {
-    if (logLevel >= LOG_LEVELS.INFO) {
-      chronicle.info(log)
-    }
-  }
-
-  function event(log) {
-    if (logLevel >= LOG_LEVELS.INFO) {
-      chronicle.event(log)
-    }
-  }
-
-  function time(log) {
-    if (logLevel >= LOG_LEVELS.INFO) {
-      chronicle.time(log)
-    }
-  }
-
-  function error(log) {
-    if (logLevel < LOG_LEVELS.ERROR) {
+  function setLogLevel(newLogLevel: LogLevel | undefined) {
+    if (typeof newLogLevel !== "number") {
       return
     }
 
-    const error = typeof log === "object" && log.message ? log : new Error(log)
-
-    chronicle.error(error)
+    currentLogLevel = newLogLevel
   }
 
-  function warn(log) {
-    if (logLevel < LOG_LEVELS.WARN) {
-      return
-    }
-
-    chronicle.warn(log)
-  }
-
-  function verbose(log) {
-    if (logLevel >= LOG_LEVELS.VERBOSE) {
-      chronicle.verbose(log)
-    }
-  }
-
-  function updateKeyValue(message) {
-    const staticFieldValue = staticFieldValues[message.key]
-
-    if (staticFieldValue) {
-      const entry = chronicle.retrieve()[staticFieldValue.index]
-
-      if (entry) {
-        entry.keyvalue = message
-      }
-    } else {
-      staticFieldValues[message.key] = { value: message.value, index: chronicle.retrieve().length }
-      chronicle.keyValue(message)
-    }
-  }
-
-  function setRootElement(element) {
-    rootElement = element
+  function setRootElement(element: HTMLElement) {
+    viewController.setRootElement(element)
   }
 
   function tearDown() {
-    staticFieldValues = {}
-    chronicle = new Chronicle()
-    if (visible) {
+    if (viewController.isVisible) {
       hide()
     }
+
+    chronicle = new Chronicle()
+    currentLogLevel = LogLevels.INFO
+  }
+
+  function updateElementTime(seconds: number) {
+    chronicle.setCurrentElementTime(seconds)
+  }
+
+  function apicall(functionName: string, functionArgs: any[]) {
+    debug(`Called '${functionName}' with args [${functionArgs.join(", ")}]`)
+  }
+
+  function debug(...parts: any[]) {
+    if (currentLogLevel < LogLevels.DEBUG) {
+      return
+    }
+
+    chronicle.debug(parts.join(" "))
+  }
+
+  function error(...parts: any[]) {
+    if (currentLogLevel < LogLevels.ERROR) {
+      return
+    }
+
+    if (parts.length === 1) {
+      const data = parts[0]
+
+      chronicle.error(typeof data === "object" && "message" in data ? data : new Error(data))
+      return
+    }
+
+    chronicle.error(new Error(parts.join(" ")))
+  }
+
+  function event(eventType: string, eventTarget?: string) {
+    chronicle.event(eventType, eventTarget ?? "unknown")
+  }
+
+  function info(...parts: any[]) {
+    if (currentLogLevel < LogLevels.INFO) {
+      return
+    }
+
+    chronicle.info(parts.join(" "))
+  }
+
+  function warn(...parts: any[]) {
+    if (currentLogLevel < LogLevels.WARN) {
+      return
+    }
+
+    chronicle.warn(parts.join(" "))
+  }
+
+  function metric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
+    chronicle.pushMetric(key, data)
+  }
+
+  function handleHistoryUpdate(change: TimestampedEntry) {
+    viewController.addEntries([change])
+  }
+
+  function handleTimeUpdate(seconds: number) {
+    viewController.addTime({ currentElementTime: seconds, sessionTime: chronicle.getSessionTime() })
+  }
+
+  function hide() {
+    viewController.hideView()
+
+    chronicle.off("update", handleHistoryUpdate)
+    chronicle.off("timeupdate", handleTimeUpdate)
+  }
+
+  function show() {
+    viewController.showView()
+
+    viewController.addEntries(chronicle.retrieve())
+
+    viewController.addTime({
+      currentElementTime: chronicle.getCurrentElementTime(),
+      sessionTime: chronicle.getSessionTime(),
+    })
+
+    chronicle.on("update", handleHistoryUpdate)
+    chronicle.on("timeupdate", handleTimeUpdate)
+  }
+
+  function toggleVisibility() {
+    const toggle = viewController.isVisible ? hide : show
+
+    toggle()
   }
 
   return {
-    logLevels: LOG_LEVELS,
-    error,
-    event,
-    info,
+    logLevels: LogLevels,
+    getDebugLogs,
     setLogLevel,
     setRootElement,
     tearDown,
-    time,
-    toggleVisibility,
-    verbose,
+    updateElementTime,
+    apicall,
+    debug,
+    error,
+    event,
+    info,
     warn,
-    keyValue: updateKeyValue,
-    apicall: (...args) => chronicle.apicall(...args),
-    getDebugLogs: () => chronicle.retrieve(),
+    metric,
+    hide,
+    show,
+    toggleVisibility,
   }
 }
 
-const DebugToolInstance = DebugTool()
+const DebugToolInstance = DebugTool() satisfies DebugTool
 
 export default DebugToolInstance

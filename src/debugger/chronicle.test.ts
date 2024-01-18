@@ -12,11 +12,11 @@ describe("Chronicle", () => {
   it("updates current time", () => {
     const chronicle = new Chronicle()
 
-    expect(chronicle.currentElementTime).toBe(0)
+    expect(chronicle.getCurrentElementTime()).toBe(0)
 
-    chronicle.currentElementTime = 12
+    chronicle.setCurrentElementTime(12)
 
-    expect(chronicle.currentElementTime).toBe(12)
+    expect(chronicle.getCurrentElementTime()).toBe(12)
   })
 
   it("notifies update listeners", () => {
@@ -30,19 +30,22 @@ describe("Chronicle", () => {
     chronicle.error(new DOMException("Operation timed out", "timeout"))
 
     expect(handleUpdate).toHaveBeenCalledTimes(2)
-    expect(handleUpdate).toHaveBeenNthCalledWith(1, [
-      { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 0 },
-    ])
-    expect(handleUpdate).toHaveBeenNthCalledWith(2, [
-      { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 0 },
-      {
-        type: EntryType.MESSAGE,
-        level: "error",
-        data: new DOMException("Operation timed out", "timeout"),
-        sessionTime: 0,
-        currentElementTime: 0,
-      },
-    ])
+
+    expect(handleUpdate).toHaveBeenNthCalledWith(1, {
+      type: EntryType.METRIC,
+      currentElementTime: 0,
+      sessionTime: 0,
+      key: "ready-state",
+      data: 0,
+    })
+
+    expect(handleUpdate).toHaveBeenNthCalledWith(2, {
+      type: EntryType.MESSAGE,
+      level: "error",
+      data: new DOMException("Operation timed out", "timeout"),
+      sessionTime: 0,
+      currentElementTime: 0,
+    })
   })
 
   it("does not notify unregistered update listeners", () => {
@@ -80,7 +83,7 @@ describe("Chronicle", () => {
     it("associates a metric with the current element time", () => {
       const chronicle = new Chronicle()
 
-      chronicle.currentElementTime = 32
+      chronicle.setCurrentElementTime(32)
 
       chronicle.pushMetric("bitrate", 16)
 
@@ -111,7 +114,7 @@ describe("Chronicle", () => {
       chronicle.pushMetric("ready-state", 1)
 
       jest.advanceTimersByTime(3456)
-      chronicle.currentElementTime = 0.3
+      chronicle.setCurrentElementTime(0.3)
 
       chronicle.pushMetric("ready-state", 4)
 

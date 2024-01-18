@@ -60,31 +60,36 @@ function setRootElement(root) {
   }
 }
 
-function render(logData) {
-  const LINES_TO_DISPLAY = 29
-  let dynamicLogs = logData.dynamic
-
-  if (dynamicLogs.length === 0) {
-    logContainer.textContent = ""
-  }
-
-  dynamicLogs = dynamicLogs.slice(-LINES_TO_DISPLAY)
-  logContainer.textContent = dynamicLogs.join("\n")
-
-  logData.static.forEach(updateStaticElements)
+function renderDynamicLogs(dynamic) {
+  logContainer.textContent = dynamic.join("\n")
 }
 
-function updateStaticElements(log) {
-  const existingElement = document.querySelector(log.key)
-  const text = `${log.key}: ${log.value}`
+function renderStaticLogs(staticLogs) {
+  staticLogs.forEach((entry) => renderStaticLog(entry))
+}
 
-  if (existingElement) {
-    if (text !== existingElement.textContent) {
-      existingElement.textContent = text
-    }
-  } else {
-    createNewStaticElement(log.key, log.value)
+function render({ dynamic: dynamicLogs, static: staticLogs }) {
+  renderDynamicLogs(dynamicLogs)
+  renderStaticLogs(staticLogs)
+}
+
+function renderStaticLog(entry) {
+  const [key, value] = entry
+
+  const existingElement = document.querySelector(key)
+  const text = `${key}: ${value}`
+
+  if (existingElement == null) {
+    createNewStaticElement(key, value)
+
+    return
   }
+
+  if (existingElement.textContent === text) {
+    return
+  }
+
+  existingElement.textContent = text
 }
 
 function createNewStaticElement(key, value) {
