@@ -1,6 +1,17 @@
-// import MediaState from "../models/mediastate.js"
+import MediaState from "../models/mediastate"
 import { EntryForType, EntryType, History, Message, MetricKey, MetricValue, TimestampedEntry, Trace } from "./chronicle"
-import DebugView from "./debugview.js"
+import DebugView from "./debugview"
+
+type WrungMediaState = { [Key in keyof typeof MediaState as (typeof MediaState)[Key]]: Key }
+
+const wrungMediaState: WrungMediaState = {
+  0: "STOPPED",
+  1: "PAUSED",
+  2: "PLAYING",
+  4: "WAITING",
+  5: "ENDED",
+  6: "FATAL_ERROR",
+}
 
 export interface DebugViewController {
   isVisible: boolean
@@ -97,7 +108,9 @@ export default class ViewController implements DebugViewController {
   private serialiseDynamicEntry(entry: DynamicEntry): string {
     let formattedData: string
 
-    switch (entry.type) {
+    const { type } = entry
+
+    switch (type) {
       case EntryType.MESSAGE: {
         formattedData = this.serialiseMessage(entry)
         break
@@ -111,7 +124,7 @@ export default class ViewController implements DebugViewController {
         break
       }
       default: {
-        throw new TypeError("EEk")
+        throw new TypeError(`Unrecognised entry type: ${type}`)
       }
     }
 
@@ -150,16 +163,30 @@ export default class ViewController implements DebugViewController {
   }
 
   private serialiseTrace(trace: Trace): string {
-    const { eventType, eventTarget } = trace
-
-    return `Event: '${eventType}' from ${eventTarget}`
+    const { kind, data } = trace
+    switch (kind) {
+      case "event": {
+        const { eventType, eventTarget } = data
+        return `Event: '${eventType}' from ${eventTarget}`
+      }
+      case "state-change": {
+        return `Event: ${wrungMediaState[data]}`
+      }
+      default: {
+        throw new TypeError(`Unrecognised trace kind: ${kind}`)
+      }
+    }
   }
 
-  private serialiseStaticEntry({ key, data }: StaticEntry): [key: string, value: boolean | number | string] {
+  private serialiseStaticEntry({ key, data }: StaticEntry): {
+    id: string
+    key: string
+    value: boolean | number | string
+  } {
     const parsedKey = key.replace("-", " ")
     const parsedValue = this.serialiseMetric(key, data)
 
-    return [parsedKey, parsedValue]
+    return { id: key, key: parsedKey, value: parsedValue }
   }
 
   private serialiseMetric(key: MetricKey, data: MetricValue): boolean | number | string {
@@ -218,13 +245,3 @@ export default class ViewController implements DebugViewController {
     DebugView.setRootElement(el)
   }
 }
-
-// function convertToReadableEvent(type: number) {
-//   for (const key in MediaState) {
-//     if (MediaState[key as keyof typeof MediaState] === type) {
-//       return key
-//     }
-//   }
-
-//   throw new TypeError("eeek")
-// }

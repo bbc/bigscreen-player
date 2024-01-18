@@ -1,3 +1,4 @@
+import { MediaStates } from "../models/mediastate"
 import Chronicle, { History, MetricForKey, MetricKey, TimestampedEntry } from "./chronicle"
 import DebugViewController from "./debugviewcontroller"
 
@@ -22,8 +23,9 @@ interface DebugTool {
   error(...parts: any[]): void
   event(eventType: string): void
   info(...parts: any[]): void
-  metric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
+  statechange(value: MediaStates): void
   warn(...parts: any[]): void
+  metric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
   // view
   hide(): void
   show(): void
@@ -64,8 +66,10 @@ function DebugTool() {
     chronicle.setCurrentElementTime(seconds)
   }
 
-  function apicall(functionName: string, functionArgs: any[]) {
-    debug(`Called '${functionName}' with args [${functionArgs.join(", ")}]`)
+  function apicall(functionName: string, functionArgs: any[] = []) {
+    const argsPart = functionArgs.length === 0 ? "" : ` with args [${functionArgs.join(", ")}]`
+
+    debug(`Called '${functionName}${argsPart}'`)
   }
 
   function debug(...parts: any[]) {
@@ -101,6 +105,10 @@ function DebugTool() {
     }
 
     chronicle.info(parts.join(" "))
+  }
+
+  function statechange(value: MediaStates) {
+    chronicle.statechange(value)
   }
 
   function warn(...parts: any[]) {
@@ -162,6 +170,7 @@ function DebugTool() {
     error,
     event,
     info,
+    statechange,
     warn,
     metric,
     hide,

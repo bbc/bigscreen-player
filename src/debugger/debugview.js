@@ -74,13 +74,14 @@ function render({ dynamic: dynamicLogs, static: staticLogs }) {
 }
 
 function renderStaticLog(entry) {
-  const [key, value] = entry
+  const { id, key, value } = entry
 
-  const existingElement = document.querySelector(key)
+  const existingElement = document.querySelector(`#${id}`)
+
   const text = `${key}: ${value}`
 
   if (existingElement == null) {
-    createNewStaticElement(key, value)
+    createNewStaticElement(id, key, value)
 
     return
   }
@@ -92,10 +93,10 @@ function renderStaticLog(entry) {
   existingElement.textContent = text
 }
 
-function createNewStaticElement(key, value) {
+function createNewStaticElement(id, key, value) {
   const staticLog = document.createElement("div")
 
-  staticLog.id = key
+  staticLog.id = id
   staticLog.style.paddingBottom = "1%"
   staticLog.style.borderBottom = "1px solid white"
   staticLog.textContent = `${key}: ${value}`

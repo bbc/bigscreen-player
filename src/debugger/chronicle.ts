@@ -1,3 +1,5 @@
+import { MediaStates } from "../models/mediastate"
+
 export enum EntryType {
   METRIC = "metric",
   MESSAGE = "message",
@@ -32,7 +34,10 @@ export type Metric = { type: EntryType.METRIC } & (
   | { key: "version"; data: string }
 )
 
-export type Trace = { type: EntryType.TRACE } & { kind: "event"; eventType: string; eventTarget: string }
+export type Trace = { type: EntryType.TRACE } & (
+  | { kind: "event"; data: { eventType: string; eventTarget: string } }
+  | { kind: "state-change"; data: MediaStates }
+)
 
 export type Entry = Message | Metric | Trace
 
@@ -134,20 +139,24 @@ class Chronicle {
     return filtered.length > 0 ? filtered[filtered.length - 1] : undefined
   }
 
+  public debug(message: MessageForLevel<"debug">["data"]) {
+    this.pushEntry({ type: EntryType.MESSAGE, level: "debug", data: message })
+  }
+
   public error(err: MessageForLevel<"error">["data"]) {
     this.pushEntry({ type: EntryType.MESSAGE, level: "error", data: err })
   }
 
-  public event(type: TraceForKind<"event">["eventType"], target: TraceForKind<"event">["eventTarget"]) {
-    this.pushEntry({ type: EntryType.TRACE, kind: "event", eventType: type, eventTarget: target })
+  public event(type: string, target: string) {
+    this.pushEntry({ type: EntryType.TRACE, kind: "event", data: { eventType: type, eventTarget: target } })
   }
 
   public info(message: MessageForLevel<"info">["data"]) {
     this.pushEntry({ type: EntryType.MESSAGE, level: "info", data: message })
   }
 
-  public debug(message: MessageForLevel<"debug">["data"]) {
-    this.pushEntry({ type: EntryType.MESSAGE, level: "debug", data: message })
+  public statechange(value: MediaStates) {
+    this.pushEntry({ type: EntryType.TRACE, kind: "state-change", data: value })
   }
 
   public warn(message: MessageForLevel<"warning">["data"]) {

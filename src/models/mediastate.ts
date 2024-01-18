@@ -11,7 +11,9 @@ const MediaState = {
   ENDED: 5,
   /** Media has thrown a fatal error. */
   FATAL_ERROR: 6,
-}
+} as const
+
+export type MediaStates = (typeof MediaState)[keyof typeof MediaState]
 
 /**
  * Provides an enumeration of possible media states.
