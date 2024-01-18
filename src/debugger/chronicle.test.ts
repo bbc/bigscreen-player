@@ -1,4 +1,4 @@
-import Chronicle, { EntryType, MessageLevel } from "./chronicle"
+import Chronicle, { EntryType } from "./chronicle"
 
 describe("Chronicle", () => {
   beforeAll(() => {
@@ -37,7 +37,7 @@ describe("Chronicle", () => {
       { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 0 },
       {
         type: EntryType.MESSAGE,
-        level: MessageLevel.ERROR,
+        level: "error",
         data: new DOMException("Operation timed out", "timeout"),
         sessionTime: 0,
         currentElementTime: 0,
@@ -128,7 +128,40 @@ describe("Chronicle", () => {
     })
   })
 
+  it("records an event trace", () => {
+    const chronicle = new Chronicle()
+
+    chronicle.event("playing", "MediaElement")
+
+    expect(chronicle.retrieve()).toEqual([
+      {
+        type: EntryType.TRACE,
+        kind: "event",
+        eventType: "playing",
+        eventTarget: "MediaElement",
+        currentElementTime: 0,
+        sessionTime: 0,
+      },
+    ])
+  })
+
   describe("logging messages", () => {
+    it("logs debug info", () => {
+      const chronicle = new Chronicle()
+
+      chronicle.debug("👾")
+
+      expect(chronicle.retrieve()).toEqual([
+        {
+          type: EntryType.MESSAGE,
+          level: "debug",
+          data: "👾",
+          sessionTime: 0,
+          currentElementTime: 0,
+        },
+      ])
+    })
+
     it("logs an error", () => {
       const chronicle = new Chronicle()
 
@@ -137,7 +170,7 @@ describe("Chronicle", () => {
       expect(chronicle.retrieve()).toEqual([
         {
           type: EntryType.MESSAGE,
-          level: MessageLevel.ERROR,
+          level: "error",
           data: new Error("Oops"),
           sessionTime: 0,
           currentElementTime: 0,
@@ -153,24 +186,8 @@ describe("Chronicle", () => {
       expect(chronicle.retrieve()).toEqual([
         {
           type: EntryType.MESSAGE,
-          level: MessageLevel.INFO,
+          level: "info",
           data: "🧐",
-          sessionTime: 0,
-          currentElementTime: 0,
-        },
-      ])
-    })
-
-    it("logs traces", () => {
-      const chronicle = new Chronicle()
-
-      chronicle.trace("👾")
-
-      expect(chronicle.retrieve()).toEqual([
-        {
-          type: EntryType.MESSAGE,
-          level: MessageLevel.TRACE,
-          data: "👾",
           sessionTime: 0,
           currentElementTime: 0,
         },
@@ -185,7 +202,7 @@ describe("Chronicle", () => {
       expect(chronicle.retrieve()).toEqual([
         {
           type: EntryType.MESSAGE,
-          level: MessageLevel.WARNING,
+          level: "warning",
           data: "😱",
           sessionTime: 0,
           currentElementTime: 0,

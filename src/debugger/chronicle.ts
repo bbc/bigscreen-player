@@ -1,23 +1,17 @@
 export enum EntryType {
   METRIC = "metric",
   MESSAGE = "message",
-}
-
-export enum MessageLevel {
-  ERROR = "error",
-  INFO = "info",
-  WARNING = "warning",
   TRACE = "trace",
 }
 
-type ErrorMessage = { level: MessageLevel.ERROR; data: Error }
-type InfoMessage = { level: MessageLevel.INFO; data: string }
-type WarningMessage = { level: MessageLevel.WARNING; data: string }
-type TraceMessage = { level: MessageLevel.TRACE; data: string }
+type ErrorMessage = { level: "error"; data: Error }
+type InfoMessage = { level: "info"; data: string }
+type WarningMessage = { level: "warning"; data: string }
+type DebugMessage = { level: "debug"; data: string }
 
-type Message = { type: EntryType.MESSAGE } & (ErrorMessage | InfoMessage | WarningMessage | TraceMessage)
+export type Message = { type: EntryType.MESSAGE } & (ErrorMessage | InfoMessage | WarningMessage | DebugMessage)
 
-type Metric = { type: EntryType.METRIC } & (
+export type Metric = { type: EntryType.METRIC } & (
   | { key: "auto-resume"; data: number }
   | { key: "bitrate"; data: number }
   | { key: "buffer-length"; data: number }
@@ -38,20 +32,22 @@ type Metric = { type: EntryType.METRIC } & (
   | { key: "version"; data: string }
 )
 
-type EntryIdentifier = Message["level"] | Metric["key"]
+export type Trace = { type: EntryType.TRACE } & { kind: "event"; eventType: string; eventTarget: string }
 
-type Entry = Message | Metric
-
-type TimestampedEntry = { currentElementTime: number; sessionTime: number } & Entry
-
-type History = TimestampedEntry[]
-
+export type Entry = Message | Metric | Trace
 export type EntryForType<Type extends EntryType> = Extract<Entry, { type: Type }>
 
-type MessageForLevel<Level extends Message["level"]> = Extract<Message, { level: Level }>
+export type MessageLevel = Message["level"]
+export type MetricKey = Metric["key"]
+export type TraceKind = Trace["kind"]
+export type EntryIdentifier = MessageLevel | MetricKey | TraceKind
 
-type MetricForKey<Key extends Metric["key"]> = Extract<Metric, { key: Key }>
+export type TimestampedEntry = { currentElementTime: number; sessionTime: number } & Entry
+export type History = TimestampedEntry[]
 
+export type MessageForLevel<Level extends MessageLevel> = Extract<Message, { level: Level }>
+export type MetricForKey<Key extends MetricKey> = Extract<Metric, { key: Key }>
+export type TraceForKind<Kind extends TraceKind> = Extract<Trace, { kind: Kind }>
 export type EntryForIdentifier<I extends EntryIdentifier> = I extends Message["level"]
   ? MessageForLevel<I>
   : I extends Metric["key"]
@@ -115,20 +111,24 @@ class Chronicle {
     return filtered.length > 0 ? filtered[filtered.length - 1] : undefined
   }
 
-  public error(err: EntryForIdentifier<MessageLevel.ERROR>["data"]) {
-    this.pushEntry({ type: EntryType.MESSAGE, level: MessageLevel.ERROR, data: err })
+  public error(err: MessageForLevel<"error">["data"]) {
+    this.pushEntry({ type: EntryType.MESSAGE, level: "error", data: err })
   }
 
-  public info(message: EntryForIdentifier<MessageLevel.INFO>["data"]) {
-    this.pushEntry({ type: EntryType.MESSAGE, level: MessageLevel.INFO, data: message })
+  public event(type: TraceForKind<"event">["eventType"], target: TraceForKind<"event">["eventTarget"]) {
+    this.pushEntry({ type: EntryType.TRACE, kind: "event", eventType: type, eventTarget: target })
   }
 
-  public trace(message: EntryForIdentifier<MessageLevel.TRACE>["data"]) {
-    this.pushEntry({ type: EntryType.MESSAGE, level: MessageLevel.TRACE, data: message })
+  public info(message: MessageForLevel<"info">["data"]) {
+    this.pushEntry({ type: EntryType.MESSAGE, level: "info", data: message })
   }
 
-  public warn(message: EntryForIdentifier<MessageLevel.WARNING>["data"]) {
-    this.pushEntry({ type: EntryType.MESSAGE, level: MessageLevel.WARNING, data: message })
+  public debug(message: MessageForLevel<"debug">["data"]) {
+    this.pushEntry({ type: EntryType.MESSAGE, level: "debug", data: message })
+  }
+
+  public warn(message: MessageForLevel<"warning">["data"]) {
+    this.pushEntry({ type: EntryType.MESSAGE, level: "warning", data: message })
   }
 }
 
