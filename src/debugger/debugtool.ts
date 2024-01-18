@@ -1,6 +1,6 @@
 import Chronicle from "./chronicle.ts"
 import DebugFormatter from "./debugformatter.js"
-import DebugView from "./debugview"
+import DebugView from "./debugview.js"
 
 function DebugTool() {
   const formatter = DebugFormatter
