@@ -90,17 +90,45 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
   }
 
+  function onLoadedMetaData() {
+    DebugTool.event("loadedmetadata", "MediaElement")
+    DebugTool.metric("ready-state", mediaElement.readyState)
+  }
+
+  function onLoadedData() {
+    DebugTool.event("loadeddata", "MediaElement")
+    DebugTool.metric("ready-state", mediaElement.readyState)
+  }
+
+  function onCanPlay() {
+    DebugTool.event("canplay", "MediaElement")
+    DebugTool.metric("ready-state", mediaElement.readyState)
+  }
+
+  function onPlay() {
+    DebugTool.event("play", "MediaElement")
+    DebugTool.metric("paused", mediaElement.paused)
+  }
+
   function onPlaying() {
+    DebugTool.event("playing", "MediaElement")
+    DebugTool.metric("ready-state", mediaElement.readyState)
+
     isEnded = false
+
     publishMediaState(MediaState.PLAYING)
   }
 
   function onPaused() {
+    DebugTool.event("paused", "MediaElement")
+    DebugTool.metric("paused", mediaElement.paused)
+
     publishMediaState(MediaState.PAUSED)
   }
 
   function onBuffering() {
     isEnded = false
+
     if (!isSeeking || !publishedSeekEvent) {
       publishMediaState(MediaState.WAITING)
       publishedSeekEvent = true
@@ -108,8 +136,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onSeeked() {
+    DebugTool.event("seeked", "MediaElement")
+    DebugTool.metric("seeking", mediaElement.seeking)
+
     isSeeking = false
-    DebugTool.info("Seeked Event")
 
     if (isPaused()) {
       if (windowType === WindowTypes.SLIDING) {
@@ -121,8 +151,26 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
   }
 
+  function onSeeking() {
+    DebugTool.event("seeking", "MediaElement")
+    DebugTool.metric("seeking", mediaElement.seeking)
+
+    onBuffering()
+  }
+
+  function onWaiting() {
+    DebugTool.event("waiting", "MediaElement")
+    DebugTool.metric("ready-state", mediaElement.readyState)
+
+    onBuffering()
+  }
+
   function onEnded() {
+    DebugTool.event("ended", "MediaElement")
+    DebugTool.metric("ended", mediaElement.ended)
+
     isEnded = true
+
     publishMediaState(MediaState.ENDED)
   }
 
@@ -230,7 +278,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         ? currentPlaybackBitrate(MediaKinds.VIDEO) + currentPlaybackBitrate(MediaKinds.AUDIO)
         : currentPlaybackBitrate(MediaKinds.AUDIO)
 
-    DebugTool.keyValue({ key: "playback bitrate", value: `${playerMetadata.playbackBitrate} kbps` })
+    DebugTool.metric("bitrate", playerMetadata.playbackBitrate)
 
     Plugins.interface.onPlayerInfoUpdated({
       bufferLength: playerMetadata.bufferLength,
@@ -257,24 +305,25 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onQualityChangeRendered(event) {
-    function logBitrate(mediaKind, event) {
-      const oldBitrate = isNaN(event.oldQuality)
-        ? "--"
-        : playbackBitrateForRepresentationIndex(event.oldQuality, mediaKind)
-      const oldRepresentation = isNaN(event.oldQuality) ? "Start" : `${event.oldQuality} (${oldBitrate} kbps)`
-      const newRepresentation = `${event.newQuality} (${playbackBitrateForRepresentationIndex(
-        event.newQuality,
-        mediaKind
-      )} kbps)`
+    function logBitrate(event) {
+      const { mediaType, oldQuality, newQuality } = event
 
-      DebugTool.keyValue({ key: `${event.mediaType} Representation`, value: newRepresentation })
+      const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
+
+      const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
+
+      const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
+      const newRepresentation = `${newQuality} (${newBitrate} kbps)`
+
+      DebugTool.metric(`representation-${mediaType}`, { qualityIndex: newQuality, bitrate: newBitrate })
+
       DebugTool.info(
         `${mediaKind} ABR Change Rendered From Representation ${oldRepresentation} To ${newRepresentation}`
       )
     }
 
     if (event.newQuality !== undefined) {
-      logBitrate(event.mediaType, event)
+      logBitrate(event)
     }
 
     emitPlayerInfo()
@@ -312,14 +361,14 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function onMetricAdded(event) {
     if (event.mediaType === "video" && event.metric === "DroppedFrames") {
-      DebugTool.keyValue({ key: "Dropped Frames", value: event.value.droppedFrames })
+      DebugTool.metric("frames-dropped", event.value.droppedFrames)
     }
     if (event.mediaType === mediaKind && event.metric === "BufferLevel") {
       dashMetrics = mediaPlayer.getDashMetrics()
 
       if (dashMetrics) {
         playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(event.mediaType)
-        DebugTool.keyValue({ key: "Buffer Length", value: playerMetadata.bufferLength })
+        DebugTool.metric("buffer-length", playerMetadata.bufferLength)
         Plugins.interface.onPlayerInfoUpdated({
           bufferLength: playerMetadata.bufferLength,
           playbackBitrate: playerMetadata.playbackBitrate,
@@ -329,7 +378,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onDebugLog(event) {
-    DebugTool.verbose(event.message)
+    DebugTool.debug(event.message)
   }
 
   function onFragmentContentLengthMismatch(event) {
@@ -404,11 +453,20 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function setUpMediaListeners() {
+    DebugTool.metric("ended", mediaElement.ended)
+    DebugTool.metric("paused", mediaElement.paused)
+    DebugTool.metric("ready-state", mediaElement.readyState)
+    DebugTool.metric("seeking", mediaElement.seeking)
+
     mediaElement.addEventListener("timeupdate", onTimeUpdate)
+    mediaElement.addEventListener("loadedmetadata", onLoadedMetaData)
+    mediaElement.addEventListener("loadeddata", onLoadedData)
+    mediaElement.addEventListener("canplay", onCanPlay)
+    mediaElement.addEventListener("play", onPlay)
     mediaElement.addEventListener("playing", onPlaying)
     mediaElement.addEventListener("pause", onPaused)
-    mediaElement.addEventListener("waiting", onBuffering)
-    mediaElement.addEventListener("seeking", onBuffering)
+    mediaElement.addEventListener("waiting", onWaiting)
+    mediaElement.addEventListener("seeking", onSeeking)
     mediaElement.addEventListener("seeked", onSeeked)
     mediaElement.addEventListener("ended", onEnded)
     mediaPlayer.on(DashJSEvents.ERROR, onError)
@@ -530,10 +588,14 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.reset()
 
       mediaElement.removeEventListener("timeupdate", onTimeUpdate)
+      mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
+      mediaElement.removeEventListener("loadeddata", onLoadedData)
+      mediaElement.removeEventListener("canplay", onCanPlay)
+      mediaElement.removeEventListener("play", onPlay)
       mediaElement.removeEventListener("playing", onPlaying)
       mediaElement.removeEventListener("pause", onPaused)
-      mediaElement.removeEventListener("waiting", onBuffering)
-      mediaElement.removeEventListener("seeking", onBuffering)
+      mediaElement.removeEventListener("waiting", onWaiting)
+      mediaElement.removeEventListener("seeking", onSeeking)
       mediaElement.removeEventListener("seeked", onSeeked)
       mediaElement.removeEventListener("ended", onEnded)
       mediaPlayer.off(DashJSEvents.ERROR, onError)

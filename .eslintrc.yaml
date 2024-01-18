@@ -132,6 +132,7 @@ rules:
   unicorn/prefer-dom-node-append: off
   unicorn/prefer-number-properties: off
   unicorn/prefer-math-trunc: off
+  unicorn/prefer-optional-catch-binding: off
   unicorn/prefer-string-replace-all: off
 
   # Typescript

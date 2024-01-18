@@ -4,9 +4,14 @@
     "target": "es6",
     "esModuleInterop": true,
     "moduleResolution": "bundler",
+    "allowJs": true,
+    "alwaysStrict": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
     "noImplicitReturns": true,
     "noUnusedLocals": false,
-    "strict": true
+    "strictNullChecks": true
   },
   "compileOnSave": true,
   "include": ["src/**/*.ts"]

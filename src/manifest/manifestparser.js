@@ -181,7 +181,7 @@ function parse(manifest, { type, windowType, initialWallclockTime } = {}) {
   return parseManifest(manifest, { windowType, initialWallclockTime })
     .then((values) => ({ ...placeholders, ...values }))
     .catch((error) => {
-      DebugTool.info(`Manifest Parse Error: ${error.code} ${error.message}`)
+      DebugTool.error(error)
       Plugins.interface.onManifestParseError({ code: error.code, message: error.message })
 
       return { ...placeholders }

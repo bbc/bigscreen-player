@@ -339,11 +339,11 @@ function MediaSources() {
   }
 
   function updateDebugOutput() {
-    DebugTool.keyValue({ key: "available cdns", value: availableCdns() })
-    DebugTool.keyValue({ key: "url", value: stripQueryParamsAndHash(getCurrentUrl()) })
+    DebugTool.metric("cdns-available", availableCdns())
+    DebugTool.metric("current-url", stripQueryParamsAndHash(getCurrentUrl()))
 
-    DebugTool.keyValue({ key: "available subtitle cdns", value: availableSubtitlesCdns() })
-    DebugTool.keyValue({ key: "subtitles url", value: stripQueryParamsAndHash(getCurrentSubtitlesUrl()) })
+    DebugTool.metric("subtitle-cdns-available", availableSubtitlesCdns())
+    DebugTool.metric("subtitle-current-url", stripQueryParamsAndHash(getCurrentSubtitlesUrl()))
   }
 
   function tearDown() {

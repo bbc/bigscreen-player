@@ -43,7 +43,8 @@ function BigscreenPlayer() {
 
   function mediaStateUpdateCallback(evt) {
     if (evt.timeUpdate) {
-      DebugTool.time(evt.data.currentTime)
+      DebugTool.updateElementTime(evt.data.currentTime)
+
       callCallbacks(timeUpdateCallbacks, {
         currentTime: evt.data.currentTime,
         endOfStream,
@@ -72,18 +73,20 @@ function BigscreenPlayer() {
       }
 
       stateObject.endOfStream = endOfStream
-      DebugTool.event(stateObject)
+      DebugTool.statechange(evt.data.state)
 
       callCallbacks(stateChangeCallbacks, stateObject)
     }
 
     if (evt.data.seekableRange) {
-      DebugTool.keyValue({ key: "seekableRangeStart", value: deviceTimeToDate(evt.data.seekableRange.start) })
-      DebugTool.keyValue({ key: "seekableRangeEnd", value: deviceTimeToDate(evt.data.seekableRange.end) })
+      DebugTool.metric("seekable-range", {
+        start: deviceTimeToDate(evt.data.seekableRange.start),
+        end: deviceTimeToDate(evt.data.seekableRange.end),
+      })
     }
 
     if (evt.data.duration) {
-      DebugTool.keyValue({ key: "duration", value: evt.data.duration })
+      DebugTool.metric("duration", evt.data.duration)
     }
 
     if (playerComponent && readyHelper) {
@@ -192,7 +195,7 @@ function BigscreenPlayer() {
       playbackElement = newPlaybackElement
       resizer = Resizer()
       DebugTool.setRootElement(playbackElement)
-      DebugTool.keyValue({ key: "framework-version", value: Version })
+      DebugTool.metric("version", Version)
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
 
@@ -323,7 +326,8 @@ function BigscreenPlayer() {
      * @param {Number} time - In seconds
      */
     setCurrentTime(time) {
-      DebugTool.apicall("setCurrentTime")
+      DebugTool.apicall("setCurrentTime", [time])
+
       if (playerComponent) {
         // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
         isSeeking = true
@@ -433,6 +437,7 @@ function BigscreenPlayer() {
      */
     play: () => {
       DebugTool.apicall("play")
+
       playerComponent.play()
     },
     /**
@@ -444,6 +449,7 @@ function BigscreenPlayer() {
      */
     pause: (opts) => {
       DebugTool.apicall("pause")
+
       pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
       playerComponent.pause(opts)
     },
@@ -658,7 +664,7 @@ function BigscreenPlayer() {
      * @function
      * @param logLevel -  log level to display @see getLogLevels
      */
-    setLogLevel: DebugTool.setLogLevel,
+    setLogLevel: (level) => DebugTool.setLogLevel(level),
     getDebugLogs: () => DebugTool.getDebugLogs(),
   }
 }
