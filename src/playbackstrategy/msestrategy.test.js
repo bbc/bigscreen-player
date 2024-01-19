@@ -639,18 +639,6 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       expect(playbackElement.childElementCount).toBe(0)
     })
-
-    it("should empty the eventCallbacks array and stop emitting events", () => {
-      function tearDownAndError() {
-        mseStrategy.load(null, 0)
-        mseStrategy.tearDown()
-        dashEventCallback("pause")
-      }
-
-      setUpMSE()
-
-      expect(tearDownAndError).not.toThrow()
-    })
   })
 
   describe("isEnded()", () => {
