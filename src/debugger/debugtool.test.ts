@@ -128,7 +128,7 @@ describe("Debug Tool", () => {
       DebugTool.event("playing")
 
       expect(DebugTool.getDebugLogs()).toEqual([
-        expect.objectContaining({ kind: "event", eventType: "playing", eventTarget: "unknown" }),
+        expect.objectContaining({ kind: "event", data: { eventType: "playing", eventTarget: "unknown" } }),
       ])
     })
   })

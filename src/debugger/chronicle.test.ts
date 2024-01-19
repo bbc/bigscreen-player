@@ -64,9 +64,13 @@ describe("Chronicle", () => {
     chronicle.error(new DOMException("Operation timed out", "timeout"))
 
     expect(handleUpdate).toHaveBeenCalledTimes(1)
-    expect(handleUpdate).toHaveBeenNthCalledWith(1, [
-      { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 0 },
-    ])
+    expect(handleUpdate).toHaveBeenNthCalledWith(1, {
+      type: EntryType.METRIC,
+      currentElementTime: 0,
+      sessionTime: 0,
+      key: "ready-state",
+      data: 0,
+    })
   })
 
   describe("pushing metrics", () => {
@@ -140,8 +144,10 @@ describe("Chronicle", () => {
       {
         type: EntryType.TRACE,
         kind: "event",
-        eventType: "playing",
-        eventTarget: "MediaElement",
+        data: {
+          eventType: "playing",
+          eventTarget: "MediaElement",
+        },
         currentElementTime: 0,
         sessionTime: 0,
       },

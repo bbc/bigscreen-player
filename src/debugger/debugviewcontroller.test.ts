@@ -28,9 +28,9 @@ describe("Debug View", () => {
     expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
         static: [
-          ["paused", true],
-          ["ready state", 4],
-          ["seeking", false],
+          { id: "paused", key: "paused", value: true },
+          { id: "ready-state", key: "ready state", value: 4 },
+          { id: "seeking", key: "seeking", value: false },
         ],
       })
     )
@@ -49,7 +49,7 @@ describe("Debug View", () => {
 
     expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
-        static: [["seekable range", expected]],
+        static: [{ id: "seekable-range", key: "seekable range", value: expected }],
       })
     )
   })
@@ -128,12 +128,18 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
-    controller.addTime({ currentElementTime: chronicle.currentElementTime, sessionTime: chronicle.getSessionTime() })
+    controller.addTime({
+      currentElementTime: chronicle.getCurrentElementTime(),
+      sessionTime: chronicle.getSessionTime(),
+    })
 
     jest.advanceTimersByTime(600)
-    chronicle.currentElementTime = 0.6
+    chronicle.setCurrentElementTime(0.6)
 
-    controller.addTime({ currentElementTime: chronicle.currentElementTime, sessionTime: chronicle.getSessionTime() })
+    controller.addTime({
+      currentElementTime: chronicle.getCurrentElementTime(),
+      sessionTime: chronicle.getSessionTime(),
+    })
 
     expect(DebugView.render).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -146,16 +152,22 @@ describe("Debug View", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
 
-    controller.addTime({ currentElementTime: chronicle.currentElementTime, sessionTime: chronicle.getSessionTime() })
+    controller.addTime({
+      currentElementTime: chronicle.getCurrentElementTime(),
+      sessionTime: chronicle.getSessionTime(),
+    })
 
     chronicle.event("playing", "MediaElement")
 
     controller.addEntries(chronicle.retrieve())
 
     jest.advanceTimersByTime(600)
-    chronicle.currentElementTime = 0.6
+    chronicle.setCurrentElementTime(0.6)
 
-    controller.addTime({ currentElementTime: chronicle.currentElementTime, sessionTime: chronicle.getSessionTime() })
+    controller.addTime({
+      currentElementTime: chronicle.getCurrentElementTime(),
+      sessionTime: chronicle.getSessionTime(),
+    })
 
     expect(DebugView.render).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -193,6 +205,8 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
-    expect(DebugView.render).toHaveBeenCalledWith(expect.objectContaining({ static: [["ready state", 4]] }))
+    expect(DebugView.render).toHaveBeenCalledWith(
+      expect.objectContaining({ static: [{ id: "ready-state", key: "ready state", value: 4 }] })
+    )
   })
 })
