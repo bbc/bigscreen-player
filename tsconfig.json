@@ -10,7 +10,7 @@
     "noImplicitOverride": true,
     "noImplicitThis": true,
     "noImplicitReturns": true,
-    "noUnusedLocals": false,
+    "noUnusedLocals": true,
     "strictNullChecks": true
   },
   "compileOnSave": true,
