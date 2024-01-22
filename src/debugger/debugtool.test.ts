@@ -9,18 +9,12 @@ function getMockViewController(): DebugViewController {
 }
 
 describe("Debug Tool", () => {
-  let mockViewController: DebugViewController
-
   beforeAll(() => {
     jest.useFakeTimers({ now: 1234 })
-
-    mockViewController = getMockViewController()
   })
 
   beforeEach(() => {
     jest.clearAllMocks()
-
-    mockViewController.isVisible = false
 
     DebugTool.tearDown()
   })
@@ -53,6 +47,8 @@ describe("Debug Tool", () => {
     })
 
     it("tears down the view if it was visible", () => {
+      const mockViewController = getMockViewController()
+
       mockViewController.isVisible = true
 
       DebugTool.tearDown()
@@ -135,6 +131,8 @@ describe("Debug Tool", () => {
 
   describe("show", () => {
     it("provides the chronicle so far to the view controller", () => {
+      const mockViewController = getMockViewController()
+
       expect(mockViewController.addEntries).toHaveBeenCalledTimes(0)
 
       DebugTool.show()
@@ -143,6 +141,8 @@ describe("Debug Tool", () => {
     })
 
     it("provides the current time to the view controller", () => {
+      const mockViewController = getMockViewController()
+
       expect(mockViewController.addTime).toHaveBeenCalledTimes(0)
 
       DebugTool.show()
@@ -151,6 +151,8 @@ describe("Debug Tool", () => {
     })
 
     it("renders new entries to the view controller", () => {
+      const mockViewController = getMockViewController()
+
       DebugTool.show()
 
       expect(mockViewController.addEntries).toHaveBeenCalledTimes(1)
@@ -161,6 +163,8 @@ describe("Debug Tool", () => {
     })
 
     it("updates time of the view controller", () => {
+      const mockViewController = getMockViewController()
+
       DebugTool.show()
 
       expect(mockViewController.addTime).toHaveBeenCalledTimes(1)
@@ -173,6 +177,8 @@ describe("Debug Tool", () => {
 
   describe("hide", () => {
     it("tears down the view", () => {
+      const mockViewController = getMockViewController()
+
       expect(mockViewController.hideView).toHaveBeenCalledTimes(0)
 
       DebugTool.hide()

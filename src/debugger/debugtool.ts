@@ -33,9 +33,19 @@ interface DebugTool {
 }
 
 function DebugTool() {
-  const viewController = new DebugViewController()
   let chronicle = new Chronicle()
   let currentLogLevel: LogLevel = LogLevels.INFO
+  let viewController = new DebugViewController()
+
+  function tearDown() {
+    if (viewController.isVisible) {
+      hide()
+    }
+
+    chronicle = new Chronicle()
+    currentLogLevel = LogLevels.INFO
+    viewController = new DebugViewController()
+  }
 
   function getDebugLogs() {
     return chronicle.retrieve()
@@ -51,15 +61,6 @@ function DebugTool() {
 
   function setRootElement(element: HTMLElement) {
     viewController.setRootElement(element)
-  }
-
-  function tearDown() {
-    if (viewController.isVisible) {
-      hide()
-    }
-
-    chronicle = new Chronicle()
-    currentLogLevel = LogLevels.INFO
   }
 
   function updateElementTime(seconds: number) {
