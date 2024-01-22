@@ -40,8 +40,8 @@ describe("Chronicle", () => {
     })
 
     expect(handleUpdate).toHaveBeenNthCalledWith(2, {
-      type: EntryType.MESSAGE,
-      level: "error",
+      type: EntryType.TRACE,
+      kind: "error",
       data: new DOMException("Operation timed out", "timeout"),
       sessionTime: 0,
       currentElementTime: 0,
