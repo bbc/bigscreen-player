@@ -78,7 +78,7 @@ describe("Debug Tool", () => {
       DebugTool.error("something went wrong")
 
       expect(DebugTool.getDebugLogs()).toEqual([
-        expect.objectContaining({ level: "error", data: new Error("something went wrong") }),
+        expect.objectContaining({ kind: "error", data: new Error("something went wrong") }),
       ])
     })
 
@@ -86,7 +86,7 @@ describe("Debug Tool", () => {
       DebugTool.error(new TypeError("something went REALLY wrong"))
 
       expect(DebugTool.getDebugLogs()).toEqual([
-        expect.objectContaining({ level: "error", data: new TypeError("something went REALLY wrong") }),
+        expect.objectContaining({ kind: "error", data: new TypeError("something went REALLY wrong") }),
       ])
     })
   })
