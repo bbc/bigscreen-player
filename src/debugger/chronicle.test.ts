@@ -133,6 +133,22 @@ describe("Chronicle", () => {
     })
   })
 
+  it("records an error trace", () => {
+    const chronicle = new Chronicle()
+
+    chronicle.error(new Error("Oops"))
+
+    expect(chronicle.retrieve()).toEqual([
+      {
+        type: EntryType.TRACE,
+        kind: "error",
+        data: new Error("Oops"),
+        sessionTime: 0,
+        currentElementTime: 0,
+      },
+    ])
+  })
+
   it("records an event trace", () => {
     const chronicle = new Chronicle()
 
@@ -162,22 +178,6 @@ describe("Chronicle", () => {
         type: EntryType.MESSAGE,
         level: "debug",
         data: "👾",
-        sessionTime: 0,
-        currentElementTime: 0,
-      },
-    ])
-  })
-
-  it("logs an error", () => {
-    const chronicle = new Chronicle()
-
-    chronicle.error(new Error("Oops"))
-
-    expect(chronicle.retrieve()).toEqual([
-      {
-        type: EntryType.MESSAGE,
-        level: "error",
-        data: new Error("Oops"),
         sessionTime: 0,
         currentElementTime: 0,
       },
