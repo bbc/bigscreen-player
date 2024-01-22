@@ -35,6 +35,7 @@ export type Metric = { type: EntryType.METRIC } & (
 )
 
 export type Trace = { type: EntryType.TRACE } & (
+  | { kind: "error"; data: Error }
   | { kind: "event"; data: { eventType: string; eventTarget: string } }
   | { kind: "state-change"; data: MediaStates }
 )
@@ -143,8 +144,8 @@ class Chronicle {
     this.pushEntry({ type: EntryType.MESSAGE, level: "debug", data: message })
   }
 
-  public error(err: MessageForLevel<"error">["data"]) {
-    this.pushEntry({ type: EntryType.MESSAGE, level: "error", data: err })
+  public error(error: Error) {
+    this.pushEntry({ type: EntryType.TRACE, kind: "error", data: error })
   }
 
   public event(type: string, target: string) {
