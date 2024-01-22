@@ -52,6 +52,26 @@ export default class ViewController implements DebugViewController {
   private latestMetricsSoFar: Partial<Record<MetricKey, StaticEntry>> = {}
   private rootElement: HTMLElement
 
+  private keepEntry(entry: TimestampedEntry): boolean {
+    const { type } = entry
+
+    if (type !== EntryType.TRACE) {
+      return true
+    }
+
+    const { kind, data } = entry
+
+    if (kind !== "event") {
+      return true
+    }
+
+    const { eventType, eventTarget } = data
+
+    // HACK: Filter events presented in the view
+    // Not very robust, should we add typing checks to the event trace's type and target fields?
+    return eventTarget === "MediaElement" && ["paused", "playing", "seeking", "seeked", "waiting"].includes(eventType)
+  }
+
   private cacheEntry(entry: TimestampedEntry): void {
     switch (entry.type) {
       case EntryType.METRIC: {
@@ -224,6 +244,10 @@ export default class ViewController implements DebugViewController {
 
   public addEntries(entries: History) {
     for (const entry of entries) {
+      if (!this.keepEntry(entry)) {
+        continue
+      }
+
       this.cacheEntry(entry)
     }
 
