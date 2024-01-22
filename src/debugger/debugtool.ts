@@ -85,18 +85,13 @@ function DebugTool() {
       return
     }
 
-    if (parts.length === 1) {
-      const data = parts[0]
+    const data = parts.length < 2 ? parts[0] : parts.join(" ")
 
-      chronicle.error(typeof data === "object" && "message" in data ? data : new Error(data))
-      return
-    }
-
-    chronicle.error(new Error(parts.join(" ")))
+    chronicle.trace("error", typeof data === "object" && "message" in data ? data : new Error(data))
   }
 
-  function event(eventType: string, eventTarget?: string) {
-    chronicle.event(eventType, eventTarget ?? "unknown")
+  function event(eventType: string, eventTarget = "unknown") {
+    chronicle.trace("event", { eventTarget, eventType })
   }
 
   function info(...parts: any[]) {
@@ -108,7 +103,7 @@ function DebugTool() {
   }
 
   function statechange(value: MediaStates) {
-    chronicle.statechange(value)
+    chronicle.trace("state-change", value)
   }
 
   function warn(...parts: any[]) {

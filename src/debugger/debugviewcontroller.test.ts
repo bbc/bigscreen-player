@@ -62,7 +62,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersByTime(500)
 
-    chronicle.event("paused", "MediaElement")
+    chronicle.trace("event", { eventType: "paused", eventTarget: "MediaElement" })
 
     jest.advanceTimersByTime(3600000)
 
@@ -85,7 +85,7 @@ describe("Debug View", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
 
-    chronicle.error(new TypeError("The TV exploded💥"))
+    chronicle.trace("error", new TypeError("The TV exploded💥"))
 
     controller.addEntries(chronicle.retrieve())
 
@@ -98,7 +98,7 @@ describe("Debug View", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
 
-    chronicle.event("paused", "MediaElement")
+    chronicle.trace("event", { eventType: "paused", eventTarget: "MediaElement" })
 
     controller.addEntries(chronicle.retrieve())
 
@@ -124,7 +124,7 @@ describe("Debug View", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
 
-    chronicle.event("playing", "MediaElement")
+    chronicle.trace("event", { eventType: "playing", eventTarget: "MediaElement" })
 
     controller.addEntries(chronicle.retrieve())
 
@@ -157,7 +157,7 @@ describe("Debug View", () => {
       sessionTime: chronicle.getSessionTime(),
     })
 
-    chronicle.event("playing", "MediaElement")
+    chronicle.trace("event", { eventType: "playing", eventTarget: "MediaElement" })
 
     controller.addEntries(chronicle.retrieve())
 

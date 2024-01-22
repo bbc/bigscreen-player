@@ -126,7 +126,7 @@ class Chronicle {
   }
 
   public pushMetric<Key extends Metric["key"]>(key: Key, data: MetricForKey<Key>["data"]) {
-    this.pushEntry({ key, data, type: EntryType.METRIC } as TimestampedEntry)
+    this.pushEntry({ key, data, type: EntryType.METRIC } as Entry)
   }
 
   public getLatestMetric<Key extends Metric["key"]>(key: Key): MetricForKey<Key> | undefined {
@@ -143,20 +143,12 @@ class Chronicle {
     this.pushEntry({ type: EntryType.MESSAGE, level: "debug", data: message })
   }
 
-  public error(error: Error) {
-    this.pushEntry({ type: EntryType.TRACE, kind: "error", data: error })
-  }
-
-  public event(type: string, target: string) {
-    this.pushEntry({ type: EntryType.TRACE, kind: "event", data: { eventType: type, eventTarget: target } })
-  }
-
   public info(message: MessageForLevel<"info">["data"]) {
     this.pushEntry({ type: EntryType.MESSAGE, level: "info", data: message })
   }
 
-  public statechange(value: MediaStates) {
-    this.pushEntry({ type: EntryType.TRACE, kind: "state-change", data: value })
+  public trace<Kind extends TraceKind>(kind: Kind, data: TraceForKind<Kind>["data"]) {
+    this.pushEntry({ kind, data, type: EntryType.TRACE } as Entry)
   }
 
   public warn(message: MessageForLevel<"warning">["data"]) {

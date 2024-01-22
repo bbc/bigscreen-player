@@ -27,7 +27,7 @@ describe("Chronicle", () => {
     chronicle.on("update", handleUpdate)
 
     chronicle.pushMetric("ready-state", 0)
-    chronicle.error(new DOMException("Operation timed out", "timeout"))
+    chronicle.trace("error", new DOMException("Operation timed out", "timeout"))
 
     expect(handleUpdate).toHaveBeenCalledTimes(2)
 
@@ -61,7 +61,7 @@ describe("Chronicle", () => {
 
     chronicle.off("update", handleUpdate)
 
-    chronicle.error(new DOMException("Operation timed out", "timeout"))
+    chronicle.trace("error", new DOMException("Operation timed out", "timeout"))
 
     expect(handleUpdate).toHaveBeenCalledTimes(1)
     expect(handleUpdate).toHaveBeenNthCalledWith(1, {
@@ -133,37 +133,18 @@ describe("Chronicle", () => {
     })
   })
 
-  it("records an error trace", () => {
+  it("records a trace", () => {
     const chronicle = new Chronicle()
 
-    chronicle.error(new Error("Oops"))
+    chronicle.trace("error", new Error("💥 splode"))
 
     expect(chronicle.retrieve()).toEqual([
       {
         type: EntryType.TRACE,
         kind: "error",
-        data: new Error("Oops"),
+        data: new Error("💥 splode"),
         sessionTime: 0,
         currentElementTime: 0,
-      },
-    ])
-  })
-
-  it("records an event trace", () => {
-    const chronicle = new Chronicle()
-
-    chronicle.event("playing", "MediaElement")
-
-    expect(chronicle.retrieve()).toEqual([
-      {
-        type: EntryType.TRACE,
-        kind: "event",
-        data: {
-          eventType: "playing",
-          eventTarget: "MediaElement",
-        },
-        currentElementTime: 0,
-        sessionTime: 0,
       },
     ])
   })
