@@ -73,65 +73,63 @@ describe("Chronicle", () => {
     })
   })
 
-  describe("pushing metrics", () => {
-    it("add a metric", () => {
-      const chronicle = new Chronicle()
+  it("appends a metric", () => {
+    const chronicle = new Chronicle()
 
-      chronicle.pushMetric("ready-state", 1)
+    chronicle.pushMetric("ready-state", 1)
 
-      expect(chronicle.retrieve()).toEqual([
-        { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 1 },
-      ])
-    })
+    expect(chronicle.retrieve()).toEqual([
+      { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 1 },
+    ])
+  })
 
-    it("associates a metric with the current element time", () => {
-      const chronicle = new Chronicle()
+  it("associates a new metric with the current element time", () => {
+    const chronicle = new Chronicle()
 
-      chronicle.setCurrentElementTime(32)
+    chronicle.setCurrentElementTime(32)
 
-      chronicle.pushMetric("bitrate", 16)
+    chronicle.pushMetric("bitrate", 16)
 
-      expect(chronicle.retrieve()).toEqual([
-        { type: EntryType.METRIC, currentElementTime: 32, sessionTime: 0, key: "bitrate", data: 16 },
-      ])
-    })
+    expect(chronicle.retrieve()).toEqual([
+      { type: EntryType.METRIC, currentElementTime: 32, sessionTime: 0, key: "bitrate", data: 16 },
+    ])
+  })
 
-    it("associates a metric with the current session time", () => {
-      const chronicle = new Chronicle()
+  it("associates a new metric with the current session time", () => {
+    const chronicle = new Chronicle()
 
-      jest.advanceTimersByTime(2345)
+    jest.advanceTimersByTime(2345)
 
-      chronicle.pushMetric("duration", 300)
+    chronicle.pushMetric("duration", 300)
 
-      expect(chronicle.retrieve()).toEqual([
-        { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 2345, key: "duration", data: 300 },
-      ])
-    })
+    expect(chronicle.retrieve()).toEqual([
+      { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 2345, key: "duration", data: 300 },
+    ])
+  })
 
-    it("records changes in metrics over time", () => {
-      const chronicle = new Chronicle()
+  it("records changes in metrics over time", () => {
+    const chronicle = new Chronicle()
 
-      chronicle.pushMetric("ready-state", 0)
+    chronicle.pushMetric("ready-state", 0)
 
-      jest.advanceTimersByTime(2345)
+    jest.advanceTimersByTime(2345)
 
-      chronicle.pushMetric("ready-state", 1)
+    chronicle.pushMetric("ready-state", 1)
 
-      jest.advanceTimersByTime(3456)
-      chronicle.setCurrentElementTime(0.3)
+    jest.advanceTimersByTime(3456)
+    chronicle.setCurrentElementTime(0.3)
 
-      chronicle.pushMetric("ready-state", 4)
+    chronicle.pushMetric("ready-state", 4)
 
-      expect(chronicle.retrieve()).toEqual([
-        expect.objectContaining({ key: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
-        expect.objectContaining({ key: "ready-state", data: 1, sessionTime: 2345, currentElementTime: 0 }),
-        expect.objectContaining({ key: "ready-state", data: 4, sessionTime: 2345 + 3456, currentElementTime: 0.3 }),
-      ])
+    expect(chronicle.retrieve()).toEqual([
+      expect.objectContaining({ key: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
+      expect.objectContaining({ key: "ready-state", data: 1, sessionTime: 2345, currentElementTime: 0 }),
+      expect.objectContaining({ key: "ready-state", data: 4, sessionTime: 2345 + 3456, currentElementTime: 0.3 }),
+    ])
 
-      expect(chronicle.getLatestMetric("ready-state")).toMatchObject({
-        key: "ready-state",
-        data: 4,
-      })
+    expect(chronicle.getLatestMetric("ready-state")).toMatchObject({
+      key: "ready-state",
+      data: 4,
     })
   })
 
@@ -154,69 +152,67 @@ describe("Chronicle", () => {
     ])
   })
 
-  describe("logging messages", () => {
-    it("logs debug info", () => {
-      const chronicle = new Chronicle()
+  it("logs a debug message", () => {
+    const chronicle = new Chronicle()
 
-      chronicle.debug("👾")
+    chronicle.debug("👾")
 
-      expect(chronicle.retrieve()).toEqual([
-        {
-          type: EntryType.MESSAGE,
-          level: "debug",
-          data: "👾",
-          sessionTime: 0,
-          currentElementTime: 0,
-        },
-      ])
-    })
+    expect(chronicle.retrieve()).toEqual([
+      {
+        type: EntryType.MESSAGE,
+        level: "debug",
+        data: "👾",
+        sessionTime: 0,
+        currentElementTime: 0,
+      },
+    ])
+  })
 
-    it("logs an error", () => {
-      const chronicle = new Chronicle()
+  it("logs an error", () => {
+    const chronicle = new Chronicle()
 
-      chronicle.error(new Error("Oops"))
+    chronicle.error(new Error("Oops"))
 
-      expect(chronicle.retrieve()).toEqual([
-        {
-          type: EntryType.MESSAGE,
-          level: "error",
-          data: new Error("Oops"),
-          sessionTime: 0,
-          currentElementTime: 0,
-        },
-      ])
-    })
+    expect(chronicle.retrieve()).toEqual([
+      {
+        type: EntryType.MESSAGE,
+        level: "error",
+        data: new Error("Oops"),
+        sessionTime: 0,
+        currentElementTime: 0,
+      },
+    ])
+  })
 
-    it("logs info", () => {
-      const chronicle = new Chronicle()
+  it("logs an info message", () => {
+    const chronicle = new Chronicle()
 
-      chronicle.info("🧐")
+    chronicle.info("🧐")
 
-      expect(chronicle.retrieve()).toEqual([
-        {
-          type: EntryType.MESSAGE,
-          level: "info",
-          data: "🧐",
-          sessionTime: 0,
-          currentElementTime: 0,
-        },
-      ])
-    })
+    expect(chronicle.retrieve()).toEqual([
+      {
+        type: EntryType.MESSAGE,
+        level: "info",
+        data: "🧐",
+        sessionTime: 0,
+        currentElementTime: 0,
+      },
+    ])
+  })
 
-    it("logs warnings", () => {
-      const chronicle = new Chronicle()
+  it("logs a warning message", () => {
+    const chronicle = new Chronicle()
 
-      chronicle.warn("😱")
+    chronicle.warn("😱")
 
-      expect(chronicle.retrieve()).toEqual([
-        {
-          type: EntryType.MESSAGE,
-          level: "warning",
-          data: "😱",
-          sessionTime: 0,
-          currentElementTime: 0,
-        },
-      ])
-    })
+    expect(chronicle.retrieve()).toEqual([
+      {
+        type: EntryType.MESSAGE,
+        level: "warning",
+        data: "😱",
+        sessionTime: 0,
+        currentElementTime: 0,
+      },
+    ])
   })
 })
