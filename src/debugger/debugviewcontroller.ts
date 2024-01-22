@@ -141,9 +141,6 @@ export default class ViewController implements DebugViewController {
       case "debug": {
         return `Debug: ${data}`
       }
-      case "error": {
-        return `${data.name ?? "Error"}: ${data.message}`
-      }
       case "info": {
         return `Info: ${data}`
       }
@@ -165,6 +162,9 @@ export default class ViewController implements DebugViewController {
   private serialiseTrace(trace: Trace): string {
     const { kind, data } = trace
     switch (kind) {
+      case "error": {
+        return `${data.name ?? "Error"}: ${data.message}`
+      }
       case "event": {
         const { eventType, eventTarget } = data
         return `Event: '${eventType}' from ${eventTarget}`

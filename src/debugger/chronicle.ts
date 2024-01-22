@@ -6,12 +6,11 @@ export enum EntryType {
   TRACE = "trace",
 }
 
-type ErrorMessage = { level: "error"; data: Error }
 type InfoMessage = { level: "info"; data: string }
 type WarningMessage = { level: "warning"; data: string }
 type DebugMessage = { level: "debug"; data: string }
 
-export type Message = { type: EntryType.MESSAGE } & (ErrorMessage | InfoMessage | WarningMessage | DebugMessage)
+export type Message = { type: EntryType.MESSAGE } & (InfoMessage | WarningMessage | DebugMessage)
 
 export type Metric = { type: EntryType.METRIC } & (
   | { key: "auto-resume"; data: number }
