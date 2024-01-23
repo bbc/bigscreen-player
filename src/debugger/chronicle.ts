@@ -15,6 +15,7 @@ export type Message = { type: EntryType.MESSAGE } & (InfoMessage | WarningMessag
 export type Metric = { type: EntryType.METRIC } & (
   | { key: "auto-resume"; data: number }
   | { key: "bitrate"; data: number }
+  | { key: "buffered-audio"; data: [start: number, end: number][] }
   | { key: "buffer-length"; data: number }
   | { key: "ended"; data: boolean }
   | { key: "ready-state"; data: HTMLMediaElement["readyState"] }
@@ -26,7 +27,7 @@ export type Metric = { type: EntryType.METRIC } & (
   | { key: "paused"; data: HTMLMediaElement["paused"] }
   | { key: "representation-audio"; data: { qualityIndex: number; bitrate: number } }
   | { key: "representation-video"; data: { qualityIndex: number; bitrate: number } }
-  | { key: "seekable-range"; data: [start: Date, end: Date] }
+  | { key: "seekable-range"; data: [start: number, end: number] }
   | { key: "seeking"; data: HTMLMediaElement["seeking"] }
   | { key: "strategy"; data: string }
   | { key: "subtitle-cdns-available"; data: string[] }

@@ -232,7 +232,7 @@ const DebugViewController = class implements DebugViewController {
     if (key === "seekable-range") {
       const [start, end] = data as MetricForKey<"seekable-range">["data"]
 
-      return `${formatDate(start)} - ${formatDate(end)}`
+      return `${formatDate(new Date(start))} - ${formatDate(new Date(end))}`
     }
 
     if ("bitrate" in data) {

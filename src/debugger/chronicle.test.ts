@@ -1,5 +1,5 @@
 import getError, { NoErrorThrownError } from "../testutils/geterror"
-import Chronicle, { EntryType, MetricForKey } from "./chronicle"
+import Chronicle, { EntryType } from "./chronicle"
 
 describe("Chronicle", () => {
   beforeAll(() => {
@@ -183,7 +183,7 @@ describe("Chronicle", () => {
     const chronicle = new Chronicle()
 
     const error = getError(() =>
-      chronicle.pushMetric("audio-buffered-ranges", [
+      chronicle.pushMetric("buffered-audio", [
         [0, 12],
         [16, 20],
       ])
