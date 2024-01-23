@@ -79,10 +79,10 @@ function BigscreenPlayer() {
     }
 
     if (evt.data.seekableRange) {
-      DebugTool.metric("seekable-range", {
-        start: deviceTimeToDate(evt.data.seekableRange.start),
-        end: deviceTimeToDate(evt.data.seekableRange.end),
-      })
+      DebugTool.metric("seekable-range", [
+        deviceTimeToDate(evt.data.seekableRange.start).getTime(),
+        deviceTimeToDate(evt.data.seekableRange.end).getTime(),
+      ])
     }
 
     if (evt.data.duration) {

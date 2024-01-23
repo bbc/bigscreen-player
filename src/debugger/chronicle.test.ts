@@ -1,4 +1,3 @@
-import getError, { NoErrorThrownError } from "../testutils/geterror"
 import Chronicle, { EntryType } from "./chronicle"
 
 describe("Chronicle", () => {
@@ -159,64 +158,99 @@ describe("Chronicle", () => {
     })
   })
 
+  it("does not record a new metric if the array value is the same", () => {
+    const chronicle = new Chronicle()
+
+    chronicle.pushMetric("buffered-audio", [[0, 1]])
+
+    jest.advanceTimersByTime(2345)
+
+    chronicle.pushMetric("buffered-audio", [[0, 1]])
+
+    jest.advanceTimersByTime(3456)
+    chronicle.setCurrentElementTime(0.3)
+
+    chronicle.pushMetric("buffered-audio", [
+      [0, 1],
+      [1, 2],
+    ])
+
+    expect(chronicle.retrieve()).toEqual([
+      expect.objectContaining({ key: "buffered-audio", data: [[0, 1]], sessionTime: 0, currentElementTime: 0 }),
+      expect.objectContaining({
+        key: "buffered-audio",
+        data: [
+          [0, 1],
+          [1, 2],
+        ],
+        sessionTime: 2345 + 3456,
+        currentElementTime: 0.3,
+      }),
+    ])
+
+    expect(chronicle.getLatestMetric("buffered-audio")).toMatchObject({
+      key: "buffered-audio",
+      data: [
+        [0, 1],
+        [1, 2],
+      ],
+    })
+  })
+
   it.each([
     ["boolean", "ended", true],
     ["number", "frames-dropped", 0],
     ["string", "current-url", "mock://fake.url/"],
   ] as const)("accepts a value of type %s as a metric", (_, key, value) => {
     const chronicle = new Chronicle()
+    const code = () => chronicle.pushMetric(key, value)
 
-    const error = getError(() => chronicle.pushMetric(key, value))
-
-    expect(error).toBeInstanceOf(NoErrorThrownError)
+    expect(code).not.toThrow()
   })
 
   it("accepts an array-like as a metric value", () => {
     const chronicle = new Chronicle()
+    const code = () => chronicle.pushMetric("seekable-range", [0, 30])
 
-    const error = getError(() => chronicle.pushMetric("seekable-range", [0, 30]))
-
-    expect(error).toBeInstanceOf(NoErrorThrownError)
+    expect(code).not.toThrow()
   })
 
   it("accepts nested array-likes as a metric value", () => {
     const chronicle = new Chronicle()
-
-    const error = getError(() =>
+    const code = () =>
       chronicle.pushMetric("buffered-audio", [
         [0, 12],
         [16, 20],
       ])
-    )
 
-    expect(error).toBeInstanceOf(NoErrorThrownError)
+    expect(code).not.toThrow()
   })
 
   it("does not accept an object literal as a metric value", () => {
     const chronicle = new Chronicle()
 
     // @ts-expect-error - testing type checks
-    const error = getError(() => chronicle.pushMetric("invalid", { bad: "objects" }))
+    const code = () => chronicle.pushMetric("invalid", { bad: "objects" })
 
-    expect(error).toBeInstanceOf(TypeError)
+    expect(code).toThrow(TypeError)
   })
 
   it("does not accept an array containing object literals as a metric value", () => {
     const chronicle = new Chronicle()
 
     // @ts-expect-error - testing type checks
-    const error = getError(() => chronicle.pushMetric("invalid", [2, { evil: "deeds" }]))
+    const code = () => chronicle.pushMetric("invalid", [2, { evil: "deeds" }])
 
-    expect(error).toBeInstanceOf(TypeError)
+    expect(code).toThrow(TypeError)
   })
 
   it("does not accept functions as a metric value", () => {
     const chronicle = new Chronicle()
 
     // @ts-expect-error - testing type checks
-    const error = getError(() => chronicle.pushMetric("seekable-range", () => false))
+    const code = () => chronicle.pushMetric("seekable-range", () => false)
 
-    expect(error).toBeInstanceOf(NoErrorThrownError)
+    expect(code).not.toThrow()
   })
 
   it("records a trace", () => {

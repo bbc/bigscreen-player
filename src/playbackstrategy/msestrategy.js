@@ -315,7 +315,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
       const newRepresentation = `${newQuality} (${newBitrate} kbps)`
 
-      DebugTool.metric(`representation-${mediaType}`, { qualityIndex: newQuality, bitrate: newBitrate })
+      DebugTool.metric(`representation-${mediaType}`, [newQuality, newBitrate])
 
       DebugTool.info(
         `${mediaKind} ABR Change Rendered From Representation ${oldRepresentation} To ${newRepresentation}`

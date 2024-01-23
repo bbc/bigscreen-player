@@ -235,8 +235,8 @@ const DebugViewController = class implements DebugViewController {
       return `${formatDate(new Date(start))} - ${formatDate(new Date(end))}`
     }
 
-    if ("bitrate" in data) {
-      const { bitrate, qualityIndex } = data
+    if (key === "representation-audio" || key === "representation-video") {
+      const [bitrate, qualityIndex] = data
 
       return `${qualityIndex} (${bitrate} kbps)`
     }

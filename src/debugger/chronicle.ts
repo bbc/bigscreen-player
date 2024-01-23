@@ -25,8 +25,8 @@ export type Metric = { type: EntryType.METRIC } & (
   | { key: "frames-dropped"; data: number }
   | { key: "initial-playback-time"; data: number }
   | { key: "paused"; data: HTMLMediaElement["paused"] }
-  | { key: "representation-audio"; data: { qualityIndex: number; bitrate: number } }
-  | { key: "representation-video"; data: { qualityIndex: number; bitrate: number } }
+  | { key: "representation-audio"; data: [qualityIndex: number, bitrate: number] }
+  | { key: "representation-video"; data: [qualityIndex: number, bitrate: number] }
   | { key: "seekable-range"; data: [start: number, end: number] }
   | { key: "seeking"; data: HTMLMediaElement["seeking"] }
   | { key: "strategy"; data: string }
@@ -69,6 +69,23 @@ type EventListeners =
   | { type: "timeupdate"; listener: (seconds: number) => void }
 type EventTypes = EventListeners["type"]
 type EventListenerForType<Type extends EventTypes> = Extract<EventListeners, { type: Type }>["listener"]
+
+function isValid<T>(data: T): boolean {
+  if (typeof data !== "object") return true
+  if (Array.isArray(data)) {
+    return data.every((element) => isValid(element))
+  }
+
+  return false
+}
+
+function isEqual<T>(left: T, right: T): boolean {
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return left.length === right.length && left.every((element, index) => isEqual(element, right[index]))
+  }
+
+  return left === right
+}
 
 class Chronicle {
   private currentElementTime: number = 0
@@ -130,6 +147,16 @@ class Chronicle {
   }
 
   public pushMetric<Key extends Metric["key"]>(key: Key, data: MetricForKey<Key>["data"]) {
+    if (!isValid(data)) {
+      throw new TypeError(`Metric cannot be Object or Function, got: ${JSON.stringify(data)}`)
+    }
+
+    const latest = this.getLatestMetric(key)
+
+    if (latest && isEqual(latest.data, data)) {
+      return
+    }
+
     this.pushEntry({ key, data, type: EntryType.METRIC } as Entry)
   }
 
