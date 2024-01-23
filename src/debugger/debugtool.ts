@@ -12,10 +12,10 @@ export const LogLevels = {
 type LogLevel = (typeof LogLevels)[keyof typeof LogLevels]
 
 interface DebugTool {
+  init(): void
+  tearDown(): void
   getDebugLogs(): History
   setLogLevel(level: LogLevel | undefined): void
-  setRootElement(el: HTMLElement): void
-  tearDown(): void
   updateElementTime(seconds: number): void
   // chronicle
   apicall(functionName: string, functionArgs: any[]): void
@@ -29,6 +29,7 @@ interface DebugTool {
   // view
   hide(): void
   show(): void
+  setRootElement(el: HTMLElement): void
   toggleVisibility(): void
 }
 
@@ -37,14 +38,20 @@ function DebugTool() {
   let currentLogLevel: LogLevel = LogLevels.INFO
   let viewController = new DebugViewController()
 
+  function init() {
+    chronicle = new Chronicle()
+    currentLogLevel = LogLevels.INFO
+    viewController = new DebugViewController()
+
+    chronicle.trace("session-start", new Date())
+  }
+
   function tearDown() {
     if (viewController.isVisible) {
       hide()
     }
 
-    chronicle = new Chronicle()
-    currentLogLevel = LogLevels.INFO
-    viewController = new DebugViewController()
+    chronicle.trace("session-end", new Date())
   }
 
   function getDebugLogs() {
@@ -156,10 +163,10 @@ function DebugTool() {
 
   return {
     logLevels: LogLevels,
+    init,
+    tearDown,
     getDebugLogs,
     setLogLevel,
-    setRootElement,
-    tearDown,
     updateElementTime,
     apicall,
     debug,
@@ -171,6 +178,7 @@ function DebugTool() {
     metric,
     hide,
     show,
+    setRootElement,
     toggleVisibility,
   }
 }

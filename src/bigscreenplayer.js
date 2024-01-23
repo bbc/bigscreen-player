@@ -194,6 +194,7 @@ function BigscreenPlayer() {
     init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks = {}) => {
       playbackElement = newPlaybackElement
       resizer = Resizer()
+      DebugTool.init()
       DebugTool.setRootElement(playbackElement)
       DebugTool.metric("version", Version)
       windowType = newWindowType

@@ -36,6 +36,8 @@ export type Metric = { type: EntryType.METRIC } & (
 export type Trace = { type: EntryType.TRACE } & (
   | { kind: "error"; data: Error }
   | { kind: "event"; data: { eventType: string; eventTarget: string } }
+  | { kind: "session-start"; data: Date }
+  | { kind: "session-end"; data: Date }
   | { kind: "state-change"; data: MediaStates }
 )
 

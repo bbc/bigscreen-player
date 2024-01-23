@@ -8,15 +8,91 @@ function getMockViewController(): DebugViewController {
   return instance
 }
 
+beforeAll(() => {
+  jest.useFakeTimers({ now: 1234 })
+})
+
+beforeEach(() => {
+  jest.clearAllMocks()
+
+  DebugTool.tearDown()
+})
+
 describe("Debug Tool", () => {
-  beforeAll(() => {
-    jest.useFakeTimers({ now: 1234 })
+  describe("init", () => {
+    it("logs session start", () => {
+      DebugTool.init()
+
+      expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start", data: new Date(1234) }),
+      ])
+    })
+
+    it("wipes previous logs", () => {
+      DebugTool.init()
+
+      DebugTool.info("Hello")
+      DebugTool.info("World")
+
+      expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
+        expect.objectContaining({ data: "Hello" }),
+        expect.objectContaining({ data: "World" }),
+      ])
+
+      DebugTool.init()
+
+      expect(DebugTool.getDebugLogs()).toEqual([expect.objectContaining({ kind: "session-start" })])
+    })
   })
 
-  beforeEach(() => {
-    jest.clearAllMocks()
+  describe("teardown", () => {
+    it("logs session end", () => {
+      DebugTool.init()
 
-    DebugTool.tearDown()
+      jest.advanceTimersByTime(1234)
+
+      DebugTool.tearDown()
+
+      expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start", data: new Date(1234) }),
+        expect.objectContaining({ kind: "session-end", data: new Date(2468) }),
+      ])
+    })
+
+    it("does not wipe logs", () => {
+      DebugTool.init()
+
+      DebugTool.info("Hello")
+      DebugTool.info("World")
+
+      DebugTool.tearDown()
+
+      expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
+        expect.objectContaining({ data: "Hello" }),
+        expect.objectContaining({ data: "World" }),
+        expect.objectContaining({ kind: "session-end" }),
+      ])
+    })
+
+    it("tears down the view if it was visible", () => {
+      DebugTool.init()
+
+      const mockViewController = getMockViewController()
+
+      mockViewController.isVisible = true
+
+      DebugTool.tearDown()
+
+      expect(mockViewController.hideView).toHaveBeenCalledTimes(1)
+    })
+  })
+})
+
+describe("Debug Tool", () => {
+  beforeEach(() => {
+    DebugTool.init()
   })
 
   describe("getDebugLogs", () => {
@@ -25,35 +101,10 @@ describe("Debug Tool", () => {
       DebugTool.info("World")
 
       expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
         expect.objectContaining({ data: "Hello" }),
         expect.objectContaining({ data: "World" }),
       ])
-    })
-  })
-
-  describe("teardown", () => {
-    it("wipes previous logs", () => {
-      DebugTool.info("Hello")
-      DebugTool.info("World")
-
-      expect(DebugTool.getDebugLogs()).toEqual([
-        expect.objectContaining({ data: "Hello" }),
-        expect.objectContaining({ data: "World" }),
-      ])
-
-      DebugTool.tearDown()
-
-      expect(DebugTool.getDebugLogs()).toEqual([])
-    })
-
-    it("tears down the view if it was visible", () => {
-      const mockViewController = getMockViewController()
-
-      mockViewController.isVisible = true
-
-      DebugTool.tearDown()
-
-      expect(mockViewController.hideView).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -64,6 +115,7 @@ describe("Debug Tool", () => {
       DebugTool.debug("Detailed information")
 
       expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
         expect.objectContaining({ level: "debug", data: "Detailed information" }),
       ])
     })
@@ -74,6 +126,7 @@ describe("Debug Tool", () => {
       DebugTool.error("something went wrong")
 
       expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
         expect.objectContaining({ kind: "error", data: new Error("something went wrong") }),
       ])
     })
@@ -82,6 +135,7 @@ describe("Debug Tool", () => {
       DebugTool.error(new TypeError("something went REALLY wrong"))
 
       expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
         expect.objectContaining({ kind: "error", data: new TypeError("something went REALLY wrong") }),
       ])
     })
@@ -91,7 +145,10 @@ describe("Debug Tool", () => {
     it("takes a string", () => {
       DebugTool.info("Hello World")
 
-      expect(DebugTool.getDebugLogs()).toEqual([expect.objectContaining({ level: "info", data: "Hello World" })])
+      expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
+        expect.objectContaining({ level: "info", data: "Hello World" }),
+      ])
     })
   })
 
@@ -100,6 +157,7 @@ describe("Debug Tool", () => {
       DebugTool.warn("you're using a deprecated thingie!")
 
       expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
         expect.objectContaining({ level: "warning", data: "you're using a deprecated thingie!" }),
       ])
     })
@@ -112,6 +170,7 @@ describe("Debug Tool", () => {
       DebugTool.metric("seeking", false)
 
       expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
         expect.objectContaining({ key: "bitrate", data: 1000 }),
         expect.objectContaining({ key: "seeking", data: true }),
         expect.objectContaining({ key: "seeking", data: false }),
@@ -124,6 +183,7 @@ describe("Debug Tool", () => {
       DebugTool.event("playing")
 
       expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
         expect.objectContaining({ kind: "event", data: { eventType: "playing", eventTarget: "unknown" } }),
       ])
     })

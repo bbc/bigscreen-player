@@ -109,7 +109,28 @@ describe("Debug View", () => {
     )
   })
 
-  // TEST: rounding 788.9999 to 789.00
+  it("parses session times into a human-readable representation", () => {
+    const controller = new ViewController()
+    const chronicle = new Chronicle()
+
+    chronicle.trace("session-start", new Date(2024, 0, 1, 0, 0, 0, 0))
+
+    jest.advanceTimersByTime(Date.UTC(1970, 0, 1, 2, 31, 16, 15))
+
+    chronicle.trace("session-end", new Date(2024, 0, 1, 2, 31, 16, 15))
+
+    controller.addEntries(chronicle.retrieve())
+
+    expect(DebugView.render).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dynamic: [
+          "00:00:00.000 - Playback session started at 2024-01-01 00:00:00.000Z",
+          "02:31:16.015 - Playback session ended at 2024-01-01 02:31:16.015Z",
+        ],
+      })
+    )
+  })
+
   it("parses current element time into a human-readable representation", () => {
     const controller = new ViewController()
 

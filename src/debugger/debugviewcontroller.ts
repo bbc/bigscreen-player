@@ -45,7 +45,7 @@ function formatDate(value: Date) {
   return `${zeroPadHMS(hours)}:${zeroPadHMS(mins)}:${zeroPadHMS(secs)}`
 }
 
-export default class ViewController implements DebugViewController {
+const DebugViewController = class implements DebugViewController {
   public isVisible: boolean = false
 
   private dynamicEntriesSoFar: DynamicEntry[] = []
@@ -189,6 +189,12 @@ export default class ViewController implements DebugViewController {
         const { eventType, eventTarget } = data
         return `Event: '${eventType}' from ${eventTarget}`
       }
+      case "session-start": {
+        return `Playback session started at ${data.toISOString().replace("T", " ")}`
+      }
+      case "session-end": {
+        return `Playback session ended at ${data.toISOString().replace("T", " ")}`
+      }
       case "state-change": {
         return `Event: ${wrungMediaState[data]}`
       }
@@ -269,3 +275,5 @@ export default class ViewController implements DebugViewController {
     DebugView.setRootElement(el)
   }
 }
+
+export default DebugViewController
