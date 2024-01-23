@@ -123,7 +123,7 @@ function DebugTool() {
   }
 
   function metric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
-    chronicle.pushMetric(key, data)
+    chronicle.appendMetric(key, data)
   }
 
   function handleHistoryUpdate(change: TimestampedEntry) {

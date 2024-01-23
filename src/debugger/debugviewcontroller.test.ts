@@ -19,9 +19,9 @@ describe("Debug View", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
 
-    chronicle.pushMetric("paused", true)
-    chronicle.pushMetric("ready-state", 4)
-    chronicle.pushMetric("seeking", false)
+    chronicle.appendMetric("paused", true)
+    chronicle.appendMetric("ready-state", 4)
+    chronicle.appendMetric("seeking", false)
 
     controller.addEntries(chronicle.retrieve())
 
@@ -43,7 +43,7 @@ describe("Debug View", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
 
-    chronicle.pushMetric("seekable-range", [start, end])
+    chronicle.appendMetric("seekable-range", [start, end])
 
     controller.addEntries(chronicle.retrieve())
 
@@ -214,15 +214,15 @@ describe("Debug View", () => {
 
     const chronicle = new Chronicle()
 
-    chronicle.pushMetric("ready-state", 0)
+    chronicle.appendMetric("ready-state", 0)
 
     jest.advanceTimersByTime(500)
 
-    chronicle.pushMetric("ready-state", 1)
+    chronicle.appendMetric("ready-state", 1)
 
     jest.advanceTimersByTime(4500)
 
-    chronicle.pushMetric("ready-state", 4)
+    chronicle.appendMetric("ready-state", 4)
 
     controller.addEntries(chronicle.retrieve())
 

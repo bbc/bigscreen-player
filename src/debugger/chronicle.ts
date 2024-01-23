@@ -146,7 +146,7 @@ class Chronicle {
     return [...this.chronicle]
   }
 
-  public pushMetric<Key extends Metric["key"]>(key: Key, data: MetricForKey<Key>["data"]) {
+  public appendMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
     if (!isValid(data)) {
       throw new TypeError(`Metric cannot be Object or Function, got: ${JSON.stringify(data)}`)
     }
@@ -160,7 +160,7 @@ class Chronicle {
     this.pushEntry({ key, data, type: EntryType.METRIC } as Entry)
   }
 
-  public getLatestMetric<Key extends Metric["key"]>(key: Key): MetricForKey<Key> | undefined {
+  public getLatestMetric<Key extends MetricKey>(key: Key): MetricForKey<Key> | undefined {
     const isMetricForKey = function (entry: Entry): entry is MetricForKey<Key> {
       return entry.type === EntryType.METRIC && entry.key === key
     }
