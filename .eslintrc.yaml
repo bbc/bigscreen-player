@@ -142,7 +142,7 @@ rules:
 overrides:
   # General test overrides
   - files:
-      - "**/*.test.{js,mjs}"
+      - "**/*.test.{js,mjs,ts}"
     rules:
       max-nested-callbacks: off
       sonarjs/no-duplicate-string: off
