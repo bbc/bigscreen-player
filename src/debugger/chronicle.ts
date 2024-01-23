@@ -51,7 +51,8 @@ export type MetricValue = Metric["data"]
 export type TraceKind = Trace["kind"]
 export type EntryIdentifier = MessageLevel | MetricKey | TraceKind
 
-export type TimestampedEntry = { currentElementTime: number; sessionTime: number } & Entry
+type Timestamped<Type> = { currentElementTime: number; sessionTime: number } & Type
+export type TimestampedEntry = Timestamped<Entry>
 export type EntryForType<Type extends EntryType> = Extract<TimestampedEntry, { type: Type }>
 export type History = TimestampedEntry[]
 
@@ -91,20 +92,12 @@ class Chronicle {
   private currentElementTime: number = 0
 
   private chronicle: History = []
+  private messages: Timestamped<Message>[] = []
+  // @ts-ignore TODO: Initialise this
+  private metrics: Record<MetricKey, Timestamped<Metric>[]> = {}
+  private traces: Timestamped<Trace>[] = []
   private sessionStartTime: number = Date.now()
   private listeners: { [Type in EventTypes]: EventListenerForType<Type>[] } = { update: [], timeupdate: [] }
-
-  private pushEntry(partial: Entry) {
-    const entry = {
-      ...partial,
-      currentElementTime: this.currentElementTime,
-      sessionTime: this.getSessionTime(),
-    }
-
-    this.chronicle.push(entry)
-
-    this.triggerUpdate(entry)
-  }
 
   private triggerUpdate(entry: TimestampedEntry) {
     this.listeners.update.forEach((callback) => callback(entry))
@@ -112,6 +105,18 @@ class Chronicle {
 
   private triggerTimeUpdate(seconds: number) {
     this.listeners.timeupdate.forEach((callback) => callback(seconds))
+  }
+
+  private timestamp<E extends Entry>(entry: E): Timestamped<E> {
+    return { ...entry, currentElementTime: this.currentElementTime, sessionTime: this.getSessionTime() }
+  }
+
+  private pushMessage(message: Message): void {
+    const entry = this.timestamp(message)
+
+    this.messages.push(entry)
+
+    this.triggerUpdate(entry)
   }
 
   public getCurrentElementTime(): number {
@@ -142,8 +147,16 @@ class Chronicle {
     this.listeners[type].splice(index, 1)
   }
 
-  public retrieve() {
-    return [...this.chronicle]
+  public retrieve(): Timestamped<Entry>[] {
+    const concat = function <T>(someArray: T[], otherArray: T[]): T[] {
+      return [...someArray, ...otherArray]
+    }
+
+    const metrics = Object.values(this.metrics).reduce(concat, [])
+
+    return [...this.messages, ...this.traces, ...metrics].sort(
+      (someEntry, otherEntry) => someEntry.sessionTime - otherEntry.sessionTime
+    ) as Timestamped<Entry>[]
   }
 
   public appendMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
@@ -157,9 +170,24 @@ class Chronicle {
       return
     }
 
-    this.pushEntry({ key, data, type: EntryType.METRIC } as Entry)
+    if (this.metrics[key] == null) {
+      this.metrics[key] = []
+    }
+
+    const entry = this.timestamp({ key, data, type: EntryType.METRIC } as Metric)
+
+    this.metrics[key].push(entry)
+
+    this.triggerUpdate(entry)
   }
 
+  public setMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
+    this.metrics[key] = []
+
+    this.appendMetric(key, data)
+  }
+
+  // TODO: Fix
   public getLatestMetric<Key extends MetricKey>(key: Key): MetricForKey<Key> | undefined {
     const isMetricForKey = function (entry: Entry): entry is MetricForKey<Key> {
       return entry.type === EntryType.METRIC && entry.key === key
@@ -171,19 +199,23 @@ class Chronicle {
   }
 
   public debug(message: MessageForLevel<"debug">["data"]) {
-    this.pushEntry({ type: EntryType.MESSAGE, level: "debug", data: message })
+    this.pushMessage({ type: EntryType.MESSAGE, level: "debug", data: message })
   }
 
   public info(message: MessageForLevel<"info">["data"]) {
-    this.pushEntry({ type: EntryType.MESSAGE, level: "info", data: message })
+    this.pushMessage({ type: EntryType.MESSAGE, level: "info", data: message })
   }
 
   public trace<Kind extends TraceKind>(kind: Kind, data: TraceForKind<Kind>["data"]) {
-    this.pushEntry({ kind, data, type: EntryType.TRACE } as Entry)
+    const entry = this.timestamp({ kind, data, type: EntryType.TRACE } as Trace)
+
+    this.traces.push(entry)
+
+    this.triggerUpdate(entry)
   }
 
   public warn(message: MessageForLevel<"warning">["data"]) {
-    this.pushEntry({ type: EntryType.MESSAGE, level: "warning", data: message })
+    this.pushMessage({ type: EntryType.MESSAGE, level: "warning", data: message })
   }
 }
 

@@ -255,6 +255,105 @@ describe("Chronicle", () => {
     })
   })
 
+  describe("setting metrics", () => {
+    it("does not record changes in metrics over time", () => {
+      const chronicle = new Chronicle()
+
+      chronicle.setMetric("buffer-length", 0)
+
+      jest.advanceTimersByTime(1234)
+
+      chronicle.setMetric("buffer-length", 5)
+
+      expect(chronicle.retrieve()).toEqual([
+        expect.objectContaining({ key: "buffer-length", data: 5, sessionTime: 1234, currentElementTime: 0 }),
+      ])
+
+      expect(chronicle.getLatestMetric("ready-state")).toMatchObject({
+        key: "buffer-length",
+        data: 5,
+      })
+    })
+
+    it.each([
+      ["boolean", "ended", true],
+      ["number", "frames-dropped", 0],
+      ["string", "current-url", "mock://fake.url/"],
+    ] as const)("accepts a value of type %s as a metric", (_, key, value) => {
+      const chronicle = new Chronicle()
+
+      const code = () => chronicle.setMetric(key, value)
+
+      expect(code).not.toThrow()
+    })
+
+    it("accepts an array-like as a metric value", () => {
+      const chronicle = new Chronicle()
+
+      const code = () => chronicle.setMetric("seekable-range", [0, 30])
+
+      expect(code).not.toThrow()
+    })
+
+    it("accepts nested array-likes as a metric value", () => {
+      const chronicle = new Chronicle()
+
+      const code = () =>
+        chronicle.setMetric("buffered-audio", [
+          [0, 12],
+          [16, 20],
+        ])
+
+      expect(code).not.toThrow()
+    })
+
+    it("does not accept an object literal as a metric value", () => {
+      const chronicle = new Chronicle()
+
+      // @ts-expect-error - testing type checks
+      const code = () => chronicle.setMetric("invalid", { bad: "objects" })
+
+      expect(code).toThrow(TypeError)
+    })
+
+    it("does not accept an array containing object literals as a metric value", () => {
+      const chronicle = new Chronicle()
+
+      // @ts-expect-error - testing type checks
+      const code = () => chronicle.setMetric("invalid", [2, { evil: "deeds" }])
+
+      expect(code).toThrow(TypeError)
+    })
+
+    it("does not accept functions as a metric value", () => {
+      const chronicle = new Chronicle()
+
+      // @ts-expect-error - testing type checks
+      const code = () => chronicle.setMetric("seekable-range", () => false)
+
+      expect(code).not.toThrow()
+    })
+  })
+
+  it("returns appended and set metrics together", () => {
+    const chronicle = new Chronicle()
+
+    chronicle.appendMetric("ready-state", 0)
+    chronicle.setMetric("buffer-length", 0)
+
+    chronicle.setCurrentElementTime(0.3)
+    jest.advanceTimersByTime(1234)
+
+    chronicle.appendMetric("ready-state", 1)
+    chronicle.setMetric("buffer-length", 5)
+
+    expect(chronicle.retrieve()).toEqual([
+      expect.objectContaining({ key: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
+      expect.objectContaining({ key: "ready-state", data: 1, sessionTime: 1234, currentElementTime: 0.3 }),
+      expect.objectContaining({ key: "buffer-length", data: 5, sessionTime: 1234, currentElementTime: 0.3 }),
+    ])
+  })
+
   it("records a trace", () => {
     const chronicle = new Chronicle()
 
