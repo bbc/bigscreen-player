@@ -1,5 +1,14 @@
 import MediaState from "../models/mediastate"
-import { EntryForType, EntryType, History, Message, MetricKey, MetricValue, TimestampedEntry, Trace } from "./chronicle"
+import {
+  EntryForType,
+  EntryType,
+  History,
+  Message,
+  MetricForKey,
+  MetricKey,
+  TimestampedEntry,
+  Trace,
+} from "./chronicle"
 import DebugView from "./debugview"
 
 type WrungMediaState = { [Key in keyof typeof MediaState as (typeof MediaState)[Key]]: Key }
@@ -215,13 +224,13 @@ const DebugViewController = class implements DebugViewController {
     return { id: key, key: parsedKey, value: parsedValue }
   }
 
-  private serialiseMetric(key: MetricKey, data: MetricValue): boolean | number | string {
+  private serialiseMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): boolean | number | string {
     if (typeof data !== "object") {
       return data
     }
 
-    if ("start" in data && "end" in data) {
-      const { start, end } = data
+    if (key === "seekable-range") {
+      const [start, end] = data as MetricForKey<"seekable-range">["data"]
 
       return `${formatDate(start)} - ${formatDate(end)}`
     }
