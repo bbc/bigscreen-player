@@ -196,7 +196,7 @@ function BigscreenPlayer() {
       resizer = Resizer()
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
-      DebugTool.dynamicMetric("version", Version)
+      DebugTool.staticMetric("version", Version)
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
 
