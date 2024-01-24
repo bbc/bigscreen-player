@@ -91,10 +91,8 @@ function isEqual<T>(left: T, right: T): boolean {
 class Chronicle {
   private currentElementTime: number = 0
 
-  private chronicle: History = []
   private messages: Timestamped<Message>[] = []
-  // @ts-ignore TODO: Initialise this
-  private metrics: Record<MetricKey, Timestamped<Metric>[]> = {}
+  private metrics: { [Key in MetricKey]?: Timestamped<MetricForKey<Key>>[] } = {}
   private traces: Timestamped<Trace>[] = []
   private sessionStartTime: number = Date.now()
   private listeners: { [Type in EventTypes]: EventListenerForType<Type>[] } = { update: [], timeupdate: [] }
@@ -154,8 +152,10 @@ class Chronicle {
 
     const metrics = Object.values(this.metrics).reduce(concat, [])
 
-    return [...this.messages, ...this.traces, ...metrics].sort(
-      (someEntry, otherEntry) => someEntry.sessionTime - otherEntry.sessionTime
+    return [...this.messages, ...this.traces, ...metrics].sort((someEntry, otherEntry) =>
+      someEntry.sessionTime === otherEntry.sessionTime
+        ? someEntry.currentElementTime - otherEntry.currentElementTime
+        : someEntry.sessionTime - otherEntry.sessionTime
     ) as Timestamped<Entry>[]
   }
 
@@ -174,9 +174,9 @@ class Chronicle {
       this.metrics[key] = []
     }
 
-    const entry = this.timestamp({ key, data, type: EntryType.METRIC } as Metric)
+    const entry = this.timestamp({ key, data, type: EntryType.METRIC } as MetricForKey<Key>)
 
-    this.metrics[key].push(entry)
+    this.metrics[key]!.push(entry)
 
     this.triggerUpdate(entry)
   }
@@ -187,15 +187,12 @@ class Chronicle {
     this.appendMetric(key, data)
   }
 
-  // TODO: Fix
-  public getLatestMetric<Key extends MetricKey>(key: Key): MetricForKey<Key> | undefined {
-    const isMetricForKey = function (entry: Entry): entry is MetricForKey<Key> {
-      return entry.type === EntryType.METRIC && entry.key === key
+  public getLatestMetric<Key extends MetricKey>(key: Key): MetricForKey<Key> | null {
+    if (!this.metrics[key]?.length) {
+      return null
     }
 
-    const filtered = (this.chronicle as Entry[]).filter(isMetricForKey)
-
-    return filtered.length > 0 ? filtered[filtered.length - 1] : undefined
+    return this.metrics[key]![this.metrics[key]!.length - 1] as MetricForKey<Key>
   }
 
   public debug(message: MessageForLevel<"debug">["data"]) {

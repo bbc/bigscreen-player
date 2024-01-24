@@ -269,7 +269,7 @@ describe("Chronicle", () => {
         expect.objectContaining({ key: "buffer-length", data: 5, sessionTime: 1234, currentElementTime: 0 }),
       ])
 
-      expect(chronicle.getLatestMetric("ready-state")).toMatchObject({
+      expect(chronicle.getLatestMetric("buffer-length")).toMatchObject({
         key: "buffer-length",
         data: 5,
       })

@@ -9,10 +9,11 @@ function getMockViewController(): DebugViewController {
 }
 
 beforeAll(() => {
-  jest.useFakeTimers({ now: 1234 })
+  jest.useFakeTimers()
 })
 
 beforeEach(() => {
+  jest.setSystemTime(Date.UTC(1970, 0, 1, 0, 0, 1, 234))
   jest.clearAllMocks()
 
   DebugTool.tearDown()
@@ -31,7 +32,12 @@ describe("Debug Tool", () => {
     it("wipes previous logs", () => {
       DebugTool.init()
 
+      jest.advanceTimersByTime(1)
+
       DebugTool.info("Hello")
+
+      jest.advanceTimersByTime(1)
+
       DebugTool.info("World")
 
       expect(DebugTool.getDebugLogs()).toEqual([
@@ -63,8 +69,15 @@ describe("Debug Tool", () => {
     it("does not wipe logs", () => {
       DebugTool.init()
 
+      jest.advanceTimersByTime(1)
+
       DebugTool.info("Hello")
+
+      jest.advanceTimersByTime(1)
+
       DebugTool.info("World")
+
+      jest.advanceTimersByTime(1)
 
       DebugTool.tearDown()
 
@@ -97,7 +110,12 @@ describe("Debug Tool", () => {
 
   describe("getDebugLogs", () => {
     it("retrieves logs", () => {
+      jest.advanceTimersByTime(1)
+
       DebugTool.info("Hello")
+
+      jest.advanceTimersByTime(1)
+
       DebugTool.info("World")
 
       expect(DebugTool.getDebugLogs()).toEqual([
@@ -112,6 +130,8 @@ describe("Debug Tool", () => {
     it("takes a string", () => {
       DebugTool.setLogLevel(LogLevels.DEBUG)
 
+      jest.advanceTimersByTime(1)
+
       DebugTool.debug("Detailed information")
 
       expect(DebugTool.getDebugLogs()).toEqual([
@@ -123,6 +143,8 @@ describe("Debug Tool", () => {
 
   describe("logging an error", () => {
     it("takes a string", () => {
+      jest.advanceTimersByTime(1)
+
       DebugTool.error("something went wrong")
 
       expect(DebugTool.getDebugLogs()).toEqual([
@@ -132,6 +154,8 @@ describe("Debug Tool", () => {
     })
 
     it("takes an instance of Error", () => {
+      jest.advanceTimersByTime(1)
+
       DebugTool.error(new TypeError("something went REALLY wrong"))
 
       expect(DebugTool.getDebugLogs()).toEqual([
@@ -143,6 +167,8 @@ describe("Debug Tool", () => {
 
   describe("logging info", () => {
     it("takes a string", () => {
+      jest.advanceTimersByTime(1)
+
       DebugTool.info("Hello World")
 
       expect(DebugTool.getDebugLogs()).toEqual([
@@ -154,6 +180,8 @@ describe("Debug Tool", () => {
 
   describe("logging a warning", () => {
     it("takes a string", () => {
+      jest.advanceTimersByTime(1)
+
       DebugTool.warn("you're using a deprecated thingie!")
 
       expect(DebugTool.getDebugLogs()).toEqual([
@@ -165,6 +193,8 @@ describe("Debug Tool", () => {
 
   describe("logging metrics", () => {
     it("appends the metric to the log", () => {
+      jest.advanceTimersByTime(1)
+
       DebugTool.metric("bitrate", 1000)
       DebugTool.metric("seeking", true)
       DebugTool.metric("seeking", false)
@@ -180,6 +210,8 @@ describe("Debug Tool", () => {
 
   describe("logging events", () => {
     it("appens the event trace to the log", () => {
+      jest.advanceTimersByTime(1)
+
       DebugTool.event("playing")
 
       expect(DebugTool.getDebugLogs()).toEqual([
