@@ -74,6 +74,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   const DashJSEvents = {
     LOG: "log",
     ERROR: "error",
+    GAP_JUMP: "gapCausedInternalSeek",
+    GAP_JUMP_TO_END: "gapCausedSeekToPeriodEnd",
     MANIFEST_LOADED: "manifestLoaded",
     DOWNLOAD_MANIFEST_ERROR_CODE: 25,
     DOWNLOAD_CONTENT_ERROR_CODE: 27,
@@ -224,6 +226,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     publishError(event.error)
+  }
+
+  function onGapJump({ seekTime, duration }) {
+    DebugTool.gap(seekTime - duration, seekTime)
   }
 
   function manifestDownloadError(mediaError) {
@@ -480,6 +486,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
     mediaPlayer.on(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
+    mediaPlayer.on(DashJSEvents.GAP_JUMP, onGapJump)
+    mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
   }
 
   function getSeekableRange() {
@@ -608,6 +616,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.off(DashJSEvents.LOG, onDebugLog)
       mediaPlayer.off(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
       mediaPlayer.off(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
+      mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
+      mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
 
       DOMHelpers.safeRemoveElement(mediaElement)
 

@@ -22,6 +22,7 @@ interface DebugTool {
   debug(...parts: any[]): void
   error(...parts: any[]): void
   event(eventType: string): void
+  gap(from: number, to: number): void
   info(...parts: any[]): void
   statechange(value: MediaStates): void
   warn(...parts: any[]): void
@@ -103,6 +104,10 @@ function DebugTool() {
     chronicle.trace("event", { eventTarget, eventType })
   }
 
+  function gap(from: number, to: number): void {
+    chronicle.trace("gap", { from, to })
+  }
+
   function info(...parts: any[]) {
     if (currentLogLevel < LogLevels.INFO) {
       return
@@ -177,6 +182,7 @@ function DebugTool() {
     debug,
     error,
     event,
+    gap,
     info,
     statechange,
     warn,

@@ -6,6 +6,7 @@ import MSEStrategy from "./msestrategy"
 import TimeUtils from "../utils/timeutils"
 import DynamicWindowUtils from "../dynamicwindowutils"
 import Plugins from "../plugins"
+import DebugTool from "../debugger/debugtool"
 
 const mockDashInstance = {
   initialize: jest.fn(),
@@ -42,6 +43,7 @@ const mockDashMediaPlayer = {
 
 jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
 jest.mock("../dynamicwindowutils")
+jest.mock("../debugger/debugtool")
 
 describe("Media Source Extensions Playback Strategy", () => {
   const dashjsMediaPlayerEvents = {
@@ -1360,6 +1362,26 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(Plugins.interface.onFragmentContentLengthMismatch).toHaveBeenCalledWith(
         mockFragmentContentLengthMismatchEvent
       )
+    })
+  })
+
+  describe("gap jumps", () => {
+    it("logs a seek triggered by a gap to the debugger", () => {
+      setUpMSE()
+
+      dashEventCallback("gapCausedInternalSeek", { duration: 0.3, seekTime: 33.3 })
+
+      expect(DebugTool.gap).toHaveBeenCalledTimes(1)
+      expect(DebugTool.gap).toHaveBeenCalledWith(33, 33.3)
+    })
+
+    it("logs a seek to end triggered by a gap to the debugger", () => {
+      setUpMSE()
+
+      dashEventCallback("gapCausedSeekToPeriodEnd", { duration: 0.3, seekTime: 33.3 })
+
+      expect(DebugTool.gap).toHaveBeenCalledTimes(1)
+      expect(DebugTool.gap).toHaveBeenCalledWith(33, 33.3)
     })
   })
 })
