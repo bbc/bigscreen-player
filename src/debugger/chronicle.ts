@@ -59,11 +59,6 @@ export type History = TimestampedEntry[]
 export type MessageForLevel<Level extends MessageLevel> = Extract<Message, { level: Level }>
 export type MetricForKey<Key extends MetricKey> = Extract<Metric, { key: Key }>
 export type TraceForKind<Kind extends TraceKind> = Extract<Trace, { kind: Kind }>
-export type EntryForIdentifier<I extends EntryIdentifier> = I extends Message["level"]
-  ? MessageForLevel<I>
-  : I extends Metric["key"]
-    ? MetricForKey<I>
-    : never
 
 type EventListeners =
   | { type: "update"; listener: (change: Readonly<TimestampedEntry>) => void }
@@ -72,12 +67,14 @@ type EventTypes = EventListeners["type"]
 type EventListenerForType<Type extends EventTypes> = Extract<EventListeners, { type: Type }>["listener"]
 
 function isValid<T>(data: T): boolean {
-  if (typeof data !== "object") return true
-  if (Array.isArray(data)) {
-    return data.every((element) => isValid(element))
-  }
+  const type = typeof data
 
-  return false
+  return (
+    type === "boolean" ||
+    type === "number" ||
+    type === "string" ||
+    (type === "object" && Array.isArray(data) && data.every((element) => isValid(element)))
+  )
 }
 
 function isEqual<T>(left: T, right: T): boolean {
@@ -88,13 +85,23 @@ function isEqual<T>(left: T, right: T): boolean {
   return left === right
 }
 
+function sortEntries(someEntry: Timestamped<Entry>, otherEntry: Timestamped<Entry>): number {
+  return someEntry.sessionTime === otherEntry.sessionTime
+    ? someEntry.currentElementTime - otherEntry.currentElementTime
+    : someEntry.sessionTime - otherEntry.sessionTime
+}
+
+function concatArrays<T>(someArray: T[], otherArray: T[]): T[] {
+  return [...someArray, ...otherArray]
+}
+
 class Chronicle {
+  private sessionStartTime: number = Date.now()
   private currentElementTime: number = 0
 
   private messages: Timestamped<Message>[] = []
   private metrics: { [Key in MetricKey]?: Timestamped<MetricForKey<Key>>[] } = {}
   private traces: Timestamped<Trace>[] = []
-  private sessionStartTime: number = Date.now()
   private listeners: { [Type in EventTypes]: EventListenerForType<Type>[] } = { update: [], timeupdate: [] }
 
   private triggerUpdate(entry: TimestampedEntry) {
@@ -113,7 +120,6 @@ class Chronicle {
     const entry = this.timestamp(message)
 
     this.messages.push(entry)
-
     this.triggerUpdate(entry)
   }
 
@@ -146,22 +152,16 @@ class Chronicle {
   }
 
   public retrieve(): Timestamped<Entry>[] {
-    const concat = function <T>(someArray: T[], otherArray: T[]): T[] {
-      return [...someArray, ...otherArray]
-    }
+    const metrics = Object.values(this.metrics).reduce(concatArrays, [])
 
-    const metrics = Object.values(this.metrics).reduce(concat, [])
-
-    return [...this.messages, ...this.traces, ...metrics].sort((someEntry, otherEntry) =>
-      someEntry.sessionTime === otherEntry.sessionTime
-        ? someEntry.currentElementTime - otherEntry.currentElementTime
-        : someEntry.sessionTime - otherEntry.sessionTime
-    ) as Timestamped<Entry>[]
+    return [...this.messages, ...this.traces, ...metrics].sort(sortEntries) as Timestamped<Entry>[]
   }
 
   public appendMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
     if (!isValid(data)) {
-      throw new TypeError(`Metric cannot be Object or Function, got: ${JSON.stringify(data)}`)
+      throw new TypeError(
+        `A metric value can only be a primitive type, or an array of any depth containing primitive types. Got ${typeof data}`
+      )
     }
 
     const latest = this.getLatestMetric(key)
@@ -177,7 +177,6 @@ class Chronicle {
     const entry = this.timestamp({ key, data, type: EntryType.METRIC } as MetricForKey<Key>)
 
     this.metrics[key]!.push(entry)
-
     this.triggerUpdate(entry)
   }
 
@@ -207,7 +206,6 @@ class Chronicle {
     const entry = this.timestamp({ kind, data, type: EntryType.TRACE } as Trace)
 
     this.traces.push(entry)
-
     this.triggerUpdate(entry)
   }
 

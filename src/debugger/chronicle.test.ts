@@ -251,7 +251,7 @@ describe("Chronicle", () => {
       // @ts-expect-error - testing type checks
       const code = () => chronicle.appendMetric("seekable-range", () => false)
 
-      expect(code).not.toThrow()
+      expect(code).toThrow()
     })
   })
 
@@ -331,7 +331,7 @@ describe("Chronicle", () => {
       // @ts-expect-error - testing type checks
       const code = () => chronicle.setMetric("seekable-range", () => false)
 
-      expect(code).not.toThrow()
+      expect(code).toThrow(TypeError)
     })
   })
 
