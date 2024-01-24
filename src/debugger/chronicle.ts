@@ -200,7 +200,9 @@ class Chronicle {
       return null
     }
 
-    return this.metrics[key]![this.metrics[key]!.length - 1] as MetricForKey<Key>
+    const metricsForKey = this.metrics[key] as Timestamped<MetricForKey<Key>>[]
+
+    return metricsForKey[metricsForKey.length - 1] as MetricForKey<Key>
   }
 
   public debug(message: MessageForLevel<"debug">["data"]) {
