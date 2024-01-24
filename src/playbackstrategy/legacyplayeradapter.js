@@ -249,13 +249,13 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
 
       if (!isPlaybackFromLivePoint && typeof mediaPlayer.beginPlaybackFrom === "function") {
         currentTime = startTime
-        DebugTool.metric("initial-playback-time", startTime + timeCorrection)
+        DebugTool.dynamicMetric("initial-playback-time", startTime + timeCorrection)
         mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0)
       } else {
         mediaPlayer.beginPlayback()
       }
 
-      DebugTool.metric("strategy", getStrategy())
+      DebugTool.dynamicMetric("strategy", getStrategy())
     },
     play: () => {
       isPaused = false

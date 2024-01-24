@@ -195,9 +195,9 @@ describe("Debug Tool", () => {
     it("appends the metric to the log", () => {
       jest.advanceTimersByTime(1)
 
-      DebugTool.metric("bitrate", 1000)
-      DebugTool.metric("seeking", true)
-      DebugTool.metric("seeking", false)
+      DebugTool.dynamicMetric("bitrate", 1000)
+      DebugTool.dynamicMetric("seeking", true)
+      DebugTool.dynamicMetric("seeking", false)
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
@@ -249,7 +249,7 @@ describe("Debug Tool", () => {
 
       expect(mockViewController.addEntries).toHaveBeenCalledTimes(1)
 
-      DebugTool.metric("seeking", true)
+      DebugTool.dynamicMetric("seeking", true)
 
       expect(mockViewController.addEntries).toHaveBeenCalledTimes(2)
     })

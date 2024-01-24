@@ -25,7 +25,8 @@ interface DebugTool {
   info(...parts: any[]): void
   statechange(value: MediaStates): void
   warn(...parts: any[]): void
-  metric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
+  dynamicMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
+  staticMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
   // view
   hide(): void
   show(): void
@@ -122,8 +123,12 @@ function DebugTool() {
     chronicle.warn(parts.join(" "))
   }
 
-  function metric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
+  function dynamicMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
     chronicle.appendMetric(key, data)
+  }
+
+  function staticMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
+    chronicle.setMetric(key, data)
   }
 
   function handleHistoryUpdate(change: TimestampedEntry) {
@@ -175,7 +180,8 @@ function DebugTool() {
     info,
     statechange,
     warn,
-    metric,
+    dynamicMetric,
+    staticMetric,
     hide,
     show,
     setRootElement,

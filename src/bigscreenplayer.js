@@ -79,14 +79,14 @@ function BigscreenPlayer() {
     }
 
     if (evt.data.seekableRange) {
-      DebugTool.metric("seekable-range", [
+      DebugTool.staticMetric("seekable-range", [
         deviceTimeToDate(evt.data.seekableRange.start).getTime(),
         deviceTimeToDate(evt.data.seekableRange.end).getTime(),
       ])
     }
 
     if (evt.data.duration) {
-      DebugTool.metric("duration", evt.data.duration)
+      DebugTool.dynamicMetric("duration", evt.data.duration)
     }
 
     if (playerComponent && readyHelper) {
@@ -196,7 +196,7 @@ function BigscreenPlayer() {
       resizer = Resizer()
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
-      DebugTool.metric("version", Version)
+      DebugTool.dynamicMetric("version", Version)
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
 

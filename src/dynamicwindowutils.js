@@ -56,7 +56,7 @@ function autoResumeAtStartOfRange(
   resume
 ) {
   const resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS)
-  DebugTool.metric("auto-resume", resumeTimeOut)
+  DebugTool.dynamicMetric("auto-resume", resumeTimeOut)
   const autoResumeTimer = setTimeout(() => {
     removeEventCallback(undefined, detectIfUnpaused)
     resume()
