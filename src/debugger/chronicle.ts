@@ -95,6 +95,8 @@ function concatArrays<T>(someArray: T[], otherArray: T[]): T[] {
   return [...someArray, ...otherArray]
 }
 
+const METRIC_ENTRY_THRESHOLD = 100
+
 class Chronicle {
   private sessionStartTime: number = Date.now()
   private currentElementTime: number = 0
@@ -177,7 +179,14 @@ class Chronicle {
     const entry = this.timestamp({ key, data, type: EntryType.METRIC } as MetricForKey<Key>)
 
     this.metrics[key]!.push(entry)
+
     this.triggerUpdate(entry)
+
+    if (this.metrics[key]!.length > METRIC_ENTRY_THRESHOLD) {
+      this.warn(
+        `Metric ${key} exceeded ${METRIC_ENTRY_THRESHOLD}. Consider a more selective sample, or not storing history.`
+      )
+    }
   }
 
   public setMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
