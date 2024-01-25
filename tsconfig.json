@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "outDir": "dist",
+    "outDir": "dist/esm",
     "module": "es6",
     "target": "es6",
+    "declaration": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "allowJs": true,
