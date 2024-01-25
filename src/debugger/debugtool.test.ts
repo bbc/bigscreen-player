@@ -1,10 +1,10 @@
 import DebugTool, { LogLevels } from "./debugtool"
-import ViewController, { DebugViewController } from "./debugviewcontroller"
+import DebugViewController from "./debugviewcontroller"
 
 jest.mock("./debugviewcontroller")
 
 function getMockViewController(): DebugViewController {
-  const [instance] = jest.mocked(ViewController).mock.instances
+  const [instance] = jest.mocked(DebugViewController).mock.instances
   return instance
 }
 

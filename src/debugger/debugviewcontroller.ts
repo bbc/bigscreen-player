@@ -22,15 +22,6 @@ const wrungMediaState: WrungMediaState = {
   6: "FATAL_ERROR",
 }
 
-export interface DebugViewController {
-  isVisible: boolean
-  addTime({ currentElementTime, sessionTime }: { currentElementTime: number; sessionTime: number }): void
-  addEntries(entries: History): void
-  showView(): void
-  hideView(): void
-  setRootElement(el: HTMLElement): void
-}
-
 const DYNAMIC_ENTRY_LIMIT = 29 as const
 
 type TimeEntry = { type: "time"; currentElementTime: number; sessionTime: number }
@@ -54,7 +45,7 @@ function formatDate(value: Date) {
   return `${zeroPadHMS(hours)}:${zeroPadHMS(mins)}:${zeroPadHMS(secs)}`
 }
 
-const DebugViewController = class implements DebugViewController {
+class DebugViewController {
   public isVisible: boolean = false
 
   private dynamicEntriesSoFar: DynamicEntry[] = []
