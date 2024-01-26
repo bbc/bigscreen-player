@@ -1,4 +1,5 @@
 import { MediaStates } from "../models/mediastate"
+import getValues from "../utils/get-values"
 
 export enum EntryType {
   METRIC = "metric",
@@ -156,7 +157,7 @@ class Chronicle {
   }
 
   public retrieve(): Timestamped<Entry>[] {
-    const metrics = Object.values(this.metrics).reduce(concatArrays, [])
+    const metrics = getValues(this.metrics).reduce(concatArrays, [])
 
     return [...this.messages, ...this.traces, ...metrics].sort(sortEntries) as Timestamped<Entry>[]
   }

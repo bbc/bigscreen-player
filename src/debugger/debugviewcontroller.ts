@@ -1,4 +1,5 @@
 import MediaState from "../models/mediastate"
+import getValues from "../utils/get-values"
 import {
   EntryForType,
   EntryType,
@@ -237,7 +238,7 @@ class DebugViewController {
 
   private render(): void {
     DebugView.render({
-      static: Object.values(this.latestMetricsSoFar).map((entry) => this.serialiseStaticEntry(entry)),
+      static: getValues(this.latestMetricsSoFar).map((entry) => this.serialiseStaticEntry(entry)),
       dynamic: this.dynamicEntriesSoFar.map((entry) => this.serialiseDynamicEntry(entry)),
     })
   }
