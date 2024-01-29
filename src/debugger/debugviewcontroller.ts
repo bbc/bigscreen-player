@@ -1,13 +1,16 @@
 import MediaState from "../models/mediastate"
 import getValues from "../utils/get-values"
 import {
-  EntryForType,
   EntryType,
   History,
   Message,
   MetricForKey,
   MetricKey,
+  Timestamped,
   TimestampedEntry,
+  TimestampedMessage,
+  TimestampedMetric,
+  TimestampedTrace,
   Trace,
 } from "./chronicle"
 import DebugView from "./debugview"
@@ -25,10 +28,10 @@ const wrungMediaState: WrungMediaState = {
 
 const DYNAMIC_ENTRY_LIMIT = 29 as const
 
-type TimeEntry = { type: "time"; currentElementTime: number; sessionTime: number }
+type Timestamp = Timestamped<{ type: "time" }>
 
-type StaticEntry = EntryForType<EntryType.METRIC>
-type DynamicEntry = EntryForType<EntryType.MESSAGE | EntryType.TRACE> | TimeEntry
+type StaticEntry = TimestampedMetric
+type DynamicEntry = TimestampedMessage | TimestampedTrace | Timestamp
 
 function zeroPadHMS(time: number): string {
   return `${time < 10 ? "0" : ""}${time}`
@@ -106,7 +109,7 @@ class DebugViewController {
 
   private cacheDynamicEntry(entry: DynamicEntry): void {
     if (entry.type === "time") {
-      this.cacheTimeEntry(entry)
+      this.cacheTimestamp(entry)
 
       return
     }
@@ -114,7 +117,7 @@ class DebugViewController {
     this.dynamicEntriesSoFar.push(entry)
   }
 
-  private cacheTimeEntry(entry: TimeEntry): void {
+  private cacheTimestamp(entry: Timestamp): void {
     const lastDynamicEntry = this.dynamicEntriesSoFar[this.dynamicEntriesSoFar.length - 1]
 
     if (lastDynamicEntry == null || lastDynamicEntry.type !== "time") {
@@ -174,7 +177,7 @@ class DebugViewController {
     }
   }
 
-  private serialiseTime(time: TimeEntry): string {
+  private serialiseTime(time: Timestamp): string {
     const { currentElementTime } = time
 
     return `Video time: ${currentElementTime.toFixed(2)}`
@@ -228,7 +231,7 @@ class DebugViewController {
     }
 
     if (key === "representation-audio" || key === "representation-video") {
-      const [bitrate, qualityIndex] = data
+      const [qualityIndex, bitrate] = data
 
       return `${qualityIndex} (${bitrate} kbps)`
     }
@@ -244,7 +247,7 @@ class DebugViewController {
   }
 
   public addTime({ currentElementTime, sessionTime }: { currentElementTime: number; sessionTime: number }): void {
-    this.cacheTimeEntry({ currentElementTime, sessionTime, type: "time" })
+    this.cacheTimestamp({ currentElementTime, sessionTime, type: "time" })
 
     this.render()
   }

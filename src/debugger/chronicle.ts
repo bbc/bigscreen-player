@@ -50,14 +50,14 @@ export type Entry = Message | Metric | Trace
 
 export type MessageLevel = Message["level"]
 export type MetricKey = Metric["key"]
-export type MetricValue = Metric["data"]
 export type TraceKind = Trace["kind"]
-export type EntryIdentifier = MessageLevel | MetricKey | TraceKind
 
-type Timestamped<Type> = { currentElementTime: number; sessionTime: number } & Type
+export type Timestamped<Type> = { currentElementTime: number; sessionTime: number } & Type
 export type TimestampedEntry = Timestamped<Entry>
-export type EntryForType<Type extends EntryType> = Extract<TimestampedEntry, { type: Type }>
 export type History = TimestampedEntry[]
+export type TimestampedMetric = Timestamped<Metric>
+export type TimestampedMessage = Timestamped<Message>
+export type TimestampedTrace = Timestamped<Trace>
 
 export type MessageForLevel<Level extends MessageLevel> = Extract<Message, { level: Level }>
 export type MetricForKey<Key extends MetricKey> = Extract<Metric, { key: Key }>
@@ -162,6 +162,14 @@ class Chronicle {
     return [...this.messages, ...this.traces, ...metrics].sort(sortEntries) as Timestamped<Entry>[]
   }
 
+  public size(): number {
+    return (
+      this.messages.length +
+      this.traces.length +
+      getValues(this.metrics).reduce((sumSoFar, metricsForKey) => sumSoFar + metricsForKey.length, 0)
+    )
+  }
+
   public appendMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
     if (!isValid(data)) {
       throw new TypeError(
@@ -179,17 +187,19 @@ class Chronicle {
       this.metrics[key] = []
     }
 
-    const entry = this.timestamp({ key, data, type: EntryType.METRIC } as MetricForKey<Key>)
+    const metricsForKey = this.metrics[key] as Timestamped<MetricForKey<Key>>[]
 
-    this.metrics[key]!.push(entry)
-
-    this.triggerUpdate(entry)
-
-    if (this.metrics[key]!.length > METRIC_ENTRY_THRESHOLD) {
+    if (metricsForKey.length + 1 === METRIC_ENTRY_THRESHOLD) {
       this.warn(
         `Metric ${key} exceeded ${METRIC_ENTRY_THRESHOLD}. Consider a more selective sample, or not storing history.`
       )
     }
+
+    const metric = this.timestamp({ key, data, type: EntryType.METRIC } as MetricForKey<Key>)
+
+    metricsForKey.push(metric)
+
+    this.triggerUpdate(metric)
   }
 
   public setMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
