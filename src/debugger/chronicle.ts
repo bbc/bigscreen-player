@@ -1,4 +1,5 @@
 import { MediaStates } from "../models/mediastate"
+import { compress, decompress } from "./compressor"
 import getValues from "../utils/get-values"
 
 export enum EntryType {
@@ -235,6 +236,32 @@ class Chronicle {
 
   public warn(message: MessageForLevel<"warning">["data"]) {
     this.pushMessage({ type: EntryType.MESSAGE, level: "warning", data: message })
+  }
+
+  /**
+   * Compresses the Chronicle Log into a more compact form, suitable for network communication, storage etc.
+   * The current compression format is quite simple, consisting of semicolon seperate entries, mnemonics for field names
+   * and a simple format for multi parameter entries and arrays (speration with colons, arrays are wrapped in square brackets).
+   *
+   * Text in entries undergoes a normalization process in order to ensure this encoding is unambigious, wherein the above mentioned
+   * characters, and the percent sign, are replaced with their UTF8 Percent Encoded Equivalent.
+   * @returns A string representing the compressed form of the Chronicle Log.
+   * @see {@link decompress} - The Inverse of this Function.
+   * @see {@link EntryForType | Chronicle Entries}
+   */
+  public compress(): string {
+    return compress(this.retrieve())
+  }
+
+  /**
+   * Decompresses Chronicle Entries previously compressed by {@link compress}.
+   * @param compressed A string representing the compressed form of Chronicle Entries.
+   * @returns The Chronicle Entries the given compressed string represents.
+   * @see {@link compress} - The Inverse of this Function.
+   * @see {@link EntryForType | Chronicle Entries}
+   */
+  public decompress(compressed: string): TimestampedEntry[] {
+    return decompress(compressed)
   }
 }
 
