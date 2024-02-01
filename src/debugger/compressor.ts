@@ -95,3 +95,5 @@ export function compress(_entries: TimestampedEntry[]): string {
 export function decompress(_compressed: string): TimestampedEntry[] {
   return []
 }
+
+export default { compress, decompress }
