@@ -6,6 +6,7 @@
   "browser": "dist/esm/main.js",
   "module": "dist/esm/main.js",
   "type": "module",
+  "types": "dist/bigscreen-player.d.ts",
   "files": [
     "dist",
     "CONTRIBUTING.md"
@@ -18,9 +19,7 @@
     "start": "rollup -c rollup.dev.config.js -w",
     "test": "jest",
     "docs": "jsdoc -c jsdoc.conf.json",
-    "build": "npm run build:clean && npm run build:bundle",
-    "build:clean": "rm -rf dist",
-    "build:bundle": "rollup -c rollup.config.js",
+    "build": "rollup -c rollup.config.js",
     "prepare": "npm run install:dist"
   },
   "devDependencies": {
@@ -51,6 +50,9 @@
     "jsdoc": "^4.0.2",
     "prettier": "^3.1.1",
     "rollup": "^3.29.4",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-delete": "^2.0.0",
+    "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-livereload": "^2.0.5",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "rollup-plugin-serve": "^1.1.0",

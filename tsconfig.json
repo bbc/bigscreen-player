@@ -3,6 +3,7 @@
     "outDir": "dist/esm",
     "module": "es6",
     "target": "es6",
+    "rootDir": "src",
     "declaration": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",

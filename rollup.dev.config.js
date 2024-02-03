@@ -6,9 +6,10 @@ import serve from "rollup-plugin-serve"
 import liveReload from "rollup-plugin-livereload"
 import json from "@rollup/plugin-json"
 import typescript from "@rollup/plugin-typescript"
+import del from "rollup-plugin-delete"
 
 export default {
-  input: "src/main.js",
+  input: "src/main.ts",
   output: {
     name: "bsp",
     inlineDynamicImports: true,
@@ -17,6 +18,7 @@ export default {
     format: "es",
   },
   plugins: [
+    del({ targets: "dist-local/*", runOnce: true }),
     resolve({ browser: true, preferBuiltins: false }),
     commonjs(),
     json(),
