@@ -5,5 +5,10 @@ export default {
   input: "src/main.js",
   external: [/^dashjs/, "smp-imsc"],
   output: [{ dir: "dist/esm", format: "es" }],
-  plugins: [json(), typescript()],
+  plugins: [
+    json(),
+    typescript({
+      exclude: ["./src/**/*.test.ts"],
+    }),
+  ],
 }
