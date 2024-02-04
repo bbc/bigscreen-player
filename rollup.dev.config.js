@@ -1,12 +1,13 @@
+import PackageJSON from "./package.json" assert { type: "json" }
+
 import resolve from "@rollup/plugin-node-resolve"
 import commonjs from "@rollup/plugin-commonjs"
 import nodePolyfills from "rollup-plugin-polyfill-node"
 import babel from "@rollup/plugin-babel"
 import serve from "rollup-plugin-serve"
 import liveReload from "rollup-plugin-livereload"
-import json from "@rollup/plugin-json"
 import typescript from "@rollup/plugin-typescript"
-import del from "rollup-plugin-delete"
+import replace from "@rollup/plugin-replace"
 
 export default {
   input: "src/main.ts",
@@ -18,10 +19,12 @@ export default {
     format: "es",
   },
   plugins: [
-    del({ targets: "dist-local/*", runOnce: true }),
+    replace({
+      preventAssignment: true,
+      __VERSION__: () => PackageJSON.version,
+    }),
     resolve({ browser: true, preferBuiltins: false }),
     commonjs(),
-    json(),
     nodePolyfills(),
     typescript({
       compilerOptions: {

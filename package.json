@@ -12,15 +12,18 @@
     "CONTRIBUTING.md"
   ],
   "scripts": {
-    "postinstall": "npm run install:dist && npm run install:hooks",
-    "install:dist": "if [ ! -d dist/ ]; then npm run build; fi",
-    "install:hooks": "if [ -d .git/ ]; then husky install; fi",
+    "prepare": "[ ! -d dist/ ] && npm run build || exit 0",
+    "postinstall": "[ -d .git/ ] && husky install || exit 0",
+    "docs": "jsdoc -c jsdoc.conf.json",
+    "build": "npm run build:clean && npm run build:bundle && npm run build:declaration",
+    "build:clean": "rm -rf dist",
+    "build:bundle": "rollup -c rollup.config.js",
+    "build:declaration": "tsc -p tsconfig.declaration.json",
     "watch": "rollup -c rollup.config.js -w",
     "start": "rollup -c rollup.dev.config.js -w",
     "test": "jest",
-    "docs": "jsdoc -c jsdoc.conf.json",
-    "build": "rollup -c rollup.config.js",
-    "prepare": "npm run install:dist"
+    "coverage": "jest --coverage",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@babel/core": "^7.23.7",
@@ -32,6 +35,7 @@
     "@rollup/plugin-inject": "^5.0.5",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-replace": "^5.0.5",
     "@rollup/plugin-typescript": "^11.1.5",
     "@types/jest": "^29.5.11",
     "@typescript-eslint/eslint-plugin": "^6.18.1",
@@ -50,15 +54,11 @@
     "jsdoc": "^4.0.2",
     "prettier": "^3.1.1",
     "rollup": "^3.29.4",
-    "rollup-plugin-copy": "^3.5.0",
-    "rollup-plugin-delete": "^2.0.0",
-    "rollup-plugin-dts": "^6.1.0",
     "rollup-plugin-livereload": "^2.0.5",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "rollup-plugin-serve": "^1.1.0",
     "rollup-plugin-visualizer": "^5.5.2",
     "ts-jest": "^29.1.1",
-    "tslib": "^2.6.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {

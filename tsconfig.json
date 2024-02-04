@@ -4,7 +4,6 @@
     "module": "es6",
     "target": "es6",
     "rootDir": "src",
-    "declaration": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",
     "allowJs": true,
@@ -14,7 +13,8 @@
     "noImplicitThis": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "resolveJsonModule": true
   },
   "compileOnSave": true,
   "include": ["src/**/*.ts"]
