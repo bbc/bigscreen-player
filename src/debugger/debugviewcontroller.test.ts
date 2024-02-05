@@ -20,18 +20,18 @@ describe("Debug View", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
 
-    chronicle.appendMetric("paused", true)
-    chronicle.appendMetric("ready-state", 4)
-    chronicle.appendMetric("seeking", false)
+    chronicle.appendMetric("bitrate", 0)
+    chronicle.appendMetric("frames-dropped", 4)
+    chronicle.appendMetric("duration", 30)
 
     controller.addEntries(chronicle.retrieve())
 
     expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
         static: [
-          { id: "paused", key: "paused", value: true },
-          { id: "ready-state", key: "ready state", value: 4 },
-          { id: "seeking", key: "seeking", value: false },
+          { id: "bitrate", key: "bitrate", value: 0 },
+          { id: "frames-dropped", key: "frames dropped", value: 4 },
+          { id: "duration", key: "duration", value: 30 },
         ],
       })
     )
@@ -213,20 +213,20 @@ describe("Debug View", () => {
 
     const chronicle = new Chronicle()
 
-    chronicle.appendMetric("ready-state", 0)
+    chronicle.appendMetric("frames-dropped", 0)
 
     jest.advanceTimersByTime(500)
 
-    chronicle.appendMetric("ready-state", 1)
+    chronicle.appendMetric("frames-dropped", 1)
 
     jest.advanceTimersByTime(4500)
 
-    chronicle.appendMetric("ready-state", 4)
+    chronicle.appendMetric("frames-dropped", 4)
 
     controller.addEntries(chronicle.retrieve())
 
     expect(mockRender).toHaveBeenCalledWith(
-      expect.objectContaining({ static: [{ id: "ready-state", key: "ready state", value: 4 }] })
+      expect.objectContaining({ static: [{ id: "frames-dropped", key: "frames dropped", value: 4 }] })
     )
   })
 })

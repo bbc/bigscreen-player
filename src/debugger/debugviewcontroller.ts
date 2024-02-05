@@ -1,5 +1,6 @@
 import MediaState from "../models/mediastate"
 import getValues from "../utils/get-values"
+import { Extends } from "../utils/types"
 import {
   EntryType,
   History,
@@ -24,14 +25,26 @@ const wrungMediaState: WrungMediaState = {
   4: "WAITING",
   5: "ENDED",
   6: "FATAL_ERROR",
-}
+} as const
 
 const DYNAMIC_ENTRY_LIMIT = 29 as const
 
 type Timestamp = Timestamped<{ type: "time" }>
 
-type StaticEntry = TimestampedMetric
+type MetricUnion<UnionKey extends string, MergedKeys extends MetricKey> = {
+  type: "union"
+  key: UnionKey
+  data: { [Key in MergedKeys]?: MetricForKey<Key>["data"] }
+}
+
+type MediaStateMetrics = Extends<MetricKey, "ended" | "paused" | "ready-state" | "seeking">
+type MediaStateUnion = MetricUnion<"media-element-state", MediaStateMetrics>
+
 type DynamicEntry = TimestampedMessage | TimestampedTrace | Timestamp
+
+type StaticEntry = TimestampedMetric | Timestamped<MediaStateUnion>
+type StaticEntryKey = StaticEntry["key"]
+type StaticEntryForKey<Key extends StaticEntryKey> = Extract<StaticEntry, { key: Key }>
 
 function zeroPadHMS(time: number): string {
   return `${time < 10 ? "0" : ""}${time}`
@@ -53,9 +66,11 @@ class DebugViewController {
   public isVisible: boolean = false
 
   private debugView = new DebugView()
-  private dynamicEntriesSoFar: DynamicEntry[] = []
-  private latestMetricsSoFar: Partial<Record<MetricKey, StaticEntry>> = {}
   private rootElement: HTMLElement
+
+  private dynamicEntries: DynamicEntry[] = []
+  private latestMetricByKey: Partial<Record<StaticEntryKey, StaticEntry>> = {}
+  // private latestMetricByKey: { [Key in StaticEntryKey]?: StaticEntryForKey<Key> } = {}
 
   private keepEntry(entry: TimestampedEntry): boolean {
     const { type } = entry
@@ -77,17 +92,42 @@ class DebugViewController {
     return eventTarget === "MediaElement" && ["paused", "playing", "seeking", "seeked", "waiting"].includes(eventType)
   }
 
+  private isMerged(metric: TimestampedMetric): metric is Timestamped<MetricForKey<MediaStateMetrics>> {
+    const { key } = metric
+    const mediaStateMetrics = ["ended", "paused", "ready-state", "seeking"]
+
+    return mediaStateMetrics.includes(key)
+  }
+
+  private mergeMediaState<Key extends MediaStateMetrics>(
+    entry: Timestamped<MetricForKey<Key>>
+  ): Timestamped<MediaStateUnion> {
+    const prevData =
+      this.latestMetricByKey["media-element-state"] == null
+        ? {}
+        : (this.latestMetricByKey["media-element-state"] as StaticEntryForKey<"media-element-state">).data
+
+    const { key, data } = entry
+
+    return {
+      ...entry,
+      type: "union",
+      key: "media-element-state",
+      data: { ...prevData, [key]: data },
+    }
+  }
+
   private cacheEntry(entry: TimestampedEntry): void {
     switch (entry.type) {
       case EntryType.METRIC: {
-        return this.cacheStaticEntry(entry)
+        return this.cacheStaticEntry(this.isMerged(entry) ? this.mergeMediaState(entry) : entry)
       }
       case EntryType.MESSAGE:
       case EntryType.TRACE: {
         this.cacheDynamicEntry(entry)
 
-        if (this.dynamicEntriesSoFar.length >= DYNAMIC_ENTRY_LIMIT) {
-          this.dynamicEntriesSoFar = this.dynamicEntriesSoFar.slice(-DYNAMIC_ENTRY_LIMIT)
+        if (this.dynamicEntries.length >= DYNAMIC_ENTRY_LIMIT) {
+          this.dynamicEntries = this.dynamicEntries.slice(-DYNAMIC_ENTRY_LIMIT)
         }
 
         return
@@ -99,13 +139,13 @@ class DebugViewController {
   }
 
   private cacheStaticEntry(entry: StaticEntry): void {
-    const latestSessionTimeSoFar = this.latestMetricsSoFar[entry.key]?.sessionTime
+    const latestSessionTimeSoFar = this.latestMetricByKey[entry.key]?.sessionTime
 
     if (typeof latestSessionTimeSoFar === "number" && latestSessionTimeSoFar > entry.sessionTime) {
       return
     }
 
-    this.latestMetricsSoFar[entry.key] = entry
+    this.latestMetricByKey[entry.key] = entry
   }
 
   private cacheDynamicEntry(entry: DynamicEntry): void {
@@ -115,19 +155,19 @@ class DebugViewController {
       return
     }
 
-    this.dynamicEntriesSoFar.push(entry)
+    this.dynamicEntries.push(entry)
   }
 
   private cacheTimestamp(entry: Timestamp): void {
-    const lastDynamicEntry = this.dynamicEntriesSoFar[this.dynamicEntriesSoFar.length - 1]
+    const lastDynamicEntry = this.dynamicEntries[this.dynamicEntries.length - 1]
 
     if (lastDynamicEntry == null || lastDynamicEntry.type !== "time") {
-      this.dynamicEntriesSoFar.push(entry)
+      this.dynamicEntries.push(entry)
 
       return
     }
 
-    this.dynamicEntriesSoFar[this.dynamicEntriesSoFar.length - 1] = entry
+    this.dynamicEntries[this.dynamicEntries.length - 1] = entry
   }
 
   private serialiseDynamicEntry(entry: DynamicEntry): string {
@@ -220,9 +260,39 @@ class DebugViewController {
     return { id: key, key: parsedKey, value: parsedValue }
   }
 
-  private serialiseMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): boolean | number | string {
+  private serialiseMetric<Key extends StaticEntryKey>(
+    key: Key,
+    data: StaticEntryForKey<Key>["data"]
+  ): boolean | number | string {
     if (typeof data !== "object") {
       return data
+    }
+
+    if (!("length" in data)) {
+      const parts: string[] = []
+      const isWaiting = typeof data["ready-state"] === "number" && data["ready-state"] <= 2
+
+      if (!isWaiting && !data.paused && !data.seeking) {
+        parts.push("playing")
+      }
+
+      if (isWaiting) {
+        parts.push("waiting")
+      }
+
+      if (data.paused) {
+        parts.push("paused")
+      }
+
+      if (data.seeking) {
+        parts.push("seeking")
+      }
+
+      if (data.ended) {
+        parts.push("ended")
+      }
+
+      return parts.join(", ")
     }
 
     if (key === "seekable-range") {
@@ -242,8 +312,8 @@ class DebugViewController {
 
   private render(): void {
     this.debugView.render({
-      static: getValues(this.latestMetricsSoFar).map((entry) => this.serialiseStaticEntry(entry)),
-      dynamic: this.dynamicEntriesSoFar.map((entry) => this.serialiseDynamicEntry(entry)),
+      static: getValues(this.latestMetricByKey).map((entry) => this.serialiseStaticEntry(entry)),
+      dynamic: this.dynamicEntries.map((entry) => this.serialiseDynamicEntry(entry)),
     })
   }
 
@@ -258,6 +328,8 @@ class DebugViewController {
       if (!this.keepEntry(entry)) {
         continue
       }
+
+      // cacheEntry(isEntryMerged() ? mergeEntries() : entry)
 
       this.cacheEntry(entry)
     }
