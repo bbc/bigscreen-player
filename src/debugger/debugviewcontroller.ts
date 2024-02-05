@@ -52,6 +52,7 @@ function formatDate(value: Date) {
 class DebugViewController {
   public isVisible: boolean = false
 
+  private debugView = new DebugView()
   private dynamicEntriesSoFar: DynamicEntry[] = []
   private latestMetricsSoFar: Partial<Record<MetricKey, StaticEntry>> = {}
   private rootElement: HTMLElement
@@ -240,7 +241,7 @@ class DebugViewController {
   }
 
   private render(): void {
-    DebugView.render({
+    this.debugView.render({
       static: getValues(this.latestMetricsSoFar).map((entry) => this.serialiseStaticEntry(entry)),
       dynamic: this.dynamicEntriesSoFar.map((entry) => this.serialiseDynamicEntry(entry)),
     })
@@ -265,18 +266,18 @@ class DebugViewController {
   }
 
   public hideView(): void {
-    DebugView.tearDown()
+    this.debugView.tearDown()
     this.isVisible = false
   }
 
   public showView(): void {
-    DebugView.setRootElement(this.rootElement)
-    DebugView.init()
+    this.debugView = new DebugView()
+    this.debugView.setRootElement(this.rootElement)
     this.isVisible = true
   }
 
   setRootElement(el: HTMLElement): void {
-    DebugView.setRootElement(el)
+    this.debugView.setRootElement(el)
   }
 }
 

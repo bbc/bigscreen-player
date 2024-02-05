@@ -1,12 +1,13 @@
 import Chronicle, { History } from "./chronicle"
-import DebugView from "./debugview"
 import ViewController from "./debugviewcontroller"
+
+const mockRender = jest.fn()
+jest.mock("./debugview", () => jest.fn().mockImplementation(() => ({ render: mockRender })))
 
 describe("Debug View", () => {
   beforeAll(() => {
     jest.useFakeTimers()
-
-    jest.spyOn(DebugView, "render").mockImplementation()
+    jest.mock("./debugview")
   })
 
   beforeEach(() => {
@@ -25,7 +26,7 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
-    expect(DebugView.render).toHaveBeenCalledWith(
+    expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
         static: [
           { id: "paused", key: "paused", value: true },
@@ -47,7 +48,7 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
-    expect(DebugView.render).toHaveBeenCalledWith(
+    expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
         static: [{ id: "seekable-range", key: "seekable range", value: expected }],
       })
@@ -70,7 +71,7 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
-    expect(DebugView.render).toHaveBeenCalledWith(
+    expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
         dynamic: [
           "00:00:00.000 - Info: Hello world",
@@ -89,7 +90,7 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
-    expect(DebugView.render).toHaveBeenCalledWith(
+    expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({ dynamic: ["00:00:00.000 - TypeError: The TV exploded💥"] })
     )
   })
@@ -102,7 +103,7 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
-    expect(DebugView.render).toHaveBeenCalledWith(
+    expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
         dynamic: ["00:00:00.000 - Event: 'paused' from MediaElement"],
       })
@@ -121,7 +122,7 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
-    expect(DebugView.render).toHaveBeenCalledWith(
+    expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
         dynamic: [
           "00:00:00.000 - Playback session started at 2024-01-01 00:00:00.000Z",
@@ -136,9 +137,7 @@ describe("Debug View", () => {
 
     controller.addTime({ currentElementTime: 788.9999, sessionTime: 0 })
 
-    expect(DebugView.render).toHaveBeenCalledWith(
-      expect.objectContaining({ dynamic: ["00:00:00.000 - Video time: 789.00"] })
-    )
+    expect(mockRender).toHaveBeenCalledWith(expect.objectContaining({ dynamic: ["00:00:00.000 - Video time: 789.00"] }))
   })
 
   it("updates the last time entry if the last dynamic entry is time", () => {
@@ -162,7 +161,7 @@ describe("Debug View", () => {
       sessionTime: chronicle.getSessionTime(),
     })
 
-    expect(DebugView.render).toHaveBeenLastCalledWith(
+    expect(mockRender).toHaveBeenLastCalledWith(
       expect.objectContaining({
         dynamic: ["00:00:00.000 - Event: 'playing' from MediaElement", "00:00:00.600 - Video time: 0.60"],
       })
@@ -190,7 +189,7 @@ describe("Debug View", () => {
       sessionTime: chronicle.getSessionTime(),
     })
 
-    expect(DebugView.render).toHaveBeenLastCalledWith(
+    expect(mockRender).toHaveBeenLastCalledWith(
       expect.objectContaining({
         dynamic: [
           "00:00:00.000 - Video time: 0.00",
@@ -226,7 +225,7 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
-    expect(DebugView.render).toHaveBeenCalledWith(
+    expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({ static: [{ id: "ready-state", key: "ready state", value: 4 }] })
     )
   })

@@ -63,6 +63,7 @@
   },
   "dependencies": {
     "dashjs": "github:bbc/dash.js#smp-v4.7.1-2",
+    "fflate": "^0.8.1",
     "smp-imsc": "github:bbc/imscJS#v1.0.3"
   },
   "repository": {

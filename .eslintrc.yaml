@@ -134,6 +134,7 @@ rules:
   unicorn/prefer-math-trunc: off
   unicorn/prefer-optional-catch-binding: off
   unicorn/prefer-string-replace-all: off
+  unicorn/prefer-dom-node-remove: off
 
   # Typescript
   "@typescript-eslint/no-unused-vars": [error, { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }]

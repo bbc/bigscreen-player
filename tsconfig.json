@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "dist/esm",
-    "module": "es6",
+    "module": "ESNext",
     "target": "es6",
     "rootDir": "src",
     "esModuleInterop": true,
