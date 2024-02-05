@@ -1,6 +1,6 @@
 const DASH_MANIFEST_STRINGS = {
   BAD_ATTRIBUTES: `<?xml version="1.0" encoding="UTF-8"?>
-  <MPD 
+  <MPD
   type="dynamic"
   availabilityStartTime="not-valid-iso-time">
     <Period start="PT0S">
@@ -12,15 +12,15 @@ const DASH_MANIFEST_STRINGS = {
     </Period>
   </MPD>`,
   GROWING_WINDOW: `<?xml version="1.0" encoding="UTF-8"?>
-  <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-  xmlns="urn:mpeg:dash:schema:mpd:2011" 
-  xmlns:cenc="urn:mpeg:cenc:2013" 
-  xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" 
-  type="dynamic" 
-  publishTime="2018-12-01T00:28:35Z" 
+  <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="urn:mpeg:dash:schema:mpd:2011"
+  xmlns:cenc="urn:mpeg:cenc:2013"
+  xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
+  type="dynamic"
+  publishTime="2018-12-01T00:28:35Z"
   minimumUpdatePeriod="PT30S"
   availabilityStartTime="1970-01-01T00:00:00.000Z"
-  minBufferTime="PT4S" 
+  minBufferTime="PT4S"
   suggestedPresentationDelay="PT20S"
   profiles="urn:mpeg:dash:profile:isoff-live:2011">
     <Period start="PT0S" id="1">
@@ -40,17 +40,17 @@ const DASH_MANIFEST_STRINGS = {
     </Period>
   </MPD>`,
   SLIDING_WINDOW: `<?xml version="1.0" encoding="UTF-8"?>
-  <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-  xmlns="urn:mpeg:dash:schema:mpd:2011" 
-  xmlns:cenc="urn:mpeg:cenc:2013" 
-  xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd" 
-  type="dynamic" 
-  publishTime="2018-12-01T00:28:35Z" 
-  minimumUpdatePeriod="PT30S" 
-  availabilityStartTime="1970-01-01T00:01:00Z" 
+  <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="urn:mpeg:dash:schema:mpd:2011"
+  xmlns:cenc="urn:mpeg:cenc:2013"
+  xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
+  type="dynamic"
+  publishTime="2018-12-01T00:28:35Z"
+  minimumUpdatePeriod="PT30S"
+  availabilityStartTime="1970-01-01T00:01:00Z"
   timeShiftBufferDepth="PT2H"
-  minBufferTime="PT4S" 
-  suggestedPresentationDelay="PT20S" 
+  minBufferTime="PT4S"
+  suggestedPresentationDelay="PT20S"
   profiles="urn:mpeg:dash:profile:isoff-live:2011">
     <Period start="PT0S" id="1">
       <AdaptationSet mimeType="video/mp4" frameRate="30/1" segmentAlignment="true" subsegmentAlignment="true" startWithSAP="1" subsegmentStartsWithSAP="1" bitstreamSwitching="false">
@@ -107,18 +107,16 @@ const DashManifests = Object.fromEntries(
   ])
 )
 
-/** @param {Document} manifestEl */
-function appendTimingResource(manifestEl, timingResource) {
+function appendTimingResource(manifestEl: Document, timingResource: string) {
   const timingEl = manifestEl.createElement("UTCTiming")
   timingEl.setAttribute("schemeIdUri", "urn:mpeg:dash:utc:http-xsdate:2014")
   timingEl.setAttribute("value", timingResource ?? "https://time.some-cdn.com/?iso")
 
-  manifestEl.querySelector("MPD").append(timingEl)
+  manifestEl.querySelector("MPD")?.append(timingEl)
 }
 
-/** @param {Document} manifestEl */
-function setAvailabilityStartTime(manifestEl, date) {
-  manifestEl.querySelector("MPD").setAttribute("availabilityStartTime", new Date(date).toISOString())
+function setAvailabilityStartTime(manifestEl: Document, date: ConstructorParameters<typeof Date>[0]) {
+  manifestEl.querySelector("MPD")?.setAttribute("availabilityStartTime", new Date(date).toISOString())
 }
 
 export default DashManifests

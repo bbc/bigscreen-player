@@ -4,4 +4,6 @@ const PauseTriggers = {
   DEVICE: 3,
 }
 
+export type PauseTriggers = (typeof PauseTriggers)[keyof typeof PauseTriggers]
+
 export default PauseTriggers

@@ -13,6 +13,8 @@ const TransportControlPosition = {
   FULLSCREEN: 16,
 }
 
+export type TransportControlPosition = (typeof TransportControlPosition)[keyof typeof TransportControlPosition]
+
 /**
  * Provides an enumeration of on-screen transport control positions, which can be combined as flags.
  */

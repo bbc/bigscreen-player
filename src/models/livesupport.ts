@@ -5,4 +5,6 @@ const LiveSupport = {
   SEEKABLE: "seekable",
 }
 
+export type LiveSupport = (typeof LiveSupport)[keyof typeof LiveSupport]
+
 export default LiveSupport
