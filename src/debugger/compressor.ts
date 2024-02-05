@@ -1,37 +1,5 @@
 import { MetricForKey, MetricKey, Timestamped, TimestampedEntry } from "./chronicle"
 
-// const support = {
-//   arrayBuffer: 'ArrayBuffer' in window,
-//   textEncoder: 'TextEncoder' in window
-// };
-
-/**
- * Represents the result of {@link compressed}.
- */
-export const CompressedState = {
-  Compressed: 0,
-  Uncompressed: 1,
-  Corrupted: 2,
-} as const
-
-type CompressedState = (typeof CompressedState)[keyof typeof CompressedState]
-
-/**
- * Determines if a String represents a Compressed, or Uncompressed, Entry Array based on the first Byte.
- * If `input` starts with `\u001F`, it is assumed to be the start of the GZip Magic Identifier.
- * if `input` starts with `\u005B`, it is assumed to be opening a JSON Array.
- * Otherwise, the string is assumed to have been corrupted in transit.
- * @param input the string to check for compression status.
- * @returns `CompressedState`, representing the outcome of the check.
- * @see CompressedState
- */
-export function compressed(input: string): CompressedState {
-  if (input[0] === "\u001F") return CompressedState.Compressed
-  if (input[0] === "\u005B") return CompressedState.Uncompressed
-
-  return CompressedState.Corrupted
-}
-
 export function normalize(input: string): string {
   return input.replace(
     /[%;[\]]/g,
@@ -116,19 +84,6 @@ export function compressMetric<
 // }
 
 export function compress(_entries: TimestampedEntry[]): string {
-  // const hasSupport = support.arrayBuffer && support.textEncoder
-  // const entriesText = JSON.stringify(entries, undefined, 0) // TODO
-
-  // const compressor = new Promise((resolve, reject) => {
-  //   hasSupport ? import("fflate")
-  //     .then(({ default: FFlate }) => resolve(FFlate))
-  //     .catch(() => {
-  //       reject({ error: "fflateDynamicLoadError" })
-  //     }) : { gzipSync: (array: TimestampedEntries) => array, }
-  // })
-
-  // const compressed = gzipSync(entries)
-
   return ""
 }
 
