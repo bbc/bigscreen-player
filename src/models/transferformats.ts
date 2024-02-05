@@ -3,6 +3,6 @@ const TransferFormat = {
   HLS: "hls",
 }
 
-export type PlaybackStrategy = (typeof PlaybackStrategy)[keyof typeof PlaybackStrategy]
+export type TransferFormat = (typeof TransferFormat)[keyof typeof TransferFormat]
 
 export default TransferFormat
