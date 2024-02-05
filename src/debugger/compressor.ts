@@ -1,8 +1,8 @@
 import { MetricForKey, MetricKey, Timestamped, TimestampedEntry } from "./chronicle"
 
 // const support = {
-//   arrayBuffer: 'ArrayBuffer' in globalThis,
-//   textEncoder: 'TextEncoder' in globalThis
+//   arrayBuffer: 'ArrayBuffer' in window,
+//   textEncoder: 'TextEncoder' in window
 // };
 
 /**
