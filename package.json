@@ -12,8 +12,8 @@
     "CONTRIBUTING.md"
   ],
   "scripts": {
-    "prepare": "[ ! -d dist/ ] && npm run build || exit 0",
-    "postinstall": "[ -d .git/ ] && husky install || exit 0",
+    "prepare": "if [ ! -d dist/ ]; then npm run build; fi",
+    "postinstall": "if [ -d .git/ ]; then husky install; fi",
     "docs": "jsdoc -c jsdoc.conf.json",
     "build": "npm run build:clean && npm run build:bundle",
     "build:clean": "rm -r dist/*",
