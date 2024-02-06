@@ -16,7 +16,7 @@
     "postinstall": "if [ -d .git/ ]; then husky install; fi",
     "docs": "jsdoc -c jsdoc.conf.json",
     "build": "npm run build:clean && npm run build:bundle",
-    "build:clean": "rm -r dist/*",
+    "build:clean": "rm -rf dist/*",
     "build:bundle": "rollup --config rollup.config.js",
     "watch": "rollup --watch --config rollup.config.js",
     "start": "rollup --watch --config rollup.dev.config.js",
