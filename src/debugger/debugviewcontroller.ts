@@ -70,7 +70,6 @@ class DebugViewController {
 
   private dynamicEntries: DynamicEntry[] = []
   private latestMetricByKey: Partial<Record<StaticEntryKey, StaticEntry>> = {}
-  // private latestMetricByKey: { [Key in StaticEntryKey]?: StaticEntryForKey<Key> } = {}
 
   private shouldRender: boolean = false
   private renderInterval = setInterval(() => {
@@ -336,8 +335,6 @@ class DebugViewController {
       if (!this.keepEntry(entry)) {
         continue
       }
-
-      // cacheEntry(isEntryMerged() ? mergeEntries() : entry)
 
       this.cacheEntry(entry)
     }
