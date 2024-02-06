@@ -1,6 +1,7 @@
 import PackageJSON from "./package.json" assert { type: "json" }
 
 import replace from "@rollup/plugin-replace"
+import { dts } from "rollup-plugin-dts"
 import ts from "rollup-plugin-ts"
 
 export default [
@@ -17,5 +18,10 @@ export default [
         exclude: ["./src/**/*.test.ts"],
       }),
     ],
+  },
+  {
+    input: "./dist/esm/dts/main.d.ts",
+    output: [{ file: "./dist/esm/main.d.ts", format: "es" }],
+    plugins: [dts()],
   },
 ]

@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
     "outDir": "./dist/esm",
+    "declaration": true,
+    "declarationDir": "./dist/esm/dts",
     "module": "ESNext",
     "target": "es6",
-    "declaration": true,
     "esModuleInterop": true,
     "moduleResolution": "bundler",
+    "resolveJsonModule": true,
     "allowJs": true,
     "alwaysStrict": true,
     "noImplicitAny": true,
@@ -13,8 +15,7 @@
     "noImplicitThis": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "strictNullChecks": true,
-    "resolveJsonModule": true
+    "strictNullChecks": true
   },
   "compileOnSave": true,
   "include": ["src/**/*.ts"]
