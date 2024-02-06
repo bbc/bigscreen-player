@@ -72,6 +72,14 @@ class DebugViewController {
   private latestMetricByKey: Partial<Record<StaticEntryKey, StaticEntry>> = {}
   // private latestMetricByKey: { [Key in StaticEntryKey]?: StaticEntryForKey<Key> } = {}
 
+  private shouldRender: boolean = false
+  private renderInterval = setInterval(() => {
+    if (this.shouldRender) {
+      this.render()
+      this.shouldRender = false
+    }
+  }, 250)
+
   private keepEntry(entry: TimestampedEntry): boolean {
     const { type } = entry
 
@@ -320,7 +328,7 @@ class DebugViewController {
   public addTime({ currentElementTime, sessionTime }: { currentElementTime: number; sessionTime: number }): void {
     this.cacheTimestamp({ currentElementTime, sessionTime, type: "time" })
 
-    this.render()
+    this.shouldRender = true
   }
 
   public addEntries(entries: History) {
@@ -334,10 +342,11 @@ class DebugViewController {
       this.cacheEntry(entry)
     }
 
-    this.render()
+    this.shouldRender = true
   }
 
   public hideView(): void {
+    clearInterval(this.renderInterval)
     this.debugView.tearDown()
     this.isVisible = false
   }
@@ -345,6 +354,12 @@ class DebugViewController {
   public showView(): void {
     this.debugView = new DebugView()
     this.debugView.setRootElement(this.rootElement)
+    this.renderInterval = setInterval(() => {
+      if (this.shouldRender) {
+        this.render()
+        this.shouldRender = false
+      }
+    }, 250)
     this.isVisible = true
   }
 

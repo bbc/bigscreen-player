@@ -26,6 +26,8 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
+    jest.advanceTimersToNextTimer()
+
     expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
         static: [
@@ -47,6 +49,8 @@ describe("Debug View", () => {
     chronicle.appendMetric("seekable-range", [start, end])
 
     controller.addEntries(chronicle.retrieve())
+
+    jest.advanceTimersToNextTimer()
 
     expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -71,6 +75,8 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
+    jest.advanceTimersToNextTimer()
+
     expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
         dynamic: [
@@ -90,6 +96,8 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
+    jest.advanceTimersToNextTimer()
+
     expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({ dynamic: ["00:00:00.000 - TypeError: The TV exploded💥"] })
     )
@@ -102,6 +110,8 @@ describe("Debug View", () => {
     chronicle.trace("event", { eventType: "paused", eventTarget: "MediaElement" })
 
     controller.addEntries(chronicle.retrieve())
+
+    jest.advanceTimersToNextTimer()
 
     expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -122,6 +132,8 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
+    jest.advanceTimersToNextTimer()
+
     expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({
         dynamic: [
@@ -136,6 +148,8 @@ describe("Debug View", () => {
     const controller = new ViewController()
 
     controller.addTime({ currentElementTime: 788.9999, sessionTime: 0 })
+
+    jest.advanceTimersToNextTimer()
 
     expect(mockRender).toHaveBeenCalledWith(expect.objectContaining({ dynamic: ["00:00:00.000 - Video time: 789.00"] }))
   })
@@ -160,6 +174,8 @@ describe("Debug View", () => {
       currentElementTime: chronicle.getCurrentElementTime(),
       sessionTime: chronicle.getSessionTime(),
     })
+
+    jest.advanceTimersToNextTimer()
 
     expect(mockRender).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -188,6 +204,8 @@ describe("Debug View", () => {
       currentElementTime: chronicle.getCurrentElementTime(),
       sessionTime: chronicle.getSessionTime(),
     })
+
+    jest.advanceTimersToNextTimer()
 
     expect(mockRender).toHaveBeenLastCalledWith(
       expect.objectContaining({
@@ -225,8 +243,32 @@ describe("Debug View", () => {
 
     controller.addEntries(chronicle.retrieve())
 
+    jest.advanceTimersToNextTimer()
+
     expect(mockRender).toHaveBeenCalledWith(
       expect.objectContaining({ static: [{ id: "frames-dropped", key: "frames dropped", value: 4 }] })
+    )
+  })
+
+  it("does not render on every update, only on interval elapse", () => {
+    const controller = new ViewController()
+    const chronicle = new Chronicle()
+
+    chronicle.appendMetric("bitrate", 0)
+
+    controller.addEntries(chronicle.retrieve())
+    controller.addTime({ currentElementTime: 100, sessionTime: 0 })
+
+    expect(mockRender).toHaveBeenCalledTimes(0)
+
+    jest.advanceTimersToNextTimer()
+
+    expect(mockRender).toHaveBeenCalledTimes(1)
+    expect(mockRender).toHaveBeenCalledWith(
+      expect.objectContaining({
+        static: [{ id: "bitrate", key: "bitrate", value: 0 }],
+        dynamic: ["00:00:00.000 - Video time: 100.00"],
+      })
     )
   })
 })
