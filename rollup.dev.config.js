@@ -1,6 +1,5 @@
 import PackageJSON from "./package.json" assert { type: "json" }
 
-import babel from "@rollup/plugin-babel"
 import commonjs from "@rollup/plugin-commonjs"
 import resolve from "@rollup/plugin-node-resolve"
 import replace from "@rollup/plugin-replace"
@@ -27,7 +26,6 @@ export default {
     commonjs(),
     nodePolyfills(),
     ts({ browserslist: false, transpiler: "babel" }),
-    // babel({ babelHelpers: "bundled", presets: ["@babel/preset-env"] }),
     serve({
       open: true,
     }),

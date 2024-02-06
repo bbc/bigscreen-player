@@ -15,12 +15,12 @@ export default [
         __VERSION__: () => PackageJSON.version,
       }),
       ts({
-        exclude: ["./src/**/*.test.ts"],
+        tsconfig: "./tsconfig.dist.json",
       }),
     ],
   },
   {
-    input: "./dist/esm/dts/main.d.ts",
+    input: "./dist/tmp/dts/main.d.ts",
     output: [{ file: "./dist/esm/main.d.ts", format: "es" }],
     plugins: [dts()],
   },

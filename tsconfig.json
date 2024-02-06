@@ -1,8 +1,8 @@
 {
+  "compileOnSave": true,
+  "include": ["src/**/*.ts"],
   "compilerOptions": {
     "outDir": "./dist/esm",
-    "declaration": true,
-    "declarationDir": "./dist/esm/dts",
     "module": "ESNext",
     "target": "es6",
     "esModuleInterop": true,
@@ -16,7 +16,5 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "strictNullChecks": true
-  },
-  "compileOnSave": true,
-  "include": ["src/**/*.ts"]
+  }
 }
