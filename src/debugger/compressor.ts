@@ -1,4 +1,5 @@
 import {
+  EntryType,
   // MetricForKey,
   // MetricKey,
   TimestampedEntry,
@@ -123,8 +124,31 @@ function _isInteresting(_entry: TimestampedEntry): boolean {
   return false
 }
 
-function validateChronicleLog(_unvalidatedLog: unknown): TimestampedEntry[] | z.ZodError<TimestampedEntry[]> {
-  return []
+function validateCompressedLog(unvalidatedLog: unknown): TimestampedEntry[] | z.ZodError<TimestampedEntry[]> {
+  const messageLevelSchema = z.union([z.literal("info"), z.literal("warning"), z.literal("debug")])
+  const messageSchema = z.object({
+    type: z.literal(EntryType.MESSAGE),
+    level: messageLevelSchema,
+    data: z.string(),
+  })
+
+  const metricSchema = z.object({ type: z.literal(EntryType.METRIC), data: z.undefined() })
+  const traceSchema = z.object({ type: z.literal(EntryType.TRACE), data: z.undefined() })
+
+  const entrySchema = z.discriminatedUnion("type", [messageSchema, metricSchema, traceSchema])
+
+  const timestampedSchema = z.object({
+    currentElementTime: z.number(),
+    sessionTime: z.number(),
+  })
+
+  const timestampedEntrySchema = z.intersection(timestampedSchema, entrySchema)
+
+  const uncompressedLogSchema = z.array(timestampedEntrySchema)
+  const parsed = uncompressedLogSchema.safeParse(unvalidatedLog)
+
+  if (parsed.success) return parsed.data as unknown as TimestampedEntry[]
+  return parsed.error as unknown as TimestampedEntry[]
 }
 
 /**
@@ -173,7 +197,7 @@ type ValidationError = { issues: { path: (string | number)[]; message: string }[
  */
 export function decompress(compressed: string): TimestampedEntry[] | ValidationError {
   const parsed: unknown = JSON.parse(compressed)
-  const validated = validateChronicleLog(parsed)
+  const validated = validateCompressedLog(parsed)
 
   if (validated instanceof z.ZodError) {
     return {
