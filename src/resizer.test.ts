@@ -1,7 +1,8 @@
 import Resizer from "./resizer"
 
 describe("Resizer", () => {
-  let resizer, element
+  let resizer: ReturnType<typeof Resizer>
+  let element: HTMLElement
 
   beforeEach(() => {
     element = document.createElement("div")
