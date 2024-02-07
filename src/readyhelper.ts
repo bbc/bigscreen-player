@@ -37,11 +37,9 @@ function ReadyHelper(
   function isValidTime({ currentTime, seekableRange }: Time) {
     const isStatic = windowType === WindowTypes.STATIC
 
-    return isStatic
-      ? validateStaticTime(currentTime)
-      : seekableRange
-        ? validateLiveTime(currentTime, seekableRange)
-        : false
+    if (isStatic) return validateStaticTime(currentTime)
+    if (seekableRange) return validateLiveTime(currentTime, seekableRange)
+    return false
   }
 
   function validateStaticTime(currentTime?: number) {
