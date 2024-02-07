@@ -65,7 +65,6 @@ function formatDate(value: Date) {
 class DebugViewController {
   public isVisible: boolean = false
 
-  private debugView = new DebugView()
   private rootElement: HTMLElement
 
   private dynamicEntries: DynamicEntry[] = []
@@ -318,7 +317,7 @@ class DebugViewController {
   }
 
   private render(): void {
-    this.debugView.render({
+    DebugView.render({
       static: getValues(this.latestMetricByKey).map((entry) => this.serialiseStaticEntry(entry)),
       dynamic: this.dynamicEntries.map((entry) => this.serialiseDynamicEntry(entry)),
     })
@@ -344,13 +343,13 @@ class DebugViewController {
 
   public hideView(): void {
     clearInterval(this.renderInterval)
-    this.debugView.tearDown()
+    DebugView.tearDown()
     this.isVisible = false
   }
 
   public showView(): void {
-    this.debugView = new DebugView()
-    this.debugView.setRootElement(this.rootElement)
+    DebugView.setRootElement(this.rootElement)
+    DebugView.init()
     this.renderInterval = setInterval(() => {
       if (this.shouldRender) {
         this.render()
@@ -361,7 +360,7 @@ class DebugViewController {
   }
 
   setRootElement(el: HTMLElement): void {
-    this.debugView.setRootElement(el)
+    DebugView.setRootElement(el)
   }
 }
 

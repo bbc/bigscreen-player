@@ -1,13 +1,11 @@
 import Chronicle, { History } from "./chronicle"
 import ViewController from "./debugviewcontroller"
-
-const mockRender = jest.fn()
-jest.mock("./debugview", () => jest.fn().mockImplementation(() => ({ render: mockRender })))
+import DebugView from "./debugview"
 
 describe("Debug View", () => {
   beforeAll(() => {
     jest.useFakeTimers()
-    jest.mock("./debugview")
+    jest.spyOn(DebugView, "render").mockImplementation()
   })
 
   beforeEach(() => {
@@ -28,7 +26,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenCalledWith(
+    expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
         static: [
           { id: "bitrate", key: "bitrate", value: 0 },
@@ -52,7 +50,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenCalledWith(
+    expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
         static: [{ id: "seekable-range", key: "seekable range", value: expected }],
       })
@@ -77,7 +75,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenCalledWith(
+    expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
         dynamic: [
           "00:00:00.000 - Info: Hello world",
@@ -98,7 +96,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenCalledWith(
+    expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({ dynamic: ["00:00:00.000 - TypeError: The TV exploded💥"] })
     )
   })
@@ -113,7 +111,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenCalledWith(
+    expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
         dynamic: ["00:00:00.000 - Event: 'paused' from MediaElement"],
       })
@@ -134,7 +132,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenCalledWith(
+    expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
         dynamic: [
           "00:00:00.000 - Playback session started at 2024-01-01 00:00:00.000Z",
@@ -151,7 +149,9 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenCalledWith(expect.objectContaining({ dynamic: ["00:00:00.000 - Video time: 789.00"] }))
+    expect(DebugView.render).toHaveBeenCalledWith(
+      expect.objectContaining({ dynamic: ["00:00:00.000 - Video time: 789.00"] })
+    )
   })
 
   it("updates the last time entry if the last dynamic entry is time", () => {
@@ -177,7 +177,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenLastCalledWith(
+    expect(DebugView.render).toHaveBeenLastCalledWith(
       expect.objectContaining({
         dynamic: ["00:00:00.000 - Event: 'playing' from MediaElement", "00:00:00.600 - Video time: 0.60"],
       })
@@ -207,7 +207,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenLastCalledWith(
+    expect(DebugView.render).toHaveBeenLastCalledWith(
       expect.objectContaining({
         dynamic: [
           "00:00:00.000 - Video time: 0.00",
@@ -245,7 +245,7 @@ describe("Debug View", () => {
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenCalledWith(
+    expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({ static: [{ id: "frames-dropped", key: "frames dropped", value: 4 }] })
     )
   })
@@ -259,12 +259,12 @@ describe("Debug View", () => {
     controller.addEntries(chronicle.retrieve())
     controller.addTime({ currentElementTime: 100, sessionTime: 0 })
 
-    expect(mockRender).toHaveBeenCalledTimes(0)
+    expect(DebugView.render).toHaveBeenCalledTimes(0)
 
     jest.advanceTimersToNextTimer()
 
-    expect(mockRender).toHaveBeenCalledTimes(1)
-    expect(mockRender).toHaveBeenCalledWith(
+    expect(DebugView.render).toHaveBeenCalledTimes(1)
+    expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
         static: [{ id: "bitrate", key: "bitrate", value: 0 }],
         dynamic: ["00:00:00.000 - Video time: 100.00"],
