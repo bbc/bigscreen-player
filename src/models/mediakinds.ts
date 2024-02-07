@@ -1,4 +1,4 @@
-const MediaKinds = {
+export const MediaKinds = {
   AUDIO: "audio",
   VIDEO: "video",
 } as const

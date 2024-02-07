@@ -1,4 +1,4 @@
-const TransferFormat = {
+export const TransferFormat = {
   DASH: "dash",
   HLS: "hls",
 } as const

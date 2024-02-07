@@ -1,11 +1,11 @@
-import MediaState from "./models/mediastate"
 import ReadyHelper from "./readyhelper"
-import WindowTypes from "./models/windowtypes"
-import LiveSupport from "./models/livesupport"
+import { MediaState } from "./models/mediastate"
+import { WindowTypes } from "./models/windowtypes"
+import { LiveSupport } from "./models/livesupport"
 
 describe("readyHelper", () => {
   const callback = jest.fn()
-  let readyHelper
+  let readyHelper: ReturnType<typeof ReadyHelper>
 
   beforeEach(() => {
     callback.mockReset()
@@ -13,7 +13,7 @@ describe("readyHelper", () => {
 
   describe("- Initialisation -", () => {
     it("does not attempt to call callback if it is not supplied", () => {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, undefined)
+      readyHelper = ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE)
 
       readyHelper.callbackWhenReady({
         timeUpdate: true,
@@ -28,7 +28,7 @@ describe("readyHelper", () => {
 
   describe("- Basic -", () => {
     beforeEach(() => {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
+      readyHelper = ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
     it("does not call the supplied callback in init", () => {
@@ -66,7 +66,7 @@ describe("readyHelper", () => {
 
   describe("- VoD, No Initial Time -", () => {
     beforeEach(() => {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
+      readyHelper = ReadyHelper(undefined, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
     it("calls the supplied callback when given event data containing a valid time", () => {
@@ -125,7 +125,7 @@ describe("readyHelper", () => {
 
   describe("- VoD, Initial Time -", () => {
     beforeEach(() => {
-      readyHelper = new ReadyHelper(60, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
+      readyHelper = ReadyHelper(60, WindowTypes.STATIC, LiveSupport.RESTARTABLE, callback)
     })
 
     it("calls the supplied callback when current time exceeds intital time", () => {
@@ -153,7 +153,7 @@ describe("readyHelper", () => {
 
   describe("- Live -", () => {
     beforeEach(() => {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.RESTARTABLE, callback)
+      readyHelper = ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.RESTARTABLE, callback)
     })
 
     it("calls the supplied callback when given a valid seekable range and current time", () => {
@@ -200,7 +200,7 @@ describe("readyHelper", () => {
 
   describe("- Live, Playable -", () => {
     beforeEach(() => {
-      readyHelper = new ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.PLAYABLE, callback)
+      readyHelper = ReadyHelper(undefined, WindowTypes.SLIDING, LiveSupport.PLAYABLE, callback)
     })
 
     it("calls the supplied callback regardless of seekable range if current time is positive", () => {
@@ -208,7 +208,7 @@ describe("readyHelper", () => {
         timeUpdate: true,
         data: {
           currentTime: 60,
-          seekableRange: {},
+          seekableRange: { start: Infinity, end: -Infinity },
         },
       })
 

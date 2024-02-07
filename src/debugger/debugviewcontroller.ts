@@ -1,4 +1,4 @@
-import MediaState from "../models/mediastate"
+import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 import { Extends } from "../utils/types"
 import {

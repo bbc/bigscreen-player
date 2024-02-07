@@ -1,4 +1,4 @@
-import { MediaStates } from "../models/mediastate"
+import { MediaState } from "../models/mediastate"
 import Chronicle, { History, MetricForKey, MetricKey, TimestampedEntry } from "./chronicle"
 import DebugViewController from "./debugviewcontroller"
 
@@ -24,7 +24,7 @@ interface DebugTool {
   event(eventType: string): void
   gap(from: number, to: number): void
   info(...parts: any[]): void
-  statechange(value: MediaStates): void
+  statechange(value: MediaState): void
   warn(...parts: any[]): void
   dynamicMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
   staticMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
@@ -116,7 +116,7 @@ function DebugTool() {
     chronicle.info(parts.join(" "))
   }
 
-  function statechange(value: MediaStates) {
+  function statechange(value: MediaState) {
     chronicle.trace("state-change", value)
   }
 
