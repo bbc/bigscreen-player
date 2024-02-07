@@ -367,7 +367,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function onMetricAdded(event) {
     if (event.mediaType === "video" && event.metric === "DroppedFrames") {
-      DebugTool.dynamicMetric("frames-dropped", event.value.droppedFrames)
+      DebugTool.staticMetric("frames-dropped", event.value.droppedFrames)
     }
     if (event.mediaType === mediaKind && event.metric === "BufferLevel") {
       dashMetrics = mediaPlayer.getDashMetrics()
