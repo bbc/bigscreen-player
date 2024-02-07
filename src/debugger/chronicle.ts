@@ -1,4 +1,4 @@
-import { MediaStates } from "../models/mediastate"
+import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 
 export enum EntryType {
@@ -43,7 +43,7 @@ export type Trace = { type: EntryType.TRACE } & (
   | { kind: "gap"; data: { from: number; to: number } }
   | { kind: "session-start"; data: Date }
   | { kind: "session-end"; data: Date }
-  | { kind: "state-change"; data: MediaStates }
+  | { kind: "state-change"; data: MediaState }
 )
 
 export type Entry = Message | Metric | Trace

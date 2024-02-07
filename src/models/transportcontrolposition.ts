@@ -1,4 +1,7 @@
-const TransportControlPosition = {
+/**
+ * Provides an enumeration of on-screen transport control positions, which can be combined as flags.
+ */
+export const TransportControlPosition = {
   /** No transport controls are visible. */
   NONE: 0,
   /** The basic transport controls are visible. */
@@ -14,8 +17,3 @@ const TransportControlPosition = {
 } as const
 
 export type TransportControlPosition = (typeof TransportControlPosition)[keyof typeof TransportControlPosition]
-
-/**
- * Provides an enumeration of on-screen transport control positions, which can be combined as flags.
- */
-export default TransportControlPosition

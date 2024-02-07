@@ -3,7 +3,7 @@
  * @readonly
  * @enum {string}
  */
-const WindowTypes = {
+export const WindowTypes = {
   /** Media with a duration */
   STATIC: "staticWindow",
   /** Media with a start time but without a duration until an indeterminate time in the future */
@@ -13,5 +13,3 @@ const WindowTypes = {
 } as const
 
 export type WindowTypes = (typeof WindowTypes)[keyof typeof WindowTypes]
-
-export default WindowTypes
