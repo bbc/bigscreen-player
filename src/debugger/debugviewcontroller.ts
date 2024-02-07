@@ -71,12 +71,7 @@ class DebugViewController {
   private latestMetricByKey: Partial<Record<StaticEntryKey, StaticEntry>> = {}
 
   private shouldRender: boolean = false
-  private renderInterval = setInterval(() => {
-    if (this.shouldRender) {
-      this.render()
-      this.shouldRender = false
-    }
-  }, 250)
+  private renderInterval: ReturnType<typeof setInterval>
 
   private keepEntry(entry: TimestampedEntry): boolean {
     const { type } = entry
