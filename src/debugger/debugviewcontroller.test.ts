@@ -17,6 +17,7 @@ describe("Debug View", () => {
   it("parses static info from an array of chronicle values", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
+    controller.showView()
 
     chronicle.appendMetric("bitrate", 0)
     chronicle.appendMetric("frames-dropped", 4)
@@ -43,6 +44,7 @@ describe("Debug View", () => {
   ])("converts a seekable range %i-%i in a metric into a human-readable string %s-%s", (start, end, expected) => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
+    controller.showView()
 
     chronicle.appendMetric("seekable-range", [start, end])
 
@@ -60,6 +62,7 @@ describe("Debug View", () => {
   it("parses dynamic info from an array of chronicle values", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
+    controller.showView()
 
     chronicle.info("Hello world")
 
@@ -89,6 +92,7 @@ describe("Debug View", () => {
   it("parses errors into a human-readable string", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
+    controller.showView()
 
     chronicle.trace("error", new TypeError("The TV exploded💥"))
 
@@ -104,6 +108,7 @@ describe("Debug View", () => {
   it("parses events into a human-readable representation", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
+    controller.showView()
 
     chronicle.trace("event", { eventType: "paused", eventTarget: "MediaElement" })
 
@@ -121,6 +126,7 @@ describe("Debug View", () => {
   it("parses session times into a human-readable representation", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
+    controller.showView()
 
     chronicle.trace("session-start", new Date(2024, 0, 1, 0, 0, 0, 0))
 
@@ -144,6 +150,7 @@ describe("Debug View", () => {
 
   it("parses current element time into a human-readable representation", () => {
     const controller = new ViewController()
+    controller.showView()
 
     controller.addTime({ currentElementTime: 788.9999, sessionTime: 0 })
 
@@ -157,6 +164,7 @@ describe("Debug View", () => {
   it("updates the last time entry if the last dynamic entry is time", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
+    controller.showView()
 
     chronicle.trace("event", { eventType: "playing", eventTarget: "MediaElement" })
 
@@ -187,6 +195,7 @@ describe("Debug View", () => {
   it("appends a new time entry if the last dynamic entry isn't time", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
+    controller.showView()
 
     controller.addTime({
       currentElementTime: chronicle.getCurrentElementTime(),
@@ -220,6 +229,7 @@ describe("Debug View", () => {
 
   it("throws on an unknown entry type", () => {
     const controller = new ViewController()
+    controller.showView()
 
     const badUpdate = () => controller.addEntries([{ type: "bad-type", nefarious: "purpose" }] as unknown as History)
 
@@ -228,6 +238,7 @@ describe("Debug View", () => {
 
   it("uses the latest value for static fields", () => {
     const controller = new ViewController()
+    controller.showView()
 
     const chronicle = new Chronicle()
 
@@ -253,6 +264,7 @@ describe("Debug View", () => {
   it("does not render on every update, only on interval elapse", () => {
     const controller = new ViewController()
     const chronicle = new Chronicle()
+    controller.showView()
 
     chronicle.appendMetric("bitrate", 0)
 
