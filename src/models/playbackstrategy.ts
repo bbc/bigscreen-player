@@ -5,3 +5,5 @@ export const PlaybackStrategy = {
 } as const
 
 export type PlaybackStrategy = (typeof PlaybackStrategy)[keyof typeof PlaybackStrategy]
+
+export default PlaybackStrategy

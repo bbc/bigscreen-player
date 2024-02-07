@@ -5,3 +5,5 @@ export const PauseTriggers = {
 } as const
 
 export type PauseTriggers = (typeof PauseTriggers)[keyof typeof PauseTriggers]
+
+export default PauseTriggers

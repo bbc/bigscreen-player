@@ -13,3 +13,5 @@ export const WindowTypes = {
 } as const
 
 export type WindowTypes = (typeof WindowTypes)[keyof typeof WindowTypes]
+
+export default WindowTypes

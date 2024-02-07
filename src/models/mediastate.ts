@@ -17,3 +17,5 @@ export const MediaState = {
 } as const
 
 export type MediaState = (typeof MediaState)[keyof typeof MediaState]
+
+export default MediaState

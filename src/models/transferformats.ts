@@ -4,3 +4,5 @@ export const TransferFormat = {
 } as const
 
 export type TransferFormat = (typeof TransferFormat)[keyof typeof TransferFormat]
+
+export default TransferFormat

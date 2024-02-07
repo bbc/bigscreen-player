@@ -17,3 +17,5 @@ export const TransportControlPosition = {
 } as const
 
 export type TransportControlPosition = (typeof TransportControlPosition)[keyof typeof TransportControlPosition]
+
+export default TransportControlPosition

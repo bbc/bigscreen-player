@@ -4,3 +4,5 @@ export const MediaKinds = {
 } as const
 
 export type MediaKinds = (typeof MediaKinds)[keyof typeof MediaKinds]
+
+export default MediaKinds
