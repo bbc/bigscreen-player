@@ -12,7 +12,6 @@ import {
   TimestampedMessage,
   TimestampedMetric,
   TimestampedTrace,
-  Trace,
 } from "./chronicle"
 import DebugView from "./debugview"
 
@@ -225,9 +224,14 @@ class DebugViewController {
     return `Video time: ${currentElementTime.toFixed(2)}`
   }
 
-  private serialiseTrace(trace: Trace): string {
-    const { kind, data } = trace
+  private serialiseTrace(trace: TimestampedTrace): string {
+    const { currentElementTime, kind, data } = trace
     switch (kind) {
+      case "buffered-ranges": {
+        const buffered = data.buffered.map(([start, end]) => `${start.toFixed(2)} - ${end.toFixed(2)}`).join(", ")
+
+        return `Buffered ${data.kind}: [${buffered}] at current time ${currentElementTime.toFixed(2)}`
+      }
       case "error": {
         return `${data.name ?? "Error"}: ${data.message}`
       }
@@ -250,26 +254,25 @@ class DebugViewController {
     }
   }
 
-  private serialiseStaticEntry({ key, data }: StaticEntry): {
+  private serialiseStaticEntry(entry: StaticEntry): {
     id: string
     key: string
     value: boolean | number | string
   } {
+    const { key } = entry
+
     const parsedKey = key.replace("-", " ")
-    const parsedValue = this.serialiseMetric(key, data)
+    const parsedValue = this.serialiseMetric(entry)
 
     return { id: key, key: parsedKey, value: parsedValue }
   }
 
-  private serialiseMetric<Key extends StaticEntryKey>(
-    key: Key,
-    data: StaticEntryForKey<Key>["data"]
-  ): boolean | number | string {
+  private serialiseMetric({ key, data }: StaticEntry): boolean | number | string {
     if (typeof data !== "object") {
       return data
     }
 
-    if (!("length" in data)) {
+    if (key === "media-element-state") {
       const parts: string[] = []
       const isWaiting = typeof data["ready-state"] === "number" && data["ready-state"] <= 2
 
@@ -308,7 +311,7 @@ class DebugViewController {
       return `${qualityIndex} (${bitrate} kbps)`
     }
 
-    return data.join(", ")
+    return data.join(",&nbsp;")
   }
 
   private render(): void {

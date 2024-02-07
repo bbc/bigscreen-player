@@ -11,6 +11,7 @@ import TimeUtils from "../utils/timeutils"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
+import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -102,11 +103,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DebugTool.dynamicMetric("ready-state", mediaElement.readyState)
   }
 
-  function onCanPlay() {
-    DebugTool.event("canplay", "MediaElement")
-    DebugTool.dynamicMetric("ready-state", mediaElement.readyState)
-  }
-
   function onPlay() {
     DebugTool.event("play", "MediaElement")
     DebugTool.dynamicMetric("paused", mediaElement.paused)
@@ -164,7 +160,16 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DebugTool.event("waiting", "MediaElement")
     DebugTool.dynamicMetric("ready-state", mediaElement.readyState)
 
+    getBufferedRanges().map(({ kind, buffered }) => DebugTool.buffered(kind, buffered))
+
     onBuffering()
+  }
+
+  function onStalled() {
+    DebugTool.event("stalled", "MediaElement")
+    DebugTool.dynamicMetric("ready-state", mediaElement.readyState)
+
+    getBufferedRanges().map(({ kind, buffered }) => DebugTool.buffered(kind, buffered))
   }
 
   function onEnded() {
@@ -290,6 +295,21 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       bufferLength: playerMetadata.bufferLength,
       playbackBitrate: playerMetadata.playbackBitrate,
     })
+  }
+
+  function getBufferedRanges() {
+    if (mediaPlayer == null) {
+      return []
+    }
+
+    return mediaPlayer
+      .getActiveStream()
+      .getProcessors()
+      .filter((processor) => processor.getType() === "audio" || processor.getType() === "video")
+      .map((processor) => ({
+        kind: processor.getType(),
+        buffered: convertTimeRangesToArray(processor.getBuffer().getAllBufferRanges()),
+      }))
   }
 
   function currentPlaybackBitrate(mediaKind) {
@@ -467,7 +487,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaElement.addEventListener("timeupdate", onTimeUpdate)
     mediaElement.addEventListener("loadedmetadata", onLoadedMetaData)
     mediaElement.addEventListener("loadeddata", onLoadedData)
-    mediaElement.addEventListener("canplay", onCanPlay)
     mediaElement.addEventListener("play", onPlay)
     mediaElement.addEventListener("playing", onPlaying)
     mediaElement.addEventListener("pause", onPaused)
@@ -475,6 +494,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaElement.addEventListener("seeking", onSeeking)
     mediaElement.addEventListener("seeked", onSeeked)
     mediaElement.addEventListener("ended", onEnded)
+    mediaElement.addEventListener("stalled", onStalled)
     mediaPlayer.on(DashJSEvents.ERROR, onError)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
@@ -598,7 +618,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaElement.removeEventListener("timeupdate", onTimeUpdate)
       mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
       mediaElement.removeEventListener("loadeddata", onLoadedData)
-      mediaElement.removeEventListener("canplay", onCanPlay)
       mediaElement.removeEventListener("play", onPlay)
       mediaElement.removeEventListener("playing", onPlaying)
       mediaElement.removeEventListener("pause", onPaused)
@@ -606,6 +625,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaElement.removeEventListener("seeking", onSeeking)
       mediaElement.removeEventListener("seeked", onSeeked)
       mediaElement.removeEventListener("ended", onEnded)
+      mediaElement.removeEventListener("stalled", onStalled)
       mediaPlayer.off(DashJSEvents.ERROR, onError)
       mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)

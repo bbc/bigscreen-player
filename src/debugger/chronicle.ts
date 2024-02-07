@@ -1,5 +1,6 @@
 import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
+import { MediaKinds } from "../models/mediakinds"
 
 export enum EntryType {
   METRIC = "metric",
@@ -16,8 +17,6 @@ export type Message = { type: EntryType.MESSAGE } & (InfoMessage | WarningMessag
 export type Metric = { type: EntryType.METRIC } & (
   | { key: "auto-resume"; data: number }
   | { key: "bitrate"; data: number }
-  | { key: "buffered-audio"; data: [start: number, end: number][] }
-  | { key: "buffered-video"; data: [start: number, end: number][] }
   | { key: "buffer-length"; data: number }
   | { key: "ended"; data: HTMLMediaElement["ended"] }
   | { key: "ready-state"; data: HTMLMediaElement["readyState"] }
@@ -38,6 +37,7 @@ export type Metric = { type: EntryType.METRIC } & (
 )
 
 export type Trace = { type: EntryType.TRACE } & (
+  | { kind: "buffered-ranges"; data: { kind: MediaKinds; buffered: [start: number, end: number][] } }
   | { kind: "error"; data: Error }
   | { kind: "event"; data: { eventType: string; eventTarget: string } }
   | { kind: "gap"; data: { from: number; to: number } }

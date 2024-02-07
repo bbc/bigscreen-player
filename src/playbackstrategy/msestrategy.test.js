@@ -35,6 +35,9 @@ const mockDashInstance = {
   setPlaybackRate: jest.fn(),
   getPlaybackRate: jest.fn(),
   setBlacklistExpiryTime: jest.fn(),
+  getActiveStream: jest.fn(() => ({
+    getProcessors: jest.fn(() => []),
+  })),
 }
 
 const mockDashMediaPlayer = {

@@ -162,39 +162,30 @@ describe("Chronicle", () => {
     it("does not record a new metric if the array value is the same", () => {
       const chronicle = new Chronicle()
 
-      chronicle.appendMetric("buffered-audio", [[0, 1]])
+      chronicle.appendMetric("representation-audio", [0, 67])
 
       jest.advanceTimersByTime(2345)
 
-      chronicle.appendMetric("buffered-audio", [[0, 1]])
+      chronicle.appendMetric("representation-audio", [0, 67])
 
       jest.advanceTimersByTime(3456)
       chronicle.setCurrentElementTime(0.3)
 
-      chronicle.appendMetric("buffered-audio", [
-        [0, 1],
-        [1, 2],
-      ])
+      chronicle.appendMetric("representation-audio", [1, 128])
 
       expect(chronicle.retrieve()).toEqual([
-        expect.objectContaining({ key: "buffered-audio", data: [[0, 1]], sessionTime: 0, currentElementTime: 0 }),
+        expect.objectContaining({ key: "representation-audio", data: [0, 67], sessionTime: 0, currentElementTime: 0 }),
         expect.objectContaining({
-          key: "buffered-audio",
-          data: [
-            [0, 1],
-            [1, 2],
-          ],
+          key: "representation-audio",
+          data: [1, 128],
           sessionTime: 2345 + 3456,
           currentElementTime: 0.3,
         }),
       ])
 
-      expect(chronicle.getLatestMetric("buffered-audio")).toMatchObject({
-        key: "buffered-audio",
-        data: [
-          [0, 1],
-          [1, 2],
-        ],
+      expect(chronicle.getLatestMetric("representation-audio")).toMatchObject({
+        key: "representation-audio",
+        data: [1, 128],
       })
     })
 
@@ -218,11 +209,7 @@ describe("Chronicle", () => {
 
     it("accepts nested array-likes as a metric value", () => {
       const chronicle = new Chronicle()
-      const code = () =>
-        chronicle.appendMetric("buffered-audio", [
-          [0, 12],
-          [16, 20],
-        ])
+      const code = () => chronicle.appendMetric("representation-video", [9, 14931])
 
       expect(code).not.toThrow()
     })
@@ -298,11 +285,7 @@ describe("Chronicle", () => {
     it("accepts nested array-likes as a metric value", () => {
       const chronicle = new Chronicle()
 
-      const code = () =>
-        chronicle.setMetric("buffered-audio", [
-          [0, 12],
-          [16, 20],
-        ])
+      const code = () => chronicle.setMetric("representation-audio", [0, 67])
 
       expect(code).not.toThrow()
     })

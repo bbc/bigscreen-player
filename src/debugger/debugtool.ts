@@ -1,4 +1,5 @@
 import { MediaState } from "../models/mediastate"
+import { MediaKinds } from "../models/mediakinds"
 import Chronicle, { History, MetricForKey, MetricKey, TimestampedEntry } from "./chronicle"
 import DebugViewController from "./debugviewcontroller"
 
@@ -19,6 +20,7 @@ interface DebugTool {
   updateElementTime(seconds: number): void
   // chronicle
   apicall(functionName: string, functionArgs: any[]): void
+  buffered(kind: MediaKinds, buffered: [start: number, end: number][]): void
   debug(...parts: any[]): void
   error(...parts: any[]): void
   event(eventType: string): void
@@ -80,6 +82,10 @@ function DebugTool() {
     const argsPart = functionArgs.length === 0 ? "" : ` with args [${functionArgs.join(", ")}]`
 
     debug(`Called '${functionName}${argsPart}'`)
+  }
+
+  function buffered(kind: MediaKinds, buffered: [start: number, end: number][]) {
+    chronicle.trace("buffered-ranges", { kind, buffered })
   }
 
   function debug(...parts: any[]) {
@@ -179,6 +185,7 @@ function DebugTool() {
     setLogLevel,
     updateElementTime,
     apicall,
+    buffered,
     debug,
     error,
     event,
