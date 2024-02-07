@@ -11,7 +11,7 @@ const TransportControlPosition = {
   BOTTOM_CAROUSEL: 8,
   /** The whole screen is obscured by a navigation menu. */
   FULLSCREEN: 16,
-}
+} as const
 
 export type TransportControlPosition = (typeof TransportControlPosition)[keyof typeof TransportControlPosition]
 

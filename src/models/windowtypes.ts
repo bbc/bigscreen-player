@@ -10,7 +10,7 @@ const WindowTypes = {
   GROWING: "growingWindow",
   /** Media with a rewind window that progresses through a media timeline */
   SLIDING: "slidingWindow",
-}
+} as const
 
 export type WindowTypes = (typeof WindowTypes)[keyof typeof WindowTypes]
 
