@@ -125,15 +125,59 @@ function _isInteresting(_entry: TimestampedEntry): boolean {
 }
 
 function validateCompressedLog(unvalidatedLog: unknown): TimestampedEntry[] | z.ZodError<TimestampedEntry[]> {
-  const messageLevelSchema = z.union([z.literal("info"), z.literal("warning"), z.literal("debug")])
+  const messageLevels = [z.literal("info"), z.literal("warning"), z.literal("debug")] as const
+  const messageLevelSchema = z.union(messageLevels)
   const messageSchema = z.object({
     type: z.literal(EntryType.MESSAGE),
     level: messageLevelSchema,
     data: z.string(),
   })
 
-  const metricSchema = z.object({ type: z.literal(EntryType.METRIC), data: z.undefined() })
-  const traceSchema = z.object({ type: z.literal(EntryType.TRACE), data: z.undefined() })
+  const metricKeys = [
+    z.literal("auto-resume"),
+    z.literal("bitrate"),
+    z.literal("buffer-length"),
+    z.literal("ended"),
+    z.literal("ready-state"),
+    z.literal("cdns-available"),
+    z.literal("current-url"),
+    z.literal("duration"),
+    z.literal("frames-dropped"),
+    z.literal("initial-playback-time"),
+    z.literal("paused"),
+    z.literal("representation-audio"),
+    z.literal("representation-video"),
+    z.literal("seekable-range"),
+    z.literal("seeking"),
+    z.literal("strategy"),
+    z.literal("subtitle-cdns-available"),
+    z.literal("subtitle-current-url"),
+    z.literal("version"),
+  ] as const
+  const metricKeySchema = z.union(metricKeys)
+
+  const metricSchema = z.object({
+    type: z.literal(EntryType.METRIC),
+    key: metricKeySchema,
+    data: z.undefined(),
+  })
+
+  const traceKinds = [
+    z.literal("buffered-ranges"),
+    z.literal("error"),
+    z.literal("event"),
+    z.literal("gap"),
+    z.literal("session-start"),
+    z.literal("session-end"),
+    z.literal("state-change"),
+  ] as const
+  const traceKindSchema = z.union(traceKinds)
+
+  const traceSchema = z.object({
+    type: z.literal(EntryType.TRACE),
+    kind: traceKindSchema,
+    data: z.undefined(),
+  })
 
   const entrySchema = z.discriminatedUnion("type", [messageSchema, metricSchema, traceSchema])
 
