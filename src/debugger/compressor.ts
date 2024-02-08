@@ -228,7 +228,7 @@ export function compress(chronicle: TimestampedEntry[]): string {
 
   // return tail.map((entry) => compressEntry(entry)).join("\n")
 
-  return tail.map((entry) => JSON.stringify(entry)).join("\n")
+  return JSON.stringify(tail, undefined, 0)
 }
 
 type ValidationError = { issues: { path: (string | number)[]; message: string }[] }
