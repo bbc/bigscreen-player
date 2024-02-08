@@ -11,7 +11,7 @@ describe("Chronicle Compressor", () => {
         sessionTime: 1,
         type: EntryType.TRACE,
         kind: "session-start",
-        data: new Date(Date.now()),
+        data: Date.now(),
       }
 
       const input = JSON.stringify([trace])

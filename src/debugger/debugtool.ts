@@ -47,7 +47,7 @@ function DebugTool() {
     currentLogLevel = LogLevels.INFO
     viewController = new DebugViewController()
 
-    chronicle.trace("session-start", new Date())
+    chronicle.trace("session-start", Date.now())
   }
 
   function tearDown() {
@@ -55,7 +55,7 @@ function DebugTool() {
       hide()
     }
 
-    chronicle.trace("session-end", new Date())
+    chronicle.trace("session-end", Date.now())
   }
 
   function getDebugLogs() {

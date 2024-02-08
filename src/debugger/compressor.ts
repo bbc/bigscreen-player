@@ -128,9 +128,6 @@ import { z } from "zod"
 //   return false
 // }
 
-const datelike = z.union([z.number(), z.string(), z.date()])
-const datelikeToDate = datelike.pipe(z.coerce.date())
-
 const mediaKindSchema = [z.literal(MediaKinds.AUDIO), z.literal(MediaKinds.VIDEO)] as const
 
 const mediaStateSchema = [
@@ -209,8 +206,8 @@ const traceDataLookup: {
     from: z.number(),
     to: z.number(),
   }),
-  "session-start": datelikeToDate,
-  "session-end": datelikeToDate,
+  "session-start": z.number(),
+  "session-end": z.number(),
   "state-change": z.union(mediaStateSchema),
 } as const
 

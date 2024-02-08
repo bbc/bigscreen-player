@@ -41,8 +41,8 @@ export type Trace = { type: EntryType.TRACE } & (
   | { kind: "error"; data: Error }
   | { kind: "event"; data: { eventType: string; eventTarget: string } }
   | { kind: "gap"; data: { from: number; to: number } }
-  | { kind: "session-start"; data: Date }
-  | { kind: "session-end"; data: Date }
+  | { kind: "session-start"; data: number }
+  | { kind: "session-end"; data: number }
   | { kind: "state-change"; data: MediaState }
 )
 

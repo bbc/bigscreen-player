@@ -240,10 +240,10 @@ class DebugViewController {
         return `Event: '${eventType}' from ${eventTarget}`
       }
       case "session-start": {
-        return `Playback session started at ${data.toISOString().replace("T", " ")}`
+        return `Playback session started at ${new Date(data).toISOString().replace("T", " ")}`
       }
       case "session-end": {
-        return `Playback session ended at ${data.toISOString().replace("T", " ")}`
+        return `Playback session ended at ${new Date(data).toISOString().replace("T", " ")}`
       }
       case "state-change": {
         return `Event: ${wrungMediaState[data]}`
