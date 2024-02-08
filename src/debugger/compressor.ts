@@ -6,6 +6,7 @@ import {
   // MetricForKey,
   // MetricKey,
   TimestampedEntry,
+  Trace,
   TraceKind,
   // TimestampedMessage,
   // TimestampedMetric,
@@ -145,13 +146,12 @@ const mediaStateSchema = [
 const messageLevels = [z.literal("info"), z.literal("warning"), z.literal("debug")] as const
 const messageLevelSchema = z.union(messageLevels)
 
-const messageSchema = z
-  .object({
-    type: z.literal(EntryType.MESSAGE),
-    level: messageLevelSchema,
-    data: z.any(),
-  })
-  .refine((_schema) => true)
+const messageSchema = z.object({
+  type: z.literal(EntryType.MESSAGE),
+  level: messageLevelSchema,
+  data: z.any(),
+})
+// .refine((_schema) => true)
 
 const metricKeys = [
   z.literal("auto-resume"),
@@ -176,13 +176,12 @@ const metricKeys = [
 ] as const
 const metricKeySchema = z.union(metricKeys)
 
-const metricSchema = z
-  .object({
-    type: z.literal(EntryType.METRIC),
-    key: metricKeySchema,
-    data: z.any(),
-  })
-  .refine((_schema) => true)
+const metricSchema = z.object({
+  type: z.literal(EntryType.METRIC),
+  key: metricKeySchema,
+  data: z.any(),
+})
+// .refine((_schema) => true)
 
 const traceKinds = [
   z.literal("buffered-ranges"),
@@ -216,15 +215,17 @@ const traceDataLookup: {
   "state-change": z.union(mediaStateSchema),
 } as const
 
-const traceSchema = z
-  .object({
-    type: z.literal(EntryType.TRACE),
-    kind: traceKindSchema,
-    data: z.any(),
-  })
-  .refine((schema) => traceDataLookup[schema.kind].safeParse(schema.data).success)
+const unrefinedTraceSchema = z.object({
+  type: z.literal(EntryType.TRACE),
+  kind: traceKindSchema,
+  data: z.unknown(),
+})
 
-const entrySchema = z.discriminatedUnion("type", [messageSchema, metricSchema, traceSchema])
+const _traceSchema: z.ZodType<Trace, z.ZodTypeDef, z.infer<typeof unrefinedTraceSchema>> = unrefinedTraceSchema.refine(
+  (schema) => traceDataLookup[schema.kind].safeParse(schema.data).success
+)
+
+const entrySchema = z.discriminatedUnion("type", [messageSchema, metricSchema, unrefinedTraceSchema])
 
 const timestampedSchema = z.object({
   currentElementTime: z.number(),
