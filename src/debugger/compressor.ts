@@ -1,19 +1,7 @@
 import { MediaKinds } from "../models/mediakinds"
 import { MediaState } from "../models/mediastate"
 
-import {
-  EntryType,
-  // MetricForKey,
-  // MetricKey,
-  TimestampedEntry,
-  TraceKind,
-  // TimestampedMessage,
-  // TimestampedMetric,
-  // TimestampedTrace,
-  // isMessage,
-  // isMetric,
-  // isTrace,
-} from "./chronicle"
+import { EntryType, MessageLevel, MetricKey, TimestampedEntry, TraceKind } from "./chronicle"
 
 import { z } from "zod"
 
@@ -142,7 +130,15 @@ const mediaStateSchema = [
 const messageLevels = [z.literal("info"), z.literal("warning"), z.literal("debug")] as const
 const messageLevelSchema = z.union(messageLevels)
 
-const messageSchema = z.object({
+const messageDataLookup: {
+  [key in MessageLevel]: z.ZodTypeAny
+} = {
+  debug: z.string(),
+  info: z.string(),
+  warning: z.string(),
+} as const
+
+const unrefinedMessageSchema = z.object({
   type: z.literal(EntryType.MESSAGE),
   level: messageLevelSchema,
   data: z.any(),
@@ -172,7 +168,31 @@ const metricKeys = [
 ] as const
 const metricKeySchema = z.union(metricKeys)
 
-const metricSchema = z.object({
+const metricDataLookup: {
+  [key in MetricKey]: z.ZodTypeAny
+} = {
+  "auto-resume": z.number(),
+  bitrate: z.number(),
+  "buffer-length": z.number(),
+  ended: z.boolean(),
+  "ready-state": z.number(),
+  "cdns-available": z.string().array(),
+  "current-url": z.string(),
+  duration: z.number(),
+  "frames-dropped": z.number(),
+  "initial-playback-time": z.number(),
+  paused: z.boolean(),
+  "representation-audio": z.tuple([z.number(), z.number()]),
+  "representation-video": z.tuple([z.number(), z.number()]),
+  "seekable-range": z.tuple([z.number(), z.number()]),
+  seeking: z.boolean(),
+  strategy: z.string(),
+  "subtitle-cdns-available": z.string().array(),
+  "subtitle-current-url": z.string(),
+  version: z.string(),
+} as const
+
+const unrefinedMetricSchema = z.object({
   type: z.literal(EntryType.METRIC),
   key: metricKeySchema,
   data: z.any(),
@@ -217,12 +237,12 @@ const unrefinedTraceSchema = z.object({
   data: z.unknown(),
 })
 
-const entrySchema = z.discriminatedUnion("type", [messageSchema, metricSchema, unrefinedTraceSchema])
+const entrySchema = z.discriminatedUnion("type", [unrefinedMessageSchema, unrefinedMetricSchema, unrefinedTraceSchema])
 
 type SchemaType<Key extends EntryType> = Key extends EntryType.MESSAGE
-  ? z.infer<typeof messageSchema>
+  ? z.infer<typeof unrefinedMessageSchema>
   : Key extends EntryType.METRIC
-    ? z.infer<typeof metricSchema>
+    ? z.infer<typeof unrefinedMetricSchema>
     : Key extends EntryType.TRACE
       ? z.infer<typeof unrefinedTraceSchema>
       : never
@@ -232,12 +252,8 @@ type RefinementLookup = () => {
 }
 
 const refinementLookup: RefinementLookup = () => ({
-  [EntryType.METRIC](_unrefined): boolean {
-    throw new Error("Function not implemented.")
-  },
-  [EntryType.MESSAGE](_unrefined): boolean {
-    throw new Error("Function not implemented.")
-  },
+  [EntryType.MESSAGE]: (unrefined) => messageDataLookup[unrefined.level].safeParse(unrefined.data).success,
+  [EntryType.METRIC]: (unrefined) => metricDataLookup[unrefined.key].safeParse(unrefined.data).success,
   [EntryType.TRACE]: (unrefined) => traceDataLookup[unrefined.kind].safeParse(unrefined.data).success,
 })
 
