@@ -6,7 +6,6 @@ import {
   // MetricForKey,
   // MetricKey,
   TimestampedEntry,
-  Trace,
   TraceKind,
   // TimestampedMessage,
   // TimestampedMetric,
@@ -125,9 +124,9 @@ import { z } from "zod"
 // }
 
 // TODO: Implement
-function _isInteresting(_entry: TimestampedEntry): boolean {
-  return false
-}
+// function _isInteresting(_entry: TimestampedEntry): boolean {
+//   return false
+// }
 
 const datelike = z.union([z.number(), z.string(), z.date()])
 const datelikeToDate = datelike.pipe(z.coerce.date())
@@ -221,18 +220,40 @@ const unrefinedTraceSchema = z.object({
   data: z.unknown(),
 })
 
-const _traceSchema: z.ZodType<Trace, z.ZodTypeDef, z.infer<typeof unrefinedTraceSchema>> = unrefinedTraceSchema.refine(
-  (schema) => traceDataLookup[schema.kind].safeParse(schema.data).success
-)
-
 const entrySchema = z.discriminatedUnion("type", [messageSchema, metricSchema, unrefinedTraceSchema])
+
+type SchemaType<Key extends EntryType> = Key extends EntryType.MESSAGE
+  ? z.infer<typeof messageSchema>
+  : Key extends EntryType.METRIC
+    ? z.infer<typeof metricSchema>
+    : Key extends EntryType.TRACE
+      ? z.infer<typeof unrefinedTraceSchema>
+      : never
+
+type RefinementLookup = () => {
+  [Key in EntryType]: (unrefined: SchemaType<Key>) => boolean
+}
+
+const refinementLookup: RefinementLookup = () => ({
+  [EntryType.METRIC](_unrefined): boolean {
+    throw new Error("Function not implemented.")
+  },
+  [EntryType.MESSAGE](_unrefined): boolean {
+    throw new Error("Function not implemented.")
+  },
+  [EntryType.TRACE]: (unrefined) => traceDataLookup[unrefined.kind].safeParse(unrefined.data).success,
+})
+
+const refinedEntrySchema = entrySchema.refine((schema) =>
+  (refinementLookup()[schema.type] as (unrefined: SchemaType<typeof schema.type>) => boolean)(schema)
+)
 
 const timestampedSchema = z.object({
   currentElementTime: z.number(),
   sessionTime: z.number(),
 })
 
-const timestampedEntrySchema = entrySchema.and(timestampedSchema)
+const timestampedEntrySchema = refinedEntrySchema.and(timestampedSchema)
 const uncompressedLogSchema = timestampedEntrySchema.array()
 
 function validateCompressedLog(unvalidatedLog: unknown): TimestampedEntry[] | z.ZodError<TimestampedEntry[]> {
