@@ -1,8 +1,12 @@
+import { MediaKinds } from "../models/mediakinds"
+import { MediaState } from "../models/mediastate"
+
 import {
   EntryType,
   // MetricForKey,
   // MetricKey,
   TimestampedEntry,
+  TraceKind,
   // TimestampedMessage,
   // TimestampedMetric,
   // TimestampedTrace,
@@ -124,75 +128,117 @@ function _isInteresting(_entry: TimestampedEntry): boolean {
   return false
 }
 
-function validateCompressedLog(unvalidatedLog: unknown): TimestampedEntry[] | z.ZodError<TimestampedEntry[]> {
-  const messageLevels = [z.literal("info"), z.literal("warning"), z.literal("debug")] as const
-  const messageLevelSchema = z.union(messageLevels)
-  const messageSchema = z.object({
+const datelike = z.union([z.number(), z.string(), z.date()])
+const datelikeToDate = datelike.pipe(z.coerce.date())
+
+const mediaKindSchema = [z.literal(MediaKinds.AUDIO), z.literal(MediaKinds.VIDEO)] as const
+
+const mediaStateSchema = [
+  z.literal(MediaState.ENDED),
+  z.literal(MediaState.FATAL_ERROR),
+  z.literal(MediaState.PAUSED),
+  z.literal(MediaState.PLAYING),
+  z.literal(MediaState.STOPPED),
+  z.literal(MediaState.WAITING),
+] as const
+
+const messageLevels = [z.literal("info"), z.literal("warning"), z.literal("debug")] as const
+const messageLevelSchema = z.union(messageLevels)
+
+const messageSchema = z
+  .object({
     type: z.literal(EntryType.MESSAGE),
     level: messageLevelSchema,
-    data: z.string(),
+    data: z.any(),
   })
+  .refine((_schema) => true)
 
-  const metricKeys = [
-    z.literal("auto-resume"),
-    z.literal("bitrate"),
-    z.literal("buffer-length"),
-    z.literal("ended"),
-    z.literal("ready-state"),
-    z.literal("cdns-available"),
-    z.literal("current-url"),
-    z.literal("duration"),
-    z.literal("frames-dropped"),
-    z.literal("initial-playback-time"),
-    z.literal("paused"),
-    z.literal("representation-audio"),
-    z.literal("representation-video"),
-    z.literal("seekable-range"),
-    z.literal("seeking"),
-    z.literal("strategy"),
-    z.literal("subtitle-cdns-available"),
-    z.literal("subtitle-current-url"),
-    z.literal("version"),
-  ] as const
-  const metricKeySchema = z.union(metricKeys)
+const metricKeys = [
+  z.literal("auto-resume"),
+  z.literal("bitrate"),
+  z.literal("buffer-length"),
+  z.literal("ended"),
+  z.literal("ready-state"),
+  z.literal("cdns-available"),
+  z.literal("current-url"),
+  z.literal("duration"),
+  z.literal("frames-dropped"),
+  z.literal("initial-playback-time"),
+  z.literal("paused"),
+  z.literal("representation-audio"),
+  z.literal("representation-video"),
+  z.literal("seekable-range"),
+  z.literal("seeking"),
+  z.literal("strategy"),
+  z.literal("subtitle-cdns-available"),
+  z.literal("subtitle-current-url"),
+  z.literal("version"),
+] as const
+const metricKeySchema = z.union(metricKeys)
 
-  const metricSchema = z.object({
+const metricSchema = z
+  .object({
     type: z.literal(EntryType.METRIC),
     key: metricKeySchema,
-    data: z.undefined(),
+    data: z.any(),
   })
+  .refine((_schema) => true)
 
-  const traceKinds = [
-    z.literal("buffered-ranges"),
-    z.literal("error"),
-    z.literal("event"),
-    z.literal("gap"),
-    z.literal("session-start"),
-    z.literal("session-end"),
-    z.literal("state-change"),
-  ] as const
-  const traceKindSchema = z.union(traceKinds)
+const traceKinds = [
+  z.literal("buffered-ranges"),
+  z.literal("error"),
+  z.literal("event"),
+  z.literal("gap"),
+  z.literal("session-start"),
+  z.literal("session-end"),
+  z.literal("state-change"),
+] as const
+const traceKindSchema = z.union(traceKinds)
 
-  const traceSchema = z.object({
+const traceDataLookup: {
+  [key in TraceKind]: z.ZodTypeAny
+} = {
+  "buffered-ranges": z.object({
+    kind: z.union(mediaKindSchema),
+    buffered: z.tuple([z.number(), z.number()]).array(),
+  }),
+  error: z.instanceof(Error),
+  event: z.object({
+    eventType: z.string(),
+    target: z.string(),
+  }),
+  gap: z.object({
+    from: z.number(),
+    to: z.number(),
+  }),
+  "session-start": datelikeToDate,
+  "session-end": datelikeToDate,
+  "state-change": z.union(mediaStateSchema),
+} as const
+
+const traceSchema = z
+  .object({
     type: z.literal(EntryType.TRACE),
     kind: traceKindSchema,
-    data: z.undefined(),
+    data: z.any(),
   })
+  .refine((schema) => traceDataLookup[schema.kind].safeParse(schema.data).success)
 
-  const entrySchema = z.discriminatedUnion("type", [messageSchema, metricSchema, traceSchema])
+const entrySchema = z.discriminatedUnion("type", [messageSchema, metricSchema, traceSchema])
 
-  const timestampedSchema = z.object({
-    currentElementTime: z.number(),
-    sessionTime: z.number(),
-  })
+const timestampedSchema = z.object({
+  currentElementTime: z.number(),
+  sessionTime: z.number(),
+})
 
-  const timestampedEntrySchema = z.intersection(timestampedSchema, entrySchema)
+const timestampedEntrySchema = entrySchema.and(timestampedSchema)
+const uncompressedLogSchema = timestampedEntrySchema.array()
 
-  const uncompressedLogSchema = z.array(timestampedEntrySchema)
+function validateCompressedLog(unvalidatedLog: unknown): TimestampedEntry[] | z.ZodError<TimestampedEntry[]> {
   const parsed = uncompressedLogSchema.safeParse(unvalidatedLog)
 
   if (parsed.success) return parsed.data as unknown as TimestampedEntry[]
-  return parsed.error as unknown as TimestampedEntry[]
+  return parsed.error
 }
 
 /**
