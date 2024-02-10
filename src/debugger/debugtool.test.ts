@@ -149,7 +149,7 @@ describe("Debug Tool", () => {
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ kind: "error", data: new Error("something went wrong") }),
+        expect.objectContaining({ kind: "error", data: { message: "something went wrong" } }),
       ])
     })
 
@@ -160,7 +160,13 @@ describe("Debug Tool", () => {
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ kind: "error", data: new TypeError("something went REALLY wrong") }),
+        expect.objectContaining({
+          kind: "error",
+          data: {
+            message: "something went REALLY wrong",
+            name: "TypeError",
+          },
+        }),
       ])
     })
   })

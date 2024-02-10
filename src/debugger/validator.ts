@@ -1,7 +1,7 @@
 import { MediaKinds } from "../models/mediakinds"
 import { MediaState } from "../models/mediastate"
 
-import { EntryType, MessageLevel, MetricKey, TimestampedEntry, TraceKind } from "./chronicle"
+import { EntryCategory, MessageLevel, MetricKey, TimestampedEntry, TraceKind } from "./chronicle"
 
 import { z } from "zod"
 
@@ -28,7 +28,7 @@ const messageDataLookup: {
 } as const
 
 const unrefinedMessageSchema = z.object({
-  type: z.literal(EntryType.MESSAGE),
+  category: z.literal(EntryCategory.MESSAGE),
   level: messageLevelSchema,
   data: z.any(),
 })
@@ -81,7 +81,7 @@ const metricDataLookup: {
 } as const
 
 const unrefinedMetricSchema = z.object({
-  type: z.literal(EntryType.METRIC),
+  category: z.literal(EntryCategory.METRIC),
   key: metricKeySchema,
   data: z.any(),
 })
@@ -104,7 +104,10 @@ const traceDataLookup: {
     kind: z.union(mediaKindSchema),
     buffered: z.tuple([z.number(), z.number()]).array(),
   }),
-  error: z.instanceof(Error),
+  error: z.object({
+    name: z.string().optional(),
+    message: z.string(),
+  }),
   event: z.object({
     eventType: z.string(),
     target: z.string(),
@@ -119,33 +122,37 @@ const traceDataLookup: {
 } as const
 
 const unrefinedTraceSchema = z.object({
-  type: z.literal(EntryType.TRACE),
+  category: z.literal(EntryCategory.TRACE),
   kind: traceKindSchema,
   data: z.unknown(),
 })
 
-const entrySchema = z.discriminatedUnion("type", [unrefinedMessageSchema, unrefinedMetricSchema, unrefinedTraceSchema])
+const entrySchema = z.discriminatedUnion("category", [
+  unrefinedMessageSchema,
+  unrefinedMetricSchema,
+  unrefinedTraceSchema,
+])
 
-type SchemaType<Key extends EntryType> = Key extends EntryType.MESSAGE
+type SchemaType<Key extends EntryCategory> = Key extends EntryCategory.MESSAGE
   ? z.infer<typeof unrefinedMessageSchema>
-  : Key extends EntryType.METRIC
+  : Key extends EntryCategory.METRIC
     ? z.infer<typeof unrefinedMetricSchema>
-    : Key extends EntryType.TRACE
+    : Key extends EntryCategory.TRACE
       ? z.infer<typeof unrefinedTraceSchema>
       : never
 
 type RefinementLookup = () => {
-  [Key in EntryType]: (unrefined: SchemaType<Key>) => boolean
+  [Key in EntryCategory]: (unrefined: SchemaType<Key>) => boolean
 }
 
 const refinementLookup: RefinementLookup = () => ({
-  [EntryType.MESSAGE]: (unrefined) => messageDataLookup[unrefined.level].safeParse(unrefined.data).success,
-  [EntryType.METRIC]: (unrefined) => metricDataLookup[unrefined.key].safeParse(unrefined.data).success,
-  [EntryType.TRACE]: (unrefined) => traceDataLookup[unrefined.kind].safeParse(unrefined.data).success,
+  [EntryCategory.MESSAGE]: (unrefined) => messageDataLookup[unrefined.level].safeParse(unrefined.data).success,
+  [EntryCategory.METRIC]: (unrefined) => metricDataLookup[unrefined.key].safeParse(unrefined.data).success,
+  [EntryCategory.TRACE]: (unrefined) => traceDataLookup[unrefined.kind].safeParse(unrefined.data).success,
 })
 
 const refinedEntrySchema = entrySchema.refine((schema) =>
-  (refinementLookup()[schema.type] as (unrefined: SchemaType<typeof schema.type>) => boolean)(schema)
+  (refinementLookup()[schema.category] as (unrefined: SchemaType<typeof schema.category>) => boolean)(schema)
 )
 
 const timestampedSchema = z.object({
@@ -154,19 +161,21 @@ const timestampedSchema = z.object({
 })
 
 const timestampedEntrySchema = refinedEntrySchema.and(timestampedSchema)
-const uncompressedLogSchema = timestampedEntrySchema.array()
+const chronicleLogSchema = timestampedEntrySchema.array()
 
 export type ValidationError = { issues: { path: (string | number)[]; message: string }[] }
 
 export function validate(unvalidatedLog: unknown): TimestampedEntry[] | ValidationError {
-  const parsed = uncompressedLogSchema.safeParse(unvalidatedLog)
+  const parsed = chronicleLogSchema.safeParse(unvalidatedLog)
 
   if (parsed.success) return parsed.data as unknown as TimestampedEntry[]
 
+  const error = parsed.error
+
   return {
-    issues: parsed.error.errors.map((error) => ({
-      path: error.path,
-      message: error.message,
+    issues: error.issues.map((issue) => ({
+      path: issue.path,
+      message: issue.message,
     })),
   }
 }

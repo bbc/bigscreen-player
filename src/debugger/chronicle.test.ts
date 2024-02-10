@@ -1,4 +1,4 @@
-import Chronicle, { EntryType } from "./chronicle"
+import Chronicle, { EntryCategory } from "./chronicle"
 
 describe("Chronicle", () => {
   beforeAll(() => {
@@ -32,7 +32,7 @@ describe("Chronicle", () => {
     expect(handleUpdate).toHaveBeenCalledTimes(2)
 
     expect(handleUpdate).toHaveBeenNthCalledWith(1, {
-      type: EntryType.METRIC,
+      category: EntryCategory.METRIC,
       currentElementTime: 0,
       sessionTime: 0,
       key: "ready-state",
@@ -40,7 +40,7 @@ describe("Chronicle", () => {
     })
 
     expect(handleUpdate).toHaveBeenNthCalledWith(2, {
-      type: EntryType.TRACE,
+      category: EntryCategory.TRACE,
       kind: "error",
       data: new DOMException("Operation timed out", "timeout"),
       sessionTime: 0,
@@ -65,7 +65,7 @@ describe("Chronicle", () => {
 
     expect(handleUpdate).toHaveBeenCalledTimes(1)
     expect(handleUpdate).toHaveBeenNthCalledWith(1, {
-      type: EntryType.METRIC,
+      category: EntryCategory.METRIC,
       currentElementTime: 0,
       sessionTime: 0,
       key: "ready-state",
@@ -79,7 +79,7 @@ describe("Chronicle", () => {
     chronicle.appendMetric("ready-state", 1)
 
     expect(chronicle.retrieve()).toEqual([
-      { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 1 },
+      { category: EntryCategory.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 1 },
     ])
   })
 
@@ -91,7 +91,7 @@ describe("Chronicle", () => {
     chronicle.appendMetric("bitrate", 16)
 
     expect(chronicle.retrieve()).toEqual([
-      { type: EntryType.METRIC, currentElementTime: 32, sessionTime: 0, key: "bitrate", data: 16 },
+      { category: EntryCategory.METRIC, currentElementTime: 32, sessionTime: 0, key: "bitrate", data: 16 },
     ])
   })
 
@@ -103,7 +103,7 @@ describe("Chronicle", () => {
     chronicle.appendMetric("duration", 300)
 
     expect(chronicle.retrieve()).toEqual([
-      { type: EntryType.METRIC, currentElementTime: 0, sessionTime: 2345, key: "duration", data: 300 },
+      { category: EntryCategory.METRIC, currentElementTime: 0, sessionTime: 2345, key: "duration", data: 300 },
     ])
   })
 
@@ -344,7 +344,7 @@ describe("Chronicle", () => {
 
     expect(chronicle.retrieve()).toEqual([
       {
-        type: EntryType.TRACE,
+        category: EntryCategory.TRACE,
         kind: "error",
         data: new Error("💥 splode"),
         sessionTime: 0,
@@ -360,7 +360,7 @@ describe("Chronicle", () => {
 
     expect(chronicle.retrieve()).toEqual([
       {
-        type: EntryType.MESSAGE,
+        category: EntryCategory.MESSAGE,
         level: "debug",
         data: "👾",
         sessionTime: 0,
@@ -376,7 +376,7 @@ describe("Chronicle", () => {
 
     expect(chronicle.retrieve()).toEqual([
       {
-        type: EntryType.MESSAGE,
+        category: EntryCategory.MESSAGE,
         level: "info",
         data: "🧐",
         sessionTime: 0,
@@ -392,7 +392,7 @@ describe("Chronicle", () => {
 
     expect(chronicle.retrieve()).toEqual([
       {
-        type: EntryType.MESSAGE,
+        category: EntryCategory.MESSAGE,
         level: "warning",
         data: "😱",
         sessionTime: 0,

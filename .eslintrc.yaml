@@ -61,6 +61,7 @@ rules:
   quote-props: [error, as-needed]
   yoda: [error, never]
   unicorn/no-null: off
+  unicorn/switch-case-braces: [error, avoid]
 
   spaced-comment:
     - error

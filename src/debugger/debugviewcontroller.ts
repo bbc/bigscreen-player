@@ -2,7 +2,7 @@ import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 import { Extends } from "../utils/types"
 import {
-  EntryType,
+  EntryCategory,
   History,
   Message,
   MetricForKey,
@@ -28,10 +28,10 @@ const wrungMediaState: WrungMediaState = {
 
 const DYNAMIC_ENTRY_LIMIT = 29 as const
 
-type Timestamp = Timestamped<{ type: "time" }>
+type Timestamp = Timestamped<{ category: "time" }>
 
 type MetricUnion<UnionKey extends string, MergedKeys extends MetricKey> = {
-  type: "union"
+  category: "union"
   key: UnionKey
   data: { [Key in MergedKeys]?: MetricForKey<Key>["data"] }
 }
@@ -73,9 +73,9 @@ class DebugViewController {
   private renderInterval: ReturnType<typeof setInterval>
 
   private keepEntry(entry: TimestampedEntry): boolean {
-    const { type } = entry
+    const { category } = entry
 
-    if (type !== EntryType.TRACE) {
+    if (category !== EntryCategory.TRACE) {
       return true
     }
 
@@ -107,23 +107,23 @@ class DebugViewController {
         ? {}
         : (this.latestMetricByKey["media-element-state"] as StaticEntryForKey<"media-element-state">).data
 
-    const { key, data } = entry
+    const { key, data } = entry as TimestampedMetric
 
     return {
       ...entry,
-      type: "union",
+      category: "union",
       key: "media-element-state",
       data: { ...prevData, [key]: data },
     }
   }
 
   private cacheEntry(entry: TimestampedEntry): void {
-    switch (entry.type) {
-      case EntryType.METRIC: {
+    switch (entry.category) {
+      case EntryCategory.METRIC:
         return this.cacheStaticEntry(this.isMerged(entry) ? this.mergeMediaState(entry) : entry)
-      }
-      case EntryType.MESSAGE:
-      case EntryType.TRACE: {
+
+      case EntryCategory.MESSAGE:
+      case EntryCategory.TRACE:
         this.cacheDynamicEntry(entry)
 
         if (this.dynamicEntries.length >= DYNAMIC_ENTRY_LIMIT) {
@@ -131,10 +131,9 @@ class DebugViewController {
         }
 
         return
-      }
-      default: {
+
+      default:
         throw new TypeError("Unrecognised entry type")
-      }
     }
   }
 
@@ -149,7 +148,7 @@ class DebugViewController {
   }
 
   private cacheDynamicEntry(entry: DynamicEntry): void {
-    if (entry.type === "time") {
+    if (entry.category === "time") {
       this.cacheTimestamp(entry)
 
       return
@@ -161,7 +160,7 @@ class DebugViewController {
   private cacheTimestamp(entry: Timestamp): void {
     const lastDynamicEntry = this.dynamicEntries[this.dynamicEntries.length - 1]
 
-    if (lastDynamicEntry == null || lastDynamicEntry.type !== "time") {
+    if (lastDynamicEntry == null || lastDynamicEntry.category !== "time") {
       this.dynamicEntries.push(entry)
 
       return
@@ -173,24 +172,23 @@ class DebugViewController {
   private serialiseDynamicEntry(entry: DynamicEntry): string {
     let formattedData: string
 
-    const { type } = entry
+    const { category } = entry
 
-    switch (type) {
-      case EntryType.MESSAGE: {
+    switch (category) {
+      case EntryCategory.MESSAGE:
         formattedData = this.serialiseMessage(entry)
         break
-      }
-      case "time": {
+
+      case "time":
         formattedData = this.serialiseTime(entry)
         break
-      }
-      case EntryType.TRACE: {
+
+      case EntryCategory.TRACE:
         formattedData = this.serialiseTrace(entry)
         break
-      }
-      default: {
-        throw new TypeError(`Unrecognised entry type: ${type}`)
-      }
+
+      default:
+        throw new TypeError(`Unrecognised Entry Category: ${category}`)
     }
 
     const sessionTime = new Date(entry.sessionTime)
@@ -203,18 +201,17 @@ class DebugViewController {
     const { level, data } = message
 
     switch (level) {
-      case "debug": {
+      case "debug":
         return `Debug: ${data}`
-      }
-      case "info": {
+
+      case "info":
         return `Info: ${data}`
-      }
-      case "warning": {
+
+      case "warning":
         return `Warning: ${data}`
-      }
-      default: {
+
+      default:
         throw new TypeError(`Unrecognised message level '${level}'`)
-      }
     }
   }
 
@@ -232,25 +229,20 @@ class DebugViewController {
 
         return `Buffered ${data.kind}: [${buffered}] at current time ${currentElementTime.toFixed(2)}`
       }
-      case "error": {
+      case "error":
         return `${data.name ?? "Error"}: ${data.message}`
-      }
       case "event": {
         const { eventType, eventTarget } = data
         return `Event: '${eventType}' from ${eventTarget}`
       }
-      case "session-start": {
+      case "session-start":
         return `Playback session started at ${new Date(data).toISOString().replace("T", " ")}`
-      }
-      case "session-end": {
+      case "session-end":
         return `Playback session ended at ${new Date(data).toISOString().replace("T", " ")}`
-      }
-      case "state-change": {
+      case "state-change":
         return `Event: ${wrungMediaState[data]}`
-      }
-      default: {
+      default:
         throw new TypeError(`Unrecognised trace kind: ${kind}`)
-      }
     }
   }
 
@@ -322,7 +314,7 @@ class DebugViewController {
   }
 
   public addTime({ currentElementTime, sessionTime }: { currentElementTime: number; sessionTime: number }): void {
-    this.cacheTimestamp({ currentElementTime, sessionTime, type: "time" })
+    this.cacheTimestamp({ currentElementTime, sessionTime, category: "time" })
 
     this.shouldRender = true
   }
