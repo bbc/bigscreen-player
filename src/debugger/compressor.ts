@@ -1,5 +1,4 @@
 import { TimestampedEntry } from "./chronicle"
-import { ValidationError, validate } from "./validator"
 
 // TODO: This Module is a WIP
 
@@ -39,9 +38,8 @@ export function compress(chronicle: TimestampedEntry[]): string {
  * @param compressed A string that represents a compressed Chronicle Log.
  * @returns The uncompressed Chronicle Log represented by the input string.
  */
-export function decompress(compressed: string): TimestampedEntry[] | ValidationError {
-  const parsed: unknown = JSON.parse(compressed)
-  return validate(parsed)
+export function decompress(compressed: string): TimestampedEntry[] {
+  return JSON.parse(compressed) as TimestampedEntry[]
 }
 
 export default { compress, decompress }
