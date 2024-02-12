@@ -2,7 +2,7 @@ import TimeUtils from "./timeutils"
 
 describe("Time utils", () => {
   describe("Duration to seconds", () => {
-    const testCases = [
+    const testCases: [string, number | undefined][] = [
       ["PT2H", 7200],
       ["PT2H30S", 7230],
       ["PT2H30M30S", 9030],
@@ -15,7 +15,7 @@ describe("Time utils", () => {
       ["foobar", undefined],
     ]
 
-    it.each(testCases)("Converts duration of %s to %s seconds", (duration, expected) => {
+    it.each(testCases)("Converts duration of %s to %s seconds", (duration: string, expected?: number) => {
       expect(TimeUtils.durationToSeconds(duration)).toBe(expected)
     })
   })
@@ -24,7 +24,7 @@ describe("Time utils", () => {
     const realDateNow = global.Date.now
 
     beforeEach(() => {
-      global.Date.now = () => new Date("2019-10-22T10:59:20.000Z")
+      global.Date.now = () => new Date("2019-10-22T10:59:20.000Z").getTime()
     })
 
     afterEach(() => {
@@ -35,10 +35,10 @@ describe("Time utils", () => {
       const time = 4000
 
       // Note the 5 minute (300 second difference)
-      const dvrInfoRangeStart = new Date("2019-10-22T09:00:00.000Z") / 1000
-      const timeCorrection = new Date("2019-10-22T08:55:00.000Z") / 1000
+      const dvrInfoRangeStart = new Date("2019-10-22T09:00:00.000Z").getTime() / 1000
+      const timeCorrection = new Date("2019-10-22T08:55:00.000Z").getTime() / 1000
 
-      const pausedTime = new Date("2019-10-22T10:59:00.000Z")
+      const pausedTime = new Date("2019-10-22T10:59:00.000Z").getTime()
       // mock Date.now is 20 seconds later. Slow seeking!
 
       expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(3680)
@@ -48,8 +48,8 @@ describe("Time utils", () => {
       const time = 4000
 
       // Note the 5 minute (300 second difference)
-      const dvrInfoRangeStart = new Date("2019-10-22T09:00:00.000Z") / 1000
-      const timeCorrection = new Date("2019-10-22T08:55:00.000Z") / 1000
+      const dvrInfoRangeStart = new Date("2019-10-22T09:00:00.000Z").getTime() / 1000
+      const timeCorrection = new Date("2019-10-22T08:55:00.000Z").getTime() / 1000
       const pausedTime = 0
 
       expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(3700)

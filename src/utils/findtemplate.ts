@@ -1,6 +1,6 @@
 const SEGMENT_TEMPLATE_MATCHER = /\$[A-Za-z]+\$/g
 
-function findSegmentTemplate(url) {
+export default function findSegmentTemplate(url: string) {
   const matches = url.match(SEGMENT_TEMPLATE_MATCHER)
 
   if (matches == null) {
@@ -9,5 +9,3 @@ function findSegmentTemplate(url) {
 
   return matches[matches.length - 1]
 }
-
-export default findSegmentTemplate
