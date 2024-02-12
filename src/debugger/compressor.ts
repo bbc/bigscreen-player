@@ -1,10 +1,7 @@
 import { TimestampedEntry } from "./chronicle"
 import { ValidationError, validate } from "./validator"
 
-// TODO: Implement
-// function _isInteresting(_entry: TimestampedEntry): boolean {
-//   return false
-// }
+// TODO: This Module is a WIP
 
 /**
  * Determines if a string represents a compressed Chronicle Log.
@@ -32,13 +29,7 @@ export function isCompressed(compressed: string): boolean {
  * Chronicle Log.
  */
 export function compress(chronicle: TimestampedEntry[]): string {
-  // const head = chronicle.slice(0, -500)
   const tail = chronicle.slice(-500)
-
-  // if (head.length !== 0) {}
-
-  // return tail.map((entry) => compressEntry(entry)).join("\n")
-
   return JSON.stringify(tail, undefined, 0)
 }
 

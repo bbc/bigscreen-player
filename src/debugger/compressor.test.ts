@@ -1,5 +1,3 @@
-// import { compress, denormalize, normalize } from "./compressor"
-
 describe("Chronicle Compressor", () => {
   describe("normalize", () => {
     it.todo("should handle an empty string")
