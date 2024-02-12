@@ -10,4 +10,4 @@ export { default as TransportControlPosition } from "./models/transportcontrolpo
 export { default as WindowTypes } from "./models/windowtypes"
 export { default as DebugTool } from "./debugger/debugtool"
 export { default as Compressor } from "./debugger/compressor"
-export type * from "./debugger/chronicle"
+export * from "./debugger/chronicle"
