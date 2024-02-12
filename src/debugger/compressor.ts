@@ -1,199 +1,7 @@
-import {
-  EntryType,
-  // MetricForKey,
-  // MetricKey,
-  TimestampedEntry,
-  // TimestampedMessage,
-  // TimestampedMetric,
-  // TimestampedTrace,
-  // isMessage,
-  // isMetric,
-  // isTrace,
-} from "./chronicle"
+import { TimestampedEntry } from "./chronicle"
+import { ValidationError, validate } from "./validator"
 
-import { z } from "zod"
-
-// const base36 = {
-//   from: (num: number) => num.toString(36),
-//   to: (str: string) => parseInt(str, 36)
-// }
-
-// export function normalize(input: string): string {
-//   return input.replace(
-//     /[\n%;[\]]/g,
-//     (match) =>
-//       ({
-//         "\n": "%0A",
-//         "%": "%25",
-//         ";": "%3B",
-//         "[": "%5B",
-//         "]": "%5D",
-//       })[match] ?? match
-//   )
-// }
-
-// export function denormalize(input: string): string {
-//   return input.replace(
-//     /%(0A|25|3B|5B|5D)/g,
-//     (match) =>
-//       ({
-//         "%0A": "\n",
-//         "%25": "%",
-//         "%3B": ";",
-//         "%5B": "[",
-//         "%5D": "]",
-//       })[match] ?? match
-//   )
-// }
-
-// // const compressMessageLookup = {}
-
-// export function compressMessage({
-//   level: _level,
-//   data: _data,
-//   sessionTime: _sessionTime,
-//   currentElementTime: _currentElementTime,
-// }: TimestampedMessage): string {
-//   return ""
-// }
-
-// // function bufferArrayCompressor (data: [start: number, end: number][]): string {
-// //   return data.map(([start, end]) => `${start}:${end}`).join(",")
-// // }
-
-// function createMetricCompressor<Key extends MetricKey>(
-//   prefix: string
-// ): (data: MetricForKey<Key>["data"], sessionTime: number) => string {
-//   return (data, sessionTime) => `${prefix}[${sessionTime}]${data}`
-// }
-
-// const compressMetricLookup: {
-//   [key in MetricKey]: (data: MetricForKey<MetricKey>["data"], sessionTime: number) => string
-// } = {
-//   "auto-resume": createMetricCompressor<"auto-resume">("AR"),
-//   bitrate: createMetricCompressor<"bitrate">("BR"),
-//   "buffered-audio": createMetricCompressor<"buffered-audio">("BA"),
-//   "buffered-video": createMetricCompressor<"buffered-video">("BV"),
-//   "buffer-length": createMetricCompressor<"buffer-length">("BL"),
-//   "ready-state": createMetricCompressor<"ready-state">("RS"),
-//   "cdns-available": createMetricCompressor<"cdns-available">("CDN"),
-//   "current-url": createMetricCompressor<"current-url">("CURL"),
-//   duration: createMetricCompressor<"duration">("D"),
-//   ended: createMetricCompressor<"ended">("E"),
-//   "frames-dropped": createMetricCompressor<"frames-dropped">("FD"),
-//   "initial-playback-time": createMetricCompressor<"initial-playback-time">("IPT"),
-//   paused: createMetricCompressor<"paused">("P"),
-//   "representation-audio": createMetricCompressor<"representation-audio">("RA"),
-//   "representation-video": createMetricCompressor<"representation-video">("RV"),
-//   "seekable-range": createMetricCompressor<"seekable-range">("SR"),
-//   seeking: createMetricCompressor<"seeking">("SE"),
-//   strategy: createMetricCompressor<"strategy">("S"),
-//   "subtitle-cdns-available": createMetricCompressor<"subtitle-cdns-available">("SCDN"),
-//   "subtitle-current-url": createMetricCompressor<"subtitle-current-url">("SCURR"),
-//   version: createMetricCompressor<"version">("V"),
-// }
-
-// export function compressMetric({
-//   key,
-//   data,
-//   sessionTime,
-//   currentElementTime: _currentElementTime
-// }: TimestampedMetric): string {
-//   const compressor = compressMetricLookup[key]
-//   return compressor(data, sessionTime)
-// }
-
-// export function compressTrace({
-//   kind: _kind,
-//   data: _data,
-//   sessionTime: _sessionTime,
-//   currentElementTime: _currentElementTime
-// }: TimestampedTrace): string {
-//   return ""
-// }
-
-// function compressEntry(entry: TimestampedEntry): string {
-//   if (isMessage(entry)) return compressMessage(entry)
-//   if (isMetric(entry)) return compressMetric(entry)
-//   if (isTrace(entry)) return compressTrace(entry)
-//   return ""
-// }
-
-// TODO: Implement
-function _isInteresting(_entry: TimestampedEntry): boolean {
-  return false
-}
-
-function validateCompressedLog(unvalidatedLog: unknown): TimestampedEntry[] | z.ZodError<TimestampedEntry[]> {
-  const messageLevels = [z.literal("info"), z.literal("warning"), z.literal("debug")] as const
-  const messageLevelSchema = z.union(messageLevels)
-  const messageSchema = z.object({
-    type: z.literal(EntryType.MESSAGE),
-    level: messageLevelSchema,
-    data: z.string(),
-  })
-
-  const metricKeys = [
-    z.literal("auto-resume"),
-    z.literal("bitrate"),
-    z.literal("buffer-length"),
-    z.literal("ended"),
-    z.literal("ready-state"),
-    z.literal("cdns-available"),
-    z.literal("current-url"),
-    z.literal("duration"),
-    z.literal("frames-dropped"),
-    z.literal("initial-playback-time"),
-    z.literal("paused"),
-    z.literal("representation-audio"),
-    z.literal("representation-video"),
-    z.literal("seekable-range"),
-    z.literal("seeking"),
-    z.literal("strategy"),
-    z.literal("subtitle-cdns-available"),
-    z.literal("subtitle-current-url"),
-    z.literal("version"),
-  ] as const
-  const metricKeySchema = z.union(metricKeys)
-
-  const metricSchema = z.object({
-    type: z.literal(EntryType.METRIC),
-    key: metricKeySchema,
-    data: z.undefined(),
-  })
-
-  const traceKinds = [
-    z.literal("buffered-ranges"),
-    z.literal("error"),
-    z.literal("event"),
-    z.literal("gap"),
-    z.literal("session-start"),
-    z.literal("session-end"),
-    z.literal("state-change"),
-  ] as const
-  const traceKindSchema = z.union(traceKinds)
-
-  const traceSchema = z.object({
-    type: z.literal(EntryType.TRACE),
-    kind: traceKindSchema,
-    data: z.undefined(),
-  })
-
-  const entrySchema = z.discriminatedUnion("type", [messageSchema, metricSchema, traceSchema])
-
-  const timestampedSchema = z.object({
-    currentElementTime: z.number(),
-    sessionTime: z.number(),
-  })
-
-  const timestampedEntrySchema = z.intersection(timestampedSchema, entrySchema)
-
-  const uncompressedLogSchema = z.array(timestampedEntrySchema)
-  const parsed = uncompressedLogSchema.safeParse(unvalidatedLog)
-
-  if (parsed.success) return parsed.data as unknown as TimestampedEntry[]
-  return parsed.error as unknown as TimestampedEntry[]
-}
+// TODO: This Module is a WIP
 
 /**
  * Determines if a string represents a compressed Chronicle Log.
@@ -221,17 +29,9 @@ export function isCompressed(compressed: string): boolean {
  * Chronicle Log.
  */
 export function compress(chronicle: TimestampedEntry[]): string {
-  // const head = chronicle.slice(0, -500)
   const tail = chronicle.slice(-500)
-
-  // if (head.length !== 0) {}
-
-  // return tail.map((entry) => compressEntry(entry)).join("\n")
-
   return JSON.stringify(tail, undefined, 0)
 }
-
-type ValidationError = { issues: { path: (string | number)[]; message: string }[] }
 
 /**
  * Produces a Chronicle Log Array from a string previously compressed
@@ -241,18 +41,7 @@ type ValidationError = { issues: { path: (string | number)[]; message: string }[
  */
 export function decompress(compressed: string): TimestampedEntry[] | ValidationError {
   const parsed: unknown = JSON.parse(compressed)
-  const validated = validateCompressedLog(parsed)
-
-  if (validated instanceof z.ZodError) {
-    return {
-      issues: validated.errors.map((error) => ({
-        path: error.path,
-        message: error.message,
-      })),
-    }
-  }
-
-  return validated
+  return validate(parsed)
 }
 
 export default { compress, decompress }

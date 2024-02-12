@@ -47,7 +47,7 @@ function DebugTool() {
     currentLogLevel = LogLevels.INFO
     viewController = new DebugViewController()
 
-    chronicle.trace("session-start", new Date())
+    chronicle.trace("session-start", Date.now())
   }
 
   function tearDown() {
@@ -55,7 +55,7 @@ function DebugTool() {
       hide()
     }
 
-    chronicle.trace("session-end", new Date())
+    chronicle.trace("session-end", Date.now())
   }
 
   function getDebugLogs() {
@@ -103,7 +103,10 @@ function DebugTool() {
 
     const data = parts.length < 2 ? parts[0] : parts.join(" ")
 
-    chronicle.trace("error", typeof data === "object" && "message" in data ? data : new Error(data))
+    chronicle.trace(
+      "error",
+      typeof data === "object" && "message" in data ? { name: data.name, message: data.message } : { message: data }
+    )
   }
 
   function event(eventType: string, eventTarget = "unknown") {

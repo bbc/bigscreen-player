@@ -2,7 +2,7 @@ import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 import { MediaKinds } from "../models/mediakinds"
 
-export enum EntryType {
+export enum EntryCategory {
   METRIC = "metric",
   MESSAGE = "message",
   TRACE = "trace",
@@ -12,9 +12,9 @@ type InfoMessage = { level: "info"; data: string }
 type WarningMessage = { level: "warning"; data: string }
 type DebugMessage = { level: "debug"; data: string }
 
-export type Message = { type: EntryType.MESSAGE } & (InfoMessage | WarningMessage | DebugMessage)
+export type Message = { category: EntryCategory.MESSAGE } & (InfoMessage | WarningMessage | DebugMessage)
 
-export type Metric = { type: EntryType.METRIC } & (
+export type Metric = { category: EntryCategory.METRIC } & (
   | { key: "auto-resume"; data: number }
   | { key: "bitrate"; data: number }
   | { key: "buffer-length"; data: number }
@@ -36,13 +36,13 @@ export type Metric = { type: EntryType.METRIC } & (
   | { key: "version"; data: string }
 )
 
-export type Trace = { type: EntryType.TRACE } & (
+export type Trace = { category: EntryCategory.TRACE } & (
   | { kind: "buffered-ranges"; data: { kind: MediaKinds; buffered: [start: number, end: number][] } }
-  | { kind: "error"; data: Error }
+  | { kind: "error"; data: { name?: string; message: string } }
   | { kind: "event"; data: { eventType: string; eventTarget: string } }
   | { kind: "gap"; data: { from: number; to: number } }
-  | { kind: "session-start"; data: Date }
-  | { kind: "session-end"; data: Date }
+  | { kind: "session-start"; data: number }
+  | { kind: "session-end"; data: number }
   | { kind: "state-change"; data: MediaState }
 )
 
@@ -52,7 +52,7 @@ export type MessageLevel = Message["level"]
 export type MetricKey = Metric["key"]
 export type TraceKind = Trace["kind"]
 
-export type Timestamped<Type> = { currentElementTime: number; sessionTime: number } & Type
+export type Timestamped<Category> = { currentElementTime: number; sessionTime: number } & Category
 export type TimestampedEntry = Timestamped<Entry>
 export type History = TimestampedEntry[]
 export type TimestampedMetric = Timestamped<Metric>
@@ -75,15 +75,15 @@ export type TimestampedEntryForSelector<Selector extends EntrySelector> = Timest
 
 export const isMessage = <E extends Entry | TimestampedEntry, T extends E extends Entry ? Message : TimestampedMessage>(
   entry: E
-): entry is E & T => entry.type === EntryType.MESSAGE
+): entry is E & T => entry.category === EntryCategory.MESSAGE
 
 export const isMetric = <E extends Entry | TimestampedEntry, T extends E extends Entry ? Metric : TimestampedMetric>(
   entry: E
-): entry is E & T => entry.type === EntryType.METRIC
+): entry is E & T => entry.category === EntryCategory.METRIC
 
 export const isTrace = <E extends Entry | TimestampedEntry, T extends E extends Entry ? Trace : TimestampedTrace>(
   entry: E
-): entry is E & T => entry.type === EntryType.TRACE
+): entry is E & T => entry.category === EntryCategory.TRACE
 
 type EventListeners =
   | { type: "update"; listener: (change: Readonly<TimestampedEntry>) => void }
@@ -217,7 +217,7 @@ class Chronicle {
       )
     }
 
-    const metric = this.timestamp({ key, data, type: EntryType.METRIC } as MetricForKey<Key>)
+    const metric = this.timestamp({ key, data, category: EntryCategory.METRIC } as MetricForKey<Key>)
 
     metricsForKey.push(metric)
 
@@ -241,22 +241,22 @@ class Chronicle {
   }
 
   public debug(message: MessageForLevel<"debug">["data"]) {
-    this.pushMessage({ type: EntryType.MESSAGE, level: "debug", data: message })
+    this.pushMessage({ category: EntryCategory.MESSAGE, level: "debug", data: message })
   }
 
   public info(message: MessageForLevel<"info">["data"]) {
-    this.pushMessage({ type: EntryType.MESSAGE, level: "info", data: message })
+    this.pushMessage({ category: EntryCategory.MESSAGE, level: "info", data: message })
   }
 
   public trace<Kind extends TraceKind>(kind: Kind, data: TraceForKind<Kind>["data"]) {
-    const entry = this.timestamp({ kind, data, type: EntryType.TRACE } as Trace)
+    const entry = this.timestamp({ kind, data, category: EntryCategory.TRACE } as Trace)
 
     this.traces.push(entry)
     this.triggerUpdate(entry)
   }
 
   public warn(message: MessageForLevel<"warning">["data"]) {
-    this.pushMessage({ type: EntryType.MESSAGE, level: "warning", data: message })
+    this.pushMessage({ category: EntryCategory.MESSAGE, level: "warning", data: message })
   }
 }
 

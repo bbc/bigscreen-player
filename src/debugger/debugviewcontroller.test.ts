@@ -128,11 +128,11 @@ describe("Debug View", () => {
     const chronicle = new Chronicle()
     controller.showView()
 
-    chronicle.trace("session-start", new Date(2024, 0, 1, 0, 0, 0, 0))
+    chronicle.trace("session-start", new Date(2024, 0, 1, 0, 0, 0, 0).getTime())
 
     jest.advanceTimersByTime(Date.UTC(1970, 0, 1, 2, 31, 16, 15))
 
-    chronicle.trace("session-end", new Date(2024, 0, 1, 2, 31, 16, 15))
+    chronicle.trace("session-end", new Date(2024, 0, 1, 2, 31, 16, 15).getTime())
 
     controller.addEntries(chronicle.retrieve())
 

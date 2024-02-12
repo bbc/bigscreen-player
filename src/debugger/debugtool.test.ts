@@ -25,7 +25,7 @@ describe("Debug Tool", () => {
       DebugTool.init()
 
       expect(DebugTool.getDebugLogs()).toEqual([
-        expect.objectContaining({ kind: "session-start", data: new Date(1234) }),
+        expect.objectContaining({ kind: "session-start", data: new Date(1234).getTime() }),
       ])
     })
 
@@ -61,8 +61,8 @@ describe("Debug Tool", () => {
       DebugTool.tearDown()
 
       expect(DebugTool.getDebugLogs()).toEqual([
-        expect.objectContaining({ kind: "session-start", data: new Date(1234) }),
-        expect.objectContaining({ kind: "session-end", data: new Date(2468) }),
+        expect.objectContaining({ kind: "session-start", data: new Date(1234).getTime() }),
+        expect.objectContaining({ kind: "session-end", data: new Date(2468).getTime() }),
       ])
     })
 
@@ -149,7 +149,7 @@ describe("Debug Tool", () => {
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ kind: "error", data: new Error("something went wrong") }),
+        expect.objectContaining({ kind: "error", data: { message: "something went wrong" } }),
       ])
     })
 
@@ -160,7 +160,13 @@ describe("Debug Tool", () => {
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ kind: "error", data: new TypeError("something went REALLY wrong") }),
+        expect.objectContaining({
+          kind: "error",
+          data: {
+            message: "something went REALLY wrong",
+            name: "TypeError",
+          },
+        }),
       ])
     })
   })
