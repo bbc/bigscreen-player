@@ -1,4 +1,4 @@
-import { EntryCategory } from "./chronicle"
+import { EntryCategory, TimestampedTrace, TimestampedMessage, TimestampedMetric } from "./chronicle"
 import { ValidationError, validate } from "./validator"
 
 // import { MediaState } from "../models/mediastate";
@@ -79,24 +79,45 @@ import { ValidationError, validate } from "./validator"
 
 // const chronicleLogGenerator = () => fc.array(chronicleEntryGenerator())
 
+const timestamp = {
+  currentElementTime: 1,
+  sessionTime: 1,
+}
+
+const chronicleTrace: TimestampedTrace = {
+  ...timestamp,
+  category: EntryCategory.TRACE,
+  kind: "session-start",
+  data: Date.now(),
+}
+
+const chronicleMetric: TimestampedMetric = {
+  ...timestamp,
+  category: EntryCategory.METRIC,
+  key: "version",
+  data: "0.1.0",
+}
+
+const chronicleMessage: TimestampedMessage = {
+  ...timestamp,
+  category: EntryCategory.MESSAGE,
+  level: "info",
+  data: "An Info Level Message",
+}
+
 describe("Chronicle Validator", () => {
   // describe("Generative", () => {
   //   it.prop([chronicleLogGenerator()])("should validate an array containing valid Chronicle Entries", (input) => "type" in validate(input))
   // })
 
-  it("should validate an array containing a valid Chronicle Entry", () => {
-    const input: unknown = [
-      {
-        currentElementTime: 1,
-        sessionTime: 1,
-        category: EntryCategory.TRACE,
-        kind: "session-start",
-        data: Date.now(),
-      },
-    ]
-
-    const result = validate(input)
-    expect(result).toEqual(input)
+  test.each([
+    ["Trace", [chronicleTrace]],
+    ["Metric", [chronicleMetric]],
+    ["Message", [chronicleMessage]],
+    ["Log", [chronicleTrace, chronicleMetric, chronicleMessage]],
+  ])("should validate an array containing a valid Chronicle %s", (_, testData) => {
+    const result = validate(testData)
+    expect(result).toEqual(testData)
   })
 
   it("should accept an empty array", () => {
@@ -124,10 +145,8 @@ describe("Chronicle Validator", () => {
   it("should reject an object that does not specify EntryCategory", () => {
     const input: unknown = [
       {
-        currentElementTime: 1,
-        sessionTime: 1,
-        kind: "session-start",
-        data: Date.now(),
+        ...chronicleTrace,
+        category: undefined,
       },
     ]
 
