@@ -1,6 +1,6 @@
 import { MediaState } from "../models/mediastate"
 import { MediaKinds } from "../models/mediakinds"
-import Chronicle, { History, MetricForKey, MetricKey, TimestampedEntry } from "./chronicle"
+import Chronicle, { History, MetricForKey, MetricKey, TimestampedEntry, isTrace } from "./chronicle"
 import DebugViewController from "./debugviewcontroller"
 
 export const LogLevels = {
@@ -37,6 +37,15 @@ interface DebugTool {
   toggleVisibility(): void
 }
 
+function shouldDisplayEntry(entry: TimestampedEntry): boolean {
+  return (
+    !isTrace(entry) ||
+    entry.kind !== "event" ||
+    entry.data.eventTarget !== "MediaElement" ||
+    ["paused", "playing", "seeking", "seeked", "waiting"].includes(entry.data.eventType)
+  )
+}
+
 function DebugTool() {
   let chronicle = new Chronicle()
   let currentLogLevel: LogLevel = LogLevels.INFO
@@ -44,8 +53,9 @@ function DebugTool() {
 
   function init() {
     chronicle = new Chronicle()
-    currentLogLevel = LogLevels.INFO
     viewController = new DebugViewController()
+
+    setLogLevel(LogLevels.INFO)
 
     chronicle.trace("session-start", Date.now())
   }
@@ -65,6 +75,12 @@ function DebugTool() {
   function setLogLevel(newLogLevel: LogLevel | undefined) {
     if (typeof newLogLevel !== "number") {
       return
+    }
+
+    if (newLogLevel === LogLevels.DEBUG) {
+      viewController.setFilters([])
+    } else {
+      viewController.setFilters([shouldDisplayEntry])
     }
 
     currentLogLevel = newLogLevel

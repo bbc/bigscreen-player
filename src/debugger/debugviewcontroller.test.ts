@@ -1,4 +1,4 @@
-import Chronicle, { History } from "./chronicle"
+import Chronicle, { History, isMessage, isMetric } from "./chronicle"
 import ViewController from "./debugviewcontroller"
 import DebugView from "./debugview"
 
@@ -234,6 +234,30 @@ describe("Debug View", () => {
     const badUpdate = () => controller.addEntries([{ type: "bad-type", nefarious: "purpose" }] as unknown as History)
 
     expect(badUpdate).toThrow(TypeError)
+  })
+
+  it("keep entries matching the filters", () => {
+    const controller = new ViewController()
+
+    controller.setFilters([
+      (entry) => !isMetric(entry) || entry.key !== "frames-dropped",
+      (entry) => !isMessage(entry) || entry.level !== "debug",
+    ])
+
+    const chronicle = new Chronicle()
+
+    chronicle.appendMetric("frames-dropped", 0)
+    chronicle.debug("Can't see me")
+    chronicle.trace("error", new Error("1984"))
+
+    controller.addEntries(chronicle.retrieve())
+
+    controller.showView()
+
+    jest.advanceTimersToNextTimer()
+
+    expect(DebugView.render).toHaveBeenCalledTimes(1)
+    expect(DebugView.render).toHaveBeenCalledWith({ dynamic: ["00:00:00.000 - Error: 1984"], static: [] })
   })
 
   it("uses the latest value for static fields", () => {

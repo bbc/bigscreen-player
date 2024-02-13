@@ -45,6 +45,8 @@ type StaticEntry = TimestampedMetric | Timestamped<MediaStateUnion>
 type StaticEntryKey = StaticEntry["key"]
 type StaticEntryForKey<Key extends StaticEntryKey> = Extract<StaticEntry, { key: Key }>
 
+type FilterPredicate = (entry: TimestampedEntry) => boolean
+
 function zeroPadHMS(time: number): string {
   return `${time < 10 ? "0" : ""}${time}`
 }
@@ -65,32 +67,12 @@ class DebugViewController {
   public isVisible: boolean = false
 
   private rootElement: HTMLElement
+  private shouldRender: boolean = false
+  private renderInterval: ReturnType<typeof setInterval>
+  private filters: FilterPredicate[] = []
 
   private dynamicEntries: DynamicEntry[] = []
   private latestMetricByKey: Partial<Record<StaticEntryKey, StaticEntry>> = {}
-
-  private shouldRender: boolean = false
-  private renderInterval: ReturnType<typeof setInterval>
-
-  private keepEntry(entry: TimestampedEntry): boolean {
-    const { category } = entry
-
-    if (category !== EntryCategory.TRACE) {
-      return true
-    }
-
-    const { kind, data } = entry
-
-    if (kind !== "event") {
-      return true
-    }
-
-    const { eventType, eventTarget } = data
-
-    // HACK: Filter events presented in the view
-    // Not very robust, should we add typing checks to the event trace's type and target fields?
-    return eventTarget === "MediaElement" && ["paused", "playing", "seeking", "seeked", "waiting"].includes(eventType)
-  }
 
   private isMerged(metric: TimestampedMetric): metric is Timestamped<MetricForKey<MediaStateMetrics>> {
     const { key } = metric
@@ -313,6 +295,10 @@ class DebugViewController {
     })
   }
 
+  public setFilters(filters: FilterPredicate[]): void {
+    this.filters = filters
+  }
+
   public addTime({ currentElementTime, sessionTime }: { currentElementTime: number; sessionTime: number }): void {
     this.cacheTimestamp({ currentElementTime, sessionTime, category: "time" })
 
@@ -321,7 +307,7 @@ class DebugViewController {
 
   public addEntries(entries: History) {
     for (const entry of entries) {
-      if (!this.keepEntry(entry)) {
+      if (!this.filters.every((filter) => filter(entry))) {
         continue
       }
 
