@@ -235,7 +235,7 @@ class DebugViewController {
   } {
     const { key } = entry
 
-    const parsedKey = key.replace("-", " ")
+    const parsedKey = key.replace(/-/g, " ")
     const parsedValue = this.serialiseMetric(entry)
 
     return { id: key, key: parsedKey, value: parsedValue }
