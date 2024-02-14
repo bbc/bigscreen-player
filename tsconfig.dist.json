@@ -4,6 +4,6 @@
   "compilerOptions": {
     "outDir": "./dist/esm",
     "declaration": true,
-    "declarationDir": "./dist/tmp/dts"
+    "declarationDir": "./dist/esm/__tmp/dts"
   }
 }

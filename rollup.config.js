@@ -1,8 +1,8 @@
 import PackageJSON from "./package.json" assert { type: "json" }
 
 import replace from "@rollup/plugin-replace"
+import typescript from "@rollup/plugin-typescript"
 import { dts } from "rollup-plugin-dts"
-import ts from "rollup-plugin-ts"
 
 export default [
   {
@@ -14,13 +14,13 @@ export default [
         preventAssignment: true,
         __VERSION__: () => PackageJSON.version,
       }),
-      ts({
+      typescript({
         tsconfig: "./tsconfig.dist.json",
       }),
     ],
   },
   {
-    input: "./dist/tmp/dts/main.d.ts",
+    input: "./dist/esm/__tmp/dts/main.d.ts",
     output: [{ file: "./dist/esm/main.d.ts", format: "es" }],
     plugins: [dts()],
   },

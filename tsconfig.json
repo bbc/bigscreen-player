@@ -1,12 +1,11 @@
 {
   "compileOnSave": true,
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.js"],
   "compilerOptions": {
     "outDir": "./dist/esm",
     "module": "ESNext",
     "target": "es6",
-    "esModuleInterop": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "allowJs": true,
     "alwaysStrict": true,
