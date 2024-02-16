@@ -258,7 +258,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onQualityChangeRequested(event) {
-    DebugTool.info(`Quality change requested. Reason: ${JSON.stringify(event?.reason)}`)
+    DebugTool.info(
+      `Quality change requested from ${event?.oldQuality} to ${event?.newQuality} . Reason: ${JSON.stringify(
+        event?.reason
+      )}`
+    )
   }
 
   function onQualityChangeRendered(event) {
