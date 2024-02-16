@@ -89,6 +89,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
+    FRAGMENT_LOADING_COMPLETED: "fragmentLoadingCompleted",
+    THROUGHPUT_MEASUREMENT_STORED: 'throughputMeasurementStored'
   }
 
   function onPlaying() {
@@ -265,6 +267,18 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     )
   }
 
+  function onFragmentLoadingCompleted(event) {
+    console.debug(event);
+    DebugTool.keyValue({key: 'avg-throughput', value: mediaPlayer.getAverageThroughput('video')})
+    // Example grabbing fragment header 
+    console.debug(mediaPlayer.getDashMetrics().getLatestFragmentRequestHeaderValueByID('video', 'Cache-Control'))
+  }
+
+  function onThroughputStored(event) {
+    console.debug(event);
+    DebugTool.keyValue({key: 'throughput', value: event?.throughput})
+  }
+
   function onQualityChangeRendered(event) {
     function logBitrate(mediaKind, event) {
       const oldBitrate = isNaN(event.oldQuality)
@@ -432,6 +446,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
     mediaPlayer.on(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
+    mediaPlayer.on(DashJSEvents.FRAGMENT_LOADING_COMPLETED, onFragmentLoadingCompleted)
+    mediaPlayer.on(DashJSEvents.THROUGHPUT_MEASUREMENT_STORED, onThroughputStored)
   }
 
   function getSeekableRange() {
