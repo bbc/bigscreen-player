@@ -80,6 +80,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
     UNSUPPORTED_CODEC: 30,
     MANIFEST_VALIDITY_CHANGED: "manifestValidityChanged",
+    QUALITY_CHANGE_REQUESTED: "qualityChangeRequested",
     QUALITY_CHANGE_RENDERED: "qualityChangeRendered",
     BASE_URL_SELECTED: "baseUrlSelected",
     SERVICE_LOCATION_AVAILABLE: "serviceLocationUnblacklisted",
@@ -256,6 +257,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     return parseInt(bitrateInfoList[index].bitrate / 1000)
   }
 
+  function onQualityChangeRequested(event) {
+    DebugTool.info(`Quality change requested. Reason: ${JSON.stringify(event?.reason)}`)
+  }
+
   function onQualityChangeRendered(event) {
     function logBitrate(mediaKind, event) {
       const oldBitrate = isNaN(event.oldQuality)
@@ -416,6 +421,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
     mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
     mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
+    mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_REQUESTED, onQualityChangeRequested)
     mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
     mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded)
     mediaPlayer.on(DashJSEvents.LOG, onDebugLog)
