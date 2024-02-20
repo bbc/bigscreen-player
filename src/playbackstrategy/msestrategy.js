@@ -180,9 +180,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onQuotaExceeded(event) {
-    // { criticalBufferLevel, quotaExceededTime }
-    // criticalBufferLevel (Total buffered ranges * 0.8) is set BEFORE this event is triggered, therefore it should actually be `criticalBufferLevel * 1.25` to see what it was on the device when this happened.
-    // What else do we need to be reported here?
     const bufferLevel = event.criticalBufferLevel * 1.25
     DebugTool.info(`Quota Exceeded at: ${event.quotaExceededTime}, criticalBufferLevel: ${bufferLevel}`)
     Plugins.interface.onQuotaExceeded({ criticalBufferLevel: bufferLevel, ...event.quotaExceededTime })
