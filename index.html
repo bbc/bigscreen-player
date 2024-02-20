@@ -5,7 +5,6 @@
         <title>bigscreen-player</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
     </head>
-
     <body>
         <script type="module">
             import { BigscreenPlayer } from "./dist-local/esm/main.js"
@@ -29,18 +28,6 @@
             let minimalData = {
                 initialPlaybackTime: 30,
                 media: {
-                    playerSettings: {
-                        streaming: {
-                            fragmentRequestTimeout: 0,
-                            manifestRequestTimeout: 0,
-                            buffer: {
-                                bufferTimeAtTopQualityLongForm: 1000,
-                                stableBufferTime: 12,
-                                initialBufferLevel: 1000,
-                                bufferToKeep: 2000,
-                            },
-                        },
-                    },
                     captions: [],
                     type: "application/dash+xml",
                     mimeType: "video/mp4",
