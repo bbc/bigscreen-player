@@ -88,6 +88,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
+    QUOTA_EXCEEDED: "quotaExceeded",
   }
 
   function onPlaying() {
@@ -176,6 +177,14 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     publishError(event.error)
+  }
+
+  function onQuotaExceeded(event) {
+    // Note: criticalBufferLevel (Total buffered ranges * 0.8) is set BEFORE this event is triggered,
+    // therefore it should actually be `criticalBufferLevel * 1.25` to see what the buffer size was on the device when this happened.
+    const bufferLevel = event.criticalBufferLevel * 1.25
+    DebugTool.info(`Quota Exceeded at: ${event.quotaExceededTime}, criticalBufferLevel: ${bufferLevel}`)
+    Plugins.interface.onQuotaExceeded({ criticalBufferLevel: bufferLevel, ...event.quotaExceededTime })
   }
 
   function manifestDownloadError(mediaError) {
@@ -422,6 +431,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
     mediaPlayer.on(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
+    mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
   }
 
   function getSeekableRange() {
