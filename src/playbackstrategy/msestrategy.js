@@ -184,7 +184,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     // therefore it should actually be `criticalBufferLevel * 1.25` to see what the buffer size was on the device when this happened.
     const bufferLevel = event.criticalBufferLevel * 1.25
     DebugTool.info(`Quota Exceeded at: ${event.quotaExceededTime}, criticalBufferLevel: ${bufferLevel}`)
-    Plugins.interface.onQuotaExceeded({ criticalBufferLevel: bufferLevel, ...event.quotaExceededTime })
+    Plugins.interface.onQuotaExceeded({ criticalBufferLevel: bufferLevel, quotaExceededTime: event.quotaExceededTime })
   }
 
   function manifestDownloadError(mediaError) {
