@@ -25,6 +25,7 @@ interface DebugTool {
   error(...parts: any[]): void
   event(eventType: string): void
   gap(from: number, to: number): void
+  quotaExceeded(bufferLevel: number, time: number): void
   info(...parts: any[]): void
   statechange(value: MediaState): void
   warn(...parts: any[]): void
@@ -133,6 +134,10 @@ function DebugTool() {
     chronicle.trace("gap", { from, to })
   }
 
+  function quotaExceeded(bufferLevel: number, time: number): void {
+    chronicle.trace("quotaExceeded", { bufferLevel, time })
+  }
+
   function info(...parts: any[]) {
     if (currentLogLevel < LogLevels.INFO) {
       return
@@ -209,6 +214,7 @@ function DebugTool() {
     error,
     event,
     gap,
+    quotaExceeded,
     info,
     statechange,
     warn,
