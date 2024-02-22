@@ -28,7 +28,7 @@ export function isCompressed(compressed: string): boolean {
  * Chronicle Log.
  */
 export function compress(chronicle: TimestampedEntry[]): string {
-  const tail = chronicle.slice(-500)
+  const tail = chronicle.slice(-100)
   return JSON.stringify(tail, undefined, 0)
 }
 
