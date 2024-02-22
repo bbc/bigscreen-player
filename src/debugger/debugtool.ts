@@ -135,7 +135,7 @@ function DebugTool() {
   }
 
   function quotaExceeded(bufferLevel: number, time: number): void {
-    chronicle.trace("quotaExceeded", { bufferLevel, time })
+    chronicle.trace("quota-exceeded", { bufferLevel, time })
   }
 
   function info(...parts: any[]) {

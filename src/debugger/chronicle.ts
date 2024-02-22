@@ -41,7 +41,7 @@ export type Trace = { category: EntryCategory.TRACE } & (
   | { kind: "error"; data: { name?: string; message: string } }
   | { kind: "event"; data: { eventType: string; eventTarget: string } }
   | { kind: "gap"; data: { from: number; to: number } }
-  | { kind: "quotaExceeded"; data: { bufferLevel: number; time: number } }
+  | { kind: "quota-exceeded"; data: { bufferLevel: number; time: number } }
   | { kind: "session-start"; data: number }
   | { kind: "session-end"; data: number }
   | { kind: "state-change"; data: MediaState }
