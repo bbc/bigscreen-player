@@ -238,13 +238,12 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DebugTool.gap(seekTime - duration, seekTime)
   }
 
-  // TODO:: Make Structured
   function onQuotaExceeded(event) {
     // Note: criticalBufferLevel (Total buffered ranges * 0.8) is set BEFORE this event is triggered,
     // therefore it should actually be `criticalBufferLevel * 1.25` to see what the buffer size was on the device when this happened.
     const bufferLevel = event.criticalBufferLevel * 1.25
     DebugTool.quotaExceeded(bufferLevel, event.quotaExceededTime)
-    Plugins.interface.onQuotaExceeded({ criticalBufferLevel: bufferLevel, ...event.quotaExceededTime })
+    Plugins.interface.onQuotaExceeded({ criticalBufferLevel: bufferLevel, quotaExceededTime: event.quotaExceededTime })
   }
 
   function manifestDownloadError(mediaError) {
