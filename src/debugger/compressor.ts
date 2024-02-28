@@ -20,17 +20,12 @@ export function isCompressed(compressed: string): boolean {
  * for transfer over a network. This function is WIP and, although
  * callable, does not actually do much compression.
  *
- * The Last 500 entries are taken, along with select "interesting"
- * entries from the preceding part of the log, this is then combined
- * and JSON.stringified.
+ * The Last 100 entries are taken for now.
  * @param entries The Chronicle Log to compress
  * @returns A string representing the compressed form of the given
  * Chronicle Log.
  */
-export function compress(chronicle: TimestampedEntry[]): string {
-  const tail = chronicle.slice(-100)
-  return JSON.stringify(tail, undefined, 0)
-}
+export const compress = (chronicle: TimestampedEntry[]): TimestampedEntry[] => chronicle.slice(-100)
 
 /**
  * Produces a Chronicle Log Array from a string previously compressed
