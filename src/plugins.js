@@ -48,6 +48,7 @@ export default {
     onSubtitlesRenderError: (evt) => callOnAllPlugins("onSubtitlesRenderError", evt),
     onSubtitlesDynamicLoadError: (evt) => callOnAllPlugins("onSubtitlesDynamicLoadError", evt),
     onFragmentContentLengthMismatch: (evt) => callOnAllPlugins("onFragmentContentLengthMismatch", evt),
+    onFragmentLoadingCompleted: (evt) => callOnAllPlugins("onFragmentLoadingCompleted", evt),
     onQuotaExceeded: (evt) => callOnAllPlugins("onQuotaExceeded", evt),
   },
 }

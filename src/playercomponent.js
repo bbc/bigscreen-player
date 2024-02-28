@@ -94,6 +94,10 @@ function PlayerComponent(
     return playbackStrategy && playbackStrategy.getCurrentTime()
   }
 
+  function getDashMetrics() {
+    return playbackStrategy && playbackStrategy.getDashMetrics()
+  }
+
   function getSeekableRange() {
     return playbackStrategy && playbackStrategy.getSeekableRange()
   }
@@ -399,6 +403,7 @@ function PlayerComponent(
     isEnded,
     setPlaybackRate,
     getPlaybackRate,
+    getDashMetrics,
     setCurrentTime,
     getCurrentTime,
     getDuration,

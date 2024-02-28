@@ -383,6 +383,8 @@ function BigscreenPlayer() {
      */
     getSeekableRange: () => (playerComponent ? playerComponent.getSeekableRange() : {}),
 
+    getDashMetrics: () => (playerComponent ? playerComponent.getDashMetrics() : null),
+
     /**
      * @function
      * @returns {boolean} Returns true if media is initialised and playing a live stream within a tolerance of the end of the seekable range (10 seconds).

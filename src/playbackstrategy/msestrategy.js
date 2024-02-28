@@ -87,6 +87,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
+    FRAGMENT_LOADING_COMPLETED: "fragmentLoadingCompleted",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
     QUOTA_EXCEEDED: "quotaExceeded",
   }
@@ -341,6 +342,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DebugTool.verbose(event.message)
   }
 
+  function onFragmentLoadingCompleted (event) {
+    console.debug(event)
+    Plugins.interface.onFragmentLoadingCompleted(event)
+  }
+
   function onFragmentContentLengthMismatch(event) {
     DebugTool.info(`Fragment Content Length Mismatch: ${event.responseUrl} (${event.mediaType})`)
     DebugTool.info(`Header Length ${event.headerLength}`)
@@ -431,6 +437,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
     mediaPlayer.on(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
+    mediaPlayer.on(DashJSEvents.FRAGMENT_LOADING_COMPLETED, onFragmentLoadingCompleted)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
   }
 
@@ -593,6 +600,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       }
     },
     play: () => mediaPlayer.play(),
+    getDashMetrics: () => mediaPlayer.getDashMetrics(),
     setCurrentTime: (time) => {
       publishedSeekEvent = false
       isSeeking = true
