@@ -182,7 +182,7 @@ class Chronicle {
   public retrieve(): Timestamped<Entry>[] {
     const metrics = getValues(this.metrics).reduce(concatArrays, [])
 
-    return [...this.messages, ...this.traces, ...metrics].sort(sortEntries) as Timestamped<Entry>[]
+    return [...this.traces, ...metrics, ...this.messages].sort(sortEntries) as Timestamped<Entry>[]
   }
 
   public size(): number {
