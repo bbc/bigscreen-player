@@ -35,7 +35,7 @@ describe("Chronicle", () => {
       category: EntryCategory.METRIC,
       currentElementTime: 0,
       sessionTime: 0,
-      key: "ready-state",
+      kind: "ready-state",
       data: 0,
     })
 
@@ -68,7 +68,7 @@ describe("Chronicle", () => {
       category: EntryCategory.METRIC,
       currentElementTime: 0,
       sessionTime: 0,
-      key: "ready-state",
+      kind: "ready-state",
       data: 0,
     })
   })
@@ -79,7 +79,7 @@ describe("Chronicle", () => {
     chronicle.appendMetric("ready-state", 1)
 
     expect(chronicle.retrieve()).toEqual([
-      { category: EntryCategory.METRIC, currentElementTime: 0, sessionTime: 0, key: "ready-state", data: 1 },
+      { category: EntryCategory.METRIC, currentElementTime: 0, sessionTime: 0, kind: "ready-state", data: 1 },
     ])
   })
 
@@ -91,7 +91,7 @@ describe("Chronicle", () => {
     chronicle.appendMetric("bitrate", 16)
 
     expect(chronicle.retrieve()).toEqual([
-      { category: EntryCategory.METRIC, currentElementTime: 32, sessionTime: 0, key: "bitrate", data: 16 },
+      { category: EntryCategory.METRIC, currentElementTime: 32, sessionTime: 0, kind: "bitrate", data: 16 },
     ])
   })
 
@@ -103,7 +103,7 @@ describe("Chronicle", () => {
     chronicle.appendMetric("duration", 300)
 
     expect(chronicle.retrieve()).toEqual([
-      { category: EntryCategory.METRIC, currentElementTime: 0, sessionTime: 2345, key: "duration", data: 300 },
+      { category: EntryCategory.METRIC, currentElementTime: 0, sessionTime: 2345, kind: "duration", data: 300 },
     ])
   })
 
@@ -123,13 +123,13 @@ describe("Chronicle", () => {
       chronicle.appendMetric("ready-state", 4)
 
       expect(chronicle.retrieve()).toEqual([
-        expect.objectContaining({ key: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
-        expect.objectContaining({ key: "ready-state", data: 1, sessionTime: 2345, currentElementTime: 0 }),
-        expect.objectContaining({ key: "ready-state", data: 4, sessionTime: 2345 + 3456, currentElementTime: 0.3 }),
+        expect.objectContaining({ kind: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
+        expect.objectContaining({ kind: "ready-state", data: 1, sessionTime: 2345, currentElementTime: 0 }),
+        expect.objectContaining({ kind: "ready-state", data: 4, sessionTime: 2345 + 3456, currentElementTime: 0.3 }),
       ])
 
       expect(chronicle.getLatestMetric("ready-state")).toMatchObject({
-        key: "ready-state",
+        kind: "ready-state",
         data: 4,
       })
     })
@@ -149,12 +149,12 @@ describe("Chronicle", () => {
       chronicle.appendMetric("ready-state", 1)
 
       expect(chronicle.retrieve()).toEqual([
-        expect.objectContaining({ key: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
-        expect.objectContaining({ key: "ready-state", data: 1, sessionTime: 2345 + 3456, currentElementTime: 0.3 }),
+        expect.objectContaining({ kind: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
+        expect.objectContaining({ kind: "ready-state", data: 1, sessionTime: 2345 + 3456, currentElementTime: 0.3 }),
       ])
 
       expect(chronicle.getLatestMetric("ready-state")).toMatchObject({
-        key: "ready-state",
+        kind: "ready-state",
         data: 1,
       })
     })
@@ -174,9 +174,9 @@ describe("Chronicle", () => {
       chronicle.appendMetric("representation-audio", [1, 128])
 
       expect(chronicle.retrieve()).toEqual([
-        expect.objectContaining({ key: "representation-audio", data: [0, 67], sessionTime: 0, currentElementTime: 0 }),
+        expect.objectContaining({ kind: "representation-audio", data: [0, 67], sessionTime: 0, currentElementTime: 0 }),
         expect.objectContaining({
-          key: "representation-audio",
+          kind: "representation-audio",
           data: [1, 128],
           sessionTime: 2345 + 3456,
           currentElementTime: 0.3,
@@ -184,7 +184,7 @@ describe("Chronicle", () => {
       ])
 
       expect(chronicle.getLatestMetric("representation-audio")).toMatchObject({
-        key: "representation-audio",
+        kind: "representation-audio",
         data: [1, 128],
       })
     })
@@ -193,9 +193,9 @@ describe("Chronicle", () => {
       ["boolean", "ended", true],
       ["number", "frames-dropped", 0],
       ["string", "current-url", "mock://fake.url/"],
-    ] as const)("accepts a value of type %s as a metric", (_, key, value) => {
+    ] as const)("accepts a value of type %s as a metric", (_, kind, value) => {
       const chronicle = new Chronicle()
-      const code = () => chronicle.appendMetric(key, value)
+      const code = () => chronicle.appendMetric(kind, value)
 
       expect(code).not.toThrow()
     })
@@ -253,11 +253,11 @@ describe("Chronicle", () => {
       chronicle.setMetric("buffer-length", 5)
 
       expect(chronicle.retrieve()).toEqual([
-        expect.objectContaining({ key: "buffer-length", data: 5, sessionTime: 1234, currentElementTime: 0 }),
+        expect.objectContaining({ kind: "buffer-length", data: 5, sessionTime: 1234, currentElementTime: 0 }),
       ])
 
       expect(chronicle.getLatestMetric("buffer-length")).toMatchObject({
-        key: "buffer-length",
+        kind: "buffer-length",
         data: 5,
       })
     })
@@ -266,10 +266,10 @@ describe("Chronicle", () => {
       ["boolean", "ended", true],
       ["number", "frames-dropped", 0],
       ["string", "current-url", "mock://fake.url/"],
-    ] as const)("accepts a value of type %s as a metric", (_, key, value) => {
+    ] as const)("accepts a value of type %s as a metric", (_, kind, value) => {
       const chronicle = new Chronicle()
 
-      const code = () => chronicle.setMetric(key, value)
+      const code = () => chronicle.setMetric(kind, value)
 
       expect(code).not.toThrow()
     })
@@ -331,9 +331,9 @@ describe("Chronicle", () => {
     chronicle.setMetric("buffer-length", 5)
 
     expect(chronicle.retrieve()).toEqual([
-      expect.objectContaining({ key: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
-      expect.objectContaining({ key: "ready-state", data: 1, sessionTime: 1234, currentElementTime: 0.3 }),
-      expect.objectContaining({ key: "buffer-length", data: 5, sessionTime: 1234, currentElementTime: 0.3 }),
+      expect.objectContaining({ kind: "ready-state", data: 0, sessionTime: 0, currentElementTime: 0 }),
+      expect.objectContaining({ kind: "ready-state", data: 1, sessionTime: 1234, currentElementTime: 0.3 }),
+      expect.objectContaining({ kind: "buffer-length", data: 5, sessionTime: 1234, currentElementTime: 0.3 }),
     ])
   })
 
@@ -361,7 +361,7 @@ describe("Chronicle", () => {
     expect(chronicle.retrieve()).toEqual([
       {
         category: EntryCategory.MESSAGE,
-        level: "debug",
+        kind: "debug",
         data: "👾",
         sessionTime: 0,
         currentElementTime: 0,
@@ -377,7 +377,7 @@ describe("Chronicle", () => {
     expect(chronicle.retrieve()).toEqual([
       {
         category: EntryCategory.MESSAGE,
-        level: "info",
+        kind: "info",
         data: "🧐",
         sessionTime: 0,
         currentElementTime: 0,
@@ -393,7 +393,7 @@ describe("Chronicle", () => {
     expect(chronicle.retrieve()).toEqual([
       {
         category: EntryCategory.MESSAGE,
-        level: "warning",
+        kind: "warning",
         data: "😱",
         sessionTime: 0,
         currentElementTime: 0,

@@ -1,6 +1,6 @@
 import { MediaState } from "../models/mediastate"
 import { MediaKinds } from "../models/mediakinds"
-import Chronicle, { History, MetricForKey, MetricKey, TimestampedEntry, isTrace } from "./chronicle"
+import Chronicle, { MetricForKind, MetricKind, TimestampedEntry, isTrace } from "./chronicle"
 import DebugViewController from "./debugviewcontroller"
 
 export const LogLevels = {
@@ -15,7 +15,7 @@ type LogLevel = (typeof LogLevels)[keyof typeof LogLevels]
 interface DebugTool {
   init(): void
   tearDown(): void
-  getDebugLogs(): History
+  getDebugLogs(): TimestampedEntry[]
   setLogLevel(level: LogLevel | undefined): void
   updateElementTime(seconds: number): void
   // chronicle
@@ -23,14 +23,14 @@ interface DebugTool {
   buffered(kind: MediaKinds, buffered: [start: number, end: number][]): void
   debug(...parts: any[]): void
   error(...parts: any[]): void
-  event(eventType: string): void
+  event(eventType: string, eventTarget?: string): void
   gap(from: number, to: number): void
   quotaExceeded(bufferLevel: number, time: number): void
   info(...parts: any[]): void
   statechange(value: MediaState): void
   warn(...parts: any[]): void
-  dynamicMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
-  staticMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]): void
+  dynamicMetric<Kind extends MetricKind>(kind: Kind, data: MetricForKind<Kind>["data"]): void
+  staticMetric<Kind extends MetricKind>(key: Kind, data: MetricForKind<Kind>["data"]): void
   // view
   hide(): void
   show(): void
@@ -158,12 +158,12 @@ function DebugTool() {
     chronicle.warn(parts.join(" "))
   }
 
-  function dynamicMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
-    chronicle.appendMetric(key, data)
+  function dynamicMetric<Kind extends MetricKind>(kind: Kind, data: MetricForKind<Kind>["data"]) {
+    chronicle.appendMetric(kind, data)
   }
 
-  function staticMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
-    chronicle.setMetric(key, data)
+  function staticMetric<Kind extends MetricKind>(kind: Kind, data: MetricForKind<Kind>["data"]) {
+    chronicle.setMetric(kind, data)
   }
 
   function handleHistoryUpdate(change: TimestampedEntry) {

@@ -3,10 +3,9 @@ import getValues from "../utils/get-values"
 import { Extends } from "../utils/types"
 import {
   EntryCategory,
-  History,
   Message,
-  MetricForKey,
-  MetricKey,
+  MetricForKind,
+  MetricKind,
   Timestamped,
   TimestampedEntry,
   TimestampedMessage,
@@ -30,20 +29,20 @@ const DYNAMIC_ENTRY_LIMIT = 29 as const
 
 type Timestamp = Timestamped<{ category: "time" }>
 
-type MetricUnion<UnionKey extends string, MergedKeys extends MetricKey> = {
+type MetricUnion<UnionKind extends string, MergedKind extends MetricKind> = {
   category: "union"
-  key: UnionKey
-  data: { [Key in MergedKeys]?: MetricForKey<Key>["data"] }
+  kind: UnionKind
+  data: { [Kind in MergedKind]?: MetricForKind<Kind>["data"] }
 }
 
-type MediaStateMetrics = Extends<MetricKey, "ended" | "paused" | "ready-state" | "seeking">
+type MediaStateMetrics = Extends<MetricKind, "ended" | "paused" | "ready-state" | "seeking">
 type MediaStateUnion = MetricUnion<"media-element-state", MediaStateMetrics>
 
 type DynamicEntry = TimestampedMessage | TimestampedTrace | Timestamp
 
 type StaticEntry = TimestampedMetric | Timestamped<MediaStateUnion>
-type StaticEntryKey = StaticEntry["key"]
-type StaticEntryForKey<Key extends StaticEntryKey> = Extract<StaticEntry, { key: Key }>
+type StaticEntryKind = StaticEntry["kind"]
+type StaticEntryForKind<Kind extends StaticEntryKind> = Extract<StaticEntry, { kind: Kind }>
 
 type FilterPredicate = (entry: TimestampedEntry) => boolean
 
@@ -72,30 +71,30 @@ class DebugViewController {
   private filters: FilterPredicate[] = []
 
   private dynamicEntries: DynamicEntry[] = []
-  private latestMetricByKey: Partial<Record<StaticEntryKey, StaticEntry>> = {}
+  private latestMetricByKey: Partial<Record<StaticEntryKind, StaticEntry>> = {}
 
-  private isMerged(metric: TimestampedMetric): metric is Timestamped<MetricForKey<MediaStateMetrics>> {
-    const { key } = metric
+  private isMerged(metric: TimestampedMetric): metric is Timestamped<MetricForKind<MediaStateMetrics>> {
+    const { kind } = metric
     const mediaStateMetrics = ["ended", "paused", "ready-state", "seeking"]
 
-    return mediaStateMetrics.includes(key)
+    return mediaStateMetrics.includes(kind)
   }
 
-  private mergeMediaState<Key extends MediaStateMetrics>(
-    entry: Timestamped<MetricForKey<Key>>
+  private mergeMediaState<Kind extends MediaStateMetrics>(
+    entry: Timestamped<MetricForKind<Kind>>
   ): Timestamped<MediaStateUnion> {
     const prevData =
       this.latestMetricByKey["media-element-state"] == null
         ? {}
-        : (this.latestMetricByKey["media-element-state"] as StaticEntryForKey<"media-element-state">).data
+        : (this.latestMetricByKey["media-element-state"] as StaticEntryForKind<"media-element-state">).data
 
-    const { key, data } = entry as TimestampedMetric
+    const { kind, data } = entry as TimestampedMetric
 
     return {
       ...entry,
       category: "union",
-      key: "media-element-state",
-      data: { ...prevData, [key]: data },
+      kind: "media-element-state",
+      data: { ...prevData, [kind]: data },
     }
   }
 
@@ -120,13 +119,13 @@ class DebugViewController {
   }
 
   private cacheStaticEntry(entry: StaticEntry): void {
-    const latestSessionTimeSoFar = this.latestMetricByKey[entry.key]?.sessionTime
+    const latestSessionTimeSoFar = this.latestMetricByKey[entry.kind]?.sessionTime
 
     if (typeof latestSessionTimeSoFar === "number" && latestSessionTimeSoFar > entry.sessionTime) {
       return
     }
 
-    this.latestMetricByKey[entry.key] = entry
+    this.latestMetricByKey[entry.kind] = entry
   }
 
   private cacheDynamicEntry(entry: DynamicEntry): void {
@@ -180,9 +179,9 @@ class DebugViewController {
   }
 
   private serialiseMessage(message: Message): string {
-    const { level, data } = message
+    const { kind, data } = message
 
-    switch (level) {
+    switch (kind) {
       case "debug":
         return `Debug: ${data}`
 
@@ -193,7 +192,7 @@ class DebugViewController {
         return `Warning: ${data}`
 
       default:
-        throw new TypeError(`Unrecognised message level '${level}'`)
+        throw new TypeError(`Unrecognised message level '${kind}'`)
     }
   }
 
@@ -233,20 +232,20 @@ class DebugViewController {
     key: string
     value: boolean | number | string
   } {
-    const { key } = entry
+    const { kind } = entry
 
-    const parsedKey = key.replace(/-/g, " ")
+    const parsedKey = kind.replace(/-/g, " ")
     const parsedValue = this.serialiseMetric(entry)
 
-    return { id: key, key: parsedKey, value: parsedValue }
+    return { id: kind, key: parsedKey, value: parsedValue }
   }
 
-  private serialiseMetric({ key, data }: StaticEntry): boolean | number | string {
+  private serialiseMetric({ kind, data }: StaticEntry): boolean | number | string {
     if (typeof data !== "object") {
       return data
     }
 
-    if (key === "media-element-state") {
+    if (kind === "media-element-state") {
       const parts: string[] = []
       const isWaiting = typeof data["ready-state"] === "number" && data["ready-state"] <= 2
 
@@ -273,13 +272,13 @@ class DebugViewController {
       return parts.join(", ")
     }
 
-    if (key === "seekable-range") {
-      const [start, end] = data as MetricForKey<"seekable-range">["data"]
+    if (kind === "seekable-range") {
+      const [start, end] = data as MetricForKind<"seekable-range">["data"]
 
       return `${formatDate(new Date(start))} - ${formatDate(new Date(end))}`
     }
 
-    if (key === "representation-audio" || key === "representation-video") {
+    if (kind === "representation-audio" || kind === "representation-video") {
       const [qualityIndex, bitrate] = data
 
       return `${qualityIndex} (${bitrate} kbps)`
@@ -305,7 +304,7 @@ class DebugViewController {
     this.shouldRender = true
   }
 
-  public addEntries(entries: History) {
+  public addEntries(entries: TimestampedEntry[]) {
     for (const entry of entries) {
       if (!this.filters.every((filter) => filter(entry))) {
         continue

@@ -1,4 +1,4 @@
-import Chronicle, { History, isMessage, isMetric } from "./chronicle"
+import Chronicle, { TimestampedEntry } from "./chronicle"
 import ViewController from "./debugviewcontroller"
 import DebugView from "./debugview"
 
@@ -231,7 +231,8 @@ describe("Debug View", () => {
     const controller = new ViewController()
     controller.showView()
 
-    const badUpdate = () => controller.addEntries([{ type: "bad-type", nefarious: "purpose" }] as unknown as History)
+    const badUpdate = () =>
+      controller.addEntries([{ type: "bad-type", nefarious: "purpose" } as unknown as TimestampedEntry])
 
     expect(badUpdate).toThrow(TypeError)
   })
@@ -239,10 +240,7 @@ describe("Debug View", () => {
   it("keep entries matching the filters", () => {
     const controller = new ViewController()
 
-    controller.setFilters([
-      (entry) => !isMetric(entry) || entry.key !== "frames-dropped",
-      (entry) => !isMessage(entry) || entry.level !== "debug",
-    ])
+    controller.setFilters([(entry) => entry.kind !== "frames-dropped", (entry) => entry.kind !== "debug"])
 
     const chronicle = new Chronicle()
 

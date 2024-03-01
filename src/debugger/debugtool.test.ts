@@ -136,7 +136,7 @@ describe("Debug Tool", () => {
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ level: "debug", data: "Detailed information" }),
+        expect.objectContaining({ kind: "debug", data: "Detailed information" }),
       ])
     })
   })
@@ -179,7 +179,7 @@ describe("Debug Tool", () => {
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ level: "info", data: "Hello World" }),
+        expect.objectContaining({ kind: "info", data: "Hello World" }),
       ])
     })
   })
@@ -192,7 +192,7 @@ describe("Debug Tool", () => {
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ level: "warning", data: "you're using a deprecated thingie!" }),
+        expect.objectContaining({ kind: "warning", data: "you're using a deprecated thingie!" }),
       ])
     })
   })
@@ -207,9 +207,9 @@ describe("Debug Tool", () => {
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ key: "bitrate", data: 1000 }),
-        expect.objectContaining({ key: "seeking", data: true }),
-        expect.objectContaining({ key: "seeking", data: false }),
+        expect.objectContaining({ kind: "bitrate", data: 1000 }),
+        expect.objectContaining({ kind: "seeking", data: true }),
+        expect.objectContaining({ kind: "seeking", data: false }),
       ])
     })
   })

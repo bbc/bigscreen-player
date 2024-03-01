@@ -8,71 +8,107 @@ export enum EntryCategory {
   TRACE = "trace",
 }
 
-type InfoMessage = { level: "info"; data: string }
-type WarningMessage = { level: "warning"; data: string }
-type DebugMessage = { level: "debug"; data: string }
+type CreateMessage<Kind extends string> = {
+  category: EntryCategory.MESSAGE
+  kind: Kind
+  data: string
+}
 
-export type Message = { category: EntryCategory.MESSAGE } & (InfoMessage | WarningMessage | DebugMessage)
+type InfoMessage = CreateMessage<"info">
+type WarningMessage = CreateMessage<"warning">
+type DebugMessage = CreateMessage<"debug">
 
-export type Metric = { category: EntryCategory.METRIC } & (
-  | { key: "auto-resume"; data: number }
-  | { key: "bitrate"; data: number }
-  | { key: "buffer-length"; data: number }
-  | { key: "ended"; data: HTMLMediaElement["ended"] }
-  | { key: "ready-state"; data: HTMLMediaElement["readyState"] }
-  | { key: "cdns-available"; data: string[] }
-  | { key: "current-url"; data: string }
-  | { key: "duration"; data: number }
-  | { key: "frames-dropped"; data: number }
-  | { key: "initial-playback-time"; data: number }
-  | { key: "paused"; data: HTMLMediaElement["paused"] }
-  | { key: "representation-audio"; data: [qualityIndex: number, bitrate: number] }
-  | { key: "representation-video"; data: [qualityIndex: number, bitrate: number] }
-  | { key: "seekable-range"; data: [start: number, end: number] }
-  | { key: "seeking"; data: HTMLMediaElement["seeking"] }
-  | { key: "strategy"; data: string }
-  | { key: "subtitle-cdns-available"; data: string[] }
-  | { key: "subtitle-current-url"; data: string }
-  | { key: "version"; data: string }
-)
+export type Message = InfoMessage | WarningMessage | DebugMessage
 
-export type Trace = { category: EntryCategory.TRACE } & (
-  | { kind: "buffered-ranges"; data: { kind: MediaKinds; buffered: [start: number, end: number][] } }
-  | { kind: "error"; data: { name?: string; message: string } }
-  | { kind: "event"; data: { eventType: string; eventTarget: string } }
-  | { kind: "gap"; data: { from: number; to: number } }
-  | { kind: "quota-exceeded"; data: { bufferLevel: number; time: number } }
-  | { kind: "session-start"; data: number }
-  | { kind: "session-end"; data: number }
-  | { kind: "state-change"; data: MediaState }
-)
+export type MessageKind = Message["kind"]
+export type MessageForKind<Kind extends MessageKind> = Extract<Message, { kind: Kind }>
+export type MessageLike = CreateMessage<string>
+
+type Primitive = string | number | bigint | boolean
+type Primitives = Primitive | Primitive[] | Primitives[]
+
+type CreateMetric<Kind extends string, Data extends Primitives> = {
+  category: EntryCategory.METRIC
+  kind: Kind
+  data: Data
+}
+
+type AutoResume = CreateMetric<"auto-resume", number>
+type BitRate = CreateMetric<"bitrate", number>
+type BufferLength = CreateMetric<"buffer-length", number>
+type CDNsAvailable = CreateMetric<"cdns-available", string[]>
+type CurrentUrl = CreateMetric<"current-url", string>
+type Duration = CreateMetric<"duration", number>
+type FramesDropped = CreateMetric<"frames-dropped", number>
+type InitialPlaybackTime = CreateMetric<"initial-playback-time", number>
+type MediaElementEnded = CreateMetric<"ended", HTMLMediaElement["ended"]>
+type MediaElementPaused = CreateMetric<"paused", HTMLMediaElement["paused"]>
+type MediaElementReadyState = CreateMetric<"ready-state", HTMLMediaElement["readyState"]>
+type MediaElementSeeking = CreateMetric<"seeking", HTMLMediaElement["seeking"]>
+type PlaybackStrategy = CreateMetric<"strategy", string>
+type RepresentationAudio = CreateMetric<"representation-audio", [qualityIndex: number, bitrate: number]>
+type RepresentationVideo = CreateMetric<"representation-video", [qualityIndex: number, bitrate: number]>
+type SeekableRange = CreateMetric<"seekable-range", [start: number, end: number]>
+type SubtitleCDNsAvailable = CreateMetric<"subtitle-cdns-available", string[]>
+type SubtitleCurrentUrl = CreateMetric<"subtitle-current-url", string>
+type Version = CreateMetric<"version", string>
+
+export type Metric =
+  | AutoResume
+  | BitRate
+  | BufferLength
+  | CDNsAvailable
+  | CurrentUrl
+  | Duration
+  | FramesDropped
+  | InitialPlaybackTime
+  | MediaElementEnded
+  | MediaElementPaused
+  | MediaElementReadyState
+  | MediaElementSeeking
+  | PlaybackStrategy
+  | RepresentationAudio
+  | RepresentationVideo
+  | SeekableRange
+  | SubtitleCDNsAvailable
+  | SubtitleCurrentUrl
+  | Version
+
+export type MetricKind = Metric["kind"]
+export type MetricForKind<Kind extends MetricKind> = Extract<Metric, { kind: Kind }>
+export type MetricLike = CreateMetric<string, Primitives>
+
+type CreateTrace<Kind extends string, Data extends Primitives | Record<string, Primitives>> = {
+  category: EntryCategory.TRACE
+  kind: Kind
+  data: Data
+}
+
+type BufferedRanges = CreateTrace<"buffered-ranges", { kind: MediaKinds; buffered: [start: number, end: number][] }>
+type Error = CreateTrace<"error", { name?: string; message: string }>
+type Event = CreateTrace<"event", { eventType: string; eventTarget: string }>
+type Gap = CreateTrace<"gap", { from: number; to: number }>
+type QuotaExceeded = CreateTrace<"quota-exceeded", { bufferLevel: number; time: number }>
+type SessionStart = CreateTrace<"session-start", number>
+type SessionEnd = CreateTrace<"session-end", number>
+type StateChange = CreateTrace<"state-change", MediaState>
+
+export type Trace = BufferedRanges | Error | Event | Gap | QuotaExceeded | SessionStart | SessionEnd | StateChange
+
+export type TraceKind = Trace["kind"]
+export type TraceForKind<Kind extends TraceKind> = Extract<Trace, { kind: Kind }>
+export type TraceLike = CreateTrace<string, Primitives | Record<string, Primitives>>
 
 export type Entry = Message | Metric | Trace
-
-export type MessageLevel = Message["level"]
-export type MetricKey = Metric["key"]
-export type TraceKind = Trace["kind"]
+export type EntryKind = Entry["kind"]
 
 export type Timestamped<Category> = { currentElementTime: number; sessionTime: number } & Category
 export type TimestampedEntry = Timestamped<Entry>
-export type History = TimestampedEntry[]
 export type TimestampedMetric = Timestamped<Metric>
 export type TimestampedMessage = Timestamped<Message>
 export type TimestampedTrace = Timestamped<Trace>
 
-export type MessageForLevel<Level extends MessageLevel> = Extract<Message, { level: Level }>
-export type MetricForKey<Key extends MetricKey> = Extract<Metric, { key: Key }>
-export type TraceForKind<Kind extends TraceKind> = Extract<Trace, { kind: Kind }>
-
-export type EntrySelector = MessageLevel | MetricKey | TraceKind
-export type EntryForSelector<Selector extends EntrySelector> = Selector extends MessageLevel
-  ? MessageForLevel<Selector>
-  : Selector extends MetricKey
-    ? MetricForKey<Selector>
-    : Selector extends TraceKind
-      ? TraceForKind<Selector>
-      : never
-export type TimestampedEntryForSelector<Selector extends EntrySelector> = Timestamped<EntryForSelector<Selector>>
+export type EntryForKind<Kind extends EntryKind> = Extract<Entry, { kind: Kind }>
 
 export const isMessage = <E extends Entry | TimestampedEntry, T extends E extends Entry ? Message : TimestampedMessage>(
   entry: E
@@ -128,7 +164,7 @@ class Chronicle {
   private currentElementTime: number = 0
 
   private messages: Timestamped<Message>[] = []
-  private metrics: { [Key in MetricKey]?: Timestamped<MetricForKey<Key>>[] } = {}
+  private metrics: { [Kind in MetricKind]?: Timestamped<MetricForKind<Kind>>[] } = {}
   private traces: Timestamped<Trace>[] = []
   private listeners: { [Type in EventTypes]: EventListenerForType<Type>[] } = { update: [], timeupdate: [] }
 
@@ -193,60 +229,60 @@ class Chronicle {
     )
   }
 
-  public appendMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
+  public appendMetric<Kind extends MetricKind>(kind: Kind, data: MetricForKind<Kind>["data"]) {
     if (!isValid(data)) {
       throw new TypeError(
         `A metric value can only be a primitive type, or an array of any depth containing primitive types. Got ${typeof data}`
       )
     }
 
-    const latest = this.getLatestMetric(key)
+    const latest = this.getLatestMetric(kind)
 
     if (latest && isEqual(latest.data, data)) {
       return
     }
 
-    if (this.metrics[key] == null) {
-      this.metrics[key] = []
+    if (this.metrics[kind] == null) {
+      this.metrics[kind] = []
     }
 
-    const metricsForKey = this.metrics[key] as Timestamped<MetricForKey<Key>>[]
+    const metricsForKey = this.metrics[kind] as Timestamped<MetricForKind<Kind>>[]
 
     if (metricsForKey.length + 1 === METRIC_ENTRY_THRESHOLD) {
       this.warn(
-        `Metric ${key} exceeded ${METRIC_ENTRY_THRESHOLD}. Consider a more selective sample, or not storing history.`
+        `Metric ${kind} exceeded ${METRIC_ENTRY_THRESHOLD}. Consider a more selective sample, or not storing history.`
       )
     }
 
-    const metric = this.timestamp({ key, data, category: EntryCategory.METRIC } as MetricForKey<Key>)
+    const metric = this.timestamp({ kind, data, category: EntryCategory.METRIC } as MetricForKind<Kind>)
 
     metricsForKey.push(metric)
 
     this.triggerUpdate(metric)
   }
 
-  public setMetric<Key extends MetricKey>(key: Key, data: MetricForKey<Key>["data"]) {
-    this.metrics[key] = []
+  public setMetric<Kind extends MetricKind>(kind: Kind, data: MetricForKind<Kind>["data"]) {
+    this.metrics[kind] = []
 
-    this.appendMetric(key, data)
+    this.appendMetric(kind, data)
   }
 
-  public getLatestMetric<Key extends MetricKey>(key: Key): MetricForKey<Key> | null {
-    if (!this.metrics[key]?.length) {
+  public getLatestMetric<Kind extends MetricKind>(kind: Kind): MetricForKind<Kind> | null {
+    if (!this.metrics[kind]?.length) {
       return null
     }
 
-    const metricsForKey = this.metrics[key] as Timestamped<MetricForKey<Key>>[]
+    const metricsForKey = this.metrics[kind] as Timestamped<MetricForKind<Kind>>[]
 
-    return metricsForKey[metricsForKey.length - 1] as MetricForKey<Key>
+    return metricsForKey[metricsForKey.length - 1] as MetricForKind<Kind>
   }
 
-  public debug(message: MessageForLevel<"debug">["data"]) {
-    this.pushMessage({ category: EntryCategory.MESSAGE, level: "debug", data: message })
+  public debug(message: MessageForKind<"debug">["data"]) {
+    this.pushMessage({ category: EntryCategory.MESSAGE, kind: "debug", data: message })
   }
 
-  public info(message: MessageForLevel<"info">["data"]) {
-    this.pushMessage({ category: EntryCategory.MESSAGE, level: "info", data: message })
+  public info(message: MessageForKind<"info">["data"]) {
+    this.pushMessage({ category: EntryCategory.MESSAGE, kind: "info", data: message })
   }
 
   public trace<Kind extends TraceKind>(kind: Kind, data: TraceForKind<Kind>["data"]) {
@@ -256,8 +292,8 @@ class Chronicle {
     this.triggerUpdate(entry)
   }
 
-  public warn(message: MessageForLevel<"warning">["data"]) {
-    this.pushMessage({ category: EntryCategory.MESSAGE, level: "warning", data: message })
+  public warn(message: MessageForKind<"warning">["data"]) {
+    this.pushMessage({ category: EntryCategory.MESSAGE, kind: "warning", data: message })
   }
 }
 
