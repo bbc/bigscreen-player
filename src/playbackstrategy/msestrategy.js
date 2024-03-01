@@ -344,7 +344,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       const { mediaType, oldQuality, newQuality } = event
 
       const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
-
       const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
 
       const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
@@ -353,7 +352,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       DebugTool.dynamicMetric(`representation-${mediaType}`, [newQuality, newBitrate])
 
       DebugTool.info(
-        `${mediaKind} ABR Change Rendered From Representation ${oldRepresentation} To ${newRepresentation}`
+        `${mediaType} ABR Change Rendered From Representation ${oldRepresentation} To ${newRepresentation}`
       )
     }
 
