@@ -1,11 +1,11 @@
 import Renderer from "./renderer"
 
 jest.mock("./transformer", () => () => ({
-  transformXML: () => ({
-    baseStyle: "",
-    subtitlesForTime: () => {},
-  }),
-}))
+      transformXML: () => ({
+          baseStyle: "",
+          subtitlesForTime: () => {},
+        }),
+    }))
 
 describe("Renderer", () => {
   it("should initialise with a id, xml object, media player", () => {

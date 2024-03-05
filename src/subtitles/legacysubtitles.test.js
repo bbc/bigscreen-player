@@ -7,13 +7,13 @@ import Renderer from "./renderer"
 jest.mock("../utils/loadurl")
 
 jest.mock("../plugins", () => ({
-  interface: {
-    onSubtitlesTimeout: jest.fn(),
-    onSubtitlesXMLError: jest.fn(),
-    onSubtitlesRenderError: jest.fn(),
-    onSubtitlesTransformError: jest.fn(),
-  },
-}))
+    interface: {
+      onSubtitlesTimeout: jest.fn(),
+      onSubtitlesXMLError: jest.fn(),
+      onSubtitlesRenderError: jest.fn(),
+      onSubtitlesTransformError: jest.fn(),
+    },
+  }))
 
 const mockRender = () => document.createElement("div")
 
@@ -23,10 +23,10 @@ const mockStart = jest.fn()
 const mockStop = jest.fn()
 
 Renderer.mockImplementation(() => ({
-  start: mockStart,
-  stop: mockStop,
-  render: mockRender,
-}))
+    start: mockStart,
+    stop: mockStop,
+    render: mockRender,
+  }))
 
 describe("Legacy Subtitles", () => {
   const mockMediaPlayer = {
