@@ -58,15 +58,15 @@ describe("HTML5 Base", () => {
 
     jest.spyOn(document, "createElement").mockImplementation((type) => {
       switch (type) {
-      case "source":
+      case "source": {
         return mockSourceElement
-      
-      case "video":
+      }
+      case "video": {
         return mockVideoMediaElement
-      
-      case "audio":
+      }
+      case "audio": {
         return mockAudioMediaElement
-      
+      }
       // No default
       } 
         return sourceContainer
@@ -75,72 +75,72 @@ describe("HTML5 Base", () => {
 
     jest.spyOn(mockVideoMediaElement, "addEventListener").mockImplementation((name, methodCall) => {
       switch (name) {
-      case "loadedmetadata":
+      case "loadedmetadata": {
         metaDataCallback = methodCall
       
       break;
-      
-      case "canplay":
+      }
+      case "canplay": {
         finishedBufferingCallback = methodCall
       
       break;
-      
-      case "error":
+      }
+      case "error": {
         errorCallback = methodCall
       
       break;
-      
-      case "ended":
+      }
+      case "ended": {
         endedCallback = methodCall
       
       break;
-      
-      case "waiting":
+      }
+      case "waiting": {
         waitingCallback = methodCall
       
       break;
-      
-      case "playing":
+      }
+      case "playing": {
         playingCallback = methodCall
       
       break;
-      
-      case "timeupdate":
+      }
+      case "timeupdate": {
         timeupdateCallback = methodCall
       
       break;
-      
+      }
       // No default
       }
     })
 
     jest.spyOn(mockAudioMediaElement, "addEventListener").mockImplementation((name, methodCall) => {
       switch (name) {
-      case "loadedmetadata":
+      case "loadedmetadata": {
         metaDataCallback = methodCall
       
       break;
-      
-      case "canplay":
+      }
+      case "canplay": {
         finishedBufferingCallback = methodCall
       
       break;
-      
-      case "error":
+      }
+      case "error": {
         errorCallback = methodCall
       
       break;
-      
-      case "ended":
+      }
+      case "ended": {
         endedCallback = methodCall
       
       break;
-      
-      case "waiting":
+      }
+      case "waiting": {
         waitingCallback = methodCall
       
       break;
-      
+      }
       // No default
       }
     })
