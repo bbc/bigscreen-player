@@ -14,9 +14,9 @@ import {
 } from "./chronicle"
 import DebugView from "./debugview"
 
-type WrungMediaState = { [Key in keyof typeof MediaState as (typeof MediaState)[Key]]: Key }
+type InvertedMediaState = { [Key in keyof typeof MediaState as (typeof MediaState)[Key]]: Key }
 
-const wrungMediaState: WrungMediaState = {
+const invertedMediaState: InvertedMediaState = {
   0: "STOPPED",
   1: "PAUSED",
   2: "PLAYING",
@@ -221,7 +221,7 @@ class DebugViewController {
       case "session-end":
         return `Playback session ended at ${new Date(data).toISOString().replace("T", " ")}`
       case "state-change":
-        return `Event: ${wrungMediaState[data]}`
+        return `Event: ${invertedMediaState[data]}`
       default:
         throw new TypeError(`Unrecognised trace kind: ${kind}`)
     }
