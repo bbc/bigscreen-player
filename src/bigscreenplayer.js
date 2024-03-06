@@ -16,7 +16,6 @@ import Version from "./version"
 import Resizer from "./resizer"
 import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
-import "./typedefs"
 
 function BigscreenPlayer() {
   let stateChangeCallbacks = []
@@ -186,10 +185,10 @@ function BigscreenPlayer() {
      * @function
      * @name init
      * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
-     * @param {BigscreenPlayerData} bigscreenPlayerData
+     * @param {import("./types").InitData} bigscreenPlayerData
      * @param {WindowTypes} newWindowType
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
-     * @param {InitCallbacks} callbacks
+     * @param {import("./types").InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks = {}) => {
       playbackElement = newPlaybackElement
@@ -513,7 +512,7 @@ function BigscreenPlayer() {
     /**
      * Customise the rendered subitles style
      *
-     * @param {SubtitlesCustomisationOptions} styleOpts
+     * @param {import("./types").SubtitlesCustomisationOptions} styleOpts
      */
     customiseSubtitles: (styleOpts) => {
       if (subtitles) {
@@ -524,9 +523,9 @@ function BigscreenPlayer() {
     /**
      * Render an example subtitles string with a given style and location
      *
-     * @param {String} xmlString - EBU-TT-D compliant XML String
-     * @param {SubtitlesCustomisationOptions} styleOpts - {@link SubtitlesCustomisationOptions}
-     * @param {SubtitlesSafePosition} safePosition - {@link SubtitlesSafePosition}
+     * @param {string} xmlString - EBU-TT-D compliant XML String
+     * @param {import("./types").SubtitlesCustomisationOptions} styleOpts
+     * @param {DOMRect} safePosition
      */
     renderSubtitleExample: (xmlString, styleOpts, safePosition) => {
       if (subtitles) {
