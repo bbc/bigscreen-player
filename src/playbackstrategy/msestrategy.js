@@ -113,6 +113,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DebugTool.event("playing", "MediaElement")
     DebugTool.dynamicMetric("ready-state", mediaElement.readyState)
 
+    getBufferedRanges().map(({ kind, buffered }) => DebugTool.buffered(kind, buffered))
+
     isEnded = false
 
     publishMediaState(MediaState.PLAYING)
