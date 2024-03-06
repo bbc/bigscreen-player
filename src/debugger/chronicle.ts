@@ -249,8 +249,11 @@ class Chronicle {
     const metricsForKey = this.metrics[kind] as Timestamped<MetricForKind<Kind>>[]
 
     if (metricsForKey.length + 1 === METRIC_ENTRY_THRESHOLD) {
-      this.warn(
-        `Metric ${kind} exceeded ${METRIC_ENTRY_THRESHOLD}. Consider a more selective sample, or not storing history.`
+      this.trace(
+        "error",
+        new Error(
+          `Metric ${kind} exceeded ${METRIC_ENTRY_THRESHOLD}. Consider a more selective sample, or not storing history.`
+        )
       )
     }
 
