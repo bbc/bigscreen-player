@@ -16,6 +16,9 @@ import Version from "./version"
 import Resizer from "./resizer"
 import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
+// TODO: Remove when this becomes a TypeScript file
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { InitData, InitCallbacks, SubtitlesCustomisationOptions } from "./types"
 
 function BigscreenPlayer() {
   let stateChangeCallbacks = []
@@ -185,10 +188,10 @@ function BigscreenPlayer() {
      * @function
      * @name init
      * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
-     * @param {import("./types").InitData} bigscreenPlayerData
+     * @param {InitData} bigscreenPlayerData
      * @param {WindowTypes} newWindowType
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
-     * @param {import("./types").InitCallbacks} callbacks
+     * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks = {}) => {
       playbackElement = newPlaybackElement
@@ -512,7 +515,7 @@ function BigscreenPlayer() {
     /**
      * Customise the rendered subitles style
      *
-     * @param {import("./types").SubtitlesCustomisationOptions} styleOpts
+     * @param {SubtitlesCustomisationOptions} styleOpts
      */
     customiseSubtitles: (styleOpts) => {
       if (subtitles) {
@@ -524,7 +527,7 @@ function BigscreenPlayer() {
      * Render an example subtitles string with a given style and location
      *
      * @param {string} xmlString - EBU-TT-D compliant XML String
-     * @param {import("./types").SubtitlesCustomisationOptions} styleOpts
+     * @param {SubtitlesCustomisationOptions} styleOpts
      * @param {DOMRect} safePosition
      */
     renderSubtitleExample: (xmlString, styleOpts, safePosition) => {
