@@ -5,11 +5,11 @@
   },
   "source": {
     "include": ["src"],
-    "includePattern": ".js$",
+    "includePattern": ".(js|ts)$",
     "excludePattern": "(node_modules/|docs)"
   },
   "sourceType": "module",
-  "plugins": ["plugins/markdown"],
+  "plugins": ["plugins/markdown", "node_modules/better-docs/typescript"],
   "templates": {
     "cleverLinks": false,
     "monospaceLinks": true,

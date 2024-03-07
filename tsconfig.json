@@ -1,0 +1,19 @@
+{
+  "compileOnSave": true,
+  "include": ["src/**/*.ts", "src/**/*.js"],
+  "compilerOptions": {
+    "outDir": "./dist/esm",
+    "module": "ESNext",
+    "target": "es6",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "allowJs": true,
+    "alwaysStrict": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "strictNullChecks": true
+  }
+}
