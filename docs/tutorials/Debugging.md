@@ -10,7 +10,7 @@ The on-screen debugger can be shown using:
 bigscreenPlayer.toggleDebug()
 ```
 
-### Structured Logging
+## Structured Logging
 
 Logs in the Chronicle are _structured_. What is more, logs are captured even when the on-screen debugger isn't active. You can access the complete record of the playback session using:
 
