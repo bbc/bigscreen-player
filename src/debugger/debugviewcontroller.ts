@@ -284,7 +284,7 @@ class DebugViewController {
       return `${qualityIndex} (${bitrate} kbps)`
     }
 
-    return data.join(",&nbsp;")
+    return data.join(", ")
   }
 
   private render(): void {
