@@ -215,7 +215,7 @@ describe("Debug Tool", () => {
   })
 
   describe("logging events", () => {
-    it("appens the event trace to the log", () => {
+    it("appends the event trace to the log", () => {
       jest.advanceTimersByTime(1)
 
       DebugTool.event("playing")
@@ -223,6 +223,19 @@ describe("Debug Tool", () => {
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
         expect.objectContaining({ kind: "event", data: { eventType: "playing", eventTarget: "unknown" } }),
+      ])
+    })
+  })
+
+  describe("logging api calls", () => {
+    it("appends the apicall trace to the log", () => {
+      jest.advanceTimersByTime(1)
+
+      DebugTool.apicall("setCurrentTime", [30])
+
+      expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
+        expect.objectContaining({ kind: "apicall", data: { functionName: "setCurrentTime", functionArgs: [30] } }),
       ])
     })
   })

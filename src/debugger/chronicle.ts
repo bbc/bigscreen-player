@@ -84,6 +84,7 @@ type CreateTrace<Kind extends string, Data extends Primitives | Record<string, P
   data: Data
 }
 
+type ApiCall = CreateTrace<"apicall", { functionName: string; functionArgs: any[] }>
 type BufferedRanges = CreateTrace<"buffered-ranges", { kind: MediaKinds; buffered: [start: number, end: number][] }>
 type Error = CreateTrace<"error", { name?: string; message: string }>
 type Event = CreateTrace<"event", { eventType: string; eventTarget: string }>
@@ -93,7 +94,16 @@ type SessionStart = CreateTrace<"session-start", number>
 type SessionEnd = CreateTrace<"session-end", number>
 type StateChange = CreateTrace<"state-change", MediaState>
 
-export type Trace = BufferedRanges | Error | Event | Gap | QuotaExceeded | SessionStart | SessionEnd | StateChange
+export type Trace =
+  | ApiCall
+  | BufferedRanges
+  | Error
+  | Event
+  | Gap
+  | QuotaExceeded
+  | SessionStart
+  | SessionEnd
+  | StateChange
 
 export type TraceKind = Trace["kind"]
 export type TraceForKind<Kind extends TraceKind> = Extract<Trace, { kind: Kind }>
