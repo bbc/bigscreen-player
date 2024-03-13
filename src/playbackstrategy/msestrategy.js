@@ -168,13 +168,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     onBuffering()
   }
 
-  function onStalled() {
-    DebugTool.event("stalled", "MediaElement")
-    DebugTool.dynamicMetric("ready-state", mediaElement.readyState)
-
-    getBufferedRanges().map(({ kind, buffered }) => DebugTool.buffered(kind, buffered))
-  }
-
   function onEnded() {
     DebugTool.event("ended", "MediaElement")
     DebugTool.dynamicMetric("ended", mediaElement.ended)
@@ -184,7 +177,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     publishMediaState(MediaState.ENDED)
   }
 
+  function onRateChange() {
+    DebugTool.dynamicMetric("playback-rate", mediaElement.playbackRate)
+  }
+
   function onTimeUpdate() {
+    DebugTool.updateElementTime(mediaElement.currentTime)
+
     const currentMpdTimeSeconds =
       windowType === WindowTypes.SLIDING
         ? mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)?.time
@@ -211,7 +210,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     if (event.error && event.error.message) {
-      DebugTool.info(`MSE Error: ${event.error.message} Code: ${event.error.code}`)
+      DebugTool.error(`${event.error.message} (code: ${event.error.code})`)
+
       lastError = event.error
 
       // Don't raise an error on fragment download error
@@ -491,6 +491,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   function setUpMediaListeners() {
     DebugTool.dynamicMetric("ended", mediaElement.ended)
     DebugTool.dynamicMetric("paused", mediaElement.paused)
+    DebugTool.dynamicMetric("playback-rate", mediaElement.playbackRate)
     DebugTool.dynamicMetric("ready-state", mediaElement.readyState)
     DebugTool.dynamicMetric("seeking", mediaElement.seeking)
 
@@ -504,7 +505,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaElement.addEventListener("seeking", onSeeking)
     mediaElement.addEventListener("seeked", onSeeked)
     mediaElement.addEventListener("ended", onEnded)
-    mediaElement.addEventListener("stalled", onStalled)
+    mediaElement.addEventListener("ratechange", onRateChange)
     mediaPlayer.on(DashJSEvents.ERROR, onError)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
@@ -636,7 +637,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaElement.removeEventListener("seeking", onSeeking)
       mediaElement.removeEventListener("seeked", onSeeked)
       mediaElement.removeEventListener("ended", onEnded)
-      mediaElement.removeEventListener("stalled", onStalled)
+      mediaElement.removeEventListener("ratechange", onRateChange)
       mediaPlayer.off(DashJSEvents.ERROR, onError)
       mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
