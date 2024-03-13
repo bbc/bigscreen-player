@@ -204,7 +204,13 @@ class DebugViewController {
 
   private serialiseTrace(trace: TimestampedTrace): string {
     const { currentElementTime, kind, data } = trace
+
     switch (kind) {
+      case "apicall": {
+        const { functionName, functionArgs } = data
+        const argsPart = functionArgs.length === 0 ? "" : ` with args [${functionArgs.join(", ")}]`
+        return `Called '${functionName}${argsPart}'`
+      }
       case "buffered-ranges": {
         const buffered = data.buffered.map(([start, end]) => `${start.toFixed(2)} - ${end.toFixed(2)}`).join(", ")
 
@@ -216,14 +222,20 @@ class DebugViewController {
         const { eventType, eventTarget } = data
         return `Event: '${eventType}' from ${eventTarget}`
       }
+      case "gap": {
+        const { from, to } = data
+        return `Gap from ${from} to ${to}`
+      }
       case "session-start":
         return `Playback session started at ${new Date(data).toISOString().replace("T", " ")}`
       case "session-end":
         return `Playback session ended at ${new Date(data).toISOString().replace("T", " ")}`
+      case "quota-exceeded": {
+        const { bufferLevel, time } = data
+        return `Quota exceeded with buffer level ${bufferLevel} at chunk start time ${time}`
+      }
       case "state-change":
         return `Event: ${invertedMediaState[data]}`
-      default:
-        throw new TypeError(`Unrecognised trace kind: ${kind}`)
     }
   }
 
@@ -284,7 +296,7 @@ class DebugViewController {
       return `${qualityIndex} (${bitrate} kbps)`
     }
 
-    return data.join(",&nbsp;")
+    return data.join(", ")
   }
 
   private render(): void {
