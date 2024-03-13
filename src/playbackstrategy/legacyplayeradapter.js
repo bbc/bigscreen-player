@@ -90,6 +90,8 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
   }
 
   function onTimeUpdate(event) {
+    DebugTool.updateElementTime(event.currentTime)
+
     isPaused = false
 
     // Note: Multiple consecutive CDN failover logic
@@ -102,6 +104,7 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
     // Must publish this time update before checkSeekSucceded - which could cause a pause event
     // This is a device specific event ordering issue.
     publishTimeUpdate()
+
     if ((handleErrorOnExitingSeek || delayPauseOnExitSeek) && exitingSeek) {
       checkSeekSucceeded(event.seekableRange.start, event.currentTime)
     }

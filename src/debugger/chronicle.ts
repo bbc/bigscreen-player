@@ -43,6 +43,7 @@ type FramesDropped = CreateMetric<"frames-dropped", number>
 type InitialPlaybackTime = CreateMetric<"initial-playback-time", number>
 type MediaElementEnded = CreateMetric<"ended", HTMLMediaElement["ended"]>
 type MediaElementPaused = CreateMetric<"paused", HTMLMediaElement["paused"]>
+type MediaElementPlaybackRate = CreateMetric<"playback-rate", HTMLMediaElement["playbackRate"]>
 type MediaElementReadyState = CreateMetric<"ready-state", HTMLMediaElement["readyState"]>
 type MediaElementSeeking = CreateMetric<"seeking", HTMLMediaElement["seeking"]>
 type PlaybackStrategy = CreateMetric<"strategy", string>
@@ -64,6 +65,7 @@ export type Metric =
   | InitialPlaybackTime
   | MediaElementEnded
   | MediaElementPaused
+  | MediaElementPlaybackRate
   | MediaElementReadyState
   | MediaElementSeeking
   | PlaybackStrategy
@@ -84,6 +86,7 @@ type CreateTrace<Kind extends string, Data extends Primitives | Record<string, P
   data: Data
 }
 
+type ApiCall = CreateTrace<"apicall", { functionName: string; functionArgs: any[] }>
 type BufferedRanges = CreateTrace<"buffered-ranges", { kind: MediaKinds; buffered: [start: number, end: number][] }>
 type Error = CreateTrace<"error", { name?: string; message: string }>
 type Event = CreateTrace<"event", { eventType: string; eventTarget: string }>
@@ -93,7 +96,16 @@ type SessionStart = CreateTrace<"session-start", number>
 type SessionEnd = CreateTrace<"session-end", number>
 type StateChange = CreateTrace<"state-change", MediaState>
 
-export type Trace = BufferedRanges | Error | Event | Gap | QuotaExceeded | SessionStart | SessionEnd | StateChange
+export type Trace =
+  | ApiCall
+  | BufferedRanges
+  | Error
+  | Event
+  | Gap
+  | QuotaExceeded
+  | SessionStart
+  | SessionEnd
+  | StateChange
 
 export type TraceKind = Trace["kind"]
 export type TraceForKind<Kind extends TraceKind> = Extract<Trace, { kind: Kind }>

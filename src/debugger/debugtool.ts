@@ -96,9 +96,7 @@ function DebugTool() {
   }
 
   function apicall(functionName: string, functionArgs: any[] = []) {
-    const argsPart = functionArgs.length === 0 ? "" : ` with args [${functionArgs.join(", ")}]`
-
-    debug(`Called '${functionName}${argsPart}'`)
+    chronicle.trace("apicall", { functionName, functionArgs })
   }
 
   function buffered(kind: MediaKinds, buffered: [start: number, end: number][]) {
