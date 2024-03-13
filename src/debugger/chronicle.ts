@@ -43,6 +43,7 @@ type FramesDropped = CreateMetric<"frames-dropped", number>
 type InitialPlaybackTime = CreateMetric<"initial-playback-time", number>
 type MediaElementEnded = CreateMetric<"ended", HTMLMediaElement["ended"]>
 type MediaElementPaused = CreateMetric<"paused", HTMLMediaElement["paused"]>
+type MediaElementPlaybackRate = CreateMetric<"playback-rate", HTMLMediaElement["playbackRate"]>
 type MediaElementReadyState = CreateMetric<"ready-state", HTMLMediaElement["readyState"]>
 type MediaElementSeeking = CreateMetric<"seeking", HTMLMediaElement["seeking"]>
 type PlaybackStrategy = CreateMetric<"strategy", string>
@@ -64,6 +65,7 @@ export type Metric =
   | InitialPlaybackTime
   | MediaElementEnded
   | MediaElementPaused
+  | MediaElementPlaybackRate
   | MediaElementReadyState
   | MediaElementSeeking
   | PlaybackStrategy
