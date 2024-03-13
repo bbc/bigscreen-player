@@ -151,7 +151,7 @@ class DebugViewController {
   }
 
   private serialiseDynamicEntry(entry: DynamicEntry): string {
-    let formattedData: string
+    let formattedData: string | undefined
 
     const { category } = entry
 
@@ -167,15 +167,12 @@ class DebugViewController {
       case EntryCategory.TRACE:
         formattedData = this.serialiseTrace(entry)
         break
-
-      default:
-        throw new TypeError(`Unrecognised Entry Category: ${category}`)
     }
 
     const sessionTime = new Date(entry.sessionTime)
     const formatedSessionTime = `${formatDate(sessionTime)}.${zeroPadMs(sessionTime.getUTCMilliseconds())}`
 
-    return `${formatedSessionTime} - ${formattedData}`
+    return `${formatedSessionTime} - ${formattedData satisfies string}`
   }
 
   private serialiseMessage(message: Message): string {
@@ -190,9 +187,6 @@ class DebugViewController {
 
       case "warning":
         return `Warning: ${data}`
-
-      default:
-        throw new TypeError(`Unrecognised message level '${kind}'`)
     }
   }
 
