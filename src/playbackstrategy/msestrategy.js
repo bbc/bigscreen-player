@@ -345,13 +345,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function load(mimeType, playbackTime) {
-    if (!mediaPlayer) {
+    if (mediaPlayer) {
+      modifySource(refreshFailoverTime || failoverTime, failoverZeroPoint)
+    } else {
       failoverTime = playbackTime
       setUpMediaElement(playbackElement)
       setUpMediaPlayer(playbackTime)
       setUpMediaListeners()
-    } else {
-      modifySource(refreshFailoverTime || failoverTime, failoverZeroPoint)
     }
   }
 
@@ -382,6 +382,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.attachSource(`${source}${anchor}`)
   }
 
+  function onStalled() {
+    DebugTool.info('Media Element "stalled" event')
+  }
+
   function setUpMediaListeners() {
     mediaElement.addEventListener("timeupdate", onTimeUpdate)
     mediaElement.addEventListener("playing", onPlaying)
@@ -390,6 +394,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaElement.addEventListener("seeking", onBuffering)
     mediaElement.addEventListener("seeked", onSeeked)
     mediaElement.addEventListener("ended", onEnded)
+    mediaElement.addEventListener("stalled", onStalled)
     mediaPlayer.on(DashJSEvents.ERROR, onError)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
@@ -432,13 +437,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
     mediaPlayer.refreshManifest((manifest) => {
       const mediaPresentationDuration = manifest && manifest.mediaPresentationDuration
-      if (!isNaN(mediaPresentationDuration)) {
+      if (isNaN(mediaPresentationDuration)) {
+        mediaPlayer.seek(seekToTime)
+      } else {
         DebugTool.info("Stream ended. Clamping seek point to end of stream")
         mediaPlayer.seek(
           getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration })
         )
-      } else {
-        mediaPlayer.seek(seekToTime)
       }
     })
   }
@@ -514,6 +519,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaElement.removeEventListener("seeking", onBuffering)
       mediaElement.removeEventListener("seeked", onSeeked)
       mediaElement.removeEventListener("ended", onEnded)
+      mediaElement.removeEventListener("stalled", onstalled)
       mediaPlayer.off(DashJSEvents.ERROR, onError)
       mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
