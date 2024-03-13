@@ -92,6 +92,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
   }
 
+  function onStalled() {
+    DebugTool.info("Stalled event")
+  }
+
   function onSeeked() {
     isSeeking = false
     DebugTool.info("Seeked Event")
@@ -390,6 +394,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaElement.addEventListener("seeking", onBuffering)
     mediaElement.addEventListener("seeked", onSeeked)
     mediaElement.addEventListener("ended", onEnded)
+    mediaElement.addEventListener("stalled", onStalled)
     mediaPlayer.on(DashJSEvents.ERROR, onError)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
