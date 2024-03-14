@@ -45,8 +45,6 @@ function BigscreenPlayer() {
 
   function mediaStateUpdateCallback(evt) {
     if (evt.timeUpdate) {
-      DebugTool.updateElementTime(evt.data.currentTime)
-
       callCallbacks(timeUpdateCallbacks, {
         currentTime: evt.data.currentTime,
         endOfStream,
