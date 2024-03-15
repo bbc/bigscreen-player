@@ -2,6 +2,7 @@ import eslint from "@eslint/js"
 import eslintPluginJest from "eslint-plugin-jest"
 import eslintPluginUnicorn from "eslint-plugin-unicorn"
 import tseslint from "typescript-eslint"
+import { sonarjs } from "./eslint.compat.js"
 
 const unsafe = [
   "src/playbackstrategy/modifiers/samsungmaple.js",
@@ -47,6 +48,7 @@ export default tseslint.config(
     extends: [
       eslint.configs.recommended,
       ...tseslint.configs.recommendedTypeChecked,
+      ...sonarjs.configs.recommended,
       eslintPluginUnicorn.configs["flat/recommended"],
     ],
     languageOptions: {
@@ -63,7 +65,7 @@ export default tseslint.config(
     },
     rules: {
       // Discuss these!
-      // sonarjs/cognitive-complexity: off
+      "sonarjs/cognitive-complexity": "off",
       "unicorn/consistent-function-scoping": "off",
       "unicorn/no-array-reduce": "off",
       "unicorn/prevent-abbreviations": "off",
@@ -164,6 +166,7 @@ export default tseslint.config(
       "unicorn/prefer-string-replace-all": "off",
 
       // HAS ISSUES
+      "sonarjs/no-duplicate-string": "off",
       "unicorn/no-array-callback-reference": "off",
       "unicorn/no-array-method-this-argument": "off",
     },
@@ -180,6 +183,7 @@ export default tseslint.config(
     files: ["**/*.test.{js,cjs,mjs,ts,cts,mts}"],
     rules: {
       "max-nested-callbacks": "off",
+      "sonarjs/no-identical-functions": "off",
       "unicorn/consistent-function-scoping": "off",
     },
   },
