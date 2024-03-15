@@ -99,7 +99,9 @@ class DebugViewController {
   }
 
   private cacheEntry(entry: TimestampedEntry): void {
-    switch (entry.category) {
+    const { category } = entry
+
+    switch (category) {
       case EntryCategory.METRIC:
         return this.cacheStaticEntry(this.isMerged(entry) ? this.mergeMediaState(entry) : entry)
 
@@ -111,10 +113,7 @@ class DebugViewController {
           this.dynamicEntries = this.dynamicEntries.slice(-DYNAMIC_ENTRY_LIMIT)
         }
 
-        return
-
-      default:
-        throw new TypeError("Unrecognised entry type")
+        break
     }
   }
 
