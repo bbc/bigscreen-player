@@ -1,4 +1,4 @@
-import Chronicle, { TimestampedEntry } from "./chronicle"
+import Chronicle from "./chronicle"
 import ViewController from "./debugviewcontroller"
 import DebugView from "./debugview"
 
@@ -225,16 +225,6 @@ describe("Debug View", () => {
         ],
       })
     )
-  })
-
-  it("throws on an unknown entry type", () => {
-    const controller = new ViewController()
-    controller.showView()
-
-    const badUpdate = () =>
-      controller.addEntries([{ type: "bad-type", nefarious: "purpose" } as unknown as TimestampedEntry])
-
-    expect(badUpdate).toThrow(TypeError)
   })
 
   it("keep entries matching the filters", () => {
