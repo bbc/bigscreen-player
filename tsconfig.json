@@ -1,6 +1,6 @@
 {
   "compileOnSave": true,
-  "include": ["src/**/*.ts", "src/**/*.js"],
+  "include": ["src/**/*.ts", "src/**/*.js", "eslint.config.js"],
   "compilerOptions": {
     "outDir": "./dist/esm",
     "module": "ESNext",
