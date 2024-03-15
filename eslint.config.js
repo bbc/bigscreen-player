@@ -1,15 +1,54 @@
 import eslint from "@eslint/js"
+import eslintPluginJest from "eslint-plugin-jest"
 import eslintPluginUnicorn from "eslint-plugin-unicorn"
-import globals from "globals"
 import tseslint from "typescript-eslint"
 
-export default tseslint.config(
-  eslint.configs.recommended,
-  ...tseslint.configs.recommended,
-  eslintPluginUnicorn.configs["flat/recommended"],
+const unsafe = [
+  "src/playbackstrategy/modifiers/samsungmaple.js",
+  "src/playbackstrategy/modifiers/samsungstreaming.js",
+  "src/playbackstrategy/modifiers/samsungstreaming2015.js",
+]
+
+const namingConvention = [
   {
-    // ignores: ["samsungmaple.js", "samsungstreaming.js", "samsungstreaming2015.js"],
-    plugins: { "@typescript-eslint": tseslint.plugin },
+    selector: "default",
+    format: ["camelCase"],
+    leadingUnderscore: "allow",
+    trailingUnderscore: "allow",
+  },
+  {
+    selector: "import",
+    format: ["camelCase", "PascalCase"],
+  },
+  {
+    selector: "property",
+    format: ["camelCase", "UPPER_CASE"],
+  },
+  {
+    selector: "property",
+    modifiers: ["requiresQuotes"],
+    format: null, // Format rules disabled
+  },
+  {
+    selector: "typeLike",
+    format: ["PascalCase"],
+  },
+  {
+    selector: "variable",
+    format: ["camelCase", "PascalCase", "UPPER_CASE"],
+    leadingUnderscore: "allow",
+    trailingUnderscore: "allow",
+  },
+]
+
+export default tseslint.config(
+  {
+    ignores: [...unsafe],
+    extends: [
+      eslint.configs.recommended,
+      ...tseslint.configs.recommendedTypeChecked,
+      eslintPluginUnicorn.configs["flat/recommended"],
+    ],
     languageOptions: {
       ecmaVersion: 5,
       sourceType: "module",
@@ -17,9 +56,6 @@ export default tseslint.config(
       parserOptions: {
         project: true,
         tsconfigRootDir: import.meta.dirname,
-      },
-      globals: {
-        ...globals.browser,
       },
     },
     linterOptions: {
@@ -36,10 +72,8 @@ export default tseslint.config(
       // STYLE
       // Sorted alphabetically
       "arrow-body-style": ["error", "as-needed"],
-      "camelcase": "error",
       "curly": ["error", "multi-line"],
       "default-param-last": "error",
-      "dot-notation": "error",
       "id-length": ["error", { min: 2, exceptions: ["_"] }],
       "max-nested-callbacks": ["error", 3],
       "new-cap": ["error", { newIsCap: true, capIsNew: false }],
@@ -57,6 +91,14 @@ export default tseslint.config(
       "yoda": ["error", "never"],
       "unicorn/no-null": "off",
       "unicorn/switch-case-braces": ["error", "avoid"],
+      "@typescript-eslint/consistent-type-exports": "error",
+      "@typescript-eslint/dot-notation": "error",
+      "@typescript-eslint/naming-convention": ["error", ...namingConvention],
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "@typescript-eslint/switch-exhaustiveness-check": [
+        "error",
+        { allowDefaultCaseForExhaustiveSwitch: false, requireDefaultForNonUnion: true },
+      ],
 
       // PROBLEMS
       // Sorted alphabetically
@@ -89,19 +131,22 @@ export default tseslint.config(
       "no-param-reassign": "error",
       "no-proto": "error",
       "no-return-assign": "error",
-      "no-return-await": "error",
       "no-sequences": "error",
-      "no-throw-literal": "error",
       "no-unneeded-ternary": "error",
       "no-unreachable-loop": "error",
       "no-unused-private-class-members": "error",
       "no-useless-call": "error",
-      "no-useless-constructor": "error",
       "no-useless-return": "error",
       "no-use-before-define": ["error", "nofunc"],
       "no-with": "error",
       "use-isnan": "error",
       "wrap-iife": ["error", "any"],
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-throw-literal": "error",
+      "@typescript-eslint/no-useless-constructor": "error",
+      "@typescript-eslint/prefer-promise-reject-errors": "error",
+      "@typescript-eslint/prefer-return-this-type": "error",
+      "@typescript-eslint/return-await": "error",
 
       // TV COMPATIBILITY – features that aren't fully supported
       // Sorted alphabetically
@@ -118,21 +163,33 @@ export default tseslint.config(
       "unicorn/prefer-optional-catch-binding": "off",
       "unicorn/prefer-string-replace-all": "off",
 
-      // TYPESCRIPT
-      // Sorted alphabetically
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
-      "@typescript-eslint/no-explicit-any": "warn",
+      // HAS ISSUES
+      "unicorn/no-array-callback-reference": "off",
+      "unicorn/no-array-method-this-argument": "off",
     },
   },
-  // turn off type-aware linting for pure JS files
   {
-    files: ["*.ts"],
-    ...tseslint.configs.recommendedTypeChecked,
+    // Overrides for all JavaScript files
+    files: ["**/*.{js,cjs,mjs}"],
+    ignores: [...unsafe],
+    // Turn off type-aware linting
+    extends: [tseslint.configs.disableTypeChecked, ...tseslint.configs.recommended],
+  },
+  {
+    // Overrides for all tests
+    files: ["**/*.test.{js,cjs,mjs,ts,cts,mts}"],
     rules: {
-      "@typescript-eslint/switch-exhaustiveness-check": [
-        "error",
-        { allowDefaultCaseForExhaustiveSwitch: false, requireDefaultForNonUnion: true },
-      ],
+      "max-nested-callbacks": "off",
+      "unicorn/consistent-function-scoping": "off",
+    },
+  },
+  {
+    // Overrides for Jest unit tests
+    files: ["src/**/*.test.{js,cjs,mjs,ts,cts,mts}"],
+    extends: [eslintPluginJest.configs["flat/recommended"], eslintPluginJest.configs["flat/style"]],
+    rules: {
+      "jest/prefer-each": "error",
+      "jest/prefer-spy-on": "error",
     },
   }
 )
