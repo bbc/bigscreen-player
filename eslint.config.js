@@ -18,6 +18,11 @@ const namingConvention = [
     trailingUnderscore: "allow",
   },
   {
+    selector: ["function"],
+    modifiers: ["exported"],
+    format: ["camelCase", "PascalCase"],
+  },
+  {
     selector: "import",
     format: ["camelCase", "PascalCase"],
   },
@@ -26,19 +31,23 @@ const namingConvention = [
     format: ["camelCase", "UPPER_CASE"],
   },
   {
-    selector: "property",
-    modifiers: ["requiresQuotes"],
-    format: null, // Format rules disabled
-  },
-  {
-    selector: "typeLike",
-    format: ["PascalCase"],
+    selector: ["enumMember"],
+    format: ["camelCase", "UPPER_CASE"],
   },
   {
     selector: "variable",
     format: ["camelCase", "PascalCase", "UPPER_CASE"],
     leadingUnderscore: "allow",
     trailingUnderscore: "allow",
+  },
+  {
+    selector: "typeLike",
+    format: ["PascalCase"],
+  },
+  {
+    selector: "property",
+    modifiers: ["requiresQuotes"],
+    format: null, // Format rules disabled
   },
 ]
 
