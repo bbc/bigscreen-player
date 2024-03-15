@@ -1,19 +1,10 @@
-# unsupported
-*.html
-*.md
-*.sh
-*.yaml
+# Exclude everything
+*
 
-# deps
-node_modules/
-
-# build
-docs/
-dist/
-dist-local/
-
-# configs
-.nvmrc
-*.config.*
-rollup.*.js
-.*ignore
+# Re-include supported file formats and locations
+!**/*.js
+!**/*.cjs
+!**/*.mjs
+!**/*.ts
+!**/*.cts
+!**/*.mts
