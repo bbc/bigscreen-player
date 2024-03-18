@@ -2,9 +2,15 @@
 *
 
 # Re-include supported file formats and locations
-!**/*.js
-!**/*.cjs
-!**/*.mjs
-!**/*.ts
-!**/*.cts
-!**/*.mts
+!./*.js
+!./*.cjs
+!./*.mjs
+!./*.ts
+!./*.cts
+!./*.mts
+!src/**/*.js
+!src/**/*.cjs
+!src/**/*.mjs
+!src/**/*.ts
+!src/**/*.cts
+!src/**/*.mts
