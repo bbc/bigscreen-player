@@ -32,7 +32,7 @@ type InvertedPauseTrigger = { [Key in keyof typeof PauseTriggers as (typeof Paus
 const invertedPauseTrigger: InvertedPauseTrigger = {
   1: "USER",
   2: "APP",
-  3: "DEVICE"
+  3: "DEVICE",
 } as const
 
 const DYNAMIC_ENTRY_LIMIT = 29 as const
@@ -244,20 +244,23 @@ class DebugViewController {
 
   private serialiseStateChange(stateChange: TraceForKind<"state-change">): string {
     const { data } = stateChange
-    const state = invertedMediaState[data.state]
+    let output = `Event: state change: ${invertedMediaState[data.state]}`
 
-    let output = `Event: state change: ${state}`
-
-    switch(state) {
-      case "WAITING":
-        return output += `, isSeeking: ${data.isSeeking}`
-      case "PAUSED":
-        return output += `, trigger: ${data.trigger ? invertedPauseTrigger[data.trigger] : 'none'}`
-      case "FATAL_ERROR":
-        return output += `, reason: ${data.message}`
+    switch (data.state) {
+      case MediaState.WAITING:
+        output += ` ${data.isSeeking ? "(user seek)" : ""}`
+        break
+      case MediaState.PAUSED:
+        output += ` (${invertedPauseTrigger[data.trigger]})`
+        break
+      case MediaState.FATAL_ERROR:
+        output += ` (${data.message})`
+        break
       default:
         return output
     }
+
+    return output
   }
 
   private serialiseStaticEntry(entry: StaticEntry): {
