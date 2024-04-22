@@ -63,7 +63,7 @@
     "typescript-eslint": "^7.2.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#badgers-404-config-synthetic-stalls",
+    "dashjs": "github:bbc/dash.js#smp-v4.7.3-1",
     "smp-imsc": "github:bbc/imscJS#v1.0.3"
   },
   "repository": {
