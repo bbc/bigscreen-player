@@ -1,7 +1,7 @@
-import { MediaState } from "../models/mediastate"
 import { MediaKinds } from "../models/mediakinds"
 import Chronicle, { MetricForKind, MetricKind, TimestampedEntry, isTrace } from "./chronicle"
 import DebugViewController from "./debugviewcontroller"
+import { StateChange } from "./statechange"
 
 export const LogLevels = {
   ERROR: 0,
@@ -27,7 +27,7 @@ interface DebugTool {
   gap(from: number, to: number): void
   quotaExceeded(bufferLevel: number, time: number): void
   info(...parts: any[]): void
-  statechange(value: MediaState): void
+  statechange(value: StateChange): void
   warn(...parts: any[]): void
   dynamicMetric<Kind extends MetricKind>(kind: Kind, data: MetricForKind<Kind>["data"]): void
   staticMetric<Kind extends MetricKind>(key: Kind, data: MetricForKind<Kind>["data"]): void
@@ -144,7 +144,7 @@ function DebugTool() {
     chronicle.info(parts.join(" "))
   }
 
-  function statechange(value: MediaState) {
+  function statechange(value: StateChange) {
     chronicle.trace("state-change", value)
   }
 

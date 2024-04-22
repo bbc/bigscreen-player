@@ -228,7 +228,7 @@ class DebugViewController {
         return `Quota exceeded with buffer level ${bufferLevel} at chunk start time ${time}`
       }
       case "state-change":
-        return `Event: ${invertedMediaState[data]}`
+        return `Event: ${invertedMediaState[data.state]}`
     }
   }
 

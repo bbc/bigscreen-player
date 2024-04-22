@@ -1,4 +1,4 @@
-import { MediaState } from "../models/mediastate"
+import { StateChange as StateChangeObject } from "./statechange"
 import getValues from "../utils/get-values"
 import { MediaKinds } from "../models/mediakinds"
 
@@ -94,7 +94,7 @@ type Gap = CreateTrace<"gap", { from: number; to: number }>
 type QuotaExceeded = CreateTrace<"quota-exceeded", { bufferLevel: number; time: number }>
 type SessionStart = CreateTrace<"session-start", number>
 type SessionEnd = CreateTrace<"session-end", number>
-type StateChange = CreateTrace<"state-change", MediaState>
+type StateChange = CreateTrace<"state-change", StateChangeObject>
 
 export type Trace =
   | ApiCall
