@@ -1,6 +1,8 @@
 import Chronicle from "./chronicle"
 import ViewController from "./debugviewcontroller"
 import DebugView from "./debugview"
+import { MediaState } from "../models/mediastate"
+import { PauseTriggers } from "../main"
 
 describe("Debug View", () => {
   beforeAll(() => {
@@ -119,6 +121,65 @@ describe("Debug View", () => {
     expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
         dynamic: ["00:00:00.000 - Event: 'paused' from MediaElement"],
+      })
+    )
+  })
+
+  it.each([[true], [false]])("parses WAITING state change events into a human-readable representation", (userSeek) => {
+    const controller = new ViewController()
+    const chronicle = new Chronicle()
+    controller.showView()
+
+    chronicle.trace("state-change", { state: MediaState.WAITING, isSeeking: userSeek })
+
+    controller.addEntries(chronicle.retrieve())
+
+    jest.advanceTimersToNextTimer()
+
+    expect(DebugView.render).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dynamic: [`00:00:00.000 - Event: state change: WAITING ${userSeek ? "(user seek)" : ""}`],
+      })
+    )
+  })
+
+  it("parses PAUSED state change events into a human-readable representation", () => {
+    const controller = new ViewController()
+    const chronicle = new Chronicle()
+    controller.showView()
+
+    chronicle.trace("state-change", { state: MediaState.PAUSED, trigger: PauseTriggers.USER })
+
+    controller.addEntries(chronicle.retrieve())
+
+    jest.advanceTimersToNextTimer()
+
+    expect(DebugView.render).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dynamic: [`00:00:00.000 - Event: state change: PAUSED (USER)`],
+      })
+    )
+  })
+
+  it("parses FATAL_ERROR state change events into a human-readable representation", () => {
+    const controller = new ViewController()
+    const chronicle = new Chronicle()
+    controller.showView()
+
+    chronicle.trace("state-change", {
+      state: MediaState.FATAL_ERROR,
+      isBufferingTimeoutError: true,
+      code: 1,
+      message: "Test Media Element Error",
+    })
+
+    controller.addEntries(chronicle.retrieve())
+
+    jest.advanceTimersToNextTimer()
+
+    expect(DebugView.render).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dynamic: [`00:00:00.000 - Event: state change: FATAL_ERROR (Test Media Element Error)`],
       })
     )
   })
