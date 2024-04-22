@@ -73,7 +73,7 @@ function BigscreenPlayer() {
       }
 
       stateObject.endOfStream = endOfStream
-      DebugTool.statechange(evt.data.state)
+      DebugTool.statechange(stateObject)
 
       callCallbacks(stateChangeCallbacks, stateObject)
     }

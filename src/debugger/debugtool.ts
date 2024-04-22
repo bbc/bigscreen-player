@@ -1,7 +1,7 @@
 import { MediaKinds } from "../models/mediakinds"
 import Chronicle, { MetricForKind, MetricKind, TimestampedEntry, isTrace } from "./chronicle"
 import DebugViewController from "./debugviewcontroller"
-import { StateChange } from "./statechange"
+import { StateChange } from "../models/statechange"
 
 export const LogLevels = {
   ERROR: 0,

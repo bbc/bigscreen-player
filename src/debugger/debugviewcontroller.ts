@@ -1,3 +1,4 @@
+import { PauseTriggers } from "../models/pausetriggers"
 import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 import { Extends } from "../utils/types"
@@ -11,6 +12,7 @@ import {
   TimestampedMessage,
   TimestampedMetric,
   TimestampedTrace,
+  TraceForKind,
 } from "./chronicle"
 import DebugView from "./debugview"
 
@@ -23,6 +25,14 @@ const invertedMediaState: InvertedMediaState = {
   4: "WAITING",
   5: "ENDED",
   6: "FATAL_ERROR",
+} as const
+
+type InvertedPauseTrigger = { [Key in keyof typeof PauseTriggers as (typeof PauseTriggers)[Key]]: Key }
+
+const invertedPauseTrigger: InvertedPauseTrigger = {
+  1: "USER",
+  2: "APP",
+  3: "DEVICE"
 } as const
 
 const DYNAMIC_ENTRY_LIMIT = 29 as const
@@ -228,7 +238,25 @@ class DebugViewController {
         return `Quota exceeded with buffer level ${bufferLevel} at chunk start time ${time}`
       }
       case "state-change":
-        return `Event: ${invertedMediaState[data.state]}`
+        return this.serialiseStateChange(trace)
+    }
+  }
+
+  private serialiseStateChange(stateChange: TraceForKind<"state-change">): string {
+    const { data } = stateChange
+    const state = invertedMediaState[data.state]
+
+    let output = `Event: state change: ${state}`
+
+    switch(state) {
+      case "WAITING":
+        return output += `, isSeeking: ${data.isSeeking}`
+      case "PAUSED":
+        return output += `, trigger: ${data.trigger ? invertedPauseTrigger[data.trigger] : 'none'}`
+      case "FATAL_ERROR":
+        return output += `, reason: ${data.message}`
+      default:
+        return output
     }
   }
 

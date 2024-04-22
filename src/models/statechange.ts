@@ -1,11 +1,11 @@
-import MediaState from "../models/mediastate"
-import PauseTriggers from "../models/pausetriggers"
+import MediaState from "./mediastate"
+import PauseTriggers from "./pausetriggers"
 
 export type StateChange = {
     state: MediaState
     isSeeking?: boolean
     trigger?: PauseTriggers
-    isBufferingTimeout?: boolean
+    isBufferingTimeoutError?: boolean
     code?: number
     message?: string
 }

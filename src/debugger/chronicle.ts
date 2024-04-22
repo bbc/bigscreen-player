@@ -1,4 +1,4 @@
-import { StateChange as StateChangeObject } from "./statechange"
+import { StateChange as StateChangeObject } from "../models/statechange"
 import getValues from "../utils/get-values"
 import { MediaKinds } from "../models/mediakinds"
 
