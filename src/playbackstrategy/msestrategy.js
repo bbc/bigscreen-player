@@ -454,6 +454,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     if (mediaPlayer) {
       modifySource(refreshFailoverTime || failoverTime, failoverZeroPoint)
     } else {
+      DebugTool.dynamicMetric("initial-playback-time", playbackTime)
       failoverTime = playbackTime
       setUpMediaElement(playbackElement)
       setUpMediaPlayer(playbackTime)
