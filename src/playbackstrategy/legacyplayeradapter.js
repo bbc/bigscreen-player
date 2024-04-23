@@ -256,8 +256,6 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
       } else {
         mediaPlayer.beginPlayback()
       }
-
-      DebugTool.staticMetric("strategy", getStrategy())
     },
     play: () => {
       isPaused = false
