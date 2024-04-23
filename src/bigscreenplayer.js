@@ -198,8 +198,13 @@ function BigscreenPlayer() {
       DebugTool.setRootElement(playbackElement)
 
       DebugTool.staticMetric("version", Version)
-      DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime)
-      DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
+
+      if (typeof bigscreenPlayerData.initialPlaybackTime === "number") {
+        DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime)
+      }
+      if (typeof window.bigscreenPlayer?.playbackStrategy === "string") {
+        DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
+      }
 
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
