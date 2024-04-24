@@ -46,14 +46,14 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
 
   function eventHandler(event) {
     const handleEvent = {
-      playing: onPlaying,
-      paused: onPaused,
-      buffering: onBuffering,
+      "playing": onPlaying,
+      "paused": onPaused,
+      "buffering": onBuffering,
       "seek-attempted": onSeekAttempted,
       "seek-finished": onSeekFinished,
-      status: onTimeUpdate,
-      complete: onEnded,
-      error: onError,
+      "status": onTimeUpdate,
+      "complete": onEnded,
+      "error": onError,
     }
 
     if (handleEvent.hasOwnProperty(event.type)) {
@@ -252,13 +252,10 @@ function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, p
 
       if (!isPlaybackFromLivePoint && typeof mediaPlayer.beginPlaybackFrom === "function") {
         currentTime = startTime
-        DebugTool.dynamicMetric("initial-playback-time", startTime + timeCorrection)
         mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0)
       } else {
         mediaPlayer.beginPlayback()
       }
-
-      DebugTool.staticMetric("strategy", getStrategy())
     },
     play: () => {
       isPaused = false
