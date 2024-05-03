@@ -31,6 +31,8 @@ export default {
     serve({
       open: true,
     }),
-    liveReload("dist"),
+    liveReload({
+      watch: ["index.html", "dist-local"],
+    }),
   ],
 }
