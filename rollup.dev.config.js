@@ -1,29 +1,38 @@
-import resolve from "@rollup/plugin-node-resolve"
-import commonjs from "@rollup/plugin-commonjs"
-import nodePolyfills from "rollup-plugin-polyfill-node"
+import PackageJSON from "./package.json" assert { type: "json" }
+
 import babel from "@rollup/plugin-babel"
-import serve from "rollup-plugin-serve"
+import commonjs from "@rollup/plugin-commonjs"
+import resolve from "@rollup/plugin-node-resolve"
+import replace from "@rollup/plugin-replace"
 import liveReload from "rollup-plugin-livereload"
-import json from "@rollup/plugin-json"
+import nodePolyfills from "rollup-plugin-polyfill-node"
+import serve from "rollup-plugin-serve"
+
+const extensions = [".js", ".ts"]
 
 export default {
-  input: "src/main.js",
+  input: "src/main.ts",
   output: {
+    file: "dist-local/esm/main.js",
     name: "bsp",
     inlineDynamicImports: true,
-    file: "dist-local/esm/main.js",
     sourcemap: true,
     format: "es",
   },
   plugins: [
-    resolve({ browser: true, preferBuiltins: false }),
+    replace({
+      preventAssignment: true,
+      __VERSION__: () => PackageJSON.version,
+    }),
+    resolve({ extensions, preferBuiltins: false }),
     commonjs(),
-    json(),
     nodePolyfills(),
-    babel({ babelHelpers: "bundled", presets: ["@babel/preset-env"] }),
+    babel({ extensions, babelHelpers: "bundled" }),
     serve({
       open: true,
     }),
-    liveReload("dist"),
+    liveReload({
+      watch: ["index.html", "dist-local"],
+    }),
   ],
 }
