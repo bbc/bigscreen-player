@@ -1,3 +1,4 @@
+import DebugTool from "../debugger/debugtool"
 import MediaState from "../models/mediastate"
 import WindowTypes from "../models/windowtypes"
 import MediaKinds from "../models/mediakinds"
@@ -36,14 +37,16 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
   }
 
   function load(_mimeType, startTime) {
-    if (!mediaElement) {
+    if (mediaElement == null) {
       setUpMediaElement(startTime)
       setUpMediaListeners()
-    } else {
-      mediaElement.src = mediaSources.currentSource()
-      setStartTime(startTime)
-      mediaElement.load()
+
+      return
     }
+
+    mediaElement.src = mediaSources.currentSource()
+    setStartTime(startTime)
+    mediaElement.load()
   }
 
   function setUpMediaElement(startTime) {
@@ -113,6 +116,8 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
   }
 
   function onTimeUpdate() {
+    DebugTool.updateElementTime(mediaElement.currentTime)
+
     publishTimeUpdate()
   }
 

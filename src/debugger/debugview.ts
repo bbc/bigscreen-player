@@ -1,6 +1,12 @@
 import DOMHelpers from "../domhelpers"
 
-let appElement, logBox, logContainer, staticContainer, staticBox
+type Entry = { id: string; key: string; value: string | number | boolean }
+
+let appElement: HTMLElement | undefined
+let logBox: HTMLElement | undefined
+let logContainer: HTMLElement | undefined
+let staticContainer: HTMLElement | undefined
+let staticBox: HTMLElement | undefined
 
 function init() {
   logBox = document.createElement("div")
@@ -19,7 +25,7 @@ function init() {
   logBox.style.top = "15%"
   logBox.style.bottom = "25%"
   logBox.style.backgroundColor = "#1D1D1D"
-  logBox.style.opacity = 0.9
+  logBox.style.opacity = "0.9"
   logBox.style.overflow = "hidden"
 
   staticBox.id = "staticBox"
@@ -29,7 +35,7 @@ function init() {
   staticBox.style.top = "15%"
   staticBox.style.bottom = "25%"
   staticBox.style.backgroundColor = "#1D1D1D"
-  staticBox.style.opacity = 0.9
+  staticBox.style.opacity = "0.9"
   staticBox.style.overflow = "hidden"
 
   logContainer.id = "logContainer"
@@ -54,48 +60,54 @@ function init() {
   appElement.appendChild(staticBox)
 }
 
-function setRootElement(root) {
+function setRootElement(root?: HTMLElement) {
   if (root) {
     appElement = root
   }
 }
 
-function render(logData) {
-  const LINES_TO_DISPLAY = 29
-  let dynamicLogs = logData.dynamic
-
-  if (dynamicLogs.length === 0) {
-    logContainer.textContent = ""
-  }
-
-  dynamicLogs = dynamicLogs.slice(-LINES_TO_DISPLAY)
-  logContainer.textContent = dynamicLogs.join("\n")
-
-  logData.static.forEach(updateStaticElements)
+function renderDynamicLogs(dynamic: string[]) {
+  if (logContainer) logContainer.textContent = dynamic.join("\n")
 }
 
-function updateStaticElements(log) {
-  const existingElement = document.getElementById(log.key)
-  const text = log.key + ": " + log.value
-
-  if (existingElement) {
-    if (text !== existingElement.textContent) {
-      existingElement.textContent = text
-    }
-  } else {
-    createNewStaticElement(log.key, log.value)
-  }
+function renderStaticLogs(staticLogs: Entry[]) {
+  staticLogs.forEach((entry) => renderStaticLog(entry))
 }
 
-function createNewStaticElement(key, value) {
+function render({ dynamic: dynamicLogs, static: staticLogs }: { dynamic: string[]; static: Entry[] }) {
+  renderDynamicLogs(dynamicLogs)
+  renderStaticLogs(staticLogs)
+}
+
+function renderStaticLog(entry: Entry) {
+  const { id, key, value } = entry
+
+  const existingElement = document.querySelector(`#${id}`)
+
+  const text = `${key}: ${value}`
+
+  if (existingElement == null) {
+    createNewStaticElement(entry)
+
+    return
+  }
+
+  if (existingElement.textContent === text) {
+    return
+  }
+
+  existingElement.textContent = text
+}
+
+function createNewStaticElement({ id, key, value }: Entry) {
   const staticLog = document.createElement("div")
 
-  staticLog.id = key
+  staticLog.id = id
   staticLog.style.paddingBottom = "1%"
   staticLog.style.borderBottom = "1px solid white"
-  staticLog.textContent = key + ": " + value
+  staticLog.textContent = `${key}: ${value}`
 
-  staticContainer.appendChild(staticLog)
+  staticContainer?.appendChild(staticLog)
 }
 
 function tearDown() {
@@ -109,8 +121,8 @@ function tearDown() {
 }
 
 export default {
-  init: init,
-  setRootElement: setRootElement,
-  render: render,
-  tearDown: tearDown,
+  init,
+  setRootElement,
+  render,
+  tearDown,
 }

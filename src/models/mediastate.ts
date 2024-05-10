@@ -1,4 +1,7 @@
-const MediaState = {
+/**
+ * Provides an enumeration of possible media states.
+ */
+export const MediaState = {
   /** Media is stopped and is not attempting to start. */
   STOPPED: 0,
   /** Media is paused. */
@@ -11,9 +14,8 @@ const MediaState = {
   ENDED: 5,
   /** Media has thrown a fatal error. */
   FATAL_ERROR: 6,
-}
+} as const
 
-/**
- * Provides an enumeration of possible media states.
- */
+export type MediaState = (typeof MediaState)[keyof typeof MediaState]
+
 export default MediaState

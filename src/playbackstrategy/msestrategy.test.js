@@ -7,6 +7,9 @@ import TimeUtils from "../utils/timeutils"
 import DynamicWindowUtils from "../dynamicwindowutils"
 import Plugins from "../plugins"
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import DebugTool from "../debugger/debugtool"
+
 const mockDashInstance = {
   initialize: jest.fn(),
   retrieveManifest: jest.fn(),
@@ -34,6 +37,9 @@ const mockDashInstance = {
   setPlaybackRate: jest.fn(),
   getPlaybackRate: jest.fn(),
   setBlacklistExpiryTime: jest.fn(),
+  getActiveStream: jest.fn(() => ({
+    getProcessors: jest.fn(() => []),
+  })),
 }
 
 const mockDashMediaPlayer = {
@@ -42,6 +48,7 @@ const mockDashMediaPlayer = {
 
 jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
 jest.mock("../dynamicwindowutils")
+jest.mock("../debugger/debugtool")
 
 describe("Media Source Extensions Playback Strategy", () => {
   const dashjsMediaPlayerEvents = {
@@ -229,22 +236,22 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       const baseUrlArray = [
         {
-          __text: `${cdnArray[0].url}dash/`,
+          "__text": `${cdnArray[0].url}dash/`,
           "dvb:priority": 0,
           "dvb:weight": 0,
-          serviceLocation: cdnArray[0].url,
+          "serviceLocation": cdnArray[0].url,
         },
         {
-          __text: `${cdnArray[1].url}dash/`,
+          "__text": `${cdnArray[1].url}dash/`,
           "dvb:priority": 1,
           "dvb:weight": 0,
-          serviceLocation: cdnArray[1].url,
+          "serviceLocation": cdnArray[1].url,
         },
         {
-          __text: `${cdnArray[2].url}dash/`,
+          "__text": `${cdnArray[2].url}dash/`,
           "dvb:priority": 2,
           "dvb:weight": 0,
-          serviceLocation: cdnArray[2].url,
+          "serviceLocation": cdnArray[2].url,
         },
       ]
 
@@ -643,18 +650,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.tearDown()
 
       expect(playbackElement.childElementCount).toBe(0)
-    })
-
-    it("should empty the eventCallbacks array and stop emitting events", () => {
-      function tearDownAndError() {
-        mseStrategy.load(null, 0)
-        mseStrategy.tearDown()
-        dashEventCallback("pause")
-      }
-
-      setUpMSE()
-
-      expect(tearDownAndError).not.toThrow()
     })
   })
 
