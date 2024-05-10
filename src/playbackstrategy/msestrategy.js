@@ -11,6 +11,7 @@ import TimeUtils from "../utils/timeutils"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
+import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
 
 function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
   let mediaPlayer
@@ -191,7 +192,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
     if (event.error && event.error.message) {
       DebugTool.error(`${event.error.message} (code: ${event.error.code})`)
-  
+
       lastError = event.error
 
       // Don't raise an error on fragment download error
