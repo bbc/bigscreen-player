@@ -74,6 +74,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
+    QUOTA_EXCEEDED: "quotaExceeded",
   }
 
   function onLoadedMetaData() {
@@ -183,6 +184,14 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     publishTimeUpdate()
+  }
+
+  function onQuotaExceeded(event) {
+    // Note: criticalBufferLevel (Total buffered ranges * 0.8) is set BEFORE this event is triggered,
+    // therefore it should actually be `criticalBufferLevel * 1.25` to see what the buffer size was on the device when this happened.
+    const bufferLevel = event.criticalBufferLevel * 1.25
+    DebugTool.quotaExceeded(bufferLevel, event.quotaExceededTime)
+    Plugins.interface.onQuotaExceeded({ criticalBufferLevel: bufferLevel, quotaExceededTime: event.quotaExceededTime })
   }
 
   function onError(event) {
@@ -479,6 +488,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.LOG, onDebugLog)
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
+    mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
   }
 
   function getSeekableRange() {
@@ -607,6 +617,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.off(DashJSEvents.LOG, onDebugLog)
       mediaPlayer.off(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
       mediaPlayer.off(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
+      mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
 
       DOMHelpers.safeRemoveElement(mediaElement)
 
