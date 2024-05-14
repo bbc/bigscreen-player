@@ -50,9 +50,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       },
       streaming: {
         liveDelay: 1.1,
-        bufferToKeep: 4,
+        bufferToKeep: 300,
         bufferTimeAtTopQuality: 12,
-        bufferTimeAtTopQualityLongForm: 15,
+        bufferTimeAtTopQualityLongForm: 300,
       },
     },
     customPlayerSettings
