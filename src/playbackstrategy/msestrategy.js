@@ -14,8 +14,6 @@ import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
 
 function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
-  DebugTool.info(JSON.stringify(customPlayerSettings))
-
   let mediaPlayer
   let mediaElement
 
