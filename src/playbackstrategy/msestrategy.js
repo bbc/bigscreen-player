@@ -49,10 +49,14 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         logLevel: 2,
       },
       streaming: {
-        liveDelay: 1.1,
-        bufferToKeep: 300,
-        bufferTimeAtTopQuality: 12,
-        bufferTimeAtTopQualityLongForm: 300,
+        fragmentRequestTimeout: 0,
+        manifestRequestTimeout: 0,
+        buffer: {
+          bufferTimeAtTopQualityLongForm: 1000,
+          stableBufferTime: 12,
+          initialBufferLevel: 1000,
+          bufferToKeep: 2000,
+        },
       },
     },
     customPlayerSettings
