@@ -1,4 +1,5 @@
 import PlaybackUtils from "./utils/playbackutils"
+import deferExceptions from "./utils/deferexceptions"
 
 let plugins = []
 
@@ -7,7 +8,10 @@ function callOnAllPlugins(funcKey, evt) {
 
   for (const plugin in plugins) {
     if (plugins[plugin][funcKey]) {
-      plugins[plugin][funcKey](clonedEvent)
+      const selectedPlugin = plugins[plugin][funcKey]
+      deferExceptions(() => {
+        selectedPlugin(clonedEvent)
+      })
     }
   }
 }
