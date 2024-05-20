@@ -1,10 +1,6 @@
 import plugins from "./plugins"
 
 describe("Plugins", () => {
-  beforeEach(() => {
-    // mockReset();
-  })
-
   it("Calls a registered plugin on interface invocation", () => {
     const fatalErrorPlugin = {
       onFatalError: jest.fn(),

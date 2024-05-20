@@ -1,19 +1,15 @@
 import PlaybackUtils from "./utils/playbackutils"
-import deferExceptions from "./utils/deferexceptions"
+import CallCallbacks from "./utils/callcallbacks"
 
 let plugins = []
 
 function callOnAllPlugins(funcKey, evt) {
   const clonedEvent = PlaybackUtils.deepClone(evt)
+  const selectedPlugins = plugins
+    .filter((plugin) => plugin[funcKey] && typeof plugin[funcKey] === "function")
+    .map((plugin) => plugin[funcKey])
 
-  for (const plugin in plugins) {
-    if (plugins[plugin][funcKey]) {
-      const selectedPlugin = plugins[plugin][funcKey]
-      deferExceptions(() => {
-        selectedPlugin(clonedEvent)
-      })
-    }
-  }
+  CallCallbacks(selectedPlugins, clonedEvent)
 }
 
 export default {
