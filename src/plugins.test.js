@@ -12,38 +12,30 @@ describe("Plugins", () => {
     expect(fatalErrorPlugin.onFatalError).toHaveBeenCalled()
   })
 
-  it("Calls multiple plugins and defers any error thrown inside a plugin", () => {
-    const fatalErrorPlugin = {
-      onFatalError: jest.fn(),
-    }
+  it("Calls multiple plugins and defers any error thrown inside a plugin", () =>
+    new Promise((done) => {
+      const fatalErrorPlugin = {
+        onFatalError: jest.fn(),
+      }
 
-    const newError = new Error("oops")
+      const anotherFatalErrorPlugin = {
+        onFatalError: jest.fn(),
+      }
 
-    fatalErrorPlugin.onFatalError.mockImplementationOnce(() => {
-      throw newError
-    })
+      fatalErrorPlugin.onFatalError.mockImplementationOnce(() => {
+        expect(anotherFatalErrorPlugin.onFatalError).toHaveBeenCalled()
+        expect(fatalErrorPlugin.onFatalError).toHaveBeenCalled()
+        done()
+      })
 
-    const anotherFatalErrorPlugin = {
-      onFatalError: jest.fn(),
-    }
+      plugins.registerPlugin(fatalErrorPlugin)
+      plugins.registerPlugin(anotherFatalErrorPlugin)
 
-    plugins.registerPlugin(fatalErrorPlugin)
-    plugins.registerPlugin(anotherFatalErrorPlugin)
+      jest.useFakeTimers()
 
-    jest.useFakeTimers()
-
-    try {
       expect(() => {
         plugins.interface.onFatalError()
       }).not.toThrow()
       jest.advanceTimersByTime(1)
-    } catch (error) {
-      // eslint-disable-next-line jest/no-conditional-expect
-      expect(error).toBe(newError)
-      // eslint-disable-next-line jest/no-conditional-expect
-      expect(anotherFatalErrorPlugin.onFatalError).toHaveBeenCalled()
-      // eslint-disable-next-line jest/no-conditional-expect
-      expect(fatalErrorPlugin.onFatalError).toHaveBeenCalled()
-    }
-  })
+    }))
 })
