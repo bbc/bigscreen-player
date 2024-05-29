@@ -83,12 +83,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
         }
 
         try {
-          const preTime = Date.now()
-          const xmlText = responseText.replace(/^.*<\?xml[^?]+\?>/i, "") || responseText
-          DebugTool.info(`xml split time: ${Date.now() - preTime}`)
-          const postTextTime = Date.now()
+          const xmlText = isSubtitlesWhole() ? responseText : responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText
           const xml = fromXML(xmlText)
-          DebugTool.info(`xml parse time: ${Date.now() - postTextTime}`)
           const times = xml.getMediaTimeEvents()
 
           segments.push({
