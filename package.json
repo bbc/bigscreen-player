@@ -64,7 +64,7 @@
   },
   "dependencies": {
     "dashjs": "github:bbc/dash.js#smp-v4.7.3-1",
-    "smp-imsc": "github:bbc/imscJS#v1.0.3"
+    "smp-imsc": "github:domjacks/imscJS#spike-instrument-from-xml"
   },
   "repository": {
     "type": "git",
