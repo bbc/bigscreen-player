@@ -88,7 +88,7 @@ type CreateTrace<Kind extends string, Data extends Primitives | Record<string, P
 
 type ApiCall = CreateTrace<"apicall", { functionName: string; functionArgs: any[] }>
 type BufferedRanges = CreateTrace<"buffered-ranges", { kind: MediaKinds; buffered: [start: number, end: number][] }>
-type Error = CreateTrace<"error", { name?: string; message: string }>
+type Error = CreateTrace<"error", { name: string; message: string }>
 type Event = CreateTrace<"event", { eventType: string; eventTarget: string }>
 type Gap = CreateTrace<"gap", { from: number; to: number }>
 type QuotaExceeded = CreateTrace<"quota-exceeded", { bufferLevel: number; time: number }>

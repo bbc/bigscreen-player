@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-
 import { MediaState } from "../models/mediastate"
 import { MediaKinds } from "../models/mediakinds"
 import Chronicle, { MetricForKind, MetricKind, TimestampedEntry, isTrace } from "./chronicle"
@@ -127,12 +124,12 @@ function createDebugTool() {
       return
     }
 
-    const data = parts.length < 2 ? parts[0] : parts.join(" ")
+    const { name, message } =
+      parts.length === 1 && typeof parts[0] === "object" && "name" in parts[0] && "message" in parts[0]
+        ? (parts[0] as Error)
+        : new Error(parts.join(" "))
 
-    chronicle.trace(
-      "error",
-      typeof data === "object" && "message" in data ? { name: data.name, message: data.message } : { message: data }
-    )
+    chronicle.trace("error", { name, message })
   }
 
   function event(eventType: string, eventTarget = "unknown") {

@@ -161,7 +161,7 @@ describe("logging an error", () => {
 
     expect(DebugTool.getDebugLogs()).toEqual([
       expect.objectContaining({ kind: "session-start" }),
-      expect.objectContaining({ kind: "error", data: { message: "something went wrong" } }),
+      expect.objectContaining({ kind: "error", data: { name: "Error", message: "something went wrong" } }),
     ])
   })
 
