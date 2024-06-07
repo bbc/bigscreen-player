@@ -13,7 +13,7 @@ export const LogLevel = {
   DEBUG: 3,
 } as const
 
-type LogLevel = (typeof LogLevel)[keyof typeof LogLevel]
+export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel]
 
 interface DebugTool {
   init(): void
