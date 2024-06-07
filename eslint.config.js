@@ -193,6 +193,7 @@ export default tseslint.config(
     files: ["**/*.test.{js,cjs,mjs,ts,cts,mts}"],
     rules: {
       "max-nested-callbacks": "off",
+      "@typescript-eslint/unbound-method": "off",
       "sonarjs/no-identical-functions": "off",
       "unicorn/consistent-function-scoping": "off",
     },
