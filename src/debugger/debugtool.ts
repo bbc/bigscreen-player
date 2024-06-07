@@ -1,16 +1,19 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import { MediaState } from "../models/mediastate"
 import { MediaKinds } from "../models/mediakinds"
 import Chronicle, { MetricForKind, MetricKind, TimestampedEntry, isTrace } from "./chronicle"
 import DebugViewController from "./debugviewcontroller"
 
-export const LogLevels = {
+export const LogLevel = {
   ERROR: 0,
   WARN: 1,
   INFO: 2,
   DEBUG: 3,
 } as const
 
-type LogLevel = (typeof LogLevels)[keyof typeof LogLevels]
+type LogLevel = (typeof LogLevel)[keyof typeof LogLevel]
 
 interface DebugTool {
   init(): void
@@ -47,16 +50,16 @@ function shouldDisplayEntry(entry: TimestampedEntry): boolean {
   )
 }
 
-function DebugTool() {
+function createDebugTool() {
   let chronicle = new Chronicle()
-  let currentLogLevel: LogLevel = LogLevels.INFO
+  let currentLogLevel: LogLevel = LogLevel.INFO
   let viewController = new DebugViewController()
 
   function init() {
     chronicle = new Chronicle()
     viewController = new DebugViewController()
 
-    setLogLevel(LogLevels.INFO)
+    setViewFilter(currentLogLevel)
 
     chronicle.trace("session-start", Date.now())
   }
@@ -73,16 +76,24 @@ function DebugTool() {
     return chronicle.retrieve()
   }
 
+  function setViewFilter(logLevel: LogLevel): void {
+    switch (logLevel) {
+      case LogLevel.DEBUG:
+        viewController.setFilters([])
+        break
+      case LogLevel.INFO:
+      case LogLevel.WARN:
+      case LogLevel.ERROR:
+        viewController.setFilters([shouldDisplayEntry])
+    }
+  }
+
   function setLogLevel(newLogLevel: LogLevel | undefined) {
     if (typeof newLogLevel !== "number") {
       return
     }
 
-    if (newLogLevel === LogLevels.DEBUG) {
-      viewController.setFilters([])
-    } else {
-      viewController.setFilters([shouldDisplayEntry])
-    }
+    setViewFilter(newLogLevel)
 
     currentLogLevel = newLogLevel
   }
@@ -104,7 +115,7 @@ function DebugTool() {
   }
 
   function debug(...parts: any[]) {
-    if (currentLogLevel < LogLevels.DEBUG) {
+    if (currentLogLevel < LogLevel.DEBUG) {
       return
     }
 
@@ -112,7 +123,7 @@ function DebugTool() {
   }
 
   function error(...parts: any[]) {
-    if (currentLogLevel < LogLevels.ERROR) {
+    if (currentLogLevel < LogLevel.ERROR) {
       return
     }
 
@@ -137,7 +148,7 @@ function DebugTool() {
   }
 
   function info(...parts: any[]) {
-    if (currentLogLevel < LogLevels.INFO) {
+    if (currentLogLevel < LogLevel.INFO) {
       return
     }
 
@@ -149,7 +160,7 @@ function DebugTool() {
   }
 
   function warn(...parts: any[]) {
-    if (currentLogLevel < LogLevels.WARN) {
+    if (currentLogLevel < LogLevel.WARN) {
       return
     }
 
@@ -200,7 +211,7 @@ function DebugTool() {
   }
 
   return {
-    logLevels: LogLevels,
+    logLevels: LogLevel,
     init,
     tearDown,
     getDebugLogs,
@@ -225,6 +236,6 @@ function DebugTool() {
   }
 }
 
-const DebugToolInstance = DebugTool() satisfies DebugTool
+const DebugTool = createDebugTool() satisfies DebugTool
 
-export default DebugToolInstance
+export default DebugTool
