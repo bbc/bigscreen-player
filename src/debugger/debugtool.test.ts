@@ -277,6 +277,16 @@ describe("show", () => {
     expect(mockViewController.addEntries).toHaveBeenCalledTimes(1)
   })
 
+  it("can be called before init", () => {
+    DebugTool.show()
+
+    DebugTool.init()
+
+    const mockViewController = getMockViewController()
+
+    expect(mockViewController.addEntries).toHaveBeenCalledTimes(1)
+  })
+
   it("provides the current time to the view controller", () => {
     DebugTool.init()
 

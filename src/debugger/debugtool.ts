@@ -48,9 +48,10 @@ function shouldDisplayEntry(entry: TimestampedEntry): boolean {
 }
 
 function createDebugTool() {
-  let chronicle = new Chronicle()
+  let chronicle: Chronicle | null = null
   let currentLogLevel: LogLevel = LogLevel.INFO
-  let viewController = new DebugViewController()
+  let isVisible = false
+  let viewController: DebugViewController | null = new DebugViewController()
 
   function init() {
     chronicle = new Chronicle()
@@ -59,21 +60,32 @@ function createDebugTool() {
     setViewFilter(currentLogLevel)
 
     chronicle.trace("session-start", Date.now())
+
+    if (isVisible) {
+      show()
+    }
   }
 
   function tearDown() {
-    if (viewController.isVisible) {
+    if (viewController?.isVisible) {
       hide()
     }
 
-    chronicle.trace("session-end", Date.now())
+    currentLogLevel = LogLevel.INFO
+    isVisible = false
+
+    chronicle?.trace("session-end", Date.now())
   }
 
   function getDebugLogs() {
-    return chronicle.retrieve()
+    return chronicle?.retrieve() ?? []
   }
 
   function setViewFilter(logLevel: LogLevel): void {
+    if (viewController == null) {
+      return
+    }
+
     switch (logLevel) {
       case LogLevel.DEBUG:
         viewController.setFilters([])
@@ -96,19 +108,19 @@ function createDebugTool() {
   }
 
   function setRootElement(element: HTMLElement) {
-    viewController.setRootElement(element)
+    viewController?.setRootElement(element)
   }
 
   function updateElementTime(seconds: number) {
-    chronicle.setCurrentElementTime(seconds)
+    chronicle?.setCurrentElementTime(seconds)
   }
 
   function apicall(functionName: string, functionArgs: any[] = []) {
-    chronicle.trace("apicall", { functionName, functionArgs })
+    chronicle?.trace("apicall", { functionName, functionArgs })
   }
 
   function buffered(kind: MediaKinds, buffered: [start: number, end: number][]) {
-    chronicle.trace("buffered-ranges", { kind, buffered })
+    chronicle?.trace("buffered-ranges", { kind, buffered })
   }
 
   function debug(...parts: any[]) {
@@ -116,7 +128,7 @@ function createDebugTool() {
       return
     }
 
-    chronicle.debug(parts.join(" "))
+    chronicle?.debug(parts.join(" "))
   }
 
   function error(...parts: any[]) {
@@ -129,19 +141,19 @@ function createDebugTool() {
         ? (parts[0] as Error)
         : new Error(parts.join(" "))
 
-    chronicle.trace("error", { name, message })
+    chronicle?.trace("error", { name, message })
   }
 
   function event(eventType: string, eventTarget = "unknown") {
-    chronicle.trace("event", { eventTarget, eventType })
+    chronicle?.trace("event", { eventTarget, eventType })
   }
 
   function gap(from: number, to: number): void {
-    chronicle.trace("gap", { from, to })
+    chronicle?.trace("gap", { from, to })
   }
 
   function quotaExceeded(bufferLevel: number, time: number): void {
-    chronicle.trace("quota-exceeded", { bufferLevel, time })
+    chronicle?.trace("quota-exceeded", { bufferLevel, time })
   }
 
   function info(...parts: any[]) {
@@ -149,11 +161,11 @@ function createDebugTool() {
       return
     }
 
-    chronicle.info(parts.join(" "))
+    chronicle?.info(parts.join(" "))
   }
 
   function statechange(value: MediaState) {
-    chronicle.trace("state-change", value)
+    chronicle?.trace("state-change", value)
   }
 
   function warn(...parts: any[]) {
@@ -161,33 +173,49 @@ function createDebugTool() {
       return
     }
 
-    chronicle.warn(parts.join(" "))
+    chronicle?.warn(parts.join(" "))
   }
 
   function dynamicMetric<Kind extends MetricKind>(kind: Kind, data: MetricForKind<Kind>["data"]) {
-    chronicle.appendMetric(kind, data)
+    chronicle?.appendMetric(kind, data)
   }
 
   function staticMetric<Kind extends MetricKind>(kind: Kind, data: MetricForKind<Kind>["data"]) {
-    chronicle.setMetric(kind, data)
+    chronicle?.setMetric(kind, data)
   }
 
   function handleHistoryUpdate(change: TimestampedEntry) {
+    if (viewController == null) {
+      return
+    }
+
     viewController.addEntries([change])
   }
 
   function handleTimeUpdate(seconds: number) {
+    if (chronicle == null || viewController == null) {
+      return
+    }
+
     viewController.addTime({ currentElementTime: seconds, sessionTime: chronicle.getSessionTime() })
   }
 
   function hide() {
-    viewController.hideView()
+    isVisible = false
 
-    chronicle.off("update", handleHistoryUpdate)
-    chronicle.off("timeupdate", handleTimeUpdate)
+    viewController?.hideView()
+
+    chronicle?.off("update", handleHistoryUpdate)
+    chronicle?.off("timeupdate", handleTimeUpdate)
   }
 
   function show() {
+    isVisible = true
+
+    if (viewController == null || chronicle == null) {
+      return
+    }
+
     viewController.showView()
 
     viewController.addEntries(chronicle.retrieve())
@@ -202,7 +230,7 @@ function createDebugTool() {
   }
 
   function toggleVisibility() {
-    const toggle = viewController.isVisible ? hide : show
+    const toggle = isVisible ? hide : show
 
     toggle()
   }
