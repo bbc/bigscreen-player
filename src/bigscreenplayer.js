@@ -153,12 +153,6 @@ function BigscreenPlayer() {
     return mediaSources && mediaSources.time().windowEndTime
   }
 
-  function toggleDebug() {
-    if (playerComponent) {
-      DebugTool.toggleVisibility()
-    }
-  }
-
   function callSubtitlesCallbacks(enabled) {
     callCallbacks(subtitleCallbacks, { enabled })
   }
@@ -662,7 +656,7 @@ function BigscreenPlayer() {
      * Toggle the visibility of the debug tool overlay.
      * @function
      */
-    toggleDebug,
+    toggleDebug: () => DebugTool.toggleVisibility(),
 
     /**
      * @function
