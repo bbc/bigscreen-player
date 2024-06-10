@@ -48,6 +48,7 @@ export type InitData = {
    * Date object with server time offset
    */
   serverDate?: Date
+  debug?: boolean
 }
 
 export type InitCallbacks = {

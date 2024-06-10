@@ -191,6 +191,10 @@ function BigscreenPlayer() {
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
 
+      if (bigscreenPlayerData.debug) {
+        DebugTool.toggleVisibility()
+      }
+
       DebugTool.staticMetric("version", Version)
 
       if (typeof bigscreenPlayerData.initialPlaybackTime === "number") {
