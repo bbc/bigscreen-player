@@ -39,7 +39,7 @@ type failoverResetTime = number is FiniteNumber
 Provide a sorting algorithm to reorder the available media sources after a failover.
 
 ```ts
-type failoverSort = (...sources: [...string]) => [...string]
+type failoverSort = (sources: string[]) => string[]
 ```
 
 ### `streaming.seekDurationPadding`

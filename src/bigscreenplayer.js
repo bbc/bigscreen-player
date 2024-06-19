@@ -8,7 +8,6 @@ import DynamicWindowUtils from "./dynamicwindowutils"
 import WindowTypes from "./models/windowtypes"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
-import Chronicle from "./debugger/chronicle"
 import DebugTool from "./debugger/debugtool"
 import SlidingWindowUtils from "./utils/timeutils"
 import callCallbacks from "./utils/callcallbacks"
@@ -17,7 +16,9 @@ import Version from "./version"
 import Resizer from "./resizer"
 import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
-import "./typedefs"
+// TODO: Remove when this becomes a TypeScript file
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { InitData, InitCallbacks, SubtitlesCustomisationOptions } from "./types"
 
 function BigscreenPlayer() {
   let stateChangeCallbacks = []
@@ -44,7 +45,6 @@ function BigscreenPlayer() {
 
   function mediaStateUpdateCallback(evt) {
     if (evt.timeUpdate) {
-      DebugTool.time(evt.data.currentTime)
       callCallbacks(timeUpdateCallbacks, {
         currentTime: evt.data.currentTime,
         endOfStream,
@@ -73,18 +73,20 @@ function BigscreenPlayer() {
       }
 
       stateObject.endOfStream = endOfStream
-      DebugTool.event(stateObject)
+      DebugTool.statechange(evt.data.state)
 
       callCallbacks(stateChangeCallbacks, stateObject)
     }
 
     if (evt.data.seekableRange) {
-      DebugTool.keyValue({ key: "seekableRangeStart", value: deviceTimeToDate(evt.data.seekableRange.start) })
-      DebugTool.keyValue({ key: "seekableRangeEnd", value: deviceTimeToDate(evt.data.seekableRange.end) })
+      DebugTool.staticMetric("seekable-range", [
+        deviceTimeToDate(evt.data.seekableRange.start).getTime(),
+        deviceTimeToDate(evt.data.seekableRange.end).getTime(),
+      ])
     }
 
     if (evt.data.duration) {
-      DebugTool.keyValue({ key: "duration", value: evt.data.duration })
+      DebugTool.dynamicMetric("duration", evt.data.duration)
     }
 
     if (playerComponent && readyHelper) {
@@ -184,17 +186,26 @@ function BigscreenPlayer() {
      * @function
      * @name init
      * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
-     * @param {BigscreenPlayerData} bigscreenPlayerData
+     * @param {InitData} bigscreenPlayerData
      * @param {WindowTypes} newWindowType
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
      * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks = {}) => {
       playbackElement = newPlaybackElement
-      Chronicle.init()
       resizer = Resizer()
+      DebugTool.init()
       DebugTool.setRootElement(playbackElement)
-      DebugTool.keyValue({ key: "framework-version", value: Version })
+
+      DebugTool.staticMetric("version", Version)
+
+      if (typeof bigscreenPlayerData.initialPlaybackTime === "number") {
+        DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime)
+      }
+      if (typeof window.bigscreenPlayer?.playbackStrategy === "string") {
+        DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
+      }
+
       windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
 
@@ -250,7 +261,6 @@ function BigscreenPlayer() {
       resizer = undefined
       this.unregisterPlugin()
       DebugTool.tearDown()
-      Chronicle.tearDown()
     },
 
     /**
@@ -326,7 +336,8 @@ function BigscreenPlayer() {
      * @param {Number} time - In seconds
      */
     setCurrentTime(time) {
-      DebugTool.apicall("setCurrentTime")
+      DebugTool.apicall("setCurrentTime", [time])
+
       if (playerComponent) {
         // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
         isSeeking = true
@@ -436,6 +447,7 @@ function BigscreenPlayer() {
      */
     play: () => {
       DebugTool.apicall("play")
+
       playerComponent.play()
     },
     /**
@@ -447,6 +459,7 @@ function BigscreenPlayer() {
      */
     pause: (opts) => {
       DebugTool.apicall("pause")
+
       pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
       playerComponent.pause(opts)
     },
@@ -520,9 +533,9 @@ function BigscreenPlayer() {
     /**
      * Render an example subtitles string with a given style and location
      *
-     * @param {String} xmlString - EBU-TT-D compliant XML String
-     * @param {SubtitlesCustomisationOptions} styleOpts - {@link SubtitlesCustomisationOptions}
-     * @param {SubtitlesSafePosition} safePosition - {@link SubtitlesSafePosition}
+     * @param {string} xmlString - EBU-TT-D compliant XML String
+     * @param {SubtitlesCustomisationOptions} styleOpts
+     * @param {DOMRect} safePosition
      */
     renderSubtitleExample: (xmlString, styleOpts, safePosition) => {
       if (subtitles) {
@@ -661,8 +674,8 @@ function BigscreenPlayer() {
      * @function
      * @param logLevel -  log level to display @see getLogLevels
      */
-    setLogLevel: DebugTool.setLogLevel,
-    getDebugLogs: () => Chronicle.retrieve(),
+    setLogLevel: (level) => DebugTool.setLogLevel(level),
+    getDebugLogs: () => DebugTool.getDebugLogs(),
   }
 }
 

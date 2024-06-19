@@ -11,6 +11,9 @@
   "cdn-failover": {
     "title": "CDN Failover"
   },
+  "debugging": {
+    "title": "Debugging"
+  },
   "live-streaming": {
     "title": "Live"
   }

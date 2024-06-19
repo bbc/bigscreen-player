@@ -6,6 +6,7 @@ import MSEStrategy from "./msestrategy"
 import TimeUtils from "../utils/timeutils"
 import DynamicWindowUtils from "../dynamicwindowutils"
 import Plugins from "../plugins"
+import DebugTool from "../debugger/debugtool"
 
 const mockDashInstance = {
   initialize: jest.fn(),
@@ -34,6 +35,9 @@ const mockDashInstance = {
   setPlaybackRate: jest.fn(),
   getPlaybackRate: jest.fn(),
   setBlacklistExpiryTime: jest.fn(),
+  getActiveStream: jest.fn(() => ({
+    getProcessors: jest.fn(() => []),
+  })),
 }
 
 const mockDashMediaPlayer = {
@@ -42,6 +46,7 @@ const mockDashMediaPlayer = {
 
 jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
 jest.mock("../dynamicwindowutils")
+jest.mock("../debugger/debugtool")
 
 describe("Media Source Extensions Playback Strategy", () => {
   const dashjsMediaPlayerEvents = {
@@ -638,18 +643,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.tearDown()
 
       expect(playbackElement.childElementCount).toBe(0)
-    })
-
-    it("should empty the eventCallbacks array and stop emitting events", () => {
-      function tearDownAndError() {
-        mseStrategy.load(null, 0)
-        mseStrategy.tearDown()
-        dashEventCallback("pause")
-      }
-
-      setUpMSE()
-
-      expect(tearDownAndError).not.toThrow()
     })
   })
 
@@ -1372,6 +1365,26 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(Plugins.interface.onFragmentContentLengthMismatch).toHaveBeenCalledWith(
         mockFragmentContentLengthMismatchEvent
       )
+    })
+  })
+
+  describe("gap jumps", () => {
+    it("logs a seek triggered by a gap to the debugger", () => {
+      setUpMSE()
+
+      dashEventCallback("gapCausedInternalSeek", { duration: 0.3, seekTime: 33.3 })
+
+      expect(DebugTool.gap).toHaveBeenCalledTimes(1)
+      expect(DebugTool.gap).toHaveBeenCalledWith(33, 33.3)
+    })
+
+    it("logs a seek to end triggered by a gap to the debugger", () => {
+      setUpMSE()
+
+      dashEventCallback("gapCausedSeekToPeriodEnd", { duration: 0.3, seekTime: 33.3 })
+
+      expect(DebugTool.gap).toHaveBeenCalledTimes(1)
+      expect(DebugTool.gap).toHaveBeenCalledWith(33, 33.3)
     })
   })
 })

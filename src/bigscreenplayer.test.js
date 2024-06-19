@@ -5,7 +5,7 @@ import Plugins from "./plugins"
 import TransferFormats from "./models/transferformats"
 import LiveSupport from "./models/livesupport"
 import BigscreenPlayer from "./bigscreenplayer"
-import Chronicle from "./debugger/chronicle"
+import DebugTool from "./debugger/debugtool"
 import PlayerComponent from "./playercomponent"
 
 let bigscreenPlayer
@@ -122,6 +122,8 @@ function initialiseBigscreenPlayer(options = {}) {
 
 describe("Bigscreen Player", () => {
   beforeEach(() => {
+    jest.clearAllMocks()
+
     setupManifestData()
 
     mockPlayerComponentInstance = {
@@ -156,7 +158,6 @@ describe("Bigscreen Player", () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
     forceMediaSourcesConstructionFailure = false
     bigscreenPlayer.tearDown()
     bigscreenPlayer = undefined
@@ -208,6 +209,22 @@ describe("Bigscreen Player", () => {
       initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
 
       expect(errorCallback).not.toHaveBeenCalled()
+    })
+
+    it("initialises the debugger", () => {
+      initialiseBigscreenPlayer({ windowType: WindowTypes.STATIC })
+
+      expect(DebugTool.init).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("tearDown", () => {
+    it("tears down the debugger", () => {
+      initialiseBigscreenPlayer({ windowType: WindowTypes.STATIC })
+
+      bigscreenPlayer.tearDown()
+
+      expect(DebugTool.tearDown).toHaveBeenCalledTimes(1)
     })
   })
 
@@ -1432,10 +1449,9 @@ describe("Bigscreen Player", () => {
   })
 
   describe("getDebugLogs", () => {
-    it('should call "retrieve" on the Chronicle', () => {
-      jest.spyOn(Chronicle, "retrieve")
+    it('should call "retrieve" on the DebugTool', () => {
       bigscreenPlayer.getDebugLogs()
-      expect(Chronicle.retrieve).toHaveBeenCalledTimes(1)
+      expect(DebugTool.getDebugLogs).toHaveBeenCalledTimes(1)
     })
   })
 })

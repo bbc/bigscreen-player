@@ -76,14 +76,31 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       onLoad: (responseXML, responseText) => {
         resetLoadErrorCount()
         if (!responseXML && isSubtitlesWhole()) {
-          DebugTool.info("Error: responseXML is invalid.")
+          DebugTool.error("responseXML is invalid")
           Plugins.interface.onSubtitlesXMLError({ cdn: mediaSources.currentSubtitlesCdn() })
           stop()
           return
         }
 
         try {
-          const xml = fromXML(responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText)
+          const preTrimTime = Date.now()
+
+          const xmlText = isSubtitlesWhole()
+            ? responseText.replace(/^.*<\?xml[^?]+\?>/i, "")
+            : responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText
+
+          if (isSubtitlesWhole()) {
+            DebugTool.info(`XML trim duration: ${Date.now() - preTrimTime}`)
+          }
+
+          const preParseTime = Date.now()
+
+          const xml = fromXML(xmlText)
+
+          if (isSubtitlesWhole()) {
+            DebugTool.info(`XML parse duration: ${Date.now() - preParseTime}`)
+          }
+
           const times = xml.getMediaTimeEvents()
 
           segments.push({
@@ -97,17 +114,19 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
             pruneSegments()
           }
         } catch (error) {
-          DebugTool.info(`Error transforming subtitles: ${error}`)
+          error.name = "SubtitlesTransformError"
+          DebugTool.error(error)
+
           Plugins.interface.onSubtitlesTransformError()
           stop()
         }
       },
       onError: ({ statusCode, ...rest } = {}) => {
-        DebugTool.info(`Error loading subtitles data: ${statusCode}`)
+        DebugTool.error(`Failed to load subtitle data. Status code: ${statusCode}`)
         loadErrorFailover({ statusCode, ...rest })
       },
       onTimeout: () => {
-        DebugTool.info("Request timeout loading subtitles")
+        DebugTool.error("Loading subtitles timed out")
         Plugins.interface.onSubtitlesTimeout({ cdn: mediaSources.currentSubtitlesCdn() })
         stop()
       },
@@ -269,7 +288,9 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       const isd = generateISD(xml, currentTime)
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
     } catch (error) {
-      DebugTool.info(`Exception while rendering subtitles: ${error}`)
+      error.name = "SubtitlesRenderError"
+      DebugTool.error(error)
+
       Plugins.interface.onSubtitlesRenderError()
     }
   }

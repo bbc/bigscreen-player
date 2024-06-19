@@ -12,7 +12,9 @@ function hasFiniteSeekableRange(seekableRange) {
   let hasRange = true
   try {
     hasRange = seekableRange.end !== Infinity
-  } catch (e) {}
+  } catch (_error) {
+    /* empty */
+  }
   return hasRange
 }
 
@@ -54,7 +56,7 @@ function autoResumeAtStartOfRange(
   resume
 ) {
   const resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS)
-  DebugTool.keyValue({ key: "autoresume", value: resumeTimeOut })
+  DebugTool.dynamicMetric("auto-resume", resumeTimeOut)
   const autoResumeTimer = setTimeout(() => {
     removeEventCallback(undefined, detectIfUnpaused)
     resume()
@@ -71,7 +73,7 @@ function autoResumeAtStartOfRange(
 }
 
 export default {
-  autoResumeAtStartOfRange: autoResumeAtStartOfRange,
-  canPause: canPause,
-  canSeek: canSeek,
+  autoResumeAtStartOfRange,
+  canPause,
+  canSeek,
 }
