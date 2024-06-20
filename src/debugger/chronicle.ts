@@ -261,10 +261,8 @@ class Chronicle {
 
     const metricsForKey = this.metrics[kind] as Timestamped<MetricForKind<Kind>>[]
 
-    if(kind === "duration") {
-      console.log("=== DURATION ===")
-      console.log(JSON.stringify(metricsForKey))
-    }
+    console.log(`=== ${kind.toUpperCase()} ===`)
+    console.log(metricsForKey)
 
     if (metricsForKey.length + 1 === METRIC_ENTRY_THRESHOLD) {
       this.trace(
