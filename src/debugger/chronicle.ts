@@ -242,7 +242,6 @@ class Chronicle {
   }
 
   public appendMetric<Kind extends MetricKind>(kind: Kind, data: MetricForKind<Kind>["data"]) {
-
     if (!isValid(data)) {
       throw new TypeError(
         `A metric value can only be a primitive type, or an array of any depth containing primitive types. Got ${typeof data}`
@@ -260,11 +259,6 @@ class Chronicle {
     }
 
     const metricsForKey = this.metrics[kind] as Timestamped<MetricForKind<Kind>>[]
-
-    if(kind === "duration") {
-      console.log("=== DURATION ===")
-      console.log(JSON.stringify(metricsForKey))
-    }
 
     if (metricsForKey.length + 1 === METRIC_ENTRY_THRESHOLD) {
       this.trace(
