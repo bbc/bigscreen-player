@@ -86,7 +86,7 @@ function BigscreenPlayer() {
     }
 
     if (evt.data.duration) {
-      DebugTool.dynamicMetric("duration", evt.data.duration)
+      DebugTool.staticMetric("duration", evt.data.duration)
     }
 
     if (playerComponent && readyHelper) {
