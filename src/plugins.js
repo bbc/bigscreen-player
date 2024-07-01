@@ -1,15 +1,15 @@
 import PlaybackUtils from "./utils/playbackutils"
+import CallCallbacks from "./utils/callcallbacks"
 
 let plugins = []
 
 function callOnAllPlugins(funcKey, evt) {
   const clonedEvent = PlaybackUtils.deepClone(evt)
+  const selectedPlugins = plugins
+    .filter((plugin) => plugin[funcKey] && typeof plugin[funcKey] === "function")
+    .map((plugin) => plugin[funcKey])
 
-  for (const plugin in plugins) {
-    if (plugins[plugin][funcKey]) {
-      plugins[plugin][funcKey](clonedEvent)
-    }
-  }
+  CallCallbacks(selectedPlugins, clonedEvent)
 }
 
 export default {
