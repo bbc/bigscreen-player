@@ -95,7 +95,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
           const preParseTime = Date.now()
 
-          const xml = fromXML(responseXML)
+          const xml = fromXML(responseXML, DebugTool.info)
 
           if (isSubtitlesWhole()) {
             DebugTool.info(`XML parse duration: ${Date.now() - preParseTime}`)
