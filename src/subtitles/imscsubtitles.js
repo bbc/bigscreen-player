@@ -85,7 +85,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
         try {
           const preTrimTime = Date.now()
 
-          const xmlText = isSubtitlesWhole()
+          isSubtitlesWhole()
             ? responseText.replace(/^.*<\?xml[^?]+\?>/i, "")
             : responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText
 
@@ -95,7 +95,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
           const preParseTime = Date.now()
 
-          const xml = fromXML(xmlText)
+          const xml = fromXML(responseXML)
 
           if (isSubtitlesWhole()) {
             DebugTool.info(`XML parse duration: ${Date.now() - preParseTime}`)
