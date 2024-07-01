@@ -1,3 +1,4 @@
+/* eslint-disable jest/no-conditional-expect */
 import plugins from "./plugins"
 
 describe("Plugins", () => {
@@ -12,30 +13,38 @@ describe("Plugins", () => {
     expect(fatalErrorPlugin.onFatalError).toHaveBeenCalled()
   })
 
-  it("Calls multiple plugins and defers any error thrown inside a plugin", () =>
-    new Promise((done) => {
-      const fatalErrorPlugin = {
-        onFatalError: jest.fn(),
-      }
+  it("Calls multiple plugins and defers any error thrown inside a plugin", () => {
+    expect.assertions(4)
 
-      const anotherFatalErrorPlugin = {
-        onFatalError: jest.fn(),
-      }
+    const fatalErrorPlugin = {
+      onFatalError: jest.fn(),
+    }
 
-      fatalErrorPlugin.onFatalError.mockImplementationOnce(() => {
-        expect(anotherFatalErrorPlugin.onFatalError).toHaveBeenCalled()
-        expect(fatalErrorPlugin.onFatalError).toHaveBeenCalled()
-        done()
-      })
+    const newError = new Error("oops")
 
-      plugins.registerPlugin(fatalErrorPlugin)
-      plugins.registerPlugin(anotherFatalErrorPlugin)
+    fatalErrorPlugin.onFatalError.mockImplementationOnce(() => {
+      throw newError
+    })
 
-      jest.useFakeTimers()
+    const anotherFatalErrorPlugin = {
+      onFatalError: jest.fn(),
+    }
 
+    plugins.registerPlugin(fatalErrorPlugin)
+    plugins.registerPlugin(anotherFatalErrorPlugin)
+
+    jest.useFakeTimers()
+
+    try {
       expect(() => {
         plugins.interface.onFatalError()
       }).not.toThrow()
       jest.advanceTimersByTime(1)
-    }))
+    } catch (error) {
+      // Test for the async error case, linting hates it!
+      expect(error).toBe(newError)
+      expect(anotherFatalErrorPlugin.onFatalError).toHaveBeenCalled()
+      expect(fatalErrorPlugin.onFatalError).toHaveBeenCalled()
+    }
+  })
 })
