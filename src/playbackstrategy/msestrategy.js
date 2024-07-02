@@ -471,9 +471,22 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     playbackElement.insertBefore(mediaElement, playbackElement.firstChild)
   }
 
+  function getDashSettings(playerSettings) {
+    const settings = Utils.deepClone(playerSettings)
+
+    // BSP Specific Settings
+    delete settings.failoverResetTime
+    delete settings.failoverSort
+    delete settings.streaming?.seekDurationPadding
+
+    return settings
+  }
+
   function setUpMediaPlayer(playbackTime) {
+    const dashSettings = getDashSettings(playerSettings)
+
     mediaPlayer = MediaPlayer().create()
-    mediaPlayer.updateSettings(playerSettings)
+    mediaPlayer.updateSettings(dashSettings)
     mediaPlayer.initialize(mediaElement, null, true)
     modifySource(playbackTime)
   }

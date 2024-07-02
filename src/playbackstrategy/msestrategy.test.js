@@ -7,6 +7,7 @@ import TimeUtils from "../utils/timeutils"
 import DynamicWindowUtils from "../dynamicwindowutils"
 import Plugins from "../plugins"
 import DebugTool from "../debugger/debugtool"
+import Utils from "../utils/playbackutils"
 
 const mockDashInstance = {
   initialize: jest.fn(),
@@ -177,6 +178,47 @@ describe("Media Source Extensions Playback Strategy", () => {
     )
   }
 
+  describe("Settings", () => {
+    it("does not pass BSP Specific Settings to Dash", () => {
+      const liveDelay = 20
+      const failoverResetTime = 2
+      const seekDurationPadding = 0
+
+      const bspSettings = { failoverResetTime, failoverSort: () => {}, streaming: { seekDurationPadding } }
+      const dashSettings = { streaming: { delay: { liveDelay } } }
+      const customPlayerSettings = Utils.merge(bspSettings, dashSettings)
+
+      setUpMSE(0, undefined, undefined, 0, 0, customPlayerSettings)
+      mseStrategy.load(null, 0)
+
+      expect(mockDashInstance.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          streaming: expect.objectContaining({
+            delay: { liveDelay },
+          }),
+        })
+      )
+
+      expect(mockDashInstance.updateSettings).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          failoverResetTime,
+        })
+      )
+
+      expect(mockDashInstance.updateSettings).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          failoverSort: expect.any(Function),
+        })
+      )
+
+      expect(mockDashInstance.updateSettings).not.toHaveBeenCalledWith(
+        expect.objectContaining({
+          streaming: expect.objectContaining({ seekDurationPadding }),
+        })
+      )
+    })
+  })
+
   describe("Transitions", () => {
     it("canBePaused() Transition is true", () => {
       setUpMSE()
@@ -235,22 +277,22 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       const baseUrlArray = [
         {
-          __text: `${cdnArray[0].url}dash/`,
+          "__text": `${cdnArray[0].url}dash/`,
           "dvb:priority": 0,
           "dvb:weight": 0,
-          serviceLocation: cdnArray[0].url,
+          "serviceLocation": cdnArray[0].url,
         },
         {
-          __text: `${cdnArray[1].url}dash/`,
+          "__text": `${cdnArray[1].url}dash/`,
           "dvb:priority": 1,
           "dvb:weight": 0,
-          serviceLocation: cdnArray[1].url,
+          "serviceLocation": cdnArray[1].url,
         },
         {
-          __text: `${cdnArray[2].url}dash/`,
+          "__text": `${cdnArray[2].url}dash/`,
           "dvb:priority": 2,
           "dvb:weight": 0,
-          serviceLocation: cdnArray[2].url,
+          "serviceLocation": cdnArray[2].url,
         },
       ]
 
