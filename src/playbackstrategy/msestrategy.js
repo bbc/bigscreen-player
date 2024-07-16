@@ -282,6 +282,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function onManifestValidityChange(event) {
     DebugTool.info(`Manifest validity changed. Duration is: ${event.newDuration}`)
+    if (windowType === WindowTypes.GROWING) {
+      mediaPlayer.refreshManifest((manifest) => {
+        DebugTool.info(`Manifest Refreshed. Duration is: ${manifest.mediaPresentationDuration}`)
+      })
+    }
   }
 
   function onStreamInitialised() {
