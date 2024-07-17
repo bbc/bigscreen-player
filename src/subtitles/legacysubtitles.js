@@ -46,6 +46,19 @@ function LegacySubtitles(mediaPlayer, autoStart, parentElement, mediaSources) {
   function createContainer(xml) {
     container.id = "playerCaptionsContainer"
     DOMHelpers.addClass(container, "playerCaptions")
+    
+    container.style.position = 'absolute'
+    container.style.bottom = '0px'
+    container.style.right = '0px'
+    container.style.width = '1216px'
+    container.style.fontSize = '42px'
+    container.style.fontWeight = 'bold'
+    container.style.textAlign = 'center'
+    container.style.textShadow = '#161616 2px 2px 1px'
+    container.style.color = '#ebebeb'
+    container.style.paddingRight = '32px'
+    container.style.paddingLeft = '32px'
+    container.style.paddingBottom = '40px'
 
     // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
     subtitlesRenderer = Renderer("playerCaptions", xml, mediaPlayer)
