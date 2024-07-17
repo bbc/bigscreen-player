@@ -582,13 +582,12 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     if (windowType === WindowTypes.SLIDING) {
-      console.log(`Sliding Window Paused Time: ${new Date(slidingWindowPausedTime).toString()}`)
       const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
       const offset = TimeUtils.calculateSlidingWindowSeekOffset(
         time,
         dvrInfo.range.start,
         timeCorrection,
-        0 // slidingWindowPausedTime
+        slidingWindowPausedTime
       )
       slidingWindowPausedTime = 0
 
@@ -701,7 +700,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         startAutoResumeTimeout()
       }
     },
-    play: () => mediaPlayer.play(),
+    play: () => {
+      if (windowType === WindowTypes.SLIDING) {
+        slidingWindowPausedTime = 0
+      }
+
+      mediaPlayer.play()
+    },
     setCurrentTime: (time) => {
       publishedSeekEvent = false
       isSeeking = true
