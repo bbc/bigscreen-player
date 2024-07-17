@@ -582,12 +582,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     if (windowType === WindowTypes.SLIDING) {
+      console.log(`Sliding Window Paused Time: ${new Date(slidingWindowPausedTime).toString()}`)
       const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
       const offset = TimeUtils.calculateSlidingWindowSeekOffset(
         time,
         dvrInfo.range.start,
         timeCorrection,
-        slidingWindowPausedTime
+        0 // slidingWindowPausedTime
       )
       slidingWindowPausedTime = 0
 
