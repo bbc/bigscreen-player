@@ -1099,6 +1099,15 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("does not call refreshManifest on mediaPlayer with a sliding window", () => {
+      setUpMSE(0, WindowTypes.SLIDING)
+
+      mseStrategy.load(null, 0)
+      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
+
+      expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
+    })
+
+    it("does not call refreshManifest on mediaPlayer with a static window", () => {
       setUpMSE(0, WindowTypes.STATIC)
 
       mseStrategy.load(null, 0)
