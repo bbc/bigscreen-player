@@ -7,7 +7,7 @@ function callOnAllPlugins(funcKey, evt) {
   const clonedEvent = PlaybackUtils.deepClone(evt)
   const selectedPlugins = plugins
     .filter((plugin) => plugin[funcKey] && typeof plugin[funcKey] === "function")
-    .map((plugin) => plugin[funcKey])
+    .map((plugin, index, arr) => plugin[funcKey].bind(arr[index]))
 
   CallCallbacks(selectedPlugins, clonedEvent)
 }
