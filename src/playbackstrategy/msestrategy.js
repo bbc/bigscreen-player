@@ -691,7 +691,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     isEnded: () => isEnded,
     isPaused,
     pause: (opts = {}) => {
-      if (windowType === WindowTypes.SLIDING) {
+      if (windowType === WindowTypes.SLIDING && opts.userPause === false) {
         slidingWindowPausedTime = Date.now()
       }
 

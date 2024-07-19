@@ -199,7 +199,7 @@ describe("Player Component", () => {
 
       return StrategyPicker.default().then(() => {
         playerComponent.pause()
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: true })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expect.objectContaining({ disableAutoResume: true }))
       })
     })
 
@@ -209,14 +209,16 @@ describe("Player Component", () => {
       jest.spyOn(mockStrategy, "pause")
 
       return StrategyPicker.default().then(() => {
+        const expected = (disableAutoResume) => expect.objectContaining({ disableAutoResume })
+
         playerComponent.pause()
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: undefined })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected())
 
         playerComponent.pause({ disableAutoResume: false })
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: false })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected(false))
 
         playerComponent.pause({ disableAutoResume: true })
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: true })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected(true))
       })
     })
 
@@ -226,14 +228,16 @@ describe("Player Component", () => {
       jest.spyOn(mockStrategy, "pause")
 
       return StrategyPicker.default().then(() => {
+        const expected = (disableAutoResume) => expect.objectContaining({ disableAutoResume })
+
         playerComponent.pause()
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: undefined })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected())
 
         playerComponent.pause({ disableAutoResume: false })
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: false })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected(false))
 
         playerComponent.pause({ disableAutoResume: true })
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: true })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected(true))
       })
     })
   })
