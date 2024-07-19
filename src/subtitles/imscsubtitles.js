@@ -75,19 +75,19 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
       timeout: mediaSources.subtitlesRequestTimeout(),
       onLoad: (responseXML, responseText) => {
         resetLoadErrorCount()
-        if (!responseXML && isSubtitlesWhole()) {
-          DebugTool.error("responseXML is invalid")
-          Plugins.interface.onSubtitlesXMLError({ cdn: mediaSources.currentSubtitlesCdn() })
-          stop()
-          return
-        }
+        // if (!responseXML && isSubtitlesWhole()) {
+        //   DebugTool.error("responseXML is invalid")
+        //   Plugins.interface.onSubtitlesXMLError({ cdn: mediaSources.currentSubtitlesCdn() })
+        //   stop()
+        //   return
+        // }
 
         try {
           const preTrimTime = Date.now()
 
-          const xmlText = isSubtitlesWhole()
-            ? responseText.replace(/^.*<\?xml[^?]+\?>/i, "")
-            : responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText
+          // isSubtitlesWhole()
+          //   ? responseText.replace(/^.*<\?xml[^?]+\?>/i, "")
+          //   : responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText
 
           if (isSubtitlesWhole()) {
             DebugTool.info(`XML trim duration: ${Date.now() - preTrimTime}`)
@@ -95,13 +95,15 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
           const preParseTime = Date.now()
 
-          const xml = fromXML(xmlText)
+          const xml = JSON.parse(responseText)
 
           if (isSubtitlesWhole()) {
             DebugTool.info(`XML parse duration: ${Date.now() - preParseTime}`)
           }
 
-          const times = xml.getMediaTimeEvents()
+          // const times = xml.getMediaTimeEvents()
+
+          const times = xml.events
 
           segments.push({
             xml: modifyStyling(xml),
