@@ -66,9 +66,8 @@ function PlayerComponent(
   function pause(opts = {}) {
     if (transitions().canBePaused()) {
       const disableAutoResume = _windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
-      const userPause = opts.userPause ?? true
 
-      playbackStrategy && playbackStrategy.pause({ disableAutoResume, userPause })
+      playbackStrategy && playbackStrategy.pause({ disableAutoResume, pauseTrigger: opts.pauseTrigger })
     }
   }
 
