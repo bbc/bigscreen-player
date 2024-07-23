@@ -701,13 +701,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         startAutoResumeTimeout()
       }
     },
-    play: () => {
-      if (windowType === WindowTypes.SLIDING) {
-        slidingWindowPausedTime = 0
-      }
-
-      mediaPlayer.play()
-    },
+    play: () => mediaPlayer.play(),
     setCurrentTime: (time) => {
       publishedSeekEvent = false
       isSeeking = true
