@@ -7,6 +7,7 @@ import TransferFormats from "./models/transferformats"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
 import * as StrategyPicker from "./playbackstrategy/strategypicker"
+import PauseTriggers from "./models/pausetriggers"
 
 window.bigscreenPlayer = {}
 
@@ -194,12 +195,23 @@ describe("Player Component", () => {
   })
 
   describe("Pause", () => {
+    it("should pass through Pause Trigger to the playback strategy", () => {
+      const pauseTrigger = PauseTriggers.APP
+
+      setUpPlayerComponent()
+
+      return StrategyPicker.default().then(() => {
+        playerComponent.pause({ pauseTrigger })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expect.objectContaining({ pauseTrigger }))
+      })
+    })
+
     it("should disable auto resume when playing a video webcast", () => {
       setUpPlayerComponent({ windowType: WindowTypes.GROWING })
 
       return StrategyPicker.default().then(() => {
         playerComponent.pause()
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: true })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expect.objectContaining({ disableAutoResume: true }))
       })
     })
 
@@ -209,14 +221,16 @@ describe("Player Component", () => {
       jest.spyOn(mockStrategy, "pause")
 
       return StrategyPicker.default().then(() => {
+        const expected = (disableAutoResume) => expect.objectContaining({ disableAutoResume })
+
         playerComponent.pause()
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: undefined })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected())
 
         playerComponent.pause({ disableAutoResume: false })
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: false })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected(false))
 
         playerComponent.pause({ disableAutoResume: true })
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: true })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected(true))
       })
     })
 
@@ -226,14 +240,16 @@ describe("Player Component", () => {
       jest.spyOn(mockStrategy, "pause")
 
       return StrategyPicker.default().then(() => {
+        const expected = (disableAutoResume) => expect.objectContaining({ disableAutoResume })
+
         playerComponent.pause()
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: undefined })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected())
 
         playerComponent.pause({ disableAutoResume: false })
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: false })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected(false))
 
         playerComponent.pause({ disableAutoResume: true })
-        expect(mockStrategy.pause).toHaveBeenCalledWith({ disableAutoResume: true })
+        expect(mockStrategy.pause).toHaveBeenCalledWith(expected(true))
       })
     })
   })

@@ -66,7 +66,8 @@ function PlayerComponent(
   function pause(opts = {}) {
     if (transitions().canBePaused()) {
       const disableAutoResume = _windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
-      playbackStrategy && playbackStrategy.pause({ disableAutoResume })
+
+      playbackStrategy && playbackStrategy.pause({ disableAutoResume, pauseTrigger: opts.pauseTrigger })
     }
   }
 
@@ -167,26 +168,24 @@ function PlayerComponent(
 
   function eventCallback(mediaState) {
     switch (mediaState) {
-      case MediaState.PLAYING: {
+      case MediaState.PLAYING:
         onPlaying()
         break
-      }
-      case MediaState.PAUSED: {
+
+      case MediaState.PAUSED:
         onPaused()
         break
-      }
-      case MediaState.WAITING: {
+
+      case MediaState.WAITING:
         onBuffering()
         break
-      }
-      case MediaState.ENDED: {
+
+      case MediaState.ENDED:
         onEnded()
         break
-      }
 
-      default: {
+      default:
         break
-      }
     }
   }
 

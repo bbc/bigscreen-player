@@ -8,6 +8,7 @@ import DynamicWindowUtils from "../dynamicwindowutils"
 import Plugins from "../plugins"
 import DebugTool from "../debugger/debugtool"
 import Utils from "../utils/playbackutils"
+import PauseTriggers from "../models/pausetriggers"
 
 const mockDashInstance = {
   initialize: jest.fn(),
@@ -888,14 +889,6 @@ describe("Media Source Extensions Playback Strategy", () => {
         expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
       })
 
-      it("should calculate seek offset time when paused before seeking", () => {
-        jest.spyOn(TimeUtils, "calculateSlidingWindowSeekOffset")
-        mseStrategy.pause()
-        mseStrategy.setCurrentTime(101)
-
-        expect(TimeUtils.calculateSlidingWindowSeekOffset).toHaveBeenCalledTimes(1)
-      })
-
       it("should start auto resume timeout when paused and seeking", () => {
         mockDashInstance.isPaused.mockReturnValue(true)
 
@@ -914,6 +907,54 @@ describe("Media Source Extensions Playback Strategy", () => {
         eventCallbacks("seeked")
 
         expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+      })
+
+      describe("seek offset", () => {
+        beforeEach(() => {
+          jest.useFakeTimers()
+        })
+
+        afterEach(() => {
+          jest.useRealTimers()
+        })
+
+        it("should calculate seek offset time when paused before seeking", () => {
+          jest.spyOn(TimeUtils, "calculateSlidingWindowSeekOffset")
+          mseStrategy.pause()
+          mseStrategy.setCurrentTime(101)
+
+          expect(TimeUtils.calculateSlidingWindowSeekOffset).toHaveBeenCalledTimes(1)
+        })
+
+        it("should calculate seek offset time correctly during user pause", () => {
+          jest.spyOn(TimeUtils, "calculateSlidingWindowSeekOffset")
+
+          mseStrategy.pause({ pauseTrigger: PauseTriggers.USER })
+          jest.advanceTimersByTime(5000)
+
+          mseStrategy.pause({ pauseTrigger: PauseTriggers.APP })
+          jest.advanceTimersByTime(6000)
+
+          mseStrategy.setCurrentTime(15)
+
+          expect(mockDashInstance.seek).toHaveBeenCalledWith(9)
+        })
+
+        it("should calculate seek offset time correctly if the session has previously had a user pause", () => {
+          jest.spyOn(TimeUtils, "calculateSlidingWindowSeekOffset")
+
+          mseStrategy.pause({ pauseTrigger: PauseTriggers.USER })
+          jest.advanceTimersByTime(3000)
+          mseStrategy.play()
+
+          jest.advanceTimersByTime(2000)
+          mseStrategy.pause({ pauseTrigger: PauseTriggers.APP })
+          jest.advanceTimersByTime(6000)
+
+          mseStrategy.setCurrentTime(15)
+
+          expect(mockDashInstance.seek).toHaveBeenCalledWith(9)
+        })
       })
     })
 
