@@ -461,7 +461,7 @@ function BigscreenPlayer() {
       DebugTool.apicall("pause")
 
       pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
-      playerComponent.pause(opts)
+      playerComponent.pause({ pauseTrigger, ...opts })
     },
 
     /**
