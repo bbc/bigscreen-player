@@ -1,5 +1,6 @@
 # 002 Use of Sinon for unit testing
 
+Update: Depricated, we no longer use sinon, see future ADRs
 Originally Added: April 30th, 2019
 
 ## Context
