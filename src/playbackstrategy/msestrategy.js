@@ -283,6 +283,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function onManifestValidityChange(event) {
     DebugTool.info(`Manifest validity changed. Duration is: ${event.newDuration}`)
+    if (windowType === WindowTypes.GROWING) {
+      mediaPlayer.refreshManifest((manifest) => {
+        DebugTool.info(`Manifest Refreshed. Duration is: ${manifest.mediaPresentationDuration}`)
+      })
+    }
   }
 
   function onStreamInitialised() {
@@ -569,10 +574,12 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       if (isNaN(mediaPresentationDuration)) {
         mediaPlayer.seek(seekToTime)
       } else {
-        DebugTool.info("Stream ended. Clamping seek point to end of stream")
-        mediaPlayer.seek(
-          getClampedTime(seekToTime, { start: getSeekableRange().start, end: mediaPresentationDuration })
-        )
+        const clampedSeekTime = getClampedTime(seekToTime, {
+          start: getSeekableRange().start,
+          end: mediaPresentationDuration,
+        })
+        DebugTool.info(`Stream ended. Clamping seek point to end of stream - seek point now: ${clampedSeekTime}`)
+        mediaPlayer.seek(clampedSeekTime)
       }
     })
   }

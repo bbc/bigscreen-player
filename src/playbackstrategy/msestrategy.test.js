@@ -13,6 +13,7 @@ import PauseTriggers from "../models/pausetriggers"
 const mockDashInstance = {
   initialize: jest.fn(),
   retrieveManifest: jest.fn(),
+  refreshManifest: jest.fn(),
   getDebug: jest.fn(),
   getSource: jest.fn(),
   on: jest.fn(),
@@ -65,7 +66,7 @@ describe("Media Source Extensions Playback Strategy", () => {
   let mseStrategy
   let eventCallbacks
   let dashEventCallback
-  const eventHandlers = {}
+  let eventHandlers
   let playbackElement
   let cdnArray = []
   let mediaSources
@@ -92,6 +93,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    eventHandlers = {}
     delete window.bigscreenPlayer
 
     mediaElement = undefined
@@ -105,7 +107,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     mockDashInstance.on.mockImplementation((eventType, handler) => {
       eventHandlers[eventType] = handler
-      dashEventCallback = (eventType, event) => eventHandlers[eventType].call(eventType, event)
+      dashEventCallback = (eventType, event) =>
+        eventHandlers[eventType] ? eventHandlers[eventType].call(eventType, event) : null
     })
 
     mockDashInstance.getDashMetrics.mockReturnValue({
@@ -1115,10 +1118,43 @@ describe("Media Source Extensions Playback Strategy", () => {
   describe("onManifestLoaded", () => {
     it("calls onManifestLoaded plugin with the manifest when dashjs loads it", () => {
       const onManifestLoadedSpy = jest.spyOn(Plugins.interface, "onManifestLoaded")
-
+      setUpMSE(0, WindowTypes.SLIDING)
+      mseStrategy.load(null, 0)
       dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
 
       expect(onManifestLoadedSpy).toHaveBeenCalledWith(expect.any(Object))
+    })
+  })
+
+  describe("onManifestValidityChanged", () => {
+    beforeEach(() => {
+      mockDashInstance.refreshManifest.mockReset()
+    })
+
+    it("calls refreshManifest on mediaPlayer with a growing window", () => {
+      setUpMSE(0, WindowTypes.GROWING)
+      mseStrategy.load(null, 0)
+      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
+
+      expect(mockDashInstance.refreshManifest).toHaveBeenCalledTimes(1)
+    })
+
+    it("does not call refreshManifest on mediaPlayer with a sliding window", () => {
+      setUpMSE(0, WindowTypes.SLIDING)
+
+      mseStrategy.load(null, 0)
+      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
+
+      expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
+    })
+
+    it("does not call refreshManifest on mediaPlayer with a static window", () => {
+      setUpMSE(0, WindowTypes.STATIC)
+
+      mseStrategy.load(null, 0)
+      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
+
+      expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
     })
   })
 
@@ -1454,7 +1490,7 @@ describe("Media Source Extensions Playback Strategy", () => {
   describe("gap jumps", () => {
     it("logs a seek triggered by a gap to the debugger", () => {
       setUpMSE()
-
+      mseStrategy.load(null, 0)
       dashEventCallback("gapCausedInternalSeek", { duration: 0.3, seekTime: 33.3 })
 
       expect(DebugTool.gap).toHaveBeenCalledTimes(1)
@@ -1463,6 +1499,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     it("logs a seek to end triggered by a gap to the debugger", () => {
       setUpMSE()
+      mseStrategy.load(null, 0)
 
       dashEventCallback("gapCausedSeekToPeriodEnd", { duration: 0.3, seekTime: 33.3 })
 
