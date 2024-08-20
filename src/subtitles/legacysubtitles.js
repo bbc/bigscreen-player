@@ -19,20 +19,19 @@ function LegacySubtitles(mediaPlayer, autoStart, parentElement, mediaSources) {
     if (url && url !== "") {
       LoadURL(url, {
         timeout: mediaSources.subtitlesRequestTimeout(),
-        onLoad: (responseXML, responseText, status) => {
-          if (!responseXML) {
+        onLoad: (responseXML) => {
+          if (responseXML) {
+            createContainer(responseXML)
+          } else {
             DebugTool.info("Error: responseXML is invalid.")
             Plugins.interface.onSubtitlesXMLError({ cdn: mediaSources.currentSubtitlesCdn() })
-            return
-          } else {
-            createContainer(responseXML)
           }
         },
         onError: ({ statusCode, ...rest } = {}) => {
           const errorCase = () => {
             DebugTool.info("Failed to load from subtitles file from all available CDNs")
           }
-          DebugTool.info("Error loading subtitles data: " + statusCode)
+          DebugTool.info(`Error loading subtitles data: ${statusCode}`)
           mediaSources.failoverSubtitles(loadSubtitles, errorCase, { statusCode, ...rest })
         },
         onTimeout: () => {
@@ -46,6 +45,31 @@ function LegacySubtitles(mediaPlayer, autoStart, parentElement, mediaSources) {
   function createContainer(xml) {
     container.id = "playerCaptionsContainer"
     DOMHelpers.addClass(container, "playerCaptions")
+
+    const videoHeight = parentElement.clientHeight
+
+    container.style.position = "absolute"
+    container.style.bottom = "0px"
+    container.style.right = "0px"
+    container.style.fontWeight = "bold"
+    container.style.textAlign = "center"
+    container.style.textShadow = "#161616 2px 2px 1px"
+    container.style.color = "#ebebeb"
+
+    if (videoHeight === 1080) {
+      container.style.width = "1824px"
+      container.style.fontSize = "63px"
+      container.style.paddingRight = "48px"
+      container.style.paddingLeft = "48px"
+      container.style.paddingBottom = "60px"
+    } else {
+      // Assume 720 if not 1080. Styling implementation could be cleaner, but this is a quick fix for legacy subtitles
+      container.style.width = "1216px"
+      container.style.fontSize = "42px"
+      container.style.paddingRight = "32px"
+      container.style.paddingLeft = "32px"
+      container.style.paddingBottom = "40px"
+    }
 
     // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
     subtitlesRenderer = Renderer("playerCaptions", xml, mediaPlayer)
@@ -77,6 +101,7 @@ function LegacySubtitles(mediaPlayer, autoStart, parentElement, mediaSources) {
     }
 
     for (const cssClassName in classes) {
+      // eslint-disable-next-line no-prototype-builtins
       if (classes.hasOwnProperty(cssClassName)) {
         // Allow multiple flags to be set at once
         if ((classes[cssClassName] & transportControlPosition) === classes[cssClassName]) {
@@ -94,13 +119,13 @@ function LegacySubtitles(mediaPlayer, autoStart, parentElement, mediaSources) {
   }
 
   return {
-    start: start,
-    stop: stop,
-    updatePosition: updatePosition,
+    start,
+    stop,
+    updatePosition,
     customise: () => {},
     renderExample: () => {},
     clearExample: () => {},
-    tearDown: tearDown,
+    tearDown,
   }
 }
 

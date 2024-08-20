@@ -12,6 +12,7 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
+import PauseTriggers from "../models/pausetriggers"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -698,7 +699,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     isEnded: () => isEnded,
     isPaused,
     pause: (opts = {}) => {
-      if (windowType === WindowTypes.SLIDING) {
+      if (windowType === WindowTypes.SLIDING && opts.pauseTrigger === PauseTriggers.APP) {
         slidingWindowPausedTime = Date.now()
       }
 
