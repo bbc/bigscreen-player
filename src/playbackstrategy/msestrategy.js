@@ -217,8 +217,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
       // Don't raise an error on fragment download error
       if (
-        event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
-        event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE
+        (event.error.code === DashJSEvents.DOWNLOAD_CONTENT_ERROR_CODE ||
+          event.error.code === DashJSEvents.DOWNLOAD_INIT_SEGMENT_ERROR_CODE) &&
+        mediaSources.availableSources().length > 1
       ) {
         return
       }
