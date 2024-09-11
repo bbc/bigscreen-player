@@ -1241,7 +1241,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(Plugins.interface.onErrorHandled).not.toHaveBeenCalledWith()
     })
 
-    it("should not publish error event on initial segment download error", () => {
+    it("should not publish error event on init segment download error if more than one CDN available", () => {
       const mockEvent = {
         error: {
           message: "initial segment download error",
@@ -1261,7 +1261,31 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockErrorCallback).not.toHaveBeenCalled()
     })
 
-    it("should not publish error event on content download error", () => {
+    it("should publish error event on init segment download error if only one CDN available", () => {
+      const mockEvent = {
+        error: {
+          message: "initial segment download error",
+          code: 28,
+        },
+      }
+
+      setUpMSE()
+
+      const mockErrorCallback = jest.fn()
+      mseStrategy.addErrorCallback(null, mockErrorCallback)
+
+      mseStrategy.load(null, 0)
+
+      const noop = () => {}
+      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
+      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
+
+      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
+
+      expect(mockErrorCallback).toHaveBeenCalled()
+    })
+
+    it("should not publish error event on content download error if more than one CDN available", () => {
       const mockEvent = {
         error: {
           message: "content download error",
@@ -1279,6 +1303,30 @@ describe("Media Source Extensions Playback Strategy", () => {
       dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
 
       expect(mockErrorCallback).not.toHaveBeenCalled()
+    })
+
+    it("should publish error event on content download error if only one CDN available", () => {
+      const mockEvent = {
+        error: {
+          message: "content download error",
+          code: 27,
+        },
+      }
+
+      setUpMSE()
+
+      const mockErrorCallback = jest.fn()
+      mseStrategy.addErrorCallback(null, mockErrorCallback)
+
+      mseStrategy.load(null, 0)
+
+      const noop = () => {}
+      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
+      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
+
+      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
+
+      expect(mockErrorCallback).toHaveBeenCalled()
     })
 
     it("should initiate a failover with correct parameters on manifest download error", () => {
