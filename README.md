@@ -60,5 +60,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md)
 ## License
 
 Bigscreen Player is available to everyone under the terms of the Apache 2.0 open source license. Take a look at the LICENSE file in the code for more information.
-
-## TESTING PR
