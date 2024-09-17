@@ -319,6 +319,16 @@ describe("Media Source Extensions Playback Strategy", () => {
         expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
         expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=15`)
       })
+
+      it("should clamp the seek to the end of the seekable range", () => {
+        const seekDurationPadding = 0
+
+        setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { seekDurationPadding } })
+        mseStrategy.load(null, 0)
+
+        mseStrategy.setCurrentTime(1000)
+        expect(mockDashInstance.seek).toHaveBeenCalledWith(101)
+      })
     })
 
     describe("for SLIDING window", () => {

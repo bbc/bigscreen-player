@@ -454,7 +454,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    return Math.min(Math.max(time, range.start), range.end - Math.max(liveDelay, seekDurationPadding))
+    if (windowType === WindowTypes.SLIDING) {
+      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - Math.max(liveDelay, seekDurationPadding))
+    }
+
+    return Math.min(Math.max(time, range.start), range.end - seekDurationPadding)
   }
 
   function load(mimeType, playbackTime) {
@@ -586,10 +590,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function calculateSeekOffset(time) {
-    function getClampedTimeForLive(time) {
-      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - Math.max(liveDelay, seekDurationPadding))
-    }
-
     if (windowType === WindowTypes.SLIDING) {
       const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
       const offset = TimeUtils.calculateSlidingWindowSeekOffset(
@@ -600,8 +600,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       )
       slidingWindowPausedTime = 0
 
-      return getClampedTimeForLive(offset)
+      return getClampedTime(offset)
     }
+
     return getClampedTime(time, getSeekableRange())
   }
 
