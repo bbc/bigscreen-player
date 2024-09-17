@@ -458,6 +458,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - Math.max(liveDelay, seekDurationPadding))
     }
 
+    if (windowType === WindowTypes.GROWING) {
+      return Math.min(Math.max(time, range.start), range.end - Math.max(liveDelay, seekDurationPadding))
+    }
+
     return Math.min(Math.max(time, range.start), range.end - seekDurationPadding)
   }
 
