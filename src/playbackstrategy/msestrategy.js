@@ -454,15 +454,12 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    if (windowType === WindowTypes.SLIDING) {
-      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - Math.max(liveDelay, seekDurationPadding))
-    }
+    const rangeStart = windowType === WindowTypes.SLIDING ? 0 : range.start
+    const rangeEnd = windowType === WindowTypes.SLIDING ? mediaPlayer.getDVRWindowSize() : range.end
+    const correction =
+      windowType === WindowTypes.STATIC ? seekDurationPadding : Math.max(liveDelay, seekDurationPadding)
 
-    if (windowType === WindowTypes.GROWING) {
-      return Math.min(Math.max(time, range.start), range.end - Math.max(liveDelay, seekDurationPadding))
-    }
-
-    return Math.min(Math.max(time, range.start), range.end - seekDurationPadding)
+    return Math.min(Math.max(time, rangeStart), rangeEnd - correction)
   }
 
   function load(mimeType, playbackTime) {
