@@ -1,10 +1,13 @@
 /* eslint-disable jest/no-done-callback */
 import IMSCSubtitles from "./imscsubtitles"
 import LegacySubtitles from "./legacysubtitles"
+import DashSubtitles from "./dashsubtitles"
+
 import Subtitles from "./subtitles"
 
 jest.mock("./imscsubtitles")
 jest.mock("./legacysubtitles")
+jest.mock("./dashsubtitles")
 
 describe("Subtitles", () => {
   let isAvailable
@@ -69,6 +72,42 @@ describe("Subtitles", () => {
         Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
           expect(LegacySubtitles).not.toHaveBeenCalled()
           expect(IMSCSubtitles).not.toHaveBeenCalled()
+          done()
+        })
+      })
+    })
+
+    describe("dash", () => {
+      beforeEach(() => {
+        window.bigscreenPlayer = {
+          overrides: {
+            dashSubtitles: true,
+          },
+        }
+
+        DashSubtitles.mockReset()
+      })
+
+      it("implementation is available when dash subtitles override is true", (done) => {
+        const mockMediaPlayer = {}
+        const autoStart = true
+
+        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
+          expect(result).toBe(true)
+          expect(DashSubtitles).toHaveBeenCalledTimes(1)
+          done()
+        })
+      })
+
+      it("implementation is not available when dash subtitles override is true, but subtitles are segmented", (done) => {
+        isSegmented = true
+        const mockMediaPlayer = {}
+        const autoStart = true
+
+        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
+          expect(LegacySubtitles).not.toHaveBeenCalled()
+          expect(IMSCSubtitles).not.toHaveBeenCalled()
+          expect(DashSubtitles).not.toHaveBeenCalled()
           done()
         })
       })

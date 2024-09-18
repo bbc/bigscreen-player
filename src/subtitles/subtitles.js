@@ -21,8 +21,7 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
         .catch(() => {
           Plugins.interface.onSubtitlesDynamicLoadError()
         })
-    }
-    if (dashSubs) {
+    } else if (dashSubs) {
       import("./dashsubtitles.js")
         .then(({ default: DashSubtitles }) => {
           subtitlesContainer = DashSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
@@ -87,7 +86,7 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
 
     const isWhole = findSegmentTemplate(url) == null
 
-    return isWhole || (!useLegacySubs && isSeekableLiveSupport)
+    return isWhole || (!useLegacySubs && !dashSubs && isSeekableLiveSupport)
   }
 
   function setPosition(position) {
