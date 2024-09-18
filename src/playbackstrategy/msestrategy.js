@@ -454,12 +454,15 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    const rangeStart = windowType === WindowTypes.SLIDING ? 0 : range.start
-    const rangeEnd = windowType === WindowTypes.SLIDING ? mediaPlayer.getDVRWindowSize() : range.end
-    const correction =
-      windowType === WindowTypes.STATIC ? seekDurationPadding : Math.max(liveDelay, seekDurationPadding)
+    const vod = windowType === WindowTypes.STATIC
+    const sliding = windowType === WindowTypes.SLIDING
+    const clampedRange = {
+      start: sliding ? 0 : range.start,
+      end: sliding ? mediaPlayer.getDVRWindowSize() : range.end,
+      correction: vod ? seekDurationPadding : Math.max(liveDelay, seekDurationPadding),
+    }
 
-    return Math.min(Math.max(time, rangeStart), rangeEnd - correction)
+    return Math.min(Math.max(time, clampedRange.start), clampedRange.end - clampedRange.correction)
   }
 
   function load(mimeType, playbackTime) {
@@ -591,20 +594,20 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function calculateSeekOffset(time) {
-    if (windowType === WindowTypes.SLIDING) {
-      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
-      const offset = TimeUtils.calculateSlidingWindowSeekOffset(
-        time,
-        dvrInfo.range.start,
-        timeCorrection,
-        slidingWindowPausedTime
-      )
-      slidingWindowPausedTime = 0
-
-      return getClampedTime(offset)
+    if (windowType !== WindowTypes.SLIDING) {
+      return getClampedTime(time, getSeekableRange())
     }
 
-    return getClampedTime(time, getSeekableRange())
+    const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+    const offset = TimeUtils.calculateSlidingWindowSeekOffset(
+      time,
+      dvrInfo.range.start,
+      timeCorrection,
+      slidingWindowPausedTime
+    )
+    slidingWindowPausedTime = 0
+
+    return getClampedTime(offset)
   }
 
   function addEventCallback(thisArg, newCallback) {
