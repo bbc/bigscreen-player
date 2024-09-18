@@ -3,6 +3,8 @@ import findSegmentTemplate from "../utils/findtemplate"
 
 function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   const useLegacySubs = window.bigscreenPlayer?.overrides?.legacySubtitles ?? false
+  const dashSubs = window.bigscreenPlayer?.overrides?.dashSubtitles ?? false
+
   const isSeekableLiveSupport =
     window.bigscreenPlayer.liveSupport == null || window.bigscreenPlayer.liveSupport === "seekable"
 
@@ -14,6 +16,16 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
       import("./legacysubtitles.js")
         .then(({ default: LegacySubtitles }) => {
           subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+          callback(subtitlesEnabled)
+        })
+        .catch(() => {
+          Plugins.interface.onSubtitlesDynamicLoadError()
+        })
+    }
+    if (dashSubs) {
+      import("./dashsubtitles.js")
+        .then(({ default: DashSubtitles }) => {
+          subtitlesContainer = DashSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
           callback(subtitlesEnabled)
         })
         .catch(() => {
