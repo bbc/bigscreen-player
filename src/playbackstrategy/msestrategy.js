@@ -454,12 +454,12 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    const vod = windowType === WindowTypes.STATIC
-    const sliding = windowType === WindowTypes.SLIDING
+    const isStatic = windowType === WindowTypes.STATIC
+    const isSliding = windowType === WindowTypes.SLIDING
     const clampedRange = {
-      start: sliding ? 0 : range.start,
-      end: sliding ? mediaPlayer.getDVRWindowSize() : range.end,
-      correction: vod ? seekDurationPadding : Math.max(liveDelay, seekDurationPadding),
+      start: isSliding ? 0 : range.start,
+      end: isSliding ? mediaPlayer.getDVRWindowSize() : range.end,
+      correction: isStatic ? seekDurationPadding : Math.max(liveDelay, seekDurationPadding),
     }
 
     return Math.min(Math.max(time, clampedRange.start), clampedRange.end - clampedRange.correction)
