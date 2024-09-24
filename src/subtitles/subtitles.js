@@ -78,6 +78,10 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
   }
 
   function available() {
+    if (dashSubs) {
+      return true
+    }
+
     const url = mediaSources.currentSubtitlesSource()
 
     if (!(typeof url === "string" && url !== "")) {
@@ -86,7 +90,7 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
 
     const isWhole = findSegmentTemplate(url) == null
 
-    return isWhole || (!useLegacySubs && !dashSubs && isSeekableLiveSupport)
+    return isWhole || (!useLegacySubs && isSeekableLiveSupport)
   }
 
   function setPosition(position) {
