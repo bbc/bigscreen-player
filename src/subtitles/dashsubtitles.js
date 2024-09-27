@@ -1,3 +1,5 @@
+import DOMHelpers from "../domhelpers"
+
 function DashSubtitles(mediaPlayer, autoStart, parentElement) {
   let currentSubtitlesElement
 
@@ -31,15 +33,17 @@ function DashSubtitles(mediaPlayer, autoStart, parentElement) {
     mediaPlayer.setSubtitles(false)
   }
 
+  function tearDown() {
+    stop()
+  }
+
   addCurrentSubtitlesElement()
 
   return {
     start,
     stop,
     customise: () => {},
-    tearDown: () => {
-      stop()
-    },
+    tearDown,
   }
 }
 

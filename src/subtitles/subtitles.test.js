@@ -99,7 +99,7 @@ describe("Subtitles", () => {
         })
       })
 
-      it("implementation is not available when dash subtitles override is true, but subtitles are segmented", (done) => {
+      it("implementation is available when dash subtitles override is true, even if segmented URL is passed", (done) => {
         isSegmented = true
         const mockMediaPlayer = {}
         const autoStart = true
@@ -107,7 +107,7 @@ describe("Subtitles", () => {
         Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
           expect(LegacySubtitles).not.toHaveBeenCalled()
           expect(IMSCSubtitles).not.toHaveBeenCalled()
-          expect(DashSubtitles).not.toHaveBeenCalled()
+          expect(DashSubtitles).toHaveBeenCalledTimes(1)
           done()
         })
       })
