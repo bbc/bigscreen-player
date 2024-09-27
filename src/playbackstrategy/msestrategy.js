@@ -455,7 +455,15 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getClampedTime(time, range) {
-    return Math.min(Math.max(time, range.start), range.end - Math.max(liveDelay, seekDurationPadding))
+    const isStatic = windowType === WindowTypes.STATIC
+    const isSliding = windowType === WindowTypes.SLIDING
+    const clampedRange = {
+      start: isSliding ? 0 : range.start,
+      end: isSliding ? mediaPlayer.getDVRWindowSize() : range.end,
+      correction: isStatic ? seekDurationPadding : Math.max(liveDelay, seekDurationPadding),
+    }
+
+    return Math.min(Math.max(time, clampedRange.start), clampedRange.end - clampedRange.correction)
   }
 
   function load(mimeType, playbackTime) {
@@ -607,23 +615,20 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function calculateSeekOffset(time) {
-    function getClampedTimeForLive(time) {
-      return Math.min(Math.max(time, 0), mediaPlayer.getDVRWindowSize() - Math.max(liveDelay, seekDurationPadding))
+    if (windowType !== WindowTypes.SLIDING) {
+      return getClampedTime(time, getSeekableRange())
     }
 
-    if (windowType === WindowTypes.SLIDING) {
-      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
-      const offset = TimeUtils.calculateSlidingWindowSeekOffset(
-        time,
-        dvrInfo.range.start,
-        timeCorrection,
-        slidingWindowPausedTime
-      )
-      slidingWindowPausedTime = 0
+    const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+    const offset = TimeUtils.calculateSlidingWindowSeekOffset(
+      time,
+      dvrInfo.range.start,
+      timeCorrection,
+      slidingWindowPausedTime
+    )
+    slidingWindowPausedTime = 0
 
-      return getClampedTimeForLive(offset)
-    }
-    return getClampedTime(time, getSeekableRange())
+    return getClampedTime(offset)
   }
 
   function addEventCallback(thisArg, newCallback) {
