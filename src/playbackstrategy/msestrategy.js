@@ -701,7 +701,26 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         },
       }
     },
-    reset: () => {},
+    reset: () => {
+      mediaPlayer.destroy()
+
+      mediaElement.removeEventListener("timeupdate", onTimeUpdate)
+      mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
+      mediaElement.removeEventListener("loadeddata", onLoadedData)
+      mediaElement.removeEventListener("play", onPlay)
+      mediaElement.removeEventListener("playing", onPlaying)
+      mediaElement.removeEventListener("pause", onPaused)
+      mediaElement.removeEventListener("waiting", onWaiting)
+      mediaElement.removeEventListener("seeking", onSeeking)
+      mediaElement.removeEventListener("seeked", onSeeked)
+      mediaElement.removeEventListener("ended", onEnded)
+      mediaElement.removeEventListener("ratechange", onRateChange)
+
+      DOMHelpers.safeRemoveElement(mediaElement)
+
+      mediaPlayer = undefined
+      mediaElement = undefined
+    },
     isEnded: () => isEnded,
     isPaused,
     pause: (opts = {}) => {
