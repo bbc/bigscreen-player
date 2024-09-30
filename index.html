@@ -46,6 +46,23 @@
             player.init(playbackElement, minimalData, windowType, enableSubtitles, {
                 onSuccess: function () {
                     player.toggleDebug()
+
+                    //wait a bit, then try to update the sources, which should cause an immediate failover
+                    setTimeout(() => {
+                        let newSources = {
+                            captions: [],
+                            type: "application/dash+xml",
+                            mimeType: "video/mp4",
+                            kind: "video",
+                            urls: [
+                                {
+                                    url: "https://rdmedia.bbc.co.uk/elephants_dream/1/client_manifest-all.mpd",
+                                    cdn: "bbc_randd",
+                                },
+                            ],
+                        }
+                        player.replaceMediaSources(newSources)
+                    }, 10000)
                 },
                 onError: function (error) {
                     player.toggleDebug()

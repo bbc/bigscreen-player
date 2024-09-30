@@ -183,6 +183,17 @@ function MediaSources() {
     )
   }
 
+  function replace(sources, onReplaceSuccess, onReplaceError) {
+    mediaSources = sources.urls
+
+    updateDebugOutput()
+    if (needToGetManifest(windowType, liveSupport)) {
+      loadManifest({ onReplaceSuccess, onReplaceError }, { windowType })
+    } else {
+      onReplaceSuccess()
+    }
+  }
+
   function refresh(onSuccess, onError) {
     loadManifest({ onSuccess, onError }, { windowType })
   }
@@ -365,6 +376,7 @@ function MediaSources() {
     failover,
     failoverSubtitles,
     refresh,
+    replace,
     currentSource: getCurrentUrl,
     currentSubtitlesSource: getCurrentSubtitlesUrl,
     currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,

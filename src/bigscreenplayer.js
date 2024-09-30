@@ -676,6 +676,14 @@ function BigscreenPlayer() {
      */
     setLogLevel: (level) => DebugTool.setLogLevel(level),
     getDebugLogs: () => DebugTool.getDebugLogs(),
+
+    /**
+     * @function
+     * @param {Array} sources - Array of new media sources
+     */
+    replaceMediaSources: (sources) => {
+      playerComponent && playerComponent.replaceMediaSources(sources)
+    },
   }
 }
 
