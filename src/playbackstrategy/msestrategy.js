@@ -702,24 +702,26 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       }
     },
     reset: () => {
-      mediaPlayer.destroy()
+      if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.resetMSEPlayer) {
+        mediaPlayer.destroy()
 
-      mediaElement.removeEventListener("timeupdate", onTimeUpdate)
-      mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
-      mediaElement.removeEventListener("loadeddata", onLoadedData)
-      mediaElement.removeEventListener("play", onPlay)
-      mediaElement.removeEventListener("playing", onPlaying)
-      mediaElement.removeEventListener("pause", onPaused)
-      mediaElement.removeEventListener("waiting", onWaiting)
-      mediaElement.removeEventListener("seeking", onSeeking)
-      mediaElement.removeEventListener("seeked", onSeeked)
-      mediaElement.removeEventListener("ended", onEnded)
-      mediaElement.removeEventListener("ratechange", onRateChange)
+        mediaElement.removeEventListener("timeupdate", onTimeUpdate)
+        mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
+        mediaElement.removeEventListener("loadeddata", onLoadedData)
+        mediaElement.removeEventListener("play", onPlay)
+        mediaElement.removeEventListener("playing", onPlaying)
+        mediaElement.removeEventListener("pause", onPaused)
+        mediaElement.removeEventListener("waiting", onWaiting)
+        mediaElement.removeEventListener("seeking", onSeeking)
+        mediaElement.removeEventListener("seeked", onSeeked)
+        mediaElement.removeEventListener("ended", onEnded)
+        mediaElement.removeEventListener("ratechange", onRateChange)
 
-      DOMHelpers.safeRemoveElement(mediaElement)
+        DOMHelpers.safeRemoveElement(mediaElement)
 
-      mediaPlayer = undefined
-      mediaElement = undefined
+        mediaPlayer = undefined
+        mediaElement = undefined
+      }
     },
     isEnded: () => isEnded,
     isPaused,
