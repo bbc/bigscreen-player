@@ -633,26 +633,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     )
   }
 
-  return {
-    transitions: {
-      canBePaused: () => true,
-      canBeginSeek: () => true,
-    },
-    addEventCallback,
-    removeEventCallback,
-    addErrorCallback: (thisArg, newErrorCallback) => {
-      errorCallback = (event) => newErrorCallback.call(thisArg, event)
-    },
-    addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
-      timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
-    },
-    load,
-    getSeekableRange,
-    getCurrentTime,
-    getDuration,
-    getPlayerElement: () => mediaElement,
-    tearDown: () => {
-      mediaPlayer.reset()
+  function cleanUpMediaPlayer() {
+    if (mediaPlayer && mediaElement) {
+      mediaPlayer.destroy()
 
       mediaElement.removeEventListener("timeupdate", onTimeUpdate)
       mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
@@ -681,9 +664,33 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
       DOMHelpers.safeRemoveElement(mediaElement)
 
-      lastError = undefined
       mediaPlayer = undefined
       mediaElement = undefined
+    }
+  }
+
+  return {
+    transitions: {
+      canBePaused: () => true,
+      canBeginSeek: () => true,
+    },
+    addEventCallback,
+    removeEventCallback,
+    addErrorCallback: (thisArg, newErrorCallback) => {
+      errorCallback = (event) => newErrorCallback.call(thisArg, event)
+    },
+    addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
+      timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
+    },
+    load,
+    getSeekableRange,
+    getCurrentTime,
+    getDuration,
+    getPlayerElement: () => mediaElement,
+    tearDown: () => {
+      cleanUpMediaPlayer()
+
+      lastError = undefined
       eventCallbacks = []
       errorCallback = undefined
       timeUpdateCallback = undefined
@@ -703,24 +710,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     },
     reset: () => {
       if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.resetMSEPlayer) {
-        mediaPlayer.destroy()
-
-        mediaElement.removeEventListener("timeupdate", onTimeUpdate)
-        mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
-        mediaElement.removeEventListener("loadeddata", onLoadedData)
-        mediaElement.removeEventListener("play", onPlay)
-        mediaElement.removeEventListener("playing", onPlaying)
-        mediaElement.removeEventListener("pause", onPaused)
-        mediaElement.removeEventListener("waiting", onWaiting)
-        mediaElement.removeEventListener("seeking", onSeeking)
-        mediaElement.removeEventListener("seeked", onSeeked)
-        mediaElement.removeEventListener("ended", onEnded)
-        mediaElement.removeEventListener("ratechange", onRateChange)
-
-        DOMHelpers.safeRemoveElement(mediaElement)
-
-        mediaPlayer = undefined
-        mediaElement = undefined
+        cleanUpMediaPlayer()
       }
     },
     isEnded: () => isEnded,

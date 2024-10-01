@@ -748,13 +748,13 @@ describe("Media Source Extensions Playback Strategy", () => {
   })
 
   describe("tearDown()", () => {
-    it("should reset the MediaPlayer", () => {
+    it("should destroy the MediaPlayer", () => {
       setUpMSE()
       mseStrategy.load(null, 0)
 
       mseStrategy.tearDown()
 
-      expect(mockDashInstance.reset).toHaveBeenCalledWith()
+      expect(mockDashInstance.destroy).toHaveBeenCalledWith()
     })
 
     it("should tear down bindings to MediaPlayer Events correctly", () => {
