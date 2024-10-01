@@ -634,20 +634,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function cleanUpMediaPlayer() {
-    if (mediaPlayer && mediaElement) {
+    if (mediaPlayer) {
       mediaPlayer.destroy()
 
-      mediaElement.removeEventListener("timeupdate", onTimeUpdate)
-      mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
-      mediaElement.removeEventListener("loadeddata", onLoadedData)
-      mediaElement.removeEventListener("play", onPlay)
-      mediaElement.removeEventListener("playing", onPlaying)
-      mediaElement.removeEventListener("pause", onPaused)
-      mediaElement.removeEventListener("waiting", onWaiting)
-      mediaElement.removeEventListener("seeking", onSeeking)
-      mediaElement.removeEventListener("seeked", onSeeked)
-      mediaElement.removeEventListener("ended", onEnded)
-      mediaElement.removeEventListener("ratechange", onRateChange)
       mediaPlayer.off(DashJSEvents.ERROR, onError)
       mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
@@ -662,9 +651,24 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
 
+      mediaPlayer = undefined
+    }
+
+    if (mediaElement) {
+      mediaElement.removeEventListener("timeupdate", onTimeUpdate)
+      mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
+      mediaElement.removeEventListener("loadeddata", onLoadedData)
+      mediaElement.removeEventListener("play", onPlay)
+      mediaElement.removeEventListener("playing", onPlaying)
+      mediaElement.removeEventListener("pause", onPaused)
+      mediaElement.removeEventListener("waiting", onWaiting)
+      mediaElement.removeEventListener("seeking", onSeeking)
+      mediaElement.removeEventListener("seeked", onSeeked)
+      mediaElement.removeEventListener("ended", onEnded)
+      mediaElement.removeEventListener("ratechange", onRateChange)
+
       DOMHelpers.safeRemoveElement(mediaElement)
 
-      mediaPlayer = undefined
       mediaElement = undefined
     }
   }
