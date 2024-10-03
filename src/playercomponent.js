@@ -71,6 +71,10 @@ function PlayerComponent(
     }
   }
 
+  function setSubtitles(state) {
+    return playbackStrategy && playbackStrategy.setSubtitles(state)
+  }
+
   function getDuration() {
     return playbackStrategy && playbackStrategy.getDuration()
   }
@@ -394,6 +398,7 @@ function PlayerComponent(
   return {
     play,
     pause,
+    setSubtitles,
     transitions,
     isEnded,
     setPlaybackRate,
