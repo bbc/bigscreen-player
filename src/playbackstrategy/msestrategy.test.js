@@ -22,6 +22,7 @@ const mockDashInstance = {
   duration: jest.fn(),
   attachSource: jest.fn(),
   reset: jest.fn(),
+  destroy: jest.fn(),
   isPaused: jest.fn(),
   pause: jest.fn(),
   play: jest.fn(),
@@ -654,14 +655,106 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
   })
 
+  describe("reset()", () => {
+    describe("when resetMSEPlayer is configured as true", () => {
+      beforeEach(() => {
+        window.bigscreenPlayer.overrides = {
+          resetMSEPlayer: true,
+        }
+      })
+
+      it("should destroy the player and listeners", () => {
+        setUpMSE()
+        mseStrategy.load(null, 0)
+
+        expect(playbackElement.childElementCount).toBe(1)
+
+        mseStrategy.reset()
+
+        expect(mockDashInstance.destroy).toHaveBeenCalledWith()
+
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("timeupdate", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("loadedmetadata", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("loadeddata", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("play", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("playing", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("pause", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("waiting", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("seeking", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("seeked", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("ended", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("ratechange", expect.any(Function))
+
+        expect(playbackElement.childElementCount).toBe(0)
+      })
+
+      it("should setup player and element on a load after a reset", () => {
+        setUpMSE()
+        mseStrategy.load(null, 0)
+
+        mseStrategy.reset()
+
+        jest.clearAllMocks()
+
+        jest.spyOn(document, "createElement").mockImplementationOnce((elementType) => {
+          if (["audio", "video"].includes(elementType)) {
+            mediaElement = mockMediaElement(elementType)
+            return mediaElement
+          }
+
+          return document.createElement(elementType)
+        })
+
+        mseStrategy.load(null, 0)
+
+        expect(mockDashInstance.initialize).toHaveBeenCalledTimes(1)
+        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
+        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
+
+        expect(playbackElement.childElementCount).toBe(1)
+        expect(playbackElement.firstChild).toBeInstanceOf(HTMLVideoElement)
+        expect(playbackElement.firstChild).toBe(mediaElement)
+        expect(isMockedElement(playbackElement.firstChild)).toBe(true)
+      })
+    })
+    describe("when resetMSEPlayer is configured as false", () => {
+      beforeEach(() => {
+        window.bigscreenPlayer.overrides = {
+          resetMSEPlayer: false,
+        }
+      })
+
+      it("should not destroy the player or listeners", () => {
+        setUpMSE()
+        mseStrategy.load(null, 0)
+        mseStrategy.reset()
+
+        expect(mockDashInstance.destroy).not.toHaveBeenCalledWith()
+        expect(playbackElement.childElementCount).toBe(1)
+
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("timeupdate", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("loadedmetadata", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("loadeddata", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("play", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("playing", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("pause", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("waiting", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("seeking", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("seeked", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("ended", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("ratechange", expect.any(Function))
+      })
+    })
+  })
+
   describe("tearDown()", () => {
-    it("should reset the MediaPlayer", () => {
+    it("should destroy the MediaPlayer", () => {
       setUpMSE()
       mseStrategy.load(null, 0)
 
       mseStrategy.tearDown()
 
-      expect(mockDashInstance.reset).toHaveBeenCalledWith()
+      expect(mockDashInstance.destroy).toHaveBeenCalledWith()
     })
 
     it("should tear down bindings to MediaPlayer Events correctly", () => {
@@ -671,12 +764,17 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.tearDown()
 
       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("timeupdate", expect.any(Function))
+      expect(mediaElement.removeEventListener).toHaveBeenCalledWith("loadedmetadata", expect.any(Function))
+      expect(mediaElement.removeEventListener).toHaveBeenCalledWith("loadeddata", expect.any(Function))
+      expect(mediaElement.removeEventListener).toHaveBeenCalledWith("play", expect.any(Function))
       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("playing", expect.any(Function))
       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("pause", expect.any(Function))
       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("waiting", expect.any(Function))
       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("seeking", expect.any(Function))
       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("seeked", expect.any(Function))
       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("ended", expect.any(Function))
+      expect(mediaElement.removeEventListener).toHaveBeenCalledWith("ratechange", expect.any(Function))
+
       expect(mockDashInstance.off).toHaveBeenCalledWith(dashjsMediaPlayerEvents.ERROR, expect.any(Function))
       expect(mockDashInstance.off).toHaveBeenCalledWith(
         dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED,

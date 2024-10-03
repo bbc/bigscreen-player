@@ -633,6 +633,46 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     )
   }
 
+  function cleanUpMediaPlayer() {
+    if (mediaPlayer) {
+      mediaPlayer.destroy()
+
+      mediaPlayer.off(DashJSEvents.ERROR, onError)
+      mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
+      mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
+      mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
+      mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
+      mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded)
+      mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
+      mediaPlayer.off(DashJSEvents.LOG, onDebugLog)
+      mediaPlayer.off(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
+      mediaPlayer.off(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
+      mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
+      mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
+      mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
+
+      mediaPlayer = undefined
+    }
+
+    if (mediaElement) {
+      mediaElement.removeEventListener("timeupdate", onTimeUpdate)
+      mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
+      mediaElement.removeEventListener("loadeddata", onLoadedData)
+      mediaElement.removeEventListener("play", onPlay)
+      mediaElement.removeEventListener("playing", onPlaying)
+      mediaElement.removeEventListener("pause", onPaused)
+      mediaElement.removeEventListener("waiting", onWaiting)
+      mediaElement.removeEventListener("seeking", onSeeking)
+      mediaElement.removeEventListener("seeked", onSeeked)
+      mediaElement.removeEventListener("ended", onEnded)
+      mediaElement.removeEventListener("ratechange", onRateChange)
+
+      DOMHelpers.safeRemoveElement(mediaElement)
+
+      mediaElement = undefined
+    }
+  }
+
   return {
     transitions: {
       canBePaused: () => true,
@@ -652,38 +692,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     getDuration,
     getPlayerElement: () => mediaElement,
     tearDown: () => {
-      mediaPlayer.reset()
-
-      mediaElement.removeEventListener("timeupdate", onTimeUpdate)
-      mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
-      mediaElement.removeEventListener("loadeddata", onLoadedData)
-      mediaElement.removeEventListener("play", onPlay)
-      mediaElement.removeEventListener("playing", onPlaying)
-      mediaElement.removeEventListener("pause", onPaused)
-      mediaElement.removeEventListener("waiting", onWaiting)
-      mediaElement.removeEventListener("seeking", onSeeking)
-      mediaElement.removeEventListener("seeked", onSeeked)
-      mediaElement.removeEventListener("ended", onEnded)
-      mediaElement.removeEventListener("ratechange", onRateChange)
-      mediaPlayer.off(DashJSEvents.ERROR, onError)
-      mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
-      mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
-      mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
-      mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
-      mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded)
-      mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
-      mediaPlayer.off(DashJSEvents.LOG, onDebugLog)
-      mediaPlayer.off(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
-      mediaPlayer.off(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
-      mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
-      mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
-      mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
-
-      DOMHelpers.safeRemoveElement(mediaElement)
+      cleanUpMediaPlayer()
 
       lastError = undefined
-      mediaPlayer = undefined
-      mediaElement = undefined
       eventCallbacks = []
       errorCallback = undefined
       timeUpdateCallback = undefined
@@ -701,7 +712,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         },
       }
     },
-    reset: () => {},
+    reset: () => {
+      if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.resetMSEPlayer) {
+        cleanUpMediaPlayer()
+      }
+    },
     isEnded: () => isEnded,
     isPaused,
     pause: (opts = {}) => {
