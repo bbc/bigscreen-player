@@ -63,6 +63,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   let publishedSeekEvent = false
   let isSeeking = false
+  let manifestRequestTime
 
   let playerMetadata = {
     playbackBitrate: undefined,
@@ -79,6 +80,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     GAP_JUMP: "gapCausedInternalSeek",
     GAP_JUMP_TO_END: "gapCausedSeekToPeriodEnd",
     MANIFEST_LOADED: "manifestLoaded",
+    MANIFEST_LOADING_FINISHED: "manifestLoadingFinished",
     DOWNLOAD_MANIFEST_ERROR_CODE: 25,
     DOWNLOAD_CONTENT_ERROR_CODE: 27,
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
@@ -273,6 +275,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
       ManifestModifier.filter(manifest, representationOptions)
       ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources())
+
+      manifest.manifestRequestTime = manifestRequestTime
 
       emitManifestInfo(manifest)
     }
@@ -548,6 +552,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.GAP_JUMP, onGapJump)
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
+    mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
+  }
+
+  function manifestLoadingFinished(event) {
+    manifestRequestTime = event.request.requestEndDate.getTime() - event.request.requestStartDate.getTime()
   }
 
   function getSeekableRange() {
