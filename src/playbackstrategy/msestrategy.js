@@ -84,6 +84,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
     UNSUPPORTED_CODEC: 30,
     MANIFEST_VALIDITY_CHANGED: "manifestValidityChanged",
+    QUALITY_CHANGE_REQUESTED: "qualityChangeRequested",
     QUALITY_CHANGE_RENDERED: "qualityChangeRendered",
     BASE_URL_SELECTED: "baseUrlSelected",
     SERVICE_LOCATION_AVAILABLE: "serviceLocationUnblacklisted",
@@ -383,7 +384,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       DebugTool.dynamicMetric(`representation-${mediaType}`, [newQuality, newBitrate])
 
       DebugTool.info(
-        `${mediaType} ABR Change Rendered !!! From Representation ${oldRepresentation} To ${newRepresentation}`
+        `${mediaType} ABR Change Rendered From Representation ${oldRepresentation} To ${newRepresentation}`
       )
     }
 
