@@ -383,7 +383,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       DebugTool.dynamicMetric(`representation-${mediaType}`, [newQuality, newBitrate])
 
       DebugTool.info(
-        `${mediaType} ABR Change Rendered From Representation ${oldRepresentation} To ${newRepresentation}`
+        `${mediaType} ABR Change Rendered !!! From Representation ${oldRepresentation} To ${newRepresentation}`
       )
     }
 
