@@ -36,10 +36,22 @@
                         {
                             // Content from DASH IF testing assests (used in their reference player)
                             // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
-                            url: "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd",
-                            cdn: "dash.akamaized.net",
+                            url: "https://d2suqw8t4p7hpz.cloudfront.net/usp/labsamples/2_11_1/rights_free1728/iptv_hd_abr_v1_dash/rights_free.ism/.mpd",
+                            cdn: "cf",
                         },
                     ],
+                    playerSettings: {
+                        streaming: {
+                            buffer: {
+                                syntheticStallEvents: {
+                                    enabled: true,
+                                },
+                            },
+                            abr: {
+                                movingAverageMethod: "ewma",
+                            },
+                        },
+                    },
                 },
             }
 
