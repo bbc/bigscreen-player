@@ -348,6 +348,28 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     return parseInt(bitrateInfoList[index].bitrate / 1000)
   }
 
+  function onQualityChangeRequested(event) {
+    function logBitrate(event) {
+      const { mediaType, oldQuality, newQuality } = event
+
+      const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
+      const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
+
+      const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
+      const newRepresentation = `${newQuality} (${newBitrate} kbps)`
+
+      DebugTool.info(
+        `${mediaType} ABR Change Requested From Representation ${oldRepresentation} to ${newRepresentation}`
+      )
+    }
+
+    if (event.newQuality !== undefined) {
+      logBitrate(event)
+    }
+
+    Plugins.interface.onQualityChangeRequested(event)
+  }
+
   function onQualityChangeRendered(event) {
     function logBitrate(event) {
       const { mediaType, oldQuality, newQuality } = event
@@ -538,6 +560,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
     mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
+    mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_REQUESTED, onQualityChangeRequested)
     mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
     mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
     mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded)
@@ -669,6 +692,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
       mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
+      mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_REQUESTED, onQualityChangeRequested)
       mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
       mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded)
       mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
