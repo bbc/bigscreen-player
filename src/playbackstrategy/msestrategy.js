@@ -64,6 +64,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   let publishedSeekEvent = false
   let isSeeking = false
   let manifestRequestTime
+  let manifestLoadCount = 0
 
   let playerMetadata = {
     playbackBitrate: undefined,
@@ -267,9 +268,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onManifestLoaded(event) {
-    DebugTool.info(`Manifest loaded. Duration is: ${event.data.mediaPresentationDuration}`)
-
     if (event.data) {
+      DebugTool.info(`Manifest loaded. Duration is: ${event.data.mediaPresentationDuration}`)
       const manifest = event.data
       const representationOptions = window.bigscreenPlayer.representationOptions || {}
 
@@ -277,6 +277,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources())
 
       manifest.manifestRequestTime = manifestRequestTime
+      manifest.manifestLoadCount = manifestLoadCount
+      manifestLoadCount = 0
 
       emitManifestInfo(manifest)
     }
@@ -556,6 +558,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function manifestLoadingFinished(event) {
+    manifestLoadCount++
     manifestRequestTime = event.request.requestEndDate.getTime() - event.request.requestStartDate.getTime()
   }
 
