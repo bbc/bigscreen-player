@@ -94,7 +94,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
     QUOTA_EXCEEDED: "quotaExceeded",
-    THROUGHPUT_MEASUREMENT_STORED: "throughputMeasurementStored",
   }
 
   function onLoadedMetaData() {
@@ -252,10 +251,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     Plugins.interface.onQuotaExceeded({ criticalBufferLevel: bufferLevel, quotaExceededTime: event.quotaExceededTime })
   }
 
-  function onThroughputMeasurementStored(event) {
-    Plugins.interface.onThroughputMeasurementStored(event)
-  }
-
   function manifestDownloadError(mediaError) {
     const error = () => publishError(mediaError)
 
@@ -372,6 +367,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     if (event.newQuality !== undefined) {
       logBitrate(event)
     }
+
+    event.throughput = mediaPlayer.getAverageThroughput(mediaKind)
 
     Plugins.interface.onQualityChangeRequested(event)
   }
@@ -577,7 +574,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.GAP_JUMP, onGapJump)
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
-    mediaPlayer.on(DashJSEvents.THROUGHPUT_MEASUREMENT_STORED, onThroughputMeasurementStored)
   }
 
   function getSeekableRange() {
@@ -709,7 +705,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
-      mediaPlayer.off(DashJSEvents.THROUGHPUT_MEASUREMENT_STORED, onThroughputMeasurementStored)
 
       DOMHelpers.safeRemoveElement(mediaElement)
 
