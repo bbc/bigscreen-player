@@ -1,13 +1,13 @@
 /* eslint-disable jest/no-done-callback */
 import IMSCSubtitles from "./imscsubtitles"
 import LegacySubtitles from "./legacysubtitles"
-import DashSubtitles from "./dashsubtitles"
+import EmbeddedSubtitles from "./embeddedsubtitles"
 
 import Subtitles from "./subtitles"
 
 jest.mock("./imscsubtitles")
 jest.mock("./legacysubtitles")
-jest.mock("./dashsubtitles")
+jest.mock("./embeddedsubtitles")
 
 describe("Subtitles", () => {
   let isAvailable
@@ -77,29 +77,29 @@ describe("Subtitles", () => {
       })
     })
 
-    describe("dash", () => {
+    describe("embedded", () => {
       beforeEach(() => {
         window.bigscreenPlayer = {
           overrides: {
-            dashSubtitles: true,
+            embeddedSubtitles: true,
           },
         }
 
-        DashSubtitles.mockReset()
+        EmbeddedSubtitles.mockReset()
       })
 
-      it("implementation is available when dash subtitles override is true", (done) => {
+      it("implementation is available when embedded subtitles override is true", (done) => {
         const mockMediaPlayer = {}
         const autoStart = true
 
         Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
           expect(result).toBe(true)
-          expect(DashSubtitles).toHaveBeenCalledTimes(1)
+          expect(EmbeddedSubtitles).toHaveBeenCalledTimes(1)
           done()
         })
       })
 
-      it("implementation is available when dash subtitles override is true, even if segmented URL is passed", (done) => {
+      it("implementation is available when embedded subtitles override is true, even if segmented URL is passed", (done) => {
         isSegmented = true
         const mockMediaPlayer = {}
         const autoStart = true
@@ -107,7 +107,7 @@ describe("Subtitles", () => {
         Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
           expect(LegacySubtitles).not.toHaveBeenCalled()
           expect(IMSCSubtitles).not.toHaveBeenCalled()
-          expect(DashSubtitles).toHaveBeenCalledTimes(1)
+          expect(EmbeddedSubtitles).toHaveBeenCalledTimes(1)
           done()
         })
       })

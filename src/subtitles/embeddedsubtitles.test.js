@@ -1,8 +1,8 @@
-import DashSubtitles from "./dashsubtitles"
+import EmbeddedSubtitles from "./embeddedsubtitles"
 
 const UPDATE_INTERVAL = 750
 
-describe("Dash Subtitles", () => {
+describe("Embedded Subtitles", () => {
   let subtitles
   let targetElement
 
@@ -41,7 +41,7 @@ describe("Dash Subtitles", () => {
     it("returns the correct interface", () => {
       const autoStart = false
 
-      subtitles = DashSubtitles(mockMediaPlayer, autoStart, targetElement)
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement)
 
       expect(subtitles).toEqual(
         expect.objectContaining({
@@ -55,7 +55,7 @@ describe("Dash Subtitles", () => {
 
     it("Expect TTML rendering div to have been created", () => {
       const autoStart = false
-      subtitles = DashSubtitles(mockMediaPlayer, autoStart, targetElement)
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement)
 
       progressTime(1.5)
       expect(targetElement.querySelector("#bsp_subtitles")).toBeTruthy()
@@ -66,7 +66,7 @@ describe("Dash Subtitles", () => {
     it("triggers the MSE player to enable subtitles immediately when set to autoplay", () => {
       const autoStart = true
 
-      subtitles = DashSubtitles(mockMediaPlayer, autoStart, targetElement)
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement)
 
       progressTime(1.5)
       expect(mockMediaPlayer.setSubtitles).toHaveBeenCalledTimes(1)
@@ -75,7 +75,7 @@ describe("Dash Subtitles", () => {
     it("does not trigger the MSE player to enable subtitles immediately when set to autoplay", () => {
       const autoStart = false
 
-      subtitles = DashSubtitles(mockMediaPlayer, autoStart, targetElement)
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement)
 
       progressTime(1.5)
       expect(mockMediaPlayer.setSubtitles).toHaveBeenCalledTimes(0)

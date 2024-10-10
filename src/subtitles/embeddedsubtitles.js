@@ -1,6 +1,6 @@
 import DOMHelpers from "../domhelpers"
 
-function DashSubtitles(mediaPlayer, autoStart, parentElement) {
+function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement) {
   let currentSubtitlesElement
 
   if (autoStart) {
@@ -47,4 +47,4 @@ function DashSubtitles(mediaPlayer, autoStart, parentElement) {
   }
 }
 
-export default DashSubtitles
+export default EmbeddedSubtitles

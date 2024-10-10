@@ -500,13 +500,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function setUpMediaPlayer(playbackTime) {
     const dashSettings = getDashSettings(playerSettings)
-    const dashSubs = window.bigscreenPlayer?.overrides?.dashSubtitles ?? false
+    const embeddedSubs = window.bigscreenPlayer?.overrides?.embeddedSubtitles ?? false
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
     mediaPlayer.initialize(mediaElement, null, true)
 
-    if (dashSubs) {
+    if (embeddedSubs) {
       mediaPlayer.attachTTMLRenderingDiv(document.querySelector("#bsp_subtitles"))
     }
 

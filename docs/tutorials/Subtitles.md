@@ -51,10 +51,12 @@ const captions = [
   {
     url: "https://some.cdn/subtitles/$segment$.m4s",
     segmentLength: 3.84,
+    cdn: "default",
   },
   {
     url: "https://other.cdn/subtitles/$segment$.m4s",
     segmentLength: 3.84,
+    cdn: "default",
   },
   /* ... */
 ]
@@ -83,7 +85,7 @@ player.init(document.querySelector("video"), playbackData /* other opts */)
 
 ### Low Latency Streams
 
-When using Dash.js with a low-latency MPD segments are delivered using Chunked Transfer Encoding (CTE) - the current side chain doesn't allow for delivery in this case.
+When using Dash.js with a low-latency MPD segments are delivered using Chunked Transfer Encoding (CTE) - the default side chain doesn't allow for delivery in this case.
 
 Whilst it is possible to collect chunks as they are delivered, wait until a full segment worth of subtitles have been delivered and pass these to the render function this breaks the low-latency workflow.
 
@@ -91,7 +93,7 @@ An override has been added to allow subtitles to be rendered directly by Dash.js
 
 Subtitles can be enabled and disabled in the usual way using the `setSubtitlesEnabled()` function. However, they are signalled and delivered by the chosen MPD.
 
-Using Dash.js subtitles can be enabled using `window.bigscreenPlayer.overrides.dashSubtitles = true`.
+Using Dash.js subtitles can be enabled using `window.bigscreenPlayer.overrides.embeddedSubtitles = true`.
 
 ##  Design
 
