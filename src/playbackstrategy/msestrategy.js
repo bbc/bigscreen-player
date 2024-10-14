@@ -355,21 +355,17 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     return parseInt(bitrateInfoList[index].bitrate / 1000)
   }
 
+  function logBitrate({ mediaType, oldQuality, newQuality }) {
+    const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
+    const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
+
+    const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
+    const newRepresentation = `${newQuality} (${newBitrate} kbps)`
+
+    DebugTool.info(`${mediaType} ABR Change Requested From Representation ${oldRepresentation} to ${newRepresentation}`)
+  }
+
   function onQualityChangeRequested(event) {
-    function logBitrate(event) {
-      const { mediaType, oldQuality, newQuality } = event
-
-      const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
-      const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
-
-      const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
-      const newRepresentation = `${newQuality} (${newBitrate} kbps)`
-
-      DebugTool.info(
-        `${mediaType} ABR Change Requested From Representation ${oldRepresentation} to ${newRepresentation}`
-      )
-    }
-
     if (event.newQuality !== undefined) {
       logBitrate(event)
     }
