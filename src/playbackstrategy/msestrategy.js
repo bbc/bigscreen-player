@@ -87,6 +87,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
     UNSUPPORTED_CODEC: 30,
     MANIFEST_VALIDITY_CHANGED: "manifestValidityChanged",
+    QUALITY_CHANGE_REQUESTED: "qualityChangeRequested",
     QUALITY_CHANGE_RENDERED: "qualityChangeRendered",
     BASE_URL_SELECTED: "baseUrlSelected",
     SERVICE_LOCATION_AVAILABLE: "serviceLocationUnblacklisted",
@@ -354,25 +355,31 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     return parseInt(bitrateInfoList[index].bitrate / 1000)
   }
 
-  function onQualityChangeRendered(event) {
-    function logBitrate(event) {
-      const { mediaType, oldQuality, newQuality } = event
+  function logBitrate(abrType, { mediaType, oldQuality, newQuality }) {
+    const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
+    const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
 
-      const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
-      const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
+    const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
+    const newRepresentation = `${newQuality} (${newBitrate} kbps)`
 
-      const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
-      const newRepresentation = `${newQuality} (${newBitrate} kbps)`
+    DebugTool.info(
+      `${mediaType} ABR Change ${abrType} From Representation ${oldRepresentation} to ${newRepresentation}`
+    )
+  }
 
-      DebugTool.dynamicMetric(`representation-${mediaType}`, [newQuality, newBitrate])
-
-      DebugTool.info(
-        `${mediaType} ABR Change Rendered From Representation ${oldRepresentation} To ${newRepresentation}`
-      )
+  function onQualityChangeRequested(event) {
+    if (event.newQuality !== undefined) {
+      logBitrate("Requested", event)
     }
 
+    event.throughput = mediaPlayer.getAverageThroughput(mediaKind)
+
+    Plugins.interface.onQualityChangeRequested(event)
+  }
+
+  function onQualityChangeRendered(event) {
     if (event.newQuality !== undefined) {
-      logBitrate(event)
+      logBitrate("Rendered", event)
     }
 
     emitPlayerInfo()
@@ -544,6 +551,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
     mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
+    mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_REQUESTED, onQualityChangeRequested)
     mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
     mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
     mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded)
@@ -654,6 +662,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
       mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
       mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
+      mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_REQUESTED, onQualityChangeRequested)
       mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded)
       mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
       mediaPlayer.off(DashJSEvents.LOG, onDebugLog)
