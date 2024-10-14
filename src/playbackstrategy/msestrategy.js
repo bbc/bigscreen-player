@@ -355,19 +355,21 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     return parseInt(bitrateInfoList[index].bitrate / 1000)
   }
 
-  function logBitrate({ mediaType, oldQuality, newQuality }) {
+  function logBitrate(abrType, { mediaType, oldQuality, newQuality }) {
     const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
     const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
 
     const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
     const newRepresentation = `${newQuality} (${newBitrate} kbps)`
 
-    DebugTool.info(`${mediaType} ABR Change Requested From Representation ${oldRepresentation} to ${newRepresentation}`)
+    DebugTool.info(
+      `${mediaType} ABR Change ${abrType} From Representation ${oldRepresentation} to ${newRepresentation}`
+    )
   }
 
   function onQualityChangeRequested(event) {
     if (event.newQuality !== undefined) {
-      logBitrate(event)
+      logBitrate("Requested", event)
     }
 
     event.throughput = mediaPlayer.getAverageThroughput(mediaKind)
@@ -377,7 +379,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function onQualityChangeRendered(event) {
     if (event.newQuality !== undefined) {
-      logBitrate(event)
+      logBitrate("Rendered", event)
     }
 
     emitPlayerInfo()
