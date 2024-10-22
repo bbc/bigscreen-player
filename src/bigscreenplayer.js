@@ -102,9 +102,9 @@ function BigscreenPlayer() {
   //   return seconds + getPresentationTimeOffsetInSeconds();
   // }
 
-  // function convertMediaTimeToPresentationTime(seconds) {
-  //   return seconds - getPresentationTimeOffsetInSeconds();
-  // }
+  function convertMediaTimeToPresentationTime(seconds) {
+    return seconds - mediaSources.time().presentationTimeOffsetSeconds || 0
+  }
 
   function convertVideoTimeSecondsToEpochMs(seconds) {
     return getWindowStartTime() ? getWindowStartTime() + seconds * 1000 : null
@@ -684,6 +684,7 @@ function BigscreenPlayer() {
      */
     setLogLevel: (level) => DebugTool.setLogLevel(level),
     getDebugLogs: () => DebugTool.getDebugLogs(),
+    convertMediaTimeToPresentationTime,
   }
 }
 
