@@ -98,6 +98,14 @@ function BigscreenPlayer() {
     return getWindowStartTime() ? new Date(convertVideoTimeSecondsToEpochMs(time)) : new Date(time * 1000)
   }
 
+  // function convertPresentationTimeToMediaTime(seconds) {
+  //   return seconds + getPresentationTimeOffsetInSeconds();
+  // }
+
+  // function convertMediaTimeToPresentationTime(seconds) {
+  //   return seconds - getPresentationTimeOffsetInSeconds();
+  // }
+
   function convertVideoTimeSecondsToEpochMs(seconds) {
     return getWindowStartTime() ? getWindowStartTime() + seconds * 1000 : null
   }

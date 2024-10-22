@@ -22,11 +22,11 @@
             playbackElement.style.height = "720px"
             playbackElement.style.width = "1280px"
 
-            let windowType = "staticWindow"
+            let windowType = "growingWindow"
             let enableSubtitles = false
 
             let minimalData = {
-                initialPlaybackTime: 30,
+                initialPlaybackTime: 1729602120000,
                 media: {
                     captions: [],
                     type: "application/dash+xml",
@@ -36,7 +36,7 @@
                         {
                             // Content from DASH IF testing assests (used in their reference player)
                             // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
-                            url: "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd",
+                            url: "https://ve-cmaf-pushb-uk-stage.akamaized.net/x=4/i=urn:bbc:pips:service:uk_bbc_stream_053/iptv_hd_abr_v1.mpd",
                             cdn: "dash.akamaized.net",
                         },
                     ],

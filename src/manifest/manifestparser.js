@@ -17,28 +17,52 @@ const placeholders = {
   timeCorrectionSeconds: NaN,
 }
 
-const dashParsingStrategyByWindowType = {
-  [WindowTypes.GROWING]: parseGrowingMPD,
-  [WindowTypes.SLIDING]: parseSlidingMPD,
-  [WindowTypes.STATIC]: parseStaticMPD,
+function calcPresentationTimeFromWallClock(wallclockTimeInMillis, availabilityStartTimeInMillis) {
+  return wallclockTimeInMillis < availabilityStartTimeInMillis
+    ? 0
+    : wallclockTimeInMillis - availabilityStartTimeInMillis
+}
+function calcMediaTimeFromPresentationTime(presentationTimeInMillis, offsetInMillis) {
+  return presentationTimeInMillis + offsetInMillis
 }
 
-function parseMPD(manifestEl, { windowType, initialWallclockTime } = {}) {
-  return new Promise((resolve) => {
-    const mpd = manifestEl.querySelector("MPD")
+function parseMPD(manifestEl, { initialWallclockTime } = {}) {
+  const mpd = manifestEl.querySelector("MPD")
 
-    const parse = dashParsingStrategyByWindowType[windowType]
+  return fetchWallclockTime(mpd, initialWallclockTime)
+    .then((wallclockTime) => {
+      const { presentationTimeOffset, timescale } = getSegmentTemplate(mpd)
+      const type = mpd.getAttribute("type")
+      const availabilityStartTimeInMillis = Date.parse(mpd.getAttribute("availabilityStartTime"))
+      const timeShiftBufferDepthInMillis = 1000 * TimeUtils.durationToSeconds(mpd.getAttribute("timeShiftBufferDepth"))
+      const presentationTimeOffsetInMillis = (1000 * (presentationTimeOffset || 0)) / timescale
 
-    if (parse == null) {
-      throw new Error(`Could not find a DASH parsing strategy for window type ${windowType}`)
-    }
+      const windowStartTime = calcMediaTimeFromPresentationTime(
+        calcPresentationTimeFromWallClock(wallclockTime - timeShiftBufferDepthInMillis, availabilityStartTimeInMillis),
+        presentationTimeOffsetInMillis
+      )
+      const windowEndTime = calcMediaTimeFromPresentationTime(
+        calcPresentationTimeFromWallClock(wallclockTime, availabilityStartTimeInMillis),
+        presentationTimeOffsetInMillis
+      )
 
-    return resolve(parse(mpd, initialWallclockTime))
-  }).catch((error) => {
-    const errorWithCode = new Error(error.message ?? "manifest-dash-parse-error")
-    errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
-    throw errorWithCode
-  })
+      return {
+        type,
+        windowStartTime,
+        windowEndTime,
+        presentationTimeOffsetSeconds: presentationTimeOffset / timescale,
+        hasTimeShift: !!timeShiftBufferDepthInMillis,
+        // HMW apply timeCorrectionSeconds correctly to webcasts?
+        // - Set 0 if PTO is defined
+        // - Remove time correction
+        timeCorrectionSeconds: windowStartTime / 1000,
+      }
+    })
+    .catch((error) => {
+      const errorWithCode = new Error(error.message ?? "manifest-dash-parse-error")
+      errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
+      throw errorWithCode
+    })
 }
 
 function fetchWallclockTime(mpd, initialWallclockTime) {
@@ -71,57 +95,8 @@ function getSegmentTemplate(mpd) {
   return {
     duration: parseFloat(segmentTemplate.getAttribute("duration")),
     timescale: parseFloat(segmentTemplate.getAttribute("timescale")),
-    presentationTimeOffset: parseFloat(segmentTemplate.getAttribute("presentationTimeOffset")),
+    presentationTimeOffset: parseFloat(segmentTemplate.getAttribute("presentationTimeOffset")) || 0,
   }
-}
-
-function parseStaticMPD(mpd) {
-  return new Promise((resolveParse) => {
-    const { presentationTimeOffset, timescale } = getSegmentTemplate(mpd)
-
-    return resolveParse({
-      presentationTimeOffsetSeconds: presentationTimeOffset / timescale,
-    })
-  })
-}
-
-function parseSlidingMPD(mpd, initialWallclockTime) {
-  return fetchWallclockTime(mpd, initialWallclockTime).then((wallclockTime) => {
-    const { duration, timescale } = getSegmentTemplate(mpd)
-    const availabilityStartTime = mpd.getAttribute("availabilityStartTime")
-    const segmentLengthMillis = (1000 * duration) / timescale
-
-    if (!availabilityStartTime || !segmentLengthMillis) {
-      throw new Error("manifest-dash-attributes-parse-error")
-    }
-
-    const timeShiftBufferDepthMillis = 1000 * TimeUtils.durationToSeconds(mpd.getAttribute("timeShiftBufferDepth"))
-    const windowEndTime = wallclockTime - Date.parse(availabilityStartTime) - segmentLengthMillis
-    const windowStartTime = windowEndTime - timeShiftBufferDepthMillis
-
-    return {
-      windowStartTime,
-      windowEndTime,
-      timeCorrectionSeconds: windowStartTime / 1000,
-    }
-  })
-}
-
-function parseGrowingMPD(mpd, initialWallclockTime) {
-  return fetchWallclockTime(mpd, initialWallclockTime).then((wallclockTime) => {
-    const { duration, timescale } = getSegmentTemplate(mpd)
-    const availabilityStartTime = mpd.getAttribute("availabilityStartTime")
-    const segmentLengthMillis = (1000 * duration) / timescale
-
-    if (!availabilityStartTime || !segmentLengthMillis) {
-      throw new Error("manifest-dash-attributes-parse-error")
-    }
-
-    return {
-      windowStartTime: Date.parse(availabilityStartTime),
-      windowEndTime: wallclockTime - segmentLengthMillis,
-    }
-  })
 }
 
 function parseM3U8(manifest, { windowType } = {}) {

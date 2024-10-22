@@ -52,11 +52,6 @@ function MediaSources() {
 
     updateDebugOutput()
 
-    if (!needToGetManifest(windowType, liveSupport)) {
-      callbacks.onSuccess()
-      return
-    }
-
     loadManifest(callbacks, { initialWallclockTime, windowType })
   }
 
