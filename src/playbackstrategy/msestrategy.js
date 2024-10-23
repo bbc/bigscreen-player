@@ -11,7 +11,6 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
-import PauseTriggers from "../models/pausetriggers"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -54,7 +53,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   let failoverTime
   let failoverZeroPoint
   let refreshFailoverTime
-  let slidingWindowPausedTime = null
   let isEnded = false
 
   let dashMetrics
@@ -593,7 +591,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     return mediaElement ? mediaElement.currentTime - timeCorrection : 0
   }
 
-  function clampPresentationTime(presentationTimeInSeconds) {
+  function clampPresentationTimeToSafeRange(presentationTimeInSeconds) {
     const { start, end } = getSafelySeekableRangeInPresentationTime()
 
     return Math.min(Math.max(presentationTimeInSeconds, start), end)
@@ -610,24 +608,16 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         DebugTool.info(`Stream ended`)
       }
 
-      const relativeTimeInSeconds = convertPresentationTimeToRelativeTime(presentationTimeInSeconds)
+      const dvrTimeInSeconds = convertPresentationTimeToDVRTime(presentationTimeInSeconds)
 
-      mediaPlayer.seek(relativeTimeInSeconds)
+      mediaPlayer.seek(dvrTimeInSeconds)
     })
   }
 
-  function convertPresentationTimeToRelativeTime(presentationTimeInSeconds) {
+  function convertPresentationTimeToDVRTime(presentationTimeInSeconds) {
     const { start } = getSafelySeekableRangeInPresentationTime()
 
-    let relativeTimeInSeconds = presentationTimeInSeconds - start
-
-    if (typeof slidingWindowPausedTime === "number") {
-      const timeShiftDriftSincePauseInSeconds = start - slidingWindowPausedTime
-
-      relativeTimeInSeconds -= timeShiftDriftSincePauseInSeconds
-    }
-
-    return relativeTimeInSeconds
+    return presentationTimeInSeconds - start
   }
 
   function addEventCallback(thisArg, newCallback) {
@@ -741,34 +731,26 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     isEnded: () => isEnded,
     isPaused,
     pause: (opts = {}) => {
-      if (opts.pauseTrigger === PauseTriggers.APP) {
-        slidingWindowPausedTime = getSafelySeekableRangeInPresentationTime().start
-      }
-
       mediaPlayer.pause()
 
       if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
         startAutoResumeTimeout()
       }
     },
-    play: () => {
-      slidingWindowPausedTime = null
-
-      mediaPlayer.play()
-    },
-    setCurrentTime: (videoTimeInSeconds) => {
+    play: () => mediaPlayer.play(),
+    setCurrentTime: (presentationTimeInSeconds) => {
       publishedSeekEvent = false
       isSeeking = true
 
       // Time correction wrong for webcasts
-      const presentationTimeInSeconds = clampPresentationTime(videoTimeInSeconds /* + timeCorrection */)
+      const safePresentationTime = clampPresentationTimeToSafeRange(presentationTimeInSeconds)
 
       // TODO: if type is dynamic
-      if (presentationTimeInSeconds > mediaElement.currentTime) {
-        refreshManifestBeforeSeek(presentationTimeInSeconds)
+      if (safePresentationTime > mediaElement.currentTime) {
+        refreshManifestBeforeSeek(safePresentationTime)
       } else {
-        const relativeTime = convertPresentationTimeToRelativeTime(presentationTimeInSeconds)
-        mediaPlayer.seek(relativeTime)
+        const dvrTimeInSeconds = convertPresentationTimeToDVRTime(safePresentationTime)
+        mediaPlayer.seek(dvrTimeInSeconds)
       }
     },
     setPlaybackRate: (rate) => {
