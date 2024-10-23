@@ -583,6 +583,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     const textTracks = mediaElement.textTracks
     for (let index = 0; index < textTracks.length; index++) {
       textTracks[index].mode = "showing"
+    }
   }
 
   function manifestLoadingFinished(event) {
