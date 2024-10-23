@@ -92,7 +92,7 @@ function PlayerComponent(
   }
 
   function getCurrentTime() {
-    return playbackStrategy && playbackStrategy.getCurrentTime()
+    return playbackStrategy?.getCurrentTime()
   }
 
   function getSeekableRange() {

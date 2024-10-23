@@ -42,8 +42,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   let errorCallback
   let timeUpdateCallback
 
-  let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
-
   const seekDurationPadding = isNaN(playerSettings.streaming?.seekDurationPadding)
     ? DEFAULT_SETTINGS.seekDurationPadding
     : playerSettings.streaming?.seekDurationPadding
@@ -555,24 +553,16 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     manifestRequestTime = event.request.requestEndDate.getTime() - event.request.requestStartDate.getTime()
   }
 
-  function getSeekableRangeInVideoTime() {
-    if (mediaPlayer && mediaPlayer.isReady() && windowType !== WindowTypes.STATIC) {
-      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
-      if (dvrInfo) {
-        return {
-          start: dvrInfo.range.start - timeCorrection,
-          end: dvrInfo.range.end - timeCorrection - liveDelay,
-        }
-      }
+  function getSeekableRangeInPresentationTime() {
+    if (windowType !== WindowTypes.STATIC && mediaPlayer?.isReady()) {
+      const { range } = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+
+      return { start: range.start, end: range.end - liveDelay }
     }
 
-    return {
-      start: 0,
-      end: getDuration(),
-    }
+    return { start: 0, end: getDuration() }
   }
 
-  /** presentation time */
   function getSafelySeekableRangeInPresentationTime() {
     if (windowType !== WindowTypes.STATIC && mediaPlayer?.isReady()) {
       const { range } = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
@@ -588,7 +578,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getCurrentTime() {
-    return mediaElement ? mediaElement.currentTime - timeCorrection : 0
+    return mediaElement?.currentTime ?? 0
   }
 
   function clampPresentationTimeToSafeRange(presentationTimeInSeconds) {
@@ -635,7 +625,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   function startAutoResumeTimeout() {
     DynamicWindowUtils.autoResumeAtStartOfRange(
       getCurrentTime(),
-      getSeekableRangeInVideoTime(),
+      getSeekableRangeInPresentationTime(),
       addEventCallback,
       removeEventCallback,
       (event) => event !== MediaState.PAUSED,
@@ -698,7 +688,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
     load,
-    getSeekableRange: getSeekableRangeInVideoTime,
+    getSeekableRange: getSeekableRangeInPresentationTime,
     getCurrentTime,
     getDuration,
     getPlayerElement: () => mediaElement,
@@ -709,7 +699,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       eventCallbacks = []
       errorCallback = undefined
       timeUpdateCallback = undefined
-      timeCorrection = undefined
       failoverTime = undefined
       failoverZeroPoint = undefined
       isEnded = undefined

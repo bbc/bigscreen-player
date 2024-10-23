@@ -98,12 +98,12 @@ function BigscreenPlayer() {
     return getWindowStartTime() ? new Date(convertVideoTimeSecondsToEpochMs(time)) : new Date(time * 1000)
   }
 
-  // function convertPresentationTimeToMediaTime(seconds) {
-  //   return seconds + getPresentationTimeOffsetInSeconds();
-  // }
+  function convertPresentationTimeToMediaTime(presentationTimeInSeconds) {
+    return presentationTimeInSeconds + mediaSources.time().presentationTimeOffsetSeconds || 0
+  }
 
-  function convertMediaTimeToPresentationTime(seconds) {
-    return seconds - mediaSources.time().presentationTimeOffsetSeconds || 0
+  function convertMediaTimeToPresentationTime(presentationTimeInSeconds) {
+    return presentationTimeInSeconds - mediaSources.time().presentationTimeOffsetSeconds || 0
   }
 
   function convertVideoTimeSecondsToEpochMs(seconds) {
@@ -379,7 +379,7 @@ function BigscreenPlayer() {
      * @function
      * @returns {Number}
      */
-    getCurrentTime: () => (playerComponent && playerComponent.getCurrentTime()) || 0,
+    getCurrentTime: () => playerComponent?.getCurrentTime() ?? 0,
 
     /**
      * Returns the current media kind.
@@ -685,6 +685,7 @@ function BigscreenPlayer() {
     setLogLevel: (level) => DebugTool.setLogLevel(level),
     getDebugLogs: () => DebugTool.getDebugLogs(),
     convertMediaTimeToPresentationTime,
+    convertPresentationTimeToMediaTime,
   }
 }
 
