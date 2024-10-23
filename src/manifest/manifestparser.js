@@ -48,6 +48,7 @@ function parseMPD(manifestEl, { initialWallclockTime } = {}) {
 
       return {
         type,
+        availabilityStartTimeInMillis,
         windowStartTime,
         windowEndTime,
         presentationTimeOffsetSeconds: presentationTimeOffset / timescale,
@@ -115,6 +116,7 @@ function parseM3U8(manifest, { windowType } = {}) {
     }
 
     return resolve({
+      availabilityStartTimeInMillis: programDateTime,
       windowStartTime: programDateTime,
       windowEndTime: programDateTime + duration * 1000,
     })

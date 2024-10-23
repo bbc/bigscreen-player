@@ -103,9 +103,11 @@ function PlayerComponent(
     return playbackStrategy && playbackStrategy.isPaused()
   }
 
-  function setCurrentTime(time) {
+  function setCurrentTime(presentationTimeInSeconds) {
     if (transitions().canBeginSeek()) {
-      isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy && playbackStrategy.setCurrentTime(time)
+      isNativeHLSRestartable()
+        ? reloadMediaElement(presentationTimeInSeconds)
+        : playbackStrategy?.setCurrentTime(presentationTimeInSeconds)
     }
   }
 
@@ -126,24 +128,26 @@ function PlayerComponent(
     )
   }
 
-  function reloadMediaElement(time) {
-    const originalWindowStartOffset = getWindowStartTime()
+  function reloadMediaElement(presentationTimeInSeconds) {
+    const wallclockTimeInMilliSeconds =
+      presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMillis
 
     const doSeek = () => {
-      const windowOffset = mediaSources.time().windowStartTime - originalWindowStartOffset
+      let presentationTimeInSeconds =
+        (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMillis) / 1000
+
       const seekableRange = playbackStrategy && playbackStrategy.getSeekableRange()
 
-      let seekToTime = time - windowOffset / 1000
       let thenPause = playbackStrategy && playbackStrategy.isPaused()
 
       tearDownMediaElement()
 
-      if (seekToTime > seekableRange.end - seekableRange.start - 30) {
-        seekToTime = undefined
+      if (presentationTimeInSeconds > seekableRange.end - seekableRange.start - 30) {
+        presentationTimeInSeconds = undefined
         thenPause = false
       }
 
-      loadMedia(mediaMetaData.type, seekToTime, thenPause)
+      loadMedia(mediaMetaData.type, presentationTimeInSeconds, thenPause)
     }
 
     const onError = () => {
@@ -251,13 +255,14 @@ function PlayerComponent(
   }
 
   function attemptCdnFailover(mediaError) {
-    const time = getCurrentTime()
-    const oldWindowStartTime = getWindowStartTime()
-    const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
+    const presentationTimeInSeconds = getCurrentTime()
+
+    const wallclockTimeInMilliSeconds =
+      presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMillis
 
     const failoverParams = {
-      isBufferingTimeoutError: bufferingTimeoutError,
-      currentTime: getCurrentTime(),
+      isBufferingTimeoutError: mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+      currentTime: presentationTimeInSeconds,
       duration: getDuration(),
       code: mediaError.code,
       message: mediaError.message,
@@ -265,10 +270,12 @@ function PlayerComponent(
 
     const doLoadMedia = () => {
       const thenPause = isPaused()
-      const windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000
-      const failoverTime = time - (windowOffset || 0)
       tearDownMediaElement()
-      loadMedia(mediaMetaData.type, failoverTime, thenPause)
+
+      const presentationTimeInSeconds =
+        (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMillis) / 1000
+
+      loadMedia(mediaMetaData.type, presentationTimeInSeconds, thenPause)
     }
 
     const doErrorCallback = () => {
@@ -370,8 +377,8 @@ function PlayerComponent(
     }
   }
 
-  function loadMedia(type, startTime, thenPause) {
-    playbackStrategy && playbackStrategy.load(type, startTime)
+  function loadMedia(type, presentationTimeInSeconds, thenPause) {
+    playbackStrategy && playbackStrategy.load(type, presentationTimeInSeconds)
     if (thenPause) {
       pause()
     }
