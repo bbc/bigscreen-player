@@ -2,7 +2,7 @@
 
 BigscreenPlayer aims to provide a consistent experience across all devices regardless of the underlying playback strategy and native functionality. The player can render subtitles (aka captions) with on-demand and live content. You can also customise the appearance of your subtitles using this library.
 
-To achieve that consistent experience BigscreenPlayer cannot render subtitles as you would using f.ex. Dash.js. Some devices do not support text tracks natively, others do not present cues accurately ([more detail here](#why-not-include-subtitles-in-the-manifest)). For this reason you SHOULD NOT specify subtitles in your manifest. Instead you SHOULD provide subtitles separately to make use of the capabilities BigscreenPlayer provides.
+To achieve that consistent experience BigscreenPlayer cannot render subtitles as you would using f.ex. Dash.js. Some devices do not support text tracks natively, others do not present cues accurately ([more detail here](#why-not-include-subtitles-in-the-manifest%3F)). For this reason you SHOULD NOT specify subtitles in your manifest. Instead you SHOULD provide subtitles separately to make use of the capabilities BigscreenPlayer provides.
 
 ##  Usage
 

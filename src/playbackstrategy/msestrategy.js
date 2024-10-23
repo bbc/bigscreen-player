@@ -63,6 +63,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   let publishedSeekEvent = false
   let isSeeking = false
+  let manifestRequestTime
+  let manifestLoadCount = 0
 
   let playerMetadata = {
     playbackBitrate: undefined,
@@ -79,11 +81,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     GAP_JUMP: "gapCausedInternalSeek",
     GAP_JUMP_TO_END: "gapCausedSeekToPeriodEnd",
     MANIFEST_LOADED: "manifestLoaded",
+    MANIFEST_LOADING_FINISHED: "manifestLoadingFinished",
     DOWNLOAD_MANIFEST_ERROR_CODE: 25,
     DOWNLOAD_CONTENT_ERROR_CODE: 27,
     DOWNLOAD_INIT_SEGMENT_ERROR_CODE: 28,
     UNSUPPORTED_CODEC: 30,
     MANIFEST_VALIDITY_CHANGED: "manifestValidityChanged",
+    QUALITY_CHANGE_REQUESTED: "qualityChangeRequested",
     QUALITY_CHANGE_RENDERED: "qualityChangeRendered",
     BASE_URL_SELECTED: "baseUrlSelected",
     SERVICE_LOCATION_AVAILABLE: "serviceLocationUnblacklisted",
@@ -266,14 +270,17 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onManifestLoaded(event) {
-    DebugTool.info(`Manifest loaded. Duration is: ${event.data.mediaPresentationDuration}`)
-
     if (event.data) {
+      DebugTool.info(`Manifest loaded. Duration is: ${event.data.mediaPresentationDuration}`)
       const manifest = event.data
       const representationOptions = window.bigscreenPlayer.representationOptions || {}
 
       ManifestModifier.filter(manifest, representationOptions)
       ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources())
+
+      manifest.manifestRequestTime = manifestRequestTime
+      manifest.manifestLoadCount = manifestLoadCount
+      manifestLoadCount = 0
 
       emitManifestInfo(manifest)
     }
@@ -349,25 +356,31 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     return parseInt(bitrateInfoList[index].bitrate / 1000)
   }
 
-  function onQualityChangeRendered(event) {
-    function logBitrate(event) {
-      const { mediaType, oldQuality, newQuality } = event
+  function logBitrate(abrType, { mediaType, oldQuality, newQuality }) {
+    const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
+    const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
 
-      const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
-      const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
+    const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
+    const newRepresentation = `${newQuality} (${newBitrate} kbps)`
 
-      const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
-      const newRepresentation = `${newQuality} (${newBitrate} kbps)`
+    DebugTool.info(
+      `${mediaType} ABR Change ${abrType} From Representation ${oldRepresentation} to ${newRepresentation}`
+    )
+  }
 
-      DebugTool.dynamicMetric(`representation-${mediaType}`, [newQuality, newBitrate])
-
-      DebugTool.info(
-        `${mediaType} ABR Change Rendered From Representation ${oldRepresentation} To ${newRepresentation}`
-      )
+  function onQualityChangeRequested(event) {
+    if (event.newQuality !== undefined) {
+      logBitrate("Requested", event)
     }
 
+    event.throughput = mediaPlayer.getAverageThroughput(mediaKind)
+
+    Plugins.interface.onQualityChangeRequested(event)
+  }
+
+  function onQualityChangeRendered(event) {
     if (event.newQuality !== undefined) {
-      logBitrate(event)
+      logBitrate("Rendered", event)
     }
 
     emitPlayerInfo()
@@ -544,6 +557,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
     mediaPlayer.on(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
     mediaPlayer.on(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
+    mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_REQUESTED, onQualityChangeRequested)
     mediaPlayer.on(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
     mediaPlayer.on(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
     mediaPlayer.on(DashJSEvents.METRIC_ADDED, onMetricAdded)
@@ -555,6 +569,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
     mediaPlayer.on(DashJSEvents.TEXT_TRACKS_ADDED, disableTextTracks)
+    mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
   }
 
   function disableTextTracks() {
@@ -568,7 +583,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     const textTracks = mediaElement.textTracks
     for (let index = 0; index < textTracks.length; index++) {
       textTracks[index].mode = "showing"
-    }
+  }
+
+  function manifestLoadingFinished(event) {
+    manifestLoadCount++
+    manifestRequestTime = event.request.requestEndDate.getTime() - event.request.requestStartDate.getTime()
   }
 
   function getSeekableRange() {
@@ -654,6 +673,47 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     )
   }
 
+  function cleanUpMediaPlayer() {
+    if (mediaPlayer) {
+      mediaPlayer.destroy()
+
+      mediaPlayer.off(DashJSEvents.ERROR, onError)
+      mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
+      mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
+      mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
+      mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
+      mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_REQUESTED, onQualityChangeRequested)
+      mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded)
+      mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
+      mediaPlayer.off(DashJSEvents.LOG, onDebugLog)
+      mediaPlayer.off(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
+      mediaPlayer.off(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
+      mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
+      mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
+      mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
+
+      mediaPlayer = undefined
+    }
+
+    if (mediaElement) {
+      mediaElement.removeEventListener("timeupdate", onTimeUpdate)
+      mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
+      mediaElement.removeEventListener("loadeddata", onLoadedData)
+      mediaElement.removeEventListener("play", onPlay)
+      mediaElement.removeEventListener("playing", onPlaying)
+      mediaElement.removeEventListener("pause", onPaused)
+      mediaElement.removeEventListener("waiting", onWaiting)
+      mediaElement.removeEventListener("seeking", onSeeking)
+      mediaElement.removeEventListener("seeked", onSeeked)
+      mediaElement.removeEventListener("ended", onEnded)
+      mediaElement.removeEventListener("ratechange", onRateChange)
+
+      DOMHelpers.safeRemoveElement(mediaElement)
+
+      mediaElement = undefined
+    }
+  }
+
   return {
     transitions: {
       canBePaused: () => true,
@@ -679,38 +739,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     },
     getPlayerElement: () => mediaElement,
     tearDown: () => {
-      mediaPlayer.reset()
-
-      mediaElement.removeEventListener("timeupdate", onTimeUpdate)
-      mediaElement.removeEventListener("loadedmetadata", onLoadedMetaData)
-      mediaElement.removeEventListener("loadeddata", onLoadedData)
-      mediaElement.removeEventListener("play", onPlay)
-      mediaElement.removeEventListener("playing", onPlaying)
-      mediaElement.removeEventListener("pause", onPaused)
-      mediaElement.removeEventListener("waiting", onWaiting)
-      mediaElement.removeEventListener("seeking", onSeeking)
-      mediaElement.removeEventListener("seeked", onSeeked)
-      mediaElement.removeEventListener("ended", onEnded)
-      mediaElement.removeEventListener("ratechange", onRateChange)
-      mediaPlayer.off(DashJSEvents.ERROR, onError)
-      mediaPlayer.off(DashJSEvents.MANIFEST_LOADED, onManifestLoaded)
-      mediaPlayer.off(DashJSEvents.MANIFEST_VALIDITY_CHANGED, onManifestValidityChange)
-      mediaPlayer.off(DashJSEvents.STREAM_INITIALIZED, onStreamInitialised)
-      mediaPlayer.off(DashJSEvents.QUALITY_CHANGE_RENDERED, onQualityChangeRendered)
-      mediaPlayer.off(DashJSEvents.METRIC_ADDED, onMetricAdded)
-      mediaPlayer.off(DashJSEvents.BASE_URL_SELECTED, onBaseUrlSelected)
-      mediaPlayer.off(DashJSEvents.LOG, onDebugLog)
-      mediaPlayer.off(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
-      mediaPlayer.off(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
-      mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
-      mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
-      mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
-
-      DOMHelpers.safeRemoveElement(mediaElement)
+      cleanUpMediaPlayer()
 
       lastError = undefined
-      mediaPlayer = undefined
-      mediaElement = undefined
       eventCallbacks = []
       errorCallback = undefined
       timeUpdateCallback = undefined
@@ -728,7 +759,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         },
       }
     },
-    reset: () => {},
+    reset: () => {
+      if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.resetMSEPlayer) {
+        cleanUpMediaPlayer()
+      }
+    },
     isEnded: () => isEnded,
     isPaused,
     pause: (opts = {}) => {
