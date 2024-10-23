@@ -11,7 +11,7 @@ const LOAD_ERROR_COUNT_MAX = 3
 
 function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
   const windowStartEpochSeconds = mediaSources?.time().windowStartTime / 1000
-  const presentationTimeOffsetSeconds = mediaSources?.time().presentationTimeOffsetSeconds
+  const presentationTimeOffsetInSeconds = mediaSources?.time().presentationTimeOffsetInSeconds
 
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
   let currentSegmentRendered = {}
@@ -27,7 +27,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function getTimeOffset() {
-    return presentationTimeOffsetSeconds || windowStartEpochSeconds
+    return presentationTimeOffsetInSeconds || windowStartEpochSeconds
   }
 
   function calculateSegmentNumber() {
@@ -36,7 +36,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     // Add 1 as the PTO gives segment '0' relative to the presentation time.
     // DASH segments use one-based indexing, so add 1 to the result of PTO.
     // (Imagine PTO was 0)
-    if (typeof presentationTimeOffsetSeconds === "number" && isFinite(presentationTimeOffsetSeconds)) {
+    if (typeof presentationTimeOffsetInSeconds === "number" && isFinite(presentationTimeOffsetInSeconds)) {
       return segmentNumber + 1
     }
 

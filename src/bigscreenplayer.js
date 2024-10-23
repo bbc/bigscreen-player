@@ -9,7 +9,6 @@ import WindowTypes from "./models/windowtypes"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
-import SlidingWindowUtils from "./utils/timeutils"
 import callCallbacks from "./utils/callcallbacks"
 import MediaSources from "./mediasources"
 import Version from "./version"
@@ -98,12 +97,20 @@ function BigscreenPlayer() {
     return getWindowStartTime() ? new Date(convertVideoTimeSecondsToEpochMs(time)) : new Date(time * 1000)
   }
 
-  function convertPresentationTimeToMediaTime(presentationTimeInSeconds) {
-    return presentationTimeInSeconds + mediaSources.time().presentationTimeOffsetSeconds || 0
+  function convertPresentationTimeToWallclockTimeInMilliSeconds(presentationTimeInSeconds) {
+    return presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMilliSeconds
   }
 
-  function convertMediaTimeToPresentationTime(presentationTimeInSeconds) {
-    return presentationTimeInSeconds - mediaSources.time().presentationTimeOffsetSeconds || 0
+  function convertWallclockTimeToPresentationTimeInSeconds(wallclockTimeInMilliSeconds) {
+    return (wallclockTimeInMilliSeconds - mediaSources.time().windowStartTime) / 1000
+  }
+
+  function convertPresentationTimeToMediaTimeInSeconds(presentationTimeInSeconds) {
+    return presentationTimeInSeconds + mediaSources.time().presentationTimeOffsetInSeconds || 0
+  }
+
+  function convertMediaTimeToPresentationTimeInSeconds(presentationTimeInSeconds) {
+    return presentationTimeInSeconds - mediaSources.time().presentationTimeOffsetInSeconds || 0
   }
 
   function convertVideoTimeSecondsToEpochMs(seconds) {
@@ -115,10 +122,14 @@ function BigscreenPlayer() {
       serverDate = bigscreenPlayerData.serverDate
 
       initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
-      // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
-      bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(
-        bigscreenPlayerData.initialPlaybackTime,
-        mediaSources.time().windowStartTime
+
+      // opt 1:
+      // dash: media time -> presentation time
+      // hls: media time -> presentation time
+
+      // overwrite initialPlaybackTime with presentation time (it comes in as epoch time for a sliding/growing window)
+      bigscreenPlayerData.initialPlaybackTime = convertMediaTimeToPresentationTimeInSeconds(
+        bigscreenPlayerData.initialPlaybackTime / 1000
       )
     }
 
@@ -684,8 +695,10 @@ function BigscreenPlayer() {
      */
     setLogLevel: (level) => DebugTool.setLogLevel(level),
     getDebugLogs: () => DebugTool.getDebugLogs(),
-    convertMediaTimeToPresentationTime,
-    convertPresentationTimeToMediaTime,
+    convertMediaTimeToPresentationTimeInSeconds,
+    convertPresentationTimeToMediaTimeInSeconds,
+    convertPresentationTimeToWallclockTimeInMilliSeconds,
+    convertWallclockTimeToPresentationTimeInSeconds,
   }
 }
 

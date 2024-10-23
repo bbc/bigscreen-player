@@ -130,11 +130,11 @@ function PlayerComponent(
 
   function reloadMediaElement(presentationTimeInSeconds) {
     const wallclockTimeInMilliSeconds =
-      presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMillis
+      presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMilliSeconds
 
     const doSeek = () => {
       let presentationTimeInSeconds =
-        (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMillis) / 1000
+        (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMilliSeconds) / 1000
 
       const seekableRange = playbackStrategy && playbackStrategy.getSeekableRange()
 
@@ -258,7 +258,7 @@ function PlayerComponent(
     const presentationTimeInSeconds = getCurrentTime()
 
     const wallclockTimeInMilliSeconds =
-      presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMillis
+      presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMilliSeconds
 
     const failoverParams = {
       isBufferingTimeoutError: mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
@@ -273,7 +273,7 @@ function PlayerComponent(
       tearDownMediaElement()
 
       const presentationTimeInSeconds =
-        (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMillis) / 1000
+        (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMilliSeconds) / 1000
 
       loadMedia(mediaMetaData.type, presentationTimeInSeconds, thenPause)
     }

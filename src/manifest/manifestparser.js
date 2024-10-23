@@ -13,7 +13,7 @@ const parsingStrategyByManifestType = {
 const placeholders = {
   windowStartTime: NaN,
   windowEndTime: NaN,
-  presentationTimeOffsetSeconds: NaN,
+  presentationTimeOffsetInSeconds: NaN,
   timeCorrectionSeconds: NaN,
 }
 
@@ -48,10 +48,10 @@ function parseMPD(manifestEl, { initialWallclockTime } = {}) {
 
       return {
         type,
-        availabilityStartTimeInMillis,
+        availabilityStartTimeInMilliSeconds: availabilityStartTimeInMillis,
         windowStartTime,
         windowEndTime,
-        presentationTimeOffsetSeconds: presentationTimeOffset / timescale,
+        presentationTimeOffsetInSeconds: presentationTimeOffset / timescale,
         hasTimeShift: !!timeShiftBufferDepthInMillis,
         // HMW apply timeCorrectionSeconds correctly to webcasts?
         // - Set 0 if PTO is defined
@@ -111,12 +111,13 @@ function parseM3U8(manifest, { windowType } = {}) {
 
     if (windowType === WindowTypes.STATIC) {
       return resolve({
-        presentationTimeOffsetSeconds: programDateTime / 1000,
+        presentationTimeOffsetInSeconds: programDateTime / 1000,
       })
     }
 
     return resolve({
-      availabilityStartTimeInMillis: programDateTime,
+      availabilityStartTimeInMilliSeconds: programDateTime,
+      presentationTimeOffsetInSeconds: programDateTime / 1000,
       windowStartTime: programDateTime,
       windowEndTime: programDateTime + duration * 1000,
     })
