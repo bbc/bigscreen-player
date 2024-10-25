@@ -1,8 +1,8 @@
-export const ManifestTypes = {
+export const ManifestType = {
   STATIC: "static",
   DYNAMIC: "dynamic",
 } as const
 
-export type ManifestTypes = (typeof ManifestTypes)[keyof typeof ManifestTypes]
+export type ManifestType = (typeof ManifestType)[keyof typeof ManifestType]
 
-export default ManifestTypes
+export default ManifestType

@@ -9,7 +9,7 @@ import ReadyHelper from "./readyhelper"
 import Resizer from "./resizer"
 import Version from "./version"
 import DebugTool from "./debugger/debugtool"
-import ManifestTypes from "./models/manifesttypes"
+import ManifestType from "./models/manifesttypes"
 import MediaState from "./models/mediastate"
 import PauseTriggers from "./models/pausetriggers"
 import Subtitles from "./subtitles/subtitles"
@@ -33,7 +33,7 @@ function BigscreenPlayer() {
   let pauseTrigger
   let isSeeking = false
   let endOfStream
-  let manifestType = ManifestTypes.STATIC
+  let manifestType = ManifestType.STATIC
   let mediaSources
   let playbackElement
   let readyHelper
@@ -119,7 +119,7 @@ function BigscreenPlayer() {
   function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
     manifestType = mediaSources.time().type
 
-    if (manifestType === ManifestTypes.DYNAMIC) {
+    if (manifestType === ManifestType.DYNAMIC) {
       serverDate = bigscreenPlayerData.serverDate
 
       initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
@@ -136,13 +136,13 @@ function BigscreenPlayer() {
 
     mediaKind = bigscreenPlayerData.media.kind
     endOfStream =
-      manifestType === ManifestTypes.DYNAMIC &&
+      manifestType === ManifestType.DYNAMIC &&
       !bigscreenPlayerData.initialPlaybackTime &&
       bigscreenPlayerData.initialPlaybackTime !== 0
 
     readyHelper = new ReadyHelper(
       bigscreenPlayerData.initialPlaybackTime,
-      manifestType === ManifestTypes.STATIC,
+      manifestType === ManifestType.STATIC,
       PlayerComponent.getLiveSupport(),
       playerReadyCallback
     )
@@ -359,7 +359,7 @@ function BigscreenPlayer() {
         isSeeking = true
         playerComponent.setCurrentTime(time)
         endOfStream =
-          manifestType === ManifestTypes.DYNAMIC &&
+          manifestType === ManifestType.DYNAMIC &&
           Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
       }
     },
@@ -411,7 +411,7 @@ function BigscreenPlayer() {
     isPlayingAtLiveEdge() {
       return (
         !!playerComponent &&
-        manifestType === ManifestTypes.DYNAMIC &&
+        manifestType === ManifestType.DYNAMIC &&
         Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
       )
     },
@@ -421,7 +421,7 @@ function BigscreenPlayer() {
      * @return {Object} An object of the shape {windowStartTime: Number, windowEndTime: Number, initialPlaybackTime: Number, serverDate: Date}
      */
     getLiveWindowData: () => {
-      if (manifestType === ManifestTypes.STATIC) {
+      if (manifestType === ManifestType.STATIC) {
         return {}
       }
 
@@ -581,7 +581,7 @@ function BigscreenPlayer() {
      */
     canSeek() {
       return (
-        manifestType === ManifestTypes.STATIC ||
+        manifestType === ManifestType.STATIC ||
         DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
       )
     },
@@ -591,7 +591,7 @@ function BigscreenPlayer() {
      * @return Returns whether the current media asset is pausable.
      */
     canPause: () =>
-      manifestType === ManifestTypes.STATIC ||
+      manifestType === ManifestType.STATIC ||
       DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport()),
 
     /**

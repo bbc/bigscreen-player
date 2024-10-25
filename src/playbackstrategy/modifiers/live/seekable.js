@@ -1,6 +1,6 @@
 import MediaPlayerBase from "../mediaplayerbase"
 import DynamicWindowUtils from "../../../dynamicwindowutils"
-import ManifestTypes from "../../../models/manifesttypes"
+import ManifestType from "../../../models/manifesttypes"
 
 function SeekableLivePlayer(mediaPlayer, mediaSources) {
   const AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
@@ -61,7 +61,7 @@ function SeekableLivePlayer(mediaPlayer, mediaSources) {
         mediaPlayer.toPlaying()
       } else {
         mediaPlayer.pause()
-        if (manifestType === ManifestTypes.DYNAMIC) {
+        if (manifestType === ManifestType.DYNAMIC) {
           DynamicWindowUtils.autoResumeAtStartOfRange(
             mediaPlayer.getCurrentTime(),
             mediaPlayer.getSeekableRange(),

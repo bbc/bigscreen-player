@@ -1,6 +1,6 @@
 import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
 import MediaState from "../models/mediastate"
-import ManifestTypes from "../models/manifesttypes"
+import ManifestType from "../models/manifesttypes"
 import DebugTool from "../debugger/debugtool"
 import MediaKinds from "../models/mediakinds"
 import Plugins from "../plugins"
@@ -143,7 +143,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
     isSeeking = false
 
     if (isPaused()) {
-      if (manifestType === ManifestTypes.DYNAMIC) {
+      if (manifestType === ManifestType.DYNAMIC) {
         startAutoResumeTimeout()
       }
       publishMediaState(MediaState.PAUSED)
@@ -282,7 +282,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
 
   function onManifestValidityChange(event) {
     DebugTool.info(`Manifest validity changed. Duration is: ${event.newDuration}`)
-    if (manifestType === ManifestTypes.DYNAMIC) {
+    if (manifestType === ManifestType.DYNAMIC) {
       mediaPlayer.refreshManifest((manifest) => {
         DebugTool.info(`Manifest Refreshed. Duration is: ${manifest.mediaPresentationDuration}`)
       })
@@ -291,7 +291,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
 
   function onStreamInitialised() {
     const setMseDuration = window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.mseDurationOverride
-    if (setMseDuration && manifestType === ManifestTypes.DYNAMIC) {
+    if (setMseDuration && manifestType === ManifestType.DYNAMIC) {
       // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
@@ -547,7 +547,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
   }
 
   function getSeekableRangeInPresentationTime() {
-    if (manifestType === ManifestTypes.DYNAMIC && mediaPlayer?.isReady()) {
+    if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
       const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
 
       // FIX: Dash.js briefly returns `null` on a failover for the first time update
@@ -560,7 +560,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
   }
 
   function getSafelySeekableRangeInPresentationTime() {
-    if (manifestType === ManifestTypes.DYNAMIC && mediaPlayer?.isReady()) {
+    if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
       const { range } = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
 
       return { start: range.start, end: range.end - Math.max(liveDelay, seekDurationPadding) }
@@ -717,7 +717,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
     pause: (opts = {}) => {
       mediaPlayer.pause()
 
-      if (opts.disableAutoResume !== true && manifestType === ManifestTypes.DYNAMIC) {
+      if (opts.disableAutoResume !== true && manifestType === ManifestType.DYNAMIC) {
         startAutoResumeTimeout()
       }
     },

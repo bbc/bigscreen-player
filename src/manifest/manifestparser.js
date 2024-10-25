@@ -3,7 +3,7 @@ import DebugTool from "../debugger/debugtool"
 import Plugins from "../plugins"
 import PluginEnums from "../pluginenums"
 import LoadUrl from "../utils/loadurl"
-import ManifestTypes from "../models/manifesttypes"
+import ManifestType from "../models/manifesttypes"
 
 const parsingStrategyByManifestType = {
   mpd: parseMPD,
@@ -14,7 +14,7 @@ const placeholders = {
   windowStartTime: NaN,
   windowEndTime: NaN,
   presentationTimeOffsetInSeconds: NaN,
-  type: ManifestTypes.STATIC,
+  type: ManifestType.STATIC,
 }
 
 function calcPresentationTimeFromWallClock(wallclockTimeInMillis, availabilityStartTimeInMillis) {

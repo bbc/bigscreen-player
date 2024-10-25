@@ -6,7 +6,7 @@ import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/manifestloader"
 import TransferFormats from "./models/transferformats"
 import findSegmentTemplate from "./utils/findtemplate"
-import ManifestTypes from "./models/manifesttypes"
+import ManifestType from "./models/manifesttypes"
 
 function MediaSources() {
   let mediaSources
@@ -15,7 +15,7 @@ function MediaSources() {
   let liveSupport
   let initialWallclockTime
   let time = {
-    type: ManifestTypes.STATIC,
+    type: ManifestType.STATIC,
   }
   let transferFormat
   let subtitlesSources
@@ -104,8 +104,8 @@ function MediaSources() {
       return false
     }
     const aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5
-    const shouldStaticFailover = time.type === ManifestTypes.STATIC && !aboutToEnd
-    const shouldLiveFailover = time.type === ManifestTypes.DYNAMIC
+    const shouldStaticFailover = time.type === ManifestType.STATIC && !aboutToEnd
+    const shouldLiveFailover = time.type === ManifestType.DYNAMIC
     return (
       isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover)
     )
@@ -173,7 +173,7 @@ function MediaSources() {
 
     return (
       (!hasManifestBeenLoaded || transferFormat === TransferFormats.HLS) &&
-      (time.type === ManifestTypes.DYNAMIC || hasSegmentedSubtitles()) &&
+      (time.type === ManifestType.DYNAMIC || hasSegmentedSubtitles()) &&
       isStartTimeAccurate[liveSupport]
     )
   }

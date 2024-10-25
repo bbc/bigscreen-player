@@ -1,6 +1,6 @@
 import DebugTool from "../debugger/debugtool"
 import MediaState from "../models/mediastate"
-import ManifestTypes from "../models/manifesttypes"
+import ManifestType from "../models/manifesttypes"
 import MediaKinds from "../models/mediakinds"
 import LiveSupport from "../models/livesupport"
 import DynamicWindowUtils from "../dynamicwindowutils"
@@ -101,7 +101,7 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
 
   function onSeeked() {
     if (isPaused()) {
-      if (manifestType === ManifestTypes.DYNAMIC) {
+      if (manifestType === ManifestType.DYNAMIC) {
         startAutoResumeTimeout()
       }
 
@@ -249,7 +249,7 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
 
   function pause(opts = {}) {
     mediaElement.pause()
-    if (opts.disableAutoResume !== true && manifestType === ManifestTypes.DYNAMIC) {
+    if (opts.disableAutoResume !== true && manifestType === ManifestType.DYNAMIC) {
       startAutoResumeTimeout()
     }
   }

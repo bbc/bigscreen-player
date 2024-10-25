@@ -1,5 +1,5 @@
 import MediaPlayerBase from "../mediaplayerbase"
-import ManifestTypes from "../../../models/manifesttypes"
+import ManifestType from "../../../models/manifesttypes"
 import DynamicWindowUtils from "../../../dynamicwindowutils"
 
 function RestartableLivePlayer(mediaPlayer, mediaSources) {
@@ -47,7 +47,7 @@ function RestartableLivePlayer(mediaPlayer, mediaSources) {
   function pause(opts = {}) {
     mediaPlayer.pause()
 
-    if (opts.disableAutoResume !== true && manifestType === ManifestTypes.DYNAMIC) {
+    if (opts.disableAutoResume !== true && manifestType === ManifestType.DYNAMIC) {
       DynamicWindowUtils.autoResumeAtStartOfRange(
         getCurrentTime(),
         getSeekableRange(),

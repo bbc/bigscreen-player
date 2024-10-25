@@ -10,7 +10,7 @@ import None from "./modifiers/live/none"
 import Playable from "./modifiers/live/playable"
 import Restartable from "./modifiers/live/restartable"
 import Seekable from "./modifiers/live/seekable"
-import ManifestTypes from "../models/manifesttypes"
+import ManifestType from "../models/manifesttypes"
 
 function NativeStrategy(mediaSources, mediaKind, playbackElement, isUHD) {
   let mediaPlayer
@@ -35,7 +35,7 @@ function NativeStrategy(mediaSources, mediaKind, playbackElement, isUHD) {
       mediaPlayer = Html5()
   }
 
-  if (mediaSources.time().type === ManifestTypes.DYNAMIC) {
+  if (mediaSources.time().type === ManifestType.DYNAMIC) {
     switch (window.bigscreenPlayer.liveSupport) {
       case "none":
         mediaPlayer = None(mediaPlayer, mediaSources)

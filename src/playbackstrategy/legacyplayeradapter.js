@@ -1,6 +1,6 @@
 import AllowedMediaTransitions from "../allowedmediatransitions"
 import MediaState from "../models/mediastate"
-import ManifestTypes from "../models/manifesttypes"
+import ManifestType from "../models/manifesttypes"
 import DebugTool from "../debugger/debugtool"
 import LiveGlitchCurtain from "./liveglitchcurtain"
 
@@ -11,7 +11,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
   const setSourceOpts = {
     disableSentinels:
-      !!isUHD && manifestType === ManifestTypes.DYNAMIC && window.bigscreenPlayer?.overrides?.liveUhdDisableSentinels,
+      !!isUHD && manifestType === ManifestType.DYNAMIC && window.bigscreenPlayer?.overrides?.liveUhdDisableSentinels,
     disableSeekSentinel: window.bigscreenPlayer?.overrides?.disableSeekSentinel,
   }
 
@@ -141,7 +141,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
       const overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow
       const shouldShowCurtain =
-        manifestType === ManifestTypes.DYNAMIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow)
+        manifestType === ManifestType.DYNAMIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow)
 
       if (shouldShowCurtain) {
         liveGlitchCurtain = new LiveGlitchCurtain(playbackElement)
@@ -179,7 +179,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   }
 
   function setupExitSeekWorkarounds(mimeType) {
-    handleErrorOnExitingSeek = manifestType === ManifestTypes.DYNAMIC && mimeType === "application/dash+xml"
+    handleErrorOnExitingSeek = manifestType === ManifestType.DYNAMIC && mimeType === "application/dash+xml"
 
     const deviceFailsPlayAfterPauseOnExitSeek =
       window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.pauseOnExitSeek
@@ -247,7 +247,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       isPaused = false
 
       hasStartTime = presentationTimeInSeconds || presentationTimeInSeconds === 0
-      const isPlaybackFromLivePoint = manifestType === ManifestTypes.DYNAMIC && !hasStartTime
+      const isPlaybackFromLivePoint = manifestType === ManifestType.DYNAMIC && !hasStartTime
 
       mediaPlayer.initialiseMedia("video", mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
 
@@ -285,7 +285,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     getDuration: () => duration,
     getPlayerElement: () => mediaPlayer.getPlayerElement && mediaPlayer.getPlayerElement(),
     getSeekableRange: () => {
-      if (manifestType === ManifestTypes.STATIC) {
+      if (manifestType === ManifestType.STATIC) {
         return {
           start: 0,
           end: duration,

@@ -6,7 +6,7 @@ import TransferFormats from "./models/transferformats"
 import LiveSupport from "./models/livesupport"
 import PlaybackStrategyModel from "./models/playbackstrategy"
 import StrategyPicker from "./playbackstrategy/strategypicker"
-import ManifestTypes from "./models/manifesttypes"
+import ManifestType from "./models/manifesttypes"
 
 function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, stateUpdateCallback, errorCallback) {
   const transferFormat = bigscreenPlayerData.media.transferFormat
@@ -115,7 +115,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     return (
       window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
       transferFormat === TransferFormats.HLS &&
-      manifestType === ManifestTypes.DYNAMIC &&
+      manifestType === ManifestType.DYNAMIC &&
       getLiveSupport() === LiveSupport.RESTARTABLE
     )
   }
