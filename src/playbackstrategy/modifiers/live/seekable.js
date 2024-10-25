@@ -23,13 +23,10 @@ function SeekableLivePlayer(mediaPlayer, windowType) {
 
   return {
     initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
-      if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
-        mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO
-      } else {
-        mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO
-      }
+      const _mediaType =
+        mediaType === MediaPlayerBase.TYPE.AUDIO ? MediaPlayerBase.TYPE.LIVE_AUDIO : MediaPlayerBase.TYPE.LIVE_VIDEO
 
-      mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts)
+      mediaPlayer.initialiseMedia(_mediaType, sourceUrl, mimeType, sourceContainer, opts)
     },
 
     beginPlayback: function beginPlayback() {
@@ -44,19 +41,19 @@ function SeekableLivePlayer(mediaPlayer, windowType) {
       }
     },
 
-    beginPlaybackFrom: function beginPlaybackFrom(offset) {
-      mediaPlayer.beginPlaybackFrom(offset)
+    beginPlaybackFrom: function beginPlaybackFrom(presentationTimeInSeconds) {
+      mediaPlayer.beginPlaybackFrom(presentationTimeInSeconds)
     },
 
-    playFrom: function playFrom(offset) {
-      mediaPlayer.playFrom(offset)
+    playFrom: function playFrom(presentationTimeInSeconds) {
+      mediaPlayer.playFrom(presentationTimeInSeconds)
     },
 
     pause: function pause(opts) {
       const secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start
-      opts = opts || {}
+      const _opts = opts || {}
 
-      if (opts.disableAutoResume) {
+      if (_opts.disableAutoResume) {
         mediaPlayer.pause()
       } else if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
         mediaPlayer.toPaused()
@@ -76,7 +73,7 @@ function SeekableLivePlayer(mediaPlayer, windowType) {
       }
     },
 
-    resume: resume,
+    resume,
     stop: () => mediaPlayer.stop(),
     reset: () => mediaPlayer.reset(),
     getState: () => mediaPlayer.getState(),
@@ -84,9 +81,9 @@ function SeekableLivePlayer(mediaPlayer, windowType) {
     getCurrentTime: () => mediaPlayer.getCurrentTime(),
     getSeekableRange: () => mediaPlayer.getSeekableRange(),
     getMimeType: () => mediaPlayer.getMimeType(),
-    addEventCallback: addEventCallback,
-    removeEventCallback: removeEventCallback,
-    removeAllEventCallbacks: removeAllEventCallbacks,
+    addEventCallback,
+    removeEventCallback,
+    removeAllEventCallbacks,
     getPlayerElement: () => mediaPlayer.getPlayerElement(),
     getLiveSupport: () => MediaPlayerBase.LIVE_SUPPORT.SEEKABLE,
   }

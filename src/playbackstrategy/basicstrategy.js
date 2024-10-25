@@ -16,7 +16,6 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
 
   let mediaElement
   let metaDataLoaded
-  let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
 
   function publishMediaState(mediaState) {
     for (let index = 0; index < eventCallbacks.length; index++) {
@@ -77,9 +76,9 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
     mediaElement.addEventListener("loadedmetadata", onLoadedMetadata)
   }
 
-  function setStartTime(startTime) {
-    if (startTime) {
-      mediaElement.currentTime = startTime + timeCorrection
+  function setStartTime(presentationTimeInSeconds) {
+    if (presentationTimeInSeconds) {
+      mediaElement.currentTime = presentationTimeInSeconds
     }
   }
 
@@ -140,8 +139,8 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
   function getSeekableRange() {
     if (mediaElement && mediaElement.seekable && mediaElement.seekable.length > 0 && metaDataLoaded) {
       return {
-        start: mediaElement.seekable.start(0) - timeCorrection,
-        end: mediaElement.seekable.end(0) - timeCorrection,
+        start: mediaElement.seekable.start(0),
+        end: mediaElement.seekable.end(0),
       }
     }
     return {
@@ -159,7 +158,7 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
   }
 
   function getCurrentTime() {
-    return mediaElement ? mediaElement.currentTime - timeCorrection : 0
+    return mediaElement ? mediaElement.currentTime : 0
   }
 
   function addEventCallback(thisArg, newCallback) {
@@ -190,11 +189,11 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
     handlePlayPromise(mediaElement.play())
   }
 
-  function setCurrentTime(time) {
+  function setCurrentTime(presentationTimeInSeconds) {
     // Without metadata we cannot clamp to seekableRange
     mediaElement.currentTime = metaDataLoaded
-      ? getClampedTime(time, getSeekableRange()) + timeCorrection
-      : time + timeCorrection
+      ? getClampedTime(presentationTimeInSeconds, getSeekableRange())
+      : presentationTimeInSeconds
   }
 
   function setPlaybackRate(rate) {
@@ -239,7 +238,6 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
 
     mediaElement = undefined
     metaDataLoaded = undefined
-    timeCorrection = undefined
   }
 
   function reset() {}

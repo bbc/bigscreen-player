@@ -312,7 +312,7 @@ function MediaSources() {
   function logManifestLoaded(transferFormat, time) {
     let logMessage = `Loaded ${transferFormat} manifest.`
 
-    const { presentationTimeOffsetInSeconds, timeCorrectionSeconds, windowStartTime, windowEndTime } = time
+    const { presentationTimeOffsetInSeconds, windowStartTime, windowEndTime } = time
 
     if (!isNaN(windowStartTime)) {
       logMessage += ` Window start time [ms]: ${windowStartTime}.`
@@ -320,10 +320,6 @@ function MediaSources() {
 
     if (!isNaN(windowEndTime)) {
       logMessage += ` Window end time [ms]: ${windowEndTime}.`
-    }
-
-    if (!isNaN(timeCorrectionSeconds)) {
-      logMessage += ` Correction [s]: ${timeCorrectionSeconds}.`
     }
 
     if (!isNaN(presentationTimeOffsetInSeconds)) {

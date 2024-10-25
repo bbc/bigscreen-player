@@ -4,10 +4,8 @@ import DynamicWindowUtils from "../../../dynamicwindowutils"
 
 function RestartableLivePlayer(mediaPlayer, windowType, mediaSources) {
   const fakeTimer = {}
-  const timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
 
   let callbacksMap = []
-  let startTime
 
   addEventCallback(this, updateFakeTimer)
 
@@ -65,23 +63,24 @@ function RestartableLivePlayer(mediaPlayer, windowType, mediaSources) {
   }
 
   function getCurrentTime() {
-    return fakeTimer.currentTime + timeCorrection
+    return fakeTimer.currentTime
   }
 
   function getSeekableRange() {
-    const windowLength = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000
-    const delta = (Date.now() - startTime) / 1000
+    //TODO: can we replace Date.now with serverDate/date offset to get accurate time here
+    const endInMilliseconds = Date.now() - mediaSources.time().availabilityStartTimeInMilliseconds
+    const startInMilliseconds = endInMilliseconds - mediaSources.time().timeShiftInMilliseconds
 
     return {
-      start: (windowType === WindowTypes.SLIDING ? delta : 0) + timeCorrection,
-      end: windowLength + delta + timeCorrection,
+      start: Math.max(0, startInMilliseconds / 1000),
+      end: endInMilliseconds / 1000,
     }
   }
 
   return {
     beginPlayback: () => {
-      startTime = Date.now()
-      fakeTimer.currentTime = (mediaSources.time().windowEndTime - mediaSources.time().windowStartTime) / 1000
+      //TODO: can we replace Date.now with serverDate/date offset to get accurate time here
+      fakeTimer.currentTime = (Date.now() - mediaSources.time().availabilityStartTimeInMilliseconds) / 1000
 
       if (
         window.bigscreenPlayer &&
@@ -94,10 +93,9 @@ function RestartableLivePlayer(mediaPlayer, windowType, mediaSources) {
       }
     },
 
-    beginPlaybackFrom: (offset) => {
-      startTime = Date.now()
-      fakeTimer.currentTime = offset
-      mediaPlayer.beginPlaybackFrom(offset)
+    beginPlaybackFrom: (presentationTimeInSeconds) => {
+      fakeTimer.currentTime = presentationTimeInSeconds
+      mediaPlayer.beginPlaybackFrom(presentationTimeInSeconds)
     },
 
     initialiseMedia: (mediaType, sourceUrl, mimeType, sourceContainer, opts) => {

@@ -14,7 +14,6 @@ const placeholders = {
   windowStartTime: NaN,
   windowEndTime: NaN,
   presentationTimeOffsetInSeconds: NaN,
-  timeCorrectionSeconds: NaN,
 }
 
 function calcPresentationTimeFromWallClock(wallclockTimeInMillis, availabilityStartTimeInMillis) {
@@ -52,11 +51,7 @@ function parseMPD(manifestEl, { initialWallclockTime } = {}) {
         windowStartTime,
         windowEndTime,
         presentationTimeOffsetInSeconds: presentationTimeOffset / timescale,
-        hasTimeShift: !!timeShiftBufferDepthInMillis,
-        // HMW apply timeCorrectionSeconds correctly to webcasts?
-        // - Set 0 if PTO is defined
-        // - Remove time correction
-        timeCorrectionSeconds: windowStartTime / 1000,
+        timeShiftInMilliseconds: timeShiftBufferDepthInMillis,
       }
     })
     .catch((error) => {
