@@ -12,6 +12,7 @@ export type TimeInfo = {
   type: ManifestType
   windowStartTime: number
   windowEndTime: number
+  joinTimeInMilliseconds: number
   presentationTimeOffsetInSeconds: number
   timeShiftBufferDepthInMilliseconds: number
   availabilityStartTimeInMilliseconds: number
@@ -87,6 +88,7 @@ function parseMPD(
         type,
         windowEndTime,
         windowStartTime,
+        joinTimeInMilliseconds: wallclockTime,
         timeShiftBufferDepthInMilliseconds,
         availabilityStartTimeInMilliseconds,
         presentationTimeOffsetInSeconds: presentationTimeOffsetInMilliseconds / 1000,
@@ -123,20 +125,21 @@ function fetchWallclockTime(mpd: Element, initialWallclockTime?: number): Promis
 
 function parseM3U8(manifest: string): Promise<TimeInfo> {
   return new Promise<TimeInfo>((resolve) => {
-    const programDateTime = getM3U8ProgramDateTime(manifest)
-    const duration = getM3U8WindowSizeInSeconds(manifest)
+    const programDateTimeInMilliseconds = getM3U8ProgramDateTimeInMilliseconds(manifest)
+    const durationInMilliseconds = getM3U8WindowSizeInMilliseconds(manifest)
 
-    if (programDateTime == null || duration == null) {
+    if (programDateTimeInMilliseconds == null || durationInMilliseconds == null) {
       throw new Error("manifest-hls-attributes-parse-error")
     }
 
     return resolve({
       type: ManifestType.DYNAMIC,
-      windowStartTime: programDateTime,
+      windowStartTime: programDateTimeInMilliseconds,
       timeShiftBufferDepthInMilliseconds: 0,
-      windowEndTime: programDateTime + duration * 1000,
-      availabilityStartTimeInMilliseconds: programDateTime,
-      presentationTimeOffsetInSeconds: programDateTime / 1000,
+      windowEndTime: programDateTimeInMilliseconds + durationInMilliseconds * 1000,
+      joinTimeInMilliseconds: programDateTimeInMilliseconds + durationInMilliseconds * 1000,
+      availabilityStartTimeInMilliseconds: programDateTimeInMilliseconds,
+      presentationTimeOffsetInSeconds: programDateTimeInMilliseconds / 1000,
     })
   }).catch((reason: unknown) => {
     const errorWithCode = (isError(reason) ? reason : new Error("manifest-dash-parse-error")) as ErrorWithCode
@@ -145,7 +148,7 @@ function parseM3U8(manifest: string): Promise<TimeInfo> {
   })
 }
 
-function getM3U8ProgramDateTime(data: string) {
+function getM3U8ProgramDateTimeInMilliseconds(data: string) {
   const match = /^#EXT-X-PROGRAM-DATE-TIME:(.*)$/m.exec(data)
 
   if (match == null) {
@@ -157,7 +160,7 @@ function getM3U8ProgramDateTime(data: string) {
   return isNaN(parsedDate) ? 0 : parsedDate
 }
 
-function getM3U8WindowSizeInSeconds(data: string): number {
+function getM3U8WindowSizeInMilliseconds(data: string): number {
   const regex = /#EXTINF:(\d+(?:\.\d+)?)/g
   let matches = regex.exec(data)
   let result = 0
@@ -167,7 +170,7 @@ function getM3U8WindowSizeInSeconds(data: string): number {
     matches = regex.exec(data)
   }
 
-  return Math.floor(result)
+  return Math.floor(result * 1000)
 }
 
 function parse(
@@ -191,6 +194,7 @@ function parse(
         type: ManifestType.STATIC,
         windowStartTime: 0,
         windowEndTime: 0,
+        joinTimeInMilliseconds: 0,
         presentationTimeOffsetInSeconds: 0,
         timeShiftBufferDepthInMilliseconds: 0,
         availabilityStartTimeInMilliseconds: 0,

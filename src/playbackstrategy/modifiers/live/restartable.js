@@ -6,6 +6,7 @@ function RestartableLivePlayer(mediaPlayer, mediaSources) {
   const fakeTimer = {}
   const manifestType = mediaSources.time().type
 
+  let streamStartDateTimeInMilliseconds
   let callbacksMap = []
 
   addEventCallback(this, updateFakeTimer)
@@ -68,20 +69,41 @@ function RestartableLivePlayer(mediaPlayer, mediaSources) {
   }
 
   function getSeekableRange() {
-    //TODO: can we replace Date.now with serverDate/date offset to get accurate time here
-    const endInMilliseconds = Date.now() - mediaSources.time().availabilityStartTimeInMilliseconds
-    const startInMilliseconds = endInMilliseconds - mediaSources.time().timeShiftInMilliseconds
+    const timeSinceStreamStartInMilliseconds = Date.now() - streamStartDateTimeInMilliseconds
+
+    const { joinTimeInMilliseconds, availabilityStartTimeInMilliseconds, timeShiftBufferDepthInMilliseconds } =
+      mediaSources.time()
+
+    // TODO:
+    //   Can we replace joinTimeInMilliseconds (derived from serverDate or the manifest
+    //   with passing in the drift between the client and the server?
+    // Motivation:
+    //   Instead of joinTimeInMilliseconds + curr Date.now - prev Date.now, use
+    //   ServerDate.now() which returns Date.now() + drift between client and server
+    //
+    // ...or should we support both?
+    const endInMilliseconds =
+      timeSinceStreamStartInMilliseconds + joinTimeInMilliseconds - availabilityStartTimeInMilliseconds
+
+    const startInMilliseconds =
+      typeof timeShiftBufferDepthInMilliseconds === "number" && timeShiftBufferDepthInMilliseconds > 0
+        ? Math.max(0, endInMilliseconds - timeShiftBufferDepthInMilliseconds)
+        : 0
 
     return {
-      start: Math.max(0, startInMilliseconds / 1000),
+      start: startInMilliseconds / 1000,
       end: endInMilliseconds / 1000,
     }
   }
 
   return {
     beginPlayback: () => {
-      //TODO: can we replace Date.now with serverDate/date offset to get accurate time here
-      fakeTimer.currentTime = (Date.now() - mediaSources.time().availabilityStartTimeInMilliseconds) / 1000
+      streamStartDateTimeInMilliseconds = Date.now()
+
+      const { joinTimeInMilliseconds, availabilityStartTimeInMilliseconds } = mediaSources.time()
+
+      // TODO: Same as above – replace joinTime with ServerDate.now()?
+      fakeTimer.currentTime = (joinTimeInMilliseconds - availabilityStartTimeInMilliseconds) / 1000
 
       if (
         window.bigscreenPlayer &&
@@ -95,7 +117,10 @@ function RestartableLivePlayer(mediaPlayer, mediaSources) {
     },
 
     beginPlaybackFrom: (presentationTimeInSeconds) => {
+      streamStartDateTimeInMilliseconds = Date.now()
+
       fakeTimer.currentTime = presentationTimeInSeconds
+
       mediaPlayer.beginPlaybackFrom(presentationTimeInSeconds)
     },
 
