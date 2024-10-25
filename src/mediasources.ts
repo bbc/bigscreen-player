@@ -4,27 +4,48 @@ import PluginEnums from "./pluginenums"
 import PluginData from "./plugindata"
 import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/manifestloader"
-import TransferFormats from "./models/transferformats"
+import TransferFormat from "./models/transferformats"
 import findSegmentTemplate from "./utils/findtemplate"
 import ManifestType from "./models/manifesttypes"
+import LiveSupport from "./models/livesupport"
+import { CaptionsConnection, Connection, MediaDescriptor, ServerDate } from "./types"
+import isError from "./utils/is-error"
+import { TimeInfo } from "./manifest/manifestparser"
+
+type MediaSourceCallbacks = {
+  onSuccess: () => void
+  onError: () => void
+}
+
+type FailoverParams = {
+  isBufferingTimeoutError: boolean
+  code: number
+  message: string
+  duration?: number
+  currentTime?: number
+  serviceLocation?: string
+}
 
 function MediaSources() {
-  let mediaSources
-  let failedOverSources = []
-  let failoverResetTokens = []
-  let liveSupport
-  let initialWallclockTime
-  let time = {
-    type: ManifestType.STATIC,
-  }
-  let transferFormat
-  let subtitlesSources
+  let mediaSources: Connection[] = []
+  let failedOverSources: Connection[] = []
+  let failoverResetTokens: number[] = []
+  let liveSupport: LiveSupport | null = null
+  let initialWallclockTime: number | null = null
+  let time: TimeInfo | null = null
+  let transferFormat: TransferFormat | null = null
+  let subtitlesSources: CaptionsConnection[] = []
   // Default 5000 can be overridden with media.subtitlesRequestTimeout
   let subtitlesRequestTimeout = 5000
   let failoverResetTimeMs = 120000
-  let failoverSort
+  let failoverSort: ((sources: Connection[]) => Connection[]) | null = null
 
-  function init(media, newServerDate, newLiveSupport, callbacks) {
+  function init(
+    media: MediaDescriptor,
+    newServerDate: ServerDate,
+    newLiveSupport: LiveSupport,
+    callbacks: MediaSourceCallbacks
+  ) {
     if (!media.urls?.length) {
       throw new Error("Media Sources urls are undefined")
     }
@@ -33,35 +54,35 @@ function MediaSources() {
       throw new Error("Media Sources callbacks are undefined")
     }
 
-    if (media.subtitlesRequestTimeout) {
+    if (typeof media.subtitlesRequestTimeout === "number") {
       subtitlesRequestTimeout = media.subtitlesRequestTimeout
     }
 
-    if (media.playerSettings?.failoverResetTime) {
+    if (typeof media.playerSettings?.failoverResetTime === "number") {
       failoverResetTimeMs = media.playerSettings.failoverResetTime
     }
 
-    if (media.playerSettings?.failoverSort) {
+    if (typeof media.playerSettings?.failoverSort === "function") {
       failoverSort = media.playerSettings.failoverSort
     }
 
     liveSupport = newLiveSupport
     initialWallclockTime = newServerDate
-    mediaSources = media.urls ? PlaybackUtils.cloneArray(media.urls) : []
-    subtitlesSources = media.captions ? PlaybackUtils.cloneArray(media.captions) : []
+    mediaSources = media.urls ? (PlaybackUtils.cloneArray(media.urls) as Connection[]) : []
+    subtitlesSources = media.captions ? (PlaybackUtils.cloneArray(media.captions) as CaptionsConnection[]) : []
 
     updateDebugOutput()
 
     loadManifest(callbacks, { initialWallclockTime })
   }
 
-  function failover(onFailoverSuccess, onFailoverError, failoverParams) {
+  function failover(onFailoverSuccess: () => void, onFailoverError: () => void, failoverParams: FailoverParams): void {
     if (shouldFailover(failoverParams)) {
       emitCdnFailover(failoverParams)
       updateCdns(failoverParams.serviceLocation)
       updateDebugOutput()
 
-      if (needToGetManifest(liveSupport)) {
+      if (liveSupport && needToGetManifest(liveSupport)) {
         loadManifest({ onSuccess: onFailoverSuccess, onError: onFailoverError }, {})
       } else {
         onFailoverSuccess()
@@ -71,7 +92,11 @@ function MediaSources() {
     }
   }
 
-  function failoverSubtitles(postFailoverAction, failoverErrorAction, { statusCode, ...rest } = {}) {
+  function failoverSubtitles(
+    postFailoverAction: () => void,
+    failoverErrorAction?: () => void,
+    { statusCode, ...rest }: Partial<{ statusCode: number }> = {}
+  ): void {
     if (subtitlesSources.length > 1) {
       Plugins.interface.onSubtitlesLoadError({
         status: statusCode,
@@ -99,30 +124,36 @@ function MediaSources() {
     }
   }
 
-  function shouldFailover(failoverParams) {
-    if (isFirstManifest(failoverParams.serviceLocation)) {
-      return false
-    }
-    const aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5
-    const shouldStaticFailover = time.type === ManifestType.STATIC && !aboutToEnd
-    const shouldLiveFailover = time.type === ManifestType.DYNAMIC
+  function shouldFailover(failoverParams: FailoverParams): boolean {
+    const { currentTime, duration, serviceLocation } = failoverParams
+
+    const aboutToEnd =
+      typeof currentTime === "number" && typeof duration === "number" && duration > 0 && currentTime > duration - 5
+
+    const shouldStaticFailover = time?.type === ManifestType.STATIC && !aboutToEnd
+
+    const shouldLiveFailover = time?.type === ManifestType.DYNAMIC
+
     return (
-      isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover)
+      !isFirstManifest(serviceLocation) &&
+      isFailoverInfoValid(failoverParams) &&
+      hasSourcesToFailoverTo() &&
+      (shouldStaticFailover || shouldLiveFailover)
     )
   }
 
-  function stripQueryParamsAndHash(url) {
-    return typeof url === "string" ? url.split(/[#?]/)[0] : url
+  function stripQueryParamsAndHash(url: string): string {
+    return url.replace(/[#?].*/, "")
   }
 
   // we don't want to failover on the first playback
   // the serviceLocation is set to our first cdn url
   // see manifest modifier - generateBaseUrls
-  function isFirstManifest(serviceLocation) {
-    return doHostsMatch(serviceLocation, getCurrentUrl())
+  function isFirstManifest(serviceLocation: string | undefined): boolean {
+    return typeof serviceLocation === "string" && doHostsMatch(serviceLocation, getCurrentUrl())
   }
 
-  function doHostsMatch(firstUrl, secondUrl) {
+  function doHostsMatch(firstUrl: string, secondUrl: string): boolean {
     // Matches anything between *:// and / or the end of the line
     const hostRegex = /\w+?:\/\/(.*?)(?:\/|$)/
 
@@ -137,7 +168,7 @@ function MediaSources() {
       : serviceLocNoQueryHash === currUrlNoQueryHash
   }
 
-  function isFailoverInfoValid(failoverParams) {
+  function isFailoverInfoValid(failoverParams: FailoverParams): boolean {
     const infoValid = typeof failoverParams === "object" && typeof failoverParams.isBufferingTimeoutError === "boolean"
 
     if (!infoValid) {
@@ -147,11 +178,11 @@ function MediaSources() {
     return infoValid
   }
 
-  function failoverResetTime() {
+  function failoverResetTime(): number {
     return failoverResetTimeMs
   }
 
-  function hasSegmentedSubtitles() {
+  function hasSegmentedSubtitles(): boolean {
     const url = getCurrentSubtitlesUrl()
 
     if (typeof url !== "string" || url === "") {
@@ -161,7 +192,7 @@ function MediaSources() {
     return findSegmentTemplate(url) != null
   }
 
-  function needToGetManifest(liveSupport) {
+  function needToGetManifest(liveSupport: LiveSupport): boolean {
     const isStartTimeAccurate = {
       restartable: true,
       seekable: true,
@@ -172,28 +203,31 @@ function MediaSources() {
     const hasManifestBeenLoaded = transferFormat !== undefined
 
     return (
-      (!hasManifestBeenLoaded || transferFormat === TransferFormats.HLS) &&
-      (time.type === ManifestType.DYNAMIC || hasSegmentedSubtitles()) &&
+      (!hasManifestBeenLoaded || transferFormat === TransferFormat.HLS) &&
+      (time?.type === ManifestType.DYNAMIC || hasSegmentedSubtitles()) &&
       isStartTimeAccurate[liveSupport]
     )
   }
 
-  function refresh(onSuccess, onError) {
+  function refresh(onSuccess: () => void, onError: () => void) {
     loadManifest({ onSuccess, onError }, {})
   }
 
   // [tag:ServerDate]
-  function loadManifest(callbacks, { initialWallclockTime } = {}) {
-    return ManifestLoader.load(getCurrentUrl(), { initialWallclockTime })
-      .then(({ time: newTime, transferFormat: newTransferFormat } = {}) => {
+  function loadManifest(
+    callbacks: { onSuccess: () => void; onError: (info: { error: string }) => void },
+    { initialWallclockTime }: Partial<{ initialWallclockTime: number }> = {}
+  ): void {
+    ManifestLoader.load(getCurrentUrl(), { initialWallclockTime })
+      .then(({ time: newTime, transferFormat: newTransferFormat }) => {
         time = newTime
         transferFormat = newTransferFormat
 
         logManifestLoaded(transferFormat, time)
         callbacks.onSuccess()
       })
-      .catch((error) => {
-        DebugTool.error(`Failed to load manifest: ${error?.message ?? "cause n/a"}`)
+      .catch((reason: unknown) => {
+        DebugTool.error(`Failed to load manifest: ${isError(reason) ? reason.message : "cause n/a"}`)
 
         failover(
           () => callbacks.onSuccess(),
@@ -207,39 +241,27 @@ function MediaSources() {
       })
   }
 
-  function getCurrentUrl() {
-    if (mediaSources.length > 0) {
-      return mediaSources[0].url.toString()
-    }
-
-    return ""
+  function getCurrentUrl(): string {
+    return mediaSources.length > 0 ? mediaSources[0].url.toString() : ""
   }
 
-  function getCurrentSubtitlesUrl() {
-    if (subtitlesSources.length > 0) {
-      return subtitlesSources[0].url.toString()
-    }
-
-    return ""
+  function getCurrentSubtitlesUrl(): string {
+    return subtitlesSources.length > 0 ? subtitlesSources[0].url.toString() : ""
   }
 
-  function getCurrentSubtitlesSegmentLength() {
-    if (subtitlesSources.length > 0) {
-      return subtitlesSources[0].segmentLength
-    }
+  function getCurrentSubtitlesSegmentLength(): number | undefined {
+    return subtitlesSources.length > 0 ? subtitlesSources[0].segmentLength : undefined
   }
 
-  function getSubtitlesRequestTimeout() {
+  function getSubtitlesRequestTimeout(): number {
     return subtitlesRequestTimeout
   }
 
-  function getCurrentSubtitlesCdn() {
-    if (subtitlesSources.length > 0) {
-      return subtitlesSources[0].cdn
-    }
+  function getCurrentSubtitlesCdn(): string | undefined {
+    return subtitlesSources.length > 0 ? subtitlesSources[0].cdn : undefined
   }
 
-  function availableUrls() {
+  function availableUrls(): string[] {
     return mediaSources.map((mediaSource) => mediaSource.url)
   }
 
@@ -247,7 +269,7 @@ function MediaSources() {
     return time
   }
 
-  function updateFailedOverSources(mediaSource) {
+  function updateFailedOverSources(mediaSource: Connection) {
     failedOverSources.push(mediaSource)
 
     if (failoverSort) {
@@ -255,40 +277,55 @@ function MediaSources() {
     }
 
     const failoverResetToken = setTimeout(() => {
-      if (mediaSources?.length > 0 && failedOverSources?.length > 0) {
-        DebugTool.info(`${mediaSource.cdn} has been added back in to available CDNs`)
-        mediaSources.push(failedOverSources.shift())
-        updateDebugOutput()
+      const source = failedOverSources.shift()
+
+      if (source == null || mediaSources.length === 0) {
+        return
       }
+
+      DebugTool.info(`${mediaSource.cdn} has been added back in to available CDNs`)
+      mediaSources.push(source)
+      updateDebugOutput()
     }, failoverResetTimeMs)
 
-    failoverResetTokens.push(failoverResetToken)
+    failoverResetTokens.push(failoverResetToken as unknown as number)
   }
 
-  function updateCdns(serviceLocation) {
+  function updateCdns(serviceLocation: string | undefined): void {
     if (hasSourcesToFailoverTo()) {
-      updateFailedOverSources(mediaSources.shift())
-      moveMediaSourceToFront(serviceLocation)
+      return
     }
+
+    const source = mediaSources.shift()
+
+    if (source == null) {
+      return
+    }
+
+    updateFailedOverSources(source)
+
+    if (serviceLocation == null) {
+      return
+    }
+
+    moveMediaSourceToFront(serviceLocation)
   }
 
-  function moveMediaSourceToFront(serviceLocation) {
-    if (serviceLocation) {
-      let serviceLocationIdx = mediaSources
-        .map((mediaSource) => stripQueryParamsAndHash(mediaSource.url))
-        .indexOf(stripQueryParamsAndHash(serviceLocation))
+  function moveMediaSourceToFront(serviceLocation: string): void {
+    let serviceLocationIdx = mediaSources
+      .map((mediaSource) => stripQueryParamsAndHash(mediaSource.url))
+      .indexOf(stripQueryParamsAndHash(serviceLocation))
 
-      if (serviceLocationIdx < 0) serviceLocationIdx = 0
+    if (serviceLocationIdx < 0) serviceLocationIdx = 0
 
-      mediaSources.unshift(mediaSources.splice(serviceLocationIdx, 1)[0])
-    }
+    mediaSources.unshift(mediaSources.splice(serviceLocationIdx, 1)[0])
   }
 
-  function hasSourcesToFailoverTo() {
+  function hasSourcesToFailoverTo(): boolean {
     return mediaSources.length > 1
   }
 
-  function emitCdnFailover(failoverInfo) {
+  function emitCdnFailover(failoverInfo: FailoverParams) {
     const evt = new PluginData({
       status: PluginEnums.STATUS.FAILOVER,
       stateType: PluginEnums.TYPE.ERROR,
@@ -298,18 +335,19 @@ function MediaSources() {
       code: failoverInfo.code,
       message: failoverInfo.message,
     })
+
     Plugins.interface.onErrorHandled(evt)
   }
 
-  function availableCdns() {
+  function availableCdns(): string[] {
     return mediaSources.map((mediaSource) => mediaSource.cdn)
   }
 
-  function availableSubtitlesCdns() {
+  function availableSubtitlesCdns(): string[] {
     return subtitlesSources.map((subtitleSource) => subtitleSource.cdn)
   }
 
-  function logManifestLoaded(transferFormat, time) {
+  function logManifestLoaded(transferFormat: TransferFormat, time: TimeInfo) {
     let logMessage = `Loaded ${transferFormat} manifest.`
 
     const { presentationTimeOffsetInSeconds, windowStartTime, windowEndTime } = time
@@ -340,10 +378,10 @@ function MediaSources() {
   function tearDown() {
     failoverResetTokens.forEach((token) => clearTimeout(token))
 
-    liveSupport = undefined
-    initialWallclockTime = undefined
-    time = {}
-    transferFormat = undefined
+    liveSupport = null
+    initialWallclockTime = null
+    time = null
+    transferFormat = null
     mediaSources = []
     failedOverSources = []
     failoverResetTokens = []

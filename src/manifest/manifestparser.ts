@@ -8,7 +8,7 @@ import { DASH, HLS } from "../models/transferformats"
 import isError from "../utils/is-error"
 import { ErrorWithCode } from "../models/error-code"
 
-type TimeInfo = {
+export type TimeInfo = {
   type: ManifestType
   windowStartTime: number
   windowEndTime: number
