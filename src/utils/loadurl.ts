@@ -1,3 +1,5 @@
+import isError from "./is-error"
+
 type LoadUrlOpts = {
   timeout: number | undefined
   onTimeout: XMLHttpRequest["ontimeout"] | undefined
@@ -8,7 +10,7 @@ type LoadUrlOpts = {
   headers: { [key: string]: string }
 }
 
-export default function LoadUrl(url: string | URL, opts: LoadUrlOpts) {
+export default function LoadUrl(url: string | URL, opts: Partial<LoadUrlOpts>) {
   const xhr = new XMLHttpRequest()
 
   if (opts.timeout) {
@@ -39,15 +41,15 @@ export default function LoadUrl(url: string | URL, opts: LoadUrlOpts) {
 
     if (opts.headers) {
       for (const header in opts.headers) {
-        if (opts.headers.hasOwnProperty(header)) {
+        if (Object.prototype.hasOwnProperty.call(opts.headers, header)) {
           xhr.setRequestHeader(header, opts.headers[header])
         }
       }
     }
     xhr.send(opts.data || null)
-  } catch ({ name }) {
+  } catch (reason: unknown) {
     if (opts.onError) {
-      opts.onError({ errorType: name, statusCode: xhr.status })
+      opts.onError({ errorType: isError(reason) ? reason.name : "unknown", statusCode: xhr.status })
     }
   }
 }

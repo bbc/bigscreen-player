@@ -1,4 +1,4 @@
-function durationToSeconds(duration: string) {
+export function durationToSeconds(duration: string) {
   const matches = duration.match(/^PT(\d+(?:[,.]\d+)?H)?(\d+(?:[,.]\d+)?M)?(\d+(?:[,.]\d+)?S)?/) || []
 
   const hours = parseFloat(matches[1] || "0") * 60 * 60
@@ -8,20 +8,20 @@ function durationToSeconds(duration: string) {
   return hours + mins + secs || undefined
 }
 
-function convertToSeekableVideoTime(epochTime: number, windowStartEpochTime: number) {
+export function convertToSeekableVideoTime(epochTime: number, windowStartEpochTime: number) {
   // Wont allow a 0 value for this due to device issue, this should be sorted in the TAL strategy.
   return Math.max(0.1, convertToVideoTime(epochTime, windowStartEpochTime))
 }
 
-function convertToVideoTime(epochTime: number, windowStartEpochTime: number) {
+export function convertToVideoTime(epochTime: number, windowStartEpochTime: number) {
   return Math.floor(convertMilliSecondsToSeconds(epochTime - windowStartEpochTime))
 }
 
-function convertMilliSecondsToSeconds(timeInMilis: number) {
+export function convertMilliSecondsToSeconds(timeInMilis: number) {
   return Math.floor(timeInMilis / 1000)
 }
 
-function calculateSlidingWindowSeekOffset(
+export function calculateSlidingWindowSeekOffset(
   time: number,
   dvrInfoRangeStart: number,
   timeCorrection: number,
@@ -41,4 +41,4 @@ export default {
   convertToSeekableVideoTime,
   convertToVideoTime,
   calculateSlidingWindowSeekOffset,
-}
+} as const
