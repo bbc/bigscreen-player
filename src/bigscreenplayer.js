@@ -1,23 +1,22 @@
 /**
  * @module bigscreenplayer/bigscreenplayer
  */
-import MediaState from "./models/mediastate"
-import PlayerComponent from "./playercomponent"
-import PauseTriggers from "./models/pausetriggers"
 import DynamicWindowUtils from "./dynamicwindowutils"
-import MockBigscreenPlayer from "./mockbigscreenplayer"
-import Plugins from "./plugins"
-import DebugTool from "./debugger/debugtool"
-import callCallbacks from "./utils/callcallbacks"
 import MediaSources from "./mediasources"
-import Version from "./version"
-import Resizer from "./resizer"
+import PlayerComponent from "./playercomponent"
+import Plugins from "./plugins"
 import ReadyHelper from "./readyhelper"
+import Resizer from "./resizer"
+import Version from "./version"
+import DebugTool from "./debugger/debugtool"
+import ManifestTypes from "./models/manifesttypes"
+import MediaState from "./models/mediastate"
+import PauseTriggers from "./models/pausetriggers"
 import Subtitles from "./subtitles/subtitles"
+import callCallbacks from "./utils/callcallbacks"
 // TODO: Remove when this becomes a TypeScript file
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { InitData, InitCallbacks, SubtitlesCustomisationOptions } from "./types"
-import ManifestTypes from "./models/manifesttypes"
 
 function BigscreenPlayer() {
   let stateChangeCallbacks = []
@@ -594,32 +593,6 @@ function BigscreenPlayer() {
     canPause: () =>
       manifestType === ManifestTypes.STATIC ||
       DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport()),
-
-    /**
-     * Return a mock for in place testing.
-     * @function
-     * @param {*} opts
-     */
-    mock(opts) {
-      MockBigscreenPlayer.mock(this, opts)
-    },
-
-    /**
-     * Unmock the player.
-     * @function
-     */
-    unmock() {
-      MockBigscreenPlayer.unmock(this)
-    },
-
-    /**
-     * Return a mock for unit tests.
-     * @function
-     * @param {*} opts
-     */
-    mockJasmine(opts) {
-      MockBigscreenPlayer.mockJasmine(this, opts)
-    },
 
     /**
      * Register a plugin for extended events.
