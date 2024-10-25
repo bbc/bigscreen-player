@@ -1,9 +1,10 @@
 import MediaPlayerBase from "../mediaplayerbase"
-import WindowTypes from "../../../models/windowtypes"
+import ManifestTypes from "../../../models/manifesttypes"
 import DynamicWindowUtils from "../../../dynamicwindowutils"
 
-function RestartableLivePlayer(mediaPlayer, windowType, mediaSources) {
+function RestartableLivePlayer(mediaPlayer, mediaSources) {
   const fakeTimer = {}
+  const manifestType = mediaSources.time().type
 
   let callbacksMap = []
 
@@ -46,7 +47,7 @@ function RestartableLivePlayer(mediaPlayer, windowType, mediaSources) {
   function pause(opts = {}) {
     mediaPlayer.pause()
 
-    if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
+    if (opts.disableAutoResume !== true && manifestType === ManifestTypes.DYNAMIC) {
       DynamicWindowUtils.autoResumeAtStartOfRange(
         getCurrentTime(),
         getSeekableRange(),

@@ -1,5 +1,4 @@
 import LegacyAdapter from "./legacyplayeradapter"
-import WindowTypes from "../models/windowtypes"
 
 import Cehtml from "./modifiers/cehtml"
 import Html5 from "./modifiers/html5"
@@ -11,8 +10,9 @@ import None from "./modifiers/live/none"
 import Playable from "./modifiers/live/playable"
 import Restartable from "./modifiers/live/restartable"
 import Seekable from "./modifiers/live/seekable"
+import ManifestTypes from "../models/manifesttypes"
 
-function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD) {
+function NativeStrategy(mediaSources, mediaKind, playbackElement, isUHD) {
   let mediaPlayer
 
   switch (window.bigscreenPlayer.mediaPlayer) {
@@ -35,26 +35,26 @@ function NativeStrategy(mediaSources, windowType, mediaKind, playbackElement, is
       mediaPlayer = Html5()
   }
 
-  if (windowType !== WindowTypes.STATIC) {
+  if (mediaSources.time().type === ManifestTypes.DYNAMIC) {
     switch (window.bigscreenPlayer.liveSupport) {
       case "none":
-        mediaPlayer = None(mediaPlayer, windowType, mediaSources)
+        mediaPlayer = None(mediaPlayer, mediaSources)
         break
       case "playable":
-        mediaPlayer = Playable(mediaPlayer, windowType, mediaSources)
+        mediaPlayer = Playable(mediaPlayer, mediaSources)
         break
       case "restartable":
-        mediaPlayer = Restartable(mediaPlayer, windowType, mediaSources)
+        mediaPlayer = Restartable(mediaPlayer, mediaSources)
         break
       case "seekable":
-        mediaPlayer = Seekable(mediaPlayer, windowType, mediaSources)
+        mediaPlayer = Seekable(mediaPlayer, mediaSources)
         break
       default:
-        mediaPlayer = Playable(mediaPlayer, windowType, mediaSources)
+        mediaPlayer = Playable(mediaPlayer, mediaSources)
     }
   }
 
-  return LegacyAdapter(mediaSources, windowType, playbackElement, isUHD, mediaPlayer)
+  return LegacyAdapter(mediaSources, playbackElement, isUHD, mediaPlayer)
 }
 
 NativeStrategy.getLiveSupport = () => window.bigscreenPlayer.liveSupport

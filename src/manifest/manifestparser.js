@@ -1,9 +1,9 @@
 import TimeUtils from "./../utils/timeutils"
 import DebugTool from "../debugger/debugtool"
-import WindowTypes from "../models/windowtypes"
 import Plugins from "../plugins"
 import PluginEnums from "../pluginenums"
 import LoadUrl from "../utils/loadurl"
+import ManifestTypes from "../models/manifesttypes"
 
 const parsingStrategyByManifestType = {
   mpd: parseMPD,
@@ -14,6 +14,7 @@ const placeholders = {
   windowStartTime: NaN,
   windowEndTime: NaN,
   presentationTimeOffsetInSeconds: NaN,
+  type: ManifestTypes.STATIC,
 }
 
 function calcPresentationTimeFromWallClock(wallclockTimeInMillis, availabilityStartTimeInMillis) {
@@ -95,19 +96,13 @@ function getSegmentTemplate(mpd) {
   }
 }
 
-function parseM3U8(manifest, { windowType } = {}) {
+function parseM3U8(manifest) {
   return new Promise((resolve) => {
     const programDateTime = getM3U8ProgramDateTime(manifest)
     const duration = getM3U8WindowSizeInSeconds(manifest)
 
     if (!(programDateTime && duration)) {
       throw new Error("manifest-hls-attributes-parse-error")
-    }
-
-    if (windowType === WindowTypes.STATIC) {
-      return resolve({
-        presentationTimeOffsetInSeconds: programDateTime / 1000,
-      })
     }
 
     return resolve({
@@ -148,10 +143,10 @@ function getM3U8WindowSizeInSeconds(data) {
   return Math.floor(result)
 }
 
-function parse(manifest, { type, windowType, initialWallclockTime } = {}) {
+function parse(manifest, { type, initialWallclockTime } = {}) {
   const parseManifest = parsingStrategyByManifestType[type]
 
-  return parseManifest(manifest, { windowType, initialWallclockTime })
+  return parseManifest(manifest, { initialWallclockTime })
     .then((values) => ({ ...placeholders, ...values }))
     .catch((error) => {
       DebugTool.error(error)

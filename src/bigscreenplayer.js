@@ -5,7 +5,6 @@ import MediaState from "./models/mediastate"
 import PlayerComponent from "./playercomponent"
 import PauseTriggers from "./models/pausetriggers"
 import DynamicWindowUtils from "./dynamicwindowutils"
-import WindowTypes from "./models/windowtypes"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
@@ -18,6 +17,7 @@ import Subtitles from "./subtitles/subtitles"
 // TODO: Remove when this becomes a TypeScript file
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { InitData, InitCallbacks, SubtitlesCustomisationOptions } from "./types"
+import ManifestTypes from "./models/manifesttypes"
 
 function BigscreenPlayer() {
   let stateChangeCallbacks = []
@@ -34,7 +34,7 @@ function BigscreenPlayer() {
   let pauseTrigger
   let isSeeking = false
   let endOfStream
-  let windowType
+  let manifestType = ManifestTypes.STATIC
   let mediaSources
   let playbackElement
   let readyHelper
@@ -118,7 +118,9 @@ function BigscreenPlayer() {
   }
 
   function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
-    if (windowType !== WindowTypes.STATIC) {
+    manifestType = mediaSources.time().type
+
+    if (manifestType === ManifestTypes.DYNAMIC) {
       serverDate = bigscreenPlayerData.serverDate
 
       initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
@@ -135,13 +137,13 @@ function BigscreenPlayer() {
 
     mediaKind = bigscreenPlayerData.media.kind
     endOfStream =
-      windowType !== WindowTypes.STATIC &&
+      manifestType === ManifestTypes.DYNAMIC &&
       !bigscreenPlayerData.initialPlaybackTime &&
       bigscreenPlayerData.initialPlaybackTime !== 0
 
     readyHelper = new ReadyHelper(
       bigscreenPlayerData.initialPlaybackTime,
-      windowType,
+      manifestType === ManifestTypes.STATIC,
       PlayerComponent.getLiveSupport(),
       playerReadyCallback
     )
@@ -149,7 +151,6 @@ function BigscreenPlayer() {
       playbackElement,
       bigscreenPlayerData,
       mediaSources,
-      windowType,
       mediaStateUpdateCallback,
       playerErrorCallback
     )
@@ -206,11 +207,10 @@ function BigscreenPlayer() {
      * @name init
      * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
      * @param {InitData} bigscreenPlayerData
-     * @param {WindowTypes} newWindowType
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
      * @param {InitCallbacks} callbacks
      */
-    init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks = {}) => {
+    init: (newPlaybackElement, bigscreenPlayerData, enableSubtitles, callbacks = {}) => {
       playbackElement = newPlaybackElement
       resizer = Resizer()
       DebugTool.init()
@@ -225,7 +225,6 @@ function BigscreenPlayer() {
         DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
       }
 
-      windowType = newWindowType
       serverDate = bigscreenPlayerData.serverDate
 
       if (serverDate) {
@@ -246,7 +245,7 @@ function BigscreenPlayer() {
 
       mediaSources = MediaSources()
 
-      mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks)
+      mediaSources.init(bigscreenPlayerData.media, serverDate, getLiveSupport(), mediaSourceCallbacks)
     },
 
     /**
@@ -276,7 +275,6 @@ function BigscreenPlayer() {
       endOfStream = undefined
       mediaKind = undefined
       pauseTrigger = undefined
-      windowType = undefined
       resizer = undefined
       this.unregisterPlugin()
       DebugTool.tearDown()
@@ -362,7 +360,8 @@ function BigscreenPlayer() {
         isSeeking = true
         playerComponent.setCurrentTime(time)
         endOfStream =
-          windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
+          manifestType === ManifestTypes.DYNAMIC &&
+          Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
       }
     },
 
@@ -400,13 +399,6 @@ function BigscreenPlayer() {
     getMediaKind: () => mediaKind,
 
     /**
-     * Returns the current window type.
-     * @see {@link module:bigscreenplayer/models/windowtypes}
-     * @function
-     */
-    getWindowType: () => windowType,
-
-    /**
      * Returns an object including the current start and end times.
      * @function
      * @returns {Object} {start: Number, end: Number}
@@ -420,7 +412,7 @@ function BigscreenPlayer() {
     isPlayingAtLiveEdge() {
       return (
         !!playerComponent &&
-        windowType !== WindowTypes.STATIC &&
+        manifestType === ManifestTypes.DYNAMIC &&
         Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
       )
     },
@@ -430,7 +422,7 @@ function BigscreenPlayer() {
      * @return {Object} An object of the shape {windowStartTime: Number, windowEndTime: Number, initialPlaybackTime: Number, serverDate: Date}
      */
     getLiveWindowData: () => {
-      if (windowType === WindowTypes.STATIC) {
+      if (manifestType === ManifestTypes.STATIC) {
         return {}
       }
 
@@ -590,7 +582,7 @@ function BigscreenPlayer() {
      */
     canSeek() {
       return (
-        windowType === WindowTypes.STATIC ||
+        manifestType === ManifestTypes.STATIC ||
         DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
       )
     },
@@ -600,7 +592,7 @@ function BigscreenPlayer() {
      * @return Returns whether the current media asset is pausable.
      */
     canPause: () =>
-      windowType === WindowTypes.STATIC ||
+      manifestType === ManifestTypes.STATIC ||
       DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport()),
 
     /**

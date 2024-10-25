@@ -2,7 +2,7 @@ import ManifestParser from "./manifestparser"
 import TransferFormats from "../models/transferformats"
 import LoadUrl from "../utils/loadurl"
 
-function retrieveDashManifest(url, { windowType, initialWallclockTime } = {}) {
+function retrieveDashManifest(url, { initialWallclockTime } = {}) {
   return new Promise((resolveLoad, rejectLoad) =>
     LoadUrl(url, {
       method: "GET",
@@ -17,7 +17,7 @@ function retrieveDashManifest(url, { windowType, initialWallclockTime } = {}) {
         throw new TypeError("Unable to retrieve DASH XML response")
       }
 
-      return ManifestParser.parse(xml, { initialWallclockTime, windowType, type: "mpd" })
+      return ManifestParser.parse(xml, { initialWallclockTime, type: "mpd" })
     })
     .then((time) => ({ time, transferFormat: TransferFormats.DASH }))
     .catch((error) => {
@@ -29,7 +29,7 @@ function retrieveDashManifest(url, { windowType, initialWallclockTime } = {}) {
     })
 }
 
-function retrieveHLSManifest(url, { windowType } = {}) {
+function retrieveHLSManifest(url) {
   return new Promise((resolveLoad, rejectLoad) =>
     LoadUrl(url, {
       method: "GET",
@@ -57,11 +57,11 @@ function retrieveHLSManifest(url, { windowType } = {}) {
       streamUrl = parts.join("/")
     }
 
-    return retrieveHLSLivePlaylist(streamUrl, { windowType })
+    return retrieveHLSLivePlaylist(streamUrl)
   })
 }
 
-function retrieveHLSLivePlaylist(url, { windowType } = {}) {
+function retrieveHLSLivePlaylist(url) {
   return new Promise((resolveLoad, rejectLoad) =>
     LoadUrl(url, {
       method: "GET",
@@ -76,7 +76,7 @@ function retrieveHLSLivePlaylist(url, { windowType } = {}) {
         throw new TypeError("Unable to retrieve HLS live playlist")
       }
 
-      return ManifestParser.parse(text, { windowType, type: "m3u8" })
+      return ManifestParser.parse(text, { type: "m3u8" })
     })
     .then((time) => ({ time, transferFormat: TransferFormats.HLS }))
 }
@@ -90,13 +90,13 @@ function getStreamUrl(data) {
 }
 
 export default {
-  load: (mediaUrl, { windowType, initialWallclockTime } = {}) => {
+  load: (mediaUrl, { initialWallclockTime } = {}) => {
     if (/\.mpd(\?.*)?$/.test(mediaUrl)) {
-      return retrieveDashManifest(mediaUrl, { windowType, initialWallclockTime })
+      return retrieveDashManifest(mediaUrl, { initialWallclockTime })
     }
 
     if (/\.m3u8(\?.*)?$/.test(mediaUrl)) {
-      return retrieveHLSManifest(mediaUrl, { windowType, initialWallclockTime })
+      return retrieveHLSManifest(mediaUrl)
     }
 
     return Promise.reject(new Error("Invalid media url"))

@@ -1,5 +1,4 @@
 import MediaState from "./models/mediastate"
-import WindowTypes from "./models/windowtypes"
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
@@ -7,18 +6,12 @@ import TransferFormats from "./models/transferformats"
 import LiveSupport from "./models/livesupport"
 import PlaybackStrategyModel from "./models/playbackstrategy"
 import StrategyPicker from "./playbackstrategy/strategypicker"
+import ManifestTypes from "./models/manifesttypes"
 
-function PlayerComponent(
-  playbackElement,
-  bigscreenPlayerData,
-  mediaSources,
-  windowType,
-  stateUpdateCallback,
-  errorCallback
-) {
+function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, stateUpdateCallback, errorCallback) {
   const transferFormat = bigscreenPlayerData.media.transferFormat
+  const manifestType = mediaSources.time().type
 
-  let _windowType = windowType
   let _stateUpdateCallback = stateUpdateCallback
 
   let mediaKind = bigscreenPlayerData.media.kind
@@ -34,7 +27,6 @@ function PlayerComponent(
     .then((strategy) => {
       playbackStrategy = strategy(
         mediaSources,
-        _windowType,
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
@@ -65,7 +57,7 @@ function PlayerComponent(
 
   function pause(opts = {}) {
     if (transitions().canBePaused()) {
-      const disableAutoResume = _windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
+      const disableAutoResume = opts.disableAutoResume
 
       playbackStrategy && playbackStrategy.pause({ disableAutoResume, pauseTrigger: opts.pauseTrigger })
     }
@@ -123,7 +115,7 @@ function PlayerComponent(
     return (
       window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
       transferFormat === TransferFormats.HLS &&
-      _windowType !== WindowTypes.STATIC &&
+      manifestType === ManifestTypes.DYNAMIC &&
       getLiveSupport() === LiveSupport.RESTARTABLE
     )
   }
@@ -255,13 +247,14 @@ function PlayerComponent(
   }
 
   function attemptCdnFailover(mediaError) {
+    const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
     const presentationTimeInSeconds = getCurrentTime()
 
     const wallclockTimeInMilliSeconds =
       presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMilliSeconds
 
     const failoverParams = {
-      isBufferingTimeoutError: mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+      isBufferingTimeoutError: bufferingTimeoutError,
       currentTime: presentationTimeInSeconds,
       duration: getDuration(),
       code: mediaError.code,
@@ -390,7 +383,6 @@ function PlayerComponent(
     playbackStrategy = null
     isInitialPlay = true
     errorTimeoutID = undefined
-    _windowType = undefined
     mediaKind = undefined
     _stateUpdateCallback = undefined
     mediaMetaData = undefined

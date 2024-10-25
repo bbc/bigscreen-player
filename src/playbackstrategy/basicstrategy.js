@@ -1,14 +1,15 @@
 import DebugTool from "../debugger/debugtool"
 import MediaState from "../models/mediastate"
-import WindowTypes from "../models/windowtypes"
+import ManifestTypes from "../models/manifesttypes"
 import MediaKinds from "../models/mediakinds"
 import LiveSupport from "../models/livesupport"
 import DynamicWindowUtils from "../dynamicwindowutils"
 import DOMHelpers from "../domhelpers"
 import handlePlayPromise from "../utils/handleplaypromise"
 
-function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
+function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   const CLAMP_OFFSET_SECONDS = 1.1
+  const manifestType = mediaSources.time().type
 
   let eventCallbacks = []
   let errorCallback
@@ -100,7 +101,7 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
 
   function onSeeked() {
     if (isPaused()) {
-      if (windowType === WindowTypes.SLIDING) {
+      if (manifestType === ManifestTypes.DYNAMIC) {
         startAutoResumeTimeout()
       }
 
@@ -248,7 +249,7 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
 
   function pause(opts = {}) {
     mediaElement.pause()
-    if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
+    if (opts.disableAutoResume !== true && manifestType === ManifestTypes.DYNAMIC) {
       startAutoResumeTimeout()
     }
   }

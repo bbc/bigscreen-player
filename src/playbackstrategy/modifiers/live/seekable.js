@@ -1,9 +1,10 @@
 import MediaPlayerBase from "../mediaplayerbase"
-import WindowTypes from "../../../models/windowtypes"
 import DynamicWindowUtils from "../../../dynamicwindowutils"
+import ManifestTypes from "../../../models/manifesttypes"
 
-function SeekableLivePlayer(mediaPlayer, windowType) {
+function SeekableLivePlayer(mediaPlayer, mediaSources) {
   const AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
+  const manifestType = mediaSources.time().type
 
   function addEventCallback(thisArg, callback) {
     mediaPlayer.addEventCallback(thisArg, callback)
@@ -60,7 +61,7 @@ function SeekableLivePlayer(mediaPlayer, windowType) {
         mediaPlayer.toPlaying()
       } else {
         mediaPlayer.pause()
-        if (windowType === WindowTypes.SLIDING) {
+        if (manifestType === ManifestTypes.DYNAMIC) {
           DynamicWindowUtils.autoResumeAtStartOfRange(
             mediaPlayer.getCurrentTime(),
             mediaPlayer.getSeekableRange(),

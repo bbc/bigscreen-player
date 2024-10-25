@@ -1,5 +1,4 @@
 import PlaybackUtils from "./utils/playbackutils"
-import WindowTypes from "./models/windowtypes"
 import Plugins from "./plugins"
 import PluginEnums from "./pluginenums"
 import PluginData from "./plugindata"
@@ -7,15 +6,17 @@ import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/manifestloader"
 import TransferFormats from "./models/transferformats"
 import findSegmentTemplate from "./utils/findtemplate"
+import ManifestTypes from "./models/manifesttypes"
 
 function MediaSources() {
   let mediaSources
   let failedOverSources = []
   let failoverResetTokens = []
-  let windowType
   let liveSupport
   let initialWallclockTime
-  let time = {}
+  let time = {
+    type: ManifestTypes.STATIC,
+  }
   let transferFormat
   let subtitlesSources
   // Default 5000 can be overridden with media.subtitlesRequestTimeout
@@ -23,7 +24,7 @@ function MediaSources() {
   let failoverResetTimeMs = 120000
   let failoverSort
 
-  function init(media, newServerDate, newWindowType, newLiveSupport, callbacks) {
+  function init(media, newServerDate, newLiveSupport, callbacks) {
     if (!media.urls?.length) {
       throw new Error("Media Sources urls are undefined")
     }
@@ -44,7 +45,6 @@ function MediaSources() {
       failoverSort = media.playerSettings.failoverSort
     }
 
-    windowType = newWindowType
     liveSupport = newLiveSupport
     initialWallclockTime = newServerDate
     mediaSources = media.urls ? PlaybackUtils.cloneArray(media.urls) : []
@@ -52,7 +52,7 @@ function MediaSources() {
 
     updateDebugOutput()
 
-    loadManifest(callbacks, { initialWallclockTime, windowType })
+    loadManifest(callbacks, { initialWallclockTime })
   }
 
   function failover(onFailoverSuccess, onFailoverError, failoverParams) {
@@ -61,8 +61,8 @@ function MediaSources() {
       updateCdns(failoverParams.serviceLocation)
       updateDebugOutput()
 
-      if (needToGetManifest(windowType, liveSupport)) {
-        loadManifest({ onSuccess: onFailoverSuccess, onError: onFailoverError }, { windowType })
+      if (needToGetManifest(liveSupport)) {
+        loadManifest({ onSuccess: onFailoverSuccess, onError: onFailoverError }, {})
       } else {
         onFailoverSuccess()
       }
@@ -104,8 +104,8 @@ function MediaSources() {
       return false
     }
     const aboutToEnd = failoverParams.duration && failoverParams.currentTime > failoverParams.duration - 5
-    const shouldStaticFailover = windowType === WindowTypes.STATIC && !aboutToEnd
-    const shouldLiveFailover = windowType !== WindowTypes.STATIC
+    const shouldStaticFailover = time.type === ManifestTypes.STATIC && !aboutToEnd
+    const shouldLiveFailover = time.type === ManifestTypes.DYNAMIC
     return (
       isFailoverInfoValid(failoverParams) && hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover)
     )
@@ -161,7 +161,7 @@ function MediaSources() {
     return findSegmentTemplate(url) != null
   }
 
-  function needToGetManifest(windowType, liveSupport) {
+  function needToGetManifest(liveSupport) {
     const isStartTimeAccurate = {
       restartable: true,
       seekable: true,
@@ -173,18 +173,18 @@ function MediaSources() {
 
     return (
       (!hasManifestBeenLoaded || transferFormat === TransferFormats.HLS) &&
-      (windowType !== WindowTypes.STATIC || hasSegmentedSubtitles()) &&
+      (time.type === ManifestTypes.DYNAMIC || hasSegmentedSubtitles()) &&
       isStartTimeAccurate[liveSupport]
     )
   }
 
   function refresh(onSuccess, onError) {
-    loadManifest({ onSuccess, onError }, { windowType })
+    loadManifest({ onSuccess, onError }, {})
   }
 
   // [tag:ServerDate]
-  function loadManifest(callbacks, { initialWallclockTime, windowType } = {}) {
-    return ManifestLoader.load(getCurrentUrl(), { initialWallclockTime, windowType })
+  function loadManifest(callbacks, { initialWallclockTime } = {}) {
+    return ManifestLoader.load(getCurrentUrl(), { initialWallclockTime })
       .then(({ time: newTime, transferFormat: newTransferFormat } = {}) => {
         time = newTime
         transferFormat = newTransferFormat
@@ -340,7 +340,6 @@ function MediaSources() {
   function tearDown() {
     failoverResetTokens.forEach((token) => clearTimeout(token))
 
-    windowType = undefined
     liveSupport = undefined
     initialWallclockTime = undefined
     time = {}
