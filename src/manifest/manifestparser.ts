@@ -16,6 +16,7 @@ export type TimeInfo = {
   presentationTimeOffsetInSeconds: number
   timeShiftBufferDepthInMilliseconds: number
   availabilityStartTimeInMilliseconds: number
+  transferFormat: string
 }
 
 function calcPresentationTimeFromWallClock(wallclockTimeInMillis: number, availabilityStartTimeInMillis: number) {
@@ -92,6 +93,7 @@ function parseMPD(
         timeShiftBufferDepthInMilliseconds,
         availabilityStartTimeInMilliseconds,
         presentationTimeOffsetInSeconds: presentationTimeOffsetInMilliseconds / 1000,
+        transferFormat: DASH,
       }
     })
     .catch((reason: unknown) => {
@@ -140,6 +142,7 @@ function parseM3U8(manifest: string): Promise<TimeInfo> {
       joinTimeInMilliseconds: programDateTimeInMilliseconds + durationInMilliseconds * 1000,
       availabilityStartTimeInMilliseconds: programDateTimeInMilliseconds,
       presentationTimeOffsetInSeconds: programDateTimeInMilliseconds / 1000,
+      transferFormat: HLS,
     })
   }).catch((reason: unknown) => {
     const errorWithCode = (isError(reason) ? reason : new Error("manifest-dash-parse-error")) as ErrorWithCode
@@ -198,6 +201,7 @@ function parse(
         presentationTimeOffsetInSeconds: 0,
         timeShiftBufferDepthInMilliseconds: 0,
         availabilityStartTimeInMilliseconds: 0,
+        transferFormat: DASH,
       }
     })
 }

@@ -1,10 +1,9 @@
 import MediaPlayerBase from "../mediaplayerbase"
 import DynamicWindowUtils from "../../../dynamicwindowutils"
-import ManifestType from "../../../models/manifesttypes"
+import SlidingChecker from "../../../manifest/slidingchecker"
 
 function SeekableLivePlayer(mediaPlayer, mediaSources) {
   const AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
-  const manifestType = mediaSources.time().type
 
   function addEventCallback(thisArg, callback) {
     mediaPlayer.addEventCallback(thisArg, callback)
@@ -61,16 +60,23 @@ function SeekableLivePlayer(mediaPlayer, mediaSources) {
         mediaPlayer.toPlaying()
       } else {
         mediaPlayer.pause()
-        if (manifestType === ManifestType.DYNAMIC) {
-          DynamicWindowUtils.autoResumeAtStartOfRange(
-            mediaPlayer.getCurrentTime(),
-            mediaPlayer.getSeekableRange(),
-            addEventCallback,
-            removeEventCallback,
-            MediaPlayerBase.unpausedEventCheck,
-            resume
-          )
-        }
+
+        SlidingChecker.isSliding(mediaSources.currentSource(), mediaSources.time())
+          .then((isSliding) => {
+            if (isSliding) {
+              DynamicWindowUtils.autoResumeAtStartOfRange(
+                mediaPlayer.getCurrentTime(),
+                mediaPlayer.getSeekableRange(),
+                addEventCallback,
+                removeEventCallback,
+                MediaPlayerBase.unpausedEventCheck,
+                resume
+              )
+            }
+          })
+          .catch(() => {
+            // do nothing, so don't set auto resume if unable to obtain sliding window information
+          })
       }
     },
 

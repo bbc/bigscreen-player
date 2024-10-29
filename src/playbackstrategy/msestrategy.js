@@ -11,6 +11,7 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import buildSourceAnchor from "../utils/mse/build-source-anchor"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
+import SlidingChecker from "../manifest/slidingchecker"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -717,9 +718,15 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
     pause: (opts = {}) => {
       mediaPlayer.pause()
 
-      if (opts.disableAutoResume !== true && manifestType === ManifestType.DYNAMIC) {
-        startAutoResumeTimeout()
-      }
+      SlidingChecker.isSliding(mediaSources.currentSource(), mediaSources.time())
+        .then((isSliding) => {
+          if (isSliding && opts.disableAutoResume !== true) {
+            startAutoResumeTimeout()
+          }
+        })
+        .catch(() => {
+          // do nothing, so don't set auto resume if unable to obtain sliding window information
+        })
     },
     play: () => mediaPlayer.play(),
     setCurrentTime: (presentationTimeInSeconds) => {
