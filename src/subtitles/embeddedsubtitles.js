@@ -4,7 +4,12 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement) {
   let currentSubtitlesElement
 
   if (autoStart) {
+    mediaPlayer.addEventCallback(this, onMediaPlayerReady)
+  }
+
+  function onMediaPlayerReady() {
     start()
+    mediaPlayer.removeEventCallback(this, onMediaPlayerReady)
   }
 
   function removeCurrentSubtitlesElement() {
