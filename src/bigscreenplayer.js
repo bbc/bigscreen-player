@@ -101,7 +101,7 @@ function BigscreenPlayer() {
   }
 
   function convertWallclockTimeToPresentationTimeInSeconds(wallclockTimeInMilliSeconds) {
-    return (wallclockTimeInMilliSeconds - mediaSources.time().windowStartTime) / 1000
+    return (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMilliSeconds) / 1000
   }
 
   function convertPresentationTimeToMediaTimeInSeconds(presentationTimeInSeconds) {
@@ -110,10 +110,6 @@ function BigscreenPlayer() {
 
   function convertMediaTimeToPresentationTimeInSeconds(presentationTimeInSeconds) {
     return presentationTimeInSeconds - mediaSources.time().presentationTimeOffsetInSeconds || 0
-  }
-
-  function convertVideoTimeSecondsToEpochMs(seconds) {
-    return getWindowStartTime() ? getWindowStartTime() + seconds * 1000 : null
   }
 
   function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
@@ -623,24 +619,9 @@ function BigscreenPlayer() {
 
     /**
      * @function
-     * @param {Number} epochTime - Unix Epoch based time in milliseconds.
-     * @return the time in seconds within the current sliding window.
-     */
-    convertEpochMsToVideoTimeSeconds: (epochTime) =>
-      getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : null,
-
-    /**
-     * @function
      * @return The runtime version of the library.
      */
     getFrameworkVersion: () => Version,
-
-    /**
-     * @function
-     * @param {Number} time - Seconds
-     * @return the time in milliseconds within the current sliding window.
-     */
-    convertVideoTimeSecondsToEpochMs,
 
     /**
      * Toggle the visibility of the debug tool overlay.
