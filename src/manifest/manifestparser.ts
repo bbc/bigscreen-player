@@ -13,7 +13,7 @@ export type TimeInfo = {
   windowStartTime: number
   windowEndTime: number
   joinTimeInMilliseconds: number
-  presentationTimeOffsetInSeconds: number
+  presentationTimeOffsetInMilliseconds: number
   timeShiftBufferDepthInMilliseconds: number
   availabilityStartTimeInMilliseconds: number
   transferFormat: string
@@ -92,7 +92,7 @@ function parseMPD(
         joinTimeInMilliseconds: wallclockTime,
         timeShiftBufferDepthInMilliseconds,
         availabilityStartTimeInMilliseconds,
-        presentationTimeOffsetInSeconds: presentationTimeOffsetInMilliseconds / 1000,
+        presentationTimeOffsetInMilliseconds,
         transferFormat: DASH,
       }
     })
@@ -141,7 +141,7 @@ function parseM3U8(manifest: string, { fakeTimeShift }: Partial<{ fakeTimeShift:
       windowEndTime: programDateTimeInMilliseconds + durationInMilliseconds,
       joinTimeInMilliseconds: programDateTimeInMilliseconds + durationInMilliseconds,
       availabilityStartTimeInMilliseconds: programDateTimeInMilliseconds,
-      presentationTimeOffsetInSeconds: programDateTimeInMilliseconds / 1000,
+      presentationTimeOffsetInMilliseconds: programDateTimeInMilliseconds,
       transferFormat: HLS,
     })
   }).catch((reason: unknown) => {
@@ -204,9 +204,9 @@ function parse(
         windowStartTime: 0,
         windowEndTime: 0,
         joinTimeInMilliseconds: 0,
-        presentationTimeOffsetInSeconds: 0,
         timeShiftBufferDepthInMilliseconds: 0,
         availabilityStartTimeInMilliseconds: 0,
+        presentationTimeOffsetInMilliseconds: 0,
         transferFormat: DASH,
       }
     })

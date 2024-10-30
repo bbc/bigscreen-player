@@ -10,8 +10,7 @@ const SEGMENTS_BUFFER_SIZE = 3
 const LOAD_ERROR_COUNT_MAX = 3
 
 function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
-  const windowStartEpochSeconds = mediaSources?.time().windowStartTime / 1000
-  const presentationTimeOffsetInSeconds = mediaSources?.time().presentationTimeOffsetInSeconds
+  const presentationTimeOffsetInMilliseconds = mediaSources?.time().presentationTimeOffsetInMilliseconds
 
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
   let currentSegmentRendered = {}
@@ -27,7 +26,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function getTimeOffset() {
-    return presentationTimeOffsetInSeconds || windowStartEpochSeconds
+    return presentationTimeOffsetInMilliseconds
   }
 
   function calculateSegmentNumber() {
@@ -36,7 +35,11 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     // Add 1 as the PTO gives segment '0' relative to the presentation time.
     // DASH segments use one-based indexing, so add 1 to the result of PTO.
     // (Imagine PTO was 0)
-    if (typeof presentationTimeOffsetInSeconds === "number" && isFinite(presentationTimeOffsetInSeconds)) {
+    if (
+      typeof presentationTimeOffsetInMilliseconds === "number" &&
+      isFinite(presentationTimeOffsetInMilliseconds) &&
+      presentationTimeOffsetInMilliseconds > 0
+    ) {
       return segmentNumber + 1
     }
 
@@ -296,7 +299,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function modifyStyling(xml) {
-    if (!isSubtitlesWhole() && xml?.head?.styling) {
+    if (!isSubtitlesWhole() && xml?.head?.styling && defaultStyleOpts?.initials) {
       xml.head.styling.initials = defaultStyleOpts.initials
     }
 

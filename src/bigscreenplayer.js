@@ -98,11 +98,11 @@ function BigscreenPlayer() {
   }
 
   function convertPresentationTimeToMediaTimeInSeconds(presentationTimeInSeconds) {
-    return presentationTimeInSeconds + mediaSources.time().presentationTimeOffsetInSeconds || 0
+    return presentationTimeInSeconds + mediaSources.time().presentationTimeOffsetInMilliseconds / 1000 || 0
   }
 
-  function convertMediaTimeToPresentationTimeInSeconds(presentationTimeInSeconds) {
-    return presentationTimeInSeconds - mediaSources.time().presentationTimeOffsetInSeconds || 0
+  function convertMediaTimeToPresentationTimeInSeconds(mediaTimeInSeconds) {
+    return mediaTimeInSeconds - mediaSources.time().presentationTimeOffsetInMilliseconds / 1000 || 0
   }
 
   function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
