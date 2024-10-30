@@ -135,7 +135,7 @@ function parseM3U8(manifest: string, { fakeTimeShift }: Partial<{ fakeTimeShift:
     }
 
     return resolve({
-      type: ManifestType.DYNAMIC,
+      type: hasM3U8EndList(manifest) ? ManifestType.STATIC : ManifestType.DYNAMIC,
       windowStartTime: programDateTimeInMilliseconds,
       timeShiftBufferDepthInMilliseconds: fakeTimeShift ? durationInMilliseconds : 0,
       windowEndTime: programDateTimeInMilliseconds + durationInMilliseconds,
@@ -174,6 +174,12 @@ function getM3U8WindowSizeInMilliseconds(data: string): number {
   }
 
   return Math.floor(result * 1000)
+}
+
+function hasM3U8EndList(data: string): boolean {
+  const match = /^#EXT-X-ENDLIST$/m.exec(data)
+
+  return match != null
 }
 
 function parse(
