@@ -244,16 +244,21 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     },
     load: (mimeType, presentationTimeInSeconds) => {
       setupExitSeekWorkarounds(mimeType)
+
       isPaused = false
 
-      hasStartTime = presentationTimeInSeconds || presentationTimeInSeconds === 0
+      hasStartTime = typeof presentationTimeInSeconds === "number" && isFinite(presentationTimeInSeconds)
+
       const isPlaybackFromLivePoint = manifestType === ManifestType.DYNAMIC && !hasStartTime
 
       mediaPlayer.initialiseMedia("video", mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
 
-      if (!isPlaybackFromLivePoint && typeof mediaPlayer.beginPlaybackFrom === "function") {
-        currentTime = presentationTimeInSeconds
-        mediaPlayer.beginPlaybackFrom(presentationTimeInSeconds || 0)
+      if (
+        typeof mediaPlayer.beginPlaybackFrom === "function" &&
+        (hasStartTime || manifestType === ManifestType.STATIC)
+      ) {
+        currentTime = presentationTimeInSeconds || 0
+        mediaPlayer.beginPlaybackFrom(currentTime)
       } else {
         mediaPlayer.beginPlayback()
       }
