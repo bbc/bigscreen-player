@@ -188,6 +188,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function onTimeUpdate() {
     DebugTool.updateElementTime(mediaElement.currentTime)
+    DebugTool.dynamicMetric("current-latency", mediaPlayer.getCurrentLiveLatency())
+    DebugTool.dynamicMetric("target-latency", mediaPlayer.getTargetLiveDelay())
 
     const currentMpdTimeSeconds =
       windowType === WindowTypes.SLIDING
