@@ -11,7 +11,6 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import buildSourceAnchor from "../utils/mse/build-source-anchor"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
-import SlidingChecker from "../manifest/slidingchecker"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -486,6 +485,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
     delete settings.failoverResetTime
     delete settings.failoverSort
     delete settings.streaming?.seekDurationPadding
+    delete settings.streaming?.hlsFakeTimeShift
 
     return settings
   }
@@ -618,6 +618,16 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
     }
   }
 
+  function isSliding() {
+    const { timeShiftBufferDepthInMilliseconds } = mediaSources.time()
+
+    return (
+      typeof timeShiftBufferDepthInMilliseconds === "number" &&
+      isFinite(timeShiftBufferDepthInMilliseconds) &&
+      timeShiftBufferDepthInMilliseconds > 0
+    )
+  }
+
   function startAutoResumeTimeout() {
     DynamicWindowUtils.autoResumeAtStartOfRange(
       getCurrentTime(),
@@ -709,24 +719,20 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, isUHD, customPlay
       }
     },
     reset: () => {
-      if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.resetMSEPlayer) {
+      if (window.bigscreenPlayer?.overrides?.resetMSEPlayer) {
         cleanUpMediaPlayer()
       }
     },
     isEnded: () => isEnded,
     isPaused,
-    pause: (opts = {}) => {
+    pause: ({ disableAutoResume } = {}) => {
       mediaPlayer.pause()
 
-      SlidingChecker.isSliding(mediaSources.currentSource(), mediaSources.time())
-        .then((isSliding) => {
-          if (isSliding && opts.disableAutoResume !== true) {
-            startAutoResumeTimeout()
-          }
-        })
-        .catch(() => {
-          // do nothing, so don't set auto resume if unable to obtain sliding window information
-        })
+      if (disableAutoResume || !isSliding()) {
+        return
+      }
+
+      startAutoResumeTimeout()
     },
     play: () => mediaPlayer.play(),
     setCurrentTime: (presentationTimeInSeconds) => {

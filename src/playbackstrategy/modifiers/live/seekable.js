@@ -1,6 +1,6 @@
 import MediaPlayerBase from "../mediaplayerbase"
 import DynamicWindowUtils from "../../../dynamicwindowutils"
-import SlidingChecker from "../../../manifest/slidingchecker"
+import { TransferFormat } from "../../../main"
 
 function SeekableLivePlayer(mediaPlayer, mediaSources) {
   const AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
@@ -19,6 +19,46 @@ function SeekableLivePlayer(mediaPlayer, mediaSources) {
 
   function resume() {
     mediaPlayer.resume()
+  }
+
+  function isSliding() {
+    const { timeShiftBufferDepthInMilliseconds } = mediaSources.time()
+
+    return (
+      typeof timeShiftBufferDepthInMilliseconds === "number" &&
+      isFinite(timeShiftBufferDepthInMilliseconds) &&
+      timeShiftBufferDepthInMilliseconds > 0
+    )
+  }
+
+  function startAutoResumeTimeOut() {
+    switch (mediaSources.transferFormat()) {
+      case TransferFormat.DASH:
+        DynamicWindowUtils.autoResumeAtStartOfRange(
+          mediaPlayer.getCurrentTime(),
+          mediaPlayer.getSeekableRange(),
+          addEventCallback,
+          removeEventCallback,
+          MediaPlayerBase.unpausedEventCheck,
+          resume
+        )
+        break
+
+      case TransferFormat.HLS:
+        // refresh manifest then auto resume
+        mediaSources.refresh(
+          () =>
+            DynamicWindowUtils.autoResumeAtStartOfRange(
+              mediaPlayer.getCurrentTime(),
+              mediaPlayer.getSeekableRange(),
+              addEventCallback,
+              removeEventCallback,
+              MediaPlayerBase.unpausedEventCheck,
+              resume
+            ) // fatal error if we can't load the manifest?
+        )
+        break
+    }
   }
 
   return {
@@ -49,35 +89,25 @@ function SeekableLivePlayer(mediaPlayer, mediaSources) {
       mediaPlayer.playFrom(presentationTimeInSeconds)
     },
 
-    pause: function pause(opts) {
-      const secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start
-      const _opts = opts || {}
-
-      if (_opts.disableAutoResume) {
+    pause: function pause({ disableAutoResume } = {}) {
+      if (disableAutoResume || !isSliding()) {
         mediaPlayer.pause()
-      } else if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
+
+        return
+      }
+
+      const secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start
+
+      if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
         mediaPlayer.toPaused()
         mediaPlayer.toPlaying()
-      } else {
-        mediaPlayer.pause()
 
-        SlidingChecker.isSliding(mediaSources.currentSource(), mediaSources.time())
-          .then((isSliding) => {
-            if (isSliding) {
-              DynamicWindowUtils.autoResumeAtStartOfRange(
-                mediaPlayer.getCurrentTime(),
-                mediaPlayer.getSeekableRange(),
-                addEventCallback,
-                removeEventCallback,
-                MediaPlayerBase.unpausedEventCheck,
-                resume
-              )
-            }
-          })
-          .catch(() => {
-            // do nothing, so don't set auto resume if unable to obtain sliding window information
-          })
+        return
       }
+
+      mediaPlayer.pause()
+
+      startAutoResumeTimeOut()
     },
 
     resume,

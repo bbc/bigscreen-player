@@ -1,10 +1,9 @@
 import MediaPlayerBase from "../mediaplayerbase"
-import ManifestType from "../../../models/manifesttypes"
 import DynamicWindowUtils from "../../../dynamicwindowutils"
+import TransferFormat from "../../../models/transferformats"
 
 function RestartableLivePlayer(mediaPlayer, mediaSources) {
   const fakeTimer = {}
-  const manifestType = mediaSources.time().type
 
   let streamStartDateTimeInMilliseconds
   let callbacksMap = []
@@ -45,19 +44,54 @@ function RestartableLivePlayer(mediaPlayer, mediaSources) {
     mediaPlayer.removeAllEventCallbacks()
   }
 
-  function pause(opts = {}) {
+  function isSliding() {
+    const { timeShiftBufferDepthInMilliseconds } = mediaSources.time()
+
+    return (
+      typeof timeShiftBufferDepthInMilliseconds === "number" &&
+      isFinite(timeShiftBufferDepthInMilliseconds) &&
+      timeShiftBufferDepthInMilliseconds > 0
+    )
+  }
+
+  function startAutoResumeTimeOut() {
+    switch (mediaSources.transferFormat()) {
+      case TransferFormat.DASH:
+        DynamicWindowUtils.autoResumeAtStartOfRange(
+          mediaPlayer.getCurrentTime(),
+          mediaPlayer.getSeekableRange(),
+          addEventCallback,
+          removeEventCallback,
+          MediaPlayerBase.unpausedEventCheck,
+          resume
+        )
+        break
+
+      case TransferFormat.HLS:
+        // refresh manifest then auto resume
+        mediaSources.refresh(
+          () =>
+            DynamicWindowUtils.autoResumeAtStartOfRange(
+              mediaPlayer.getCurrentTime(),
+              mediaPlayer.getSeekableRange(),
+              addEventCallback,
+              removeEventCallback,
+              MediaPlayerBase.unpausedEventCheck,
+              resume
+            ) // fatal error if we can't load the manifest?
+        )
+        break
+    }
+  }
+
+  function pause({ disableAutoResume } = {}) {
     mediaPlayer.pause()
 
-    if (opts.disableAutoResume !== true && manifestType === ManifestType.DYNAMIC) {
-      DynamicWindowUtils.autoResumeAtStartOfRange(
-        getCurrentTime(),
-        getSeekableRange(),
-        addEventCallback,
-        removeEventCallback,
-        MediaPlayerBase.unpausedEventCheck,
-        resume
-      )
+    if (disableAutoResume || !isSliding()) {
+      return
     }
+
+    startAutoResumeTimeOut()
   }
 
   function resume() {

@@ -77,10 +77,7 @@ function BigscreenPlayer() {
     }
 
     if (evt.data.seekableRange) {
-      DebugTool.staticMetric("seekable-range", [
-        deviceTimeToDate(evt.data.seekableRange.start).getTime(),
-        deviceTimeToDate(evt.data.seekableRange.end).getTime(),
-      ])
+      DebugTool.staticMetric("seekable-range", [evt.data.seekableRange.start, evt.data.seekableRange.end])
     }
 
     if (evt.data.duration) {
@@ -90,10 +87,6 @@ function BigscreenPlayer() {
     if (playerComponent && readyHelper) {
       readyHelper.callbackWhenReady(evt)
     }
-  }
-
-  function deviceTimeToDate(time) {
-    return getWindowStartTime() ? new Date(convertVideoTimeSecondsToEpochMs(time)) : new Date(time * 1000)
   }
 
   function convertPresentationTimeToWallclockTimeInMilliSeconds(presentationTimeInSeconds) {
@@ -118,16 +111,19 @@ function BigscreenPlayer() {
     if (manifestType === ManifestType.DYNAMIC) {
       serverDate = bigscreenPlayerData.serverDate
 
-      initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
+      const { initialPlaybackTime } = bigscreenPlayerData
+
+      initialPlaybackTimeEpoch = initialPlaybackTime
 
       // opt 1:
       // dash: media time -> presentation time
       // hls: media time -> presentation time
 
       // overwrite initialPlaybackTime with presentation time (it comes in as epoch time for a sliding/growing window)
-      bigscreenPlayerData.initialPlaybackTime = convertMediaTimeToPresentationTimeInSeconds(
-        bigscreenPlayerData.initialPlaybackTime / 1000
-      )
+      bigscreenPlayerData.initialPlaybackTime =
+        typeof initialPlaybackTime === "number"
+          ? convertMediaTimeToPresentationTimeInSeconds(initialPlaybackTime / 1000)
+          : undefined
     }
 
     mediaKind = bigscreenPlayerData.media.kind

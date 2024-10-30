@@ -125,7 +125,7 @@ function fetchWallclockTime(mpd: Element, initialWallclockTime?: number): Promis
   })
 }
 
-function parseM3U8(manifest: string): Promise<TimeInfo> {
+function parseM3U8(manifest: string, { fakeTimeShift }: Partial<{ fakeTimeShift: boolean }> = {}): Promise<TimeInfo> {
   return new Promise<TimeInfo>((resolve) => {
     const programDateTimeInMilliseconds = getM3U8ProgramDateTimeInMilliseconds(manifest)
     const durationInMilliseconds = getM3U8WindowSizeInMilliseconds(manifest)
@@ -137,9 +137,9 @@ function parseM3U8(manifest: string): Promise<TimeInfo> {
     return resolve({
       type: ManifestType.DYNAMIC,
       windowStartTime: programDateTimeInMilliseconds,
-      timeShiftBufferDepthInMilliseconds: 0,
-      windowEndTime: programDateTimeInMilliseconds + durationInMilliseconds * 1000,
-      joinTimeInMilliseconds: programDateTimeInMilliseconds + durationInMilliseconds * 1000,
+      timeShiftBufferDepthInMilliseconds: fakeTimeShift ? durationInMilliseconds : 0,
+      windowEndTime: programDateTimeInMilliseconds + durationInMilliseconds,
+      joinTimeInMilliseconds: programDateTimeInMilliseconds + durationInMilliseconds,
       availabilityStartTimeInMilliseconds: programDateTimeInMilliseconds,
       presentationTimeOffsetInSeconds: programDateTimeInMilliseconds / 1000,
       transferFormat: HLS,
@@ -178,7 +178,7 @@ function getM3U8WindowSizeInMilliseconds(data: string): number {
 
 function parse(
   { body, type }: { body: Document; type: DASH } | { body: string; type: HLS },
-  { initialWallclockTime }: { initialWallclockTime?: number } = {}
+  { initialWallclockTime, hlsFakeTimeShift }: { initialWallclockTime?: number; hlsFakeTimeShift?: boolean } = {}
 ): Promise<TimeInfo> {
   return Promise.resolve()
     .then(() => {
@@ -186,7 +186,7 @@ function parse(
         case DASH:
           return parseMPD(body, { initialWallclockTime })
         case HLS:
-          return parseM3U8(body)
+          return parseM3U8(body, { fakeTimeShift: hlsFakeTimeShift })
       }
     })
     .catch((error: ErrorWithCode) => {

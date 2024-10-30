@@ -29,7 +29,7 @@ function retrieveDashManifest(url, { initialWallclockTime } = {}) {
     })
 }
 
-function retrieveHLSManifest(url) {
+function retrieveHLSManifest(url, { hlsFakeTimeShift } = {}) {
   return new Promise((resolveLoad, rejectLoad) =>
     LoadUrl(url, {
       method: "GET",
@@ -57,11 +57,11 @@ function retrieveHLSManifest(url) {
       streamUrl = parts.join("/")
     }
 
-    return retrieveHLSLivePlaylist(streamUrl)
+    return retrieveHLSLivePlaylist(streamUrl, hlsFakeTimeShift)
   })
 }
 
-function retrieveHLSLivePlaylist(url) {
+function retrieveHLSLivePlaylist(url, hlsFakeTimeShift = false) {
   return new Promise((resolveLoad, rejectLoad) =>
     LoadUrl(url, {
       method: "GET",
@@ -76,7 +76,7 @@ function retrieveHLSLivePlaylist(url) {
         throw new TypeError("Unable to retrieve HLS live playlist")
       }
 
-      return ManifestParser.parse({ body: text, type: TransferFormat.HLS })
+      return ManifestParser.parse({ body: text, type: TransferFormat.HLS }, { hlsFakeTimeShift })
     })
     .then((time) => ({ time, transferFormat: TransferFormat.HLS }))
 }
@@ -90,13 +90,13 @@ function getStreamUrl(data) {
 }
 
 export default {
-  load: (mediaUrl, { initialWallclockTime } = {}) => {
+  load: (mediaUrl, { initialWallclockTime, hlsFakeTimeShift } = {}) => {
     if (/\.mpd(\?.*)?$/.test(mediaUrl)) {
       return retrieveDashManifest(mediaUrl, { initialWallclockTime })
     }
 
     if (/\.m3u8(\?.*)?$/.test(mediaUrl)) {
-      return retrieveHLSManifest(mediaUrl)
+      return retrieveHLSManifest(mediaUrl, { hlsFakeTimeShift })
     }
 
     return Promise.reject(new Error("Invalid media url"))

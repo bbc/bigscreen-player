@@ -14,6 +14,7 @@ type Settings = MediaPlayerSettingClass & {
   failoverSort: (sources: Connection[]) => Connection[]
   streaming: {
     seekDurationPadding: number
+    hlsFakeTimeShift: boolean
   }
 }
 

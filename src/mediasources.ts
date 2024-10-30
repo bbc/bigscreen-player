@@ -39,6 +39,7 @@ function MediaSources() {
   let subtitlesRequestTimeout = 5000
   let failoverResetTimeMs = 120000
   let failoverSort: ((sources: Connection[]) => Connection[]) | null = null
+  let hlsFakeTimeShift = false
 
   function init(
     media: MediaDescriptor,
@@ -64,6 +65,10 @@ function MediaSources() {
 
     if (typeof media.playerSettings?.failoverSort === "function") {
       failoverSort = media.playerSettings.failoverSort
+    }
+
+    if (media.playerSettings?.streaming?.hlsFakeTimeShift != null) {
+      hlsFakeTimeShift = media.playerSettings?.streaming?.hlsFakeTimeShift
     }
 
     liveSupport = newLiveSupport
@@ -218,7 +223,7 @@ function MediaSources() {
     callbacks: { onSuccess: () => void; onError: (info: { error: string }) => void },
     { initialWallclockTime }: Partial<{ initialWallclockTime: number }> = {}
   ): void {
-    ManifestLoader.load(getCurrentUrl(), { initialWallclockTime })
+    ManifestLoader.load(getCurrentUrl(), { initialWallclockTime, hlsFakeTimeShift })
       .then(({ time: newTime, transferFormat: newTransferFormat }) => {
         time = newTime
         transferFormat = newTransferFormat
@@ -267,6 +272,10 @@ function MediaSources() {
 
   function generateTime() {
     return time
+  }
+
+  function getCurrentTransferFormat() {
+    return transferFormat
   }
 
   function updateFailedOverSources(mediaSource: Connection) {
@@ -401,6 +410,7 @@ function MediaSources() {
     availableSources: availableUrls,
     failoverResetTime,
     time: generateTime,
+    transferFormat: getCurrentTransferFormat,
     tearDown,
   }
 }
