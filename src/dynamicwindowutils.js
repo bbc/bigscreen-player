@@ -1,39 +1,28 @@
 import LiveSupport from "./models/livesupport"
 import DebugTool from "./debugger/debugtool"
 
-const AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
-const FOUR_MINUTES = 4 * 60
+const AUTO_RESUME_WINDOW_START_CUSHION_IN_SECONDS = 8
+const FOUR_MINUTES_IN_MILLISECONDS = 4 * 60
 
-function convertMilliSecondsToSeconds(timeInMilis) {
-  return Math.floor(timeInMilis / 1000)
-}
-
-function hasFiniteSeekableRange(seekableRange) {
-  let hasRange = true
-  try {
-    hasRange = seekableRange.end !== Infinity
-  } catch (_error) {
-    /* empty */
-  }
-  return hasRange
-}
-
-function canSeek(windowStart, windowEnd, liveSupport, seekableRange) {
+function isTimeShiftBufferBigEnoughForSeeking(timeShiftBufferDepthInMilliseconds) {
   return (
-    supportsSeeking(liveSupport) &&
-    initialWindowIsBigEnoughForSeeking(windowStart, windowEnd) &&
-    hasFiniteSeekableRange(seekableRange)
+    typeof timeShiftBufferDepthInMilliseconds === "number" &&
+    isFinite(timeShiftBufferDepthInMilliseconds) &&
+    (timeShiftBufferDepthInMilliseconds === 0 || timeShiftBufferDepthInMilliseconds > FOUR_MINUTES_IN_MILLISECONDS)
   )
 }
 
-function canPause(windowStart, windowEnd, liveSupport) {
-  return supportsPause(liveSupport) && initialWindowIsBigEnoughForSeeking(windowStart, windowEnd)
-}
-
-function initialWindowIsBigEnoughForSeeking(windowStart, windowEnd) {
-  const start = convertMilliSecondsToSeconds(windowStart)
-  const end = convertMilliSecondsToSeconds(windowEnd)
-  return end - start > FOUR_MINUTES
+function isSeekableRangeFinite(seekableRange) {
+  return (
+    seekableRange &&
+    typeof seekableRange === "object" &&
+    "start" in seekableRange &&
+    typeof seekableRange.start === "number" &&
+    isFinite(seekableRange.start) &&
+    "end" in seekableRange &&
+    typeof seekableRange.end === "number" &&
+    isFinite(seekableRange.end)
+  )
 }
 
 function supportsPause(liveSupport) {
@@ -47,6 +36,18 @@ function supportsSeeking(liveSupport) {
   )
 }
 
+function canPause(liveSupport, timeShiftBufferDepthInMilliseconds) {
+  return supportsPause(liveSupport) && isTimeShiftBufferBigEnoughForSeeking(timeShiftBufferDepthInMilliseconds)
+}
+
+function canSeek(liveSupport, timeShiftBufferDepthInMilliseconds, seekableRange) {
+  return (
+    supportsSeeking(liveSupport) &&
+    isTimeShiftBufferBigEnoughForSeeking(timeShiftBufferDepthInMilliseconds) &&
+    isSeekableRangeFinite(seekableRange)
+  )
+}
+
 function autoResumeAtStartOfRange(
   currentTime,
   seekableRange,
@@ -55,7 +56,7 @@ function autoResumeAtStartOfRange(
   checkNotPauseEvent,
   resume
 ) {
-  const resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS)
+  const resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_IN_SECONDS)
   DebugTool.dynamicMetric("auto-resume", resumeTimeOut)
   const autoResumeTimer = setTimeout(() => {
     removeEventCallback(undefined, detectIfUnpaused)

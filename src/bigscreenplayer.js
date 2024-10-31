@@ -156,14 +156,6 @@ function BigscreenPlayer() {
     )
   }
 
-  function getWindowStartTime() {
-    return mediaSources && mediaSources.time().windowStartTime
-  }
-
-  function getWindowEndTime() {
-    return mediaSources && mediaSources.time().windowEndTime
-  }
-
   function toggleDebug() {
     if (playerComponent) {
       DebugTool.toggleVisibility()
@@ -574,7 +566,11 @@ function BigscreenPlayer() {
     canSeek() {
       return (
         manifestType === ManifestType.STATIC ||
-        DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
+        DynamicWindowUtils.canSeek(
+          getLiveSupport(),
+          mediaSources.time().timeShiftBufferDepthInMillis,
+          this.getSeekableRange()
+        )
       )
     },
 
@@ -584,7 +580,7 @@ function BigscreenPlayer() {
      */
     canPause: () =>
       manifestType === ManifestType.STATIC ||
-      DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport()),
+      DynamicWindowUtils.canPause(getLiveSupport(), mediaSources.time().timeShiftBufferDepthInMillis),
 
     /**
      * Register a plugin for extended events.
