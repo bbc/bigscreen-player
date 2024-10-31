@@ -27,13 +27,15 @@ function BigscreenPlayer() {
   let playerErrorCallback
   let mediaKind
   let initialPlaybackTimeEpoch
-  let serverDate
+  let initialServerDate
+  let offsetBetweenClientUTCAndServerUTCInMilliseconds = 0
   let playerComponent
   let resizer
   let pauseTrigger
   let isSeeking = false
   let endOfStream
-  let manifestType = ManifestType.STATIC
+  let manifestType
+  /** @type {ReturnType<MediaSources> | undefined} */
   let mediaSources
   let playbackElement
   let readyHelper
@@ -109,8 +111,6 @@ function BigscreenPlayer() {
     manifestType = mediaSources.time().type
 
     if (manifestType === ManifestType.DYNAMIC) {
-      serverDate = bigscreenPlayerData.serverDate
-
       const { initialPlaybackTime } = bigscreenPlayerData
 
       initialPlaybackTimeEpoch = initialPlaybackTime
@@ -208,11 +208,10 @@ function BigscreenPlayer() {
         DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
       }
 
-      serverDate = bigscreenPlayerData.serverDate
+      offsetBetweenClientUTCAndServerUTCInMilliseconds =
+        bigscreenPlayerData.offsetBetweenClientUTCAndServerUTCInMilliseconds ?? 0
 
-      if (serverDate) {
-        DebugTool.warn("Passing in server date is deprecated. Use <UTCTiming> on manifest.")
-      }
+      initialServerDate = new Date(Date.now() + offsetBetweenClientUTCAndServerUTCInMilliseconds)
 
       playerReadyCallback = callbacks.onSuccess
       playerErrorCallback = callbacks.onError
@@ -228,7 +227,7 @@ function BigscreenPlayer() {
 
       mediaSources = MediaSources()
 
-      mediaSources.init(bigscreenPlayerData.media, serverDate, getLiveSupport(), mediaSourceCallbacks)
+      mediaSources.init(bigscreenPlayerData.media, initialServerDate, getLiveSupport(), mediaSourceCallbacks)
     },
 
     /**
@@ -410,10 +409,9 @@ function BigscreenPlayer() {
       }
 
       return {
-        windowStartTime: getWindowStartTime(),
-        windowEndTime: getWindowEndTime(),
+        offsetBetweenClientUTCAndServerUTCInMilliseconds,
+        joinTimeInMilliseconds: mediaSources.time().joinTimeInMilliseconds,
         initialPlaybackTime: initialPlaybackTimeEpoch,
-        serverDate,
       }
     },
 

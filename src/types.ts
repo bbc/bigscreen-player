@@ -44,15 +44,13 @@ export type MediaDescriptor = {
   subtitlesRequestTimeout?: number
 }
 
-export type ServerDate = number
-
 export type InitData = {
   media: MediaDescriptor
   /**
    * @deprecated
    * Date object with server time offset
    */
-  serverDate?: ServerDate
+  offsetBetweenClientUTCAndServerUTCInMilliseconds?: number
 }
 
 export type InitCallbacks = {

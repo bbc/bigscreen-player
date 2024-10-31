@@ -8,7 +8,7 @@ import TransferFormat from "./models/transferformats"
 import findSegmentTemplate from "./utils/findtemplate"
 import ManifestType from "./models/manifesttypes"
 import LiveSupport from "./models/livesupport"
-import { CaptionsConnection, Connection, MediaDescriptor, ServerDate } from "./types"
+import { CaptionsConnection, Connection, MediaDescriptor } from "./types"
 import isError from "./utils/is-error"
 import { TimeInfo } from "./manifest/manifestparser"
 
@@ -31,7 +31,7 @@ function MediaSources() {
   let failedOverSources: Connection[] = []
   let failoverResetTokens: number[] = []
   let liveSupport: LiveSupport | null = null
-  let initialWallclockTime: number | null = null
+  let initialServerDate: Date | null = null
   let time: TimeInfo | null = null
   let transferFormat: TransferFormat | null = null
   let subtitlesSources: CaptionsConnection[] = []
@@ -43,7 +43,7 @@ function MediaSources() {
 
   function init(
     media: MediaDescriptor,
-    newServerDate: ServerDate,
+    newServerDate: Date,
     newLiveSupport: LiveSupport,
     callbacks: MediaSourceCallbacks
   ) {
@@ -72,13 +72,13 @@ function MediaSources() {
     }
 
     liveSupport = newLiveSupport
-    initialWallclockTime = newServerDate
+    initialServerDate = newServerDate
     mediaSources = media.urls ? (PlaybackUtils.cloneArray(media.urls) as Connection[]) : []
     subtitlesSources = media.captions ? (PlaybackUtils.cloneArray(media.captions) as CaptionsConnection[]) : []
 
     updateDebugOutput()
 
-    loadManifest(callbacks, { initialWallclockTime })
+    loadManifest(callbacks, { initialWallclockTime: initialServerDate.getTime() })
   }
 
   function failover(onFailoverSuccess: () => void, onFailoverError: () => void, failoverParams: FailoverParams): void {
@@ -388,7 +388,7 @@ function MediaSources() {
     failoverResetTokens.forEach((token) => clearTimeout(token))
 
     liveSupport = null
-    initialWallclockTime = null
+    initialServerDate = null
     time = null
     transferFormat = null
     mediaSources = []
