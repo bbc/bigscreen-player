@@ -72,8 +72,8 @@ function RestartableLivePlayer(mediaPlayer, mediaSources) {
         mediaSources.refresh(
           () =>
             DynamicWindowUtils.autoResumeAtStartOfRange(
-              mediaPlayer.getCurrentTime(),
-              mediaPlayer.getSeekableRange(),
+              getCurrentTime(),
+              getSeekableRange(),
               addEventCallback,
               removeEventCallback,
               MediaPlayerBase.unpausedEventCheck,

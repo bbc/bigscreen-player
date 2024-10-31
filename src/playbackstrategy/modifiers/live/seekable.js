@@ -1,6 +1,5 @@
 import MediaPlayerBase from "../mediaplayerbase"
 import DynamicWindowUtils from "../../../dynamicwindowutils"
-import { TransferFormat } from "../../../main"
 
 function SeekableLivePlayer(mediaPlayer, mediaSources) {
   const AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
@@ -29,36 +28,6 @@ function SeekableLivePlayer(mediaPlayer, mediaSources) {
       isFinite(timeShiftBufferDepthInMilliseconds) &&
       timeShiftBufferDepthInMilliseconds > 0
     )
-  }
-
-  function startAutoResumeTimeOut() {
-    switch (mediaSources.transferFormat()) {
-      case TransferFormat.DASH:
-        DynamicWindowUtils.autoResumeAtStartOfRange(
-          mediaPlayer.getCurrentTime(),
-          mediaPlayer.getSeekableRange(),
-          addEventCallback,
-          removeEventCallback,
-          MediaPlayerBase.unpausedEventCheck,
-          resume
-        )
-        break
-
-      case TransferFormat.HLS:
-        // refresh manifest then auto resume
-        mediaSources.refresh(
-          () =>
-            DynamicWindowUtils.autoResumeAtStartOfRange(
-              mediaPlayer.getCurrentTime(),
-              mediaPlayer.getSeekableRange(),
-              addEventCallback,
-              removeEventCallback,
-              MediaPlayerBase.unpausedEventCheck,
-              resume
-            ) // fatal error if we can't load the manifest?
-        )
-        break
-    }
   }
 
   return {
@@ -107,7 +76,14 @@ function SeekableLivePlayer(mediaPlayer, mediaSources) {
 
       mediaPlayer.pause()
 
-      startAutoResumeTimeOut()
+      DynamicWindowUtils.autoResumeAtStartOfRange(
+        mediaPlayer.getCurrentTime(),
+        mediaPlayer.getSeekableRange(),
+        addEventCallback,
+        removeEventCallback,
+        MediaPlayerBase.unpausedEventCheck,
+        resume
+      )
     },
 
     resume,
