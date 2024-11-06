@@ -1,3 +1,5 @@
+import { TimeInfo } from "../manifest/manifestparser"
+
 export function durationToSeconds(duration: string) {
   const matches = duration.match(/^PT(\d+(?:[,.]\d+)?H)?(\d+(?:[,.]\d+)?M)?(\d+(?:[,.]\d+)?S)?/) || []
 
@@ -8,37 +10,35 @@ export function durationToSeconds(duration: string) {
   return hours + mins + secs || undefined
 }
 
-export function convertToSeekableVideoTime(epochTime: number, windowStartEpochTime: number) {
-  // Wont allow a 0 value for this due to device issue, this should be sorted in the TAL strategy.
-  return Math.max(0.1, convertToVideoTime(epochTime, windowStartEpochTime))
+export function createTimeConverter(timeInfo: TimeInfo) {
+  function presentationTimeToAvailabilityTimeInMilliseconds(presentationTimeInSeconds: number): number {
+    return presentationTimeInSeconds * 1000 + timeInfo.availabilityStartTimeInMilliseconds
+  }
+
+  function availabilityTimeToPresentationTimeInSeconds(availabilityTimeInMilliseconds: number): number {
+    return availabilityTimeInMilliseconds < timeInfo.availabilityStartTimeInMilliseconds
+      ? 0
+      : (availabilityTimeInMilliseconds - timeInfo.availabilityStartTimeInMilliseconds) / 1000
+  }
+
+  function presentationTimeToMediaSampleTimeInSeconds(presentationTimeInSeconds: number): number {
+    return presentationTimeInSeconds + timeInfo.presentationTimeOffsetInMilliseconds / 1000
+  }
+
+  function mediaSampleTimeToPresentationTimeInSeconds(mediaSampleTimeInSeconds: number): number {
+    return mediaSampleTimeInSeconds - timeInfo.presentationTimeOffsetInMilliseconds / 1000
+  }
+
+  return {
+    mediaSampleTimeToPresentationTimeInSeconds,
+    presentationTimeToMediaSampleTimeInSeconds,
+    availabilityTimeToPresentationTimeInSeconds,
+    presentationTimeToAvailabilityTimeInMilliseconds,
+  }
 }
 
-export function convertToVideoTime(epochTime: number, windowStartEpochTime: number) {
-  return Math.floor(convertMilliSecondsToSeconds(epochTime - windowStartEpochTime))
-}
+export type TimeConverter = ReturnType<typeof createTimeConverter>
 
 export function convertMilliSecondsToSeconds(timeInMilis: number) {
   return Math.floor(timeInMilis / 1000)
 }
-
-export function calculateSlidingWindowSeekOffset(
-  time: number,
-  dvrInfoRangeStart: number,
-  timeCorrection: number,
-  slidingWindowPausedTime: number
-) {
-  const dashRelativeTime = time + timeCorrection - dvrInfoRangeStart
-
-  if (slidingWindowPausedTime === 0) {
-    return dashRelativeTime
-  }
-
-  return dashRelativeTime - (Date.now() - slidingWindowPausedTime) / 1000
-}
-
-export default {
-  durationToSeconds,
-  convertToSeekableVideoTime,
-  convertToVideoTime,
-  calculateSlidingWindowSeekOffset,
-} as const

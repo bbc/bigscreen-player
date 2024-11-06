@@ -91,20 +91,8 @@ function BigscreenPlayer() {
     }
   }
 
-  function convertPresentationTimeToWallclockTimeInMilliSeconds(presentationTimeInSeconds) {
-    return presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMilliSeconds
-  }
-
-  function convertWallclockTimeToPresentationTimeInSeconds(wallclockTimeInMilliSeconds) {
-    return (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMilliSeconds) / 1000
-  }
-
-  function convertPresentationTimeToMediaTimeInSeconds(presentationTimeInSeconds) {
-    return presentationTimeInSeconds + mediaSources.time().presentationTimeOffsetInMilliseconds / 1000 || 0
-  }
-
-  function convertMediaTimeToPresentationTimeInSeconds(mediaTimeInSeconds) {
-    return mediaTimeInSeconds - mediaSources.time().presentationTimeOffsetInMilliseconds / 1000 || 0
+  function getTimeConverter() {
+    return mediaSources.getTimeConverter()
   }
 
   function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
@@ -122,7 +110,7 @@ function BigscreenPlayer() {
       // overwrite initialPlaybackTime with presentation time (it comes in as epoch time for a sliding/growing window)
       bigscreenPlayerData.initialPlaybackTime =
         typeof initialPlaybackTime === "number"
-          ? convertMediaTimeToPresentationTimeInSeconds(initialPlaybackTime / 1000)
+          ? getTimeConverter().mediaSampleTimeToPresentationTimeInSeconds(initialPlaybackTime / 1000)
           : undefined
     }
 
@@ -400,8 +388,15 @@ function BigscreenPlayer() {
     },
 
     /**
+     * @typedef {Object} LiveWindowData
+     * @property {number} offsetBetweenClientUTCAndServerUTCInMilliseconds
+     * @property {number} joinTimeInMilliseconds
+     * @property {number | undefined} initialPlaybackTime
+     */
+
+    /**
      * @function
-     * @return {Object} An object of the shape {windowStartTime: Number, windowEndTime: Number, initialPlaybackTime: Number, serverDate: Date}
+     * @return {LiveWindowData | {}}
      */
     getLiveWindowData: () => {
       if (manifestType === ManifestType.STATIC) {
@@ -631,10 +626,7 @@ function BigscreenPlayer() {
      */
     setLogLevel: (level) => DebugTool.setLogLevel(level),
     getDebugLogs: () => DebugTool.getDebugLogs(),
-    convertMediaTimeToPresentationTimeInSeconds,
-    convertPresentationTimeToMediaTimeInSeconds,
-    convertPresentationTimeToWallclockTimeInMilliSeconds,
-    convertWallclockTimeToPresentationTimeInSeconds,
+    getTimeConverter,
   }
 }
 

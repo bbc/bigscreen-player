@@ -11,6 +11,7 @@ import LiveSupport from "./models/livesupport"
 import { CaptionsConnection, Connection, MediaDescriptor } from "./types"
 import isError from "./utils/is-error"
 import { TimeInfo } from "./manifest/manifestparser"
+import { TimeConverter, createTimeConverter } from "./utils/timeutils"
 
 type MediaSourceCallbacks = {
   onSuccess: () => void
@@ -33,6 +34,7 @@ function MediaSources() {
   let liveSupport: LiveSupport | null = null
   let initialServerDate: Date | null = null
   let time: TimeInfo | null = null
+  let timeConverter: TimeConverter | null = null
   let transferFormat: TransferFormat | null = null
   let subtitlesSources: CaptionsConnection[] = []
   // Default 5000 can be overridden with media.subtitlesRequestTimeout
@@ -227,6 +229,7 @@ function MediaSources() {
       .then(({ time: newTime, transferFormat: newTransferFormat }) => {
         time = newTime
         transferFormat = newTransferFormat
+        timeConverter = createTimeConverter(time)
 
         logManifestLoaded(transferFormat, time)
         callbacks.onSuccess()
@@ -270,8 +273,12 @@ function MediaSources() {
     return mediaSources.map((mediaSource) => mediaSource.url)
   }
 
-  function generateTime() {
+  function generateTime(): TimeInfo | null {
     return time
+  }
+
+  function getTimeConverter(): TimeConverter | null {
+    return timeConverter
   }
 
   function getCurrentTransferFormat() {
@@ -357,20 +364,25 @@ function MediaSources() {
   }
 
   function logManifestLoaded(transferFormat: TransferFormat, time: TimeInfo) {
-    let logMessage = `Loaded ${transferFormat} manifest.`
+    const {
+      type,
+      availabilityStartTimeInMilliseconds,
+      presentationTimeOffsetInMilliseconds,
+      timeShiftBufferDepthInMilliseconds,
+    } = time
 
-    const { presentationTimeOffsetInMilliseconds, windowStartTime, windowEndTime } = time
+    let logMessage = `Loaded ${type} ${transferFormat} manifest.`
 
-    if (!isNaN(windowStartTime)) {
-      logMessage += ` Window start time [ms]: ${windowStartTime}.`
+    if (availabilityStartTimeInMilliseconds > 0) {
+      logMessage += ` AST: ${new Date(availabilityStartTimeInMilliseconds).toString()}`
     }
 
-    if (!isNaN(windowEndTime)) {
-      logMessage += ` Window end time [ms]: ${windowEndTime}.`
+    if (timeShiftBufferDepthInMilliseconds > 0) {
+      logMessage += ` Time shift [s]: ${timeShiftBufferDepthInMilliseconds / 1000}`
     }
 
-    if (!isNaN(presentationTimeOffsetInMilliseconds)) {
-      logMessage += ` Offset [s]: ${presentationTimeOffsetInMilliseconds}.`
+    if (presentationTimeOffsetInMilliseconds > 0) {
+      logMessage += ` PTO [s]: ${presentationTimeOffsetInMilliseconds / 1000}.`
     }
 
     DebugTool.info(logMessage)
@@ -410,6 +422,7 @@ function MediaSources() {
     availableSources: availableUrls,
     failoverResetTime,
     time: generateTime,
+    getTimeConverter,
     transferFormat: getCurrentTransferFormat,
     tearDown,
   }

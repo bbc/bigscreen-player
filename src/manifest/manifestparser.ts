@@ -10,22 +10,11 @@ import { ErrorWithCode } from "../models/error-code"
 
 export type TimeInfo = {
   type: ManifestType
-  windowStartTime: number
-  windowEndTime: number
   joinTimeInMilliseconds: number
   presentationTimeOffsetInMilliseconds: number
   timeShiftBufferDepthInMilliseconds: number
   availabilityStartTimeInMilliseconds: number
   transferFormat: string
-}
-
-function calcPresentationTimeFromWallClock(wallclockTimeInMillis: number, availabilityStartTimeInMillis: number) {
-  return wallclockTimeInMillis < availabilityStartTimeInMillis
-    ? 0
-    : wallclockTimeInMillis - availabilityStartTimeInMillis
-}
-function calcMediaTimeFromPresentationTime(presentationTimeInMillis: number, offsetInMillis: number) {
-  return presentationTimeInMillis + offsetInMillis
 }
 
 function getMpdType(mpd: Element): ManifestType {
@@ -73,22 +62,8 @@ function parseMPD(
       const availabilityStartTimeInMilliseconds = getAvailabilityStartTimeInMilliseconds(mpd)
       const timeShiftBufferDepthInMilliseconds = getTimeShiftBufferDepthInMilliseconds(mpd)
 
-      const windowStartTime = calcMediaTimeFromPresentationTime(
-        calcPresentationTimeFromWallClock(
-          wallclockTime - timeShiftBufferDepthInMilliseconds,
-          availabilityStartTimeInMilliseconds
-        ),
-        presentationTimeOffsetInMilliseconds
-      )
-      const windowEndTime = calcMediaTimeFromPresentationTime(
-        calcPresentationTimeFromWallClock(wallclockTime, availabilityStartTimeInMilliseconds),
-        presentationTimeOffsetInMilliseconds
-      )
-
       return {
         type,
-        windowEndTime,
-        windowStartTime,
         joinTimeInMilliseconds: wallclockTime,
         timeShiftBufferDepthInMilliseconds,
         availabilityStartTimeInMilliseconds,
@@ -136,9 +111,7 @@ function parseM3U8(manifest: string, { fakeTimeShift }: Partial<{ fakeTimeShift:
 
     return resolve({
       type: hasM3U8EndList(manifest) ? ManifestType.STATIC : ManifestType.DYNAMIC,
-      windowStartTime: programDateTimeInMilliseconds,
       timeShiftBufferDepthInMilliseconds: fakeTimeShift ? durationInMilliseconds : 0,
-      windowEndTime: programDateTimeInMilliseconds + durationInMilliseconds,
       joinTimeInMilliseconds: programDateTimeInMilliseconds + durationInMilliseconds,
       availabilityStartTimeInMilliseconds: programDateTimeInMilliseconds,
       presentationTimeOffsetInMilliseconds: programDateTimeInMilliseconds,
@@ -201,8 +174,6 @@ function parse(
 
       return {
         type: ManifestType.STATIC,
-        windowStartTime: 0,
-        windowEndTime: 0,
         joinTimeInMilliseconds: 0,
         timeShiftBufferDepthInMilliseconds: 0,
         availabilityStartTimeInMilliseconds: 0,

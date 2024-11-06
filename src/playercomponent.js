@@ -121,12 +121,14 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
   }
 
   function reloadMediaElement(presentationTimeInSeconds) {
-    const wallclockTimeInMilliSeconds =
-      presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMilliSeconds
+    const availabilityTimeInMilliseconds = mediaSources
+      .getTimeConversions()
+      .presentationTimeToAvailabilityTimeInMilliseconds(presentationTimeInSeconds)
 
     const doSeek = () => {
-      let presentationTimeInSeconds =
-        (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMilliSeconds) / 1000
+      let presentationTimeInSeconds = mediaSources
+        .getTimeConversions()
+        .availabilityTimeToPresentationTimeInSeconds(availabilityTimeInMilliseconds)
 
       const seekableRange = playbackStrategy && playbackStrategy.getSeekableRange()
 
@@ -250,8 +252,9 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
     const presentationTimeInSeconds = getCurrentTime()
 
-    const wallclockTimeInMilliSeconds =
-      presentationTimeInSeconds * 1000 + mediaSources.time().availabilityStartTimeInMilliSeconds
+    const availabilityTimeInMilliseconds = mediaSources
+      .getTimeConversions()
+      .presentationTimeToAvailabilityTimeInMilliseconds(presentationTimeInSeconds)
 
     const failoverParams = {
       isBufferingTimeoutError: bufferingTimeoutError,
@@ -265,8 +268,9 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
       const thenPause = isPaused()
       tearDownMediaElement()
 
-      const presentationTimeInSeconds =
-        (wallclockTimeInMilliSeconds - mediaSources.time().availabilityStartTimeInMilliSeconds) / 1000
+      const presentationTimeInSeconds = mediaSources
+        .getTimeConversions()
+        .availabilityTimeToPresentationTimeInSeconds(availabilityTimeInMilliseconds)
 
       loadMedia(mediaMetaData.type, presentationTimeInSeconds, thenPause)
     }
