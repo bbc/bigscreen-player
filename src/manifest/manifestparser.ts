@@ -1,4 +1,4 @@
-import TimeUtils from "./../utils/timeutils"
+import TimeUtils from "../utils/timeutils"
 import DebugTool from "../debugger/debugtool"
 import WindowTypes from "../models/windowtypes"
 import Plugins from "../plugins"
