@@ -3,7 +3,7 @@ import WindowTypes from "./models/windowtypes"
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
-import TransferFormats from "./models/transferformats"
+import { HLS } from "./models/transferformats"
 import LiveSupport from "./models/livesupport"
 import PlaybackStrategyModel from "./models/playbackstrategy"
 import StrategyPicker from "./playbackstrategy/strategypicker"
@@ -120,7 +120,7 @@ function PlayerComponent(
   function isNativeHLSRestartable() {
     return (
       window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
-      transferFormat === TransferFormats.HLS &&
+      transferFormat === HLS &&
       _windowType !== WindowTypes.STATIC &&
       getLiveSupport() === LiveSupport.RESTARTABLE
     )

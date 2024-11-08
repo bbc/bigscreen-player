@@ -1,6 +1,6 @@
 import WindowTypes from "./models/windowtypes"
 import LiveSupport from "./models/livesupport"
-import TransferFormats from "./models/transferformats"
+import { DASH, HLS } from "./models/transferformats"
 import PluginEnums from "./pluginenums"
 import MediaSources from "./mediasources"
 import Plugins from "./plugins"
@@ -131,7 +131,7 @@ describe("Media Sources", () => {
     it("calls onSuccess callback when manifest loader returns on success for SLIDING window content", async () => {
       ManifestLoader.load.mockResolvedValueOnce({
         time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-        transferFormat: TransferFormats.DASH,
+        transferFormat: DASH,
       })
 
       const mediaSources = await initMediaSources(testMedia, {
@@ -150,7 +150,7 @@ describe("Media Sources", () => {
 
       ManifestLoader.load.mockResolvedValueOnce({
         time: { presentationTimeOffsetSeconds: 54 },
-        transferFormat: TransferFormats.DASH,
+        transferFormat: DASH,
       })
 
       const mediaSources = await initMediaSources(testMedia, {
@@ -189,7 +189,7 @@ describe("Media Sources", () => {
       ManifestLoader.load.mockRejectedValueOnce()
       ManifestLoader.load.mockResolvedValueOnce({
         time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-        transferFormat: TransferFormats.DASH,
+        transferFormat: DASH,
       })
 
       const mediaSources = await initMediaSources(testMedia, {
@@ -218,7 +218,7 @@ describe("Media Sources", () => {
     it("sets time data correcly when manifest loader successfully returns", async () => {
       ManifestLoader.load.mockResolvedValueOnce({
         time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-        transferFormat: TransferFormats.DASH,
+        transferFormat: DASH,
       })
 
       const mediaSources = await initMediaSources(testMedia, {
@@ -253,7 +253,7 @@ describe("Media Sources", () => {
       // HLS manifests must be reloaded on failover to fetch accurate start time
       ManifestLoader.load.mockResolvedValueOnce({
         time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: NaN },
-        transferFormat: TransferFormats.HLS,
+        transferFormat: HLS,
       })
 
       const mediaSources = await initMediaSources(testMedia, {
@@ -278,7 +278,7 @@ describe("Media Sources", () => {
       // HLS manifests must be reloaded on failover to fetch accurate start time
       ManifestLoader.load.mockResolvedValueOnce({
         time: {},
-        transferFormat: TransferFormats.HLS,
+        transferFormat: HLS,
       })
 
       const mediaSources = await initMediaSources(testMedia, {
@@ -779,7 +779,7 @@ describe("Media Sources", () => {
           async (windowType) => {
             ManifestLoader.load.mockResolvedValueOnce({
               time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-              transferFormat: TransferFormats.DASH,
+              transferFormat: DASH,
             })
 
             const mediaSources = await initMediaSources(testMedia, {
@@ -805,7 +805,7 @@ describe("Media Sources", () => {
           async (windowType) => {
             ManifestLoader.load.mockResolvedValueOnce({
               time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: NaN },
-              transferFormat: TransferFormats.HLS,
+              transferFormat: HLS,
             })
 
             const mediaSources = await initMediaSources(testMedia, {
@@ -831,7 +831,7 @@ describe("Media Sources", () => {
     it("updates the mediasources time data", async () => {
       ManifestLoader.load.mockResolvedValueOnce({
         time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-        transferFormat: TransferFormats.DASH,
+        transferFormat: DASH,
       })
 
       const mediaSources = await initMediaSources(testMedia, {
@@ -847,7 +847,7 @@ describe("Media Sources", () => {
 
       ManifestLoader.load.mockResolvedValueOnce({
         time: { windowStartTime: 6000, windowEndTime: 16000, timeCorrectionSeconds: 6 },
-        transferFormat: TransferFormats.DASH,
+        transferFormat: DASH,
       })
 
       await new Promise((resolve, reject) =>

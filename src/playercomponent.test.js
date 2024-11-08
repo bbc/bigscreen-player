@@ -3,7 +3,7 @@ import WindowTypes from "./models/windowtypes"
 import MediaKinds from "./models/mediakinds"
 import LiveSupport from "./models/livesupport"
 import PluginEnums from "./pluginenums"
-import TransferFormats from "./models/transferformats"
+import { DASH, HLS } from "./models/transferformats"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
 import * as StrategyPicker from "./playbackstrategy/strategypicker"
@@ -97,7 +97,7 @@ describe("Player Component", () => {
           { url: "c.mpd", cdn: "cdn-c" },
         ],
         type: opts.type || "application/dash+xml",
-        transferFormat: opts.transferFormat || TransferFormats.DASH,
+        transferFormat: opts.transferFormat || DASH,
         bitrate: undefined,
       },
       time: testTime,
@@ -310,7 +310,7 @@ describe("Player Component", () => {
 
       setUpPlayerComponent({
         windowType: WindowTypes.SLIDING,
-        transferFormat: TransferFormats.HLS,
+        transferFormat: HLS,
         type: "applesomething",
       })
 
@@ -332,7 +332,7 @@ describe("Player Component", () => {
 
       setUpPlayerComponent({
         windowType: WindowTypes.SLIDING,
-        transferFormat: TransferFormats.HLS,
+        transferFormat: HLS,
         type: "applesomething",
       })
 
@@ -957,7 +957,7 @@ describe("Player Component", () => {
     })
 
     it("should failover for with updated failover time when window time data has changed", () => {
-      setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormats.HLS })
+      setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: HLS })
       updateTestTime = true
 
       return StrategyPicker.default().then(() => {

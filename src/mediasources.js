@@ -5,7 +5,7 @@ import PluginEnums from "./pluginenums"
 import PluginData from "./plugindata"
 import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/manifestloader"
-import TransferFormats from "./models/transferformats"
+import { HLS } from "./models/transferformats"
 import findSegmentTemplate from "./utils/findtemplate"
 
 function MediaSources() {
@@ -177,7 +177,7 @@ function MediaSources() {
     const hasManifestBeenLoaded = transferFormat !== undefined
 
     return (
-      (!hasManifestBeenLoaded || transferFormat === TransferFormats.HLS) &&
+      (!hasManifestBeenLoaded || transferFormat === HLS) &&
       (windowType !== WindowTypes.STATIC || hasSegmentedSubtitles()) &&
       isStartTimeAccurate[liveSupport]
     )

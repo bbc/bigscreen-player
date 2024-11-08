@@ -1,4 +1,4 @@
-function durationToSeconds(duration: string) {
+export function durationToSeconds(duration: string) {
   const matches = duration.match(/^PT(\d+(?:[,.]\d+)?H)?(\d+(?:[,.]\d+)?M)?(\d+(?:[,.]\d+)?S)?/) || []
 
   const hours = parseFloat(matches[1] || "0") * 60 * 60
