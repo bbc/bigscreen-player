@@ -1,5 +1,4 @@
 import MediaSources from "./mediasources"
-import LiveSupport from "./models/livesupport"
 import getError from "./testutils/geterror"
 import { MediaDescriptor } from "./types"
 import ManifestLoader from "./manifest/manifestloader"
@@ -9,15 +8,17 @@ import { DASH, HLS } from "./models/transferformats"
 jest.mock("./manifest/manifestloader", () => ({ default: { load: jest.fn(() => Promise.resolve({ time: {} })) } }))
 
 jest.mock("./plugins", () => ({
-  interface: {
-    onErrorCleared: jest.fn(),
-    onBuffering: jest.fn(),
-    onBufferingCleared: jest.fn(),
-    onError: jest.fn(),
-    onFatalError: jest.fn(),
-    onErrorHandled: jest.fn(),
-    onSubtitlesLoadError: jest.fn(),
-  },
+  default: {
+    interface: {
+      onErrorCleared: jest.fn(),
+      onBuffering: jest.fn(),
+      onBufferingCleared: jest.fn(),
+      onError: jest.fn(),
+      onFatalError: jest.fn(),
+      onErrorHandled: jest.fn(),
+      onSubtitlesLoadError: jest.fn(),
+    }
+  }
 }))
 
 const FAILOVER_RESET_TIMEOUT = 60000
@@ -56,7 +57,7 @@ describe("Media Sources", () => {
 
       const mediaSources = MediaSources()
 
-      const error = await getError(() => mediaSources.init(testMedia, { liveSupport: LiveSupport.SEEKABLE }))
+      const error = await getError(() => mediaSources.init(testMedia))
 
       expect(error).toEqual(new Error("Media Sources urls are undefined"))
     })
@@ -66,7 +67,7 @@ describe("Media Sources", () => {
 
       const mediaSources = MediaSources()
 
-      await mediaSources.init(testMedia, { liveSupport: LiveSupport.SEEKABLE })
+      await mediaSources.init(testMedia)
 
       testMedia.urls[0].url = "mock://url.clone/"
 
@@ -86,7 +87,7 @@ describe("Media Sources", () => {
 
       const mediaSources = MediaSources()
 
-      await mediaSources.init(testMedia, { liveSupport: LiveSupport.SEEKABLE })
+      await mediaSources.init(testMedia)
 
       expect(mediaSources.time()).toEqual({
         manifestType: ManifestType.DYNAMIC,
@@ -116,7 +117,7 @@ describe("Media Sources", () => {
 
       const mediaSources = MediaSources()
 
-      await mediaSources.init(testMedia, { liveSupport: LiveSupport.SEEKABLE })
+      await mediaSources.init(testMedia)
 
       expect(mediaSources.time()).toEqual({
         manifestType: ManifestType.STATIC,
@@ -132,9 +133,7 @@ describe("Media Sources", () => {
       const mediaSources = MediaSources()
 
       const error = await getError(async () =>
-        mediaSources.init(testMedia, {
-          liveSupport: LiveSupport.SEEKABLE,
-        })
+        mediaSources.init(testMedia)
       )
 
       expect(error.name).toBe("ManifestLoadError")

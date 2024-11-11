@@ -7,7 +7,6 @@ import ManifestLoader from "./manifest/manifestloader"
 import { TransferFormat, HLS } from "./models/transferformats"
 import findSegmentTemplate from "./utils/findtemplate"
 import { CaptionsConnection, Connection, MediaDescriptor } from "./types"
-import { LiveSupport } from "./models/livesupport"
 import { TimeInfo } from "./manifest/manifestparser"
 import isError from "./utils/iserror"
 import { ManifestType } from "./models/manifesttypes"
@@ -21,15 +20,10 @@ type FailoverParams = {
   serviceLocation?: string
 }
 
-type MediaSourcesOptions = {
-  liveSupport: LiveSupport
-}
-
 function MediaSources() {
   let mediaSources: Connection[] = []
   let failedOverSources: Connection[] = []
   let failoverResetTokens: number[] = []
-  let currentLiveSupport: LiveSupport | null = null
   let time: TimeInfo | null = null
   let transferFormat: TransferFormat | null = null
   let subtitlesSources: CaptionsConnection[] = []
@@ -38,7 +32,7 @@ function MediaSources() {
   let failoverResetTimeMs = 120000
   let failoverSort: ((sources: Connection[]) => Connection[]) | null = null
 
-  function init(media: MediaDescriptor, { liveSupport }: MediaSourcesOptions): Promise<void> {
+  function init(media: MediaDescriptor): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!media.urls?.length) {
         return reject(new Error("Media Sources urls are undefined"))
@@ -56,7 +50,6 @@ function MediaSources() {
         failoverSort = media.playerSettings.failoverSort
       }
 
-      currentLiveSupport = liveSupport
       mediaSources = media.urls ? (PlaybackUtils.cloneArray(media.urls) as Connection[]) : []
       subtitlesSources = media.captions ? (PlaybackUtils.cloneArray(media.captions) as CaptionsConnection[]) : []
 
@@ -76,7 +69,7 @@ function MediaSources() {
       updateCdns(failoverParams.serviceLocation)
       updateDebugOutput()
 
-      if (currentLiveSupport == null || !needToGetManifest(currentLiveSupport)) {
+      if (!needToGetManifest()) {
         return resolve()
       }
 
@@ -115,6 +108,10 @@ function MediaSources() {
   }
 
   function shouldFailover(failoverParams: FailoverParams): boolean {
+    if (!time) {
+      return true
+    }
+
     const { currentTime, duration, serviceLocation } = failoverParams
 
     const aboutToEnd =
@@ -182,20 +179,12 @@ function MediaSources() {
     return findSegmentTemplate(url) != null
   }
 
-  function needToGetManifest(liveSupport: LiveSupport): boolean {
-    const isStartTimeAccurate = {
-      restartable: true,
-      seekable: true,
-      playable: false,
-      none: false,
-    }
-
-    const hasManifestBeenLoaded = transferFormat !== undefined
+  function needToGetManifest(): boolean {
+    const hasManifestBeenLoaded = transferFormat != null
 
     return (
-      (!hasManifestBeenLoaded || transferFormat === HLS) &&
-      (time?.manifestType === ManifestType.DYNAMIC || hasSegmentedSubtitles()) &&
-      isStartTimeAccurate[liveSupport]
+      !hasManifestBeenLoaded ||
+      (transferFormat === HLS && (time?.manifestType === ManifestType.DYNAMIC || hasSegmentedSubtitles()))
     )
   }
 
@@ -379,7 +368,6 @@ function MediaSources() {
   function tearDown() {
     failoverResetTokens.forEach((token) => clearTimeout(token))
 
-    currentLiveSupport = null
     time = null
     transferFormat = null
     mediaSources = []
