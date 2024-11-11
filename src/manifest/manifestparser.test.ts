@@ -7,7 +7,6 @@ import { DASH, HLS } from "../models/transferformats"
 import { ManifestType } from "../models/manifesttypes"
 
 jest.mock("../utils/loadurl")
-const mockLoadUrl = LoadUrl as jest.MockedFunction<typeof LoadUrl>
 
 describe("ManifestParser", () => {
   beforeAll(() => {
@@ -16,7 +15,7 @@ describe("ManifestParser", () => {
 
     jest.spyOn(Plugins.interface, "onManifestParseError")
 
-    mockLoadUrl.mockImplementation((_, { onLoad }) => onLoad(null, new Date().toISOString(), 200))
+    jest.mocked(LoadUrl).mockImplementation((_, { onLoad }) => onLoad(null, new Date().toISOString(), 200))
   })
 
   beforeEach(() => {

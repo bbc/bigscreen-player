@@ -69,7 +69,7 @@ function MediaSources() {
   function failover(failoverParams: FailoverParams): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!shouldFailover(failoverParams)) {
-        return reject()
+        return reject(new Error("Exhaused all sources"))
       }
 
       emitCdnFailover(failoverParams)
@@ -213,7 +213,7 @@ function MediaSources() {
         time = newTime
         transferFormat = newTransferFormat
 
-        logManifestLoaded(transferFormat, time)
+        logManifestLoaded(newTransferFormat, newTime)
       })
       .catch((reason) => {
         DebugTool.error(`Failed to load manifest: ${isError(reason) ? reason.message : "cause n/a"}`)
@@ -222,13 +222,14 @@ function MediaSources() {
           isBufferingTimeoutError: false,
           code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
           message: PluginEnums.ERROR_MESSAGES.MANIFEST,
-        }).catch((reason: unknown) => {
-          const error = new Error(isError(reason) ? reason.message : undefined)
-
-          error.name = "ManifestLoadError"
-
-          throw error
         })
+      })
+      .catch((reason: unknown) => {
+        const error = new Error(isError(reason) ? reason.message : undefined)
+
+        error.name = "ManifestLoadError"
+
+        throw error
       })
   }
 

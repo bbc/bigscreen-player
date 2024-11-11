@@ -2,8 +2,11 @@ import MediaSources from "./mediasources"
 import LiveSupport from "./models/livesupport"
 import getError from "./testutils/geterror"
 import { MediaDescriptor } from "./types"
+import ManifestLoader from "./manifest/manifestloader"
+import { ManifestType } from "./models/manifesttypes"
+import { DASH, HLS } from "./models/transferformats"
 
-jest.mock("./manifest/manifestloader", () => ({ load: jest.fn(() => Promise.resolve({ time: {} })) }))
+jest.mock("./manifest/manifestloader", () => ({ default: { load: jest.fn(() => Promise.resolve({ time: {} })) } }))
 
 jest.mock("./plugins", () => ({
   interface: {
@@ -58,116 +61,84 @@ describe("Media Sources", () => {
       expect(error).toEqual(new Error("Media Sources urls are undefined"))
     })
 
-    //   it("clones the urls", async () => {
-    //     testMedia.urls = [{ url: "mock://url.test/", cdn: "mock://cdn.test/" }]
+    it("clones the urls", async () => {
+      testMedia.urls = [{ url: "mock://url.test/", cdn: "mock://cdn.test/" }]
 
-    //     const mediaSources = await initMediaSources(testMedia, {
-    //       initialWallclockTime: Date.now(),
-    //       windowType: WindowTypes.STATIC,
-    //       liveSupport: LiveSupport.SEEKABLE,
-    //     })
+      const mediaSources = MediaSources()
 
-    //     testMedia.urls[0].url = "mock://url.clone/"
+      await mediaSources.init(testMedia, { liveSupport: LiveSupport.SEEKABLE })
 
-    //     expect(mediaSources.currentSource()).toBe("mock://url.test/")
-    //   })
+      testMedia.urls[0].url = "mock://url.clone/"
 
-    //   it.each([
-    //     ["both callbacks", {}],
-    //     ["success callback", { onError: jest.fn() }],
-    //     ["failure callback", { onSuccess: jest.fn() }],
-    //   ])("throws an error when %s are undefined", (_, callbacks) => {
-    //     const mediaSources = MediaSources()
+      expect(mediaSources.currentSource()).toBe("mock://url.test/")
+    })
 
-    //     expect(() =>
-    //       mediaSources.init(testMedia, new Date(), WindowTypes.STATIC, LiveSupport.SEEKABLE, callbacks)
-    //     ).toThrow("Media Sources callbacks are undefined")
-    //   })
+    it("resolves when manifest has been loaded", async () => {
+      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+        time: {
+          manifestType: ManifestType.DYNAMIC,
+          presentationTimeOffsetInMilliseconds: 1000,
+          availabilityStartTimeInMilliseconds: 10000,
+          timeShiftBufferDepthInMilliseconds: 1000,
+        },
+        transferFormat: HLS,
+      })
 
-    //   it.each([WindowTypes.GROWING, WindowTypes.SLIDING])(
-    //     "passes the '%s' window type to the manifest loader",
-    //     async (windowType) => {
-    //       await initMediaSources(testMedia, {
-    //         windowType,
-    //         initialWallclockTime: Date.now(),
-    //         liveSupport: LiveSupport.SEEKABLE,
-    //       })
+      const mediaSources = MediaSources()
 
-    //       expect(ManifestLoader.load).toHaveBeenCalledWith("http://source1.com/", expect.objectContaining({ windowType }))
-    //     }
-    //   )
+      await mediaSources.init(testMedia, { liveSupport: LiveSupport.SEEKABLE })
 
-    //   it("calls onSuccess callback immediately for STATIC window content", async () => {
-    //     const mediaSources = await initMediaSources(testMedia, {
-    //       initialWallclockTime: Date.now(),
-    //       windowType: WindowTypes.STATIC,
-    //       liveSupport: LiveSupport.SEEKABLE,
-    //     })
+      expect(mediaSources.time()).toEqual({
+        manifestType: ManifestType.DYNAMIC,
+        presentationTimeOffsetInMilliseconds: 1000,
+        availabilityStartTimeInMilliseconds: 10000,
+        timeShiftBufferDepthInMilliseconds: 1000,
+      })
+    })
 
-    //     expect(mediaSources.time()).toEqual({})
-    //   })
+    it("resolves when first manifest fails to load but second load succeeds", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+        { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+      ]
 
-    //   it("calls onSuccess callback immediately for LIVE content on a PLAYABLE device", async () => {
-    //     const mediaSources = await initMediaSources(testMedia, {
-    //       initialWallclockTime: Date.now(),
-    //       windowType: WindowTypes.SLIDING,
-    //       liveSupport: LiveSupport.PLAYABLE,
-    //     })
+      jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
 
-    //     expect(mediaSources.time()).toEqual({})
-    //   })
+      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+        time: {
+          manifestType: ManifestType.STATIC,
+          presentationTimeOffsetInMilliseconds: 0,
+          availabilityStartTimeInMilliseconds: 0,
+          timeShiftBufferDepthInMilliseconds: 0,
+        },
+        transferFormat: DASH,
+      })
 
-    //   it("calls onSuccess callback when manifest loader returns on success for SLIDING window content", async () => {
-    //     ManifestLoader.load.mockResolvedValueOnce({
-    //       time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-    //       transferFormat: DASH,
-    //     })
+      const mediaSources = MediaSources()
 
-    //     const mediaSources = await initMediaSources(testMedia, {
-    //       initialWallclockTime: Date.now(),
-    //       windowType: WindowTypes.SLIDING,
-    //       liveSupport: LiveSupport.SEEKABLE,
-    //     })
+      await mediaSources.init(testMedia, { liveSupport: LiveSupport.SEEKABLE })
 
-    //     expect(mediaSources.time()).toEqual({ windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 })
-    //   })
+      expect(mediaSources.time()).toEqual({
+        manifestType: ManifestType.STATIC,
+        presentationTimeOffsetInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 0,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
+    })
 
-    //   it("fetch presentation time offset from the manifest for on-demand media with segmented subtitles", async () => {
-    //     testMedia.captions = [
-    //       { url: "mock://some.media/captions/$segment$.m4s", cdn: "foo", segmentLength: SEGMENT_LENGTH },
-    //     ]
+    it("rejects when all available manifest sources fail to load", async () => {
+      jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
 
-    //     ManifestLoader.load.mockResolvedValueOnce({
-    //       time: { presentationTimeOffsetSeconds: 54 },
-    //       transferFormat: DASH,
-    //     })
+      const mediaSources = MediaSources()
 
-    //     const mediaSources = await initMediaSources(testMedia, {
-    //       initialWallclockTime: Date.now(),
-    //       windowType: WindowTypes.STATIC,
-    //       liveSupport: LiveSupport.SEEKABLE,
-    //     })
+      const error = await getError(async () =>
+        mediaSources.init(testMedia, {
+          liveSupport: LiveSupport.SEEKABLE,
+        })
+      )
 
-    //     expect(mediaSources.time()).toEqual({ presentationTimeOffsetSeconds: 54 })
-    //   })
-
-    //   it("calls onError when manifest fails to load for media with segmented subtitles", async () => {
-    //     testMedia.captions = [
-    //       { url: "mock://some.media/captions/$segment$.m4s", cdn: "foo", segmentLength: SEGMENT_LENGTH },
-    //     ]
-
-    //     ManifestLoader.load.mockRejectedValueOnce()
-
-    //     const error = await getError(async () =>
-    //       initMediaSources(testMedia, {
-    //         initialWallclockTime: Date.now(),
-    //         windowType: WindowTypes.STATIC,
-    //         liveSupport: LiveSupport.SEEKABLE,
-    //       })
-    //     )
-
-    //     expect(error).toEqual({ error: "manifest" })
-    //   })
+      expect(error.name).toBe("ManifestLoadError")
+    })
 
     //   it("fails over to next source when the first source fails to load", async () => {
     //     testMedia.urls = [
@@ -188,20 +159,6 @@ describe("Media Sources", () => {
     //     })
 
     //     expect(mediaSources.time()).toEqual({ windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 })
-    //   })
-
-    //   it("calls onError callback when manifest loader fails and there are insufficent sources to failover to", async () => {
-    //     ManifestLoader.load.mockRejectedValueOnce()
-
-    //     const error = await getError(async () =>
-    //       initMediaSources(testMedia, {
-    //         initialWallclockTime: Date.now(),
-    //         windowType: WindowTypes.SLIDING,
-    //         liveSupport: LiveSupport.SEEKABLE,
-    //       })
-    //     )
-
-    //     expect(error).toEqual({ error: "manifest" })
     //   })
 
     //   it("sets time data correcly when manifest loader successfully returns", async () => {
