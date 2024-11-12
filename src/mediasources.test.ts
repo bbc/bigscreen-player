@@ -378,9 +378,9 @@ describe("Media Sources", () => {
 
       const error = await getError(async () =>
         mediaSources.failover({
-          isBufferingTimeoutError: ("yes" as unknown as boolean),
+          isBufferingTimeoutError: "yes" as unknown as boolean,
           code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
-          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT
+          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
         })
       )
 
@@ -490,7 +490,7 @@ describe("Media Sources", () => {
       expect(mediaSources.currentSource()).toBe("http://source1.com")
     })
 
-    it("should failover if current time is greater than 5 seconds from duration", async () => {
+    it("fails over if current time is greater than 5 seconds from duration", async () => {
       testMedia.urls = [
         { url: "http://source1.com", cdn: "http://cdn1.com" },
         { url: "http://source2.com", cdn: "http://cdn2.com" },
@@ -534,7 +534,7 @@ describe("Media Sources", () => {
       expect(error).toEqual(new Error("Current time too close to end"))
     })
 
-    it("should failover if playback has not yet started", async () => {
+    it("fails over if playback has not yet started", async () => {
       testMedia.urls = [
         { url: "http://source1.com", cdn: "http://cdn1.com" },
         { url: "http://source2.com", cdn: "http://cdn2.com" },
@@ -555,146 +555,94 @@ describe("Media Sources", () => {
     })
   })
 
-  // describe("currentSubtitlesSource", () => {
-  //   beforeEach(() => {
-  //     testMedia.captions = [
-  //       { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
-  //       { url: "http://subtitlessource2.com/", cdn: "http://supplier2.com/", segmentLength: SEGMENT_LENGTH },
-  //     ]
-  //   })
+  describe("Subtitle Sources", () => {
+    beforeEach(() => {
+      testMedia.captions = [
+        { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
+        { url: "http://subtitlessource2.com/", cdn: "http://supplier2.com/", segmentLength: SEGMENT_LENGTH },
+      ]
+    })
 
-  //   it("returns the first subtitles source url", async () => {
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+    it("returns the first subtitles source url", async () => {
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-  //     expect(mediaSources.currentSubtitlesSource()).toBe("http://subtitlessource1.com/")
-  //   })
+      expect(mediaSources.currentSubtitlesSource()).toBe("http://subtitlessource1.com/")
+    })
 
-  //   it("returns the second subtitle source following a failover", async () => {
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+    it("returns the first subtitles segment length", async () => {
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-  //     mediaSources.failoverSubtitles()
+      expect(mediaSources.currentSubtitlesSegmentLength()).toBe(SEGMENT_LENGTH)
+    })
 
-  //     expect(mediaSources.currentSubtitlesSource()).toBe("http://subtitlessource2.com/")
-  //   })
-  // })
+    it("returns the first subtitles cdn", async () => {
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-  // describe("currentSubtitlesSegmentLength", () => {
-  //   it("returns the first subtitles segment length", async () => {
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+      expect(mediaSources.currentSubtitlesCdn()).toBe("http://supplier1.com/")
+    })
 
-  //     expect(mediaSources.currentSubtitlesSegmentLength()).toBe(SEGMENT_LENGTH)
-  //   })
-  // })
+    it("returns the second subtitle source following a failover", async () => {
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-  // describe("currentSubtitlesCdn", () => {
-  //   it("returns the first subtitles cdn", async () => {
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+      await mediaSources.failoverSubtitles()
 
-  //     expect(mediaSources.currentSubtitlesCdn()).toBe("http://supplier1.com/")
-  //   })
-  // })
+      expect(mediaSources.currentSubtitlesSource()).toBe("http://subtitlessource2.com/")
+    })
 
-  // describe("failoverSubtitles", () => {
-  //   it("When there are subtitles sources to failover to, it calls the post failover callback", async () => {
-  //     testMedia.captions = [
-  //       { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
-  //       { url: "http://subtitlessource2.com/", cdn: "http://supplier2.com/", segmentLength: SEGMENT_LENGTH },
-  //     ]
+    it("Rejects when there are no more subtitles sources to failover to", async () => {
+      testMedia.captions = [
+        { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
+      ]
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-  //     const handleSubtitleFailoverSuccess = jest.fn()
-  //     const handleSubtitleFailoverError = jest.fn()
+      const error = await getError(async () => mediaSources.failoverSubtitles())
 
-  //     mediaSources.failoverSubtitles(handleSubtitleFailoverSuccess, handleSubtitleFailoverError)
+      expect(error).toEqual(new Error("Exhaused all subtitle sources"))
+    })
 
-  //     expect(handleSubtitleFailoverSuccess).toHaveBeenCalledTimes(1)
-  //     expect(handleSubtitleFailoverError).not.toHaveBeenCalled()
-  //   })
+    it("fires onSubtitlesLoadError plugin with correct parameters when there are sources available to failover to", async () => {
+      testMedia.captions = [
+        { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
+        { url: "http://subtitlessource2.com/", cdn: "http://supplier2.com/", segmentLength: SEGMENT_LENGTH },
+      ]
 
-  //   it("When there are no more subtitles sources to failover to, it calls failure action callback", async () => {
-  //     testMedia.captions = [
-  //       { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
-  //     ]
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+      await mediaSources.failoverSubtitles({ statusCode: 404 })
 
-  //     const handleSubtitleFailoverSuccess = jest.fn()
-  //     const handleSubtitleFailoverError = jest.fn()
+      expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({
+        status: 404,
+        severity: PluginEnums.STATUS.FAILOVER,
+        cdn: "http://supplier1.com/",
+        subtitlesSources: 2,
+      })
+    })
 
-  //     mediaSources.failoverSubtitles(handleSubtitleFailoverSuccess, handleSubtitleFailoverError)
+    it("fires onSubtitlesLoadError plugin with correct parameters when there are no sources available to failover to", async () => {
+      testMedia.captions = [
+        { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
+      ]
 
-  //     expect(handleSubtitleFailoverSuccess).not.toHaveBeenCalled()
-  //     expect(handleSubtitleFailoverError).toHaveBeenCalledTimes(1)
-  //   })
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-  //   it("fires onSubtitlesLoadError plugin with correct parameters when there are sources available to failover to", async () => {
-  //     testMedia.captions = [
-  //       { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
-  //       { url: "http://subtitlessource2.com/", cdn: "http://supplier2.com/", segmentLength: SEGMENT_LENGTH },
-  //     ]
+      await getError(async () => mediaSources.failoverSubtitles({ statusCode: 404 }))
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
-
-  //     mediaSources.failoverSubtitles(jest.fn(), jest.fn(), { statusCode: 404 })
-
-  //     expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({
-  //       status: 404,
-  //       severity: PluginEnums.STATUS.FAILOVER,
-  //       cdn: "http://supplier1.com/",
-  //       subtitlesSources: 2,
-  //     })
-  //   })
-
-  //   it("fires onSubtitlesLoadError plugin with correct parameters when there are no sources available to failover to", async () => {
-  //     testMedia.captions = [
-  //       { url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH },
-  //     ]
-
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
-
-  //     mediaSources.failoverSubtitles(jest.fn(), jest.fn(), { statusCode: 404 })
-
-  //     expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({
-  //       status: 404,
-  //       severity: PluginEnums.STATUS.FATAL,
-  //       cdn: "http://supplier1.com/",
-  //       subtitlesSources: 1,
-  //     })
-  //   })
-  // })
+      expect(Plugins.interface.onSubtitlesLoadError).toHaveBeenCalledWith({
+        status: 404,
+        severity: PluginEnums.STATUS.FATAL,
+        cdn: "http://supplier1.com/",
+        subtitlesSources: 1,
+      })
+    })
+  })
 
   // describe("availableSources", () => {
   //   it("returns an array of media source urls", async () => {

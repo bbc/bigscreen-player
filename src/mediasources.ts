@@ -64,7 +64,10 @@ function MediaSources() {
         return reject(new TypeError("Invalid failover params"))
       }
 
-      if (time?.manifestType === ManifestType.STATIC && isAboutToEnd(failoverParams.currentTime, failoverParams.duration)) {
+      if (
+        time?.manifestType === ManifestType.STATIC &&
+        isAboutToEnd(failoverParams.currentTime, failoverParams.duration)
+      ) {
         return reject(new Error("Current time too close to end"))
       }
 
@@ -99,7 +102,7 @@ function MediaSources() {
           ...rest,
         })
 
-        return reject()
+        return reject(new Error("Exhaused all subtitle sources"))
       }
 
       Plugins.interface.onSubtitlesLoadError({
@@ -118,11 +121,8 @@ function MediaSources() {
     })
   }
 
-  function isAboutToEnd(currentTime : number | undefined, duration: number | undefined) {
-    return typeof currentTime === "number" &&
-        typeof duration === "number" &&
-        duration > 0 &&
-        currentTime > duration - 5
+  function isAboutToEnd(currentTime: number | undefined, duration: number | undefined) {
+    return typeof currentTime === "number" && typeof duration === "number" && duration > 0 && currentTime > duration - 5
   }
 
   function stripQueryParamsAndHash(url: string): string {
