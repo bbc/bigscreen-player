@@ -1,6 +1,6 @@
 import MediaSources from "./mediasources"
 import getError from "./testutils/geterror"
-import { MediaDescriptor } from "./types"
+import { MediaDescriptor, Connection } from "./types"
 import ManifestLoader from "./manifest/manifestloader"
 import { ManifestType } from "./models/manifesttypes"
 import { DASH, HLS } from "./models/transferformats"
@@ -21,7 +21,6 @@ jest.mock("./plugins", () => ({
   }
 }))
 
-const FAILOVER_RESET_TIMEOUT = 60000
 const SEGMENT_LENGTH = 3.84
 
 function createMediaDescriptor(): MediaDescriptor {
@@ -31,14 +30,12 @@ function createMediaDescriptor(): MediaDescriptor {
     type: "application/dash+xml",
     urls: [{ url: "http://source1.com/", cdn: "http://supplier1.com/" }],
     captions: [{ url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH }],
-    playerSettings: {
-      failoverResetTime: FAILOVER_RESET_TIMEOUT,
-    },
+    playerSettings: {},
   }
 }
 
 describe("Media Sources", () => {
-  let testMedia: MediaDescriptor = createMediaDescriptor()
+  let testMedia: MediaDescriptor
 
   beforeAll(() => {
     jest.useFakeTimers()
@@ -95,6 +92,9 @@ describe("Media Sources", () => {
         availabilityStartTimeInMilliseconds: 10000,
         timeShiftBufferDepthInMilliseconds: 1000,
       })
+
+      expect(mediaSources.transferFormat()).toEqual(HLS)
+      expect(mediaSources.currentSource()).toBe("http://source1.com/")
     })
 
     it("resolves when first manifest fails to load but second load succeeds", async () => {
@@ -125,6 +125,9 @@ describe("Media Sources", () => {
         availabilityStartTimeInMilliseconds: 0,
         timeShiftBufferDepthInMilliseconds: 0,
       })
+
+      expect(mediaSources.transferFormat()).toEqual(DASH)
+      expect(mediaSources.currentSource()).toBe("http://source2.com/")
     })
 
     it("rejects when all available manifest sources fail to load", async () => {
@@ -134,58 +137,66 @@ describe("Media Sources", () => {
 
       const error = await getError(async () =>
         mediaSources.init(testMedia)
-      )
-
+    )
+    
+      expect(mediaSources.currentSource()).toBe("http://source1.com/")
       expect(error.name).toBe("ManifestLoadError")
     })
 
-    //   it("fails over to next source when the first source fails to load", async () => {
-    //     testMedia.urls = [
-    //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
-    //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
-    //     ]
+    it("overrides the subtitlesRequestTimeout when set in media object", async () => {
+      testMedia.subtitlesRequestTimeout = 60000
 
-    //     ManifestLoader.load.mockRejectedValueOnce()
-    //     ManifestLoader.load.mockResolvedValueOnce({
-    //       time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-    //       transferFormat: DASH,
-    //     })
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-    //     const mediaSources = await initMediaSources(testMedia, {
-    //       initialWallclockTime: Date.now(),
-    //       windowType: WindowTypes.SLIDING,
-    //       liveSupport: LiveSupport.SEEKABLE,
-    //     })
+      expect(mediaSources.subtitlesRequestTimeout()).toBe(60000)
+    })
 
-    //     expect(mediaSources.time()).toEqual({ windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 })
-    //   })
+    it("overrides the failoverResetTime when set on the player settings", async () => {
+      testMedia.playerSettings = {
+        failoverResetTime: 60000
+      }
 
-    //   it("sets time data correcly when manifest loader successfully returns", async () => {
-    //     ManifestLoader.load.mockResolvedValueOnce({
-    //       time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-    //       transferFormat: DASH,
-    //     })
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-    //     const mediaSources = await initMediaSources(testMedia, {
-    //       initialWallclockTime: Date.now(),
-    //       windowType: WindowTypes.SLIDING,
-    //       liveSupport: LiveSupport.SEEKABLE,
-    //     })
+      expect(mediaSources.failoverResetTime()).toBe(60000)
+    })
 
-    //     expect(mediaSources.time()).toEqual({ windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 })
-    //   })
+    it("overrides the failoverSort function when set on the player settings", async () => {
+      const mockFailoverFunction = (sources : Connection[]) => [...sources].reverse()
 
-    //   it("overrides the subtitlesRequestTimeout when set in media object", async () => {
-    //     testMedia.subtitlesRequestTimeout = 60000
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+        { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+        { url: "http://source3.com/", cdn: "http://supplier3.com/" },
+      ]
 
-    //     const mediaSources = await initMediaSources(testMedia, {
-    //       initialWallclockTime: Date.now(),
-    //       windowType: WindowTypes.SLIDING,
-    //       liveSupport: LiveSupport.SEEKABLE,
-    //     })
+      testMedia.playerSettings = {
+        failoverSort: mockFailoverFunction
+      }
 
-    //     expect(mediaSources.subtitlesRequestTimeout()).toBe(60000)
-    //   })
+      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+        time: {
+          manifestType: ManifestType.STATIC,
+          presentationTimeOffsetInMilliseconds: 0,
+          availabilityStartTimeInMilliseconds: 0,
+          timeShiftBufferDepthInMilliseconds: 0,
+        },
+        transferFormat: DASH,
+      })
+
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      await mediaSources.failover({
+        isBufferingTimeoutError: true,
+        code: 0,
+        message: "mock failover"
+      })
+
+      expect(mediaSources.availableSources()).toEqual(["http://source3.com/", "http://source2.com/"])
+    })
   })
 
   // describe("failover", () => {

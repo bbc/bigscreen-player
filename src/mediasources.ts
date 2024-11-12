@@ -277,10 +277,6 @@ function MediaSources() {
   }
 
   function updateCdns(serviceLocation: string | undefined): void {
-    if (hasSourcesToFailoverTo()) {
-      return
-    }
-
     const source = mediaSources.shift()
 
     if (source == null) {
