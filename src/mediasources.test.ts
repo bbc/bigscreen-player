@@ -37,6 +37,7 @@ jest.mock("./plugins", () => ({
   },
 }))
 
+const FAILOVER_RESET_TIMEOUT_MS = 20000
 const SEGMENT_LENGTH = 3.84
 
 function createMediaDescriptor(): MediaDescriptor {
@@ -710,19 +711,73 @@ describe("Media Sources", () => {
       expect(mediaSources.transferFormat()).toEqual(DASH)
       expect(mediaSources.currentSource()).toBe("http://source1.com/")
     })
+
+    it("rejects if manifest fails to load", async () => {
+      testMedia.urls = [{ url: "http://source1.com/", cdn: "http://cdn1.com" }]
+
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
+
+      const error = await getError(async () => mediaSources.refresh())
+
+      expect(error.name).toBe("ManifestLoadError")
+    })
   })
 
-  it("rejects if manifest fails to load", async () => {
-    testMedia.urls = [{ url: "http://source1.com/", cdn: "http://cdn1.com" }]
+  describe("Reinstating failed over sources", () => {
+    beforeEach(() => {
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://cdn1.com" },
+        { url: "http://source2.com/", cdn: "http://cdn2.com" },
+      ]
+    })
 
-    const mediaSources = MediaSources()
-    await mediaSources.init(testMedia)
+    it("should add the cdn that failed back in to available cdns after a timeout", async () => {
+      testMedia.playerSettings = {
+        failoverResetTime: FAILOVER_RESET_TIMEOUT_MS,
+      }
 
-    jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-    const error = await getError(async () => mediaSources.refresh())
+      const expectedSources = [...mediaSources.availableSources()].reverse()
 
-    expect(error.name).toBe("ManifestLoadError")
+      await mediaSources.failover({ isBufferingTimeoutError: true, code: 0, message: "A mocked failover reason" })
+
+      jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT_MS)
+
+      expect(mediaSources.availableSources()).toEqual(expectedSources)
+    })
+
+    it("should not contain the cdn that failed before the timeout has occured", async () => {
+      testMedia.playerSettings = {
+        failoverResetTime: FAILOVER_RESET_TIMEOUT_MS,
+      }
+
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      await mediaSources.failover({ isBufferingTimeoutError: true, code: 0, message: "A mocked failover reason" })
+
+      jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT_MS - 1000)
+
+      expect(mediaSources.availableSources()).not.toContain("http://source1.com/")
+    })
+
+    it("should not preserve timers over teardown boundaries", async () => {
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      await mediaSources.failover({ isBufferingTimeoutError: true, code: 0, message: "A mocked failover reason" })
+
+      mediaSources.tearDown()
+
+      jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT_MS)
+
+      expect(mediaSources.availableSources()).toEqual([])
+    })
   })
 })
 
@@ -747,63 +802,5 @@ describe("Media Sources", () => {
 //       "http://source1.com/",
 //       expect.not.objectContaining({ initialWallclockTime: expect.anything() })
 //     )
-//   })
-// })
-
-// describe("failoverTimeout", () => {
-//   beforeEach(() => {
-//     testMedia.urls = [
-//       { url: "http://source1.com/", cdn: "http://cdn1.com" },
-//       { url: "http://source2.com/", cdn: "http://cdn2.com" },
-//     ]
-//   })
-
-//   it("should add the cdn that failed back in to available cdns after a timeout", async () => {
-//     const mediaSources = await initMediaSources(testMedia, {
-//       initialWallclockTime: Date.now(),
-//       liveSupport: LiveSupport.SEEKABLE,
-//       windowType: WindowTypes.SLIDING,
-//     })
-
-//     const expectedCdns = [...mediaSources.availableSources()].reverse()
-
-//     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: false })
-
-//     jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT)
-
-//     expect(mediaSources.availableSources()).toEqual(expectedCdns)
-//   })
-
-//   it("should not contain the cdn that failed before the timeout has occured", async () => {
-//     testMedia.urls = [
-//       { url: "http://source1.com/", cdn: "http://cdn1.com" },
-//       { url: "http://source2.com/", cdn: "http://cdn2.com" },
-//     ]
-
-//     const mediaSources = await initMediaSources(testMedia, {
-//       initialWallclockTime: Date.now(),
-//       liveSupport: LiveSupport.SEEKABLE,
-//       windowType: WindowTypes.SLIDING,
-//     })
-
-//     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: false })
-
-//     expect(mediaSources.availableSources()).not.toContain("http://cdn1.com")
-//   })
-
-//   it("should not preserve timers over teardown boundaries", async () => {
-//     const mediaSources = await initMediaSources(testMedia, {
-//       initialWallclockTime: Date.now(),
-//       liveSupport: LiveSupport.SEEKABLE,
-//       windowType: WindowTypes.SLIDING,
-//     })
-
-//     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: false })
-
-//     mediaSources.tearDown()
-
-//     jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT)
-
-//     expect(mediaSources.availableSources()).toEqual([])
 //   })
 // })
