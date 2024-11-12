@@ -192,6 +192,9 @@ export default tseslint.config(
     // Overrides for all tests
     files: ["**/*.test.{js,cjs,mjs,ts,cts,mts}"],
     rules: {
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
       "max-nested-callbacks": "off",
       "sonarjs/no-identical-functions": "off",
       "unicorn/consistent-function-scoping": "off",

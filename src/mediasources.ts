@@ -5,7 +5,6 @@ import PluginData from "./plugindata"
 import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/manifestloader"
 import { TransferFormat, HLS } from "./models/transferformats"
-import findSegmentTemplate from "./utils/findtemplate"
 import { CaptionsConnection, Connection, MediaDescriptor } from "./types"
 import { TimeInfo } from "./manifest/manifestparser"
 import isError from "./utils/iserror"
@@ -169,23 +168,10 @@ function MediaSources() {
     return failoverResetTimeMs
   }
 
-  function hasSegmentedSubtitles(): boolean {
-    const url = getCurrentSubtitlesUrl()
-
-    if (typeof url !== "string" || url === "") {
-      return false
-    }
-
-    return findSegmentTemplate(url) != null
-  }
-
   function needToGetManifest(): boolean {
     const hasManifestBeenLoaded = transferFormat != null
 
-    return (
-      !hasManifestBeenLoaded ||
-      (transferFormat === HLS && (time?.manifestType === ManifestType.DYNAMIC || hasSegmentedSubtitles()))
-    )
+    return !hasManifestBeenLoaded || (transferFormat === HLS && time?.manifestType === ManifestType.DYNAMIC)
   }
 
   function refresh(onSuccess: () => void, onError: (reason?: unknown) => void) {

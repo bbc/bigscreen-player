@@ -1,9 +1,11 @@
 import MediaSources from "./mediasources"
-import getError from "./testutils/geterror"
+import Plugins from "./plugins"
+import PluginEnums from "./pluginenums"
 import { MediaDescriptor, Connection } from "./types"
 import ManifestLoader from "./manifest/manifestloader"
 import { ManifestType } from "./models/manifesttypes"
 import { DASH, HLS } from "./models/transferformats"
+import getError from "./testutils/geterror"
 
 jest.mock("./manifest/manifestloader", () => ({ default: { load: jest.fn(() => Promise.resolve({ time: {} })) } }))
 
@@ -17,8 +19,8 @@ jest.mock("./plugins", () => ({
       onFatalError: jest.fn(),
       onErrorHandled: jest.fn(),
       onSubtitlesLoadError: jest.fn(),
-    }
-  }
+    },
+  },
 }))
 
 const SEGMENT_LENGTH = 3.84
@@ -135,10 +137,8 @@ describe("Media Sources", () => {
 
       const mediaSources = MediaSources()
 
-      const error = await getError(async () =>
-        mediaSources.init(testMedia)
-    )
-    
+      const error = await getError(async () => mediaSources.init(testMedia))
+
       expect(mediaSources.currentSource()).toBe("http://source1.com/")
       expect(error.name).toBe("ManifestLoadError")
     })
@@ -154,7 +154,7 @@ describe("Media Sources", () => {
 
     it("overrides the failoverResetTime when set on the player settings", async () => {
       testMedia.playerSettings = {
-        failoverResetTime: 60000
+        failoverResetTime: 60000,
       }
 
       const mediaSources = MediaSources()
@@ -164,7 +164,7 @@ describe("Media Sources", () => {
     })
 
     it("overrides the failoverSort function when set on the player settings", async () => {
-      const mockFailoverFunction = (sources : Connection[]) => [...sources].reverse()
+      const mockFailoverFunction = (sources: Connection[]) => [...sources].reverse()
 
       testMedia.urls = [
         { url: "http://source1.com/", cdn: "http://supplier1.com/" },
@@ -173,7 +173,7 @@ describe("Media Sources", () => {
       ]
 
       testMedia.playerSettings = {
-        failoverSort: mockFailoverFunction
+        failoverSort: mockFailoverFunction,
       }
 
       jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
@@ -192,236 +192,279 @@ describe("Media Sources", () => {
       await mediaSources.failover({
         isBufferingTimeoutError: true,
         code: 0,
-        message: "mock failover"
+        message: "mock failover",
       })
 
       expect(mediaSources.availableSources()).toEqual(["http://source3.com/", "http://source2.com/"])
     })
+
+    it("should fire onErrorHandled plugin with correct error code and message when failing to load manifest", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+        { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+      ]
+
+      jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
+
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      expect(jest.mocked(Plugins.interface).onErrorHandled).toHaveBeenCalledWith({
+        status: PluginEnums.STATUS.FAILOVER,
+        stateType: PluginEnums.TYPE.ERROR,
+        isBufferingTimeoutError: false,
+        cdn: "http://supplier1.com/",
+        newCdn: "http://supplier2.com/",
+        isInitialPlay: undefined,
+        timeStamp: expect.any(Date),
+        code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
+        message: PluginEnums.ERROR_MESSAGES.MANIFEST,
+      })
+    })
   })
 
-  // describe("failover", () => {
-  //   it("should load the manifest from the next url if manifest load is required", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
-  //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
-  //     ]
+  describe("failover", () => {
+    it.each([
+      [DASH, ManifestType.STATIC],
+      [DASH, ManifestType.DYNAMIC],
+      [HLS, ManifestType.STATIC],
+    ])("does not load the manifest from the next url for a %s %s stream", async (transferFormat, manifestType) => {
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+        { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+      ]
 
-  //     // HLS manifests must be reloaded on failover to fetch accurate start time
-  //     ManifestLoader.load.mockResolvedValueOnce({
-  //       time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: NaN },
-  //       transferFormat: HLS,
-  //     })
+      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+        transferFormat,
+        time: {
+          manifestType,
+          presentationTimeOffsetInMilliseconds: 1731406718000,
+          availabilityStartTimeInMilliseconds: 1731406758000,
+          timeShiftBufferDepthInMilliseconds: 72000000,
+        },
+      })
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.SLIDING,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+      const mediaSources = MediaSources()
 
-  //     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: true })
+      await mediaSources.init(testMedia)
 
-  //     expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
-  //     expect(ManifestLoader.load).toHaveBeenNthCalledWith(2, "http://source2.com/", expect.any(Object))
-  //   })
+      await mediaSources.failover({ isBufferingTimeoutError: true, code: 0, message: "A mocked failover reason" })
 
-  //   // [tag:ServerDate]
-  //   it("does not provide initial wallclock time to the loader", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
-  //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
-  //     ]
+      expect(ManifestLoader.load).toHaveBeenCalledTimes(1)
+      expect(ManifestLoader.load).toHaveBeenNthCalledWith(1, "http://source1.com/")
+    })
 
-  //     // HLS manifests must be reloaded on failover to fetch accurate start time
-  //     ManifestLoader.load.mockResolvedValueOnce({
-  //       time: {},
-  //       transferFormat: HLS,
-  //     })
+    it("loads the manifest from the next url for a dynamic HLS stream", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+        { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+      ]
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.SLIDING,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+      // HLS manifests must be reloaded on failover to fetch accurate start time
+      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+        time: {
+          manifestType: ManifestType.DYNAMIC,
+          presentationTimeOffsetInMilliseconds: 1731406718000,
+          availabilityStartTimeInMilliseconds: 1731406718000,
+          timeShiftBufferDepthInMilliseconds: 0,
+        },
+        transferFormat: HLS,
+      })
 
-  //     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: true })
+      const mediaSources = MediaSources()
 
-  //     expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
-  //     expect(ManifestLoader.load).toHaveBeenNthCalledWith(
-  //       2,
-  //       "http://source2.com/",
-  //       expect.not.objectContaining({ initialWallclockTime: expect.anything() })
-  //     )
-  //   })
+      await mediaSources.init(testMedia)
 
-  //   it("should fire onErrorHandled plugin with correct error code and message when failing to load manifest", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
-  //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
-  //     ]
+      await mediaSources.failover({ isBufferingTimeoutError: true, code: 0, message: "A mocked failover reason" })
 
-  //     ManifestLoader.load.mockRejectedValueOnce()
+      expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
+      expect(ManifestLoader.load).toHaveBeenNthCalledWith(2, "http://source2.com/")
+    })
 
-  //     await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.SLIDING,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+    it("should fire onErrorHandled plugin with correct error code and message when failing to load manifest", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+        { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+      ]
 
-  //     expect(Plugins.interface.onErrorHandled).toHaveBeenCalledWith({
-  //       status: PluginEnums.STATUS.FAILOVER,
-  //       stateType: PluginEnums.TYPE.ERROR,
-  //       isBufferingTimeoutError: false,
-  //       cdn: "http://supplier1.com/",
-  //       newCdn: "http://supplier2.com/",
-  //       isInitialPlay: undefined,
-  //       timeStamp: expect.any(Object),
-  //       code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
-  //       message: PluginEnums.ERROR_MESSAGES.MANIFEST,
-  //     })
-  //   })
+      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+        time: {
+          manifestType: ManifestType.STATIC,
+          presentationTimeOffsetInMilliseconds: 0,
+          availabilityStartTimeInMilliseconds: 0,
+          timeShiftBufferDepthInMilliseconds: 0,
+        },
+        transferFormat: DASH,
+      })
 
-  //   it("When there are sources to failover to, it calls the post failover callback", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
-  //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
-  //     ]
+      const mediaSources = MediaSources()
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+      await mediaSources.init(testMedia)
 
-  //     const handleFailoverSuccess = jest.fn()
-  //     const handleFailoverError = jest.fn()
+      await mediaSources.failover({
+        isBufferingTimeoutError: true,
+        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+      })
 
-  //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, { isBufferingTimeoutError: true })
+      expect(jest.mocked(Plugins.interface).onErrorHandled).toHaveBeenCalledWith({
+        status: PluginEnums.STATUS.FAILOVER,
+        stateType: PluginEnums.TYPE.ERROR,
+        isBufferingTimeoutError: true,
+        cdn: "http://supplier1.com/",
+        newCdn: "http://supplier2.com/",
+        isInitialPlay: undefined,
+        timeStamp: expect.any(Date),
+        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+      })
 
-  //     expect(handleFailoverSuccess).toHaveBeenCalled()
-  //     expect(handleFailoverError).not.toHaveBeenCalled()
-  //   })
+      expect(jest.mocked(Plugins.interface).onErrorHandled).toHaveBeenCalledTimes(1)
+    })
 
-  //   it("When there are no more sources to failover to, it calls failure action callback", async () => {
-  //     testMedia.urls = [{ url: "http://source1.com/", cdn: "http://supplier1.com/" }]
+    //   it("When there are sources to failover to, it calls the post failover callback", async () => {
+    //     testMedia.urls = [
+    //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+    //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+    //     ]
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+    //     const mediaSources = await initMediaSources(testMedia, {
+    //       initialWallclockTime: Date.now(),
+    //       windowType: WindowTypes.STATIC,
+    //       liveSupport: LiveSupport.SEEKABLE,
+    //     })
 
-  //     const handleFailoverSuccess = jest.fn()
-  //     const handleFailoverError = jest.fn()
+    //     const handleFailoverSuccess = jest.fn()
+    //     const handleFailoverError = jest.fn()
 
-  //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, { isBufferingTimeoutError: true })
+    //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, { isBufferingTimeoutError: true })
 
-  //     expect(handleFailoverSuccess).not.toHaveBeenCalled()
-  //     expect(handleFailoverError).toHaveBeenCalledWith()
-  //   })
+    //     expect(handleFailoverSuccess).toHaveBeenCalled()
+    //     expect(handleFailoverError).not.toHaveBeenCalled()
+    //   })
 
-  //   it("When there are sources to failover to, it emits correct plugin event", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
-  //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
-  //     ]
+    //   it("When there are no more sources to failover to, it calls failure action callback", async () => {
+    //     testMedia.urls = [{ url: "http://source1.com/", cdn: "http://supplier1.com/" }]
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+    //     const mediaSources = await initMediaSources(testMedia, {
+    //       initialWallclockTime: Date.now(),
+    //       windowType: WindowTypes.STATIC,
+    //       liveSupport: LiveSupport.SEEKABLE,
+    //     })
 
-  //     const handleFailoverSuccess = jest.fn()
-  //     const handleFailoverError = jest.fn()
+    //     const handleFailoverSuccess = jest.fn()
+    //     const handleFailoverError = jest.fn()
 
-  //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, {
-  //       isBufferingTimeoutError: true,
-  //       code: 0,
-  //       message: "unknown",
-  //     })
+    //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, { isBufferingTimeoutError: true })
 
-  //     expect(Plugins.interface.onErrorHandled).toHaveBeenCalledWith({
-  //       status: PluginEnums.STATUS.FAILOVER,
-  //       stateType: PluginEnums.TYPE.ERROR,
-  //       isBufferingTimeoutError: true,
-  //       cdn: "http://supplier1.com/",
-  //       newCdn: "http://supplier2.com/",
-  //       isInitialPlay: undefined,
-  //       timeStamp: expect.any(Object),
-  //       code: 0,
-  //       message: "unknown",
-  //     })
-  //   })
+    //     expect(handleFailoverSuccess).not.toHaveBeenCalled()
+    //     expect(handleFailoverError).toHaveBeenCalledWith()
+    //   })
 
-  //   it("Plugin event not emitted when there are no sources to failover to", async () => {
-  //     testMedia.urls = [{ url: "http://source1.com/", cdn: "http://supplier1.com/" }]
+    //   it("When there are sources to failover to, it emits correct plugin event", async () => {
+    //     testMedia.urls = [
+    //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+    //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+    //     ]
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+    //     const mediaSources = await initMediaSources(testMedia, {
+    //       initialWallclockTime: Date.now(),
+    //       windowType: WindowTypes.STATIC,
+    //       liveSupport: LiveSupport.SEEKABLE,
+    //     })
 
-  //     const handleFailoverSuccess = jest.fn()
-  //     const handleFailoverError = jest.fn()
+    //     const handleFailoverSuccess = jest.fn()
+    //     const handleFailoverError = jest.fn()
 
-  //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, { isBufferingTimeoutError: true })
+    //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, {
+    //       isBufferingTimeoutError: true,
+    //       code: 0,
+    //       message: "unknown",
+    //     })
 
-  //     expect(Plugins.interface.onErrorHandled).not.toHaveBeenCalled()
-  //   })
+    //     expect(Plugins.interface.onErrorHandled).toHaveBeenCalledWith({
+    //       status: PluginEnums.STATUS.FAILOVER,
+    //       stateType: PluginEnums.TYPE.ERROR,
+    //       isBufferingTimeoutError: true,
+    //       cdn: "http://supplier1.com/",
+    //       newCdn: "http://supplier2.com/",
+    //       isInitialPlay: undefined,
+    //       timeStamp: expect.any(Object),
+    //       code: 0,
+    //       message: "unknown",
+    //     })
+    //   })
 
-  //   it("moves the specified service location to the top of the list", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
-  //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
-  //       { url: "http://source3.com/", cdn: "http://supplier3.com/" },
-  //       { url: "http://source4.com/", cdn: "http://supplier4.com/" },
-  //     ]
+    //   it("Plugin event not emitted when there are no sources to failover to", async () => {
+    //     testMedia.urls = [{ url: "http://source1.com/", cdn: "http://supplier1.com/" }]
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+    //     const mediaSources = await initMediaSources(testMedia, {
+    //       initialWallclockTime: Date.now(),
+    //       windowType: WindowTypes.STATIC,
+    //       liveSupport: LiveSupport.SEEKABLE,
+    //     })
 
-  //     const handleFailoverSuccess = jest.fn()
-  //     const handleFailoverError = jest.fn()
+    //     const handleFailoverSuccess = jest.fn()
+    //     const handleFailoverError = jest.fn()
 
-  //     const serviceLocation = "http://source3.com/?key=value#hash"
+    //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, { isBufferingTimeoutError: true })
 
-  //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, {
-  //       serviceLocation,
-  //       isBufferingTimeoutError: true,
-  //     })
+    //     expect(Plugins.interface.onErrorHandled).not.toHaveBeenCalled()
+    //   })
 
-  //     expect(mediaSources.currentSource()).toBe("http://source3.com/")
-  //   })
+    //   it("moves the specified service location to the top of the list", async () => {
+    //     testMedia.urls = [
+    //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+    //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+    //       { url: "http://source3.com/", cdn: "http://supplier3.com/" },
+    //       { url: "http://source4.com/", cdn: "http://supplier4.com/" },
+    //     ]
 
-  //   it("selects the next CDN when the service location is not in the CDN list", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
-  //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
-  //       { url: "http://source3.com/", cdn: "http://supplier3.com/" },
-  //       { url: "http://source4.com/", cdn: "http://supplier4.com/" },
-  //     ]
+    //     const mediaSources = await initMediaSources(testMedia, {
+    //       initialWallclockTime: Date.now(),
+    //       windowType: WindowTypes.STATIC,
+    //       liveSupport: LiveSupport.SEEKABLE,
+    //     })
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+    //     const handleFailoverSuccess = jest.fn()
+    //     const handleFailoverError = jest.fn()
 
-  //     const handleFailoverSuccess = jest.fn()
-  //     const handleFailoverError = jest.fn()
+    //     const serviceLocation = "http://source3.com/?key=value#hash"
 
-  //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, {
-  //       isBufferingTimeoutError: true,
-  //       serviceLocation: "http://sourceInfinity.com/?key=value#hash",
-  //     })
+    //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, {
+    //       serviceLocation,
+    //       isBufferingTimeoutError: true,
+    //     })
 
-  //     expect(mediaSources.currentSource()).toBe("http://source2.com/")
-  //   })
-  // })
+    //     expect(mediaSources.currentSource()).toBe("http://source3.com/")
+    //   })
+
+    //   it("selects the next CDN when the service location is not in the CDN list", async () => {
+    //     testMedia.urls = [
+    //       { url: "http://source1.com/", cdn: "http://supplier1.com/" },
+    //       { url: "http://source2.com/", cdn: "http://supplier2.com/" },
+    //       { url: "http://source3.com/", cdn: "http://supplier3.com/" },
+    //       { url: "http://source4.com/", cdn: "http://supplier4.com/" },
+    //     ]
+
+    //     const mediaSources = await initMediaSources(testMedia, {
+    //       initialWallclockTime: Date.now(),
+    //       windowType: WindowTypes.STATIC,
+    //       liveSupport: LiveSupport.SEEKABLE,
+    //     })
+
+    //     const handleFailoverSuccess = jest.fn()
+    //     const handleFailoverError = jest.fn()
+
+    //     mediaSources.failover(handleFailoverSuccess, handleFailoverError, {
+    //       isBufferingTimeoutError: true,
+    //       serviceLocation: "http://sourceInfinity.com/?key=value#hash",
+    //     })
+
+    //     expect(mediaSources.currentSource()).toBe("http://source2.com/")
+    //   })
+  })
 
   // describe("isFirstManifest", () => {
   //   it("does not failover if service location is identical to current source cdn besides path", async () => {
