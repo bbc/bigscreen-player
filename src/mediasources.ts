@@ -64,12 +64,16 @@ function MediaSources() {
         return reject(new TypeError("Invalid failover params"))
       }
 
-      if (isFirstManifest(failoverParams.serviceLocation)) {
-        return resolve()
+      if (time?.manifestType === ManifestType.STATIC && isAboutToEnd(failoverParams.currentTime, failoverParams.duration)) {
+        return reject(new Error("Current time too close to end"))
       }
 
-      if (!shouldFailover(failoverParams)) {
+      if (!hasSourcesToFailoverTo()) {
         return reject(new Error("Exhaused all sources"))
+      }
+
+      if (isFirstManifest(failoverParams.serviceLocation)) {
+        return resolve()
       }
 
       emitCdnFailover(failoverParams)
@@ -114,21 +118,11 @@ function MediaSources() {
     })
   }
 
-  function shouldFailover(failoverParams: FailoverParams): boolean {
-    if (!time) {
-      return true
-    }
-
-    const { currentTime, duration } = failoverParams
-
-    const aboutToEnd =
-      typeof currentTime === "number" && typeof duration === "number" && duration > 0 && currentTime > duration - 5
-
-    const shouldStaticFailover = time?.manifestType === ManifestType.STATIC && !aboutToEnd
-
-    const shouldLiveFailover = time?.manifestType === ManifestType.DYNAMIC
-
-    return hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover)
+  function isAboutToEnd(currentTime : number | undefined, duration: number | undefined) {
+    return typeof currentTime === "number" &&
+        typeof duration === "number" &&
+        duration > 0 &&
+        currentTime > duration - 5
   }
 
   function stripQueryParamsAndHash(url: string): string {

@@ -366,6 +366,27 @@ describe("Media Sources", () => {
       expect(mediaSources.currentSource()).toBe("http://source1.com/")
     })
 
+    it("Rejects when the failover parameters are invalid", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com", cdn: "http://cdn1.com" },
+        { url: "http://source2.com", cdn: "http://cdn2.com" },
+      ]
+
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      const error = await getError(async () =>
+        mediaSources.failover({
+          isBufferingTimeoutError: ("yes" as unknown as boolean),
+          code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT
+        })
+      )
+
+      expect(error).toEqual(new TypeError("Invalid failover params"))
+    })
+
     it("Rejects when there are no more sources to failover to", async () => {
       testMedia.urls = [{ url: "http://source1.com/", cdn: "http://supplier1.com/" }]
 
@@ -383,7 +404,7 @@ describe("Media Sources", () => {
       expect(error).toEqual(new Error("Exhaused all sources"))
     })
 
-    it("moves the specified service location to the top of the list", async () => {
+    it("fails over by moving the specified service location to the top of the list", async () => {
       testMedia.urls = [
         { url: "http://source1.com/", cdn: "http://supplier1.com/" },
         { url: "http://source2.com/", cdn: "http://supplier2.com/" },
@@ -404,7 +425,7 @@ describe("Media Sources", () => {
       expect(mediaSources.currentSource()).toBe("http://source3.com/")
     })
 
-    it("selects the next CDN when the service location is not in the CDN list", async () => {
+    it("fails over to the next CDN when the service location is not in the CDN list", async () => {
       testMedia.urls = [
         { url: "http://source1.com/", cdn: "http://supplier1.com/" },
         { url: "http://source2.com/", cdn: "http://supplier2.com/" },
@@ -468,38 +489,71 @@ describe("Media Sources", () => {
 
       expect(mediaSources.currentSource()).toBe("http://source1.com")
     })
+
+    it("should failover if current time is greater than 5 seconds from duration", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com", cdn: "http://cdn1.com" },
+        { url: "http://source2.com", cdn: "http://cdn2.com" },
+      ]
+
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      await mediaSources.failover({
+        isBufferingTimeoutError: true,
+        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+        duration: 100,
+        currentTime: 94,
+      })
+
+      expect(mediaSources.currentSource()).toBe("http://source2.com")
+    })
+
+    it("Rejects if current time is within 5 seconds of duration", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com", cdn: "http://cdn1.com" },
+        { url: "http://source2.com", cdn: "http://cdn2.com" },
+      ]
+
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      const error = await getError(async () =>
+        mediaSources.failover({
+          isBufferingTimeoutError: true,
+          code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+          duration: 100,
+          currentTime: 96,
+        })
+      )
+
+      expect(error).toEqual(new Error("Current time too close to end"))
+    })
+
+    it("should failover if playback has not yet started", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com", cdn: "http://cdn1.com" },
+        { url: "http://source2.com", cdn: "http://cdn2.com" },
+      ]
+
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      await mediaSources.failover({
+        isBufferingTimeoutError: true,
+        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+        duration: 0,
+        currentTime: undefined,
+      })
+
+      expect(mediaSources.currentSource()).toBe("http://source2.com")
+    })
   })
-
-  // describe("currentSource", () => {
-  //   beforeEach(() => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com", cdn: "http://cdn1.com" },
-  //       { url: "http://source2.com", cdn: "http://cdn2.com" },
-  //     ]
-  //   })
-
-  //   it("returns the first media source url", async () => {
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
-
-  //     expect(mediaSources.currentSource()).toBe("http://source1.com")
-  //   })
-
-  //   it("returns the second media source following a failover", async () => {
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
-
-  //     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: true })
-
-  //     expect(mediaSources.currentSource()).toBe("http://source2.com")
-  //   })
-  // })
 
   // describe("currentSubtitlesSource", () => {
   //   beforeEach(() => {
@@ -659,131 +713,6 @@ describe("Media Sources", () => {
   //   })
   // })
 
-  // describe("should Failover", () => {
-  //   let mediaSources
-
-  //   describe("when window type is STATIC", () => {
-  //     beforeEach(async () => {
-  //       testMedia.urls = [
-  //         { url: "http://source1.com/", cdn: "http://cdn1.com" },
-  //         { url: "http://source2.com/", cdn: "http://cdn2.com" },
-  //       ]
-
-  //       mediaSources = await initMediaSources(testMedia, {
-  //         initialWallclockTime: Date.now(),
-  //         windowType: WindowTypes.STATIC,
-  //         liveSupport: LiveSupport.SEEKABLE,
-  //       })
-  //     })
-
-  //     it("should failover if current time is greater than 5 seconds from duration", () => {
-  //       const onSuccessStub = jest.fn()
-  //       const onErrorStub = jest.fn()
-
-  //       const failoverParams = {
-  //         duration: 100,
-  //         currentTime: 94,
-  //         isBufferingTimeoutError: false,
-  //       }
-
-  //       mediaSources.failover(onSuccessStub, onErrorStub, failoverParams)
-
-  //       expect(onSuccessStub).toHaveBeenCalledTimes(1)
-  //     })
-
-  //     it("should not failover if current time is within 5 seconds of duration", () => {
-  //       const onSuccessStub = jest.fn()
-  //       const onErrorStub = jest.fn()
-
-  //       const failoverParams = {
-  //         duration: 100,
-  //         currentTime: 96,
-  //         isBufferingTimeoutError: false,
-  //       }
-
-  //       mediaSources.failover(onSuccessStub, onErrorStub, failoverParams)
-
-  //       expect(onErrorStub).toHaveBeenCalledTimes(1)
-  //     })
-
-  //     it("should failover if playback has not yet started", () => {
-  //       const onSuccessStub = jest.fn()
-  //       const onErrorStub = jest.fn()
-
-  //       const failoverParams = {
-  //         duration: 0,
-  //         currentTime: undefined,
-  //         isBufferingTimeoutError: false,
-  //       }
-
-  //       mediaSources.failover(onSuccessStub, onErrorStub, failoverParams)
-
-  //       expect(onSuccessStub).toHaveBeenCalledTimes(1)
-  //     })
-  //   })
-
-  //   describe("when window type is not STATIC", () => {
-  //     beforeEach(() => {
-  //       testMedia.urls = [
-  //         { url: "http://source1.com/", cdn: "http://cdn1.com" },
-  //         { url: "http://source2.com/", cdn: "http://cdn2.com" },
-  //       ]
-  //     })
-
-  //     describe("and transfer format is DASH", () => {
-  //       it.each([WindowTypes.GROWING, WindowTypes.SLIDING])(
-  //         "should not reload the manifest for window type: '%s'",
-  //         async (windowType) => {
-  //           ManifestLoader.load.mockResolvedValueOnce({
-  //             time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-  //             transferFormat: DASH,
-  //           })
-
-  //           const mediaSources = await initMediaSources(testMedia, {
-  //             windowType,
-  //             initialWallclockTime: Date.now(),
-  //             liveSupport: LiveSupport.SEEKABLE,
-  //           })
-
-  //           expect(ManifestLoader.load).toHaveBeenCalledTimes(1)
-
-  //           mediaSources.failover(jest.fn(), jest.fn(), {
-  //             isBufferingTimeoutError: false,
-  //           })
-
-  //           expect(ManifestLoader.load).toHaveBeenCalledTimes(1)
-  //         }
-  //       )
-  //     })
-
-  //     describe("and transfer format is HLS", () => {
-  //       it.each([WindowTypes.GROWING, WindowTypes.SLIDING])(
-  //         "should reload the manifest for window type '%s'",
-  //         async (windowType) => {
-  //           ManifestLoader.load.mockResolvedValueOnce({
-  //             time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: NaN },
-  //             transferFormat: HLS,
-  //           })
-
-  //           const mediaSources = await initMediaSources(testMedia, {
-  //             windowType,
-  //             initialWallclockTime: Date.now(),
-  //             liveSupport: LiveSupport.SEEKABLE,
-  //           })
-
-  //           expect(ManifestLoader.load).toHaveBeenCalledTimes(1)
-
-  //           mediaSources.failover(jest.fn(), jest.fn(), {
-  //             isBufferingTimeoutError: false,
-  //           })
-
-  //           expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
-  //         }
-  //       )
-  //     })
-  //   })
-  // })
-
   // describe("refresh", () => {
   //   it("updates the mediasources time data", async () => {
   //     ManifestLoader.load.mockResolvedValueOnce({
@@ -896,31 +825,6 @@ describe("Media Sources", () => {
   //     jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT)
 
   //     expect(mediaSources.availableSources()).toEqual([])
-  //   })
-  // })
-
-  // describe("failoverSort", () => {
-  //   it("called when provided as an override in playerSettings", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://cdn1.com" },
-  //       { url: "http://source2.com/", cdn: "http://cdn2.com" },
-  //     ]
-
-  //     const mockFailoverSort = jest.fn().mockReturnValue([...testMedia.urls].reverse())
-
-  //     testMedia.playerSettings = {
-  //       failoverSort: mockFailoverSort,
-  //     }
-
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //       windowType: WindowTypes.SLIDING,
-  //     })
-
-  //     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: true })
-
-  //     expect(mockFailoverSort).toHaveBeenCalledTimes(1)
   //   })
   // })
 })
