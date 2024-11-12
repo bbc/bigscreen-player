@@ -60,6 +60,14 @@ function MediaSources() {
 
   function failover(failoverParams: FailoverParams): Promise<void> {
     return new Promise((resolve, reject) => {
+      if (!isFailoverInfoValid(failoverParams)) {
+        return reject(new TypeError("Invalid failover params"))
+      }
+
+      if (isFirstManifest(failoverParams.serviceLocation)) {
+        return resolve()
+      }
+
       if (!shouldFailover(failoverParams)) {
         return reject(new Error("Exhaused all sources"))
       }
@@ -111,7 +119,7 @@ function MediaSources() {
       return true
     }
 
-    const { currentTime, duration, serviceLocation } = failoverParams
+    const { currentTime, duration } = failoverParams
 
     const aboutToEnd =
       typeof currentTime === "number" && typeof duration === "number" && duration > 0 && currentTime > duration - 5
@@ -120,12 +128,7 @@ function MediaSources() {
 
     const shouldLiveFailover = time?.manifestType === ManifestType.DYNAMIC
 
-    return (
-      !isFirstManifest(serviceLocation) &&
-      isFailoverInfoValid(failoverParams) &&
-      hasSourcesToFailoverTo() &&
-      (shouldStaticFailover || shouldLiveFailover)
-    )
+    return hasSourcesToFailoverTo() && (shouldStaticFailover || shouldLiveFailover)
   }
 
   function stripQueryParamsAndHash(url: string): string {

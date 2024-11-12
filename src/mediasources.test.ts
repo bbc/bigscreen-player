@@ -17,7 +17,7 @@ jest.mock("./manifest/manifestloader", () => ({
           availabilityStartTimeInMilliseconds: 0,
           timeShiftBufferDepthInMilliseconds: 0,
         },
-        transferFormat: DASH
+        transferFormat: DASH,
       })
     ),
   },
@@ -424,53 +424,51 @@ describe("Media Sources", () => {
 
       expect(mediaSources.currentSource()).toBe("http://source2.com/")
     })
+
+    it("does not failover if service location is identical to current source cdn besides path", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com/path/to/thing.extension", cdn: "http://cdn1.com" },
+        { url: "http://source2.com", cdn: "http://cdn2.com" },
+      ]
+
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      expect(mediaSources.currentSource()).toBe("http://source1.com/path/to/thing.extension")
+
+      await mediaSources.failover({
+        isBufferingTimeoutError: true,
+        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+        serviceLocation: "http://source1.com/path/to/different/thing.extension",
+      })
+
+      expect(mediaSources.currentSource()).toBe("http://source1.com/path/to/thing.extension")
+    })
+
+    it("does not failover if service location is identical to current source cdn besides hash and query", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com", cdn: "http://cdn1.com" },
+        { url: "http://source2.com", cdn: "http://cdn2.com" },
+      ]
+
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      expect(mediaSources.currentSource()).toBe("http://source1.com")
+
+      await mediaSources.failover({
+        isBufferingTimeoutError: true,
+        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+        serviceLocation: "http://source1.com?key=value#hash",
+      })
+
+      expect(mediaSources.currentSource()).toBe("http://source1.com")
+    })
   })
-
-  // describe("isFirstManifest", () => {
-  //   it("does not failover if service location is identical to current source cdn besides path", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/path/to/thing.extension", cdn: "http://cdn1.com" },
-  //       { url: "http://source2.com", cdn: "http://cdn2.com" },
-  //     ]
-
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
-
-  //     expect(mediaSources.currentSource()).toBe("http://source1.com/path/to/thing.extension")
-
-  //     mediaSources.failover(jest.fn(), jest.fn(), {
-  //       isBufferingTimeoutError: false,
-  //       serviceLocation: "http://source1.com/path/to/different/thing.extension",
-  //     })
-
-  //     expect(mediaSources.currentSource()).toBe("http://source1.com/path/to/thing.extension")
-  //   })
-
-  //   it("does not failover if service location is identical to current source cdn besides hash and query", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com", cdn: "http://cdn1.com" },
-  //       { url: "http://source2.com", cdn: "http://cdn2.com" },
-  //     ]
-
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
-
-  //     expect(mediaSources.currentSource()).toBe("http://source1.com")
-
-  //     mediaSources.failover(jest.fn(), jest.fn(), {
-  //       isBufferingTimeoutError: false,
-  //       serviceLocation: "http://source1.com?key=value#hash",
-  //     })
-
-  //     expect(mediaSources.currentSource()).toBe("http://source1.com")
-  //   })
-  // })
 
   // describe("currentSource", () => {
   //   beforeEach(() => {
