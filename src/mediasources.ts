@@ -171,11 +171,8 @@ function MediaSources() {
     return !hasManifestBeenLoaded || (transferFormat === HLS && time?.manifestType === ManifestType.DYNAMIC)
   }
 
-  function refresh(onSuccess: () => void, onError: (reason?: unknown) => void) {
-    loadManifest().then(
-      () => onSuccess,
-      (reason) => onError(reason)
-    )
+  function refresh() {
+    return new Promise((resolve) => resolve(loadManifest()))
   }
 
   // [tag:ServerDate]

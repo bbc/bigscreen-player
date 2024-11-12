@@ -644,135 +644,166 @@ describe("Media Sources", () => {
     })
   })
 
-  // describe("availableSources", () => {
-  //   it("returns an array of media source urls", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://cdn1.com" },
-  //       { url: "http://source2.com/", cdn: "http://cdn2.com" },
-  //     ]
+  describe("availableSources", () => {
+    it("returns an array of media source urls", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://cdn1.com" },
+        { url: "http://source2.com/", cdn: "http://cdn2.com" },
+      ]
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       windowType: WindowTypes.STATIC,
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //     })
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-  //     expect(mediaSources.availableSources()).toEqual(["http://source1.com/", "http://source2.com/"])
-  //   })
-  // })
+      expect(mediaSources.availableSources()).toEqual(["http://source1.com/", "http://source2.com/"])
+    })
+  })
 
-  // describe("refresh", () => {
-  //   it("updates the mediasources time data", async () => {
-  //     ManifestLoader.load.mockResolvedValueOnce({
-  //       time: { windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 },
-  //       transferFormat: DASH,
-  //     })
+  describe("refresh", () => {
+    it("updates the mediasources time data", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com/", cdn: "http://cdn1.com" },
+        { url: "http://source2.com/", cdn: "http://cdn2.com" },
+      ]
 
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //       windowType: WindowTypes.SLIDING,
-  //     })
+      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+        time: {
+          manifestType: ManifestType.STATIC,
+          presentationTimeOffsetInMilliseconds: 0,
+          availabilityStartTimeInMilliseconds: 0,
+          timeShiftBufferDepthInMilliseconds: 0,
+        },
+        transferFormat: DASH,
+      })
 
-  //     const existingSource = mediaSources.currentSource()
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
 
-  //     // test the current time hasn't changed
-  //     expect(mediaSources.time()).toEqual({ windowStartTime: 1000, windowEndTime: 10000, timeCorrectionSeconds: 1 })
+      expect(mediaSources.time()).toEqual({
+        manifestType: ManifestType.STATIC,
+        presentationTimeOffsetInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 0,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
 
-  //     ManifestLoader.load.mockResolvedValueOnce({
-  //       time: { windowStartTime: 6000, windowEndTime: 16000, timeCorrectionSeconds: 6 },
-  //       transferFormat: DASH,
-  //     })
+      expect(mediaSources.transferFormat()).toEqual(DASH)
+      expect(mediaSources.currentSource()).toBe("http://source1.com/")
 
-  //     await new Promise((resolve, reject) =>
-  //       mediaSources.refresh(
-  //         () => resolve(),
-  //         () => reject()
-  //       )
-  //     )
+      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+        time: {
+          manifestType: ManifestType.STATIC,
+          presentationTimeOffsetInMilliseconds: 100000,
+          availabilityStartTimeInMilliseconds: 100000,
+          timeShiftBufferDepthInMilliseconds: 72000000,
+        },
+        transferFormat: DASH,
+      })
 
-  //     expect(mediaSources.currentSource()).toEqual(existingSource)
-  //   })
+      await mediaSources.refresh()
 
-  //   // [tag:ServerDate]
-  //   it("does not pass initial wall-clock time to the manifest loader", async () => {
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //       windowType: WindowTypes.SLIDING,
-  //     })
+      expect(mediaSources.time()).toEqual({
+        manifestType: ManifestType.STATIC,
+        presentationTimeOffsetInMilliseconds: 100000,
+        availabilityStartTimeInMilliseconds: 100000,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+      })
 
-  //     await new Promise((resolve, reject) =>
-  //       mediaSources.refresh(
-  //         () => resolve(),
-  //         () => reject()
-  //       )
-  //     )
+      expect(mediaSources.transferFormat()).toEqual(DASH)
+      expect(mediaSources.currentSource()).toBe("http://source1.com/")
+    })
+  })
 
-  //     expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
-  //     expect(ManifestLoader.load).toHaveBeenNthCalledWith(
-  //       2,
-  //       "http://source1.com/",
-  //       expect.not.objectContaining({ initialWallclockTime: expect.anything() })
-  //     )
-  //   })
-  // })
+  it("rejects if manifest fails to load", async () => {
+    testMedia.urls = [{ url: "http://source1.com/", cdn: "http://cdn1.com" }]
 
-  // describe("failoverTimeout", () => {
-  //   beforeEach(() => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://cdn1.com" },
-  //       { url: "http://source2.com/", cdn: "http://cdn2.com" },
-  //     ]
-  //   })
+    const mediaSources = MediaSources()
+    await mediaSources.init(testMedia)
 
-  //   it("should add the cdn that failed back in to available cdns after a timeout", async () => {
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //       windowType: WindowTypes.SLIDING,
-  //     })
+    jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
 
-  //     const expectedCdns = [...mediaSources.availableSources()].reverse()
+    const error = await getError(async () => mediaSources.refresh())
 
-  //     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: false })
-
-  //     jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT)
-
-  //     expect(mediaSources.availableSources()).toEqual(expectedCdns)
-  //   })
-
-  //   it("should not contain the cdn that failed before the timeout has occured", async () => {
-  //     testMedia.urls = [
-  //       { url: "http://source1.com/", cdn: "http://cdn1.com" },
-  //       { url: "http://source2.com/", cdn: "http://cdn2.com" },
-  //     ]
-
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //       windowType: WindowTypes.SLIDING,
-  //     })
-
-  //     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: false })
-
-  //     expect(mediaSources.availableSources()).not.toContain("http://cdn1.com")
-  //   })
-
-  //   it("should not preserve timers over teardown boundaries", async () => {
-  //     const mediaSources = await initMediaSources(testMedia, {
-  //       initialWallclockTime: Date.now(),
-  //       liveSupport: LiveSupport.SEEKABLE,
-  //       windowType: WindowTypes.SLIDING,
-  //     })
-
-  //     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: false })
-
-  //     mediaSources.tearDown()
-
-  //     jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT)
-
-  //     expect(mediaSources.availableSources()).toEqual([])
-  //   })
-  // })
+    expect(error.name).toBe("ManifestLoadError")
+  })
 })
+
+//   // [tag:ServerDate]
+//   it("does not pass initial wall-clock time to the manifest loader", async () => {
+//     const mediaSources = await initMediaSources(testMedia, {
+//       initialWallclockTime: Date.now(),
+//       liveSupport: LiveSupport.SEEKABLE,
+//       windowType: WindowTypes.SLIDING,
+//     })
+
+//     await new Promise((resolve, reject) =>
+//       mediaSources.refresh(
+//         () => resolve(),
+//         () => reject()
+//       )
+//     )
+
+//     expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
+//     expect(ManifestLoader.load).toHaveBeenNthCalledWith(
+//       2,
+//       "http://source1.com/",
+//       expect.not.objectContaining({ initialWallclockTime: expect.anything() })
+//     )
+//   })
+// })
+
+// describe("failoverTimeout", () => {
+//   beforeEach(() => {
+//     testMedia.urls = [
+//       { url: "http://source1.com/", cdn: "http://cdn1.com" },
+//       { url: "http://source2.com/", cdn: "http://cdn2.com" },
+//     ]
+//   })
+
+//   it("should add the cdn that failed back in to available cdns after a timeout", async () => {
+//     const mediaSources = await initMediaSources(testMedia, {
+//       initialWallclockTime: Date.now(),
+//       liveSupport: LiveSupport.SEEKABLE,
+//       windowType: WindowTypes.SLIDING,
+//     })
+
+//     const expectedCdns = [...mediaSources.availableSources()].reverse()
+
+//     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: false })
+
+//     jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT)
+
+//     expect(mediaSources.availableSources()).toEqual(expectedCdns)
+//   })
+
+//   it("should not contain the cdn that failed before the timeout has occured", async () => {
+//     testMedia.urls = [
+//       { url: "http://source1.com/", cdn: "http://cdn1.com" },
+//       { url: "http://source2.com/", cdn: "http://cdn2.com" },
+//     ]
+
+//     const mediaSources = await initMediaSources(testMedia, {
+//       initialWallclockTime: Date.now(),
+//       liveSupport: LiveSupport.SEEKABLE,
+//       windowType: WindowTypes.SLIDING,
+//     })
+
+//     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: false })
+
+//     expect(mediaSources.availableSources()).not.toContain("http://cdn1.com")
+//   })
+
+//   it("should not preserve timers over teardown boundaries", async () => {
+//     const mediaSources = await initMediaSources(testMedia, {
+//       initialWallclockTime: Date.now(),
+//       liveSupport: LiveSupport.SEEKABLE,
+//       windowType: WindowTypes.SLIDING,
+//     })
+
+//     mediaSources.failover(jest.fn(), jest.fn(), { isBufferingTimeoutError: false })
+
+//     mediaSources.tearDown()
+
+//     jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT)
+
+//     expect(mediaSources.availableSources()).toEqual([])
+//   })
+// })
