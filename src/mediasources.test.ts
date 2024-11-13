@@ -780,27 +780,3 @@ describe("Media Sources", () => {
     })
   })
 })
-
-//   // [tag:ServerDate]
-//   it("does not pass initial wall-clock time to the manifest loader", async () => {
-//     const mediaSources = await initMediaSources(testMedia, {
-//       initialWallclockTime: Date.now(),
-//       liveSupport: LiveSupport.SEEKABLE,
-//       windowType: WindowTypes.SLIDING,
-//     })
-
-//     await new Promise((resolve, reject) =>
-//       mediaSources.refresh(
-//         () => resolve(),
-//         () => reject()
-//       )
-//     )
-
-//     expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
-//     expect(ManifestLoader.load).toHaveBeenNthCalledWith(
-//       2,
-//       "http://source1.com/",
-//       expect.not.objectContaining({ initialWallclockTime: expect.anything() })
-//     )
-//   })
-// })

@@ -102,7 +102,7 @@ function BigscreenPlayer() {
     return getWindowStartTime() ? getWindowStartTime() + seconds * 1000 : null
   }
 
-  function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
+  function bigscreenPlayerDataLoaded(bigscreenPlayerData) {
     if (windowType !== WindowTypes.STATIC) {
       serverDate = bigscreenPlayerData.serverDate
 
@@ -115,18 +115,20 @@ function BigscreenPlayer() {
     }
 
     mediaKind = bigscreenPlayerData.media.kind
+
     endOfStream =
       windowType !== WindowTypes.STATIC &&
       !bigscreenPlayerData.initialPlaybackTime &&
       bigscreenPlayerData.initialPlaybackTime !== 0
 
-    readyHelper = new ReadyHelper(
+    readyHelper = ReadyHelper(
       bigscreenPlayerData.initialPlaybackTime,
       windowType,
       PlayerComponent.getLiveSupport(),
       playerReadyCallback
     )
-    playerComponent = new PlayerComponent(
+
+    playerComponent = PlayerComponent(
       playbackElement,
       bigscreenPlayerData,
       mediaSources,
@@ -137,7 +139,7 @@ function BigscreenPlayer() {
 
     subtitles = Subtitles(
       playerComponent,
-      enableSubtitles,
+      bigscreenPlayerData.enableSubtitles,
       playbackElement,
       bigscreenPlayerData.media.subtitleCustomisation,
       mediaSources,
@@ -191,7 +193,7 @@ function BigscreenPlayer() {
      * @param {boolean} enableSubtitles - Enable subtitles on initialisation
      * @param {InitCallbacks} callbacks
      */
-    init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks = {}) => {
+    init: (newPlaybackElement, bigscreenPlayerData, callbacks = {}) => {
       playbackElement = newPlaybackElement
       resizer = Resizer()
       DebugTool.init()
@@ -206,7 +208,7 @@ function BigscreenPlayer() {
         DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
       }
 
-      windowType = newWindowType
+      windowType = WindowTypes.STATIC
       serverDate = bigscreenPlayerData.serverDate
 
       if (serverDate) {
@@ -216,18 +218,16 @@ function BigscreenPlayer() {
       playerReadyCallback = callbacks.onSuccess
       playerErrorCallback = callbacks.onError
 
-      const mediaSourceCallbacks = {
-        onSuccess: () => bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles),
-        onError: (error) => {
-          if (callbacks.onError) {
-            callbacks.onError(error)
-          }
-        },
-      }
-
       mediaSources = MediaSources()
 
-      mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks)
+      mediaSources
+        .init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport())
+        .then(() => bigscreenPlayerDataLoaded(bigscreenPlayerData))
+        .catch((reason) => {
+          if (typeof callbacks?.onError === "function") {
+            callbacks.onError(reason)
+          }
+        })
     },
 
     /**
@@ -341,7 +341,9 @@ function BigscreenPlayer() {
       if (playerComponent) {
         // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
         isSeeking = true
+
         playerComponent.setCurrentTime(time)
+        
         endOfStream =
           windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
       }
