@@ -15,7 +15,6 @@ import getError, { NoErrorThrownError } from "./testutils/geterror"
 
 let bigscreenPlayer
 let bigscreenPlayerData
-let playbackElement
 let dispatchMediaStateChange
 let mockPlayerComponentInstance
 
@@ -969,8 +968,8 @@ describe("Bigscreen Player", () => {
   })
 
   describe("getDuration", () => {
-    it("should get the duration from the strategy", () => {
-      initialiseBigscreenPlayer()
+    it("should get the duration from the strategy", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       mockPlayerComponentInstance.getDuration.mockReturnValue(10)
 
@@ -983,8 +982,8 @@ describe("Bigscreen Player", () => {
   })
 
   describe("isPaused", () => {
-    it("should get the paused state from the strategy", () => {
-      initialiseBigscreenPlayer()
+    it("should get the paused state from the strategy", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       mockPlayerComponentInstance.isPaused.mockReturnValue(true)
 
@@ -992,13 +991,15 @@ describe("Bigscreen Player", () => {
     })
 
     it("should return true if bigscreenPlayer has not been initialised", () => {
+      mockPlayerComponentInstance.isPaused.mockReturnValue(false)
+
       expect(bigscreenPlayer.isPaused()).toBe(true)
     })
   })
 
   describe("isEnded", () => {
-    it("should get the ended state from the strategy", () => {
-      initialiseBigscreenPlayer()
+    it("should get the ended state from the strategy", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       mockPlayerComponentInstance.isEnded.mockReturnValue(true)
 
@@ -1006,13 +1007,15 @@ describe("Bigscreen Player", () => {
     })
 
     it("should return false if bigscreenPlayer has not been initialised", () => {
+      mockPlayerComponentInstance.isEnded.mockReturnValue(true)
+
       expect(bigscreenPlayer.isEnded()).toBe(false)
     })
   })
 
   describe("play", () => {
-    it("should call play on the strategy", () => {
-      initialiseBigscreenPlayer()
+    it("should call play on the strategy", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       bigscreenPlayer.play()
 
@@ -1021,54 +1024,49 @@ describe("Bigscreen Player", () => {
   })
 
   describe("pause", () => {
-    it("should call pause on the strategy", () => {
-      const opts = { disableAutoResume: true }
+    it("should call pause on the strategy", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      initialiseBigscreenPlayer()
-
-      bigscreenPlayer.pause(opts)
+      bigscreenPlayer.pause( { disableAutoResume: true } )
 
       expect(mockPlayerComponentInstance.pause).toHaveBeenCalledWith(
         expect.objectContaining({ disableAutoResume: true })
       )
     })
 
-    it("should set pauseTrigger to an app pause if user pause is false", () => {
-      const opts = { userPause: false }
+    it("should set pauseTrigger to an app pause if user pause is false", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+      
+      const onStateChange = jest.fn()
+      
+      bigscreenPlayer.registerForStateChanges(onStateChange)
 
-      initialiseBigscreenPlayer()
-
-      const callback = jest.fn()
-
-      bigscreenPlayer.registerForStateChanges(callback)
-
-      bigscreenPlayer.pause(opts)
+      bigscreenPlayer.pause( { userPause: false } )
 
       dispatchMediaStateChange({ data: { state: MediaState.PAUSED } })
 
-      expect(callback).toHaveBeenCalledWith(expect.objectContaining({ trigger: PauseTriggers.APP }))
+      expect(onStateChange).toHaveBeenCalledWith(expect.objectContaining({ trigger: PauseTriggers.APP }))
     })
 
-    it("should set pauseTrigger to a user pause if user pause is true", () => {
-      const opts = { userPause: true }
+    it("should set pauseTrigger to a user pause if user pause is true", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      initialiseBigscreenPlayer()
+      const onStateChange = jest.fn()
 
-      const callback = jest.fn()
+      bigscreenPlayer.registerForStateChanges(onStateChange)
 
-      bigscreenPlayer.registerForStateChanges(callback)
-
-      bigscreenPlayer.pause(opts)
+      bigscreenPlayer.pause( { userPause: true } )
 
       dispatchMediaStateChange({ data: { state: MediaState.PAUSED } })
 
-      expect(callback).toHaveBeenCalledWith(expect.objectContaining({ trigger: PauseTriggers.USER }))
+      expect(onStateChange).toHaveBeenCalledWith(expect.objectContaining({ trigger: PauseTriggers.USER }))
     })
   })
 
   describe("setSubtitlesEnabled", () => {
-    it("should turn subtitles on/off when a value is passed in", () => {
-      initialiseBigscreenPlayer()
+    it("should turn subtitles on/off when a value is passed in", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       bigscreenPlayer.setSubtitlesEnabled(true)
 
       expect(mockSubtitlesInstance.enable).toHaveBeenCalledTimes(1)
@@ -1078,22 +1076,25 @@ describe("Bigscreen Player", () => {
       expect(mockSubtitlesInstance.disable).toHaveBeenCalledTimes(1)
     })
 
-    it("should show subtitles when called with true", () => {
-      initialiseBigscreenPlayer()
+    it("should show subtitles when called with true", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       bigscreenPlayer.setSubtitlesEnabled(true)
 
       expect(mockSubtitlesInstance.show).toHaveBeenCalledTimes(1)
     })
 
-    it("should hide subtitleswhen called with false", () => {
-      initialiseBigscreenPlayer()
+    it("should hide subtitles when called with false", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       bigscreenPlayer.setSubtitlesEnabled(false)
 
       expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1)
     })
 
-    it("should not show subtitles when resized", () => {
-      initialiseBigscreenPlayer()
+    it("should not show subtitles when resized", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       mockResizer.isResized.mockReturnValue(true)
 
       bigscreenPlayer.setSubtitlesEnabled(true)
@@ -1101,8 +1102,9 @@ describe("Bigscreen Player", () => {
       expect(mockSubtitlesInstance.show).not.toHaveBeenCalled()
     })
 
-    it("should not hide subtitles when resized", () => {
-      initialiseBigscreenPlayer()
+    it("should not hide subtitles when resized", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       mockResizer.isResized.mockReturnValue(true)
 
       bigscreenPlayer.setSubtitlesEnabled(true)
@@ -1112,8 +1114,8 @@ describe("Bigscreen Player", () => {
   })
 
   describe("isSubtitlesEnabled", () => {
-    it("calls through to Subtitles enabled when called", () => {
-      initialiseBigscreenPlayer()
+    it("calls through to Subtitles enabled when called", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       bigscreenPlayer.isSubtitlesEnabled()
 
@@ -1122,8 +1124,8 @@ describe("Bigscreen Player", () => {
   })
 
   describe("isSubtitlesAvailable", () => {
-    it("calls through to Subtitles available when called", () => {
-      initialiseBigscreenPlayer()
+    it("calls through to Subtitles available when called", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       bigscreenPlayer.isSubtitlesAvailable()
 
@@ -1132,8 +1134,9 @@ describe("Bigscreen Player", () => {
   })
 
   describe("customiseSubtitles", () => {
-    it("passes through custom styles to Subtitles customise", () => {
-      initialiseBigscreenPlayer()
+    it("passes through custom styles to Subtitles customise", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       const customStyleObj = { size: 0.7 }
       bigscreenPlayer.customiseSubtitles(customStyleObj)
 
@@ -1142,8 +1145,9 @@ describe("Bigscreen Player", () => {
   })
 
   describe("renderSubtitleExample", () => {
-    it("calls Subtitles renderExample with correct values", () => {
-      initialiseBigscreenPlayer()
+    it("calls Subtitles renderExample with correct values", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       const exampleUrl = ""
       const customStyleObj = { size: 0.7 }
       const safePosititon = { left: 30, top: 0 }
@@ -1154,8 +1158,9 @@ describe("Bigscreen Player", () => {
   })
 
   describe("clearSubtitleExample", () => {
-    it("calls Subtitles clearExample", () => {
-      initialiseBigscreenPlayer()
+    it("calls Subtitles clearExample", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       bigscreenPlayer.clearSubtitleExample()
 
       expect(mockSubtitlesInstance.clearExample).toHaveBeenCalledTimes(1)
@@ -1163,8 +1168,9 @@ describe("Bigscreen Player", () => {
   })
 
   describe("setTransportControlsPosition", () => {
-    it("should call through to Subtitles setPosition function", () => {
-      initialiseBigscreenPlayer()
+    it("should call through to Subtitles setPosition function", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       bigscreenPlayer.setTransportControlsPosition()
 
       expect(mockSubtitlesInstance.setPosition).toHaveBeenCalledTimes(1)
@@ -1172,15 +1178,18 @@ describe("Bigscreen Player", () => {
   })
 
   describe("resize", () => {
-    it("calls resizer with correct values", () => {
-      initialiseBigscreenPlayer()
+    it("calls resizer with correct values", async () => {
+      const playbackElement = createPlaybackElement()
+      await asyncInitialiseBigscreenPlayer(playbackElement, bigscreenPlayerData)
+      
       bigscreenPlayer.resize(10, 10, 160, 90, 100)
 
       expect(mockResizer.resize).toHaveBeenCalledWith(playbackElement, 10, 10, 160, 90, 100)
     })
 
-    it("hides subtitles when resized", () => {
-      initialiseBigscreenPlayer()
+    it("hides subtitles when resized", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       bigscreenPlayer.resize(10, 10, 160, 90, 100)
 
       expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1)
@@ -1188,26 +1197,30 @@ describe("Bigscreen Player", () => {
   })
 
   describe("clearResize", () => {
-    it("calls resizers clear function", () => {
-      initialiseBigscreenPlayer()
+    it("calls resizers clear function", async () => {
+      const playbackElement = createPlaybackElement()
+      await asyncInitialiseBigscreenPlayer(playbackElement, bigscreenPlayerData)
+
       bigscreenPlayer.clearResize()
 
       expect(mockResizer.clear).toHaveBeenCalledWith(playbackElement)
     })
 
-    it("shows subtitles if subtitles are enabled", () => {
+    it("shows subtitles if subtitles are enabled", async () => {
       mockSubtitlesInstance.enabled.mockReturnValue(true)
 
-      initialiseBigscreenPlayer()
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       bigscreenPlayer.clearResize()
 
       expect(mockSubtitlesInstance.show).toHaveBeenCalledTimes(1)
     })
 
-    it("hides subtitles if subtitles are disabled", () => {
+    it("hides subtitles if subtitles are disabled", async () => {
       mockSubtitlesInstance.enabled.mockReturnValue(false)
 
-      initialiseBigscreenPlayer()
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
       bigscreenPlayer.clearResize()
 
       expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1)
