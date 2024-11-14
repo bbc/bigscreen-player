@@ -574,8 +574,8 @@ function BigscreenPlayer() {
      */
     canSeek() {
       return (
-        windowType === WindowTypes.STATIC ||
-        DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
+        mediaSources.time().manifestType === ManifestType.STATIC ||
+        DynamicWindowUtils.canSeek(getLiveSupport(), this.getSeekableRange())
       )
     },
 
@@ -583,9 +583,12 @@ function BigscreenPlayer() {
      * @function
      * @return Returns whether the current media asset is pausable.
      */
-    canPause: () =>
-      windowType === WindowTypes.STATIC ||
-      DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport()),
+    canPause() {
+      return (
+        mediaSources.time().manifestType === ManifestType.STATIC ||
+        DynamicWindowUtils.canPause(getLiveSupport(), this.getSeekableRange())
+      )
+    },
 
     /**
      * Return a mock for in place testing.
