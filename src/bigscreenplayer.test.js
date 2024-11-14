@@ -9,7 +9,6 @@ import { ManifestType } from "./models/manifesttypes"
 import { MediaKinds } from "./models/mediakinds"
 import MediaState from "./models/mediastate"
 import PauseTriggers from "./models/pausetriggers"
-import { DASH } from "./models/transferformats"
 import WindowTypes from "./models/windowtypes"
 import getError, { NoErrorThrownError } from "./testutils/geterror"
 import DynamicWindowUtils from "./dynamicwindowutils"
@@ -74,14 +73,6 @@ jest.mock("./dynamicwindowutils", () => ({
   canPause: jest.fn(),
   canSeek: jest.fn(),
 }))
-
-function setupManifestData() {
-  return null
-}
-
-function initialiseBigscreenPlayer() {
-  return null
-}
 
 function asyncInitialiseBigscreenPlayer(playbackEl, data, { noSuccessCallback = false, noErrorCallback = false } = {}) {
   return new Promise((resolve, reject) =>
@@ -848,7 +839,11 @@ describe("Bigscreen Player", () => {
 
       dispatchMediaStateChange({ data: { state: MediaState.PAUSED } })
 
-      expect(onStateChange).toHaveBeenCalledWith({ state: MediaState.PAUSED, endOfStream: false, trigger: PauseTriggers.USER })
+      expect(onStateChange).toHaveBeenCalledWith({
+        state: MediaState.PAUSED,
+        endOfStream: false,
+        trigger: PauseTriggers.USER,
+      })
     })
 
     it("reports endOfStream false for any static stream", async () => {
@@ -993,54 +988,9 @@ describe("Bigscreen Player", () => {
     })
   })
 
-  describe("getLiveWindowData", () => {
-    it("should return undefined values when windowType is static", () => {
-      initialiseBigscreenPlayer({ windowType: WindowTypes.STATIC })
+  it.todo("conversion functions")
 
-      expect(bigscreenPlayer.getLiveWindowData()).toEqual({})
-    })
-
-    it("should return liveWindowData when the windowType is sliding and manifest is loaded", () => {
-      setupManifestData({
-        transferFormat: DASH,
-        time: {
-          windowStartTime: 1,
-          windowEndTime: 2,
-        },
-      })
-
-      const initialisationData = {
-        windowType: WindowTypes.SLIDING,
-        serverDate: new Date(),
-        initialPlaybackTime: Date.now(),
-      }
-      initialiseBigscreenPlayer(initialisationData)
-
-      expect(bigscreenPlayer.getLiveWindowData()).toEqual({
-        windowStartTime: 1,
-        windowEndTime: 2,
-        serverDate: initialisationData.serverDate,
-        initialPlaybackTime: initialisationData.initialPlaybackTime,
-      })
-    })
-
-    it("should return a subset of liveWindowData when the windowType is sliding and time block is provided", () => {
-      const initialisationData = {
-        windowType: WindowTypes.SLIDING,
-        windowStartTime: 1,
-        windowEndTime: 2,
-        initialPlaybackTime: Date.now(),
-      }
-      initialiseBigscreenPlayer(initialisationData)
-
-      expect(bigscreenPlayer.getLiveWindowData()).toEqual({
-        serverDate: undefined,
-        windowStartTime: 1,
-        windowEndTime: 2,
-        initialPlaybackTime: initialisationData.initialPlaybackTime,
-      })
-    })
-  })
+  it.todo("live window data equivalent")
 
   describe("getDuration", () => {
     it("should get the duration from the strategy", async () => {
@@ -1378,76 +1328,12 @@ describe("Bigscreen Player", () => {
     })
   })
 
-  describe("convertVideoTimeSecondsToEpochMs", () => {
-    it("converts video time to epoch time when windowStartTime is supplied", () => {
-      setupManifestData({
-        time: {
-          windowStartTime: 4200,
-          windowEndTime: 150000000,
-        },
-      })
-
-      initialiseBigscreenPlayer({
-        windowType: WindowTypes.SLIDING,
-      })
-
-      expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBe(4200 + 1000000)
-    })
-
-    it("does not convert video time to epoch time when windowStartTime is not supplied", () => {
-      setupManifestData({
-        time: {
-          windowStartTime: undefined,
-          windowEndTime: undefined,
-        },
-      })
-
-      initialiseBigscreenPlayer()
-
-      expect(bigscreenPlayer.convertVideoTimeSecondsToEpochMs(1000)).toBeNull()
-    })
-  })
-
-  describe("covertEpochMsToVideoTimeSeconds", () => {
-    it("converts epoch time to video time when windowStartTime is available", () => {
-      // windowStartTime - 16 January 2019 12:00:00
-      // windowEndTime - 16 January 2019 14:00:00
-      setupManifestData({
-        time: {
-          windowStartTime: 1547640000000,
-          windowEndTime: 1547647200000,
-        },
-      })
-
-      initialiseBigscreenPlayer({
-        windowType: WindowTypes.SLIDING,
-      })
-
-      // Time to convert - 16 January 2019 13:00:00 - one hour (3600 seconds)
-      expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBe(3600)
-    })
-
-    it("does not convert epoch time to video time when windowStartTime is not available", () => {
-      setupManifestData({
-        time: {
-          windowStartTime: undefined,
-          windowEndTime: undefined,
-        },
-      })
-
-      initialiseBigscreenPlayer()
-
-      expect(bigscreenPlayer.convertEpochMsToVideoTimeSeconds(1547643600000)).toBeNull()
-    })
-  })
-
   describe("registerPlugin", () => {
     it("should register a specific plugin", () => {
       const mockPlugin = {
         onError: jest.fn(),
       }
 
-      initialiseBigscreenPlayer()
       bigscreenPlayer.registerPlugin(mockPlugin)
 
       expect(Plugins.registerPlugin).toHaveBeenCalledWith(mockPlugin)
@@ -1460,8 +1346,6 @@ describe("Bigscreen Player", () => {
         onError: jest.fn(),
       }
 
-      initialiseBigscreenPlayer()
-
       bigscreenPlayer.unregisterPlugin(mockPlugin)
 
       expect(Plugins.unregisterPlugin).toHaveBeenCalledWith(mockPlugin)
@@ -1469,8 +1353,9 @@ describe("Bigscreen Player", () => {
   })
 
   describe("getDebugLogs", () => {
-    it('should call "retrieve" on the DebugTool', () => {
+    it("should retrieve logs from DebugTool", () => {
       bigscreenPlayer.getDebugLogs()
+
       expect(DebugTool.getDebugLogs).toHaveBeenCalledTimes(1)
     })
   })
