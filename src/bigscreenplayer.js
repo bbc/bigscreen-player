@@ -19,6 +19,7 @@ import Subtitles from "./subtitles/subtitles"
 // TODO: Remove when this becomes a TypeScript file
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { InitData, InitCallbacks, SubtitlesCustomisationOptions } from "./types"
+import { ManifestType } from "./models/manifesttypes"
 
 function BigscreenPlayer() {
   let stateChangeCallbacks = []
@@ -117,7 +118,7 @@ function BigscreenPlayer() {
     mediaKind = bigscreenPlayerData.media.kind
 
     endOfStream =
-      windowType !== WindowTypes.STATIC &&
+      mediaSources.time().manifestType !== ManifestType.STATIC &&
       !bigscreenPlayerData.initialPlaybackTime &&
       bigscreenPlayerData.initialPlaybackTime !== 0
 
@@ -345,7 +346,7 @@ function BigscreenPlayer() {
         playerComponent.setCurrentTime(time)
         
         endOfStream =
-          windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
+          mediaSources.time().manifestType !== ManifestType.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
       }
     },
 
@@ -403,7 +404,7 @@ function BigscreenPlayer() {
     isPlayingAtLiveEdge() {
       return (
         !!playerComponent &&
-        windowType !== WindowTypes.STATIC &&
+        mediaSources.time().manifestType !== ManifestType.STATIC &&
         Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
       )
     },

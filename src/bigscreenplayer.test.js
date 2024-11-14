@@ -696,6 +696,8 @@ describe("Bigscreen Player", () => {
         timeShiftBufferDepthInMilliseconds: 0,
       })
 
+      bigscreenPlayerData.initialPlaybackTime = 100;
+
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       const onTimeUpdate = jest.fn()
@@ -703,8 +705,14 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.registerForTimeUpdates(onTimeUpdate)
 
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 7200 })
-
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(7198)
+
+      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+        manifestType: ManifestType.DYNAMIC,
+        presentationTimeOffsetInMilliseconds: 1731514400000,
+        availabilityStartTimeInMilliseconds: 1731514400000,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
 
       bigscreenPlayer.setCurrentTime(7198)
 
@@ -731,11 +739,58 @@ describe("Bigscreen Player", () => {
 
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(3600)
 
+      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+        manifestType: ManifestType.DYNAMIC,
+        presentationTimeOffsetInMilliseconds: 1731514400000,
+        availabilityStartTimeInMilliseconds: 1731514440000,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
+
       bigscreenPlayer.setCurrentTime(3600)
 
       dispatchMediaStateChange({ data: { currentTime: 3600 }, timeUpdate: true })
 
       expect(onTimeUpdate).toHaveBeenCalledWith({ currentTime: 3600, endOfStream: false })
+    })
+
+    it("should set endOfStream to true when playing live and no initial playback time is set", async () => {
+      const onTimeUpdate = jest.fn()
+
+      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+        manifestType: ManifestType.DYNAMIC,
+        presentationTimeOffsetInMilliseconds: 1731514400000,
+        availabilityStartTimeInMilliseconds: 1731514400000,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
+
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      bigscreenPlayer.registerForTimeUpdates(onTimeUpdate)
+
+      dispatchMediaStateChange({ data: { currentTime: 30 }, timeUpdate: true, isBufferingTimeoutError: false })
+
+      expect(onTimeUpdate).toHaveBeenCalledWith({ currentTime: 30, endOfStream: true })
+    })
+
+    it("should set endOfStream to false when playing live and initialPlaybackTime is 0", async () => {
+      const onTimeUpdate = jest.fn()
+
+      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+        manifestType: ManifestType.DYNAMIC,
+        presentationTimeOffsetInMilliseconds: 1731514400000,
+        availabilityStartTimeInMilliseconds: 1731514400000,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
+
+      bigscreenPlayerData.initialPlaybackTime = 0;
+
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      bigscreenPlayer.registerForTimeUpdates(onTimeUpdate)
+
+      dispatchMediaStateChange({ data: { currentTime: 0 }, timeUpdate: true, isBufferingTimeoutError: false })
+
+      expect(onTimeUpdate).toHaveBeenCalledWith({ currentTime: 0, endOfStream: false })
     })
   })
 
@@ -745,7 +800,7 @@ describe("Bigscreen Player", () => {
 
       bigscreenPlayer.setPlaybackRate(2)
 
-      expect(mockPlayerComponentInstance.setPlaybackRate).toHaveBeenCalledWith(1)
+      expect(mockPlayerComponentInstance.setPlaybackRate).toHaveBeenCalledWith(2)
     })
 
     it("should not set playback rate if playerComponent is not initialised", () => {
@@ -796,8 +851,8 @@ describe("Bigscreen Player", () => {
   })
 
   describe("getSeekableRange", () => {
-    it("should return the seekable range from the strategy", () => {
-      initialiseBigscreenPlayer()
+    it("should return the seekable range from the strategy", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 10 })
 
@@ -810,35 +865,19 @@ describe("Bigscreen Player", () => {
     })
   })
 
-  describe("endOfStream", () => {
-    it("should set endOfStream to true when playing live and no initial playback time is set", () => {
-      const callback = jest.fn()
-
-      initialiseBigscreenPlayer()
-
-      bigscreenPlayer.registerForTimeUpdates(callback)
-
-      dispatchMediaStateChange({ data: { currentTime: 30 }, timeUpdate: true, isBufferingTimeoutError: false })
-
-      expect(callback).toHaveBeenCalledWith({ currentTime: 30, endOfStream: true })
-    })
-
-    it("should set endOfStream to false when playing live and initialPlaybackTime is 0", () => {
-      const callback = jest.fn()
-
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING, initialPlaybackTime: 0 })
-
-      bigscreenPlayer.registerForTimeUpdates(callback)
-
-      dispatchMediaStateChange({ data: { currentTime: 0 }, timeUpdate: true, isBufferingTimeoutError: false })
-
-      expect(callback).toHaveBeenCalledWith({ currentTime: 0, endOfStream: false })
-    })
-  })
-
   describe("isAtLiveEdge", () => {
-    it("should return false when playing on demand content", () => {
-      initialiseBigscreenPlayer()
+    it("should return false when playing on demand content", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      mockPlayerComponentInstance.getCurrentTime.mockReturnValue(100)
+      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 105 })
+
+      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+        manifestType: ManifestType.STATIC,
+        presentationTimeOffsetInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 0,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
 
       expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
@@ -847,20 +886,34 @@ describe("Bigscreen Player", () => {
       expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
 
-    it("should return true when playing live and current time is within tolerance of seekable range end", () => {
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+    it("should return true when playing live and current time is within tolerance of seekable range end", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(100)
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 105 })
 
+      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+        manifestType: ManifestType.DYNAMIC,
+        presentationTimeOffsetInMilliseconds: 1731514400000,
+        availabilityStartTimeInMilliseconds: 1731514400000,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
+
       expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(true)
     })
 
-    it("should return false when playing live and current time is outside the tolerance of seekable range end", () => {
-      initialiseBigscreenPlayer({ windowType: WindowTypes.SLIDING })
+    it("should return false when playing live and current time is outside the tolerance of seekable range end", async() => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(95)
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 105 })
+
+      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+        manifestType: ManifestType.DYNAMIC,
+        presentationTimeOffsetInMilliseconds: 1731514400000,
+        availabilityStartTimeInMilliseconds: 1731514400000,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
 
       expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
