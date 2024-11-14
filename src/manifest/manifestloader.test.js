@@ -1,4 +1,4 @@
-import { DASH, HLS } from "../models/transferformats"
+import { TransferFormat } from "../models/transferformats"
 import WindowTypes from "../models/windowtypes"
 import Plugins from "../plugins"
 import getError from "../testutils/geterror"
@@ -55,7 +55,7 @@ describe("ManifestLoader", () => {
             windowType,
           })
 
-          expect(transferFormat).toBe(DASH)
+          expect(transferFormat).toBe(TransferFormat.DASH)
           expect(time).toEqual(expect.any(Object))
 
           expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
@@ -103,7 +103,7 @@ describe("ManifestLoader", () => {
 
           const { transferFormat, time } = await ManifestLoader.load("http://foo.bar/test.m3u8", { windowType })
 
-          expect(transferFormat).toBe(HLS)
+          expect(transferFormat).toBe(TransferFormat.HLS)
           expect(time).toEqual(expect.any(Object))
 
           expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()

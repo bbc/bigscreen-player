@@ -4,7 +4,7 @@ import PluginEnums from "./pluginenums"
 import PluginData from "./plugindata"
 import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/manifestloader"
-import { TransferFormat, HLS } from "./models/transferformats"
+import { TransferFormat } from "./models/transferformats"
 import { CaptionsConnection, Connection, MediaDescriptor } from "./types"
 import { TimeInfo } from "./manifest/manifestparser"
 import isError from "./utils/iserror"
@@ -168,7 +168,9 @@ function MediaSources() {
   function needToGetManifest(): boolean {
     const hasManifestBeenLoaded = transferFormat != null
 
-    return !hasManifestBeenLoaded || (transferFormat === HLS && time?.manifestType === ManifestType.DYNAMIC)
+    return (
+      !hasManifestBeenLoaded || (transferFormat === TransferFormat.HLS && time?.manifestType === ManifestType.DYNAMIC)
+    )
   }
 
   function refresh() {

@@ -1,5 +1,5 @@
 import ManifestParser from "./manifestparser"
-import { DASH, HLS } from "../models/transferformats"
+import { TransferFormat } from "../models/transferformats"
 import LoadUrl from "../utils/loadurl"
 
 function retrieveDashManifest(url) {
@@ -17,9 +17,9 @@ function retrieveDashManifest(url) {
         throw new TypeError("Unable to retrieve DASH XML response")
       }
 
-      return ManifestParser.parse({ body: xml, type: DASH })
+      return ManifestParser.parse({ body: xml, type: TransferFormat.DASH })
     })
-    .then((time) => ({ time, transferFormat: DASH }))
+    .then((time) => ({ time, transferFormat: TransferFormat.DASH }))
     .catch((error) => {
       if (error.message.indexOf("DASH") !== -1) {
         throw error
@@ -76,9 +76,9 @@ function retrieveHLSLivePlaylist(url) {
         throw new TypeError("Unable to retrieve HLS live playlist")
       }
 
-      return ManifestParser.parse({ body: text, type: HLS })
+      return ManifestParser.parse({ body: text, type: TransferFormat.HLS })
     })
-    .then((time) => ({ time, transferFormat: HLS }))
+    .then((time) => ({ time, transferFormat: TransferFormat.HLS }))
 }
 
 function getStreamUrl(data) {

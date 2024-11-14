@@ -3,7 +3,7 @@ import WindowTypes from "./models/windowtypes"
 import MediaKinds from "./models/mediakinds"
 import LiveSupport from "./models/livesupport"
 import PluginEnums from "./pluginenums"
-import { DASH, HLS } from "./models/transferformats"
+import { TransferFormat } from "./models/transferformats"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
 import * as StrategyPicker from "./playbackstrategy/strategypicker"
@@ -69,7 +69,7 @@ const mockStrategy = (() => {
 describe("Player Component", () => {
   let playerComponent
   let mockStateUpdateCallback
-  let corePlaybackData
+  let bigscreenPlayerData
   let errorCallback
   let forceMediaSourcesError
   let mockMediaSources
@@ -87,7 +87,7 @@ describe("Player Component", () => {
     playbackElement = document.createElement("div")
     playbackElement.id = "app"
 
-    corePlaybackData = {
+    bigscreenPlayerData = {
       media: {
         kind: opts.mediaKind || MediaKinds.VIDEO,
         codec: undefined,
@@ -97,7 +97,7 @@ describe("Player Component", () => {
           { url: "c.mpd", cdn: "cdn-c" },
         ],
         type: opts.type || "application/dash+xml",
-        transferFormat: opts.transferFormat || DASH,
+        transferFormat: opts.transferFormat || TransferFormat.DASH,
         bitrate: undefined,
       },
       time: testTime,
@@ -135,7 +135,7 @@ describe("Player Component", () => {
 
     playerComponent = new PlayerComponent(
       playbackElement,
-      corePlaybackData,
+      bigscreenPlayerData,
       mockMediaSources,
       windowType,
       mockStateUpdateCallback,
@@ -310,7 +310,7 @@ describe("Player Component", () => {
 
       setUpPlayerComponent({
         windowType: WindowTypes.SLIDING,
-        transferFormat: HLS,
+        transferFormat: TransferFormat.HLS,
         type: "applesomething",
       })
 
@@ -332,7 +332,7 @@ describe("Player Component", () => {
 
       setUpPlayerComponent({
         windowType: WindowTypes.SLIDING,
-        transferFormat: HLS,
+        transferFormat: TransferFormat.HLS,
         type: "applesomething",
       })
 
@@ -957,7 +957,7 @@ describe("Player Component", () => {
     })
 
     it("should failover for with updated failover time when window time data has changed", () => {
-      setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: HLS })
+      setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormat.HLS })
       updateTestTime = true
 
       return StrategyPicker.default().then(() => {

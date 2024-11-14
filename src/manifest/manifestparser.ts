@@ -3,7 +3,7 @@ import DebugTool from "../debugger/debugtool"
 import Plugins from "../plugins"
 import PluginEnums from "../pluginenums"
 import { ManifestType } from "../models/manifesttypes"
-import { DASH, HLS } from "../models/transferformats"
+import { TransferFormat, DASH, HLS } from "../models/transferformats"
 import isError from "../utils/iserror"
 import { ErrorWithCode } from "../models/errorcode"
 
@@ -127,9 +127,9 @@ function parse({ body, type }: { body: Document; type: DASH } | { body: string; 
   return Promise.resolve()
     .then(() => {
       switch (type) {
-        case DASH:
+        case TransferFormat.DASH:
           return parseMPD(body)
-        case HLS:
+        case TransferFormat.HLS:
           return parseM3U8(body)
       }
     })

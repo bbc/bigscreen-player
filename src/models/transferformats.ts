@@ -1,6 +1,6 @@
-export const DASH = "dash" as const
+const DASH = "dash" as const
 
-export const HLS = "hls" as const
+const HLS = "hls" as const
 
 export const TransferFormat = { DASH, HLS } as const
 

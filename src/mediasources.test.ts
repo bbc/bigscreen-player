@@ -4,7 +4,7 @@ import PluginEnums from "./pluginenums"
 import { MediaDescriptor, Connection } from "./types"
 import ManifestLoader from "./manifest/manifestloader"
 import { ManifestType } from "./models/manifesttypes"
-import { DASH, HLS } from "./models/transferformats"
+import { TransferFormat } from "./models/transferformats"
 import getError from "./testutils/geterror"
 
 jest.mock("./manifest/manifestloader", () => ({
@@ -17,7 +17,7 @@ jest.mock("./manifest/manifestloader", () => ({
           availabilityStartTimeInMilliseconds: 0,
           timeShiftBufferDepthInMilliseconds: 0,
         },
-        transferFormat: DASH,
+        transferFormat: TransferFormat.DASH,
       })
     ),
   },
@@ -96,7 +96,7 @@ describe("Media Sources", () => {
           availabilityStartTimeInMilliseconds: 10000,
           timeShiftBufferDepthInMilliseconds: 1000,
         },
-        transferFormat: HLS,
+        transferFormat: TransferFormat.HLS,
       })
 
       const mediaSources = MediaSources()
@@ -110,7 +110,7 @@ describe("Media Sources", () => {
         timeShiftBufferDepthInMilliseconds: 1000,
       })
 
-      expect(mediaSources.transferFormat()).toEqual(HLS)
+      expect(mediaSources.transferFormat()).toEqual(TransferFormat.HLS)
       expect(mediaSources.currentSource()).toBe("http://source1.com/")
     })
 
@@ -129,7 +129,7 @@ describe("Media Sources", () => {
           availabilityStartTimeInMilliseconds: 0,
           timeShiftBufferDepthInMilliseconds: 0,
         },
-        transferFormat: DASH,
+        transferFormat: TransferFormat.DASH,
       })
 
       const mediaSources = MediaSources()
@@ -143,7 +143,7 @@ describe("Media Sources", () => {
         timeShiftBufferDepthInMilliseconds: 0,
       })
 
-      expect(mediaSources.transferFormat()).toEqual(DASH)
+      expect(mediaSources.transferFormat()).toEqual(TransferFormat.DASH)
       expect(mediaSources.currentSource()).toBe("http://source2.com/")
     })
 
@@ -198,7 +198,7 @@ describe("Media Sources", () => {
           availabilityStartTimeInMilliseconds: 0,
           timeShiftBufferDepthInMilliseconds: 0,
         },
-        transferFormat: DASH,
+        transferFormat: TransferFormat.DASH,
       })
 
       const mediaSources = MediaSources()
@@ -241,9 +241,9 @@ describe("Media Sources", () => {
 
   describe("failover", () => {
     it.each([
-      [DASH, ManifestType.STATIC],
-      [DASH, ManifestType.DYNAMIC],
-      [HLS, ManifestType.STATIC],
+      [TransferFormat.DASH, ManifestType.STATIC],
+      [TransferFormat.DASH, ManifestType.DYNAMIC],
+      [TransferFormat.HLS, ManifestType.STATIC],
     ])("does not load the manifest from the next url for a %s %s stream", async (transferFormat, manifestType) => {
       testMedia.urls = [
         { url: "http://source1.com/", cdn: "http://supplier1.com/" },
@@ -284,7 +284,7 @@ describe("Media Sources", () => {
           availabilityStartTimeInMilliseconds: 1731406718000,
           timeShiftBufferDepthInMilliseconds: 0,
         },
-        transferFormat: HLS,
+        transferFormat: TransferFormat.HLS,
       })
 
       const mediaSources = MediaSources()
@@ -310,7 +310,7 @@ describe("Media Sources", () => {
           availabilityStartTimeInMilliseconds: 0,
           timeShiftBufferDepthInMilliseconds: 0,
         },
-        transferFormat: DASH,
+        transferFormat: TransferFormat.DASH,
       })
 
       const mediaSources = MediaSources()
@@ -348,7 +348,7 @@ describe("Media Sources", () => {
           availabilityStartTimeInMilliseconds: 0,
           timeShiftBufferDepthInMilliseconds: 0,
         },
-        transferFormat: DASH,
+        transferFormat: TransferFormat.DASH,
       })
 
       const mediaSources = MediaSources()
@@ -673,7 +673,7 @@ describe("Media Sources", () => {
           availabilityStartTimeInMilliseconds: 0,
           timeShiftBufferDepthInMilliseconds: 0,
         },
-        transferFormat: DASH,
+        transferFormat: TransferFormat.DASH,
       })
 
       const mediaSources = MediaSources()
@@ -686,7 +686,7 @@ describe("Media Sources", () => {
         timeShiftBufferDepthInMilliseconds: 0,
       })
 
-      expect(mediaSources.transferFormat()).toEqual(DASH)
+      expect(mediaSources.transferFormat()).toEqual(TransferFormat.DASH)
       expect(mediaSources.currentSource()).toBe("http://source1.com/")
 
       jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
@@ -696,7 +696,7 @@ describe("Media Sources", () => {
           availabilityStartTimeInMilliseconds: 100000,
           timeShiftBufferDepthInMilliseconds: 72000000,
         },
-        transferFormat: DASH,
+        transferFormat: TransferFormat.DASH,
       })
 
       await mediaSources.refresh()
@@ -708,7 +708,7 @@ describe("Media Sources", () => {
         timeShiftBufferDepthInMilliseconds: 72000000,
       })
 
-      expect(mediaSources.transferFormat()).toEqual(DASH)
+      expect(mediaSources.transferFormat()).toEqual(TransferFormat.DASH)
       expect(mediaSources.currentSource()).toBe("http://source1.com/")
     })
 
