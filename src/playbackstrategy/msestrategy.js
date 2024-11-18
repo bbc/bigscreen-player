@@ -7,11 +7,9 @@ import Plugins from "../plugins"
 import ManifestModifier from "../manifest/manifestmodifier"
 import LiveSupport from "../models/livesupport"
 import DynamicWindowUtils from "../dynamicwindowutils"
-import TimeUtils from "../utils/timeutils"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
-import PauseTriggers from "../models/pausetriggers"
 import { ManifestType } from "../models/manifesttypes"
 
 const DEFAULT_SETTINGS = {
@@ -22,7 +20,7 @@ const DEFAULT_SETTINGS = {
 function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, customPlayerSettings = {}) {
   let mediaPlayer
   let mediaElement
-  const manifestType = mediaSources.time().type
+  const manifestType = mediaSources.time().manifestType
 
   const playerSettings = Utils.merge(
     {
@@ -45,8 +43,6 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
   let errorCallback
   let timeUpdateCallback
 
-  let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
-
   const seekDurationPadding = isNaN(playerSettings.streaming?.seekDurationPadding)
     ? DEFAULT_SETTINGS.seekDurationPadding
     : playerSettings.streaming?.seekDurationPadding
@@ -54,8 +50,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     ? DEFAULT_SETTINGS.liveDelay
     : playerSettings.streaming?.delay?.liveDelay
   let failoverPresentationTimeInSeconds
-  let refreshFailoverTime
-  let slidingWindowPausedTime = 0
+  let refreshFailoverPresentationTimeInSeconds
   let isEnded = false
 
   let dashMetrics
@@ -467,21 +462,9 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.isPaused() : undefined
   }
 
-  function getClampedTime(time, range) {
-    const isStatic = windowType === WindowTypes.STATIC
-    const isSliding = windowType === WindowTypes.SLIDING
-    const clampedRange = {
-      start: isSliding ? 0 : range.start,
-      end: isSliding ? mediaPlayer.getDVRWindowSize() : range.end,
-      correction: isStatic ? seekDurationPadding : Math.max(liveDelay, seekDurationPadding),
-    }
-
-    return Math.min(Math.max(time, clampedRange.start), clampedRange.end - clampedRange.correction)
-  }
-
   function load(mimeType, playbackTime) {
     if (mediaPlayer) {
-      modifySource(refreshFailoverTime || failoverPresentationTimeInSeconds)
+      modifySource(refreshFailoverPresentationTimeInSeconds || failoverPresentationTimeInSeconds)
     } else {
       failoverPresentationTimeInSeconds = playbackTime
       setUpMediaElement(playbackElement)
@@ -609,39 +592,20 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     return mediaElement?.currentTime ?? 0
   }
 
-  function refreshManifestBeforeSeek(seekToTime) {
-    refreshFailoverTime = seekToTime
+  function refreshManifestBeforeSeek(presentationTimeInSeconds) {
+    refreshFailoverPresentationTimeInSeconds = presentationTimeInSeconds
 
     mediaPlayer.refreshManifest((manifest) => {
-      const mediaPresentationDuration = manifest && manifest.mediaPresentationDuration
-      if (isNaN(mediaPresentationDuration)) {
-        mediaPlayer.seek(seekToTime)
-      } else {
-        const clampedSeekTime = getClampedTime(seekToTime, {
-          start: getSeekableRangeInPresentationTime().start,
-          end: mediaPresentationDuration,
-        })
-        DebugTool.info(`Stream ended. Clamping seek point to end of stream - seek point now: ${clampedSeekTime}`)
-        mediaPlayer.seek(clampedSeekTime)
+      const mediaPresentationDuration = manifest?.mediaPresentationDuration
+
+      if (typeof mediaPresentationDuration === "number" && isFinite(mediaPresentationDuration)) {
+        DebugTool.info(`Stream ended`)
       }
+
+      const dvrTimeInSeconds = convertPresentationTimeToDVRTime(presentationTimeInSeconds)
+
+      mediaPlayer.seek(dvrTimeInSeconds)
     })
-  }
-
-  function calculateSeekOffset(time) {
-    if (windowType !== WindowTypes.SLIDING) {
-      return getClampedTime(time, getSeekableRangeInPresentationTime())
-    }
-
-    const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
-    const offset = TimeUtils.calculateSlidingWindowSeekOffset(
-      time,
-      dvrInfo.range.start,
-      timeCorrection,
-      slidingWindowPausedTime
-    )
-    slidingWindowPausedTime = 0
-
-    return getClampedTime(offset)
   }
 
   function addEventCallback(thisArg, newCallback) {
@@ -708,6 +672,69 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     }
   }
 
+  function getSafelySeekableRangeInPresentationTime() {
+    if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
+      const { range } = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+
+      return { start: range.start, end: range.end - seekDurationPadding }
+    }
+
+    return { start: 0, end: getDuration() - seekDurationPadding }
+  }
+
+  function clampPresentationTimeToSafeRange(presentationTimeInSeconds) {
+    const { start, end } = getSafelySeekableRangeInPresentationTime()
+
+    return Math.min(Math.max(presentationTimeInSeconds, start), end)
+  }
+
+  function convertPresentationTimeToDVRTime(presentationTimeInSeconds) {
+    const { start } = getSafelySeekableRangeInPresentationTime()
+
+    return presentationTimeInSeconds - start
+  }
+
+  function setCurrentTime(presentationTimeInSeconds) {
+    publishedSeekEvent = false
+    isSeeking = true
+
+    const safePresentationTime = clampPresentationTimeToSafeRange(presentationTimeInSeconds)
+
+    if (manifestType === ManifestType.DYNAMIC && safePresentationTime > mediaElement.currentTime) {
+      refreshManifestBeforeSeek(safePresentationTime)
+    } else {
+      const dvrTimeInSeconds = convertPresentationTimeToDVRTime(safePresentationTime)
+      mediaPlayer.seek(dvrTimeInSeconds)
+    }
+  }
+
+  function pause(opts = {}) {
+    mediaPlayer.pause()
+    if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
+      startAutoResumeTimeout()
+    }
+  }
+
+  function tearDown() {
+    cleanUpMediaPlayer()
+
+    lastError = undefined
+    eventCallbacks = []
+    errorCallback = undefined
+    timeUpdateCallback = undefined
+    failoverPresentationTimeInSeconds = undefined
+    isEnded = undefined
+    dashMetrics = undefined
+    playerMetadata = {
+      playbackBitrate: undefined,
+      bufferLength: undefined,
+      fragmentInfo: {
+        requestTime: undefined,
+        numDownloaded: undefined,
+      },
+    }
+  }
+
   return {
     transitions: {
       canBePaused: () => true,
@@ -726,26 +753,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     getCurrentTime,
     getDuration,
     getPlayerElement: () => mediaElement,
-    tearDown: () => {
-      cleanUpMediaPlayer()
-
-      lastError = undefined
-      eventCallbacks = []
-      errorCallback = undefined
-      timeUpdateCallback = undefined
-      timeCorrection = undefined
-      failoverPresentationTimeInSeconds = undefined
-      isEnded = undefined
-      dashMetrics = undefined
-      playerMetadata = {
-        playbackBitrate: undefined,
-        bufferLength: undefined,
-        fragmentInfo: {
-          requestTime: undefined,
-          numDownloaded: undefined,
-        },
-      }
-    },
+    tearDown,
     reset: () => {
       if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.resetMSEPlayer) {
         cleanUpMediaPlayer()
@@ -753,31 +761,10 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     },
     isEnded: () => isEnded,
     isPaused,
-    pause: (opts = {}) => {
-      if (windowType === WindowTypes.SLIDING && opts.pauseTrigger === PauseTriggers.APP) {
-        slidingWindowPausedTime = Date.now()
-      }
-
-      mediaPlayer.pause()
-      if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
-        startAutoResumeTimeout()
-      }
-    },
+    pause,
     play: () => mediaPlayer.play(),
-    setCurrentTime: (time) => {
-      publishedSeekEvent = false
-      isSeeking = true
-      const seekToTime = getClampedTime(time, getSeekableRangeInPresentationTime())
-      if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
-        refreshManifestBeforeSeek(seekToTime)
-      } else {
-        const seekTime = calculateSeekOffset(time)
-        mediaPlayer.seek(seekTime)
-      }
-    },
-    setPlaybackRate: (rate) => {
-      mediaPlayer.setPlaybackRate(rate)
-    },
+    setCurrentTime,
+    setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
   }
 }
