@@ -541,25 +541,23 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
   })
 
-  // describe("getPlayerElement()", () => {
-  //   it("returns the media player video element", () => {
-  //     setUpMSE()
+  describe("getPlayerElement()", () => {
+    it("returns the media player video element", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-  //     mseStrategy.load(null, 0)
+      expect(mseStrategy.getPlayerElement()).toBeInstanceOf(HTMLVideoElement)
+      expect(mseStrategy.getPlayerElement()).toBe(mediaElement)
+    })
 
-  //     expect(mseStrategy.getPlayerElement()).toBeInstanceOf(HTMLVideoElement)
-  //     expect(mseStrategy.getPlayerElement()).toBe(mediaElement)
-  //   })
+    it("returns the media player audio element", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.AUDIO, playbackElement)
+      mseStrategy.load(null, 0)
 
-  //   it("returns the media player audio element", () => {
-  //     setUpMSE(null, null, "audio")
-
-  //     mseStrategy.load(null, 0)
-
-  //     expect(mseStrategy.getPlayerElement()).toBeInstanceOf(HTMLAudioElement)
-  //     expect(mseStrategy.getPlayerElement()).toBe(mediaElement)
-  //   })
-  // })
+      expect(mseStrategy.getPlayerElement()).toBeInstanceOf(HTMLAudioElement)
+      expect(mseStrategy.getPlayerElement()).toBe(mediaElement)
+    })
+  })
 
   // describe("reset()", () => {
   //   describe("when resetMSEPlayer is configured as true", () => {
