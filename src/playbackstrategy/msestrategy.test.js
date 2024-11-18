@@ -98,6 +98,7 @@ describe("Media Source Extensions Playback Strategy", () => {
   let mediaElement
   // let testManifestObject
   // let mockTimeModel
+  const originalCreateElement = document.createElement
 
   function dispatchDashEvent(eventType, event) {
     if (typeof eventHandlers[eventType] !== "function") {
@@ -108,7 +109,7 @@ describe("Media Source Extensions Playback Strategy", () => {
   }
 
   const mockMediaElement = (mediaKind) => {
-    const mediaEl = document.createElement(mediaKind)
+    const mediaEl = originalCreateElement.call(document, mediaKind)
 
     mediaEl.__mocked__ = true
 
@@ -139,7 +140,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       eventHandlers[eventType] = handler
     })
 
-    playbackElement = document.createElement("div")
+    playbackElement = originalCreateElement.call(document, "div")
 
     jest.spyOn(document, "createElement").mockImplementationOnce((elementType) => {
       if (["audio", "video"].includes(elementType)) {
@@ -147,7 +148,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         return mediaElement
       }
 
-      return document.createElement(elementType)
+      return originalCreateElement.call(document, elementType)
     })
 
     cdnArray = [{ url: "http://cdn1.com/" }, { url: "http://cdn2.com/" }, { url: "http://cdn3.com/" }]
@@ -559,97 +560,88 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
   })
 
-  // describe("reset()", () => {
-  //   describe("when resetMSEPlayer is configured as true", () => {
-  //     beforeEach(() => {
-  //       window.bigscreenPlayer.overrides = {
-  //         resetMSEPlayer: true,
-  //       }
-  //     })
+  describe("reset()", () => {
+    describe("when resetMSEPlayer is configured as true", () => {
+      beforeEach(() => {
+        window.bigscreenPlayer.overrides = {
+          resetMSEPlayer: true,
+        }
+      })
 
-  //     it("should destroy the player and listeners", () => {
-  //       setUpMSE()
-  //       mseStrategy.load(null, 0)
+      it("should destroy the player and listeners", () => {
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+        mseStrategy.load(null, 0)
 
-  //       expect(playbackElement.childElementCount).toBe(1)
+        expect(playbackElement.childElementCount).toBe(1)
 
-  //       mseStrategy.reset()
+        mseStrategy.reset()
 
-  //       expect(mockDashInstance.destroy).toHaveBeenCalledWith()
+        expect(mockDashInstance.destroy).toHaveBeenCalledWith()
 
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("timeupdate", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("loadedmetadata", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("loadeddata", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("play", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("playing", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("pause", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("waiting", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("seeking", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("seeked", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("ended", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).toHaveBeenCalledWith("ratechange", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("timeupdate", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("loadedmetadata", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("loadeddata", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("play", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("playing", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("pause", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("waiting", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("seeking", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("seeked", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("ended", expect.any(Function))
+        expect(mediaElement.removeEventListener).toHaveBeenCalledWith("ratechange", expect.any(Function))
 
-  //       expect(playbackElement.childElementCount).toBe(0)
-  //     })
+        expect(playbackElement.childElementCount).toBe(0)
+      })
 
-  //     it("should setup player and element on a load after a reset", () => {
-  //       setUpMSE()
-  //       mseStrategy.load(null, 0)
+      it("should setup player and element on a load after a reset", () => {
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+        mseStrategy.load(null, 0)
 
-  //       mseStrategy.reset()
+        mseStrategy.reset()
 
-  //       jest.clearAllMocks()
+        mockMediaSources.currentSource.mockReturnValueOnce("http://example2.com")
+        mseStrategy.load(null, 0)
 
-  //       jest.spyOn(document, "createElement").mockImplementationOnce((elementType) => {
-  //         if (["audio", "video"].includes(elementType)) {
-  //           mediaElement = mockMediaElement(elementType)
-  //           return mediaElement
-  //         }
+        expect(mockDashInstance.initialize).toHaveBeenCalledTimes(2)
+        expect(mockDashInstance.initialize).toHaveBeenNthCalledWith(2, mediaElement, null, true)
+        expect(mockDashInstance.attachSource).toHaveBeenNthCalledWith(2, "http://example2.com")
 
-  //         return document.createElement(elementType)
-  //       })
+        expect(playbackElement.childElementCount).toBe(1)
+        expect(playbackElement.firstChild).toBeInstanceOf(HTMLVideoElement)
+        expect(playbackElement.firstChild).toBe(mediaElement)
+        expect(isMockedElement(playbackElement.firstChild)).toBe(true)
+      })
+    })
 
-  //       mseStrategy.load(null, 0)
+    describe("when resetMSEPlayer is configured as false", () => {
+      beforeEach(() => {
+        window.bigscreenPlayer.overrides = {
+          resetMSEPlayer: false,
+        }
+      })
 
-  //       expect(mockDashInstance.initialize).toHaveBeenCalledTimes(1)
-  //       expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-  //       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
+      it("should not destroy the player or listeners", () => {
+        setUpMSE()
+        mseStrategy.load(null, 0)
+        mseStrategy.reset()
 
-  //       expect(playbackElement.childElementCount).toBe(1)
-  //       expect(playbackElement.firstChild).toBeInstanceOf(HTMLVideoElement)
-  //       expect(playbackElement.firstChild).toBe(mediaElement)
-  //       expect(isMockedElement(playbackElement.firstChild)).toBe(true)
-  //     })
-  //   })
-  //   describe("when resetMSEPlayer is configured as false", () => {
-  //     beforeEach(() => {
-  //       window.bigscreenPlayer.overrides = {
-  //         resetMSEPlayer: false,
-  //       }
-  //     })
+        expect(mockDashInstance.destroy).not.toHaveBeenCalledWith()
+        expect(playbackElement.childElementCount).toBe(1)
 
-  //     it("should not destroy the player or listeners", () => {
-  //       setUpMSE()
-  //       mseStrategy.load(null, 0)
-  //       mseStrategy.reset()
-
-  //       expect(mockDashInstance.destroy).not.toHaveBeenCalledWith()
-  //       expect(playbackElement.childElementCount).toBe(1)
-
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("timeupdate", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("loadedmetadata", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("loadeddata", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("play", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("playing", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("pause", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("waiting", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("seeking", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("seeked", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("ended", expect.any(Function))
-  //       expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("ratechange", expect.any(Function))
-  //     })
-  //   })
-  // })
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("timeupdate", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("loadedmetadata", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("loadeddata", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("play", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("playing", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("pause", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("waiting", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("seeking", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("seeked", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("ended", expect.any(Function))
+        expect(mediaElement.removeEventListener).not.toHaveBeenCalledWith("ratechange", expect.any(Function))
+      })
+    })
+  })
 
   // describe("tearDown()", () => {
   //   it("should destroy the MediaPlayer", () => {
