@@ -10,7 +10,6 @@ import DynamicWindowUtils from "../dynamicwindowutils"
 import TimeUtils from "../utils/timeutils"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
-import buildSourceAnchor, { TimelineZeroPoints } from "../utils/mse/build-source-anchor"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
 import PauseTriggers from "../models/pausetriggers"
 
@@ -19,7 +18,7 @@ const DEFAULT_SETTINGS = {
   seekDurationPadding: 1.1,
 }
 
-function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
+function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, customPlayerSettings = {}) {
   let mediaPlayer
   let mediaElement
 
@@ -52,8 +51,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay)
     ? DEFAULT_SETTINGS.liveDelay
     : playerSettings.streaming?.delay?.liveDelay
-  let failoverTime
-  let failoverZeroPoint
+  let failoverPresentationTimeInSeconds
   let refreshFailoverTime
   let slidingWindowPausedTime = 0
   let isEnded = false
@@ -189,21 +187,17 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   function onTimeUpdate() {
     DebugTool.updateElementTime(mediaElement.currentTime)
 
-    const currentMpdTimeSeconds =
-      windowType === WindowTypes.SLIDING
-        ? mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)?.time
-        : mediaElement.currentTime
+    const currentPresentationTimeInSeconds = mediaElement.currentTime
 
     // Note: Multiple consecutive CDN failover logic
     // A newly loaded video element will always report a 0 time update
     // This is slightly unhelpful if we want to continue from a later point but consult failoverTime as the source of truth.
     if (
-      typeof currentMpdTimeSeconds === "number" &&
-      isFinite(currentMpdTimeSeconds) &&
-      parseInt(currentMpdTimeSeconds) > 0
+      typeof currentPresentationTimeInSeconds === "number" &&
+      isFinite(currentPresentationTimeInSeconds) &&
+      parseInt(currentPresentationTimeInSeconds) > 0
     ) {
-      failoverTime = currentMpdTimeSeconds
-      failoverZeroPoint = TimelineZeroPoints.MPD
+      failoverPresentationTimeInSeconds = currentPresentationTimeInSeconds
     }
 
     publishTimeUpdate()
@@ -255,8 +249,6 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function manifestDownloadError(mediaError) {
-    const error = () => publishError(mediaError)
-
     const failoverParams = {
       isBufferingTimeoutError: false,
       currentTime: getCurrentTime(),
@@ -265,7 +257,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       message: mediaError.message,
     }
 
-    mediaSources.failover(load, error, failoverParams)
+    mediaSources
+      .failover(failoverParams)
+      .then(() => load())
+      .catch(() => publishError(mediaError))
   }
 
   function onManifestLoaded(event) {
@@ -404,7 +399,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
 
     failoverInfo.serviceLocation = event.baseUrl.serviceLocation
-    mediaSources.failover(log, log, failoverInfo)
+
+    mediaSources.failover(failoverInfo).then(
+      () => log(),
+      () => log()
+    )
   }
 
   function onServiceLocationAvailable(event) {
@@ -480,9 +479,9 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function load(mimeType, playbackTime) {
     if (mediaPlayer) {
-      modifySource(refreshFailoverTime || failoverTime, failoverZeroPoint)
+      modifySource(refreshFailoverTime || failoverPresentationTimeInSeconds)
     } else {
-      failoverTime = playbackTime
+      failoverPresentationTimeInSeconds = playbackTime
       setUpMediaElement(playbackElement)
       setUpMediaPlayer(playbackTime)
       setUpMediaListeners()
@@ -519,14 +518,31 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     modifySource(playbackTime)
   }
 
-  function modifySource(playbackTime, zeroPoint) {
+  function modifySource(playbackTime) {
     const source = mediaSources.currentSource()
-    const anchor = buildSourceAnchor(playbackTime, zeroPoint, {
-      windowType,
-      initialSeekableRangeStartSeconds: mediaSources.time().windowStartTime / 1000,
-    })
+    const anchor = buildSourceAnchor(playbackTime)
 
     mediaPlayer.attachSource(`${source}${anchor}`)
+  }
+
+  /**
+   * Calculate time anchor tag for playback within dashjs
+   *
+   * Anchor tags applied to the MPD source for playback:
+   *
+   * #t=<time> - Seeks MPD timeline. By itself it means time since the beginning of the first period defined in the DASH manifest
+   *
+   * @param {number} presentationTimeInSeconds
+   * @returns {string}
+   */
+  function buildSourceAnchor(presentationTimeInSeconds) {
+    if (typeof presentationTimeInSeconds !== "number" || !isFinite(presentationTimeInSeconds)) {
+      return ""
+    }
+
+    const wholeSeconds = parseInt(presentationTimeInSeconds)
+
+    return wholeSeconds === 0 ? "" : `#t=${wholeSeconds}`
   }
 
   function setUpMediaListeners() {
@@ -720,8 +736,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       errorCallback = undefined
       timeUpdateCallback = undefined
       timeCorrection = undefined
-      failoverTime = undefined
-      failoverZeroPoint = undefined
+      failoverPresentationTimeInSeconds = undefined
       isEnded = undefined
       dashMetrics = undefined
       playerMetadata = {
