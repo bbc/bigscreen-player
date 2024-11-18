@@ -12,6 +12,7 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
 import PauseTriggers from "../models/pausetriggers"
+import { ManifestType } from "../models/manifesttypes"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -21,6 +22,7 @@ const DEFAULT_SETTINGS = {
 function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, customPlayerSettings = {}) {
   let mediaPlayer
   let mediaElement
+  const manifestType = mediaSources.time().type
 
   const playerSettings = Utils.merge(
     {
@@ -586,21 +588,17 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     manifestRequestTime = event.request.requestEndDate.getTime() - event.request.requestStartDate.getTime()
   }
 
-  function getSeekableRange() {
-    if (mediaPlayer && mediaPlayer.isReady() && windowType !== WindowTypes.STATIC) {
+  function getSeekableRangeInPresentationTime() {
+    if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
       const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+
+      // FIX: Dash.js briefly returns `null` on a failover for the first time update
       if (dvrInfo) {
-        return {
-          start: dvrInfo.range.start - timeCorrection,
-          end: dvrInfo.range.end - timeCorrection - liveDelay,
-        }
+        return { start: dvrInfo.range.start, end: dvrInfo.range.end - liveDelay }
       }
     }
 
-    return {
-      start: 0,
-      end: getDuration(),
-    }
+    return { start: 0, end: getDuration() }
   }
 
   function getDuration() {
@@ -620,7 +618,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
         mediaPlayer.seek(seekToTime)
       } else {
         const clampedSeekTime = getClampedTime(seekToTime, {
-          start: getSeekableRange().start,
+          start: getSeekableRangeInPresentationTime().start,
           end: mediaPresentationDuration,
         })
         DebugTool.info(`Stream ended. Clamping seek point to end of stream - seek point now: ${clampedSeekTime}`)
@@ -631,7 +629,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
 
   function calculateSeekOffset(time) {
     if (windowType !== WindowTypes.SLIDING) {
-      return getClampedTime(time, getSeekableRange())
+      return getClampedTime(time, getSeekableRangeInPresentationTime())
     }
 
     const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
@@ -661,7 +659,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
   function startAutoResumeTimeout() {
     DynamicWindowUtils.autoResumeAtStartOfRange(
       getCurrentTime(),
-      getSeekableRange(),
+      getSeekableRangeInPresentationTime(),
       addEventCallback,
       removeEventCallback,
       (event) => event !== MediaState.PAUSED,
@@ -724,7 +722,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
     load,
-    getSeekableRange,
+    getSeekableRange: getSeekableRangeInPresentationTime,
     getCurrentTime,
     getDuration,
     getPlayerElement: () => mediaElement,
@@ -769,7 +767,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     setCurrentTime: (time) => {
       publishedSeekEvent = false
       isSeeking = true
-      const seekToTime = getClampedTime(time, getSeekableRange())
+      const seekToTime = getClampedTime(time, getSeekableRangeInPresentationTime())
       if (windowType === WindowTypes.GROWING && seekToTime > getCurrentTime()) {
         refreshManifestBeforeSeek(seekToTime)
       } else {

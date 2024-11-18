@@ -47,6 +47,17 @@ const mockDashMediaPlayer = {
   create: jest.fn(() => mockDashInstance),
 }
 
+const mockDashMetrics = {
+  getCurrentDVRInfo: jest.fn().mockReturnValue({ range: { start: 0, end: 101 } }),
+  getCurrentBufferLevel: jest.fn().mockReturnValue(0),
+  getCurrentRepresentationSwitch: jest.fn().mockReturnValue(0),
+  getCurrentIndexForRepresentation: jest.fn().mockReturnValue(1),
+}
+
+const mockDashAdapter = {
+  getIndexForRepresentation: jest.fn().mockReturnValue(0),
+}
+
 const mockMediaSources = {
   init: jest.fn().mockResolvedValue(),
   tearDown: jest.fn(),
@@ -57,7 +68,7 @@ const mockMediaSources = {
     timeShiftBufferDepthInMilliseconds: 0,
   }),
   failoverResetTime: jest.fn().mockReturnValue(10),
-  currentSource: jest.fn().mockReturnValue(),
+  currentSource: jest.fn().mockReturnValue(""),
   availableSources: jest.fn().mockReturnValue([]),
   failover: jest.fn().mockResolvedValue(),
 }
@@ -80,7 +91,6 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   let mseStrategy
   // let eventCallbacks
-  // let dashEventCallback
   let eventHandlers
   let playbackElement
   let cdnArray = []
@@ -88,6 +98,14 @@ describe("Media Source Extensions Playback Strategy", () => {
   let mediaElement
   // let testManifestObject
   // let mockTimeModel
+
+  function dispatchDashEvent(eventType, event) {
+    if (typeof eventHandlers[eventType] !== "function") {
+      return
+    }
+
+    eventHandlers[eventType].call(eventType, event)
+  }
 
   const mockMediaElement = (mediaKind) => {
     const mediaEl = document.createElement(mediaKind)
@@ -114,23 +132,11 @@ describe("Media Source Extensions Playback Strategy", () => {
     // For DVRInfo Based Seekable Range
     mockDashInstance.duration.mockReturnValue(101)
     mockDashInstance.isReady.mockReturnValue(true)
-    mockDashInstance.getDVRWindowSize.mockReturnValue(101)
+    mockDashInstance.getDashMetrics.mockReturnValue(mockDashMetrics)
+    mockDashInstance.getDashAdapter.mockReturnValue(mockDashAdapter)
 
     mockDashInstance.on.mockImplementation((eventType, handler) => {
       eventHandlers[eventType] = handler
-      dashEventCallback = (eventType, event) =>
-        eventHandlers[eventType] ? eventHandlers[eventType].call(eventType, event) : null
-    })
-
-    mockDashInstance.getDashMetrics.mockReturnValue({
-      getCurrentDVRInfo: () => ({ range: { start: 0, end: 101 } }),
-      getCurrentBufferLevel: () => "buffer",
-      getCurrentRepresentationSwitch: () => 0,
-      getCurrentIndexForRepresentation: () => 1,
-    })
-
-    mockDashInstance.getDashAdapter.mockReturnValue({
-      getIndexForRepresentation: () => 0,
     })
 
     playbackElement = document.createElement("div")
@@ -200,7 +206,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         },
       }
 
-      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
+      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
 
       const baseUrlArray = [
         {
@@ -375,7 +381,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 0)
 
-      dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, {
+      dispatchDashEvent(dashjsMediaPlayerEvents.BASE_URL_SELECTED, {
         baseUrl: {
           url: "http://example.com",
           serviceLocation: "http://example.com",
@@ -401,9 +407,9 @@ describe("Media Source Extensions Playback Strategy", () => {
         },
       }
 
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, testError)
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, testError)
 
-      dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, {
+      dispatchDashEvent(dashjsMediaPlayerEvents.BASE_URL_SELECTED, {
         baseUrl: {
           url: "http://example.com",
           serviceLocation: "http://example.com",
@@ -434,29 +440,59 @@ describe("Media Source Extensions Playback Strategy", () => {
   })
 
   describe("getSeekableRange()", () => {
-    it("returns the correct start and end time", () => {
-      setUpMSE()
-      mseStrategy.load(null, 45)
+    it("returns zero to duration for a static stream", () => {
+      mockMediaSources.time.mockReturnValue({ type: ManifestType.STATIC })
 
-      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 101 })
+      mockDashInstance.duration.mockReturnValueOnce(300)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 300 })
     })
 
-    it("returns the end time taking the live delay into account for a live stream", () => {
-      const customPlayerSettings = { streaming: { delay: { liveDelay: 20 } } }
+    it("accounts for live delay for a dynamic stream", () => {
+      mockMediaSources.time.mockReturnValue({ type: ManifestType.DYNAMIC })
 
-      setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
-      mseStrategy.load(null, 45)
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValueOnce({ range: { start: 180, end: 360 } })
 
-      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 81 })
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { delay: { liveDelay: 20 } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 180, end: 340 })
     })
 
     it("returns the end time ignoring the live delay for an on demand stream", () => {
-      const customPlayerSettings = { streaming: { delay: { liveDelay: 20 } } }
+      mockMediaSources.time.mockReturnValue({ type: ManifestType.STATIC })
 
-      setUpMSE(0, WindowTypes.STATIC, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
-      mseStrategy.load(null, 45)
+      mockDashInstance.duration.mockReturnValueOnce(105)
 
-      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 101 })
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { delay: { liveDelay: 20 } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 105 })
+    })
+
+    it("falls back to using duration if DVR range is unavailable", () => {
+      mockMediaSources.time.mockReturnValue({ type: ManifestType.DYNAMIC })
+
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValueOnce(null)
+      mockDashInstance.duration.mockReturnValueOnce(180)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { delay: { liveDelay: 20 } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 180 })
     })
   })
 
