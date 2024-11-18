@@ -606,7 +606,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
   }
 
   function getCurrentTime() {
-    return mediaElement ? mediaElement.currentTime - timeCorrection : 0
+    return mediaElement?.currentTime ?? 0
   }
 
   function refreshManifestBeforeSeek(seekToTime) {

@@ -496,41 +496,50 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
   })
 
-  // describe("getCurrentTime()", () => {
-  //   it("returns the correct time from the DASH Mediaplayer", () => {
-  //     setUpMSE()
+  describe("getCurrentTime()", () => {
+    it("returns the correct time", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-  //     mseStrategy.load(null, 0)
+      expect(mseStrategy.getCurrentTime()).toBe(0)
 
-  //     expect(mseStrategy.getCurrentTime()).toBe(0)
+      mediaElement.currentTime = 10
 
-  //     mediaElement.currentTime = 10
+      expect(mseStrategy.getCurrentTime()).toBe(10)
+    })
 
-  //     expect(mseStrategy.getCurrentTime()).toBe(10)
-  //   })
+    it("returns 0 when MediaPlayer is undefined", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-  //   it("returns 0 when MediaPlayer is undefined", () => {
-  //     setUpMSE()
+      expect(mseStrategy.getCurrentTime()).toBe(0)
+    })
+  })
 
-  //     expect(mseStrategy.getCurrentTime()).toBe(0)
-  //   })
-  // })
+  describe("getDuration()", () => {
+    it("returns the correct duration from the DASH Mediaplayer", () => {
+      mockDashInstance.duration.mockReturnValueOnce(180)
 
-  // describe("getDuration()", () => {
-  //   it("returns the correct duration from the DASH Mediaplayer", () => {
-  //     setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-  //     mseStrategy.load(null, 0)
+      expect(mseStrategy.getDuration()).toBe(180)
+    })
 
-  //     expect(mseStrategy.getDuration()).toBe(101)
-  //   })
+    it("returns 0 when the MediaPlayer is undefined", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-  //   it("returns 0 when the MediaPlayer is undefined", () => {
-  //     setUpMSE()
+      expect(mseStrategy.getDuration()).toBe(0)
+    })
 
-  //     expect(mseStrategy.getDuration()).toBe(0)
-  //   })
-  // })
+    it("returns 0 when the MediaPlayer is not ready", () => {
+      mockDashInstance.isReady.mockReturnValue(false)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getDuration()).toBe(0)
+    })
+  })
 
   // describe("getPlayerElement()", () => {
   //   it("returns the media player video element", () => {
