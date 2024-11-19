@@ -1,15 +1,12 @@
-import MediaKinds from "../models/mediakinds"
-// import LiveSupport from "../models/livesupport"
-import MSEStrategy from "./msestrategy"
-// import TimeUtils from "../utils/timeutils"
-import DynamicWindowUtils from "../dynamicwindowutils"
-import Plugins from "../plugins"
-// import DebugTool from "../debugger/debugtool"
-import Utils from "../utils/playbackutils"
-// import PauseTriggers from "../models/pausetriggers"
-import { ManifestType } from "../models/manifesttypes"
 import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
 import ManifestModifier from "../manifest/manifestmodifier"
+import MediaKinds from "../models/mediakinds"
+import { ManifestType } from "../models/manifesttypes"
+import { MediaState } from "../models/mediastate"
+import Utils from "../utils/playbackutils"
+import DynamicWindowUtils from "../dynamicwindowutils"
+import Plugins from "../plugins"
+import MSEStrategy from "./msestrategy"
 
 jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn() }))
 jest.mock("../dynamicwindowutils")
@@ -550,6 +547,126 @@ describe("Media Source Extensions Playback Strategy", () => {
       })
 
       expect(Plugins.interface.onPlayerInfoUpdated).not.toHaveBeenCalled()
+    })
+
+    it("should call onFragmentContentLengthMismatch plugin on FRAGMENT_CONTENT_LENGTH_MISMATCH", () => {
+      jest.spyOn(Plugins.interface, "onFragmentContentLengthMismatch")
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, {
+        responseUrl: "example.com",
+        mediaType: "video/mp4",
+        headerLength: 12,
+        bodyLength: 13,
+      })
+
+      expect(Plugins.interface.onFragmentContentLengthMismatch).toHaveBeenCalledWith({
+        responseUrl: "example.com",
+        mediaType: "video/mp4",
+        headerLength: 12,
+        bodyLength: 13,
+      })
+    })
+  })
+
+  describe("responding to media element events", () => {
+    it.each([
+      [MediaState.PLAYING, "playing"],
+      [MediaState.PAUSED, "pause"],
+      [MediaState.WAITING, "waiting"],
+      [MediaState.WAITING, "seeking"],
+      [MediaState.ENDED, "ended"],
+    ])("should report media state %i for a %s event", (expectedMediaState, eventType) => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mediaElement.dispatchEvent(new Event(eventType))
+
+      expect(onEvent).toHaveBeenCalledWith(expectedMediaState)
+
+      expect(onEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it(`should report media state ${MediaState.PLAYING} for a seeked event while unpaused`, () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mockDashInstance.isPaused.mockReturnValueOnce(false)
+
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(onEvent).toHaveBeenCalledWith(MediaState.PLAYING)
+      expect(onEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it(`should report media state ${MediaState.PAUSED} for a seeked event while paused`, () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mockDashInstance.isPaused.mockReturnValueOnce(true)
+
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(onEvent).toHaveBeenCalledWith(MediaState.PAUSED)
+      expect(onEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it("should only trigger any event listeners once for any seeking/waiting events during a seek", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(60)
+
+      mediaElement.dispatchEvent(new Event("seeking"))
+      mediaElement.dispatchEvent(new Event("waiting"))
+      mediaElement.dispatchEvent(new Event("waiting"))
+
+      expect(onEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it("should trigger any event listeners for seeking/waiting events outside a seek", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(60)
+
+      mediaElement.dispatchEvent(new Event("seeking"))
+      mediaElement.dispatchEvent(new Event("waiting"))
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(onEvent).toHaveBeenCalledTimes(2)
+
+      mediaElement.dispatchEvent(new Event("waiting"))
+
+      expect(onEvent).toHaveBeenCalledTimes(3)
     })
   })
 
@@ -1129,7 +1246,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.load(null, 0)
 
       mseStrategy.pause()
-      mediaElement.dispatchEvent(new Event("paused"))
+      mediaElement.dispatchEvent(new Event("pause"))
       mockDashInstance.isPaused.mockReturnValue(true)
 
       mseStrategy.setCurrentTime(300)
@@ -1465,80 +1582,4 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockErrorCallback).toHaveBeenCalledWith({ code: 30, message: "videoCodec is not supported" })
     })
   })
-
-  // describe("seeking and waiting events", () => {
-  //   let eventCallbackSpy
-
-  //   beforeEach(() => {
-  //     setUpMSE()
-  //     eventCallbackSpy = jest.fn()
-  //     mseStrategy.addEventCallback(this, eventCallbackSpy)
-  //     mseStrategy.load(null, 0)
-  //     mseStrategy.play()
-  //   })
-
-  //   it("should call the event callback once when seeking", () => {
-  //     mseStrategy.pause()
-
-  //     mseStrategy.setCurrentTime(60)
-
-  //     eventCallbacks("seeking")
-  //     eventCallbacks("waiting")
-
-  //     expect(eventCallbackSpy).toHaveBeenCalledTimes(1)
-  //   })
-
-  //   it("should call the event callback more than once when not seeking", () => {
-  //     eventCallbacks("waiting")
-  //     eventCallbacks("waiting")
-
-  //     expect(eventCallbackSpy).toHaveBeenCalledTimes(2)
-  //   })
-  // })
-
-  // describe("plugins", () => {
-  //   it("fires onFragmentContentLengthMismatch when dash.js fires FRAGMENT_CONTENT_LENGTH_MISMATCH", () => {
-  //     const mockFragmentContentLengthMismatchEvent = {
-  //       responseUrl: "example.com",
-  //       mediaType: "video/mp4",
-  //       headerLength: 12,
-  //       bodyLength: 13,
-  //     }
-
-  //     jest.spyOn(Plugins.interface, "onFragmentContentLengthMismatch")
-
-  //     setUpMSE()
-  //     mseStrategy.load(null, 0)
-
-  //     dashEventCallback(
-  //       dashjsMediaPlayerEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH,
-  //       mockFragmentContentLengthMismatchEvent
-  //     )
-
-  //     expect(Plugins.interface.onFragmentContentLengthMismatch).toHaveBeenCalledWith(
-  //       mockFragmentContentLengthMismatchEvent
-  //     )
-  //   })
-  // })
-
-  // describe("gap jumps", () => {
-  //   it("logs a seek triggered by a gap to the debugger", () => {
-  //     setUpMSE()
-  //     mseStrategy.load(null, 0)
-  //     dashEventCallback("gapCausedInternalSeek", { duration: 0.3, seekTime: 33.3 })
-
-  //     expect(DebugTool.gap).toHaveBeenCalledTimes(1)
-  //     expect(DebugTool.gap).toHaveBeenCalledWith(33, 33.3)
-  //   })
-
-  //   it("logs a seek to end triggered by a gap to the debugger", () => {
-  //     setUpMSE()
-  //     mseStrategy.load(null, 0)
-
-  //     dashEventCallback("gapCausedSeekToPeriodEnd", { duration: 0.3, seekTime: 33.3 })
-
-  //     expect(DebugTool.gap).toHaveBeenCalledTimes(1)
-  //     expect(DebugTool.gap).toHaveBeenCalledWith(33, 33.3)
-  //   })
-  // })
 })
