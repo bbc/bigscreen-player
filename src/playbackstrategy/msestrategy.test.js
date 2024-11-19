@@ -2,7 +2,7 @@ import MediaKinds from "../models/mediakinds"
 // import LiveSupport from "../models/livesupport"
 import MSEStrategy from "./msestrategy"
 // import TimeUtils from "../utils/timeutils"
-// import DynamicWindowUtils from "../dynamicwindowutils"
+import DynamicWindowUtils from "../dynamicwindowutils"
 // import Plugins from "../plugins"
 // import DebugTool from "../debugger/debugtool"
 import Utils from "../utils/playbackutils"
@@ -925,43 +925,110 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
   })
 
-  // describe("autoresume", () => {
-  //   it("should start autoresume timeout when paused", () => {
-  //     mseStrategy.pause()
+  describe("autoresume", () => {
+    it("should not start autoresume timeout when paused on a static stream", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.STATIC })
 
-  //     expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
-  //   })
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-  //   it("should not start autoresume timeout when paused and disableAutoResume is set", () => {
-  //     const opts = {
-  //       disableAutoResume: true,
-  //     }
+      mseStrategy.pause()
 
-  //     mseStrategy.pause(opts)
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+    })
 
-  //     expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
-  //   })
+    it("should not start autoresume timeout when paused on a dynamic stream without timeshift", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
 
-  //   it("should start auto resume timeout when paused and seeking", () => {
-  //     mockDashInstance.isPaused.mockReturnValue(true)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-  //     mseStrategy.pause()
-  //     mseStrategy.setCurrentTime()
+      mseStrategy.pause()
 
-  //     eventCallbacks("seeked")
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+    })
 
-  //     expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(2)
-  //   })
+    it("should not start autoresume timeout when paused and disableAutoResume is set", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
 
-  //   it("should not try to autoresume when playing and seeking", () => {
-  //     mockDashInstance.isPaused.mockReturnValue(false)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-  //     mseStrategy.setCurrentTime()
-  //     eventCallbacks("seeked")
+      mseStrategy.pause({
+        disableAutoResume: true,
+      })
 
-  //     expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
-  //   })
-  // })
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+    })
+
+    it("should start autoresume timeout when paused on a dynamic stream with timeshift", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      mseStrategy.pause()
+
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+    })
+
+    it("should start auto resume timeout when paused and seeking", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      mseStrategy.pause()
+      mediaElement.dispatchEvent(new Event("paused"))
+      mockDashInstance.isPaused.mockReturnValue(true)
+
+      mseStrategy.setCurrentTime(300)
+      mediaElement.dispatchEvent(new Event("seeking"))
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(2)
+    })
+
+    it("should not start autoresume timeout when playing and seeking", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      mockDashInstance.isPaused.mockReturnValue(false)
+
+      mseStrategy.setCurrentTime(300)
+      mediaElement.dispatchEvent(new Event("seeking"))
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+    })
+  })
 
   // describe("Playback Rate", () => {
   //   it("should call through to MediaPlayer's setPlaybackRate function", () => {

@@ -143,7 +143,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     isSeeking = false
 
     if (isPaused()) {
-      if (windowType === WindowTypes.SLIDING) {
+      if (manifestType === ManifestType.DYNAMIC && isSliding()) {
         startAutoResumeTimeout()
       }
       publishMediaState(MediaState.PAUSED)
@@ -602,7 +602,11 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
         DebugTool.info(`Stream ended`)
       }
 
-      const dvrTimeInSeconds = convertPresentationTimeToDVRTime(presentationTimeInSeconds)
+      const dvrTimeInSeconds = convertPresentationTimeToDVRTime(
+        presentationTimeInSeconds > mediaPresentationDuration
+          ? clampPresentationTimeToSafeRange(mediaPresentationDuration)
+          : presentationTimeInSeconds
+      )
 
       mediaPlayer.seek(dvrTimeInSeconds)
     })
@@ -618,6 +622,16 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     if (index !== -1) {
       eventCallbacks.splice(index, 1)
     }
+  }
+
+  function isSliding() {
+    const { timeShiftBufferDepthInMilliseconds } = mediaSources.time()
+
+    return (
+      typeof timeShiftBufferDepthInMilliseconds === "number" &&
+      isFinite(timeShiftBufferDepthInMilliseconds) &&
+      timeShiftBufferDepthInMilliseconds > 0
+    )
   }
 
   function startAutoResumeTimeout() {
@@ -710,7 +724,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
 
   function pause(opts = {}) {
     mediaPlayer.pause()
-    if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
+    if (!opts.disableAutoResume && manifestType === ManifestType.DYNAMIC && isSliding()) {
       startAutoResumeTimeout()
     }
   }
