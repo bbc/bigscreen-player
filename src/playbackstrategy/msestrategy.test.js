@@ -1299,7 +1299,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockErrorCallback).toHaveBeenCalledWith({ code: 9999 })
     })
 
-    it("should failover on a dash.js manifest download error", async () => {
+    it("should failover with correct parameters on a dash.js manifest download error", async () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       const mockErrorCallback = jest.fn()
@@ -1319,6 +1319,14 @@ describe("Media Source Extensions Playback Strategy", () => {
       await new Promise(process.nextTick)
 
       expect(mockErrorCallback).not.toHaveBeenCalled()
+
+      expect(mockMediaSources.failover).toHaveBeenCalledWith({
+        isBufferingTimeoutError: false,
+        currentTime: 0,
+        duration: 100,
+        code: 25,
+        message: "Mock manifest load fail",
+      })
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[1].url)
       expect(mockDashInstance.attachSource).toHaveBeenCalledTimes(2)
     })
@@ -1392,198 +1400,69 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockErrorCallback).toHaveBeenCalledTimes(1)
     })
 
-    it("should not publish error event on content download error if more than one CDN available", () => {
-      const mockEvent = {
+    it("should not trigger any error listeners on a content download error if more than one CDN available", () => {
+      mockMediaSources.availableSources.mockReturnValueOnce(["mock://cdn1.com/mpd/", "mock://cdn2.com/mpd/"])
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const mockErrorCallback = jest.fn()
+
+      mseStrategy.addErrorCallback(null, mockErrorCallback)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
         error: {
           message: "content download error",
           code: 27,
         },
-      }
+      })
 
-      setUpMSE()
+      expect(mockErrorCallback).not.toHaveBeenCalled()
+    })
+
+    it("should trigger any error listeners on an content download error if only one CDN available", () => {
+      mockMediaSources.availableSources.mockReturnValueOnce(["mock://cdn1.com/mpd/"])
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
 
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      expect(mockErrorCallback).not.toHaveBeenCalled()
-    })
-
-    it("should publish error event on content download error if only one CDN available", () => {
-      const mockEvent = {
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
         error: {
           message: "content download error",
           code: 27,
         },
-      }
+      })
 
-      setUpMSE()
+      expect(mockErrorCallback).toHaveBeenCalledWith({
+        message: "content download error",
+        code: 27,
+      })
+
+      expect(mockErrorCallback).toHaveBeenCalledTimes(1)
+    })
+
+    it("should reset the media player and trigger any error listeners if an unsupported codec error is thrown", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
 
-      const noop = () => {}
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      expect(mockErrorCallback).toHaveBeenCalled()
-    })
-
-    it("should initiate a failover with correct parameters on manifest download error", () => {
-      const mockEvent = {
-        error: {
-          message: "manifest download error",
-          code: 25,
-        },
-      }
-
-      setUpMSE()
-
-      mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      const failoverParams = {
-        isBufferingTimeoutError: false,
-        currentTime: mseStrategy.getCurrentTime(),
-        duration: mseStrategy.getDuration(),
-        code: mockEvent.error.code,
-        message: mockEvent.error.message,
-      }
-
-      expect(mediaSources.failover).toHaveBeenCalledWith(mseStrategy.load, expect.any(Function), failoverParams)
-    })
-
-    it("should not publish error event on manifest download error when it is possible to failover", () => {
-      const mockEvent = {
-        error: {
-          message: "manifest download error",
-          code: 25,
-        },
-      }
-
-      setUpMSE()
-
-      const mockErrorCallback = jest.fn()
-      mseStrategy.addErrorCallback(null, mockErrorCallback)
-
-      mseStrategy.load(null, 0)
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      expect(mockErrorCallback).not.toHaveBeenCalled()
-    })
-
-    it("should publish an error event on manifest download error when there are no more sources to CDN failover to", () => {
-      const mockEvent = {
-        error: {
-          message: "manifest download error",
-          code: 25,
-        },
-      }
-
-      const noop = () => {}
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: false })
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: false })
-
-      setUpMSE()
-
-      const mockErrorCallback = jest.fn()
-      mseStrategy.addErrorCallback(null, mockErrorCallback)
-
-      mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      expect(mockErrorCallback).toHaveBeenCalledWith({ code: 25, message: "manifest download error" })
-    })
-
-    it("should publish an error event for any other error propagated from dash.js", () => {
-      const mockEvent = {
-        error: {
-          message: "MEDIA_ERR_ABORTED (message from element)",
-          code: 1,
-        },
-      }
-
-      setUpMSE()
-
-      const mockErrorCallback = jest.fn()
-      mseStrategy.addErrorCallback(null, mockErrorCallback)
-
-      mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      expect(mockErrorCallback).toHaveBeenCalledWith({ code: 1, message: "MEDIA_ERR_ABORTED (message from element)" })
-    })
-
-    it("should reset the media player immediately if an unsupported codec error is thrown", () => {
-      const mockEvent = {
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
         error: {
           message: "videoCodec is not supported",
           code: 30,
         },
-      }
-
-      setUpMSE()
-
-      const mockErrorCallback = jest.fn()
-      mseStrategy.addErrorCallback(null, mockErrorCallback)
-
-      mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
+      })
 
       expect(mockDashInstance.reset).toHaveBeenCalled()
       expect(mockErrorCallback).toHaveBeenCalledWith({ code: 30, message: "videoCodec is not supported" })
-    })
-
-    it("should initiate a failover with the previous error code and message on baseurlselected", () => {
-      const mockErrorEvent = {
-        error: {
-          message: "content download error",
-          code: 27,
-        },
-      }
-
-      setUpMSE()
-
-      mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockErrorEvent)
-      expect(mediaSources.failover).not.toHaveBeenCalled()
-
-      const mockBaseUrlEvent = {
-        mediaType: "video",
-        type: "baseUrlSelected",
-        baseUrl: {
-          serviceLocation: "cdn1",
-        },
-      }
-
-      dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, mockBaseUrlEvent)
-
-      const failoverParams = {
-        isBufferingTimeoutError: false,
-        serviceLocation: "cdn1",
-        code: mockErrorEvent.error.code,
-        message: mockErrorEvent.error.message,
-      }
-
-      expect(mediaSources.failover).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), failoverParams)
     })
   })
 
