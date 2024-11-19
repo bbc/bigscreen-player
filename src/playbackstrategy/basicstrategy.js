@@ -1,14 +1,15 @@
 import DebugTool from "../debugger/debugtool"
-import MediaState from "../models/mediastate"
-import WindowTypes from "../models/windowtypes"
-import MediaKinds from "../models/mediakinds"
+import { ManifestType } from "../models/manifesttypes"
 import LiveSupport from "../models/livesupport"
-import DynamicWindowUtils from "../dynamicwindowutils"
-import DOMHelpers from "../domhelpers"
+import MediaKinds from "../models/mediakinds"
+import MediaState from "../models/mediastate"
 import handlePlayPromise from "../utils/handleplaypromise"
+import DOMHelpers from "../domhelpers"
+import DynamicWindowUtils from "../dynamicwindowutils"
 
-function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
+function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   const CLAMP_OFFSET_SECONDS = 1.1
+  const manifestType = mediaSources.time().manifestType
 
   let eventCallbacks = []
   let errorCallback
@@ -16,7 +17,6 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
 
   let mediaElement
   let metaDataLoaded
-  let timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
 
   function publishMediaState(mediaState) {
     for (let index = 0; index < eventCallbacks.length; index++) {
@@ -77,9 +77,9 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
     mediaElement.addEventListener("loadedmetadata", onLoadedMetadata)
   }
 
-  function setStartTime(startTime) {
-    if (startTime) {
-      mediaElement.currentTime = startTime + timeCorrection
+  function setStartTime(presentationTimeInSeconds) {
+    if (presentationTimeInSeconds) {
+      mediaElement.currentTime = presentationTimeInSeconds
     }
   }
 
@@ -101,7 +101,7 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
 
   function onSeeked() {
     if (isPaused()) {
-      if (windowType === WindowTypes.SLIDING) {
+      if (manifestType === ManifestType.DYNAMIC) {
         startAutoResumeTimeout()
       }
 
@@ -140,8 +140,8 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
   function getSeekableRange() {
     if (mediaElement && mediaElement.seekable && mediaElement.seekable.length > 0 && metaDataLoaded) {
       return {
-        start: mediaElement.seekable.start(0) - timeCorrection,
-        end: mediaElement.seekable.end(0) - timeCorrection,
+        start: mediaElement.seekable.start(0),
+        end: mediaElement.seekable.end(0),
       }
     }
     return {
@@ -159,7 +159,7 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
   }
 
   function getCurrentTime() {
-    return mediaElement ? mediaElement.currentTime - timeCorrection : 0
+    return mediaElement ? mediaElement.currentTime : 0
   }
 
   function addEventCallback(thisArg, newCallback) {
@@ -190,11 +190,11 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
     handlePlayPromise(mediaElement.play())
   }
 
-  function setCurrentTime(time) {
+  function setCurrentTime(presentationTimeInSeconds) {
     // Without metadata we cannot clamp to seekableRange
     mediaElement.currentTime = metaDataLoaded
-      ? getClampedTime(time, getSeekableRange()) + timeCorrection
-      : time + timeCorrection
+      ? getClampedTime(presentationTimeInSeconds, getSeekableRange())
+      : presentationTimeInSeconds
   }
 
   function setPlaybackRate(rate) {
@@ -239,7 +239,6 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
 
     mediaElement = undefined
     metaDataLoaded = undefined
-    timeCorrection = undefined
   }
 
   function reset() {}
@@ -248,9 +247,11 @@ function BasicStrategy(mediaSources, windowType, mediaKind, playbackElement) {
     return mediaElement.ended
   }
 
-  function pause(opts = {}) {
+  function pause() {
     mediaElement.pause()
-    if (opts.disableAutoResume !== true && windowType === WindowTypes.SLIDING) {
+
+    // TODO: Implement time shift checker polling seekable range
+    if (manifestType === ManifestType.DYNAMIC) {
       startAutoResumeTimeout()
     }
   }

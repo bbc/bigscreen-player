@@ -1,4 +1,4 @@
-import WindowTypes from "../models/windowtypes"
+import { ManifestType } from "../models/manifesttypes"
 import MediaKinds from "../models/mediakinds"
 import MediaState from "../models/mediastate"
 import BasicStrategy from "./basicstrategy"
@@ -7,19 +7,15 @@ import DynamicWindowUtils from "../dynamicwindowutils"
 const autoResumeSpy = jest.spyOn(DynamicWindowUtils, "autoResumeAtStartOfRange")
 
 describe("HTML5 Strategy", () => {
+  let playbackElement
   let audioElement
   let videoElement
-  let basicStrategy
   let cdnArray
-  let playbackElement
-  let mockMediaSources
-  let testTimeCorrection
 
-  function setUpStrategy(windowType, mediaKind) {
-    const defaultWindowType = windowType || WindowTypes.STATIC
-    const defaultMediaKind = mediaKind || MediaKinds.VIDEO
-
-    basicStrategy = BasicStrategy(mockMediaSources, defaultWindowType, defaultMediaKind, playbackElement)
+  const mockMediaSources = {
+    time: jest.fn(),
+    currentSource: jest.fn().mockReturnValue(""),
+    availableSources: jest.fn().mockReturnValue([]),
   }
 
   beforeEach(() => {
@@ -48,15 +44,17 @@ describe("HTML5 Strategy", () => {
       { url: "http://testcdn3/test/", cdn: "http://testcdn3/test/" },
     ]
 
-    mockMediaSources = {
-      time: () => ({ timeCorrectionSeconds: testTimeCorrection }),
-      currentSource: () => cdnArray[0].url,
-    }
+    mockMediaSources.currentSource.mockReturnValue(cdnArray[0].url)
+
+    mockMediaSources.time.mockReturnValue({
+      manifestType: ManifestType.STATIC,
+      presentationTimeOffsetInMilliseconds: 0,
+      availabilityStartTimeInMilliseconds: 0,
+      timeShiftBufferDepthInMilliseconds: 0,
+    })
   })
 
   afterEach(() => {
-    testTimeCorrection = 0
-    basicStrategy.tearDown()
     videoElement = undefined
     audioElement = undefined
     autoResumeSpy.mockReset()
@@ -64,7 +62,7 @@ describe("HTML5 Strategy", () => {
 
   describe("transitions", () => {
     it("canBePaused() and canBeginSeek transitions are true", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       expect(basicStrategy.transitions.canBePaused()).toBe(true)
       expect(basicStrategy.transitions.canBeginSeek()).toBe(true)
@@ -73,7 +71,7 @@ describe("HTML5 Strategy", () => {
 
   describe("load", () => {
     it("should create a video element and add it to the playback element", () => {
-      setUpStrategy(null, MediaKinds.VIDEO)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       expect(playbackElement.childElementCount).toBe(0)
 
@@ -84,7 +82,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should create an audio element and add it to the playback element", () => {
-      setUpStrategy(null, MediaKinds.AUDIO)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.AUDIO, playbackElement)
 
       expect(playbackElement.childElementCount).toBe(0)
 
@@ -97,7 +95,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should set the style properties correctly on the media element", () => {
-      setUpStrategy(null, MediaKinds.VIDEO)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
 
       expect(videoElement.style.position).toBe("absolute")
@@ -106,7 +104,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should set the autoplay and preload properties correctly on the media element", () => {
-      setUpStrategy(null, MediaKinds.VIDEO)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
 
       const videoElement = document.querySelector("video")
@@ -116,28 +114,28 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should set the source url correctly on the media element", () => {
-      setUpStrategy(null, MediaKinds.VIDEO)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
 
       expect(videoElement.src).toBe("http://testcdn1/test/")
     })
 
     it("should set the currentTime to start time if one is provided", () => {
-      setUpStrategy(null, MediaKinds.VIDEO)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 25)
 
       expect(videoElement.currentTime).toBe(25)
     })
 
     it("should not set the currentTime to start time if one is not provided", () => {
-      setUpStrategy(null, MediaKinds.VIDEO)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
 
       expect(videoElement.currentTime).toBe(0)
     })
 
     it("should call load on the media element", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       const videoLoadSpy = jest.spyOn(videoElement, "load")
       basicStrategy.load(null)
@@ -146,12 +144,12 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should update the media element source if load is when media element already exists", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
 
       expect(videoElement.src).toBe("http://testcdn1/test/")
 
-      mockMediaSources.currentSource = () => cdnArray[1].url
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
 
       basicStrategy.load(null)
 
@@ -159,7 +157,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should update the media element currentTime if load is called with a start time when media element already exists", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 25)
 
       expect(videoElement.currentTime).toBe(25)
@@ -170,7 +168,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should not update the media element currentTime if load is called without a start time when media element already exists", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 25)
 
       expect(videoElement.currentTime).toBe(25)
@@ -181,7 +179,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should set up bindings to media element events correctly", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       const addEventListenerSpy = jest.spyOn(videoElement, "addEventListener")
       basicStrategy.load(null)
 
@@ -199,7 +197,7 @@ describe("HTML5 Strategy", () => {
 
   describe("play", () => {
     it("should call through to the media elements play function", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       const playSpy = jest.spyOn(videoElement, "play")
       basicStrategy.play()
@@ -210,7 +208,7 @@ describe("HTML5 Strategy", () => {
 
   describe("pause", () => {
     it("should call through to the media elements pause function", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       const pauseSpy = jest.spyOn(videoElement, "pause")
       basicStrategy.pause()
@@ -219,7 +217,8 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should start autoresume timeout if sliding window", () => {
-      setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       basicStrategy.load(null, 0)
       basicStrategy.pause()
 
@@ -239,7 +238,7 @@ describe("HTML5 Strategy", () => {
         disableAutoResume: true,
       }
 
-      setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       basicStrategy.pause(opts)
 
@@ -265,33 +264,24 @@ describe("HTML5 Strategy", () => {
     })
 
     it("returns the correct start and end time before load has been called", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       expect(basicStrategy.getSeekableRange()).toEqual({ start: 0, end: 0 })
     })
 
     it("returns the correct start and end time before meta data has loaded", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
 
       expect(basicStrategy.getSeekableRange()).toEqual({ start: 0, end: 0 })
     })
 
     it("returns the correct start and end time once meta data has loaded", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
       expect(basicStrategy.getSeekableRange()).toEqual({ start: 25, end: 100 })
-    })
-
-    it("returns the correct start and end time minus any time correction", () => {
-      testTimeCorrection = 20
-      setUpStrategy()
-      basicStrategy.load(null)
-      videoElement.dispatchEvent(new Event("loadedmetadata"))
-
-      expect(basicStrategy.getSeekableRange()).toEqual({ start: 5, end: 80 })
     })
   })
 
@@ -301,20 +291,20 @@ describe("HTML5 Strategy", () => {
     })
 
     it("returns duration of zero before load has been called", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       expect(basicStrategy.getDuration()).toBe(0)
     })
 
     it("returns duration of zero before meta data has loaded", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
 
       expect(basicStrategy.getDuration()).toBe(0)
     })
 
     it("returns the correct duration once meta data has loaded", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
@@ -328,13 +318,13 @@ describe("HTML5 Strategy", () => {
     })
 
     it("returns currentTime of zero before load has been called", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       expect(basicStrategy.getCurrentTime()).toBe(0)
     })
 
     it("returns the correct currentTime once load has been called", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
 
       expect(basicStrategy.getCurrentTime()).toBe(5)
@@ -342,16 +332,6 @@ describe("HTML5 Strategy", () => {
       videoElement.currentTime = 10
 
       expect(basicStrategy.getCurrentTime()).toBe(10)
-    })
-
-    it("subtracts any time correction from the media elements current time", () => {
-      testTimeCorrection = 20
-      setUpStrategy()
-      basicStrategy.load(null)
-
-      videoElement.currentTime = 50
-
-      expect(basicStrategy.getCurrentTime()).toBe(30)
     })
   })
 
@@ -371,7 +351,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("sets the current time on the media element to that passed in", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
 
       basicStrategy.setCurrentTime(10)
@@ -379,18 +359,8 @@ describe("HTML5 Strategy", () => {
       expect(basicStrategy.getCurrentTime()).toBe(10)
     })
 
-    it("adds time correction from the media source onto the passed in seek time", () => {
-      testTimeCorrection = 20
-      setUpStrategy()
-      basicStrategy.load(null)
-
-      basicStrategy.setCurrentTime(50)
-
-      expect(videoElement.currentTime).toBe(70)
-    })
-
     it("does not attempt to clamp time if meta data is not loaded", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
 
       // this is greater than expected seekable range. although range does not exist until meta data loaded
@@ -400,7 +370,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("clamps to 1.1 seconds before seekable range end when seeking to end", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
@@ -410,7 +380,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("clamps to 1.1 seconds before seekable range end when seeking past end", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
@@ -420,7 +390,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("clamps to 1.1 seconds before seekable range end when seeking prior to end", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
@@ -430,7 +400,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("clamps to the start of seekable range when seeking before start of range", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null)
       videoElement.dispatchEvent(new Event("loadedmetadata"))
 
@@ -442,7 +412,7 @@ describe("HTML5 Strategy", () => {
 
   describe("Playback Rate", () => {
     it("sets the playback rate on the media element", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       basicStrategy.setPlaybackRate(2)
 
@@ -450,7 +420,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("gets the playback rate on the media element", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       const testRate = 1.5
       basicStrategy.setPlaybackRate(testRate)
@@ -463,7 +433,7 @@ describe("HTML5 Strategy", () => {
 
   describe("isPaused", () => {
     it("should return false when the media element is not paused", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       jest.spyOn(videoElement, "paused", "get").mockReturnValueOnce(false)
 
@@ -471,7 +441,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should return true when the media element is paused", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       jest.spyOn(videoElement, "paused", "get").mockReturnValueOnce(true)
 
@@ -481,7 +451,7 @@ describe("HTML5 Strategy", () => {
 
   describe("isEnded", () => {
     it("should return false when the media element is not ended", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       jest.spyOn(videoElement, "ended", "get").mockReturnValueOnce(false)
 
@@ -489,7 +459,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should return true when the media element is ended", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       jest.spyOn(videoElement, "ended", "get").mockReturnValueOnce(true)
 
@@ -499,7 +469,7 @@ describe("HTML5 Strategy", () => {
 
   describe("tearDown", () => {
     it("should remove all event listener bindings", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
 
       const removeEventListenerSpy = jest.spyOn(videoElement, "removeEventListener")
@@ -517,7 +487,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should remove the video element", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
 
       expect(playbackElement.childElementCount).toBe(1)
@@ -528,7 +498,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should empty the eventCallbacks", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       function tearDownAndError() {
         // add event callback to prove array is emptied in tearDown
@@ -544,7 +514,7 @@ describe("HTML5 Strategy", () => {
     it("should undefine the error callback", () => {
       const errorCallbackSpy = jest.fn()
 
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.addErrorCallback(this, errorCallbackSpy)
       basicStrategy.load(null, 0)
       basicStrategy.tearDown()
@@ -556,7 +526,7 @@ describe("HTML5 Strategy", () => {
     it("should undefine the timeupdate callback", () => {
       const timeUpdateCallbackSpy = jest.fn()
 
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy)
       basicStrategy.load(null, 0)
       basicStrategy.tearDown()
@@ -566,7 +536,7 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should undefine the mediaPlayer element", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
       basicStrategy.tearDown()
 
@@ -576,7 +546,7 @@ describe("HTML5 Strategy", () => {
 
   describe("getPlayerElement", () => {
     it("should return the mediaPlayer element", () => {
-      setUpStrategy()
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
 
       expect(basicStrategy.getPlayerElement()).toEqual(videoElement)
@@ -587,9 +557,12 @@ describe("HTML5 Strategy", () => {
     let eventCallbackSpy
     let timeUpdateCallbackSpy
     let errorCallbackSpy
+    let basicStrategy
 
     beforeEach(() => {
-      setUpStrategy(WindowTypes.SLIDING, MediaKinds.VIDEO)
+      basicStrategy?.tearDown()
+
+      basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 25)
 
       eventCallbackSpy = jest.fn()
@@ -638,7 +611,18 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should start auto-resume timeout on seeked event if media element is paused and SLIDING window", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      basicStrategy.load(null, 0)
+
       jest.spyOn(videoElement, "paused", "get").mockReturnValueOnce(true)
+
       videoElement.dispatchEvent(new Event("seeked"))
 
       expect(autoResumeSpy).toHaveBeenCalledTimes(1)
