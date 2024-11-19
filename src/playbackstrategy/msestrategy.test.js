@@ -491,6 +491,66 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
     })
+
+    it("should call plugins with the combined playback bitrate on quality change rendered dash.js event", () => {
+      jest.spyOn(Plugins.interface, "onPlayerInfoUpdated")
+
+      mockDashInstance.getBitrateInfoListFor.mockReturnValue([
+        { bitrate: 1024000 },
+        { bitrate: 200000 },
+        { bitrate: 3000000 },
+      ])
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, {
+        mediaType: "video",
+        oldQuality: 0,
+        newQuality: 1,
+        type: "qualityChangeRendered",
+      })
+
+      expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
+        playbackBitrate: 2048,
+        bufferLength: undefined,
+      })
+    })
+
+    it("should call plugins with video playback buffer length on metric added dash.js event", () => {
+      jest.spyOn(Plugins.interface, "onPlayerInfoUpdated")
+      mockDashMetrics.getCurrentBufferLevel.mockReturnValueOnce(15)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.METRIC_ADDED, {
+        mediaType: "video",
+        metric: "BufferLevel",
+      })
+
+      expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
+        playbackBitrate: undefined,
+        bufferLength: 15,
+      })
+    })
+
+    it("should not call plugins with audio playback buffer length when mediaKind is video on metric added dash.js event", () => {
+      jest.spyOn(Plugins.interface, "onPlayerInfoUpdated")
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.METRIC_ADDED, {
+        mediaType: "audio",
+        metric: "BufferLevel",
+      })
+
+      expect(Plugins.interface.onPlayerInfoUpdated).not.toHaveBeenCalled()
+    })
   })
 
   describe("Transitions", () => {
@@ -1219,71 +1279,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
     })
   })
-
-  // describe("onMetricAdded and onQualityChangeRendered", () => {
-  //   const mockEvent = {
-  //     mediaType: "video",
-  //     oldQuality: 0,
-  //     newQuality: 1,
-  //     type: "qualityChangeRendered",
-  //   }
-
-  //   const mockOnPlayerInfoUpdated = jest.fn()
-
-  //   beforeEach(() => {
-  //     jest.spyOn(Plugins.interface, "onPlayerInfoUpdated").mockReturnValue(mockOnPlayerInfoUpdated)
-  //     jest.spyOn(Plugins.interface, "onErrorHandled")
-  //     mockOnPlayerInfoUpdated.mockReset()
-  //   })
-
-  //   it("should call plugins with the combined playback bitrate", () => {
-  //     setUpMSE()
-  //     mockDashInstance.getBitrateInfoListFor.mockReturnValue([
-  //       { bitrate: 1024000 },
-  //       { bitrate: 200000 },
-  //       { bitrate: 3000000 },
-  //     ])
-  //     mseStrategy.load(null, 0)
-
-  //     dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent)
-
-  //     expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-  //       playbackBitrate: 2048,
-  //       bufferLength: undefined,
-  //     })
-  //   })
-
-  //   it("should call plugins with video playback buffer length", () => {
-  //     const mockBufferEvent = {
-  //       mediaType: "video",
-  //       metric: "BufferLevel",
-  //     }
-
-  //     setUpMSE()
-  //     mseStrategy.load(null, 0)
-
-  //     dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent)
-
-  //     expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-  //       playbackBitrate: undefined,
-  //       bufferLength: "buffer",
-  //     })
-  //   })
-
-  //   it("should not call plugins with audio playback buffer length when mediaKind is video", () => {
-  //     const mockBufferEvent = {
-  //       mediaType: "audio",
-  //       metric: "BufferLevel",
-  //     }
-
-  //     setUpMSE()
-  //     mseStrategy.load(null, 0)
-
-  //     dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent)
-
-  //     expect(Plugins.interface.onPlayerInfoUpdated).not.toHaveBeenCalledWith()
-  //   })
-  // })
 
   // describe("Error handling", () => {
 
