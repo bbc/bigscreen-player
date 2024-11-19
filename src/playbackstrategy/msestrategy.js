@@ -460,13 +460,13 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.isPaused() : undefined
   }
 
-  function load(mimeType, playbackTime) {
+  function load(mimeType, presentationTimeInSeconds) {
     if (mediaPlayer) {
       modifySource(refreshFailoverPresentationTimeInSeconds || failoverPresentationTimeInSeconds)
     } else {
-      failoverPresentationTimeInSeconds = playbackTime
+      failoverPresentationTimeInSeconds = presentationTimeInSeconds
       setUpMediaElement(playbackElement)
-      setUpMediaPlayer(playbackTime)
+      setUpMediaPlayer(presentationTimeInSeconds)
       setUpMediaListeners()
     }
   }
@@ -492,18 +492,18 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     return settings
   }
 
-  function setUpMediaPlayer(playbackTime) {
+  function setUpMediaPlayer(presentationTimeInSeconds) {
     const dashSettings = getDashSettings(playerSettings)
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
     mediaPlayer.initialize(mediaElement, null, true)
-    modifySource(playbackTime)
+    modifySource(presentationTimeInSeconds)
   }
 
-  function modifySource(playbackTime) {
+  function modifySource(presentationTimeInSeconds) {
     const source = mediaSources.currentSource()
-    const anchor = buildSourceAnchor(playbackTime)
+    const anchor = buildSourceAnchor(presentationTimeInSeconds)
 
     mediaPlayer.attachSource(`${source}${anchor}`)
   }
@@ -569,7 +569,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     manifestRequestTime = event.request.requestEndDate.getTime() - event.request.requestStartDate.getTime()
   }
 
-  function getSeekableRangeInPresentationTime() {
+  function getSeekableRange() {
     if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
       const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
 
@@ -635,7 +635,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
   function startAutoResumeTimeout() {
     DynamicWindowUtils.autoResumeAtStartOfRange(
       getCurrentTime(),
-      getSeekableRangeInPresentationTime(),
+      getSeekableRange(),
       addEventCallback,
       removeEventCallback,
       (event) => event !== MediaState.PAUSED,
@@ -684,7 +684,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     }
   }
 
-  function getSafelySeekableRangeInPresentationTime() {
+  function getSafelySeekableRange() {
     if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
       const { range } = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
 
@@ -695,13 +695,13 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
   }
 
   function clampPresentationTimeToSafeRange(presentationTimeInSeconds) {
-    const { start, end } = getSafelySeekableRangeInPresentationTime()
+    const { start, end } = getSafelySeekableRange()
 
     return Math.min(Math.max(presentationTimeInSeconds, start), end)
   }
 
   function convertPresentationTimeToDVRTime(presentationTimeInSeconds) {
-    const { start } = getSafelySeekableRangeInPresentationTime()
+    const { start } = getSafelySeekableRange()
 
     return presentationTimeInSeconds - start
   }
@@ -712,7 +712,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
 
     const safePresentationTime = clampPresentationTimeToSafeRange(presentationTimeInSeconds)
 
-    if (manifestType === ManifestType.DYNAMIC && safePresentationTime > mediaElement.currentTime) {
+    if (manifestType === ManifestType.DYNAMIC && safePresentationTime > getCurrentTime()) {
       refreshManifestBeforeSeek(safePresentationTime)
     } else {
       const dvrTimeInSeconds = convertPresentationTimeToDVRTime(safePresentationTime)
@@ -720,9 +720,10 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
     }
   }
 
-  function pause(opts = {}) {
+  function pause() {
     mediaPlayer.pause()
-    if (!opts.disableAutoResume && manifestType === ManifestType.DYNAMIC && isSliding()) {
+
+    if (manifestType === ManifestType.DYNAMIC && isSliding()) {
       startAutoResumeTimeout()
     }
   }
@@ -761,13 +762,13 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
     load,
-    getSeekableRange: getSeekableRangeInPresentationTime,
+    getSeekableRange,
     getCurrentTime,
     getDuration,
     getPlayerElement: () => mediaElement,
     tearDown,
     reset: () => {
-      if (window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.resetMSEPlayer) {
+      if (window.bigscreenPlayer?.overrides?.resetMSEPlayer) {
         cleanUpMediaPlayer()
       }
     },

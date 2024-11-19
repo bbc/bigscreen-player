@@ -1192,24 +1192,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
 
-    it("should not start autoresume timeout when paused and disableAutoResume is set", () => {
-      mockMediaSources.time.mockReturnValue({
-        manifestType: ManifestType.DYNAMIC,
-        timeShiftBufferDepthInMilliseconds: 72000000,
-        availabilityStartTimeInMilliseconds: 1731974400000,
-        presentationTimeOffsetInMilliseconds: 0,
-      })
-
-      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-      mseStrategy.load(null, 0)
-
-      mseStrategy.pause({
-        disableAutoResume: true,
-      })
-
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
-    })
-
     it("should start autoresume timeout when paused on a dynamic stream with timeshift", () => {
       mockMediaSources.time.mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
