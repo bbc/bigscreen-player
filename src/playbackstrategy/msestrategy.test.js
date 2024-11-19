@@ -82,6 +82,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
+    STREAM_INITIALIZED: "streamInitialized",
   }
 
   let eventHandlers
@@ -985,6 +986,14 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.pause()
 
       expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledWith(
+        0,
+        { start: 0, end: 100 },
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        mockDashInstance.play
+      )
     })
 
     it("should start auto resume timeout when paused and seeking", () => {
@@ -1030,124 +1039,125 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
   })
 
-  // describe("Playback Rate", () => {
-  //   it("should call through to MediaPlayer's setPlaybackRate function", () => {
-  //     setUpMSE()
-  //     mseStrategy.load(null, 0)
+  describe("Playback Rate", () => {
+    it("should call through to MediaPlayer's setPlaybackRate function", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-  //     mseStrategy.setPlaybackRate(2)
+      mseStrategy.load(null, 0)
 
-  //     expect(mockDashInstance.setPlaybackRate).toHaveBeenCalledWith(2)
-  //   })
+      mseStrategy.setPlaybackRate(2)
 
-  //   it("should call through to MediaPlayer's getPlaybackRate function and returns correct value", () => {
-  //     setUpMSE()
-  //     mseStrategy.load(null, 0)
-  //     mockDashInstance.getPlaybackRate.mockReturnValue(1.5)
+      expect(mockDashInstance.setPlaybackRate).toHaveBeenCalledWith(2)
+    })
 
-  //     const rate = mseStrategy.getPlaybackRate()
+    it("should call through to MediaPlayer's getPlaybackRate function and returns correct value", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-  //     expect(mockDashInstance.getPlaybackRate).toHaveBeenCalled()
-  //     expect(rate).toBe(1.5)
-  //   })
-  // })
+      mseStrategy.load(null, 0)
 
-  // describe("mseDurationOverride", () => {
-  //   beforeEach(() => {
-  //     // due to interaction with emitPlayerInfo()
-  //     mockDashInstance.getBitrateInfoListFor.mockReturnValue([
-  //       { bitrate: 1024000 },
-  //       { bitrate: 200000 },
-  //       { bitrate: 3000000 },
-  //     ])
-  //   })
+      mockDashInstance.getPlaybackRate.mockReturnValue(1.5)
 
-  //   afterEach(() => {
-  //     mockDashInstance.setMediaDuration.mockReset()
-  //   })
+      const rate = mseStrategy.getPlaybackRate()
 
-  //   describe("overrides dynamic stream duration", () => {
-  //     it("when mseDurationOverride configration property is true and window type is sliding", () => {
-  //       window.bigscreenPlayer.overrides = {
-  //         mseDurationOverride: true,
-  //       }
+      expect(mockDashInstance.getPlaybackRate).toHaveBeenCalled()
+      expect(rate).toBe(1.5)
+    })
+  })
 
-  //       setUpMSE(0, WindowTypes.SLIDING)
-  //       mseStrategy.load(null, 0)
+  describe("mseDurationOverride", () => {
+    beforeEach(() => {
+      // due to interaction with emitPlayerInfo()
+      mockDashInstance.getBitrateInfoListFor.mockReturnValue([
+        { bitrate: 1024000 },
+        { bitrate: 200000 },
+        { bitrate: 3000000 },
+      ])
+    })
 
-  //       eventHandlers.streamInitialized()
+    it("does not override duration for a static stream when mseDurationOverride is false", () => {
+      window.bigscreenPlayer.overrides = {
+        mseDurationOverride: false,
+      }
 
-  //       expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-  //     })
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.STATIC,
+        presentationTimeOffsetInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 0,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
 
-  //     it("when mseDurationOverride configration property is true and window type is growing", () => {
-  //       window.bigscreenPlayer.overrides = {
-  //         mseDurationOverride: true,
-  //       }
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-  //       setUpMSE(0, WindowTypes.GROWING)
-  //       mseStrategy.load(null, 0)
+      mseStrategy.load(null, 0)
 
-  //       eventHandlers.streamInitialized()
+      dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
 
-  //       expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-  //     })
-  //   })
+      expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalled()
+    })
 
-  //   describe("does not override stream duration", () => {
-  //     it("when mseDurationOverride configration property is true and window type is static", () => {
-  //       window.bigscreenPlayer.overrides = {
-  //         mseDurationOverride: true,
-  //       }
+    it("does not override duration for a static stream when mseDurationOverride is true", () => {
+      window.bigscreenPlayer.overrides = {
+        mseDurationOverride: true,
+      }
 
-  //       setUpMSE(0, WindowTypes.STATIC)
-  //       mseStrategy.load(null, 0)
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.STATIC,
+        presentationTimeOffsetInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 0,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
 
-  //       eventHandlers.streamInitialized()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-  //       expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-  //     })
+      mseStrategy.load(null, 0)
 
-  //     it("when mseDurationOverride configration property is false and window type is static", () => {
-  //       window.bigscreenPlayer.overrides = {
-  //         mseDurationOverride: false,
-  //       }
+      dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
 
-  //       setUpMSE(0, WindowTypes.STATIC)
-  //       mseStrategy.load(null, 0)
+      expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalled()
+    })
 
-  //       eventHandlers.streamInitialized()
+    it("does not override duration for a dynamic stream when mseDurationOverride is false", () => {
+      window.bigscreenPlayer.overrides = {
+        mseDurationOverride: false,
+      }
 
-  //       expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-  //     })
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
 
-  //     it("when mseDurationOverride configration property is false and window type is sliding", () => {
-  //       window.bigscreenPlayer.overrides = {
-  //         mseDurationOverride: false,
-  //       }
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-  //       setUpMSE(0, WindowTypes.SLIDING)
-  //       mseStrategy.load(null, 0)
+      mseStrategy.load(null, 0)
 
-  //       eventHandlers.streamInitialized()
+      dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
 
-  //       expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-  //     })
+      expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalled()
+    })
 
-  //     it("when mseDurationOverride configration property is false and window type is growing", () => {
-  //       window.bigscreenPlayer.overrides = {
-  //         mseDurationOverride: false,
-  //       }
+    it("does override duration for a dynamic stream when mseDurationOverride is true", () => {
+      window.bigscreenPlayer.overrides = {
+        mseDurationOverride: true,
+      }
 
-  //       setUpMSE(0, WindowTypes.GROWING)
-  //       mseStrategy.load(null, 0)
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
 
-  //       eventHandlers.streamInitialized()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-  //       expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-  //     })
-  //   })
-  // })
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
+
+      expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
+    })
+  })
 
   // describe("onManifestLoaded", () => {
   //   it("calls onManifestLoaded plugin with the manifest when dashjs loads it", () => {
