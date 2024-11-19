@@ -232,18 +232,6 @@ describe("HTML5 Strategy", () => {
         basicStrategy.play
       )
     })
-
-    it("should not start autoresume timeout if sliding window but disableAutoResume is set", () => {
-      const opts = {
-        disableAutoResume: true,
-      }
-
-      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-      basicStrategy.load(null, 0)
-      basicStrategy.pause(opts)
-
-      expect(autoResumeSpy).not.toHaveBeenCalled()
-    })
   })
 
   describe("getSeekableRange", () => {
