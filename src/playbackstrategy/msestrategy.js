@@ -263,14 +263,13 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
   function onManifestLoaded(event) {
     if (event.data) {
       DebugTool.info(`Manifest loaded. Duration is: ${event.data.mediaPresentationDuration}`)
-      const manifest = event.data
+      let manifest = event.data
       const representationOptions = window.bigscreenPlayer.representationOptions || {}
 
       ManifestModifier.filter(manifest, representationOptions)
       ManifestModifier.generateBaseUrls(manifest, mediaSources.availableSources())
 
-      manifest.manifestRequestTime = manifestRequestTime
-      manifest.manifestLoadCount = manifestLoadCount
+      manifest = { ...manifest, manifestLoadCount, manifestRequestTime }
       manifestLoadCount = 0
 
       emitManifestInfo(manifest)

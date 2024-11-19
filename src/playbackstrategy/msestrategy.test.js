@@ -3,16 +3,18 @@ import MediaKinds from "../models/mediakinds"
 import MSEStrategy from "./msestrategy"
 // import TimeUtils from "../utils/timeutils"
 import DynamicWindowUtils from "../dynamicwindowutils"
-// import Plugins from "../plugins"
+import Plugins from "../plugins"
 // import DebugTool from "../debugger/debugtool"
 import Utils from "../utils/playbackutils"
 // import PauseTriggers from "../models/pausetriggers"
 import { ManifestType } from "../models/manifesttypes"
 import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
+import ManifestModifier from "../manifest/manifestmodifier"
 
 jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn() }))
 jest.mock("../dynamicwindowutils")
 jest.mock("../debugger/debugtool")
+jest.mock("../manifest/manifestmodifier")
 
 const mockDashAdapter = {
   getIndexForRepresentation: jest.fn().mockReturnValue(0),
@@ -194,47 +196,6 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
-    })
-
-    it("should modify the manifest when dashjs fires a manifest loaded event", () => {
-      mockMediaSources.availableSources.mockReturnValueOnce([cdnArray[0].url, cdnArray[1].url, cdnArray[2].url])
-
-      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-      mseStrategy.load(null, 0)
-
-      const testManifestObject = {
-        type: "manifestLoaded",
-        data: {
-          Period: {
-            BaseURL: "dash/",
-          },
-        },
-      }
-
-      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
-
-      const baseUrlArray = [
-        {
-          "__text": `${cdnArray[0].url}dash/`,
-          "dvb:priority": 0,
-          "dvb:weight": 0,
-          "serviceLocation": cdnArray[0].url,
-        },
-        {
-          "__text": `${cdnArray[1].url}dash/`,
-          "dvb:priority": 1,
-          "dvb:weight": 0,
-          "serviceLocation": cdnArray[1].url,
-        },
-        {
-          "__text": `${cdnArray[2].url}dash/`,
-          "dvb:priority": 2,
-          "dvb:weight": 0,
-          "serviceLocation": cdnArray[2].url,
-        },
-      ]
-
-      expect(testManifestObject.data.BaseURL_asArray).toEqual(baseUrlArray)
     })
 
     it("does not pass BSP specific settings to Dash", () => {
@@ -428,6 +389,68 @@ describe("Media Source Extensions Playback Strategy", () => {
         code: 9999,
         message: "Mock error",
         serviceLocation: "http://example.com",
+      })
+    })
+
+    it("should call ManifestModifier on dash.js manifest loaded event", () => {
+      mockMediaSources.availableSources.mockReturnValueOnce([cdnArray[0].url, cdnArray[1].url, cdnArray[2].url])
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      const testManifestLoadedEvent = {
+        type: "manifestLoaded",
+        data: {
+          Period: {
+            BaseURL: "dash/",
+          },
+        },
+      }
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestLoadedEvent)
+
+      expect(ManifestModifier.filter).toHaveBeenCalledWith(
+        {
+          Period: {
+            BaseURL: "dash/",
+          },
+        },
+        {}
+      )
+
+      expect(ManifestModifier.generateBaseUrls).toHaveBeenCalledWith(
+        {
+          Period: {
+            BaseURL: "dash/",
+          },
+        },
+        [cdnArray[0].url, cdnArray[1].url, cdnArray[2].url]
+      )
+    })
+
+    it("should call onManifestLoaded plugin with the manifest object dash.js manifest loaded event", () => {
+      const onManifestLoadedSpy = jest.spyOn(Plugins.interface, "onManifestLoaded")
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      const testManifestLoadedEvent = {
+        type: "manifestLoaded",
+        data: {
+          Period: {
+            BaseURL: "dash/",
+          },
+        },
+      }
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestLoadedEvent)
+
+      expect(onManifestLoadedSpy).toHaveBeenCalledWith({
+        Period: {
+          BaseURL: "dash/",
+        },
+        manifestLoadCount: 0,
+        manifestRequestTime: undefined,
       })
     })
   })
@@ -1158,17 +1181,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
     })
   })
-
-  // describe("onManifestLoaded", () => {
-  //   it("calls onManifestLoaded plugin with the manifest when dashjs loads it", () => {
-  //     const onManifestLoadedSpy = jest.spyOn(Plugins.interface, "onManifestLoaded")
-  //     setUpMSE(0, WindowTypes.SLIDING)
-  //     mseStrategy.load(null, 0)
-  //     dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
-
-  //     expect(onManifestLoadedSpy).toHaveBeenCalledWith(expect.any(Object))
-  //   })
-  // })
 
   // describe("onManifestValidityChanged", () => {
   //   beforeEach(() => {
