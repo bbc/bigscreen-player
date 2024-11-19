@@ -1,6 +1,5 @@
 import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
 import MediaState from "../models/mediastate"
-import WindowTypes from "../models/windowtypes"
 import DebugTool from "../debugger/debugtool"
 import MediaKinds from "../models/mediakinds"
 import Plugins from "../plugins"
@@ -282,7 +281,8 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
 
   function onManifestValidityChange(event) {
     DebugTool.info(`Manifest validity changed. Duration is: ${event.newDuration}`)
-    if (windowType === WindowTypes.GROWING) {
+
+    if (manifestType === ManifestType.DYNAMIC) {
       mediaPlayer.refreshManifest((manifest) => {
         DebugTool.info(`Manifest Refreshed. Duration is: ${manifest.mediaPresentationDuration}`)
       })

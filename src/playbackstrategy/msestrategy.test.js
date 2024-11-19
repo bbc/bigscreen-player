@@ -344,7 +344,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
   })
 
-  describe("Responding to dash.js events", () => {
+  describe("responding to dash.js events", () => {
     it("should call mediaSources failover on dash baseUrl changed event", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 0)
@@ -452,6 +452,44 @@ describe("Media Source Extensions Playback Strategy", () => {
         manifestLoadCount: 0,
         manifestRequestTime: undefined,
       })
+    })
+
+    it("refreshes the manifest on a validity change for dynamic streams", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, {
+        type: "manifestValidityChanged",
+        data: {
+          Period: {
+            BaseURL: "dash/",
+          },
+        },
+      })
+
+      expect(mockDashInstance.refreshManifest).toHaveBeenCalledTimes(1)
+    })
+
+    it("does not refresh the manifest on a validity change for a static stream", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.STATIC })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, {
+        type: "manifestValidityChanged",
+        data: {
+          Period: {
+            BaseURL: "dash/",
+          },
+        },
+      })
+
+      expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
     })
   })
 
@@ -1181,38 +1219,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
     })
   })
-
-  // describe("onManifestValidityChanged", () => {
-  //   beforeEach(() => {
-  //     mockDashInstance.refreshManifest.mockReset()
-  //   })
-
-  //   it("calls refreshManifest on mediaPlayer with a growing window", () => {
-  //     setUpMSE(0, WindowTypes.GROWING)
-  //     mseStrategy.load(null, 0)
-  //     dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
-
-  //     expect(mockDashInstance.refreshManifest).toHaveBeenCalledTimes(1)
-  //   })
-
-  //   it("does not call refreshManifest on mediaPlayer with a sliding window", () => {
-  //     setUpMSE(0, WindowTypes.SLIDING)
-
-  //     mseStrategy.load(null, 0)
-  //     dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
-
-  //     expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
-  //   })
-
-  //   it("does not call refreshManifest on mediaPlayer with a static window", () => {
-  //     setUpMSE(0, WindowTypes.STATIC)
-
-  //     mseStrategy.load(null, 0)
-  //     dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
-
-  //     expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
-  //   })
-  // })
 
   // describe("onMetricAdded and onQualityChangeRendered", () => {
   //   const mockEvent = {
