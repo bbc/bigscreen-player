@@ -646,41 +646,37 @@ describe("Legacy Playback Adapter", () => {
     )
   })
 
-  // describe("getCurrentTime", () => {
-  //   it("should be set when we get a playing event", () => {
-  //     setUpLegacyAdaptor()
+  describe("getCurrentTime", () => {
+    it("should be undefined on initialisation", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PLAYING, currentTime: 10 })
+      expect(legacyAdaptor.getCurrentTime()).toBeUndefined()
+    })
 
-  //     expect(legacyAdaptor.getCurrentTime()).toBe(10)
-  //   })
+    it("should be set when we get a playing event", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //   it("should be set with time correction when we get a playing event", () => {
-  //     testTimeCorrection = 5
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.STATIC })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PLAYING, currentTime: 10 })
+      legacyAdaptor.load("video/mp4", null)
 
-  //     expect(legacyAdaptor.getCurrentTime()).toBe(5)
-  //   })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PLAYING, currentTime: 10 })
 
-  //   it("should be set when we get a time update event", () => {
-  //     setUpLegacyAdaptor()
+      expect(legacyAdaptor.getCurrentTime()).toBe(10)
+    })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
+    it("should be set when we get a time update event", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     expect(legacyAdaptor.getCurrentTime()).toBe(10)
-  //   })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //   it("should be set with time correction when we get a time update event", () => {
-  //     testTimeCorrection = 5
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.STATIC })
+      legacyAdaptor.load("video/mp4", null)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
 
-  //     expect(legacyAdaptor.getCurrentTime()).toBe(5)
-  //   })
-  // })
+      expect(legacyAdaptor.getCurrentTime()).toBe(10)
+    })
+  })
 
   // describe("setCurrentTime", () => {
   //   it("should set isEnded to false", () => {

@@ -75,7 +75,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   }
 
   function onPlaying(event) {
-    currentTime = event.currentTime - timeCorrection
+    currentTime = event.currentTime
     isPaused = false
     isEnded = false
     duration = duration || event.duration
@@ -101,7 +101,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     // A newly loaded video element will always report a 0 time update
     // This is slightly unhelpful if we want to continue from a later point but consult currentTime as the source of truth.
     if (parseInt(event.currentTime) !== 0) {
-      currentTime = event.currentTime - timeCorrection
+      currentTime = event.currentTime
     }
 
     // Must publish this time update before checkSeekSucceded - which could cause a pause event
