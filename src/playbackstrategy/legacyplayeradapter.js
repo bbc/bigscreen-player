@@ -1,12 +1,10 @@
-import AllowedMediaTransitions from "../allowedmediatransitions"
-import MediaState from "../models/mediastate"
-import WindowTypes from "../models/windowtypes"
 import DebugTool from "../debugger/debugtool"
-import LiveGlitchCurtain from "./liveglitchcurtain"
+import MediaState from "../models/mediastate"
 import { ManifestType } from "../models/manifesttypes"
+import AllowedMediaTransitions from "../allowedmediatransitions"
+import LiveGlitchCurtain from "./liveglitchcurtain"
 
 function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
-  const windowType = WindowTypes.STATIC
   const manifestType = mediaSources.time().manifestType
   const EVENT_HISTORY_LENGTH = 2
 
@@ -143,7 +141,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
       const overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow
       const shouldShowCurtain =
-        windowType !== WindowTypes.STATIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow)
+        manifestType === ManifestType.DYNAMIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow)
 
       if (shouldShowCurtain) {
         liveGlitchCurtain = new LiveGlitchCurtain(playbackElement)
@@ -222,7 +220,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   }
 
   function requiresLiveCurtain() {
-    return !!window.bigscreenPlayer.overrides && !!window.bigscreenPlayer.overrides.showLiveCurtain
+    return !!window.bigscreenPlayer?.overrides?.showLiveCurtain
   }
 
   function reset() {

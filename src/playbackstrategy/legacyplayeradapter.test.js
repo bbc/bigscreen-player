@@ -916,87 +916,119 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("live glitch curtain", () => {
-  //   beforeEach(() => {
-  //     window.bigscreenPlayer.overrides = {
-  //       showLiveCurtain: true,
-  //     }
-  //   })
+  describe("live glitch curtain", () => {
+    beforeEach(() => {
+      window.bigscreenPlayer.overrides = {
+        showLiveCurtain: true,
+      }
+    })
 
-  //   it("should show curtain for a live restart and we get a seek-attempted event", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+    it("should show curtain for a live restart and we get a seek-attempted event", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
-  //     legacyAdaptor.load("video/mp4", 10)
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     eventCallbacks({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(mockGlitchCurtain.showCurtain).toHaveBeenCalledWith()
-  //   })
+      legacyAdaptor.load("application/vnd.apple.mpegurl", 10)
 
-  //   it("should show curtain for a live restart to 0 and we get a seek-attempted event", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
 
-  //     legacyAdaptor.load("video/mp4", 0)
+      expect(mockGlitchCurtain.showCurtain).toHaveBeenCalled()
+    })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+    it("should show curtain for a live restart to 0 and we get a seek-attempted event", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
-  //     expect(mockGlitchCurtain.showCurtain).toHaveBeenCalledWith()
-  //   })
+      const mediaPlayer = createMockMediaPlayer()
 
-  //   it("should not show curtain when playing from the live point and we get a seek-attempted event", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     legacyAdaptor.load("video/mp4")
+      legacyAdaptor.load("application/vnd.apple.mpegurl", 0)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
 
-  //     expect(mockGlitchCurtain.showCurtain).not.toHaveBeenCalledWith()
-  //   })
+      expect(mockGlitchCurtain.showCurtain).toHaveBeenCalled()
+    })
 
-  //   it("should show curtain when the forceBeginPlaybackToEndOfWindow config is set and the playback type is live", () => {
-  //     window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow = true
+    it("should not show curtain when playing from the live point and we get a seek-attempted event", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     eventCallbacks({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(mockGlitchCurtain.showCurtain).toHaveBeenCalledWith()
-  //   })
+      legacyAdaptor.load("application/vnd.apple.mpegurl", null)
 
-  //   it("should not show curtain when the config overide is not set and we are playing live", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+      expect(mockGlitchCurtain.showCurtain).not.toHaveBeenCalled()
+    })
 
-  //     expect(mockGlitchCurtain.showCurtain).not.toHaveBeenCalledWith()
-  //   })
+    it("should show curtain when the forceBeginPlaybackToEndOfWindow config is set and the playback type is live", () => {
+      window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow = true
 
-  //   it("should hide the curtain when we get a seek-finished event", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
-  //     legacyAdaptor.load("video/mp4", 0)
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     eventCallbacks({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(mockGlitchCurtain.showCurtain).toHaveBeenCalledWith()
+      legacyAdaptor.load("application/vnd.apple.mpegurl", null)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.SEEK_FINISHED })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
 
-  //     expect(mockGlitchCurtain.hideCurtain).toHaveBeenCalledWith()
-  //   })
+      expect(mockGlitchCurtain.showCurtain).toHaveBeenCalled()
+    })
 
-  //   it("should tear down the curtain on strategy tearDown if it has been shown", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+    it("should not show curtain when the config overide is not set and we are playing live", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
-  //     legacyAdaptor.load("video/mp4", 0)
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     eventCallbacks({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     legacyAdaptor.tearDown()
+      legacyAdaptor.load("application/vnd.apple.mpegurl", null)
 
-  //     expect(mockGlitchCurtain.tearDown).toHaveBeenCalledWith()
-  //   })
-  // })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+
+      expect(mockGlitchCurtain.showCurtain).not.toHaveBeenCalledWith()
+    })
+
+    it("should hide the curtain when we get a seek-finished event", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const mediaPlayer = createMockMediaPlayer()
+
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      legacyAdaptor.load("application/vnd.apple.mpegurl", 0)
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+
+      expect(mockGlitchCurtain.showCurtain).toHaveBeenCalled()
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.SEEK_FINISHED })
+
+      expect(mockGlitchCurtain.hideCurtain).toHaveBeenCalled()
+    })
+
+    it("should tear down the curtain on strategy tearDown if it has been shown", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const mediaPlayer = createMockMediaPlayer()
+
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      legacyAdaptor.load("application/vnd.apple.mpegurl", 0)
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.SEEK_ATTEMPTED })
+
+      legacyAdaptor.tearDown()
+
+      expect(mockGlitchCurtain.tearDown).toHaveBeenCalled()
+    })
+  })
 
   // describe("dash live on error after exiting seek", () => {
   //   it("should have called reset on the player", () => {
