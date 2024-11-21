@@ -1126,82 +1126,58 @@ describe("Legacy Playback Adapter", () => {
   //   })
   // })
 
-  // describe("events", () => {
-  //   it("should publish a playing event", () => {
-  //     setUpLegacyAdaptor()
+  describe("responding to media player events", () => {
+    it.each([
+      [MediaState.PLAYING, MediaPlayerEvent.PLAYING],
+      [MediaState.PAUSED, MediaPlayerEvent.PAUSED],
+      [MediaState.WAITING, MediaPlayerEvent.BUFFERING],
+      [MediaState.ENDED, MediaPlayerEvent.COMPLETE],
+    ])("should report media state %i for a %s event", (expectedMediaState, eventType) => {
+      const mediaPlayer = createMockMediaPlayer()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     const eventCallbackSpy = jest.fn()
-  //     legacyAdaptor.addEventCallback(this, eventCallbackSpy)
+      const onEvent = jest.fn()
+      legacyAdaptor.addEventCallback(this, onEvent)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PLAYING })
+      mediaPlayer.dispatchEvent({ type: eventType })
 
-  //     expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PLAYING)
-  //   })
+      expect(onEvent).toHaveBeenCalledWith(expectedMediaState)
+    })
 
-  //   it("should publish a paused event", () => {
-  //     setUpLegacyAdaptor()
+    it("should report a time update event for a Media Player STATUS event", () => {
+      const mediaPlayer = createMockMediaPlayer()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     const eventCallbackSpy = jest.fn()
-  //     legacyAdaptor.addEventCallback(this, eventCallbackSpy)
+      const onTimeUpdate = jest.fn()
+      legacyAdaptor.addTimeUpdateCallback(this, onTimeUpdate)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PAUSED })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.STATUS })
 
-  //     expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PAUSED)
-  //   })
+      expect(onTimeUpdate).toHaveBeenCalled()
+    })
 
-  //   it("should publish a buffering event", () => {
-  //     setUpLegacyAdaptor()
+    it("should report an error event with default code and message if element does not emit them", () => {
+      const mediaPlayer = createMockMediaPlayer()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     const eventCallbackSpy = jest.fn()
-  //     legacyAdaptor.addEventCallback(this, eventCallbackSpy)
+      const onError = jest.fn()
+      legacyAdaptor.addErrorCallback(this, onError)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.BUFFERING })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.ERROR })
 
-  //     expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.WAITING)
-  //   })
+      expect(onError).toHaveBeenCalledWith({ code: 0, message: "unknown" })
+    })
 
-  //   it("should publish an ended event", () => {
-  //     setUpLegacyAdaptor()
+    it("should report an error event passing through correct code and message", () => {
+      const mediaPlayer = createMockMediaPlayer()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     const eventCallbackSpy = jest.fn()
-  //     legacyAdaptor.addEventCallback(this, eventCallbackSpy)
+      const onError = jest.fn()
+      legacyAdaptor.addErrorCallback(this, onError)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.COMPLETE })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.ERROR, code: 1, message: "This is a test error"  })
 
-  //     expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.ENDED)
-  //   })
-
-  //   it("should publish a time update event", () => {
-  //     setUpLegacyAdaptor()
-
-  //     const timeUpdateCallbackSpy = jest.fn()
-  //     legacyAdaptor.addTimeUpdateCallback(this, timeUpdateCallbackSpy)
-
-  //     eventCallbacks({ type: MediaPlayerEvent.STATUS })
-
-  //     expect(timeUpdateCallbackSpy).toHaveBeenCalledWith()
-  //   })
-
-  //   it("should publish an error event with default code and message if element does not emit them", () => {
-  //     setUpLegacyAdaptor()
-
-  //     const errorCallbackSpy = jest.fn()
-
-  //     legacyAdaptor.addErrorCallback(this, errorCallbackSpy)
-  //     eventCallbacks({ type: MediaPlayerEvent.ERROR })
-
-  //     expect(errorCallbackSpy).toHaveBeenCalledWith({ code: 0, message: "unknown" })
-  //   })
-
-  //   it("should publish an error event passing through correct code and message", () => {
-  //     setUpLegacyAdaptor()
-
-  //     const errorCallbackSpy = jest.fn()
-
-  //     legacyAdaptor.addErrorCallback(this, errorCallbackSpy)
-  //     eventCallbacks({ type: MediaPlayerEvent.ERROR, code: 1, message: "This is a test error" })
-
-  //     expect(errorCallbackSpy).toHaveBeenCalledWith({ code: 1, message: "This is a test error" })
-  //   })
-  // })
+      expect(onError).toHaveBeenCalledWith({ code: 1, message: "This is a test error" })
+    })
+  })
 })
