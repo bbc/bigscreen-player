@@ -94,11 +94,8 @@ const MediaPlayerState = {
 }
 
 describe("Legacy Playback Adapter", () => {
-  let legacyAdaptor
-  let mediaPlayer
   let mediaElement
   let playbackElement
-  const cdnArray = []
 
   const originalCreateElement = document.createElement
 
