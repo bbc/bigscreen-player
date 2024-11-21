@@ -416,6 +416,12 @@ describe("Legacy Playback Adapter", () => {
   })
 
   describe("isPaused", () => {
+    it("should be set to true on initialisation", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
+
+      expect(legacyAdaptor.isPaused()).toBe(true)
+    })
+
     it("should be set to false once we have loaded", () => {
       const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
@@ -487,8 +493,6 @@ describe("Legacy Playback Adapter", () => {
     it("should be set to false on initialisation of the strategy", () => {
       const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
-      legacyAdaptor.load("video/mp4", null)
-
       expect(legacyAdaptor.isEnded()).toBe(false)
     })
 
@@ -545,33 +549,41 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("getDuration", () => {
-  //   it("should be set to 0 on initialisation", () => {
-  //     setUpLegacyAdaptor()
+  describe("getDuration", () => {
+    it("should be set to 0 on initialisation", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
-  //     expect(legacyAdaptor.getDuration()).toBe(0)
-  //   })
+      expect(legacyAdaptor.getDuration()).toBe(0)
+    })
 
-  //   it("should be updated by the playing event duration when the duration is undefined or 0", () => {
-  //     setUpLegacyAdaptor()
+    it("should be updated by the playing event duration when the duration is undefined or 0", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PLAYING, duration: 10 })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(legacyAdaptor.getDuration()).toBe(10)
-  //   })
+      legacyAdaptor.load("video/mp4", null)
 
-  //   it("should use the local duration when the value is not undefined or 0", () => {
-  //     setUpLegacyAdaptor()
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PLAYING, duration: 10 })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PLAYING, duration: 10 })
+      expect(legacyAdaptor.getDuration()).toBe(10)
+    })
 
-  //     expect(legacyAdaptor.getDuration()).toBe(10)
+    it("should use the local duration when the value is not undefined or 0", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PLAYING, duration: 20 })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(legacyAdaptor.getDuration()).toBe(10)
-  //   })
-  // })
+      legacyAdaptor.load("video/mp4", null)
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PLAYING, duration: 10 })
+
+      expect(legacyAdaptor.getDuration()).toBe(10)
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PLAYING, duration: 20 })
+
+      expect(legacyAdaptor.getDuration()).toBe(10)
+    })
+  })
 
   // describe("getPlayerElement", () => {
   //   it("should return the mediaPlayer element", () => {
