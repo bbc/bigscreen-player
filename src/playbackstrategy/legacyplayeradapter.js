@@ -4,7 +4,8 @@ import WindowTypes from "../models/windowtypes"
 import DebugTool from "../debugger/debugtool"
 import LiveGlitchCurtain from "./liveglitchcurtain"
 
-function LegacyPlayerAdapter(mediaSources, windowType, playbackElement, isUHD, player) {
+function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
+  const windowType = "static"
   const EVENT_HISTORY_LENGTH = 2
 
   const setSourceOpts = {
