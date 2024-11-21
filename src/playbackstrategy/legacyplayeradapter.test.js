@@ -1030,10 +1030,10 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  describe("handling Media Player error raised after exiting seek on dynamic DASH streams", () => {
+  describe("handling Media Player error when raised after exiting seek on dynamic DASH streams", () => {
     it("should have called reset, initialise and beginPlaybackFrom on the player", () => {
       mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
-      
+
       const mediaPlayer = createMockMediaPlayer()
       const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
@@ -1048,7 +1048,8 @@ describe("Legacy Playback Adapter", () => {
       mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.ERROR })
 
       expect(mediaPlayer.reset).toHaveBeenCalled()
-      expect(mediaPlayer.initialiseMedia).toHaveBeenNthCalledWith(2,
+      expect(mediaPlayer.initialiseMedia).toHaveBeenNthCalledWith(
+        2,
         "video",
         "mock://media.src/",
         "application/dash+xml",
@@ -1062,43 +1063,47 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("delay pause until after seek", () => {
-  //   it("should pause the player if we were in a paused state on dash live", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+  describe("handling delaying pause until after a successful seek", () => {
+    it("should pause the player if we were in a paused state on a dynamic DASH stream", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
-  //     legacyAdaptor.load("application/dash+xml")
+      const mediaPlayer = createMockMediaPlayer()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PAUSED })
+      legacyAdaptor.load("application/dash+xml", null)
 
-  //     legacyAdaptor.setCurrentTime(10)
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PAUSED })
 
-  //     expect(mediaPlayer.pause).not.toHaveBeenCalledWith()
+      legacyAdaptor.setCurrentTime(10)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.STATUS, currentTime: 10, seekableRange: { start: 5 } })
+      expect(mediaPlayer.pause).not.toHaveBeenCalledWith()
 
-  //     expect(mediaPlayer.pause).toHaveBeenCalledWith()
-  //   })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10, seekableRange: { start: 5 } })
 
-  //   it("should pause the player if we were in a paused state for devices with known issues", () => {
-  //     window.bigscreenPlayer.overrides = {
-  //       pauseOnExitSeek: true,
-  //     }
+      expect(mediaPlayer.pause).toHaveBeenCalledWith()
+    })
 
-  //     setUpLegacyAdaptor()
+    it("should pause the player if we were in a paused state for devices with known issues", () => {
+      window.bigscreenPlayer.overrides = {
+        pauseOnExitSeek: true,
+      }
 
-  //     legacyAdaptor.load("video/mp4")
+      const mediaPlayer = createMockMediaPlayer()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PAUSED })
+      legacyAdaptor.load("video/mp4", null)
 
-  //     legacyAdaptor.setCurrentTime(10)
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PAUSED })
 
-  //     expect(mediaPlayer.pause).not.toHaveBeenCalledWith()
+      legacyAdaptor.setCurrentTime(10)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.STATUS, currentTime: 10, seekableRange: { start: 5 } })
+      expect(mediaPlayer.pause).not.toHaveBeenCalledWith()
 
-  //     expect(mediaPlayer.pause).toHaveBeenCalledWith()
-  //   })
-  // })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10, seekableRange: { start: 5 } })
+
+      expect(mediaPlayer.pause).toHaveBeenCalledWith()
+    })
+  })
 
   describe("responding to media player events", () => {
     it.each([
@@ -1149,7 +1154,7 @@ describe("Legacy Playback Adapter", () => {
       const onError = jest.fn()
       legacyAdaptor.addErrorCallback(this, onError)
 
-      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.ERROR, code: 1, message: "This is a test error"  })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.ERROR, code: 1, message: "This is a test error" })
 
       expect(onError).toHaveBeenCalledWith({ code: 1, message: "This is a test error" })
     })
