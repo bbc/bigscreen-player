@@ -3,15 +3,17 @@ import MediaState from "../models/mediastate"
 import WindowTypes from "../models/windowtypes"
 import DebugTool from "../debugger/debugtool"
 import LiveGlitchCurtain from "./liveglitchcurtain"
+import { ManifestType } from "../models/manifesttypes"
 
 function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   const windowType = WindowTypes.STATIC
+  const manifestType = mediaSources.time().manifestType
   const EVENT_HISTORY_LENGTH = 2
 
   const setSourceOpts = {
     disableSentinels:
-      !!isUHD && windowType !== WindowTypes.STATIC && window.bigscreenPlayer?.overrides?.liveUhdDisableSentinels,
-    disableSeekSentinel: window.bigscreenPlayer?.overrides?.disableSeekSentinel,
+      !!isUHD && manifestType === ManifestType.DYNAMIC && window.bigscreenPlayer?.overrides?.liveUhdDisableSentinels,
+    disableSeekSentinel: !!window.bigscreenPlayer?.overrides?.disableSeekSentinel,
   }
 
   const timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
@@ -247,7 +249,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       isPaused = false
 
       hasStartTime = startTime || startTime === 0
-      const isPlaybackFromLivePoint = windowType !== WindowTypes.STATIC && !hasStartTime
+      const isPlaybackFromLivePoint = manifestType === ManifestType.DYNAMIC && !hasStartTime
 
       mediaPlayer.initialiseMedia("video", mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
 

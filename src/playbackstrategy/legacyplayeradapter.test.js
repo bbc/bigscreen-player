@@ -126,6 +126,8 @@ describe("Legacy Playback Adapter", () => {
     }
 
     playbackElement = originalCreateElement.call(document, "div")
+
+    mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.STATIC })
   })
 
   afterEach(() => {
@@ -147,7 +149,10 @@ describe("Legacy Playback Adapter", () => {
         "mock://media.src/",
         "video/mp4",
         playbackElement,
-        expect.any(Object)
+        {
+          disableSeekSentinel: false,
+          disableSentinels: false,
+        }
       )
     })
 
@@ -232,18 +237,31 @@ describe("Legacy Playback Adapter", () => {
       }
     )
 
-    it("should disable sentinels if we are watching UHD and configured to do so", () => {
+    it("should disable all sentinels for a dynamic UHD stream when configured to do so", () => {
       window.bigscreenPlayer.overrides = {
         liveUhdDisableSentinels: true,
       }
 
-      setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING, isUHD: true })
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+      mockMediaSources.currentSource.mockReturnValueOnce("mock://media.src/")
+
+      const isUHD = true
+      const mediaPlayer = createMockMediaPlayer()
+
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, isUHD, mediaPlayer)
 
       legacyAdaptor.load("video/mp4")
 
-      const properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
-
-      expect(properties.disableSentinels).toBe(true)
+      expect(mediaPlayer.initialiseMedia).toHaveBeenCalledWith(
+        "video",
+        "mock://media.src/",
+        "video/mp4",
+        playbackElement,
+        {
+          disableSeekSentinel: false,
+          disableSentinels: true,
+        }
+      )
     })
 
     it("should disable seek sentinels if we are configured to do so", () => {
@@ -251,13 +269,24 @@ describe("Legacy Playback Adapter", () => {
         disableSeekSentinel: true,
       }
 
-      setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+      mockMediaSources.currentSource.mockReturnValueOnce("mock://media.src/")
 
-      legacyAdaptor.load(cdnArray, "video/mp4")
+      const mediaPlayer = createMockMediaPlayer()
 
-      const properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-      expect(properties.disableSeekSentinel).toBe(true)
+      legacyAdaptor.load("video/mp4")
+
+      expect(mediaPlayer.initialiseMedia).toHaveBeenCalledWith(
+        "video",
+        "mock://media.src/",
+        "video/mp4",
+        playbackElement,
+        {
+          disableSeekSentinel: true,
+          disableSentinels: false,
+        }
+      )
     })
   })
 
