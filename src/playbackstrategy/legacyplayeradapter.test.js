@@ -801,34 +801,43 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("Playback Rate", () => {
-  //   it("calls through to the mediaPlayers setPlaybackRate function", () => {
-  //     setUpLegacyAdaptor()
+  describe("Playback Rate", () => {
+    function createMockOnDemandPlayer() {
+      return { ...createMockMediaPlayer(LiveSupport.SEEKABLE), getPlaybackRate: jest.fn(), setPlaybackRate: jest.fn() }
+    }
 
-  //     legacyAdaptor.setPlaybackRate(2)
+    it("calls through to the mediaPlayers setPlaybackRate function", () => {
+      const mediaPlayer = createMockOnDemandPlayer()
 
-  //     expect(mediaPlayer.setPlaybackRate).toHaveBeenCalledWith(2)
-  //   })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //   it("calls through to the mediaPlayers getPlaybackRate function and returns correct value", () => {
-  //     setUpLegacyAdaptor()
-  //     mediaPlayer.getPlaybackRate.mockReturnValue(1.5)
+      legacyAdaptor.setPlaybackRate(2)
 
-  //     const rate = legacyAdaptor.getPlaybackRate()
+      expect(mediaPlayer.setPlaybackRate).toHaveBeenCalledWith(2)
+    })
 
-  //     expect(mediaPlayer.getPlaybackRate).toHaveBeenCalledWith()
-  //     expect(rate).toBe(1.5)
-  //   })
+    it("calls through to the mediaPlayers getPlaybackRate function and returns correct value", () => {
+      const mediaPlayer = createMockOnDemandPlayer()
 
-  //   it("getPlaybackRate returns 1.0 if mediaPlayer does not have getPlaybackRate function", () => {
-  //     mediaPlayer = {
-  //       addEventCallback: jest.fn(),
-  //     }
-  //     setUpLegacyAdaptor()
+      mediaPlayer.getPlaybackRate.mockReturnValue(1.5)
 
-  //     expect(legacyAdaptor.getPlaybackRate()).toBe(1)
-  //   })
-  // })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      expect(legacyAdaptor.getPlaybackRate()).toBe(1.5)
+      expect(mediaPlayer.getPlaybackRate).toHaveBeenCalled()
+    })
+
+    it("getPlaybackRate returns 1.0 if mediaPlayer does not have getPlaybackRate function", () => {
+      const legacyAdaptor = LegacyAdaptor(
+        mockMediaSources,
+        playbackElement,
+        false,
+        createMockMediaPlayer(LiveSupport.PLAYABLE)
+      )
+
+      expect(legacyAdaptor.getPlaybackRate()).toBe(1)
+    })
+  })
 
   describe("transitions", () => {
     it("should pass back possible transitions", () => {
