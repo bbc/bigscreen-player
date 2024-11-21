@@ -6,8 +6,6 @@ import LiveGlitchCurtain from "./liveglitchcurtain"
 
 jest.mock("../playbackstrategy/liveglitchcurtain")
 
-let dispatchMediaPlayerEvent
-
 /**
  * Note: The default 'seekable' API is identical to the API for on-demand/static streams
  *
@@ -15,10 +13,19 @@ let dispatchMediaPlayerEvent
  * @returns {Object} A mocked media player instance
  */
 function createMockMediaPlayer(liveSupport = LiveSupport.SEEKABLE) {
+  const eventCallbacks = []
+
+  function dispatchEvent(event) {
+    for (const callback of eventCallbacks) {
+      callback(event)
+    }
+  }
+
   const basePlayer = {
-    addEventCallback: jest.fn().mockImplementation((component, callback) => {
-      dispatchMediaPlayerEvent = (event) => callback.call(component, event)
-    }),
+    dispatchEvent,
+    addEventCallback: jest
+      .fn()
+      .mockImplementation((component, callback) => eventCallbacks.push(callback.bind(component))),
     beginPlayback: jest.fn(),
     getMimeType: jest.fn(),
     getPlayerElement: jest.fn(),
@@ -300,7 +307,7 @@ describe("Legacy Playback Adapter", () => {
 
         legacyAdaptor.load("video/mp4", null)
 
-        dispatchMediaPlayerEvent({ type: MediaPlayerEvent.COMPLETE })
+        mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.COMPLETE })
 
         legacyAdaptor.play()
 
@@ -318,7 +325,7 @@ describe("Legacy Playback Adapter", () => {
 
           legacyAdaptor.load("video/mp4", null)
 
-          dispatchMediaPlayerEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
+          mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
 
           legacyAdaptor.play()
 
@@ -335,7 +342,7 @@ describe("Legacy Playback Adapter", () => {
 
         legacyAdaptor.load("video/mp4", null)
 
-        dispatchMediaPlayerEvent({ type: MediaPlayerEvent.COMPLETE })
+        mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.COMPLETE })
 
         expect(() => legacyAdaptor.play()).not.toThrow()
       })
@@ -347,7 +354,7 @@ describe("Legacy Playback Adapter", () => {
 
         legacyAdaptor.load("video/mp4", null)
 
-        dispatchMediaPlayerEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
+        mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
 
         expect(() => legacyAdaptor.play()).not.toThrow()
       })
@@ -408,99 +415,135 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("isPaused", () => {
-  //   it("should be set to false once we have loaded", () => {
-  //     setUpLegacyAdaptor()
+  describe("isPaused", () => {
+    it("should be set to false once we have loaded", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
-  //     legacyAdaptor.load("video/mp4")
+      legacyAdaptor.load("video/mp4", null)
 
-  //     expect(legacyAdaptor.isPaused()).toBe(false)
-  //   })
+      expect(legacyAdaptor.isPaused()).toBe(false)
+    })
 
-  //   it("should be set to false when we call play", () => {
-  //     setUpLegacyAdaptor()
+    it("should be set to false when we call play", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
-  //     legacyAdaptor.play()
+      legacyAdaptor.load("video/mp4", null)
 
-  //     expect(legacyAdaptor.isPaused()).toBe(false)
-  //   })
+      legacyAdaptor.play()
 
-  //   it("should be set to false when we get a playing event", () => {
-  //     setUpLegacyAdaptor()
+      expect(legacyAdaptor.isPaused()).toBe(false)
+    })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PLAYING })
+    it("should be set to false when we get a playing event", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     expect(legacyAdaptor.isPaused()).toBe(false)
-  //   })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //   it("should be set to false when we get a time update event", () => {
-  //     setUpLegacyAdaptor()
+      legacyAdaptor.load("video/mp4", null)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.STATUS })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PLAYING })
 
-  //     expect(legacyAdaptor.isPaused()).toBe(false)
-  //   })
+      expect(legacyAdaptor.isPaused()).toBe(false)
+    })
 
-  //   it("should be set to true when we get a paused event", () => {
-  //     setUpLegacyAdaptor()
+    it("should be set to false when we get a time update event", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PAUSED })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(legacyAdaptor.isPaused()).toBe(true)
-  //   })
+      legacyAdaptor.load("video/mp4", null)
 
-  //   it("should be set to true when we get a ended event", () => {
-  //     setUpLegacyAdaptor()
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.STATUS })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.COMPLETE })
+      expect(legacyAdaptor.isPaused()).toBe(false)
+    })
 
-  //     expect(legacyAdaptor.isPaused()).toBe(true)
-  //   })
-  // })
+    it("should be set to true when we get a paused event", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  // describe("isEnded", () => {
-  //   it("should be set to false on initialisation of the strategy", () => {
-  //     setUpLegacyAdaptor()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(legacyAdaptor.isEnded()).toBe(false)
-  //   })
+      legacyAdaptor.load("video/mp4", null)
 
-  //   it("should be set to true when we get an ended event", () => {
-  //     setUpLegacyAdaptor()
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PAUSED })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.COMPLETE })
+      expect(legacyAdaptor.isPaused()).toBe(true)
+    })
 
-  //     expect(legacyAdaptor.isEnded()).toBe(true)
-  //   })
+    it("should be set to true when we get a ended event", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //   it("should be set to false when we a playing event is recieved", () => {
-  //     setUpLegacyAdaptor()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PLAYING })
+      legacyAdaptor.load("video/mp4", null)
 
-  //     expect(legacyAdaptor.isEnded()).toBe(false)
-  //   })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.COMPLETE })
 
-  //   it("should be set to false when we get a waiting event", () => {
-  //     setUpLegacyAdaptor()
+      expect(legacyAdaptor.isPaused()).toBe(true)
+    })
+  })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.BUFFERING })
+  describe("isEnded", () => {
+    it("should be set to false on initialisation of the strategy", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
-  //     expect(legacyAdaptor.isEnded()).toBe(false)
-  //   })
+      legacyAdaptor.load("video/mp4", null)
 
-  //   it("should be set to true when we get a completed event then false when we start initial buffering from playing", () => {
-  //     setUpLegacyAdaptor()
+      expect(legacyAdaptor.isEnded()).toBe(false)
+    })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.COMPLETE })
+    it("should be set to true when we get an ended event", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     expect(legacyAdaptor.isEnded()).toBe(true)
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     eventCallbacks({ type: MediaPlayerEvent.BUFFERING })
+      legacyAdaptor.load("video/mp4", null)
 
-  //     expect(legacyAdaptor.isEnded()).toBe(false)
-  //   })
-  // })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.COMPLETE })
+
+      expect(legacyAdaptor.isEnded()).toBe(true)
+    })
+
+    it("should be set to false when we a playing event is recieved", () => {
+      const mediaPlayer = createMockMediaPlayer()
+
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      legacyAdaptor.load("video/mp4", null)
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PLAYING })
+
+      expect(legacyAdaptor.isEnded()).toBe(false)
+    })
+
+    it("should be set to false when we get a waiting event", () => {
+      const mediaPlayer = createMockMediaPlayer()
+
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      legacyAdaptor.load("video/mp4", null)
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.BUFFERING })
+
+      expect(legacyAdaptor.isEnded()).toBe(false)
+    })
+
+    it("should be set to true when we get a completed event then false when we start initial buffering from playing", () => {
+      const mediaPlayer = createMockMediaPlayer()
+
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      legacyAdaptor.load("video/mp4", null)
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.COMPLETE })
+
+      expect(legacyAdaptor.isEnded()).toBe(true)
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.BUFFERING })
+
+      expect(legacyAdaptor.isEnded()).toBe(false)
+    })
+  })
 
   // describe("getDuration", () => {
   //   it("should be set to 0 on initialisation", () => {
