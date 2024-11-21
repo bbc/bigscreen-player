@@ -854,33 +854,39 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("reset", () => {
-  //   it("should reset the player", () => {
-  //     setUpLegacyAdaptor()
+  describe("reset", () => {
+    it("should reset the player", () => {
+      const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
 
-  //     legacyAdaptor.reset()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(mediaPlayer.reset).toHaveBeenCalledWith()
-  //   })
+      legacyAdaptor.reset()
 
-  //   it("should stop the player if we are not in an unstoppable state", () => {
-  //     setUpLegacyAdaptor()
+      expect(mediaPlayer.reset).toHaveBeenCalledWith()
+    })
 
-  //     legacyAdaptor.reset()
+    it("should stop the player if we are not in an unstoppable state", () => {
+      const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
 
-  //     expect(mediaPlayer.stop).toHaveBeenCalledWith()
-  //   })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //   it("should not stop the player if we in an unstoppable state", () => {
-  //     setUpLegacyAdaptor()
+      legacyAdaptor.reset()
 
-  //     mediaPlayer.getState.mockReturnValue(MediaPlayerState.EMPTY)
+      expect(mediaPlayer.stop).toHaveBeenCalledWith()
+    })
 
-  //     legacyAdaptor.reset()
+    it("should not stop the player if we in an unstoppable state", () => {
+      const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
 
-  //     expect(mediaPlayer.stop).not.toHaveBeenCalledWith()
-  //   })
-  // })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      mediaPlayer.getState.mockReturnValue(MediaPlayerState.EMPTY)
+
+      legacyAdaptor.reset()
+
+      expect(mediaPlayer.stop).not.toHaveBeenCalledWith()
+    })
+  })
 
   // describe("tearDown", () => {
   //   beforeEach(() => {
