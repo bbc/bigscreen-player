@@ -287,20 +287,14 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     getDuration: () => duration,
     getPlayerElement: () => mediaPlayer.getPlayerElement && mediaPlayer.getPlayerElement(),
     getSeekableRange: () => {
-      if (windowType === WindowTypes.STATIC) {
+      if (manifestType === ManifestType.STATIC) {
         return {
           start: 0,
           end: duration,
         }
       }
-      const seekableRange = (mediaPlayer.getSeekableRange && mediaPlayer.getSeekableRange()) || {}
-      if (seekableRange.hasOwnProperty("start")) {
-        seekableRange.start = seekableRange.start - timeCorrection
-      }
-      if (seekableRange.hasOwnProperty("end")) {
-        seekableRange.end = seekableRange.end - timeCorrection
-      }
-      return seekableRange
+
+      return typeof mediaPlayer.getSeekableRange === "function" ? mediaPlayer.getSeekableRange() : {}
     },
     setPlaybackRate: (rate) => {
       if (typeof mediaPlayer.setPlaybackRate === "function") {

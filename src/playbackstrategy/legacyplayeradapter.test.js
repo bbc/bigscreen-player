@@ -601,33 +601,50 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("getSeekableRange", () => {
-  //   it("should return the start as 0 and the end as the duration for vod", () => {
-  //     setUpLegacyAdaptor()
+  describe("getSeekableRange", () => {
+    it("should return the start as 0 and the end as the duration for a static stream", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.STATIC })
 
-  //     eventCallbacks({ type: MediaPlayerEvent.PLAYING, duration: 10 })
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     expect(legacyAdaptor.getSeekableRange()).toEqual({ start: 0, end: 10 })
-  //   })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //   it("should return the start/end from the player - time correction", () => {
-  //     testTimeCorrection = 10
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING, playableDevice: false })
+      legacyAdaptor.load("video/mp4", null)
 
-  //     mediaPlayer.getSeekableRange.mockReturnValue({ start: 110, end: 1010 })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PLAYING, duration: 10 })
 
-  //     expect(legacyAdaptor.getSeekableRange()).toEqual({ start: 100, end: 1000 })
-  //   })
+      expect(legacyAdaptor.getSeekableRange()).toEqual({ start: 0, end: 10 })
+    })
 
-  //   it("should return the start/end from the player when the time correction is 0", () => {
-  //     testTimeCorrection = 0
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING, playableDevice: false })
+    it("should return the start/end from the player for a dynamic stream on a seekable device", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
-  //     mediaPlayer.getSeekableRange.mockReturnValue({ start: 100, end: 1000 })
+      const mediaPlayer = createMockMediaPlayer(LiveSupport.SEEKABLE)
 
-  //     expect(legacyAdaptor.getSeekableRange()).toEqual({ start: 100, end: 1000 })
-  //   })
-  // })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      legacyAdaptor.load("video/mp4", null)
+
+      mediaPlayer.getSeekableRange.mockReturnValue({ start: 100, end: 200 })
+
+      expect(legacyAdaptor.getSeekableRange()).toEqual({ start: 100, end: 200 })
+    })
+
+    it.each([LiveSupport.PLAYABLE, LiveSupport.RESTARTABLE])(
+      "should return an empty object for a dynamic stream on a %s device",
+      (liveSupport) => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+        const mediaPlayer = createMockMediaPlayer(liveSupport)
+
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdaptor.load("video/mp4", null)
+
+        expect(legacyAdaptor.getSeekableRange()).toEqual({})
+      }
+    )
+  })
 
   // describe("getCurrentTime", () => {
   //   it("should be set when we get a playing event", () => {
