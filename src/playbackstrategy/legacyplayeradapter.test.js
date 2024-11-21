@@ -585,17 +585,21 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("getPlayerElement", () => {
-  //   it("should return the mediaPlayer element", () => {
-  //     setUpLegacyAdaptor()
+  describe("getPlayerElement", () => {
+    it("should return the mediaPlayer element", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     const videoElement = document.createElement("video")
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     mediaPlayer.getPlayerElement.mockReturnValue(videoElement)
+      legacyAdaptor.load("video/mp4", null)
 
-  //     expect(legacyAdaptor.getPlayerElement()).toEqual(videoElement)
-  //   })
-  // })
+      const videoElement = document.createElement("video")
+
+      mediaPlayer.getPlayerElement.mockReturnValue(videoElement)
+
+      expect(legacyAdaptor.getPlayerElement()).toEqual(videoElement)
+    })
+  })
 
   // describe("getSeekableRange", () => {
   //   it("should return the start as 0 and the end as the duration for vod", () => {
