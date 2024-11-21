@@ -353,54 +353,60 @@ describe("Legacy Playback Adapter", () => {
       })
     })
 
-    describe('player resume support', () => {
+    describe("player resume support", () => {
       it("should resume when in a state where player can resume", () => {
         const mediaPlayer = createMockMediaPlayer()
-  
+
         const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
-  
+
         mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
-  
+
         legacyAdaptor.play()
-  
+
         expect(mediaPlayer.resume).toHaveBeenCalledWith()
       })
-  
+
       it("should not throw when the player does not support resume", () => {
         const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
-  
+
         const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
-  
+
         mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
-  
+
         expect(() => legacyAdaptor.play()).not.toThrow()
       })
     })
   })
 
-  // describe("pause", () => {
-  //   it("should pause when we don't need to delay a call to pause", () => {
-  //     setUpLegacyAdaptor()
+  describe("pause", () => {
+    it("should pause when we don't need to delay a call to pause", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     legacyAdaptor.pause({ disableAutoResume: false })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(mediaPlayer.pause).toHaveBeenCalledWith({ disableAutoResume: false })
-  //   })
+      legacyAdaptor.pause()
 
-  //   it("should not pause when we need to delay a call to pause", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+      expect(mediaPlayer.pause).toHaveBeenCalledTimes(1)
+    })
 
-  //     legacyAdaptor.load("application/dash+xml")
+    it("should not pause when we need to delay a call to pause", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
-  //     legacyAdaptor.setCurrentTime(10)
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     mediaPlayer.getState.mockReturnValue(MediaPlayerState.BUFFERING)
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     legacyAdaptor.pause({ disableAutoResume: false })
+      legacyAdaptor.load("application/dash+xml", null)
 
-  //     expect(mediaPlayer.pause).not.toHaveBeenCalledWith({ disableAutoResume: false })
-  //   })
-  // })
+      // seeking
+      legacyAdaptor.setCurrentTime(10)
+      mediaPlayer.getState.mockReturnValue(MediaPlayerState.BUFFERING)
+
+      legacyAdaptor.pause()
+
+      expect(mediaPlayer.pause).not.toHaveBeenCalled()
+    })
+  })
 
   // describe("isPaused", () => {
   //   it("should be set to false once we have loaded", () => {
@@ -735,7 +741,7 @@ describe("Legacy Playback Adapter", () => {
 
   describe("transitions", () => {
     it("should pass back possible transitions", () => {
-      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
       expect(legacyAdaptor.transitions).toEqual(
         expect.objectContaining({

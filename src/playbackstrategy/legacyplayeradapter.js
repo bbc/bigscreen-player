@@ -181,7 +181,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   }
 
   function setupExitSeekWorkarounds(mimeType) {
-    handleErrorOnExitingSeek = windowType !== WindowTypes.STATIC && mimeType === "application/dash+xml"
+    handleErrorOnExitingSeek = manifestType === ManifestType.DYNAMIC && mimeType === "application/dash+xml"
 
     const deviceFailsPlayAfterPauseOnExitSeek =
       window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.pauseOnExitSeek
@@ -274,12 +274,12 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         }
       }
     },
-    pause: (options) => {
+    pause: () => {
       // TODO - transitions is checked in playerComponent. The check can be removed here.
       if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
         pauseOnExitSeek = true
       } else {
-        mediaPlayer.pause(options)
+        mediaPlayer.pause()
       }
     },
     isPaused: () => isPaused,
