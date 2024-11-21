@@ -255,7 +255,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
       if (!isPlaybackFromLivePoint && typeof mediaPlayer.beginPlaybackFrom === "function") {
         currentTime = startTime
-        mediaPlayer.beginPlaybackFrom(startTime + timeCorrection || 0)
+        mediaPlayer.beginPlaybackFrom(startTime || 0)
       } else {
         mediaPlayer.beginPlayback()
       }
@@ -268,9 +268,9 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         if (isEnded) {
           mediaPlayer.playFrom && mediaPlayer.playFrom(0)
         } else if (transitions.canResume()) {
-          mediaPlayer.resume()
+          mediaPlayer.resume && mediaPlayer.resume()
         } else {
-          mediaPlayer.playFrom && mediaPlayer.playFrom(currentTime + timeCorrection)
+          mediaPlayer.playFrom && mediaPlayer.playFrom(currentTime)
         }
       }
     },

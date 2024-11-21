@@ -292,7 +292,7 @@ describe("Legacy Playback Adapter", () => {
   })
 
   describe("play", () => {
-    describe("if the player supports playFrom()", () => {
+    describe("when the player supports playFrom()", () => {
       it("should play from 0 if the stream has ended", () => {
         const mediaPlayer = createMockMediaPlayer()
 
@@ -327,35 +327,53 @@ describe("Legacy Playback Adapter", () => {
       )
     })
 
-    describe("if the player does not support playFrom()", () => {
-      beforeEach(() => {
-        delete mediaPlayer.playFrom
-      })
-
+    describe("when the player does not support playFrom()", () => {
       it("should not throw an error when playback has completed", () => {
-        setUpLegacyAdaptor()
+        const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
+
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdaptor.load("video/mp4", null)
 
         dispatchMediaPlayerEvent({ type: MediaPlayerEvent.COMPLETE })
 
         expect(() => legacyAdaptor.play()).not.toThrow()
       })
 
-      it("should do nothing if we are not ended, paused or buffering", () => {
-        setUpLegacyAdaptor()
+      it("should not throw an error if we are not ended or in a state where player can resume", () => {
+        const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
+
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdaptor.load("video/mp4", null)
 
         dispatchMediaPlayerEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
 
         expect(() => legacyAdaptor.play()).not.toThrow()
       })
+    })
 
-      it("should resume if the player is in a paused or buffering state", () => {
-        setUpLegacyAdaptor()
-
+    describe('player resume support', () => {
+      it("should resume when in a state where player can resume", () => {
+        const mediaPlayer = createMockMediaPlayer()
+  
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+  
         mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
-
+  
         legacyAdaptor.play()
-
+  
         expect(mediaPlayer.resume).toHaveBeenCalledWith()
+      })
+  
+      it("should not throw when the player does not support resume", () => {
+        const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
+  
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+  
+        mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
+  
+        expect(() => legacyAdaptor.play()).not.toThrow()
       })
     })
   })
