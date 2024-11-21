@@ -856,7 +856,7 @@ describe("Legacy Playback Adapter", () => {
 
   describe("reset", () => {
     it("should reset the player", () => {
-      const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
+      const mediaPlayer = createMockMediaPlayer()
 
       const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
@@ -866,7 +866,7 @@ describe("Legacy Playback Adapter", () => {
     })
 
     it("should stop the player if we are not in an unstoppable state", () => {
-      const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
+      const mediaPlayer = createMockMediaPlayer()
 
       const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
@@ -876,7 +876,7 @@ describe("Legacy Playback Adapter", () => {
     })
 
     it("should not stop the player if we in an unstoppable state", () => {
-      const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
+      const mediaPlayer = createMockMediaPlayer()
 
       const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
@@ -888,25 +888,33 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("tearDown", () => {
-  //   beforeEach(() => {
-  //     setUpLegacyAdaptor()
+  describe("tearDown", () => {
+    it("should remove all event callbacks", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     legacyAdaptor.tearDown()
-  //   })
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //   it("should remove all event callbacks", () => {
-  //     expect(mediaPlayer.removeAllEventCallbacks).toHaveBeenCalledWith()
-  //   })
+      legacyAdaptor.tearDown()
 
-  //   it("should set isPaused to true", () => {
-  //     expect(legacyAdaptor.isPaused()).toBe(true)
-  //   })
+      expect(mediaPlayer.removeAllEventCallbacks).toHaveBeenCalledWith()
+    })
 
-  //   it("should return isEnded as false", () => {
-  //     expect(legacyAdaptor.isEnded()).toBe(false)
-  //   })
-  // })
+    it("should set isPaused to true", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
+
+      legacyAdaptor.tearDown()
+
+      expect(legacyAdaptor.isPaused()).toBe(true)
+    })
+
+    it("should return isEnded as false", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
+
+      legacyAdaptor.tearDown()
+
+      expect(legacyAdaptor.isEnded()).toBe(false)
+    })
+  })
 
   // describe("live glitch curtain", () => {
   //   beforeEach(() => {
