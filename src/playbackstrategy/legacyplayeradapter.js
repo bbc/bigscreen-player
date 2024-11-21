@@ -14,7 +14,6 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     disableSeekSentinel: !!window.bigscreenPlayer?.overrides?.disableSeekSentinel,
   }
 
-  const timeCorrection = mediaSources.time()?.timeCorrectionSeconds || 0
   const mediaPlayer = player
   const eventHistory = []
 
@@ -309,15 +308,14 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     setCurrentTime: (seekToTime) => {
       isEnded = false
       currentTime = seekToTime
-      const correctedSeekToTime = seekToTime + timeCorrection
 
       if (handleErrorOnExitingSeek || delayPauseOnExitSeek) {
-        targetSeekToTime = correctedSeekToTime
+        targetSeekToTime = seekToTime
         exitingSeek = true
         pauseOnExitSeek = isPaused
       }
 
-      mediaPlayer.playFrom && mediaPlayer.playFrom(correctedSeekToTime)
+      mediaPlayer.playFrom && mediaPlayer.playFrom(seekToTime)
 
       if (isPaused && !delayPauseOnExitSeek && typeof mediaPlayer.pause === "function") {
         mediaPlayer.pause()
