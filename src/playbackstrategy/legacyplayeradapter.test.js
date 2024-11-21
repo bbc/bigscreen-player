@@ -6,6 +6,8 @@ import LiveGlitchCurtain from "./liveglitchcurtain"
 
 jest.mock("../playbackstrategy/liveglitchcurtain")
 
+let dispatchMediaPlayerEvent
+
 /**
  * Note: The default 'seekable' API is identical to the API for on-demand/static streams
  *
@@ -15,7 +17,7 @@ jest.mock("../playbackstrategy/liveglitchcurtain")
 function createMockMediaPlayer(liveSupport = LiveSupport.SEEKABLE) {
   const basePlayer = {
     addEventCallback: jest.fn().mockImplementation((component, callback) => {
-      eventCallbacks = (event) => callback.call(component, event)
+      dispatchMediaPlayerEvent = (event) => callback.call(component, event)
     }),
     beginPlayback: jest.fn(),
     getMimeType: jest.fn(),
@@ -89,7 +91,6 @@ describe("Legacy Playback Adapter", () => {
   let mediaPlayer
   let mediaElement
   let playbackElement
-  let eventCallbacks
   const cdnArray = []
 
   const originalCreateElement = document.createElement
@@ -290,72 +291,74 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("play", () => {
-  //   describe("if the player supports playFrom()", () => {
-  //     it("should play from 0 if the stream has ended", () => {
-  //       setUpLegacyAdaptor()
+  describe("play", () => {
+    describe("if the player supports playFrom()", () => {
+      it("should play from 0 if the stream has ended", () => {
+        const mediaPlayer = createMockMediaPlayer()
 
-  //       eventCallbacks({ type: MediaPlayerEvent.COMPLETE })
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //       legacyAdaptor.play()
+        legacyAdaptor.load("video/mp4", null)
 
-  //       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(0)
-  //     })
+        dispatchMediaPlayerEvent({ type: MediaPlayerEvent.COMPLETE })
 
-  //     it("should play from the current time if we are not ended, paused or buffering", () => {
-  //       setUpLegacyAdaptor()
+        legacyAdaptor.play()
 
-  //       eventCallbacks({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(0)
+      })
 
-  //       legacyAdaptor.play()
+      it.each([ManifestType.STATIC, ManifestType.DYNAMIC])(
+        "should play from the current time for a %s stream when we are not ended, paused or buffering",
+        (manifestType) => {
+          mockMediaSources.time.mockReturnValueOnce({ manifestType })
 
-  //       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
-  //     })
+          const mediaPlayer = createMockMediaPlayer()
 
-  //     it("should play from the current time on live if we are not ended, paused or buffering", () => {
-  //       testTimeCorrection = 10
-  //       setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+          const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //       eventCallbacks({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
+          legacyAdaptor.load("video/mp4", null)
 
-  //       legacyAdaptor.play()
+          dispatchMediaPlayerEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
 
-  //       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
-  //     })
-  //   })
+          legacyAdaptor.play()
 
-  //   describe("if the player does not support playFrom()", () => {
-  //     beforeEach(() => {
-  //       delete mediaPlayer.playFrom
-  //     })
+          expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+        }
+      )
+    })
 
-  //     it("should not throw an error when playback has completed", () => {
-  //       setUpLegacyAdaptor()
+    describe("if the player does not support playFrom()", () => {
+      beforeEach(() => {
+        delete mediaPlayer.playFrom
+      })
 
-  //       eventCallbacks({ type: MediaPlayerEvent.COMPLETE })
+      it("should not throw an error when playback has completed", () => {
+        setUpLegacyAdaptor()
 
-  //       expect(() => legacyAdaptor.play()).not.toThrow()
-  //     })
+        dispatchMediaPlayerEvent({ type: MediaPlayerEvent.COMPLETE })
 
-  //     it("should do nothing if we are not ended, paused or buffering", () => {
-  //       setUpLegacyAdaptor()
+        expect(() => legacyAdaptor.play()).not.toThrow()
+      })
 
-  //       eventCallbacks({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
+      it("should do nothing if we are not ended, paused or buffering", () => {
+        setUpLegacyAdaptor()
 
-  //       expect(() => legacyAdaptor.play()).not.toThrow()
-  //     })
+        dispatchMediaPlayerEvent({ type: MediaPlayerEvent.STATUS, currentTime: 10 })
 
-  //     it("should resume if the player is in a paused or buffering state", () => {
-  //       setUpLegacyAdaptor()
+        expect(() => legacyAdaptor.play()).not.toThrow()
+      })
 
-  //       mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
+      it("should resume if the player is in a paused or buffering state", () => {
+        setUpLegacyAdaptor()
 
-  //       legacyAdaptor.play()
+        mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
 
-  //       expect(mediaPlayer.resume).toHaveBeenCalledWith()
-  //     })
-  //   })
-  // })
+        legacyAdaptor.play()
+
+        expect(mediaPlayer.resume).toHaveBeenCalledWith()
+      })
+    })
+  })
 
   // describe("pause", () => {
   //   it("should pause when we don't need to delay a call to pause", () => {
