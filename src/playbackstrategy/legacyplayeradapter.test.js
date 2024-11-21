@@ -419,7 +419,7 @@ describe("Legacy Playback Adapter", () => {
     it("should be set to true on initialisation", () => {
       const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
-      expect(legacyAdaptor.isPaused()).toBe(true)
+      expect(legacyAdaptor.isPaused()).toBeUndefined()
     })
 
     it("should be set to false once we have loaded", () => {
@@ -678,109 +678,128 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("setCurrentTime", () => {
-  //   it("should set isEnded to false", () => {
-  //     setUpLegacyAdaptor()
+  describe("setCurrentTime", () => {
+    it("should update currentTime to the time value passed in", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, createMockMediaPlayer())
 
-  //     legacyAdaptor.setCurrentTime(10)
+      legacyAdaptor.setCurrentTime(10)
 
-  //     expect(legacyAdaptor.isEnded()).toBe(false)
-  //   })
+      expect(legacyAdaptor.getCurrentTime()).toBe(10)
+    })
 
-  //   it("should update currentTime to the time value passed in", () => {
-  //     setUpLegacyAdaptor()
+    it("should set isEnded to false", () => {
+      const mediaPlayer = createMockMediaPlayer()
 
-  //     legacyAdaptor.setCurrentTime(10)
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     expect(legacyAdaptor.getCurrentTime()).toBe(10)
-  //   })
+      legacyAdaptor.load("video/mp4", null)
 
-  //   describe("if the player supports playFrom()", () => {
-  //     it("should seek to the time value passed in", () => {
-  //       setUpLegacyAdaptor()
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.COMPLETE })
 
-  //       legacyAdaptor.setCurrentTime(10)
+      legacyAdaptor.setCurrentTime(10)
 
-  //       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
-  //     })
+      expect(legacyAdaptor.isEnded()).toBe(false)
+    })
 
-  //     it("should seek to the time value passed in + time correction", () => {
-  //       testTimeCorrection = 10
-  //       setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+    describe("if the player supports playFrom()", () => {
+      it.each([ManifestType.STATIC, ManifestType.DYNAMIC])(
+        "should seek to the time value passed in for a %s stream",
+        (manifestType) => {
+          mockMediaSources.time.mockReturnValueOnce({ manifestType })
 
-  //       legacyAdaptor.setCurrentTime(10)
+          const mediaPlayer = createMockMediaPlayer()
 
-  //       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(20)
-  //     })
+          const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     it("should pause after a seek if we were in a paused state, not watching dash and on a capable device", () => {
-  //       setUpLegacyAdaptor()
+          legacyAdaptor.setCurrentTime(10)
 
-  //       eventCallbacks({ type: MediaPlayerEvent.PAUSED })
+          expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+        }
+      )
 
-  //       legacyAdaptor.setCurrentTime(10)
+      it("should pause after a seek if we were in a paused state", () => {
+        const mediaPlayer = createMockMediaPlayer()
 
-  //       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //       expect(mediaPlayer.pause).toHaveBeenCalledWith()
-  //     })
+        legacyAdaptor.load("application/vnd.apple.mpegurl", null)
 
-  //     it("should not pause after a seek if we are not on capable device and watching a dash stream", () => {
-  //       setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+        mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PAUSED })
 
-  //       legacyAdaptor.load("application/dash+xml")
+        legacyAdaptor.setCurrentTime(10)
 
-  //       eventCallbacks({ type: MediaPlayerEvent.PAUSED })
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
 
-  //       legacyAdaptor.setCurrentTime(10)
+        expect(mediaPlayer.pause).toHaveBeenCalledWith()
+      })
 
-  //       expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
+      it("should not pause after a seek if we were in a paused state on a dynamic DASH stream", () => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
-  //       expect(mediaPlayer.pause).not.toHaveBeenCalledWith()
-  //     })
-  //   })
+        const mediaPlayer = createMockMediaPlayer()
 
-  //   describe("if the player does not support playFrom()", () => {
-  //     beforeEach(() => {
-  //       delete mediaPlayer.playFrom
-  //     })
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     it("should not throw an Error", () => {
-  //       setUpLegacyAdaptor()
+        legacyAdaptor.load("application/dash+xml", null)
 
-  //       expect(() => legacyAdaptor.setCurrentTime(10)).not.toThrow()
-  //     })
+        mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PAUSED })
 
-  //     it("should not throw an error for live", () => {
-  //       testTimeCorrection = 10
-  //       setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+        legacyAdaptor.setCurrentTime(10)
 
-  //       expect(() => legacyAdaptor.setCurrentTime(10)).not.toThrow()
-  //     })
+        expect(mediaPlayer.playFrom).toHaveBeenCalledWith(10)
 
-  //     it("should remain paused if we were in a paused state, not watching dash and on a capable device", () => {
-  //       setUpLegacyAdaptor()
+        expect(mediaPlayer.pause).not.toHaveBeenCalled()
+      })
+    })
 
-  //       eventCallbacks({ type: MediaPlayerEvent.PAUSED })
+    describe("if the player does not support playFrom()", () => {
+      it.each([ManifestType.STATIC, ManifestType.DYNAMIC])(
+        "should not throw an error for a %s stream",
+        (manifestType) => {
+          mockMediaSources.time.mockReturnValueOnce({ manifestType })
 
-  //       legacyAdaptor.setCurrentTime(10)
+          const legacyAdaptor = LegacyAdaptor(
+            mockMediaSources,
+            playbackElement,
+            false,
+            createMockMediaPlayer(LiveSupport.PLAYABLE)
+          )
 
-  //       expect(legacyAdaptor.isPaused()).toBe(true)
-  //     })
+          expect(() => legacyAdaptor.setCurrentTime(10)).not.toThrow()
+        }
+      )
 
-  //     it("should not pause after a no-op seek if we are not on capable device and watching a dash stream", () => {
-  //       setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+      it("should remain paused if we were in a paused state", () => {
+        const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
 
-  //       legacyAdaptor.load("application/dash+xml")
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //       eventCallbacks({ type: MediaPlayerEvent.PAUSED })
+        legacyAdaptor.load("application/vnd.apple.mpegurl", null)
 
-  //       legacyAdaptor.setCurrentTime(10)
+        mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PAUSED })
 
-  //       expect(mediaPlayer.pause).not.toHaveBeenCalledWith()
-  //     })
-  //   })
-  // })
+        legacyAdaptor.setCurrentTime(10)
+
+        expect(legacyAdaptor.isPaused()).toBe(true)
+      })
+
+      it("should remain paused after a seek no-op if we were in a paused state on a dynamic DASH stream", () => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+        const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
+
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdaptor.load("application/dash+xml", null)
+
+        mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PAUSED })
+
+        legacyAdaptor.setCurrentTime(10)
+
+        expect(legacyAdaptor.isPaused()).toBe(true)
+      })
+    })
+  })
 
   // describe("Playback Rate", () => {
   //   it("calls through to the mediaPlayers setPlaybackRate function", () => {

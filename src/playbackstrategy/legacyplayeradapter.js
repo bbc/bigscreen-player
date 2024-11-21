@@ -29,7 +29,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   let errorCallback
   let timeUpdateCallback
   let currentTime
-  let isPaused = true
+  let isPaused
   let hasStartTime
 
   let handleErrorOnExitingSeek
@@ -320,7 +320,8 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       }
 
       mediaPlayer.playFrom && mediaPlayer.playFrom(correctedSeekToTime)
-      if (isPaused && !delayPauseOnExitSeek) {
+
+      if (isPaused && !delayPauseOnExitSeek && typeof mediaPlayer.pause === "function") {
         mediaPlayer.pause()
       }
     },
