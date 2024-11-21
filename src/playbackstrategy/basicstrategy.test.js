@@ -1,10 +1,25 @@
 import { ManifestType } from "../models/manifesttypes"
 import MediaKinds from "../models/mediakinds"
 import MediaState from "../models/mediastate"
+import TimeShiftDetector from "../utils/timeshiftdetector"
 import BasicStrategy from "./basicstrategy"
 import DynamicWindowUtils from "../dynamicwindowutils"
 
-const autoResumeSpy = jest.spyOn(DynamicWindowUtils, "autoResumeAtStartOfRange")
+jest.mock("../utils/timeshiftdetector")
+
+const mockTimeShiftDetector = {
+  disconnect: jest.fn(),
+  isSeekableRangeSliding: jest.fn(),
+  observe: jest.fn(),
+  // Mock function to fake time shift detection
+  triggerTimeShiftDetected: jest.fn(),
+}
+
+const mockMediaSources = {
+  time: jest.fn(),
+  currentSource: jest.fn().mockReturnValue(""),
+  availableSources: jest.fn().mockReturnValue([]),
+}
 
 describe("HTML5 Strategy", () => {
   let playbackElement
@@ -12,19 +27,26 @@ describe("HTML5 Strategy", () => {
   let videoElement
   let cdnArray
 
-  const mockMediaSources = {
-    time: jest.fn(),
-    currentSource: jest.fn().mockReturnValue(""),
-    availableSources: jest.fn().mockReturnValue([]),
-  }
+  beforeAll(() => {
+    jest.spyOn(DynamicWindowUtils, "autoResumeAtStartOfRange")
+
+    TimeShiftDetector.mockImplementation((onceTimeShiftDetected) => {
+      mockTimeShiftDetector.triggerTimeShiftDetected.mockImplementation(() => onceTimeShiftDetected())
+
+      return mockTimeShiftDetector
+    })
+  })
 
   beforeEach(() => {
+    jest.clearAllMocks()
+
     audioElement = document.createElement("audio")
     videoElement = document.createElement("video")
 
-    jest.spyOn(videoElement, "load").mockImplementation(() => {})
     jest.spyOn(videoElement, "pause").mockImplementation(() => {})
     jest.spyOn(videoElement, "play").mockImplementation(() => {})
+    jest.spyOn(videoElement, "load").mockImplementation(() => {})
+    // jest.spyOn(audioElement, "load").mockImplementation(() => {})
 
     playbackElement = document.createElement("div")
     playbackElement.id = "app"
@@ -57,7 +79,6 @@ describe("HTML5 Strategy", () => {
   afterEach(() => {
     videoElement = undefined
     audioElement = undefined
-    autoResumeSpy.mockReset()
   })
 
   describe("transitions", () => {
@@ -193,6 +214,40 @@ describe("HTML5 Strategy", () => {
       expect(addEventListenerSpy).toHaveBeenCalledWith("error", expect.any(Function))
       expect(addEventListenerSpy).toHaveBeenCalledWith("loadedmetadata", expect.any(Function))
     })
+
+    it("should provide the seekable range to the time shift detector for any dynamic stream", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null)
+
+      expect(mockTimeShiftDetector.observe).toHaveBeenCalledWith(basicStrategy.getSeekableRange)
+    })
+
+    it("should not provide the seekable range to the time shift detector for a static stream", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.STATIC })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null)
+
+      expect(mockTimeShiftDetector.observe).not.toHaveBeenCalled()
+    })
+
+    it("should provide the seekable range to the time shift detector again on a reload", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null)
+
+      expect(mockTimeShiftDetector.observe).toHaveBeenCalledTimes(1)
+
+      basicStrategy.load(null)
+
+      expect(mockTimeShiftDetector.observe).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe("play", () => {
@@ -214,23 +269,6 @@ describe("HTML5 Strategy", () => {
       basicStrategy.pause()
 
       expect(pauseSpy).toHaveBeenCalled()
-    })
-
-    it("should start autoresume timeout if sliding window", () => {
-      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-
-      basicStrategy.load(null, 0)
-      basicStrategy.pause()
-
-      expect(autoResumeSpy).toHaveBeenCalledTimes(1)
-      expect(autoResumeSpy).toHaveBeenCalledWith(
-        0,
-        { start: 0, end: 0 },
-        expect.any(Function),
-        expect.any(Function),
-        expect.any(Function),
-        basicStrategy.play
-      )
     })
   })
 
@@ -530,6 +568,14 @@ describe("HTML5 Strategy", () => {
 
       expect(basicStrategy.getPlayerElement()).toBeUndefined()
     })
+
+    it("should disconnect the time shift detector", () => {
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      basicStrategy.load(null, 0)
+      basicStrategy.tearDown()
+
+      expect(mockTimeShiftDetector.disconnect).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe("getPlayerElement", () => {
@@ -542,28 +588,14 @@ describe("HTML5 Strategy", () => {
   })
 
   describe("events", () => {
-    let eventCallbackSpy
-    let timeUpdateCallbackSpy
-    let errorCallbackSpy
-    let basicStrategy
+    it("should publish a state change to PLAYING on playing event", () => {
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-    beforeEach(() => {
-      basicStrategy?.tearDown()
-
-      basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-      basicStrategy.load(null, 25)
-
-      eventCallbackSpy = jest.fn()
+      const eventCallbackSpy = jest.fn()
       basicStrategy.addEventCallback(this, eventCallbackSpy)
 
-      timeUpdateCallbackSpy = jest.fn()
-      basicStrategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy)
+      basicStrategy.load(null, 25)
 
-      errorCallbackSpy = jest.fn()
-      basicStrategy.addErrorCallback(this, errorCallbackSpy)
-    })
-
-    it("should publish a state change to PLAYING on playing event", () => {
       videoElement.dispatchEvent(new Event("playing"))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PLAYING)
@@ -571,6 +603,13 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should publish a state change to PAUSED on pause event", () => {
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const eventCallbackSpy = jest.fn()
+      basicStrategy.addEventCallback(this, eventCallbackSpy)
+
+      basicStrategy.load(null, 25)
+
       videoElement.dispatchEvent(new Event("pause"))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.PAUSED)
@@ -578,6 +617,13 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should publish a state change to WAITING on seeking event", () => {
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const eventCallbackSpy = jest.fn()
+      basicStrategy.addEventCallback(this, eventCallbackSpy)
+
+      basicStrategy.load(null, 25)
+
       videoElement.dispatchEvent(new Event("seeking"))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.WAITING)
@@ -585,6 +631,13 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should publish a state change to WAITING on waiting event", () => {
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const eventCallbackSpy = jest.fn()
+      basicStrategy.addEventCallback(this, eventCallbackSpy)
+
+      basicStrategy.load(null, 25)
+
       videoElement.dispatchEvent(new Event("waiting"))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.WAITING)
@@ -592,19 +645,91 @@ describe("HTML5 Strategy", () => {
     })
 
     it("should publish a state change to ENDED on ended event", () => {
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const eventCallbackSpy = jest.fn()
+      basicStrategy.addEventCallback(this, eventCallbackSpy)
+
+      basicStrategy.load(null, 25)
+
       videoElement.dispatchEvent(new Event("ended"))
 
       expect(eventCallbackSpy).toHaveBeenCalledWith(MediaState.ENDED)
       expect(eventCallbackSpy).toHaveBeenCalledTimes(1)
     })
 
-    it("should start auto-resume timeout on seeked event if media element is paused and SLIDING window", () => {
+    it("should publish a time update event on time update", () => {
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const timeUpdateCallbackSpy = jest.fn()
+      basicStrategy.addTimeUpdateCallback(this, timeUpdateCallbackSpy)
+
+      basicStrategy.load(null, 25)
+
+      videoElement.dispatchEvent(new Event("timeupdate"))
+
+      expect(timeUpdateCallbackSpy).toHaveBeenCalled()
+      expect(timeUpdateCallbackSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it("should publish a error event with code and message on error", () => {
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const errorCallbackSpy = jest.fn()
+      basicStrategy.addErrorCallback(this, errorCallbackSpy)
+
+      basicStrategy.load(null, 25)
+
+      videoElement.dispatchEvent(new Event("error"))
+
+      // cannot fully test that the MediaError is used as JSDOM cannot set error on the video element
+      expect(errorCallbackSpy).toHaveBeenCalledWith({ code: 0, message: "unknown" })
+      expect(errorCallbackSpy).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("auto resume", () => {
+    it("should start auto-resume timeout when Time Shift Detector returns true for sliding", () => {
+      mockTimeShiftDetector.isSeekableRangeSliding.mockReturnValueOnce(true)
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null, 0)
+      basicStrategy.pause()
+
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledWith(
+        0,
+        { start: 0, end: 0 },
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        basicStrategy.play
+      )
+    })
+
+    it("should not start auto-resume timeout when Time Shift Detector returns false for sliding", () => {
+      mockTimeShiftDetector.isSeekableRangeSliding.mockReturnValueOnce(false)
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null, 0)
+      basicStrategy.pause()
+
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+    })
+
+    it("should start auto-resume timeout on seeked event if media element is paused and Time Shift Detector returns true for sliding", () => {
       mockMediaSources.time.mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         timeShiftBufferDepthInMilliseconds: 72000000,
         availabilityStartTimeInMilliseconds: 1731974400000,
         presentationTimeOffsetInMilliseconds: 0,
       })
+
+      mockTimeShiftDetector.isSeekableRangeSliding.mockReturnValueOnce(true)
 
       const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
@@ -613,22 +738,65 @@ describe("HTML5 Strategy", () => {
 
       videoElement.dispatchEvent(new Event("seeked"))
 
-      expect(autoResumeSpy).toHaveBeenCalledTimes(1)
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
     })
 
-    it("should publish a time update event on time update", () => {
-      videoElement.dispatchEvent(new Event("timeupdate"))
+    it("should not start auto-resume timeout on seeked event if media element is paused and Time Shift Detector returns false for sliding", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
 
-      expect(timeUpdateCallbackSpy).toHaveBeenCalled()
-      expect(timeUpdateCallbackSpy).toHaveBeenCalledTimes(1)
+      mockTimeShiftDetector.isSeekableRangeSliding.mockReturnValueOnce(false)
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      basicStrategy.load(null, 0)
+
+      jest.spyOn(videoElement, "paused", "get").mockReturnValueOnce(true)
+
+      videoElement.dispatchEvent(new Event("seeked"))
+
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
 
-    it("should publish a error event with code and message on error", () => {
-      videoElement.dispatchEvent(new Event("error"))
+    it("should start auto-resume timeout when Time Shift Detector callback fires while paused", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
 
-      // cannot fully test that the MediaError is used as JSDOM cannot set error on the video element
-      expect(errorCallbackSpy).toHaveBeenCalledWith({ code: 0, message: "unknown" })
-      expect(errorCallbackSpy).toHaveBeenCalledTimes(1)
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null, 0)
+
+      jest.spyOn(videoElement, "paused", "get").mockReturnValueOnce(true)
+
+      mockTimeShiftDetector.triggerTimeShiftDetected()
+
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+    })
+
+    it("should not start auto-resume timeout when Time Shift Detector callback fires while unpaused", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null, 0)
+
+      jest.spyOn(videoElement, "paused", "get").mockReturnValueOnce(false)
+
+      mockTimeShiftDetector.triggerTimeShiftDetected()
+
+      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
   })
 })

@@ -4,6 +4,7 @@ import LiveSupport from "../models/livesupport"
 import MediaKinds from "../models/mediakinds"
 import MediaState from "../models/mediastate"
 import handlePlayPromise from "../utils/handleplaypromise"
+import TimeShiftDetector from "../utils/timeshiftdetector"
 import DOMHelpers from "../domhelpers"
 import DynamicWindowUtils from "../dynamicwindowutils"
 
@@ -17,6 +18,14 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
 
   let mediaElement
   let metaDataLoaded
+
+  const timeShiftDetector = TimeShiftDetector(() => {
+    if (!isPaused()) {
+      return
+    }
+
+    startAutoResumeTimeout()
+  })
 
   function publishMediaState(mediaState) {
     for (let index = 0; index < eventCallbacks.length; index++) {
@@ -37,6 +46,10 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   }
 
   function load(_mimeType, startTime) {
+    if (manifestType === ManifestType.DYNAMIC) {
+      timeShiftDetector.observe(getSeekableRange)
+    }
+
     if (mediaElement == null) {
       setUpMediaElement(startTime)
       setUpMediaListeners()
@@ -101,7 +114,7 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
 
   function onSeeked() {
     if (isPaused()) {
-      if (manifestType === ManifestType.DYNAMIC) {
+      if (timeShiftDetector.isSeekableRangeSliding()) {
         startAutoResumeTimeout()
       }
 
@@ -233,6 +246,8 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
       DOMHelpers.safeRemoveElement(mediaElement)
     }
 
+    timeShiftDetector.disconnect()
+
     eventCallbacks = []
     errorCallback = undefined
     timeUpdateCallback = undefined
@@ -250,8 +265,7 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   function pause() {
     mediaElement.pause()
 
-    // TODO: Implement time shift checker polling seekable range
-    if (manifestType === ManifestType.DYNAMIC) {
+    if (timeShiftDetector.isSeekableRangeSliding()) {
       startAutoResumeTimeout()
     }
   }
