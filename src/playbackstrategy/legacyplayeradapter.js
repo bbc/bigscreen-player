@@ -216,7 +216,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
     reset()
     mediaPlayer.initialiseMedia("video", source, mimeType, playbackElement, setSourceOpts)
-    mediaPlayer.beginPlaybackFrom(currentTime + timeCorrection || 0)
+    mediaPlayer.beginPlaybackFrom(currentTime || 0)
   }
 
   function requiresLiveCurtain() {

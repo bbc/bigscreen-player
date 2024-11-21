@@ -1030,63 +1030,37 @@ describe("Legacy Playback Adapter", () => {
     })
   })
 
-  // describe("dash live on error after exiting seek", () => {
-  //   it("should have called reset on the player", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+  describe("handling Media Player error raised after exiting seek on dynamic DASH streams", () => {
+    it("should have called reset, initialise and beginPlaybackFrom on the player", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+      
+      const mediaPlayer = createMockMediaPlayer()
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-  //     // set up the values handleErrorOnExitingSeek && exitingSeek so they are truthy then fire an error event so we restart.
-  //     legacyAdaptor.load("application/dash+xml")
+      // any dynamic DASH (based on mime type) stream will have handleErrorOnExitingSeek as true when instantiating this module,
+      // handleErrorOnExitingSeek true will cause exitingSeek to be true on a call to setCurrentTime
+      legacyAdaptor.load("application/dash+xml", null)
+      legacyAdaptor.setCurrentTime(10)
 
-  //     legacyAdaptor.setCurrentTime(10)
+      mediaPlayer.getSource.mockReturnValueOnce("mock://media.src/")
+      mediaPlayer.getMimeType.mockReturnValueOnce("application/dash+xml")
 
-  //     eventCallbacks({ type: MediaPlayerEvent.ERROR })
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.ERROR })
 
-  //     expect(mediaPlayer.reset).toHaveBeenCalledWith()
-  //   })
-
-  //   it("should initialise the player", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
-
-  //     legacyAdaptor.load("application/dash+xml")
-
-  //     legacyAdaptor.setCurrentTime(10)
-
-  //     eventCallbacks({ type: MediaPlayerEvent.ERROR })
-
-  //     expect(mediaPlayer.initialiseMedia).toHaveBeenCalledWith(
-  //       "video",
-  //       cdnArray[0].url,
-  //       "application/dash+xml",
-  //       playbackElement,
-  //       expect.any(Object)
-  //     )
-  //   })
-
-  //   it("should begin playback from the currentTime", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
-
-  //     legacyAdaptor.load("application/dash+xml")
-
-  //     legacyAdaptor.setCurrentTime(10)
-
-  //     eventCallbacks({ type: MediaPlayerEvent.ERROR })
-
-  //     expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(10)
-  //   })
-
-  //   it("should begin playback from the currentTime + time correction", () => {
-  //     testTimeCorrection = 10
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
-
-  //     legacyAdaptor.load("application/dash+xml")
-
-  //     legacyAdaptor.setCurrentTime(10)
-
-  //     eventCallbacks({ type: MediaPlayerEvent.ERROR })
-
-  //     expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(20)
-  //   })
-  // })
+      expect(mediaPlayer.reset).toHaveBeenCalled()
+      expect(mediaPlayer.initialiseMedia).toHaveBeenNthCalledWith(2,
+        "video",
+        "mock://media.src/",
+        "application/dash+xml",
+        playbackElement,
+        {
+          disableSeekSentinel: false,
+          disableSentinels: false,
+        }
+      )
+      expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(10)
+    })
+  })
 
   // describe("delay pause until after seek", () => {
   //   it("should pause the player if we were in a paused state on dash live", () => {
