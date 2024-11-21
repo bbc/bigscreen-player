@@ -1,5 +1,50 @@
+import { LiveSupport } from "../models/livesupport"
+import { ManifestType } from "../models/manifesttypes"
 import MediaState from "../models/mediastate"
 import LegacyAdaptor from "./legacyplayeradapter"
+import LiveGlitchCurtain from "./liveglitchcurtain"
+
+jest.mock("../playbackstrategy/liveglitchcurtain")
+
+/**
+ * Note: The default 'seekable' API is identical to the API for on-demand/static streams
+ *
+ * @param {LiveSupport} liveSupport
+ * @returns {Object} A mocked media player instance
+ */
+function createMockMediaPlayer(liveSupport = LiveSupport.SEEKABLE) {
+  const basePlayer = {
+    addEventCallback: jest.fn().mockImplementation((component, callback) => {
+      eventCallbacks = (event) => callback.call(component, event)
+    }),
+    beginPlayback: jest.fn(),
+    getMimeType: jest.fn(),
+    getPlayerElement: jest.fn(),
+    getState: jest.fn(),
+    getSource: jest.fn(),
+    initialiseMedia: jest.fn(),
+    removeAllEventCallbacks: jest.fn(),
+    reset: jest.fn(),
+    stop: jest.fn(),
+  }
+
+  if (liveSupport === LiveSupport.RESTARTABLE) {
+    return { ...basePlayer, beginPlaybackFrom: jest.fn() }
+  }
+
+  if (liveSupport === LiveSupport.SEEKABLE) {
+    return {
+      ...basePlayer,
+      beginPlaybackFrom: jest.fn(),
+      getSeekableRange: jest.fn(),
+      playFrom: jest.fn(),
+      pause: jest.fn(),
+      resume: jest.fn(),
+    }
+  }
+
+  return basePlayer
+}
 
 const mockGlitchCurtain = {
   showCurtain: jest.fn(),
@@ -8,16 +53,14 @@ const mockGlitchCurtain = {
 }
 
 const mockMediaSources = {
-  init: jest.fn().mockResolvedValue(),
-  tearDown: jest.fn(),
+  // init: jest.fn().mockResolvedValue(),
+  // tearDown: jest.fn(),
   time: jest.fn(),
-  failoverResetTime: jest.fn().mockReturnValue(10),
+  // failoverResetTime: jest.fn().mockReturnValue(10),
   currentSource: jest.fn().mockReturnValue(""),
-  availableSources: jest.fn().mockReturnValue([]),
-  failover: jest.fn().mockResolvedValue(),
+  // availableSources: jest.fn().mockReturnValue([]),
+  // failover: jest.fn().mockResolvedValue(),
 }
-
-jest.mock("../playbackstrategy/liveglitchcurtain", () => jest.fn(() => mockGlitchCurtain))
 
 const MediaPlayerEvent = {
   STOPPED: "stopped", // Event fired when playback is stopped
@@ -63,6 +106,8 @@ describe("Legacy Playback Adapter", () => {
   }
 
   beforeAll(() => {
+    LiveGlitchCurtain.mockReturnValue(mockGlitchCurtain)
+
     jest.spyOn(document, "createElement").mockImplementation((elementType) => {
       if (["audio", "video"].includes(elementType)) {
         mediaElement = mockMediaElement(elementType)
@@ -75,131 +120,146 @@ describe("Legacy Playback Adapter", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
+
     window.bigscreenPlayer = {
       playbackStrategy: "stubstrategy",
     }
 
     playbackElement = originalCreateElement.call(document, "div")
-
-    mediaPlayer = {
-      addEventCallback: jest.fn().mockImplementation((component, callback) => {
-        eventCallbacks = (event) => callback.call(component, event)
-      }),
-      initialiseMedia: jest.fn(),
-      beginPlayback: jest.fn(),
-      getState: jest.fn(),
-      resume: jest.fn(),
-      getPlayerElement: jest.fn(),
-      getSeekableRange: jest.fn(),
-      reset: jest.fn(),
-      stop: jest.fn(),
-      removeAllEventCallbacks: jest.fn(),
-      getSource: jest.fn(),
-      getMimeType: jest.fn(),
-      beginPlaybackFrom: jest.fn(),
-      playFrom: jest.fn(),
-      pause: jest.fn(),
-      setPlaybackRate: jest.fn(),
-      getPlaybackRate: jest.fn(),
-    }
   })
 
   afterEach(() => {
     delete window.bigscreenPlayer
   })
 
-  describe("transitions", () => {
-    it("should pass back possible transitions", () => {
+  describe("load", () => {
+    it("should initialise the media player", () => {
+      mockMediaSources.currentSource.mockReturnValueOnce("mock://media.src/")
+
+      const mediaPlayer = createMockMediaPlayer()
+
       const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
 
-      expect(legacyAdaptor.transitions).toEqual(
-        expect.objectContaining({
-          canBePaused: expect.any(Function),
-          canBeStopped: expect.any(Function),
-          canBeginSeek: expect.any(Function),
-          canResume: expect.any(Function),
-        })
+      legacyAdaptor.load("video/mp4", 0)
+
+      expect(mediaPlayer.initialiseMedia).toHaveBeenCalledWith(
+        "video",
+        "mock://media.src/",
+        "video/mp4",
+        playbackElement,
+        expect.any(Object)
       )
     })
+
+    it("should begin playback from zero if no start time is passed in for a static stream", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.STATIC })
+
+      const mediaPlayer = createMockMediaPlayer()
+
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      legacyAdaptor.load("video/mp4", null)
+
+      expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0)
+    })
+
+    it("should begin playback from the passed in start time for a static stream", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.STATIC })
+
+      const mediaPlayer = createMockMediaPlayer()
+
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      legacyAdaptor.load("video/mp4", 50)
+
+      expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(50)
+    })
+
+    it.each([LiveSupport.PLAYABLE, LiveSupport.RESTARTABLE, LiveSupport.SEEKABLE])(
+      "should begin playback at the live point for a dynamic stream on a %s device",
+      (liveSupport) => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+        const mediaPlayer = createMockMediaPlayer(liveSupport)
+
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdaptor.load("video/mp4", null)
+
+        expect(mediaPlayer.beginPlayback).toHaveBeenCalledTimes(1)
+      }
+    )
+
+    it("should ignore start time and begin playback at the live point for a dynamic stream on a playable device", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
+
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      legacyAdaptor.load("video/mp4", 50)
+
+      expect(mediaPlayer.beginPlayback).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([LiveSupport.RESTARTABLE, LiveSupport.SEEKABLE])(
+      "should begin playback from the start time for a dynamic stream on a %s device",
+      (liveSupport) => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+        const mediaPlayer = createMockMediaPlayer(liveSupport)
+
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdaptor.load("video/mp4", 50)
+
+        expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(50)
+      }
+    )
+
+    it.each([LiveSupport.RESTARTABLE, LiveSupport.SEEKABLE])(
+      "should begin playback from the start time for a dynamic stream on a %s device when start time is zero",
+      (liveSupport) => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+        const mediaPlayer = createMockMediaPlayer(liveSupport)
+
+        const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdaptor.load("video/mp4", 0)
+
+        expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0)
+      }
+    )
+
+    it("should disable sentinels if we are watching UHD and configured to do so", () => {
+      window.bigscreenPlayer.overrides = {
+        liveUhdDisableSentinels: true,
+      }
+
+      setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING, isUHD: true })
+
+      legacyAdaptor.load("video/mp4")
+
+      const properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
+
+      expect(properties.disableSentinels).toBe(true)
+    })
+
+    it("should disable seek sentinels if we are configured to do so", () => {
+      window.bigscreenPlayer.overrides = {
+        disableSeekSentinel: true,
+      }
+
+      setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
+
+      legacyAdaptor.load(cdnArray, "video/mp4")
+
+      const properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
+
+      expect(properties.disableSeekSentinel).toBe(true)
+    })
   })
-
-  // describe("load", () => {
-  //   it("should initialise the media player", () => {
-  //     setUpLegacyAdaptor()
-
-  //     legacyAdaptor.load("video/mp4", 0)
-
-  //     expect(mediaPlayer.initialiseMedia).toHaveBeenCalledWith(
-  //       "video",
-  //       cdnArray[0].url,
-  //       "video/mp4",
-  //       playbackElement,
-  //       expect.any(Object)
-  //     )
-  //   })
-
-  //   it("should begin playback from the passed in start time + time correction if we are watching live on a restartable device", () => {
-  //     testTimeCorrection = 10
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
-
-  //     legacyAdaptor.load("video/mp4", 50)
-
-  //     expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(60)
-  //   })
-
-  //   it("should begin playback at the live point if no start time is passed in and we are watching live on a playable device", () => {
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING, playableDevice: true })
-
-  //     legacyAdaptor.load("video/mp4")
-
-  //     expect(mediaPlayer.beginPlayback).toHaveBeenCalledWith()
-  //   })
-
-  //   it("should begin playback from the passed in start time if we are watching vod", () => {
-  //     setUpLegacyAdaptor()
-
-  //     legacyAdaptor.load("video/mp4", 50)
-
-  //     expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(50)
-  //   })
-
-  //   it("should begin playback from if no start time is passed in when watching vod", () => {
-  //     setUpLegacyAdaptor()
-
-  //     legacyAdaptor.load("video/mp4")
-
-  //     expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0)
-  //   })
-
-  //   it("should disable sentinels if we are watching UHD and configured to do so", () => {
-  //     window.bigscreenPlayer.overrides = {
-  //       liveUhdDisableSentinels: true,
-  //     }
-
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING, isUHD: true })
-
-  //     legacyAdaptor.load("video/mp4")
-
-  //     const properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
-
-  //     expect(properties.disableSentinels).toBe(true)
-  //   })
-
-  //   it("should disable seek sentinels if we are configured to do so", () => {
-  //     window.bigscreenPlayer.overrides = {
-  //       disableSeekSentinel: true,
-  //     }
-
-  //     setUpLegacyAdaptor({ windowType: WindowTypes.SLIDING })
-
-  //     legacyAdaptor.load(cdnArray, "video/mp4")
-
-  //     const properties = mediaPlayer.initialiseMedia.mock.calls[mediaPlayer.initialiseMedia.mock.calls.length - 1][4]
-
-  //     expect(properties.disableSeekSentinel).toBe(true)
-  //   })
-  // })
 
   // describe("play", () => {
   //   describe("if the player supports playFrom()", () => {
@@ -622,6 +682,21 @@ describe("Legacy Playback Adapter", () => {
   //     expect(legacyAdaptor.getPlaybackRate()).toBe(1)
   //   })
   // })
+
+  describe("transitions", () => {
+    it("should pass back possible transitions", () => {
+      const legacyAdaptor = LegacyAdaptor(mockMediaSources, playbackElement, false, mediaPlayer)
+
+      expect(legacyAdaptor.transitions).toEqual(
+        expect.objectContaining({
+          canBePaused: expect.any(Function),
+          canBeStopped: expect.any(Function),
+          canBeginSeek: expect.any(Function),
+          canResume: expect.any(Function),
+        })
+      )
+    })
+  })
 
   // describe("reset", () => {
   //   it("should reset the player", () => {
