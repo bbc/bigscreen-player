@@ -92,10 +92,10 @@ function createPlaybackElement() {
 
 describe("Bigscreen Player", () => {
   beforeEach(() => {
-    jest.clearAllMocks()
-
     bigscreenPlayer?.tearDown()
     bigscreenPlayer = undefined
+
+    jest.clearAllMocks()
 
     mockPlayerComponentInstance = {
       play: jest.fn(),
