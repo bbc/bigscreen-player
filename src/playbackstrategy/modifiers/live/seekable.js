@@ -59,11 +59,11 @@ function SeekableLivePlayer(mediaPlayer) {
   }
 
   return {
-    initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
-      const _mediaType =
-        mediaType === MediaPlayerBase.TYPE.AUDIO ? MediaPlayerBase.TYPE.LIVE_AUDIO : MediaPlayerBase.TYPE.LIVE_VIDEO
+    initialiseMedia: function initialiseMedia(mediaKind, sourceUrl, mimeType, sourceContainer, opts) {
+      const mediaType =
+        mediaKind === MediaPlayerBase.TYPE.AUDIO ? MediaPlayerBase.TYPE.LIVE_AUDIO : MediaPlayerBase.TYPE.LIVE_VIDEO
 
-      mediaPlayer.initialiseMedia(_mediaType, sourceUrl, mimeType, sourceContainer, opts)
+      mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts)
 
       timeShiftDetector.observe(getSeekableRange)
     },
@@ -76,12 +76,12 @@ function SeekableLivePlayer(mediaPlayer) {
       }
     },
 
-    beginPlaybackFrom: function beginPlaybackFrom(offset) {
-      mediaPlayer.beginPlaybackFrom(offset)
+    beginPlaybackFrom: function beginPlaybackFrom(presentationTimeInSeconds) {
+      mediaPlayer.beginPlaybackFrom(presentationTimeInSeconds)
     },
 
-    playFrom: function playFrom(offset) {
-      mediaPlayer.playFrom(offset)
+    playFrom: function playFrom(presentationTimeInSeconds) {
+      mediaPlayer.playFrom(presentationTimeInSeconds)
     },
 
     pause: function pause() {

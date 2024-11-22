@@ -747,6 +747,37 @@ describe("Legacy Playback Adapter", () => {
 
         expect(mediaPlayer.pause).not.toHaveBeenCalled()
       })
+
+      it("should attempt to restart playback from seek time when a seek exits with an error on a dynamic DASH stream", () => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+        const mediaPlayer = createMockMediaPlayer()
+        const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        // any dynamic DASH (based on mime type) stream will have handleErrorOnExitingSeek as true when instantiating this module,
+        // handleErrorOnExitingSeek true will cause exitingSeek to be true on a call to setCurrentTime
+        legacyAdapter.load("application/dash+xml", null)
+        legacyAdapter.setCurrentTime(10)
+
+        mediaPlayer.getSource.mockReturnValueOnce("mock://media.src/")
+        mediaPlayer.getMimeType.mockReturnValueOnce("application/dash+xml")
+
+        mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.ERROR })
+
+        expect(mediaPlayer.reset).toHaveBeenCalled()
+        expect(mediaPlayer.initialiseMedia).toHaveBeenNthCalledWith(
+          2,
+          "video",
+          "mock://media.src/",
+          "application/dash+xml",
+          playbackElement,
+          {
+            disableSeekSentinel: false,
+            disableSentinels: false,
+          }
+        )
+        expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(10)
+      })
     })
 
     describe("if the player does not support playFrom()", () => {
@@ -1024,39 +1055,6 @@ describe("Legacy Playback Adapter", () => {
       legacyAdapter.tearDown()
 
       expect(mockGlitchCurtain.tearDown).toHaveBeenCalled()
-    })
-  })
-
-  describe("handling Media Player error when raised after exiting seek on dynamic DASH streams", () => {
-    it("should have called reset, initialise and beginPlaybackFrom on the player", () => {
-      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
-
-      const mediaPlayer = createMockMediaPlayer()
-      const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
-
-      // any dynamic DASH (based on mime type) stream will have handleErrorOnExitingSeek as true when instantiating this module,
-      // handleErrorOnExitingSeek true will cause exitingSeek to be true on a call to setCurrentTime
-      legacyAdapter.load("application/dash+xml", null)
-      legacyAdapter.setCurrentTime(10)
-
-      mediaPlayer.getSource.mockReturnValueOnce("mock://media.src/")
-      mediaPlayer.getMimeType.mockReturnValueOnce("application/dash+xml")
-
-      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.ERROR })
-
-      expect(mediaPlayer.reset).toHaveBeenCalled()
-      expect(mediaPlayer.initialiseMedia).toHaveBeenNthCalledWith(
-        2,
-        "video",
-        "mock://media.src/",
-        "application/dash+xml",
-        playbackElement,
-        {
-          disableSeekSentinel: false,
-          disableSentinels: false,
-        }
-      )
-      expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(10)
     })
   })
 

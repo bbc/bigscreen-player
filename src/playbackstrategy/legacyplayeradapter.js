@@ -56,7 +56,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       "error": onError,
     }
 
-    if (handleEvent.hasOwnProperty(event.type)) {
+    if (Object.prototype.hasOwnProperty.call(handleEvent, event.type)) {
       handleEvent[event.type].call(this, event)
     } else {
       DebugTool.info(`${getSelection()} Event:${event.type}`)
@@ -241,18 +241,20 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    load: (mimeType, startTime) => {
+    load: (mimeType, presentationTimeInSeconds) => {
       setupExitSeekWorkarounds(mimeType)
       isPaused = false
 
-      hasStartTime = startTime || startTime === 0
-      const isPlaybackFromLivePoint = manifestType === ManifestType.DYNAMIC && !hasStartTime
+      hasStartTime = presentationTimeInSeconds || presentationTimeInSeconds === 0
 
       mediaPlayer.initialiseMedia("video", mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
 
-      if (!isPlaybackFromLivePoint && typeof mediaPlayer.beginPlaybackFrom === "function") {
-        currentTime = startTime
-        mediaPlayer.beginPlaybackFrom(startTime || 0)
+      if (
+        typeof mediaPlayer.beginPlaybackFrom === "function" &&
+        (manifestType === ManifestType.STATIC || hasStartTime)
+      ) {
+        currentTime = presentationTimeInSeconds || 0
+        mediaPlayer.beginPlaybackFrom(currentTime)
       } else {
         mediaPlayer.beginPlayback()
       }
@@ -305,17 +307,17 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       return 1
     },
     getCurrentTime: () => currentTime,
-    setCurrentTime: (seekToTime) => {
+    setCurrentTime: (presentationTimeInSeconds) => {
       isEnded = false
-      currentTime = seekToTime
+      currentTime = presentationTimeInSeconds
 
       if (handleErrorOnExitingSeek || delayPauseOnExitSeek) {
-        targetSeekToTime = seekToTime
+        targetSeekToTime = presentationTimeInSeconds
         exitingSeek = true
         pauseOnExitSeek = isPaused
       }
 
-      mediaPlayer.playFrom && mediaPlayer.playFrom(seekToTime)
+      mediaPlayer.playFrom && mediaPlayer.playFrom(presentationTimeInSeconds)
 
       if (isPaused && !delayPauseOnExitSeek && typeof mediaPlayer.pause === "function") {
         mediaPlayer.pause()

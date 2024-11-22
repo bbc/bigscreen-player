@@ -1,4 +1,3 @@
-import { ManifestType } from "../../../models/manifesttypes"
 import MediaPlayerBase from "../mediaplayerbase"
 import SeekableMediaPlayer from "./seekable"
 import TimeShiftDetector from "../../../utils/timeshiftdetector"
@@ -12,12 +11,6 @@ const mockTimeShiftDetector = {
   observe: jest.fn(),
   // Mock function to fake time shift detection
   triggerTimeShiftDetected: jest.fn(),
-}
-
-const mockMediaSources = {
-  time: jest.fn(),
-  currentSource: jest.fn().mockReturnValue(""),
-  availableSources: jest.fn().mockReturnValue([]),
 }
 
 describe("Seekable HMTL5 Live Player", () => {
@@ -38,13 +31,6 @@ describe("Seekable HMTL5 Live Player", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-
-    mockMediaSources.time.mockReturnValue({
-      manifestType: ManifestType.STATIC,
-      presentationTimeOffsetInMilliseconds: 0,
-      availabilityStartTimeInMilliseconds: 0,
-      timeShiftBufferDepthInMilliseconds: 0,
-    })
 
     player = {
       beginPlayback: jest.fn(),
@@ -256,6 +242,7 @@ describe("Seekable HMTL5 Live Player", () => {
 
       expect(player.toPaused).toHaveBeenCalledTimes(1)
       expect(player.toPlaying).toHaveBeenCalledTimes(1)
+      expect(player.pause).not.toHaveBeenCalled()
     })
   })
 
