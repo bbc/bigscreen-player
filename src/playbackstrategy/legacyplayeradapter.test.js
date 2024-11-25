@@ -62,13 +62,8 @@ const mockGlitchCurtain = {
 }
 
 const mockMediaSources = {
-  // init: jest.fn().mockResolvedValue(),
-  // tearDown: jest.fn(),
   time: jest.fn(),
-  // failoverResetTime: jest.fn().mockReturnValue(10),
   currentSource: jest.fn().mockReturnValue(""),
-  // availableSources: jest.fn().mockReturnValue([]),
-  // failover: jest.fn().mockResolvedValue(),
 }
 
 const MediaPlayerEvent = {

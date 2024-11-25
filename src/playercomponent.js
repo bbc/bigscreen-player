@@ -8,17 +8,10 @@ import LiveSupport from "./models/livesupport"
 import PlaybackStrategyModel from "./models/playbackstrategy"
 import StrategyPicker from "./playbackstrategy/strategypicker"
 
-function PlayerComponent(
-  playbackElement,
-  bigscreenPlayerData,
-  mediaSources,
-  windowType,
-  stateUpdateCallback,
-  errorCallback
-) {
+function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, stateUpdateCallback, errorCallback) {
   const transferFormat = bigscreenPlayerData.media.transferFormat
 
-  let _windowType = windowType
+  let _windowType = WindowTypes.STATIC
   let _stateUpdateCallback = stateUpdateCallback
 
   let mediaKind = bigscreenPlayerData.media.kind
