@@ -3,14 +3,10 @@ import WindowTypes from "./models/windowtypes"
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
-import { TransferFormat } from "./models/transferformats"
 import LiveSupport from "./models/livesupport"
-import PlaybackStrategyModel from "./models/playbackstrategy"
 import StrategyPicker from "./playbackstrategy/strategypicker"
 
 function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, stateUpdateCallback, errorCallback) {
-  const transferFormat = bigscreenPlayerData.media.transferFormat
-
   let _windowType = WindowTypes.STATIC
   let _stateUpdateCallback = stateUpdateCallback
 
@@ -27,7 +23,6 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     .then((strategy) => {
       playbackStrategy = strategy(
         mediaSources,
-        _windowType,
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
