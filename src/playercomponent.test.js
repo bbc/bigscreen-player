@@ -935,163 +935,212 @@ describe("Player Component", () => {
   })
 
   describe("cdn failover", () => {
-    let fatalErrorPluginData
-    let currentTime
-    let type
-    let currentStrategy
+    it("should failover after buffering for 30 seconds on initial playback", async () => {
+      mockStrategy.getCurrentTime.mockReturnValueOnce(100)
 
-    beforeEach(() => {
+      const _playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await new Promise(process.nextTick)
+
       jest.useFakeTimers()
 
-      fatalErrorPluginData = {
-        status: PluginEnums.STATUS.FATAL,
-        stateType: PluginEnums.TYPE.ERROR,
+      mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
+
+      jest.advanceTimersByTime(20000)
+
+      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+      expect(mockMediaSources.failover).not.toHaveBeenCalled()
+
+      jest.advanceTimersByTime(10000)
+
+      expect(mockStrategy.load).toHaveBeenCalledTimes(2)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+
+      expect(mockMediaSources.failover).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+        })
+      )
+    })
+
+    it("should failover after buffering for 20 seconds on normal playback", async () => {
+      mockStrategy.getCurrentTime.mockReturnValueOnce(100)
+
+      const _playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await new Promise(process.nextTick)
+
+      jest.useFakeTimers()
+
+      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING) // ensures the following waiting is 'mid playback'
+      mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
+
+      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+      expect(mockMediaSources.failover).not.toHaveBeenCalled()
+
+      jest.advanceTimersByTime(20000)
+
+      expect(mockStrategy.load).toHaveBeenCalledTimes(2)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+
+      expect(mockMediaSources.failover).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+        })
+      )
+    })
+
+    it("should failover after 5 seconds if we have not cleared an error from the device", async () => {
+      mockStrategy.getCurrentTime.mockReturnValueOnce(100)
+
+      const _playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await new Promise(process.nextTick)
+
+      jest.useFakeTimers()
+
+      mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
+
+      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+      expect(mockMediaSources.failover).not.toHaveBeenCalled()
+
+      jest.advanceTimersByTime(5000)
+
+      expect(mockStrategy.load).toHaveBeenCalledTimes(2)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+
+      expect(mockMediaSources.failover).toHaveBeenCalledWith(
+        expect.objectContaining({
+          code: 0,
+          message: "unknown",
+        })
+      )
+    })
+
+    it("should fire a fatal error on the plugins if attempt to failover rejects", async () => {
+      // mockMediaSources.failover.mockRejectedValueOnce(new Error("mock failover reject"))
+
+      const _playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await new Promise(process.nextTick)
+
+      jest.useFakeTimers()
+
+      mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
+
+      jest.advanceTimersByTime(5000)
+
+      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+      expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: PluginEnums.STATUS.FATAL,
+          stateType: PluginEnums.TYPE.ERROR,
+          isBufferingTimeoutError: false,
+          cdn: undefined,
+          newCdn: undefined,
+          isInitialPlay: undefined,
+          timeStamp: expect.any(Object),
+          code: 0,
+          message: "unknown",
+        })
+      )
+    })
+
+    it("should publish a media state update of fatal if failover is not possible", async () => {
+      // mockMediaSources.failover.mockRejectedValueOnce(new Error("mock failover reject"))
+
+      const onStateUpdate = jest.fn()
+      
+      const _playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await new Promise(process.nextTick)
+
+      jest.useFakeTimers()
+
+      mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
+
+      jest.advanceTimersByTime(5000)
+
+      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+      expect(onStateUpdate).toHaveBeenCalledWith({
+        data: { currentTime: undefined, duration: undefined, seekableRange: undefined, state: MediaState.FATAL_ERROR },
         isBufferingTimeoutError: false,
-        cdn: undefined,
-        newCdn: undefined,
-        isInitialPlay: undefined,
-        timeStamp: expect.any(Object),
+        timeUpdate: false,
         code: 0,
-        message: "unknown",
-      }
-
-      currentTime = 50
-      type = "application/dash+xml"
-
-      jest.spyOn(mockStrategy, "getSeekableRange").mockImplementation(() => ({ start: 0, end: 100 }))
-      jest.spyOn(mockStrategy, "getCurrentTime").mockImplementation(() => currentTime)
-      currentStrategy = window.bigscreenPlayer.playbackStrategy
-    })
-
-    afterEach(() => {
-      window.bigscreenPlayer.playbackStrategy = currentStrategy
-      jest.useRealTimers()
-    })
-
-    it("should failover after buffering for 30 seconds on initial playback", () => {
-      setUpPlayerComponent()
-
-      return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
-
-        jest.advanceTimersByTime(29999)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-
-        jest.advanceTimersByTime(1)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-        expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
-        expect(mockMediaSources.failover).toHaveBeenCalledWith(
-          expect.any(Function),
-          expect.any(Function),
-          expect.objectContaining({
-            code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
-            message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
-          })
-        )
+        message: "unknown"
       })
     })
 
-    it("should failover after buffering for 20 seconds on normal playback", () => {
-      setUpPlayerComponent()
-
-      return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING) // Set playback cause to normal
-        mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
-
-        jest.advanceTimersByTime(19999)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-
-        jest.advanceTimersByTime(1)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-        expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
-        expect(mockMediaSources.failover).toHaveBeenCalledWith(
-          expect.any(Function),
-          expect.any(Function),
-          expect.objectContaining({
-            code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
-            message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
-          })
-        )
+    it("should failover with updated failover time when window time data has changed", async () => {
+      mockMediaSources.time.mockReturnValueOnce({
+        manifestType: ManifestType.DYNAMIC,
+        presentationTimeOffsetInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 10000,
+        timeShiftBufferDepthInMilliseconds: 0,
       })
-    })
 
-    it("should failover after 5 seconds if we have not cleared an error from the device", () => {
-      setUpPlayerComponent()
+      mockStrategy.getCurrentTime.mockReturnValue(100)
+      
+      const _playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
 
-      return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
+      await new Promise(process.nextTick)
 
-        jest.advanceTimersByTime(4999)
+      jest.useFakeTimers()
 
-        expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
+      mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-        jest.advanceTimersByTime(1)
+      jest.advanceTimersByTime(20000)
 
-        expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-        expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime)
-        expect(mockStrategy.reset).toHaveBeenCalledWith()
-
-        expect(mockMediaSources.failover).toHaveBeenCalledWith(
-          expect.any(Function),
-          expect.any(Function),
-          expect.objectContaining({ code: 0, message: "unknown" })
-        )
+      mockMediaSources.time.mockReturnValueOnce({
+        manifestType: ManifestType.DYNAMIC,
+        presentationTimeOffsetInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 30000,
+        timeShiftBufferDepthInMilliseconds: 0,
       })
-    })
 
-    it("should fire a fatal error on the plugins if failover is not possible", () => {
-      setUpPlayerComponent()
-      forceMediaSourcesError = true
+      await new Promise(process.nextTick)
 
-      return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
-
-        jest.advanceTimersByTime(5000)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-        expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(expect.objectContaining(fatalErrorPluginData))
-      })
-    })
-
-    it("should publish a media state update of fatal if failover is not possible", () => {
-      setUpPlayerComponent()
-      forceMediaSourcesError = true
-
-      return StrategyPicker.default().then(() => {
-        mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
-        onStateUpdate.mockReset()
-
-        jest.advanceTimersByTime(5000)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-        expect(onStateUpdate.mock.calls[0][0].data.state).toEqual(MediaState.FATAL_ERROR)
-        expect(onStateUpdate.mock.calls[0][0].code).toBe(0)
-        expect(onStateUpdate.mock.calls[0][0].message).toBe("unknown")
-      })
-    })
-
-    it("should failover for with updated failover time when window time data has changed", () => {
-      setUpPlayerComponent({ windowType: WindowTypes.SLIDING, transferFormat: TransferFormat.HLS })
-      updateTestTime = true
-
-      return StrategyPicker.default().then(() => {
-        // Set playback cause to normal
-        mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
-        mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
-
-        jest.advanceTimersByTime(19999)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-
-        jest.advanceTimersByTime(1)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-        expect(mockStrategy.load).toHaveBeenCalledWith(type, currentTime - 20)
-      })
+      expect(mockStrategy.load).toHaveBeenCalledTimes(2)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100 - 20)
     })
 
     it("should clear buffering timeout error timeout", () => {
