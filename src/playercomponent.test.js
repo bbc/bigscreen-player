@@ -20,18 +20,11 @@ function createPlaybackElement() {
   return el
 }
 
-const mockLiveSupport = LiveSupport.SEEKABLE
-
-const mockMediaSources = {
-  failover: jest.fn().mockResolvedValue(),
-  reset: jest.fn().mockResolvedValue(),
-  time: jest.fn(),
-}
-
-const mockStrategy = (() => {
+function createMockPlaybackStrategy(liveSupport = LiveSupport.SEEKABLE) {
   let eventCallback, errorCallback, timeUpdateCallback
 
   return {
+    getLiveSupport: jest.fn().mockReturnValue(liveSupport),
     addEventCallback: (that, cb) => {
       eventCallback = (ev) => cb.call(that, ev)
     },
@@ -41,13 +34,11 @@ const mockStrategy = (() => {
     addTimeUpdateCallback: (that, cb) => {
       timeUpdateCallback = () => cb.call(that)
     },
-
     mockingHooks: {
       fireEvent: (ev) => (eventCallback ? eventCallback(ev) : undefined),
       fireError: (ev) => (errorCallback ? errorCallback(ev) : undefined),
       fireTimeUpdate: () => (errorCallback ? timeUpdateCallback() : undefined),
     },
-
     pause: jest.fn(),
     load: jest.fn(),
     reset: jest.fn(),
@@ -63,12 +54,18 @@ const mockStrategy = (() => {
       canBePaused: jest.fn().mockReturnValue(true),
       canBeginSeek: jest.fn().mockReturnValue(true),
     },
-    isPaused: () => false,
-    getLiveSupport: () => mockLiveSupport,
+    isPaused: jest.fn().mockReturnValue(false),
   }
-})()
+}
+
+const mockMediaSources = {
+  failover: jest.fn().mockResolvedValue(),
+  reset: jest.fn().mockResolvedValue(),
+  time: jest.fn(),
+}
 
 describe("Player Component", () => {
+  let mockStrategy
   let bigscreenPlayerData
 
   beforeEach(() => {
@@ -77,6 +74,8 @@ describe("Player Component", () => {
     // Real timers are necessary for `process.nextTick`
     // We use `process.nextTick` to indirectly wait for promises to resolve
     jest.useRealTimers()
+
+    mockStrategy = createMockPlaybackStrategy()
 
     StrategyPicker.mockResolvedValue(() => mockStrategy)
 
@@ -102,6 +101,53 @@ describe("Player Component", () => {
   })
 
   describe("construction", () => {
+    it("should initialise the playback strategy selected by the strategy picker", async () => {
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playbackElement = createPlaybackElement()
+
+      const _playerComponent = new PlayerComponent(
+        playbackElement,
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await new Promise(process.nextTick)
+
+      expect(mockPlaybackStrategyClass).toHaveBeenCalledWith(
+        mockMediaSources,
+        MediaKinds.VIDEO,
+        playbackElement,
+        undefined,
+        undefined
+      )
+      expect(mockPlaybackStrategyClass).toHaveBeenCalledTimes(1)
+
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", undefined)
+    })
+
+    it("should trigger the error callback when strategyPicker rejects", async () => {
+      StrategyPicker.mockRejectedValueOnce(new Error("A network error occured"))
+
+      const onError = jest.fn()
+
+      const _playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        onError
+      )
+
+      await new Promise(process.nextTick)
+
+      expect(onError).toHaveBeenCalledWith(new Error("A network error occured"))
+    })
+
     it("should fire error cleared on the plugins", async () => {
       jest.spyOn(Plugins.interface, "onErrorCleared")
 
@@ -124,24 +170,6 @@ describe("Player Component", () => {
         timeStamp: expect.any(Date),
       })
       expect(Plugins.interface.onErrorCleared).toHaveBeenCalledTimes(1)
-    })
-
-    it("should trigger the error callback when strategyPicker rejects", async () => {
-      StrategyPicker.mockRejectedValueOnce(new Error("A network error occured"))
-
-      const onError = jest.fn()
-
-      const _playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        onError
-      )
-
-      await new Promise(process.nextTick)
-
-      expect(onError).toHaveBeenCalledWith(new Error("A network error occured"))
     })
   })
 
