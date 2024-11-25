@@ -307,8 +307,8 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
         state,
         duration: getDuration(),
       },
-      timeUpdate: opts && opts.timeUpdate,
-      isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError) || false,
+      timeUpdate: opts?.timeUpdate ?? false,
+      isBufferingTimeoutError: opts?.isBufferingTimeoutError ?? false,
     }
 
     if (opts && opts.code > -1 && opts.message) {
