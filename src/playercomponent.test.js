@@ -9,9 +9,7 @@ import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
 
-window.bigscreenPlayer = {}
-
-jest.mock("./playbackstrategy/strategypicker", () => jest.fn())
+jest.mock("./playbackstrategy/strategypicker")
 
 function createPlaybackElement() {
   const el = document.createElement("div")
@@ -74,6 +72,8 @@ describe("Player Component", () => {
     // Real timers are necessary for `process.nextTick`
     // We use `process.nextTick` to indirectly wait for promises to resolve
     jest.useRealTimers()
+
+    window.bigscreenPlayer = {}
 
     mockStrategy = createMockPlaybackStrategy()
 
