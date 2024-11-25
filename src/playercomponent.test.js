@@ -60,8 +60,8 @@ const mockStrategy = (() => {
     getCurrentTime: jest.fn(),
     tearDown: jest.fn(),
     transitions: {
-      canBePaused: () => true,
-      canBeginSeek: () => true,
+      canBePaused: jest.fn().mockReturnValue(true),
+      canBeginSeek: jest.fn().mockReturnValue(true),
     },
     isPaused: () => false,
     getLiveSupport: () => mockLiveSupport,
@@ -75,7 +75,7 @@ describe("Player Component", () => {
   let errorCallback
 
   beforeEach(() => {
-    // jest.resetAllMocks()
+    jest.resetAllMocks()
 
     StrategyPicker.mockResolvedValue(() => mockStrategy)
 
@@ -158,6 +158,7 @@ describe("Player Component", () => {
 
   describe("pause", () => {
     it("should pass through Pause Trigger to the playback strategy", async () => {
+      mockStrategy.transitions.canBePaused.mockReturnValueOnce(true)
       const pauseTrigger = PauseTriggers.APP
 
       const playerComponent = new PlayerComponent(
@@ -193,7 +194,7 @@ describe("Player Component", () => {
 
       await new Promise(process.nextTick)
 
-      expect(playerComponent.getPlayerElement()).toEqual(playerElement)
+      expect(playerComponent.getPlayerElement()).toBe(playerElement)
     })
 
     it("should return null if it does not exist on the strategy", async () => {
@@ -214,76 +215,25 @@ describe("Player Component", () => {
   })
 
   describe("setCurrentTime", () => {
-    let currentStrategy
+    it("should setCurrentTime on the strategy when in a seekable state", async () => {
+      mockStrategy.transitions.canBeginSeek.mockReturnValueOnce(true)
 
-    beforeEach(() => {
-      currentStrategy = window.bigscreenPlayer.playbackStrategy
-    })
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
 
-    afterEach(() => {
-      window.bigscreenPlayer.playbackStrategy = currentStrategy
-    })
+      await new Promise(process.nextTick)
 
-    it("should setCurrentTime on the strategy when in a seekable state", () => {
-      jest.spyOn(mockStrategy, "getSeekableRange").mockImplementation(() => ({ start: 0, end: 100 }))
-      setUpPlayerComponent()
+      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
 
-      return StrategyPicker.default().then(() => {
-        mockStrategy.load.mockReset()
-        playerComponent.setCurrentTime(10)
+      playerComponent.setCurrentTime(10)
 
-        expect(mockStrategy.setCurrentTime).toHaveBeenCalledWith(10)
-        expect(mockStrategy.load).not.toHaveBeenCalled()
-      })
-    })
-
-    it("should reload the element if restartable", () => {
-      window.bigscreenPlayer.playbackStrategy = "nativestrategy"
-      window.bigscreenPlayer.liveSupport = LiveSupport.RESTARTABLE
-
-      jest.spyOn(mockStrategy, "getSeekableRange").mockImplementation(() => ({ start: 0, end: 100 }))
-
-      setUpPlayerComponent({
-        windowType: WindowTypes.SLIDING,
-        transferFormat: TransferFormat.HLS,
-        type: "applesomething",
-      })
-
-      updateTestTime = true
-
-      return StrategyPicker.default().then(() => {
-        playerComponent.setCurrentTime(50)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-        expect(mockStrategy.load).toHaveBeenCalledWith("applesomething", 30)
-      })
-    })
-
-    it("should reload the element with no time if the new time is within 30 seconds of the end of the window", () => {
-      window.bigscreenPlayer.playbackStrategy = "nativestrategy"
-
-      jest.spyOn(mockStrategy, "getSeekableRange").mockImplementation(() => ({ start: 0, end: 70 }))
-      mockStrategy.liveSupport = LiveSupport.RESTARTABLE
-
-      setUpPlayerComponent({
-        windowType: WindowTypes.SLIDING,
-        transferFormat: TransferFormat.HLS,
-        type: "applesomething",
-      })
-
-      // this will move the window forward by 20 seconds from it's original position
-      testTime = {
-        windowStartTime: 744000,
-        windowEndTime: 4344000,
-        correction: 0,
-      }
-
-      return StrategyPicker.default().then(() => {
-        playerComponent.setCurrentTime(50)
-
-        expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-        expect(mockStrategy.load).toHaveBeenCalledWith("applesomething", undefined)
-      })
+      expect(mockStrategy.setCurrentTime).toHaveBeenCalledWith(10)
+      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
     })
   })
 

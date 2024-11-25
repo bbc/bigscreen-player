@@ -98,7 +98,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
 
   function setCurrentTime(time) {
     if (transitions().canBeginSeek()) {
-      isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy && playbackStrategy.setCurrentTime(time)
+      playbackStrategy && playbackStrategy.setCurrentTime(time)
     }
   }
 
@@ -108,46 +108,6 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
 
   function getPlaybackRate() {
     return playbackStrategy && playbackStrategy.getPlaybackRate()
-  }
-
-  function isNativeHLSRestartable() {
-    return (
-      window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
-      transferFormat === TransferFormat.HLS &&
-      _windowType !== WindowTypes.STATIC &&
-      getLiveSupport() === LiveSupport.RESTARTABLE
-    )
-  }
-
-  function reloadMediaElement(time) {
-    const originalWindowStartOffset = getWindowStartTime()
-
-    const doSeek = () => {
-      const windowOffset = mediaSources.time().windowStartTime - originalWindowStartOffset
-      const seekableRange = playbackStrategy && playbackStrategy.getSeekableRange()
-
-      let seekToTime = time - windowOffset / 1000
-      let thenPause = playbackStrategy && playbackStrategy.isPaused()
-
-      tearDownMediaElement()
-
-      if (seekToTime > seekableRange.end - seekableRange.start - 30) {
-        seekToTime = undefined
-        thenPause = false
-      }
-
-      loadMedia(mediaMetaData.type, seekToTime, thenPause)
-    }
-
-    const onError = () => {
-      tearDownMediaElement()
-      bubbleFatalError(false, {
-        code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
-        message: PluginEnums.ERROR_MESSAGES.MANIFEST,
-      })
-    }
-
-    mediaSources.refresh(doSeek, onError)
   }
 
   function transitions() {
