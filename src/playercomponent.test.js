@@ -506,7 +506,7 @@ describe("Player Component", () => {
         // after 5 seconds it should attempt a failover
         mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-        // a paused event should clear the buffering error timeout
+        // a paused event should clear the error timeout
         mockStrategy.mockingHooks.fireEvent(MediaState.PAUSED)
 
         jest.advanceTimersByTime(5000)
@@ -657,103 +657,160 @@ describe("Player Component", () => {
     })
 
     describe("on ended", () => {
-      it("should clear error timeout", () => {
+      it("should publish a media state update event of ended", async () => {
+        const onStateUpdate = jest.fn()
+
+        const _playerComponent = new PlayerComponent(
+          createPlaybackElement(),
+          bigscreenPlayerData,
+          mockMediaSources,
+          onStateUpdate,
+          jest.fn()
+        )
+
+        await new Promise(process.nextTick)
+
+        mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
+
+        expect(onStateUpdate).toHaveBeenCalledWith({
+          data: { currentTime: undefined, duration: undefined, seekableRange: undefined, state: MediaState.ENDED },
+          isBufferingTimeoutError: false,
+          timeUpdate: false,
+        })
+        expect(onStateUpdate).toHaveBeenCalledTimes(1)
+      })
+      
+      it("should clear the buffering error timeout", async () => {
+        const _playerComponent = new PlayerComponent(
+          createPlaybackElement(),
+          bigscreenPlayerData,
+          mockMediaSources,
+          jest.fn(),
+          jest.fn()
+        )
+
+        await new Promise(process.nextTick)
+
         jest.useFakeTimers()
 
-        setUpPlayerComponent()
+        // dispatch a waiting event to start the buffering error timeout.
+        // after 30 seconds in waiting state it should attempt a failover
+        mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-        return StrategyPicker.default().then(() => {
-          // trigger a buffering event to start the error timeout,
-          // after 30 seconds it should fire a media state update of FATAL
-          // it is expected to be cleared
-          mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
-          mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
+        // an ended event should clear the buffering error timeout
+        mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
 
-          jest.advanceTimersByTime(30000)
+        jest.advanceTimersByTime(30000)
 
-          expect(onStateUpdate.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
-        })
+        expect(mockMediaSources.failover).not.toHaveBeenCalled()
+
       })
 
-      it("should clear fatal error timeout", () => {
+      it("should fire buffering cleared on the plugins", async () => {
+        jest.spyOn(Plugins.interface, "onBufferingCleared")
+
+        const _playerComponent = new PlayerComponent(
+          createPlaybackElement(),
+          bigscreenPlayerData,
+          mockMediaSources,
+          jest.fn(),
+          jest.fn()
+        )
+
+        await new Promise(process.nextTick)
+
+        mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
+
+        expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith({
+          status: PluginEnums.STATUS.DISMISSED,
+          stateType: PluginEnums.TYPE.BUFFERING,
+          isBufferingTimeoutError: false,
+          cdn: undefined,
+          newCdn: undefined,
+          isInitialPlay: true,
+          timeStamp: expect.any(Object),
+          message: undefined,
+          code: undefined,
+        })
+
+        expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledTimes(1)
+      })
+
+      it("should clear media element error timeout", async () => {
+        const _playerComponent = new PlayerComponent(
+          createPlaybackElement(),
+          bigscreenPlayerData,
+          mockMediaSources,
+          jest.fn(),
+          jest.fn()
+        )
+
+        await new Promise(process.nextTick)
+
         jest.useFakeTimers()
 
-        setUpPlayerComponent()
+        // dispatch a error event to start the fatal error timeout.
+        // after 5 seconds it should attempt a failover
+        mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-        return StrategyPicker.default().then(() => {
-          // trigger a error event to start the fatal error timeout,
-          // after 5 seconds it should fire a media state update of FATAL
-          // it is expected to be cleared
-          mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
+        // an ended event should clear the error timeout
+        mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
 
-          mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
+        jest.advanceTimersByTime(5000)
 
-          jest.advanceTimersByTime(5000)
-
-          expect(onStateUpdate.mock.calls[0][0].data.state).not.toEqual(MediaState.FATAL_ERROR)
-
-          jest.useRealTimers()
-        })
+        expect(mockMediaSources.failover).not.toHaveBeenCalled()
       })
 
-      it("should fire error cleared on the plugins", () => {
-        const pluginData = {
+      it("should fire error cleared on the plugins", async () => {
+        jest.spyOn(Plugins.interface, "onErrorCleared")
+
+        const _playerComponent = new PlayerComponent(
+          createPlaybackElement(),
+          bigscreenPlayerData,
+          mockMediaSources,
+          jest.fn(),
+          jest.fn()
+        )
+
+        await new Promise(process.nextTick)
+
+        mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
+
+        expect(Plugins.interface.onErrorCleared).toHaveBeenNthCalledWith(2, {
           status: PluginEnums.STATUS.DISMISSED,
           stateType: PluginEnums.TYPE.ERROR,
           isBufferingTimeoutError: false,
           cdn: undefined,
           isInitialPlay: undefined,
           timeStamp: expect.any(Object),
-        }
-
-        setUpPlayerComponent()
-
-        return StrategyPicker.default().then(() => {
-          mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
-
-          expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
         })
-      })
 
-      it("should fire buffering cleared on the plugins", () => {
-        const pluginData = {
-          status: PluginEnums.STATUS.DISMISSED,
-          stateType: PluginEnums.TYPE.BUFFERING,
-          isBufferingTimeoutError: false,
-          cdn: undefined,
-          isInitialPlay: true,
-          timeStamp: expect.any(Object),
-        }
-
-        setUpPlayerComponent()
-
-        return StrategyPicker.default().then(() => {
-          mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
-
-          expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith(expect.objectContaining(pluginData))
-        })
-      })
-
-      it("should publish a media state update event of ended", () => {
-        setUpPlayerComponent()
-
-        return StrategyPicker.default().then(() => {
-          mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
-
-          expect(onStateUpdate.mock.calls[0][0].data.state).toEqual(MediaState.ENDED)
-        })
+        expect(Plugins.interface.onErrorCleared).toHaveBeenCalledTimes(2)
       })
     })
 
     describe("on timeUpdate", () => {
-      it("should publish a media state update event", () => {
-        setUpPlayerComponent()
+      it("should publish a media state update event", async () => {
+        const onStateUpdate = jest.fn()
 
-        return StrategyPicker.default().then(() => {
-          mockStrategy.mockingHooks.fireTimeUpdate()
+        const _playerComponent = new PlayerComponent(
+          createPlaybackElement(),
+          bigscreenPlayerData,
+          mockMediaSources,
+          onStateUpdate,
+          jest.fn()
+        )
 
-          expect(onStateUpdate.mock.calls[0][0].timeUpdate).toBe(true)
+        await new Promise(process.nextTick)
+
+        mockStrategy.mockingHooks.fireTimeUpdate()
+
+        expect(onStateUpdate).toHaveBeenCalledWith({
+          data: { currentTime: undefined, duration: undefined, seekableRange: undefined, state: undefined },
+          isBufferingTimeoutError: false,
+          timeUpdate: true,
         })
+        expect(onStateUpdate).toHaveBeenCalledTimes(1)
       })
     })
 
