@@ -1,17 +1,15 @@
-import MediaState from "./models/mediastate"
-import WindowTypes from "./models/windowtypes"
-import PluginData from "./plugindata"
-import PluginEnums from "./pluginenums"
-import Plugins from "./plugins"
 import LiveSupport from "./models/livesupport"
+import MediaState from "./models/mediastate"
 import StrategyPicker from "./playbackstrategy/strategypicker"
 import {
   presentationTimeToAvailabilityTimeInMilliseconds,
   availabilityTimeToPresentationTimeInSeconds,
 } from "./utils/timeutils"
+import PluginData from "./plugindata"
+import PluginEnums from "./pluginenums"
+import Plugins from "./plugins"
 
 function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, stateUpdateCallback, errorCallback) {
-  let _windowType = WindowTypes.STATIC
   let _stateUpdateCallback = stateUpdateCallback
 
   let mediaKind = bigscreenPlayerData.media.kind
@@ -48,66 +46,64 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     })
 
   function play() {
-    playbackStrategy && playbackStrategy.play()
+    playbackStrategy?.play()
   }
 
   function isEnded() {
-    return playbackStrategy && playbackStrategy.isEnded()
+    return playbackStrategy?.isEnded()
   }
 
-  function pause(opts = {}) {
+  function pause(opts) {
     if (transitions().canBePaused()) {
-      const disableAutoResume = _windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
-
-      playbackStrategy && playbackStrategy.pause({ disableAutoResume, pauseTrigger: opts.pauseTrigger })
+      playbackStrategy?.pause({ pauseTrigger: opts.pauseTrigger })
     }
   }
 
   function getDuration() {
-    return playbackStrategy && playbackStrategy.getDuration()
+    return playbackStrategy?.getDuration()
   }
 
   function getPlayerElement() {
     let element = null
-    if (playbackStrategy && playbackStrategy.getPlayerElement) {
+    if (playbackStrategy?.getPlayerElement) {
       element = playbackStrategy.getPlayerElement()
     }
     return element
   }
 
   function getCurrentTime() {
-    return playbackStrategy && playbackStrategy.getCurrentTime()
+    return playbackStrategy?.getCurrentTime()
   }
 
   function getSeekableRange() {
-    return playbackStrategy && playbackStrategy.getSeekableRange()
+    return playbackStrategy?.getSeekableRange()
   }
 
   function isPaused() {
-    return playbackStrategy && playbackStrategy.isPaused()
+    return playbackStrategy?.isPaused()
   }
 
-  function setCurrentTime(time) {
+  function setCurrentTime(presentationTimeInSeconds) {
     if (transitions().canBeginSeek()) {
-      playbackStrategy && playbackStrategy.setCurrentTime(time)
+      playbackStrategy?.setCurrentTime(presentationTimeInSeconds)
     }
   }
 
   function setPlaybackRate(rate) {
-    playbackStrategy && playbackStrategy.setPlaybackRate(rate)
+    playbackStrategy?.setPlaybackRate(rate)
   }
 
   function getPlaybackRate() {
-    return playbackStrategy && playbackStrategy.getPlaybackRate()
+    return playbackStrategy?.getPlaybackRate()
   }
 
   function transitions() {
-    return playbackStrategy && playbackStrategy.transitions
+    return playbackStrategy?.transitions
   }
 
   function tearDownMediaElement() {
     clearTimeouts()
-    playbackStrategy && playbackStrategy.reset()
+    playbackStrategy?.reset()
   }
 
   function eventCallback(mediaState) {
@@ -318,8 +314,8 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     }
   }
 
-  function loadMedia(type, startTime, thenPause) {
-    playbackStrategy && playbackStrategy.load(type, startTime)
+  function loadMedia(type, presentationTimeInSeconds, thenPause) {
+    playbackStrategy?.load(type, presentationTimeInSeconds)
     if (thenPause) {
       pause()
     }
@@ -327,11 +323,10 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
 
   function tearDown() {
     tearDownMediaElement()
-    playbackStrategy && playbackStrategy.tearDown()
+    playbackStrategy?.tearDown()
     playbackStrategy = null
     isInitialPlay = true
     errorTimeoutID = undefined
-    _windowType = undefined
     mediaKind = undefined
     _stateUpdateCallback = undefined
     mediaMetaData = undefined
@@ -357,7 +352,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
 }
 
 function getLiveSupport() {
-  return (window.bigscreenPlayer && window.bigscreenPlayer.liveSupport) || LiveSupport.SEEKABLE
+  return window.bigscreenPlayer?.liveSupport || LiveSupport.SEEKABLE
 }
 
 PlayerComponent.getLiveSupport = getLiveSupport
