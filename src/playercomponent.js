@@ -5,6 +5,10 @@ import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import LiveSupport from "./models/livesupport"
 import StrategyPicker from "./playbackstrategy/strategypicker"
+import {
+  presentationTimeToAvailabilityTimeInMilliseconds,
+  availabilityTimeToPresentationTimeInSeconds,
+} from "./utils/timeutils"
 
 function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, stateUpdateCallback, errorCallback) {
   let _windowType = WindowTypes.STATIC
@@ -61,14 +65,6 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
 
   function getDuration() {
     return playbackStrategy && playbackStrategy.getDuration()
-  }
-
-  function getWindowStartTime() {
-    return mediaSources && mediaSources.time().windowStartTime
-  }
-
-  function getWindowEndTime() {
-    return mediaSources && mediaSources.time().windowEndTime
   }
 
   function getPlayerElement() {
@@ -199,31 +195,35 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
   }
 
   function attemptCdnFailover(mediaError) {
-    const time = getCurrentTime()
-    const oldWindowStartTime = getWindowStartTime()
+    const presentationTimeInSeconds = getCurrentTime()
+    const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
+      presentationTimeInSeconds,
+      mediaSources.time().availabilityStartTimeInMilliseconds
+    )
     const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
 
     const failoverParams = {
       isBufferingTimeoutError: bufferingTimeoutError,
-      currentTime: getCurrentTime(),
+      currentTime: presentationTimeInSeconds,
       duration: getDuration(),
       code: mediaError.code,
       message: mediaError.message,
     }
 
-    const doLoadMedia = () => {
-      const thenPause = isPaused()
-      const windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000
-      const failoverTime = time - (windowOffset || 0)
-      tearDownMediaElement()
-      loadMedia(mediaMetaData.type, failoverTime, thenPause)
-    }
-
-    const doErrorCallback = () => {
-      bubbleFatalError(bufferingTimeoutError, mediaError)
-    }
-
-    mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams)
+    mediaSources
+      .failover(failoverParams)
+      .then(() => {
+        const thenPause = isPaused()
+        tearDownMediaElement()
+        const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
+          availabilityTimeInMilliseconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
+        )
+        loadMedia(mediaMetaData.type, presentationTimeInSeconds, thenPause)
+      })
+      .catch(() => {
+        bubbleFatalError(bufferingTimeoutError, mediaError)
+      })
   }
 
   function clearFatalErrorTimeout() {
@@ -349,8 +349,6 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     setCurrentTime,
     getCurrentTime,
     getDuration,
-    getWindowStartTime,
-    getWindowEndTime,
     getSeekableRange,
     getPlayerElement,
     isPaused,
