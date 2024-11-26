@@ -97,6 +97,13 @@ describe("Bigscreen Player", () => {
 
     jest.clearAllMocks()
 
+    mockMediaSources.time.mockReturnValue({
+      manifestType: ManifestType.STATIC,
+      presentationTimeOffsetInMilliseconds: 0,
+      availabilityStartTimeInMilliseconds: 0,
+      timeShiftBufferDepthInMilliseconds: 0,
+    })
+
     mockPlayerComponentInstance = {
       play: jest.fn(),
       pause: jest.fn(),
@@ -108,8 +115,6 @@ describe("Bigscreen Player", () => {
       getSeekableRange: jest.fn(),
       getPlayerElement: jest.fn(),
       tearDown: jest.fn(),
-      getWindowStartTime: jest.fn(),
-      getWindowEndTime: jest.fn(),
       setPlaybackRate: jest.fn(),
       getPlaybackRate: jest.fn(),
       tearDown: jest.fn(),
@@ -685,6 +690,114 @@ describe("Bigscreen Player", () => {
     })
   })
 
+  describe("converting presentation time to media sample time", () => {
+    it("returns null before initialisation", () => {
+      expect(bigscreenPlayer.convertPresentationTimeToMediaSampleTimeInSeconds(60)).toBeNull()
+    })
+
+    it("returns null until MediaSources load", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      jest.mocked(mockMediaSources.time).mockReturnValue(null)
+
+      expect(bigscreenPlayer.convertPresentationTimeToMediaSampleTimeInSeconds(60)).toBeNull()
+    })
+
+    it("returns a number", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      jest.mocked(mockMediaSources.time).mockReturnValue({ presentationTimeOffsetInMilliseconds: 7200000 })
+
+      expect(bigscreenPlayer.convertPresentationTimeToMediaSampleTimeInSeconds(60)).toBe(7260)
+    })
+  })
+
+  describe("converting media sample time to presentation time", () => {
+    it("returns null before initialisation", () => {
+      expect(bigscreenPlayer.convertMediaSampleTimeToPresentationTimeInSeconds(60)).toBeNull()
+    })
+
+    it("returns null until MediaSources load", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      jest.mocked(mockMediaSources.time).mockReturnValue(null)
+
+      expect(bigscreenPlayer.convertMediaSampleTimeToPresentationTimeInSeconds(60)).toBeNull()
+    })
+
+    it("returns a number", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      jest.mocked(mockMediaSources.time).mockReturnValue({ presentationTimeOffsetInMilliseconds: 7200000 })
+
+      expect(bigscreenPlayer.convertMediaSampleTimeToPresentationTimeInSeconds(7260)).toBe(60)
+    })
+  })
+
+  describe("converting presentation time to availability time", () => {
+    it("returns null before initialisation", () => {
+      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBeNull()
+    })
+
+    it("returns null until MediaSources load", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      jest.mocked(mockMediaSources.time).mockReturnValue(null)
+
+      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBeNull()
+    })
+
+    it("returns null for a static stream", async () => {
+      jest.mocked(mockMediaSources.time).mockReturnValue({ manifestType: ManifestType.STATIC })
+
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBeNull()
+    })
+
+    it("returns a number", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      jest
+        .mocked(mockMediaSources.time)
+        .mockReturnValue({ manifestType: ManifestType.DYNAMIC, availabilityStartTimeInMilliseconds: 7200000 })
+
+      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBe(7260000)
+    })
+  })
+
+  describe("converting availability time to presentation time", () => {
+    it("returns null before initialisation", () => {
+      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBeNull()
+    })
+
+    it("returns null until MediaSources load", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      jest.mocked(mockMediaSources.time).mockReturnValue(null)
+
+      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBeNull()
+    })
+
+    it("returns null for a static stream", async () => {
+      jest.mocked(mockMediaSources.time).mockReturnValue({ manifestType: ManifestType.STATIC })
+
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBeNull()
+    })
+
+    it("returns a number", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      jest
+        .mocked(mockMediaSources.time)
+        .mockReturnValue({ manifestType: ManifestType.DYNAMIC, availabilityStartTimeInMilliseconds: 7200000 })
+
+      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(7260000)).toBe(60)
+    })
+  })
+
   describe("reporting end of stream", () => {
     it("reports endOfStream true on initialisation when playing live and no initial playback time is set", async () => {
       const onTimeUpdate = jest.fn()
@@ -987,8 +1100,6 @@ describe("Bigscreen Player", () => {
       expect(bigscreenPlayer.isPlayingAtLiveEdge()).toBe(false)
     })
   })
-
-  it.todo("conversion functions")
 
   it.todo("live window data equivalent")
 

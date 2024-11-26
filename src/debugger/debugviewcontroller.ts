@@ -280,7 +280,7 @@ class DebugViewController {
     if (kind === "seekable-range") {
       const [start, end] = data as MetricForKind<"seekable-range">["data"]
 
-      return `${formatDate(new Date(start))} - ${formatDate(new Date(end))}`
+      return `${formatDate(new Date(start * 1000))} - ${formatDate(new Date(end * 1000))}`
     }
 
     if (kind === "representation-audio" || kind === "representation-video") {

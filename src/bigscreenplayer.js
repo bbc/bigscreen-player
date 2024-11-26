@@ -9,7 +9,7 @@ import WindowTypes from "./models/windowtypes"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
-import SlidingWindowUtils from "./utils/timeutils"
+import SlidingWindowUtils, { presentationTimeToMediaSampleTimeInSeconds } from "./utils/timeutils"
 import callCallbacks from "./utils/callcallbacks"
 import MediaSources from "./mediasources"
 import Version from "./version"
@@ -80,10 +80,7 @@ function BigscreenPlayer() {
     }
 
     if (evt.data.seekableRange) {
-      DebugTool.staticMetric("seekable-range", [
-        deviceTimeToDate(evt.data.seekableRange.start).getTime(),
-        deviceTimeToDate(evt.data.seekableRange.end).getTime(),
-      ])
+      DebugTool.staticMetric("seekable-range", [evt.data.seekableRange.start, evt.data.seekableRange.end])
     }
 
     if (evt.data.duration) {
@@ -93,14 +90,6 @@ function BigscreenPlayer() {
     if (playerComponent && readyHelper) {
       readyHelper.callbackWhenReady(evt)
     }
-  }
-
-  function deviceTimeToDate(time) {
-    return getWindowStartTime() ? new Date(convertVideoTimeSecondsToEpochMs(time)) : new Date(time * 1000)
-  }
-
-  function convertVideoTimeSecondsToEpochMs(seconds) {
-    return getWindowStartTime() ? getWindowStartTime() + seconds * 1000 : null
   }
 
   function bigscreenPlayerDataLoaded(bigscreenPlayerData) {
@@ -148,12 +137,13 @@ function BigscreenPlayer() {
     )
   }
 
-  function getWindowStartTime() {
-    return mediaSources && mediaSources.time().windowStartTime
-  }
-
-  function getWindowEndTime() {
-    return mediaSources && mediaSources.time().windowEndTime
+  function convertPresentationTimeToMediaSampleTimeInSeconds(presentationTimeInSeconds) {
+    return mediaSources?.time() == null
+      ? null
+      : presentationTimeToMediaSampleTimeInSeconds(
+          presentationTimeInSeconds,
+          mediaSources.time().presentationTimeOffsetInMilliseconds
+        )
   }
 
   function toggleDebug() {
@@ -344,9 +334,10 @@ function BigscreenPlayer() {
         isSeeking = true
 
         playerComponent.setCurrentTime(time)
-        
+
         endOfStream =
-          mediaSources.time().manifestType !== ManifestType.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
+          mediaSources.time().manifestType !== ManifestType.STATIC &&
+          Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
       }
     },
 
@@ -645,24 +636,9 @@ function BigscreenPlayer() {
 
     /**
      * @function
-     * @param {Number} epochTime - Unix Epoch based time in milliseconds.
-     * @return the time in seconds within the current sliding window.
-     */
-    convertEpochMsToVideoTimeSeconds: (epochTime) =>
-      getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : null,
-
-    /**
-     * @function
      * @return The runtime version of the library.
      */
     getFrameworkVersion: () => Version,
-
-    /**
-     * @function
-     * @param {Number} time - Seconds
-     * @return the time in milliseconds within the current sliding window.
-     */
-    convertVideoTimeSecondsToEpochMs,
 
     /**
      * Toggle the visibility of the debug tool overlay.
@@ -682,14 +658,10 @@ function BigscreenPlayer() {
      */
     setLogLevel: (level) => DebugTool.setLogLevel(level),
     getDebugLogs: () => DebugTool.getDebugLogs(),
+    convertPresentationTimeToMediaSampleTimeInSeconds,
   }
 }
 
-/**
- * @function
- * @param {TALDevice} device
- * @return the live support of the device.
- */
 function getLiveSupport() {
   return PlayerComponent.getLiveSupport()
 }
