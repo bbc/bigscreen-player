@@ -31,7 +31,12 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function calculateSegmentNumber() {
-    const segmentNumber = Math.floor(getCurrentTime() / mediaSources.currentSubtitlesSegmentLength())
+    const currentTime = getCurrentTime()
+    const segmentNumber = Math.floor(currentTime / mediaSources.currentSubtitlesSegmentLength())
+
+    DebugTool.info({
+      IMSC: `Calculated Segment Number: ${segmentNumber} (${currentTime} / ${mediaSources.currentSubtitlesSegmentLength()})`,
+    })
 
     // Add 1 as the PTO gives segment '0' relative to the presentation time.
     // DASH segments use one-based indexing, so add 1 to the result of PTO.
@@ -44,6 +49,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function loadAllRequiredSegments() {
+    const timeStart = Date.now()
     const segmentsToLoad = []
 
     const currentSegmentNumber = calculateSegmentNumber()
@@ -68,6 +74,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     segmentsToLoad.forEach((segmentNumber) => {
       loadSegment(segmentsUrlTemplate.replace(segmentsTemplate, segmentNumber), segmentNumber)
     })
+
+    DebugTool.info({ IMSC: `Segment Load took ${Date.now() - timeStart}ms` })
   }
 
   function loadSegment(url, segmentNumber) {
