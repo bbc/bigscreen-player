@@ -6,7 +6,7 @@ import Utils from "../utils/playbackutils"
 import LoadURL from "../utils/loadurl"
 import findSegmentTemplate from "../utils/findtemplate"
 
-const SEGMENTS_BUFFER_SIZE = 3
+const SEGMENTS_BUFFER_SIZE = 1
 const LOAD_ERROR_COUNT_MAX = 3
 
 function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
@@ -49,7 +49,6 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function loadAllRequiredSegments() {
-    const timeStart = Date.now()
     const segmentsToLoad = []
 
     const currentSegmentNumber = calculateSegmentNumber()
@@ -74,8 +73,6 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     segmentsToLoad.forEach((segmentNumber) => {
       loadSegment(segmentsUrlTemplate.replace(segmentsTemplate, segmentNumber), segmentNumber)
     })
-
-    DebugTool.info(`Segment Load took ${Date.now() - timeStart}ms`)
   }
 
   function loadSegment(url, segmentNumber) {
