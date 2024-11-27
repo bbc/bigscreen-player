@@ -9,7 +9,12 @@ import WindowTypes from "./models/windowtypes"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
-import SlidingWindowUtils, { presentationTimeToMediaSampleTimeInSeconds } from "./utils/timeutils"
+import SlidingWindowUtils, {
+  presentationTimeToMediaSampleTimeInSeconds,
+  mediaSampleTimeToPresentationTimeInSeconds,
+  presentationTimeToAvailabilityTimeInMilliseconds,
+  availabilityTimeToPresentationTimeInSeconds,
+} from "./utils/timeutils"
 import callCallbacks from "./utils/callcallbacks"
 import MediaSources from "./mediasources"
 import Version from "./version"
@@ -143,6 +148,33 @@ function BigscreenPlayer() {
       : presentationTimeToMediaSampleTimeInSeconds(
           presentationTimeInSeconds,
           mediaSources.time().presentationTimeOffsetInMilliseconds
+        )
+  }
+
+  function convertMediaSampleTimeToPresentationTimeInSeconds(mediaSampleTimeInSeconds) {
+    return mediaSources?.time() == null
+      ? null
+      : mediaSampleTimeToPresentationTimeInSeconds(
+          mediaSampleTimeInSeconds,
+          mediaSources.time().presentationTimeOffsetInMilliseconds
+        )
+  }
+
+  function convertPresentationTimeToAvailabilityTimeInMilliseconds(presentationTimeInSeconds) {
+    return mediaSources?.time() == null || mediaSources?.time().manifestType === ManifestType.STATIC
+      ? null
+      : presentationTimeToAvailabilityTimeInMilliseconds(
+          presentationTimeInSeconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
+        )
+  }
+
+  function convertAvailabilityTimeToPresentationTimeInSeconds(availabilityTimeInMilliseconds) {
+    return mediaSources?.time() == null || mediaSources?.time().manifestType === ManifestType.STATIC
+      ? null
+      : availabilityTimeToPresentationTimeInSeconds(
+          availabilityTimeInMilliseconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
         )
   }
 
@@ -659,6 +691,9 @@ function BigscreenPlayer() {
     setLogLevel: (level) => DebugTool.setLogLevel(level),
     getDebugLogs: () => DebugTool.getDebugLogs(),
     convertPresentationTimeToMediaSampleTimeInSeconds,
+    convertMediaSampleTimeToPresentationTimeInSeconds,
+    convertPresentationTimeToAvailabilityTimeInMilliseconds,
+    convertAvailabilityTimeToPresentationTimeInSeconds,
   }
 }
 

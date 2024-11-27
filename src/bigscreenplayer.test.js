@@ -768,7 +768,7 @@ describe("Bigscreen Player", () => {
 
   describe("converting availability time to presentation time", () => {
     it("returns null before initialisation", () => {
-      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBeNull()
+      expect(bigscreenPlayer.convertAvailabilityTimeToPresentationTimeInSeconds(60)).toBeNull()
     })
 
     it("returns null until MediaSources load", async () => {
@@ -776,7 +776,7 @@ describe("Bigscreen Player", () => {
 
       jest.mocked(mockMediaSources.time).mockReturnValue(null)
 
-      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBeNull()
+      expect(bigscreenPlayer.convertAvailabilityTimeToPresentationTimeInSeconds(60)).toBeNull()
     })
 
     it("returns null for a static stream", async () => {
@@ -784,7 +784,7 @@ describe("Bigscreen Player", () => {
 
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(60)).toBeNull()
+      expect(bigscreenPlayer.convertAvailabilityTimeToPresentationTimeInSeconds(60)).toBeNull()
     })
 
     it("returns a number", async () => {
@@ -794,7 +794,7 @@ describe("Bigscreen Player", () => {
         .mocked(mockMediaSources.time)
         .mockReturnValue({ manifestType: ManifestType.DYNAMIC, availabilityStartTimeInMilliseconds: 7200000 })
 
-      expect(bigscreenPlayer.convertPresentationTimeToAvailabilityTimeInMilliseconds(7260000)).toBe(60)
+      expect(bigscreenPlayer.convertAvailabilityTimeToPresentationTimeInSeconds(7260000)).toBe(60)
     })
   })
 
