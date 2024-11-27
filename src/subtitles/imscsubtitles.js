@@ -42,7 +42,6 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     // DASH segments use one-based indexing, so add 1 to the result of PTO.
     // (Imagine PTO was 0)
     if (typeof presentationTimeOffsetSeconds === "number" && isFinite(presentationTimeOffsetSeconds)) {
-      DebugTool.info(`IMSC: PTO ${presentationTimeOffsetSeconds}`)
       return segmentNumber + 1
     }
 
@@ -95,17 +94,17 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
             ? responseText.replace(/^.*<\?xml[^?]+\?>/i, "")
             : responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText
 
-          // if (isSubtitlesWhole()) {
-          DebugTool.info(`XML trim duration: ${Date.now() - preTrimTime}`)
-          // }
+          if (isSubtitlesWhole()) {
+            DebugTool.info(`XML trim duration: ${Date.now() - preTrimTime}`)
+          }
 
           const preParseTime = Date.now()
 
           const xml = fromXML(xmlText)
 
-          // if (isSubtitlesWhole()) {
-          DebugTool.info(`XML parse duration: ${Date.now() - preParseTime}`)
-          // }
+          if (isSubtitlesWhole()) {
+            DebugTool.info(`XML parse duration: ${Date.now() - preParseTime}`)
+          }
 
           const times = xml.getMediaTimeEvents()
 
@@ -166,6 +165,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function pruneSegments() {
+    DebugTool.info(`Segment Array: ${segments.map((segment) => segment.number)}`)
     // Before sorting, check if we've gone back in time, so we know whether to prune from front or back of array
     const seekedBack = segments[SEGMENTS_BUFFER_SIZE].number < segments[SEGMENTS_BUFFER_SIZE - 1].number
 
@@ -173,8 +173,10 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
     if (seekedBack) {
       segments.pop()
+      DebugTool.info(`Segment Array Pruned: ${segments.map((segment) => segment.number)}`)
     } else {
       segments.splice(0, 1)
+      DebugTool.info(`Segment Array Pruned: ${segments.map((segment) => segment.number)}`)
     }
   }
 
