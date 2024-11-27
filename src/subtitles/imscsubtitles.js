@@ -95,17 +95,17 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
             ? responseText.replace(/^.*<\?xml[^?]+\?>/i, "")
             : responseText.split(/<\?xml[^?]+\?>/i)[1] || responseText
 
-          if (isSubtitlesWhole()) {
-            DebugTool.info(`XML trim duration: ${Date.now() - preTrimTime}`)
-          }
+          // if (isSubtitlesWhole()) {
+          DebugTool.info(`XML trim duration: ${Date.now() - preTrimTime}`)
+          // }
 
           const preParseTime = Date.now()
 
           const xml = fromXML(xmlText)
 
-          if (isSubtitlesWhole()) {
-            DebugTool.info(`XML parse duration: ${Date.now() - preParseTime}`)
-          }
+          // if (isSubtitlesWhole()) {
+          DebugTool.info(`XML parse duration: ${Date.now() - preParseTime}`)
+          // }
 
           const times = xml.getMediaTimeEvents()
 
