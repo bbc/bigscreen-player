@@ -9,7 +9,7 @@ import WindowTypes from "./models/windowtypes"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
-import SlidingWindowUtils, {
+import {
   presentationTimeToMediaSampleTimeInSeconds,
   mediaSampleTimeToPresentationTimeInSeconds,
   presentationTimeToAvailabilityTimeInMilliseconds,
@@ -25,6 +25,7 @@ import Subtitles from "./subtitles/subtitles"
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { InitData, InitCallbacks, SubtitlesCustomisationOptions } from "./types"
 import { ManifestType } from "./models/manifesttypes"
+import { Timeline } from "./models/timeline"
 
 function BigscreenPlayer() {
   let stateChangeCallbacks = []
@@ -35,7 +36,7 @@ function BigscreenPlayer() {
   let playerErrorCallback
   let mediaKind
   let initialPlaybackTimeEpoch
-  let serverDate
+  let initialServerDate
   let playerComponent
   let resizer
   let pauseTrigger
@@ -97,35 +98,28 @@ function BigscreenPlayer() {
     }
   }
 
-  function bigscreenPlayerDataLoaded(bigscreenPlayerData) {
-    if (windowType !== WindowTypes.STATIC) {
-      serverDate = bigscreenPlayerData.serverDate
+  function bigscreenPlayerDataLoaded({ media, initialPlaybackTime, enableSubtitles }) {
+    const initialPresentationTime = convertInitialPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
-      initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
-      // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
-      bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(
-        bigscreenPlayerData.initialPlaybackTime,
-        mediaSources.time().windowStartTime
-      )
-    }
+    initialPlaybackTimeEpoch = mediaSources.time().manifestType === ManifestType.DYNAMIC ? initialPlaybackTime : null
 
-    mediaKind = bigscreenPlayerData.media.kind
+    mediaKind = media.kind
 
     endOfStream =
-      mediaSources.time().manifestType !== ManifestType.STATIC &&
-      !bigscreenPlayerData.initialPlaybackTime &&
-      bigscreenPlayerData.initialPlaybackTime !== 0
+      mediaSources.time().manifestType === ManifestType.DYNAMIC &&
+      !initialPresentationTime &&
+      initialPresentationTime !== 0
 
     readyHelper = ReadyHelper(
-      bigscreenPlayerData.initialPlaybackTime,
-      windowType,
+      initialPresentationTime,
+      mediaSources.time().manifestType,
       PlayerComponent.getLiveSupport(),
       playerReadyCallback
     )
 
     playerComponent = PlayerComponent(
       playbackElement,
-      bigscreenPlayerData,
+      { media, initialPlaybackTime: initialPresentationTime },
       mediaSources,
       windowType,
       mediaStateUpdateCallback,
@@ -134,12 +128,31 @@ function BigscreenPlayer() {
 
     subtitles = Subtitles(
       playerComponent,
-      bigscreenPlayerData.enableSubtitles,
+      enableSubtitles,
       playbackElement,
-      bigscreenPlayerData.media.subtitleCustomisation,
+      media.subtitleCustomisation,
       mediaSources,
       callSubtitlesCallbacks
     )
+  }
+
+  function convertInitialPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime) {
+    if (!initialPlaybackTime || typeof initialPlaybackTime === "number") {
+      return initialPlaybackTime
+    }
+
+    const { value, timeline } = initialPlaybackTime
+
+    switch (timeline) {
+      case Timeline.PRESENTATION_TIME:
+        return value
+      case Timeline.MEDIA_SAMPLE_TIME:
+        return convertMediaSampleTimeToPresentationTimeInSeconds(value)
+      case Timeline.AVAILABILITY_TIME:
+        return convertAvailabilityTimeToPresentationTimeInSeconds(value)
+      default:
+        return value
+    }
   }
 
   function convertPresentationTimeToMediaSampleTimeInSeconds(presentationTimeInSeconds) {
@@ -232,9 +245,9 @@ function BigscreenPlayer() {
       }
 
       windowType = WindowTypes.STATIC
-      serverDate = bigscreenPlayerData.serverDate
+      initialServerDate = bigscreenPlayerData.serverDate
 
-      if (serverDate) {
+      if (initialServerDate) {
         DebugTool.warn("Passing in server date is deprecated. Use <UTCTiming> on manifest.")
       }
 
@@ -244,7 +257,7 @@ function BigscreenPlayer() {
       mediaSources = MediaSources()
 
       mediaSources
-        .init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport())
+        .init(bigscreenPlayerData.media, initialServerDate, windowType, getLiveSupport())
         .then(() => bigscreenPlayerDataLoaded(bigscreenPlayerData))
         .catch((reason) => {
           if (typeof callbacks?.onError === "function") {
@@ -445,7 +458,7 @@ function BigscreenPlayer() {
         windowStartTime: getWindowStartTime(),
         windowEndTime: getWindowEndTime(),
         initialPlaybackTime: initialPlaybackTimeEpoch,
-        serverDate,
+        serverDate: initialServerDate,
       }
     },
 

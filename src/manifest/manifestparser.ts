@@ -77,11 +77,13 @@ function parseM3U8(manifest: string): Promise<TimeInfo> {
       throw new Error("manifest-hls-attributes-parse-error")
     }
 
+    const manifestType = hasM3U8EndList(manifest) ? ManifestType.STATIC : ManifestType.DYNAMIC
+
     return resolve({
-      manifestType: hasM3U8EndList(manifest) ? ManifestType.STATIC : ManifestType.DYNAMIC,
+      manifestType,
       timeShiftBufferDepthInMilliseconds: 0,
       // joinTimeInMilliseconds: programDateTimeInMilliseconds + durationInMilliseconds,
-      availabilityStartTimeInMilliseconds: programDateTimeInMilliseconds,
+      availabilityStartTimeInMilliseconds: manifestType === ManifestType.STATIC ? 0 : programDateTimeInMilliseconds,
       presentationTimeOffsetInMilliseconds: programDateTimeInMilliseconds,
       // transferFormat: HLS,
     })

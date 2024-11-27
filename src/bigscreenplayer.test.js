@@ -12,6 +12,7 @@ import PauseTriggers from "./models/pausetriggers"
 import WindowTypes from "./models/windowtypes"
 import getError, { NoErrorThrownError } from "./testutils/geterror"
 import DynamicWindowUtils from "./dynamicwindowutils"
+import { Timeline } from "./models/timeline"
 
 let bigscreenPlayer
 let bigscreenPlayerData
@@ -177,7 +178,7 @@ describe("Bigscreen Player", () => {
 
       expect(jest.mocked(ReadyHelper)).toHaveBeenCalledWith(
         365,
-        WindowTypes.STATIC,
+        ManifestType.STATIC,
         LiveSupport.SEEKABLE,
         expect.any(Function)
       )
@@ -219,6 +220,136 @@ describe("Bigscreen Player", () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       expect(DebugTool.init).toHaveBeenCalledTimes(1)
+    })
+
+    describe("handling initial playback time", () => {
+      it("treats initial playback time as a presentation time if it is passed in as a number", async () => {
+        bigscreenPlayerData.initialPlaybackTime = 100
+        await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+        expect(jest.mocked(PlayerComponent)).toHaveBeenCalledWith(
+          expect.any(HTMLDivElement),
+          expect.objectContaining({
+            initialPlaybackTime: 100,
+          }),
+          expect.any(Object),
+          WindowTypes.STATIC,
+          expect.any(Function),
+          expect.any(Function)
+        )
+      })
+
+      it("treats initial playback time as presentation time when timeline isn't specified", async () => {
+        bigscreenPlayerData.initialPlaybackTime = {
+          value: 100,
+        }
+
+        await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+        expect(jest.mocked(PlayerComponent)).toHaveBeenCalledWith(
+          expect.any(HTMLDivElement),
+          expect.objectContaining({
+            initialPlaybackTime: 100,
+          }),
+          expect.any(Object),
+          WindowTypes.STATIC,
+          expect.any(Function),
+          expect.any(Function)
+        )
+      })
+
+      it("does not convert initial playback time if it is passed in as a presentation time", async () => {
+        bigscreenPlayerData.initialPlaybackTime = {
+          value: 100,
+          timeline: Timeline.PRESENTATION_TIME,
+        }
+
+        await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+        expect(jest.mocked(PlayerComponent)).toHaveBeenCalledWith(
+          expect.any(HTMLDivElement),
+          expect.objectContaining({
+            initialPlaybackTime: 100,
+          }),
+          expect.any(Object),
+          WindowTypes.STATIC,
+          expect.any(Function),
+          expect.any(Function)
+        )
+      })
+
+      it("converts initial playback time to a presentation time if input is a media sample time", async () => {
+        bigscreenPlayerData.initialPlaybackTime = {
+          value: 100,
+          timeline: Timeline.MEDIA_SAMPLE_TIME,
+        }
+
+        jest
+          .mocked(mockMediaSources.time)
+          .mockReturnValue({ manifestType: ManifestType.STATIC, presentationTimeOffsetInMilliseconds: 50000 })
+
+        await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+        expect(jest.mocked(PlayerComponent)).toHaveBeenCalledWith(
+          expect.any(HTMLDivElement),
+          expect.objectContaining({
+            initialPlaybackTime: 50,
+          }),
+          expect.any(Object),
+          WindowTypes.STATIC,
+          expect.any(Function),
+          expect.any(Function)
+        )
+      })
+
+      it("converts initial playback time to null if input is an availability time for a static stream", async () => {
+        bigscreenPlayerData.initialPlaybackTime = {
+          value: 100,
+          timeline: Timeline.AVAILABILITY_TIME,
+        }
+
+        jest
+          .mocked(mockMediaSources.time)
+          .mockReturnValue({ manifestType: ManifestType.STATIC, availabilityStartTimeInMilliseconds: 0 })
+
+        await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+        expect(jest.mocked(PlayerComponent)).toHaveBeenCalledWith(
+          expect.any(HTMLDivElement),
+          expect.objectContaining({
+            initialPlaybackTime: null,
+          }),
+          expect.any(Object),
+          WindowTypes.STATIC,
+          expect.any(Function),
+          expect.any(Function)
+        )
+      })
+
+      it("converts initial playback time to a presentation time if input is an availability time for a dynamic stream", async () => {
+        bigscreenPlayerData.initialPlaybackTime = {
+          value: 1731045700000,
+          timeline: Timeline.AVAILABILITY_TIME,
+        }
+
+        jest.mocked(mockMediaSources.time).mockReturnValue({
+          manifestType: ManifestType.DYNAMIC,
+          availabilityStartTimeInMilliseconds: 1731045600000, // Friday, 8 November 2024 06:00:00
+        })
+
+        await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+        expect(jest.mocked(PlayerComponent)).toHaveBeenCalledWith(
+          expect.any(HTMLDivElement),
+          expect.objectContaining({
+            initialPlaybackTime: 100,
+          }),
+          expect.any(Object),
+          WindowTypes.STATIC,
+          expect.any(Function),
+          expect.any(Function)
+        )
+      })
     })
   })
 
@@ -802,7 +933,7 @@ describe("Bigscreen Player", () => {
     it("reports endOfStream true on initialisation when playing live and no initial playback time is set", async () => {
       const onTimeUpdate = jest.fn()
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+      jest.mocked(mockMediaSources.time).mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         presentationTimeOffsetInMilliseconds: 1731514400000,
         availabilityStartTimeInMilliseconds: 1731514400000,
@@ -821,7 +952,7 @@ describe("Bigscreen Player", () => {
     it("reports endOfStream false on initialisation when playing live and initialPlaybackTime is 0", async () => {
       const onTimeUpdate = jest.fn()
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+      jest.mocked(mockMediaSources.time).mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         presentationTimeOffsetInMilliseconds: 1731514400000,
         availabilityStartTimeInMilliseconds: 1731514400000,
@@ -842,7 +973,7 @@ describe("Bigscreen Player", () => {
     it("reports endOfStream false on initialisation when playing live and initialPlaybackTime is set in the middle of the stream", async () => {
       const onTimeUpdate = jest.fn()
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+      jest.mocked(mockMediaSources.time).mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         presentationTimeOffsetInMilliseconds: 1731514400000,
         availabilityStartTimeInMilliseconds: 1731514400000,
@@ -863,7 +994,7 @@ describe("Bigscreen Player", () => {
     it("reports endOfStream false on initialisation when playing live and initialPlaybackTime is set to the live edge time", async () => {
       const onTimeUpdate = jest.fn()
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+      jest.mocked(mockMediaSources.time).mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         presentationTimeOffsetInMilliseconds: 1731514400000,
         availabilityStartTimeInMilliseconds: 1731514400000,
@@ -892,7 +1023,7 @@ describe("Bigscreen Player", () => {
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 7200 })
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(7198)
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+      jest.mocked(mockMediaSources.time).mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         presentationTimeOffsetInMilliseconds: 1731514400000,
         availabilityStartTimeInMilliseconds: 1731514400000,
@@ -917,7 +1048,7 @@ describe("Bigscreen Player", () => {
 
       mockPlayerComponentInstance.getCurrentTime.mockReturnValue(3600)
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+      jest.mocked(mockMediaSources.time).mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         presentationTimeOffsetInMilliseconds: 1731514400000,
         availabilityStartTimeInMilliseconds: 1731514440000,
@@ -932,7 +1063,7 @@ describe("Bigscreen Player", () => {
     })
 
     it("reports endOfStream false on state changes following a pause, even when at live edge", async () => {
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+      jest.mocked(mockMediaSources.time).mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         presentationTimeOffsetInMilliseconds: 1731514400000,
         availabilityStartTimeInMilliseconds: 1731514400000,

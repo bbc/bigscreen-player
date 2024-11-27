@@ -112,7 +112,7 @@ describe("ManifestParser", () => {
       expect(timeInfo.availabilityStartTimeInMilliseconds).toBe(1731052800000) // Friday, 8 November 2024 08:00:00
     })
 
-    it("returns a TimeInfo for an on demand manifest with and end list and no program date time", async () => {
+    it("returns a TimeInfo for an on demand manifest with an end list and no program date time", async () => {
       const timeInfo: TimeInfo = await ManifestParser.parse({
         body: HlsManifests.NO_PROGRAM_DATETIME_ENDLIST,
         type: TransferFormat.HLS,
@@ -124,7 +124,7 @@ describe("ManifestParser", () => {
       expect(timeInfo.availabilityStartTimeInMilliseconds).toBe(0)
     })
 
-    it("returns a TimeInfo for an on demand manifest with and end list and a valid program date time", async () => {
+    it("returns a TimeInfo for an on demand manifest with an end list and a valid program date time", async () => {
       const timeInfo: TimeInfo = await ManifestParser.parse({
         body: HlsManifests.VALID_PROGRAM_DATETIME_AND_ENDLIST,
         type: TransferFormat.HLS,
@@ -133,7 +133,7 @@ describe("ManifestParser", () => {
       expect(timeInfo.manifestType).toEqual(ManifestType.STATIC)
       expect(timeInfo.presentationTimeOffsetInMilliseconds).toBe(1731045600000) // Friday, 8 November 2024 06:00:00
       expect(timeInfo.timeShiftBufferDepthInMilliseconds).toBe(0)
-      expect(timeInfo.availabilityStartTimeInMilliseconds).toBe(1731045600000) // Friday, 8 November 2024 06:00:00
+      expect(timeInfo.availabilityStartTimeInMilliseconds).toBe(0)
     })
 
     it("returns a default TimeInfo if a program date time cannot be parsed", async () => {
