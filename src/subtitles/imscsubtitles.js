@@ -6,7 +6,7 @@ import Utils from "../utils/playbackutils"
 import LoadURL from "../utils/loadurl"
 import findSegmentTemplate from "../utils/findtemplate"
 
-const SEGMENTS_BUFFER_SIZE = 3
+const SEGMENTS_BUFFER_SIZE = 6
 const LOAD_ERROR_COUNT_MAX = 3
 
 function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
@@ -324,9 +324,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function getCurrentTime() {
-    const timeOffset = getTimeOffset()
-    DebugTool.info(`Offset: ${timeOffset}`)
-    return isSubtitlesWhole() ? mediaPlayer.getCurrentTime() : timeOffset + mediaPlayer.getCurrentTime()
+    return isSubtitlesWhole() ? mediaPlayer.getCurrentTime() : getTimeOffset() + mediaPlayer.getCurrentTime()
   }
 
   function start() {
