@@ -52,6 +52,7 @@ type RepresentationVideo = CreateMetric<"representation-video", [qualityIndex: n
 type SeekableRange = CreateMetric<"seekable-range", [start: number, end: number]>
 type SubtitleCDNsAvailable = CreateMetric<"subtitle-cdns-available", string[]>
 type SubtitleCurrentUrl = CreateMetric<"subtitle-current-url", string>
+type SubtitleSegmentNumber = CreateMetric<"subtitle-segment-number", number>
 type Version = CreateMetric<"version", string>
 
 export type Metric =
@@ -74,6 +75,7 @@ export type Metric =
   | SeekableRange
   | SubtitleCDNsAvailable
   | SubtitleCurrentUrl
+  | SubtitleSegmentNumber
   | Version
 
 export type MetricKind = Metric["kind"]
