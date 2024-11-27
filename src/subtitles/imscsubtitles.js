@@ -6,7 +6,7 @@ import Utils from "../utils/playbackutils"
 import LoadURL from "../utils/loadurl"
 import findSegmentTemplate from "../utils/findtemplate"
 
-const SEGMENTS_BUFFER_SIZE = 1
+const SEGMENTS_BUFFER_SIZE = 3
 const LOAD_ERROR_COUNT_MAX = 3
 
 function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
@@ -42,6 +42,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     // DASH segments use one-based indexing, so add 1 to the result of PTO.
     // (Imagine PTO was 0)
     if (typeof presentationTimeOffsetSeconds === "number" && isFinite(presentationTimeOffsetSeconds)) {
+      DebugTool.info(`IMSC: PTO ${presentationTimeOffsetSeconds}`)
       return segmentNumber + 1
     }
 
