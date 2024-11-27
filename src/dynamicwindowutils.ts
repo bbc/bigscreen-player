@@ -58,9 +58,20 @@ export function autoResumeAtStartOfRange(
   addEventCallback: (thisArg: undefined, callback: (event: unknown) => void) => void,
   removeEventCallback: (thisArg: undefined, callback: (event: unknown) => void) => void,
   checkNotPauseEvent: (event: unknown) => boolean,
-  resume: () => void
+  resume: () => void,
+  timeShiftBufferDepthInSeconds?: number
 ): void {
-  const resumeTimeOut = Math.max(0, currentTime - seekableRange.start - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS)
+  const { start, end } = seekableRange
+
+  const duration = end - start
+
+  const windowLengthInSeconds =
+    timeShiftBufferDepthInSeconds && duration < timeShiftBufferDepthInSeconds ? timeShiftBufferDepthInSeconds : duration
+
+  const resumeTimeOut = Math.max(
+    0,
+    windowLengthInSeconds - (end - currentTime) - AUTO_RESUME_WINDOW_START_CUSHION_SECONDS
+  )
 
   DebugTool.dynamicMetric("auto-resume", resumeTimeOut)
 

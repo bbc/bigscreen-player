@@ -635,11 +635,12 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
   function startAutoResumeTimeout() {
     DynamicWindowUtils.autoResumeAtStartOfRange(
       getCurrentTime(),
-      getSeekableRange(),
+      getSeekableRange(), // DVRWindowLength < timeShift ? { start: sr.start + timeshift - dvr, end: timeShift } : getSeekableRange
       addEventCallback,
       removeEventCallback,
       (event) => event !== MediaState.PAUSED,
-      mediaPlayer.play
+      mediaPlayer.play,
+      mediaSources.time().timeShiftBufferDepthInMilliseconds / 1000
     )
   }
 

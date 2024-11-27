@@ -6,6 +6,7 @@ describe("autoResumeAtStartOfRange", () => {
 
   const seekableRange = {
     start: 0,
+    end: 7200,
   }
 
   let resume
@@ -30,17 +31,28 @@ describe("autoResumeAtStartOfRange", () => {
     checkNotPauseEvent = jest.fn()
   })
 
-  it("resumes play when the current time is equal to the start of the seekable range", () => {
-    autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
+  it.each([
+    [0, 7200, 20],
+    [3600, 10800, 3620],
+  ])(
+    "resumes play when the start of the seekable range (%d - %d) catches up to current time %d",
+    (seekableRangeStart, seekableRangeEnd, currentTime) => {
+      const seekableRange = {
+        start: seekableRangeStart,
+        end: seekableRangeEnd,
+      }
 
-    jest.advanceTimersByTime(20000)
+      autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
-    expect(addEventCallback).toHaveBeenCalledTimes(1)
-    expect(removeEventCallback).toHaveBeenCalledTimes(1)
-    expect(resume).toHaveBeenCalledTimes(1)
-  })
+      jest.advanceTimersByTime(20000)
 
-  it("resumes play when the current time at the start of the seekable range within a threshold", () => {
+      expect(addEventCallback).toHaveBeenCalledTimes(1)
+      expect(removeEventCallback).toHaveBeenCalledTimes(1)
+      expect(resume).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it("resumes play when the start of the seekable range is within a threshold of current time", () => {
     autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(15000)
@@ -50,7 +62,7 @@ describe("autoResumeAtStartOfRange", () => {
     expect(resume).toHaveBeenCalledTimes(1)
   })
 
-  it("resumes play when the current time at the start of the seekable range at the threshold", () => {
+  it("resumes play when the start of the seekable range is at the threshold of current time", () => {
     autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(12000)
@@ -60,7 +72,25 @@ describe("autoResumeAtStartOfRange", () => {
     expect(resume).toHaveBeenCalledTimes(1)
   })
 
-  it("does not resume play when the current time is past the start of the seekable range plus the threshold", () => {
+  it("resumes play when the start of the time shift buffer is at the threshold of current time", () => {
+    const seekableRange = { start: 0, end: 7170 }
+
+    autoResumeAtStartOfRange(30, seekableRange, addEventCallback, removeEventCallback, undefined, resume, 7200)
+
+    expect(addEventCallback).toHaveBeenCalledTimes(1)
+
+    jest.advanceTimersByTime(40000)
+
+    expect(resume).not.toHaveBeenCalled()
+    expect(removeEventCallback).not.toHaveBeenCalled()
+
+    jest.advanceTimersByTime(20000)
+
+    expect(resume).toHaveBeenCalledTimes(1)
+    expect(removeEventCallback).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not resume play when the start of the seekable range has not caught up to current time", () => {
     autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(10000)

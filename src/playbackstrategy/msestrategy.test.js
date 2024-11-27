@@ -1212,7 +1212,8 @@ describe("Media Source Extensions Playback Strategy", () => {
         expect.any(Function),
         expect.any(Function),
         expect.any(Function),
-        mockDashInstance.play
+        mockDashInstance.play,
+        72000
       )
     })
 
