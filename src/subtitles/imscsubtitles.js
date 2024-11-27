@@ -324,7 +324,9 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function getCurrentTime() {
-    return isSubtitlesWhole() ? mediaPlayer.getCurrentTime() : getTimeOffset() + mediaPlayer.getCurrentTime()
+    const timeOffset = getTimeOffset()
+    DebugTool.info(`Offset: ${timeOffset}`)
+    return isSubtitlesWhole() ? mediaPlayer.getCurrentTime() : timeOffset + mediaPlayer.getCurrentTime()
   }
 
   function start() {
