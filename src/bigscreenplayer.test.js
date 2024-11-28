@@ -9,7 +9,6 @@ import { ManifestType } from "./models/manifesttypes"
 import { MediaKinds } from "./models/mediakinds"
 import MediaState from "./models/mediastate"
 import PauseTriggers from "./models/pausetriggers"
-import WindowTypes from "./models/windowtypes"
 import getError, { NoErrorThrownError } from "./testutils/geterror"
 import DynamicWindowUtils from "./dynamicwindowutils"
 import { Timeline } from "./models/timeline"
@@ -123,7 +122,7 @@ describe("Bigscreen Player", () => {
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
 
-    PlayerComponent.mockImplementation((playbackElement, bigscreenPlayerData, mediaSources, windowType, callback) => {
+    PlayerComponent.mockImplementation((playbackElement, bigscreenPlayerData, mediaSources, callback) => {
       dispatchMediaStateChange = callback
       return mockPlayerComponentInstance
     })
@@ -193,7 +192,6 @@ describe("Bigscreen Player", () => {
         expect.any(HTMLDivElement),
         bigscreenPlayerData,
         expect.any(Object),
-        WindowTypes.STATIC,
         expect.any(Function),
         expect.any(Function)
       )
@@ -233,7 +231,6 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
-          WindowTypes.STATIC,
           expect.any(Function),
           expect.any(Function)
         )
@@ -252,7 +249,6 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
-          WindowTypes.STATIC,
           expect.any(Function),
           expect.any(Function)
         )
@@ -272,7 +268,6 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
-          WindowTypes.STATIC,
           expect.any(Function),
           expect.any(Function)
         )
@@ -296,7 +291,6 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 50,
           }),
           expect.any(Object),
-          WindowTypes.STATIC,
           expect.any(Function),
           expect.any(Function)
         )
@@ -320,7 +314,6 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: null,
           }),
           expect.any(Object),
-          WindowTypes.STATIC,
           expect.any(Function),
           expect.any(Function)
         )
@@ -345,7 +338,6 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
-          WindowTypes.STATIC,
           expect.any(Function),
           expect.any(Function)
         )

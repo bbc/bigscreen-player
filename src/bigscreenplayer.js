@@ -236,7 +236,7 @@ function BigscreenPlayer() {
 
       if (typeof bigscreenPlayerData.initialPlaybackTime === "number") {
         DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime)
-      } else if (typeof bigscreenPlayerData.initialPlaybackTime.value === "number") {
+      } else if (typeof bigscreenPlayerData.initialPlaybackTime?.value === "number") {
         DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime.value)
       }
 
