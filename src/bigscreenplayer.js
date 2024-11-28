@@ -236,7 +236,10 @@ function BigscreenPlayer() {
 
       if (typeof bigscreenPlayerData.initialPlaybackTime === "number") {
         DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime)
+      } else if (typeof bigscreenPlayerData.initialPlaybackTime.value === "number") {
+        DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime.value)
       }
+
       if (typeof window.bigscreenPlayer?.playbackStrategy === "string") {
         DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
       }
@@ -358,20 +361,20 @@ function BigscreenPlayer() {
     /**
      * Sets the current time of the media asset.
      * @function
-     * @param {Number} time - In seconds
+     * @param {Number} presentationTimeInSeconds - In seconds
      */
-    setCurrentTime(time) {
-      DebugTool.apicall("setCurrentTime", [time])
+    setCurrentTime(presentationTimeInSeconds) {
+      DebugTool.apicall("setCurrentTime", [presentationTimeInSeconds])
 
       if (playerComponent) {
         // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
         isSeeking = true
 
-        playerComponent.setCurrentTime(time)
+        playerComponent.setCurrentTime(presentationTimeInSeconds)
 
         endOfStream =
           mediaSources.time().manifestType !== ManifestType.STATIC &&
-          Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
+          Math.abs(this.getSeekableRange().end - presentationTimeInSeconds) < END_OF_STREAM_TOLERANCE
       }
     },
 
