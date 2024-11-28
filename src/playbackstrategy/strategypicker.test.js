@@ -62,6 +62,7 @@ describe("Strategy Picker", () => {
     const error = await getError(async () => StrategyPicker())
 
     expect(error).not.toBeInstanceOf(NoErrorThrownError)
-    expect(error).toEqual({ error: "strategyDynamicLoadError" })
+    expect(error.name).toBe("StrategyDynamicLoadError")
+    expect(error.message).toBe("Could not construct MSE Strategy!")
   })
 })
