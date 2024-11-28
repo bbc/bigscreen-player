@@ -373,7 +373,7 @@ function BigscreenPlayer() {
         playerComponent.setCurrentTime(presentationTimeInSeconds)
 
         endOfStream =
-          mediaSources.time().manifestType !== ManifestType.STATIC &&
+          mediaSources.time().manifestType === ManifestType.DYNAMIC &&
           Math.abs(this.getSeekableRange().end - presentationTimeInSeconds) < END_OF_STREAM_TOLERANCE
       }
     },
@@ -425,7 +425,7 @@ function BigscreenPlayer() {
     isPlayingAtLiveEdge() {
       return (
         !!playerComponent &&
-        mediaSources.time().manifestType !== ManifestType.STATIC &&
+        mediaSources.time().manifestType === ManifestType.DYNAMIC &&
         Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
       )
     },
