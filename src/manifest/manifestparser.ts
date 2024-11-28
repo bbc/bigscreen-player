@@ -9,11 +9,9 @@ import { ErrorWithCode } from "../models/errorcode"
 
 export type TimeInfo = {
   manifestType: ManifestType
-  // joinTimeInMilliseconds: number
   presentationTimeOffsetInMilliseconds: number
   timeShiftBufferDepthInMilliseconds: number
   availabilityStartTimeInMilliseconds: number
-  // transferFormat: string
 }
 
 function getMpdType(mpd: Element): ManifestType {
@@ -60,7 +58,6 @@ function parseMPD(manifestEl: Document): Promise<TimeInfo> {
     timeShiftBufferDepthInMilliseconds,
     availabilityStartTimeInMilliseconds,
     presentationTimeOffsetInMilliseconds,
-    // transferFormat: DASH,
   })
 }
 
@@ -82,10 +79,8 @@ function parseM3U8(manifest: string): Promise<TimeInfo> {
     return resolve({
       manifestType,
       timeShiftBufferDepthInMilliseconds: 0,
-      // joinTimeInMilliseconds: programDateTimeInMilliseconds + durationInMilliseconds,
       availabilityStartTimeInMilliseconds: manifestType === ManifestType.STATIC ? 0 : programDateTimeInMilliseconds,
       presentationTimeOffsetInMilliseconds: programDateTimeInMilliseconds,
-      // transferFormat: HLS,
     })
   }).catch((reason: unknown) => {
     const errorWithCode = (isError(reason) ? reason : new Error("manifest-dash-parse-error")) as ErrorWithCode
@@ -144,7 +139,6 @@ function parse({ body, type }: { body: Document; type: DASH } | { body: string; 
         timeShiftBufferDepthInMilliseconds: 0,
         availabilityStartTimeInMilliseconds: 0,
         presentationTimeOffsetInMilliseconds: 0,
-        // transferFormat: DASH,
       }
     })
 }
