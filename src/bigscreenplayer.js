@@ -5,7 +5,6 @@ import MediaState from "./models/mediastate"
 import PlayerComponent from "./playercomponent"
 import PauseTriggers from "./models/pausetriggers"
 import DynamicWindowUtils from "./dynamicwindowutils"
-import WindowTypes from "./models/windowtypes"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
@@ -35,14 +34,12 @@ function BigscreenPlayer() {
   let playerReadyCallback
   let playerErrorCallback
   let mediaKind
-  let initialPlaybackTimeEpoch
-  let initialServerDate
+  let initialPlaybackTime
   let playerComponent
   let resizer
   let pauseTrigger
   let isSeeking = false
   let endOfStream
-  let windowType
   let mediaSources
   let playbackElement
   let readyHelper
@@ -101,8 +98,6 @@ function BigscreenPlayer() {
   function bigscreenPlayerDataLoaded({ media, initialPlaybackTime, enableSubtitles }) {
     const initialPresentationTime = convertInitialPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
-    initialPlaybackTimeEpoch = mediaSources.time().manifestType === ManifestType.DYNAMIC ? initialPlaybackTime : null
-
     mediaKind = media.kind
 
     endOfStream =
@@ -121,7 +116,6 @@ function BigscreenPlayer() {
       playbackElement,
       { media, initialPlaybackTime: initialPresentationTime },
       mediaSources,
-      windowType,
       mediaStateUpdateCallback,
       playerErrorCallback
     )
@@ -191,6 +185,10 @@ function BigscreenPlayer() {
         )
   }
 
+  function getInitialPlaybackTime() {
+    return initialPlaybackTime
+  }
+
   function toggleDebug() {
     if (playerComponent) {
       DebugTool.toggleVisibility()
@@ -225,12 +223,11 @@ function BigscreenPlayer() {
      * @name init
      * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
      * @param {InitData} bigscreenPlayerData
-     * @param {WindowTypes} newWindowType
-     * @param {boolean} enableSubtitles - Enable subtitles on initialisation
      * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, callbacks = {}) => {
       playbackElement = newPlaybackElement
+      initialPlaybackTime = bigscreenPlayerData.initialPlaybackTime
       resizer = Resizer()
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
@@ -244,20 +241,13 @@ function BigscreenPlayer() {
         DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
       }
 
-      windowType = WindowTypes.STATIC
-      initialServerDate = bigscreenPlayerData.serverDate
-
-      if (initialServerDate) {
-        DebugTool.warn("Passing in server date is deprecated. Use <UTCTiming> on manifest.")
-      }
-
       playerReadyCallback = callbacks.onSuccess
       playerErrorCallback = callbacks.onError
 
       mediaSources = MediaSources()
 
       mediaSources
-        .init(bigscreenPlayerData.media, initialServerDate, windowType, getLiveSupport())
+        .init(bigscreenPlayerData.media)
         .then(() => bigscreenPlayerDataLoaded(bigscreenPlayerData))
         .catch((reason) => {
           if (typeof callbacks?.onError === "function") {
@@ -293,7 +283,6 @@ function BigscreenPlayer() {
       endOfStream = undefined
       mediaKind = undefined
       pauseTrigger = undefined
-      windowType = undefined
       resizer = undefined
       this.unregisterPlugin()
       DebugTool.tearDown()
@@ -420,13 +409,6 @@ function BigscreenPlayer() {
     getMediaKind: () => mediaKind,
 
     /**
-     * Returns the current window type.
-     * @see {@link module:bigscreenplayer/models/windowtypes}
-     * @function
-     */
-    getWindowType: () => windowType,
-
-    /**
      * Returns an object including the current start and end times.
      * @function
      * @returns {Object} {start: Number, end: Number}
@@ -443,23 +425,6 @@ function BigscreenPlayer() {
         mediaSources.time().manifestType !== ManifestType.STATIC &&
         Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
       )
-    },
-
-    /**
-     * @function
-     * @return {Object} An object of the shape {windowStartTime: Number, windowEndTime: Number, initialPlaybackTime: Number, serverDate: Date}
-     */
-    getLiveWindowData: () => {
-      if (windowType === WindowTypes.STATIC) {
-        return {}
-      }
-
-      return {
-        windowStartTime: getWindowStartTime(),
-        windowEndTime: getWindowEndTime(),
-        initialPlaybackTime: initialPlaybackTimeEpoch,
-        serverDate: initialServerDate,
-      }
     },
 
     /**
@@ -707,6 +672,7 @@ function BigscreenPlayer() {
     convertMediaSampleTimeToPresentationTimeInSeconds,
     convertPresentationTimeToAvailabilityTimeInMilliseconds,
     convertAvailabilityTimeToPresentationTimeInSeconds,
+    getInitialPlaybackTime,
   }
 }
 

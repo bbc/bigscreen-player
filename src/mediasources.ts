@@ -177,7 +177,6 @@ function MediaSources() {
     return new Promise((resolve) => resolve(loadManifest()))
   }
 
-  // [tag:ServerDate]
   function loadManifest(): Promise<void> {
     return ManifestLoader.load(getCurrentUrl())
       .then(({ time: newTime, transferFormat: newTransferFormat }) => {
