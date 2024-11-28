@@ -66,12 +66,13 @@ describe("Player Component", () => {
   let mockStrategy
   let bigscreenPlayerData
 
-  beforeEach(() => {
-    jest.resetAllMocks()
-
-    // Real timers are necessary for `process.nextTick`
-    // We use `process.nextTick` to indirectly wait for promises to resolve
+  beforeAll(() => {
     jest.useFakeTimers()
+  })
+
+  beforeEach(() => {
+    jest.clearAllTimers()
+    jest.resetAllMocks()
 
     window.bigscreenPlayer = {}
 
