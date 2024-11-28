@@ -71,7 +71,7 @@ describe("Player Component", () => {
 
     // Real timers are necessary for `process.nextTick`
     // We use `process.nextTick` to indirectly wait for promises to resolve
-    jest.useRealTimers()
+    jest.useFakeTimers()
 
     window.bigscreenPlayer = {}
 
@@ -118,7 +118,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       expect(mockPlaybackStrategyClass).toHaveBeenCalledWith(
         mockMediaSources,
@@ -145,7 +145,7 @@ describe("Player Component", () => {
         onError
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       expect(onError).toHaveBeenCalledWith(new Error("A network error occured"))
     })
@@ -161,7 +161,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       expect(Plugins.interface.onErrorCleared).toHaveBeenCalledWith({
         status: PluginEnums.STATUS.DISMISSED,
@@ -188,7 +188,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       playerComponent.pause({ pauseTrigger })
 
@@ -211,7 +211,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       expect(playerComponent.getPlayerElement()).toBe(playerElement)
     })
@@ -227,7 +227,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       expect(playerComponent.getPlayerElement()).toBeNull()
     })
@@ -245,7 +245,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(1)
 
@@ -266,7 +266,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       playerComponent.setPlaybackRate(2)
 
@@ -284,7 +284,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       expect(playerComponent.getPlaybackRate()).toBe(1.5)
       expect(mockStrategy.getPlaybackRate).toHaveBeenCalledTimes(1)
@@ -304,7 +304,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
 
@@ -325,9 +325,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
-
-        jest.useFakeTimers()
+        await jest.runOnlyPendingTimersAsync()
 
         // dispatch a waiting event to start the buffering error timeout.
         // after 30 seconds in waiting state it should attempt a failover
@@ -352,7 +350,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
 
@@ -380,9 +378,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
-
-        jest.useFakeTimers()
+        await jest.runOnlyPendingTimersAsync()
 
         // dispatch an error event to start the fatal error timeout.
         // after 5 seconds it should attempt a failover
@@ -407,7 +403,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
 
@@ -436,7 +432,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.PAUSED)
 
@@ -457,9 +453,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
-
-        jest.useFakeTimers()
+        await jest.runOnlyPendingTimersAsync()
 
         // dispatch a waiting event to start the buffering error timeout.
         // after 30 seconds in waiting state it should attempt a failover
@@ -484,7 +478,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.PAUSED)
 
@@ -512,9 +506,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
-
-        jest.useFakeTimers()
+        await jest.runOnlyPendingTimersAsync()
 
         // dispatch an error event to start the fatal error timeout.
         // after 5 seconds it should attempt a failover
@@ -539,7 +531,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.PAUSED)
 
@@ -568,7 +560,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
@@ -590,9 +582,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
-
-        jest.useFakeTimers()
+        await jest.runOnlyPendingTimersAsync()
 
         // dispatch a waiting event to start the buffering error timeout.
         // after 30 seconds in waiting state it should attempt a failover
@@ -634,7 +624,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
@@ -661,7 +651,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
@@ -690,7 +680,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
 
@@ -711,9 +701,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
-
-        jest.useFakeTimers()
+        await jest.runOnlyPendingTimersAsync()
 
         // dispatch a waiting event to start the buffering error timeout.
         // after 30 seconds in waiting state it should attempt a failover
@@ -738,7 +726,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
 
@@ -766,9 +754,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
-
-        jest.useFakeTimers()
+        await jest.runOnlyPendingTimersAsync()
 
         // dispatch a error event to start the fatal error timeout.
         // after 5 seconds it should attempt a failover
@@ -793,7 +779,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireEvent(MediaState.ENDED)
 
@@ -822,7 +808,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireTimeUpdate()
 
@@ -847,7 +833,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
@@ -867,9 +853,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
-
-        jest.useFakeTimers()
+        await jest.runOnlyPendingTimersAsync()
 
         // dispatch a waiting event to start the buffering error timeout.
         // after 30 seconds in waiting state it should attempt a failover
@@ -878,7 +862,7 @@ describe("Player Component", () => {
         // an error event should clear the buffering error timeout
         mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-        jest.advanceTimersByTime(30000)
+        await jest.advanceTimersByTimeAsync(30000)
 
         expect(mockMediaSources.failover).toHaveBeenCalledWith({
           isBufferingTimeoutError: false,
@@ -901,7 +885,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
@@ -931,7 +915,7 @@ describe("Player Component", () => {
           jest.fn()
         )
 
-        await new Promise(process.nextTick)
+        await jest.runOnlyPendingTimersAsync()
 
         mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
@@ -963,21 +947,16 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-      jest.advanceTimersByTime(20000)
+      await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(1)
       expect(mockMediaSources.failover).not.toHaveBeenCalled()
 
-      jest.advanceTimersByTime(10000)
-
-      jest.useRealTimers()
-      await new Promise(process.nextTick)
+      await jest.advanceTimersByTimeAsync(10000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
       expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
@@ -1001,9 +980,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       mockMediaSources.failover.mockResolvedValueOnce()
 
@@ -1013,10 +990,7 @@ describe("Player Component", () => {
       expect(mockStrategy.load).toHaveBeenCalledTimes(1)
       expect(mockMediaSources.failover).not.toHaveBeenCalled()
 
-      jest.advanceTimersByTime(20000)
-
-      jest.useRealTimers()
-      await new Promise(process.nextTick)
+      await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
       expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
@@ -1040,19 +1014,14 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(1)
       expect(mockMediaSources.failover).not.toHaveBeenCalled()
 
-      jest.advanceTimersByTime(5000)
-
-      jest.useRealTimers()
-      await new Promise(process.nextTick)
+      await jest.advanceTimersByTimeAsync(5000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
       expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
@@ -1077,16 +1046,11 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-      jest.advanceTimersByTime(5000)
-
-      jest.useRealTimers()
-      await new Promise(process.nextTick)
+      await jest.advanceTimersByTimeAsync(5000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(1)
       expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(
@@ -1117,16 +1081,11 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-      jest.advanceTimersByTime(5000)
-
-      jest.useRealTimers()
-      await new Promise(process.nextTick)
+      await jest.advanceTimersByTimeAsync(5000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(1)
       expect(onStateUpdate).toHaveBeenCalledWith({
@@ -1163,17 +1122,12 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
       mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-      jest.advanceTimersByTime(20000)
-
-      jest.useRealTimers()
-      await new Promise(process.nextTick)
+      await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
       expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20)
@@ -1190,16 +1144,11 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-      jest.advanceTimersByTime(5000)
-
-      jest.useRealTimers()
-      await new Promise(process.nextTick)
+      await jest.advanceTimersByTimeAsync(5000)
 
       expect(Plugins.interface.onErrorCleared).toHaveBeenNthCalledWith(2, {
         status: PluginEnums.STATUS.DISMISSED,
@@ -1224,16 +1173,11 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-      jest.advanceTimersByTime(30000)
-
-      jest.useRealTimers()
-      await new Promise(process.nextTick)
+      await jest.advanceTimersByTimeAsync(30000)
 
       expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith({
         status: PluginEnums.STATUS.DISMISSED,
@@ -1261,7 +1205,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       playerComponent.tearDown()
 
@@ -1277,15 +1221,13 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
       playerComponent.tearDown()
 
-      jest.advanceTimersByTime(30000)
+      await jest.advanceTimersByTimeAsync(30000)
 
       expect(mockMediaSources.failover).not.toHaveBeenCalled()
     })
@@ -1299,9 +1241,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
-
-      jest.useFakeTimers()
+      await jest.runOnlyPendingTimersAsync()
 
       // dispatch an error to start the fatal error timeout
       // this should trigger a failover
@@ -1310,7 +1250,7 @@ describe("Player Component", () => {
       // tearDown should clear the fatal error timeout
       playerComponent.tearDown()
 
-      jest.advanceTimersByTime(5000)
+      await jest.advanceTimersByTimeAsync(5000)
 
       expect(mockMediaSources.failover).not.toHaveBeenCalled()
     })
@@ -1326,7 +1266,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       playerComponent.tearDown()
 
@@ -1353,7 +1293,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       playerComponent.tearDown()
 
@@ -1378,7 +1318,7 @@ describe("Player Component", () => {
         jest.fn()
       )
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       playerComponent.tearDown()
 

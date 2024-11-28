@@ -1416,7 +1416,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         },
       })
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       expect(mockErrorCallback).not.toHaveBeenCalled()
 
@@ -1448,7 +1448,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         },
       })
 
-      await new Promise(process.nextTick)
+      await jest.runOnlyPendingTimersAsync()
 
       expect(mockErrorCallback).toHaveBeenCalledWith({ code: 25, message: "Mock manifest load fail" })
       expect(mockDashInstance.attachSource).toHaveBeenCalledTimes(1)
