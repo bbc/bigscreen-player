@@ -1,4 +1,5 @@
 import { MediaPlayerSettingClass } from "dashjs"
+import { Timeline } from "./models/timeline"
 
 export type Connection = {
   cdn: string
@@ -14,7 +15,6 @@ type Settings = MediaPlayerSettingClass & {
   failoverSort: (sources: Connection[]) => Connection[]
   streaming: {
     seekDurationPadding: number
-    hlsFakeTimeShift: boolean
   }
 }
 
@@ -28,6 +28,11 @@ export type SubtitlesCustomisationOptions = Partial<{
   /** size multiplier to authored subtitles */
   size: number
 }>
+
+export type PlaybackTime = {
+  value: number
+  timeline: Timeline
+}
 
 export type MediaDescriptor = {
   kind: "audio" | "video"
@@ -46,11 +51,8 @@ export type MediaDescriptor = {
 
 export type InitData = {
   media: MediaDescriptor
-  /**
-   * @deprecated
-   * Date object with server time offset
-   */
-  offsetBetweenClientUTCAndServerUTCInMilliseconds?: number
+  enableSubtitles?: boolean
+  initialPlaybackTime?: number | PlaybackTime
 }
 
 export type InitCallbacks = {
