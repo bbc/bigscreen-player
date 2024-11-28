@@ -1224,8 +1224,6 @@ describe("Bigscreen Player", () => {
     })
   })
 
-  it.todo("live window data equivalent")
-
   describe("getDuration", () => {
     it("should get the duration from the strategy", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
