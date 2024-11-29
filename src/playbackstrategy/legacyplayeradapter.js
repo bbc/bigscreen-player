@@ -6,7 +6,6 @@ import LiveGlitchCurtain from "./liveglitchcurtain"
 
 function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   const manifestType = mediaSources.time().manifestType
-  const EVENT_HISTORY_LENGTH = 2
 
   const setSourceOpts = {
     disableSentinels:
@@ -15,7 +14,6 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   }
 
   const mediaPlayer = player
-  const eventHistory = []
 
   const transitions = new AllowedMediaTransitions(mediaPlayer)
 
@@ -60,14 +58,6 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       handleEvent[event.type].call(this, event)
     } else {
       DebugTool.info(`${getSelection()} Event:${event.type}`)
-    }
-
-    if (event.type !== "status") {
-      if (eventHistory.length >= EVENT_HISTORY_LENGTH) {
-        eventHistory.pop()
-      }
-
-      eventHistory.unshift({ type: event.type, time: Date.now() })
     }
   }
 
