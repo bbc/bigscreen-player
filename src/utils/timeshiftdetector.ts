@@ -2,6 +2,24 @@ export type TimeShiftDetector = ReturnType<typeof createTimeShiftDetector>
 
 const MINUTE_IN_MILLISECONDS = 60000
 
+// type SeekableRange = {
+//   start: number
+//   end: number
+// }
+
+// function isValidSeekableRange(obj: unknown): obj is SeekableRange {
+//   return (
+//     obj != null &&
+//     typeof obj === "object" &&
+//     "start" in obj &&
+//     "end" in obj &&
+//     typeof obj.start === "number" &&
+//     typeof obj.end === "number" &&
+//     isFinite(obj.start) &&
+//     obj.end > obj.start
+//   )
+// }
+
 export default function createTimeShiftDetector(onceDetected: () => void) {
   let currentIntervalId: ReturnType<typeof setInterval> | undefined
   let lastSeekableRangeStart: number = 0

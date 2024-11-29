@@ -127,3 +127,30 @@ it("overwrite the currently observed seekable range with a new seekable range", 
 
   expect(onceTimeShiftDetected).not.toHaveBeenCalled()
 })
+
+it("only set/trigger isSliding once device is reporting seekable range reliably", () => {
+  const mockGetSeekableRange = jest.fn()
+
+  const onceTimeShiftDetected = jest.fn()
+
+  const timeShiftDetector = createTimeShiftDetector(onceTimeShiftDetected)
+
+  timeShiftDetector.observe(mockGetSeekableRange)
+
+  jest.advanceTimersToNextTimer()
+
+  expect(onceTimeShiftDetected).not.toHaveBeenCalled()
+  expect(timeShiftDetector.isSeekableRangeSliding()).toBe(false)
+
+  mockGetSeekableRange.mockReturnValueOnce({ start: 50, end: 200 })
+  jest.advanceTimersToNextTimer()
+
+  expect(onceTimeShiftDetected).not.toHaveBeenCalled()
+  expect(timeShiftDetector.isSeekableRangeSliding()).toBe(false)
+
+  mockGetSeekableRange.mockReturnValueOnce({ start: 55, end: 200 })
+  jest.advanceTimersToNextTimer()
+
+  expect(onceTimeShiftDetected).toHaveBeenCalled()
+  expect(timeShiftDetector.isSeekableRangeSliding()).toBe(true)
+})
