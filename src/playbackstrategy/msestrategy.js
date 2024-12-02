@@ -687,7 +687,14 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
 
   function getSafelySeekableRange() {
     if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
-      const { range } = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+
+      // FIX: Dash.js briefly returns `null` on a failover for the first time update
+      if (dvrInfo) {
+        const { range } = dvrInfo
+
+        return { start: range.start, end: range.end - seekDurationPadding }
+      }
 
       return { start: range.start, end: range.end - seekDurationPadding }
     }
