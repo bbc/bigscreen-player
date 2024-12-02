@@ -6,7 +6,7 @@ import Utils from "../utils/playbackutils"
 import LoadURL from "../utils/loadurl"
 import findSegmentTemplate from "../utils/findtemplate"
 
-const SEGMENTS_BUFFER_SIZE = 6
+const SEGMENTS_BUFFER_SIZE = 3
 const LOAD_ERROR_COUNT_MAX = 3
 
 function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
