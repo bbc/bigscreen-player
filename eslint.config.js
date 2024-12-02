@@ -5,6 +5,8 @@ import tseslint from "typescript-eslint"
 import { sonarjs } from "./eslint.compat.js"
 
 const unsafe = [
+  "src/playbackstrategy/modifiers/html5.js",
+  "src/playbackstrategy/modifiers/cehtml.js",
   "src/playbackstrategy/modifiers/samsungmaple.js",
   "src/playbackstrategy/modifiers/samsungstreaming.js",
   "src/playbackstrategy/modifiers/samsungstreaming2015.js",
