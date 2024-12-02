@@ -1,5 +1,5 @@
+import { ManifestType } from "../models/manifesttypes"
 import { TransferFormat } from "../models/transferformats"
-import WindowTypes from "../models/windowtypes"
 import Plugins from "../plugins"
 import getError from "../testutils/geterror"
 import LoadUrl from "../utils/loadurl"
@@ -44,23 +44,23 @@ describe("ManifestLoader", () => {
     })
 
     describe("fetching DASH manifests", () => {
-      it.each([[WindowTypes.STATIC, DashManifests.STATIC_NO_PTO()]])(
-        "resolves to parsed metadata for a valid DASH '%s' manifest",
-        async (windowType, manifestEl) => {
-          LoadUrl.mockImplementationOnce((url, config) => {
-            config.onLoad(manifestEl)
-          })
+      it.each([
+        [ManifestType.STATIC, DashManifests.STATIC_NO_PTO()],
+        [ManifestType.DYNAMIC, DashManifests.PTO_NO_TIMESHIFT()],
+      ])("resolves to parsed metadata for a valid DASH '%s' manifest", async (windowType, manifestEl) => {
+        LoadUrl.mockImplementationOnce((url, config) => {
+          config.onLoad(manifestEl)
+        })
 
-          const { transferFormat, time } = await ManifestLoader.load("mock://some.manifest/test.mpd", {
-            windowType,
-          })
+        const { transferFormat, time } = await ManifestLoader.load("mock://some.manifest/test.mpd", {
+          windowType,
+        })
 
-          expect(transferFormat).toBe(TransferFormat.DASH)
-          expect(time).toEqual(expect.any(Object))
+        expect(transferFormat).toBe(TransferFormat.DASH)
+        expect(time).toEqual(expect.any(Object))
 
-          expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
-        }
-      )
+        expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
+      })
 
       it("rejects when response is invalid", async () => {
         LoadUrl.mockImplementationOnce((url, config) => {
@@ -92,23 +92,20 @@ describe("ManifestLoader", () => {
         '#EXT-X-STREAM-INF:PROGRAM-ID=1,BANDWIDTH=433540,CODECS="mp4a.40.2,avc1.66.30",RESOLUTION=384x216\n' +
         "bar.m3u8\n"
 
-      it.each([WindowTypes.SLIDING])(
-        "resolves to parsed metadata for a valid HLS '%s' playlist",
-        async (windowType) => {
-          LoadUrl.mockImplementationOnce((url, config) => {
-            config.onLoad(undefined, hlsMasterResponse)
-          }).mockImplementationOnce((url, config) => {
-            config.onLoad(undefined, HlsManifests.VALID_PROGRAM_DATETIME_NO_ENDLIST)
-          })
+      it("resolves to parsed metadata for a valid HLS 'dynamic' playlist", async () => {
+        LoadUrl.mockImplementationOnce((url, config) => {
+          config.onLoad(undefined, hlsMasterResponse)
+        }).mockImplementationOnce((url, config) => {
+          config.onLoad(undefined, HlsManifests.VALID_PROGRAM_DATETIME_NO_ENDLIST)
+        })
 
-          const { transferFormat, time } = await ManifestLoader.load("http://foo.bar/test.m3u8", { windowType })
+        const { transferFormat, time } = await ManifestLoader.load("http://foo.bar/test.m3u8")
 
-          expect(transferFormat).toBe(TransferFormat.HLS)
-          expect(time).toEqual(expect.any(Object))
+        expect(transferFormat).toBe(TransferFormat.HLS)
+        expect(time).toEqual(expect.any(Object))
 
-          expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
-        }
-      )
+        expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
+      })
 
       it("rejects when network request fails", async () => {
         LoadUrl.mockImplementation((url, config) => {
