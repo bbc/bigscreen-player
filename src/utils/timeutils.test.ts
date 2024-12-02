@@ -93,4 +93,8 @@ describe("converting between timelines", () => {
       expect(mediaSampleTimeInSeconds).toBe(expectedMediaSampleTimeInSeconds)
     }
   )
+
+  it("converts media sample time to presentation time 0 if it's less than presentation time offset", () => {
+    expect(mediaSampleTimeToPresentationTimeInSeconds(1732633427, 1732633437000)).toBe(0)
+  })
 })

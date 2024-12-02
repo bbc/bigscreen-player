@@ -35,5 +35,9 @@ export function mediaSampleTimeToPresentationTimeInSeconds(
   mediaSampleTimeInSeconds: number,
   presentationTimeOffsetInMilliseconds: number
 ): number {
-  return mediaSampleTimeInSeconds - presentationTimeOffsetInMilliseconds / 1000
+  const presentationTimeOffsetInSeconds = presentationTimeOffsetInMilliseconds / 1000
+
+  return mediaSampleTimeInSeconds < presentationTimeOffsetInSeconds
+    ? 0
+    : mediaSampleTimeInSeconds - presentationTimeOffsetInSeconds
 }
