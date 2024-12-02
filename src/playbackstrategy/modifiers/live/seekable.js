@@ -14,12 +14,10 @@ function SeekableLivePlayer(mediaPlayer) {
   })
 
   mediaPlayer.addEventCallback(null, (event) => {
-    // Avoid observing the seekable range before metadata loads
-    if (event.type !== MediaPlayerBase.EVENT.METADATA) {
-      return
+    if (event.type === MediaPlayerBase.EVENT.METADATA) {
+      // Avoid observing the seekable range before metadata loads
+      timeShiftDetector.observe(getSeekableRange)
     }
-
-    timeShiftDetector.observe(getSeekableRange)
   })
 
   function addEventCallback(thisArg, callback) {
@@ -92,17 +90,20 @@ function SeekableLivePlayer(mediaPlayer) {
     },
 
     pause: function pause() {
-      const secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start
-
-      if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
+      if (
+        mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start <=
+        AUTO_RESUME_WINDOW_START_CUSHION_SECONDS
+      ) {
         mediaPlayer.toPaused()
         mediaPlayer.toPlaying()
-      } else {
-        mediaPlayer.pause()
 
-        if (timeShiftDetector.isSeekableRangeSliding()) {
-          startAutoResumeTimeout()
-        }
+        return
+      }
+
+      mediaPlayer.pause()
+
+      if (timeShiftDetector.isSeekableRangeSliding()) {
+        startAutoResumeTimeout()
       }
     },
 
