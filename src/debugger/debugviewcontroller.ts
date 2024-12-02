@@ -289,6 +289,12 @@ class DebugViewController {
       return `${qualityIndex} (${bitrate} kbps)`
     }
 
+    if (kind === "initial-playback-time") {
+      const [seconds, timeline] = data
+
+      return `${seconds}s ${timeline}`
+    }
+
     return data.join(", ")
   }
 
