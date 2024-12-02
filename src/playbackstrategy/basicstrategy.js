@@ -46,10 +46,6 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   }
 
   function load(_mimeType, startTime) {
-    if (manifestType === ManifestType.DYNAMIC) {
-      timeShiftDetector.observe(getSeekableRange)
-    }
-
     if (mediaElement == null) {
       setUpMediaElement(startTime)
       setUpMediaListeners()
@@ -144,6 +140,10 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
 
   function onLoadedMetadata() {
     metaDataLoaded = true
+
+    if (manifestType === ManifestType.DYNAMIC) {
+      timeShiftDetector.observe(getSeekableRange)
+    }
   }
 
   function isPaused() {

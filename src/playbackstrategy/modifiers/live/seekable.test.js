@@ -5,6 +5,41 @@ import DynamicWindowUtils from "../../../dynamicwindowutils"
 
 jest.mock("../../../utils/timeshiftdetector")
 
+function createMockMediaPlayer() {
+  const eventCallbacks = []
+
+  function dispatchEvent(event) {
+    for (const callback of eventCallbacks) {
+      callback(event)
+    }
+  }
+
+  return {
+    dispatchEvent,
+    addEventCallback: jest
+      .fn()
+      .mockImplementation((component, callback) => eventCallbacks.push(callback.bind(component))),
+    removeEventCallback: jest.fn(),
+    removeAllEventCallbacks: jest.fn(),
+    beginPlayback: jest.fn(),
+    initialiseMedia: jest.fn(),
+    stop: jest.fn(),
+    reset: jest.fn(),
+    getState: jest.fn(),
+    getSource: jest.fn(),
+    getMimeType: jest.fn(),
+    getPlayerElement: jest.fn(),
+    pause: jest.fn(),
+    resume: jest.fn(),
+    beginPlaybackFrom: jest.fn(),
+    playFrom: jest.fn(),
+    getCurrentTime: jest.fn(),
+    getSeekableRange: jest.fn(),
+    toPaused: jest.fn(),
+    toPlaying: jest.fn(),
+  }
+}
+
 const mockTimeShiftDetector = {
   disconnect: jest.fn(),
   isSeekableRangeSliding: jest.fn(),
@@ -32,27 +67,7 @@ describe("Seekable HMTL5 Live Player", () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    player = {
-      beginPlayback: jest.fn(),
-      initialiseMedia: jest.fn(),
-      stop: jest.fn(),
-      reset: jest.fn(),
-      getState: jest.fn(),
-      getSource: jest.fn(),
-      getMimeType: jest.fn(),
-      addEventCallback: jest.fn(),
-      removeEventCallback: jest.fn(),
-      removeAllEventCallbacks: jest.fn(),
-      getPlayerElement: jest.fn(),
-      pause: jest.fn(),
-      resume: jest.fn(),
-      beginPlaybackFrom: jest.fn(),
-      playFrom: jest.fn(),
-      getCurrentTime: jest.fn(),
-      getSeekableRange: jest.fn(),
-      toPaused: jest.fn(),
-      toPlaying: jest.fn(),
-    }
+    player = createMockMediaPlayer()
   })
 
   describe("methods call the appropriate media player methods", () => {
@@ -190,20 +205,6 @@ describe("Seekable HMTL5 Live Player", () => {
         undefined
       )
     })
-
-    it("should provide the seekable range to the time shift detector", () => {
-      player.getSeekableRange.mockReturnValue({ start: 0, end: 10 })
-      const seekableMediaPlayer = SeekableMediaPlayer(player)
-
-      seekableMediaPlayer.initialiseMedia(
-        MediaPlayerBase.TYPE.VIDEO,
-        "http://mock.url",
-        "mockMimeType",
-        sourceContainer
-      )
-
-      expect(mockTimeShiftDetector.observe).toHaveBeenCalledWith(seekableMediaPlayer.getSeekableRange)
-    })
   })
 
   describe("pause", () => {
@@ -247,6 +248,25 @@ describe("Seekable HMTL5 Live Player", () => {
   })
 
   describe("Auto-Resume", () => {
+    it("provides the seekable range to the time shift detector once metadata loaded", () => {
+      player.getSeekableRange.mockReturnValue({ start: 0, end: 10 })
+
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
+
+      expect(mockTimeShiftDetector.observe).not.toHaveBeenCalled()
+
+      player.dispatchEvent({ type: MediaPlayerBase.EVENT.METADATA })
+
+      expect(mockTimeShiftDetector.observe).toHaveBeenCalledWith(seekableMediaPlayer.getSeekableRange)
+    })
+
     it("should start auto-resume timeout when pausing and Time Shift Detector returns true for sliding", () => {
       mockTimeShiftDetector.isSeekableRangeSliding.mockReturnValueOnce(true)
 

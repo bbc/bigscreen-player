@@ -13,6 +13,15 @@ function SeekableLivePlayer(mediaPlayer) {
     startAutoResumeTimeout()
   })
 
+  mediaPlayer.addEventCallback(null, (event) => {
+    // Avoid observing the seekable range before metadata loads
+    if (event.type !== MediaPlayerBase.EVENT.METADATA) {
+      return
+    }
+
+    timeShiftDetector.observe(getSeekableRange)
+  })
+
   function addEventCallback(thisArg, callback) {
     mediaPlayer.addEventCallback(thisArg, callback)
   }
@@ -64,8 +73,6 @@ function SeekableLivePlayer(mediaPlayer) {
         mediaKind === MediaPlayerBase.TYPE.AUDIO ? MediaPlayerBase.TYPE.LIVE_AUDIO : MediaPlayerBase.TYPE.LIVE_VIDEO
 
       mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts)
-
-      timeShiftDetector.observe(getSeekableRange)
     },
 
     beginPlayback: function beginPlayback() {

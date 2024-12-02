@@ -214,40 +214,6 @@ describe("HTML5 Strategy", () => {
       expect(addEventListenerSpy).toHaveBeenCalledWith("error", expect.any(Function))
       expect(addEventListenerSpy).toHaveBeenCalledWith("loadedmetadata", expect.any(Function))
     })
-
-    it("should provide the seekable range to the time shift detector for any dynamic stream", () => {
-      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
-
-      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-
-      basicStrategy.load(null)
-
-      expect(mockTimeShiftDetector.observe).toHaveBeenCalledWith(basicStrategy.getSeekableRange)
-    })
-
-    it("should not provide the seekable range to the time shift detector for a static stream", () => {
-      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.STATIC })
-
-      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-
-      basicStrategy.load(null)
-
-      expect(mockTimeShiftDetector.observe).not.toHaveBeenCalled()
-    })
-
-    it("should provide the seekable range to the time shift detector again on a reload", () => {
-      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
-
-      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-
-      basicStrategy.load(null)
-
-      expect(mockTimeShiftDetector.observe).toHaveBeenCalledTimes(1)
-
-      basicStrategy.load(null)
-
-      expect(mockTimeShiftDetector.observe).toHaveBeenCalledTimes(2)
-    })
   })
 
   describe("play", () => {
@@ -689,6 +655,50 @@ describe("HTML5 Strategy", () => {
   })
 
   describe("auto resume", () => {
+    it("provides the seekable range for any dynamic stream to the time shift detector once metadata has loaded", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null)
+
+      expect(mockTimeShiftDetector.observe).not.toHaveBeenCalled()
+
+      videoElement.dispatchEvent(new Event("loadedmetadata"))
+
+      expect(mockTimeShiftDetector.observe).toHaveBeenCalledWith(basicStrategy.getSeekableRange)
+    })
+
+    it("should not provide the seekable range to the time shift detector for a static stream", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.STATIC })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null)
+
+      videoElement.dispatchEvent(new Event("loadedmetadata"))
+
+      expect(mockTimeShiftDetector.observe).not.toHaveBeenCalled()
+    })
+
+    it("should provide the seekable range to the time shift detector again on a reload", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      basicStrategy.load(null)
+
+      videoElement.dispatchEvent(new Event("loadedmetadata"))
+
+      expect(mockTimeShiftDetector.observe).toHaveBeenCalledTimes(1)
+
+      basicStrategy.load(null)
+
+      videoElement.dispatchEvent(new Event("loadedmetadata"))
+
+      expect(mockTimeShiftDetector.observe).toHaveBeenCalledTimes(2)
+    })
+
     it("should start auto-resume timeout when Time Shift Detector returns true for sliding", () => {
       mockTimeShiftDetector.isSeekableRangeSliding.mockReturnValueOnce(true)
       mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
