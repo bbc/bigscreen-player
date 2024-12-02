@@ -18,7 +18,7 @@ function getMPDType(mpd: Element): ManifestType {
   const type = mpd.getAttribute("type")
 
   if (type !== ManifestType.STATIC && type !== ManifestType.DYNAMIC) {
-    throw new TypeError("Oops")
+    throw new TypeError(`MPD type attribute must be 'static' or 'dynamic'. Got ${type}`)
   }
 
   return type as ManifestType
@@ -45,7 +45,7 @@ function parseMPD(manifestEl: Document): Promise<TimeInfo> {
   const mpd = manifestEl.querySelector("MPD")
 
   if (mpd == null) {
-    return Promise.reject(new TypeError("Bad manifest"))
+    return Promise.reject(new TypeError("Could not find an 'MPD' tag in the document"))
   }
 
   const manifestType = getMPDType(mpd)
