@@ -14,7 +14,7 @@ export type TimeInfo = {
   availabilityStartTimeInMilliseconds: number
 }
 
-function getMpdType(mpd: Element): ManifestType {
+function getMPDType(mpd: Element): ManifestType {
   const type = mpd.getAttribute("type")
 
   if (type !== ManifestType.STATIC && type !== ManifestType.DYNAMIC) {
@@ -24,15 +24,15 @@ function getMpdType(mpd: Element): ManifestType {
   return type as ManifestType
 }
 
-function getAvailabilityStartTimeInMilliseconds(mpd: Element): number {
+function getMPDAvailabilityStartTimeInMilliseconds(mpd: Element): number {
   return Date.parse(mpd.getAttribute("availabilityStartTime") ?? "") || 0
 }
 
-function getTimeShiftBufferDepthInMilliseconds(mpd: Element): number {
+function getMPDTimeShiftBufferDepthInMilliseconds(mpd: Element): number {
   return (durationToSeconds(mpd.getAttribute("timeShiftBufferDepth") ?? "") || 0) * 1000
 }
 
-function getPresentationTimeOffsetInMilliseconds(mpd: Element): number {
+function getMPDPresentationTimeOffsetInMilliseconds(mpd: Element): number {
   // Can be either audio or video data. It doesn't matter as we use the factor of x/timescale. This is the same for both.
   const segmentTemplate = mpd.querySelector("SegmentTemplate")
   const presentationTimeOffsetInFrames = parseFloat(segmentTemplate?.getAttribute("presentationTimeOffset") ?? "")
@@ -48,10 +48,10 @@ function parseMPD(manifestEl: Document): Promise<TimeInfo> {
     return Promise.reject(new TypeError("Bad manifest"))
   }
 
-  const manifestType = getMpdType(mpd)
-  const presentationTimeOffsetInMilliseconds = getPresentationTimeOffsetInMilliseconds(mpd)
-  const availabilityStartTimeInMilliseconds = getAvailabilityStartTimeInMilliseconds(mpd)
-  const timeShiftBufferDepthInMilliseconds = getTimeShiftBufferDepthInMilliseconds(mpd)
+  const manifestType = getMPDType(mpd)
+  const presentationTimeOffsetInMilliseconds = getMPDPresentationTimeOffsetInMilliseconds(mpd)
+  const availabilityStartTimeInMilliseconds = getMPDAvailabilityStartTimeInMilliseconds(mpd)
+  const timeShiftBufferDepthInMilliseconds = getMPDTimeShiftBufferDepthInMilliseconds(mpd)
 
   return Promise.resolve({
     manifestType,
