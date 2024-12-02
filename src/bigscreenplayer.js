@@ -95,8 +95,8 @@ function BigscreenPlayer() {
     }
   }
 
-  function bigscreenPlayerDataLoaded({ media, initialPlaybackTime, enableSubtitles }) {
-    const initialPresentationTime = convertInitialPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
+  function bigscreenPlayerDataLoaded({ media, enableSubtitles }) {
+    const initialPresentationTime = convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
     mediaKind = media.kind
 
@@ -130,22 +130,34 @@ function BigscreenPlayer() {
     )
   }
 
-  function convertInitialPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime) {
+  function createPlaybackTime(init) {
+    if (typeof init === "number") {
+      return { seconds: init, timeline: Timeline.PRESENTATION_TIME }
+    }
+
+    if (init == null || typeof init !== "object" || typeof init.seconds !== "number") {
+      throw new TypeError("A numerical playback time must be provided")
+    }
+
+    return { seconds: init.seconds, timeline: init.timeline ?? Timeline.PRESENTATION_TIME }
+  }
+
+  function convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime) {
     if (!initialPlaybackTime || typeof initialPlaybackTime === "number") {
       return initialPlaybackTime
     }
 
-    const { value, timeline } = initialPlaybackTime
+    const { seconds, timeline } = initialPlaybackTime
 
     switch (timeline) {
       case Timeline.PRESENTATION_TIME:
-        return value
+        return seconds
       case Timeline.MEDIA_SAMPLE_TIME:
-        return convertMediaSampleTimeToPresentationTimeInSeconds(value)
+        return convertMediaSampleTimeToPresentationTimeInSeconds(seconds)
       case Timeline.AVAILABILITY_TIME:
-        return convertAvailabilityTimeToPresentationTimeInSeconds(value)
+        return convertAvailabilityTimeToPresentationTimeInSeconds(seconds * 1000)
       default:
-        return value
+        return seconds
     }
   }
 
@@ -227,17 +239,19 @@ function BigscreenPlayer() {
      */
     init: (newPlaybackElement, bigscreenPlayerData, callbacks = {}) => {
       playbackElement = newPlaybackElement
-      initialPlaybackTime = bigscreenPlayerData.initialPlaybackTime
-      resizer = Resizer()
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
+      resizer = Resizer()
+
+      if (bigscreenPlayerData.initialPlaybackTime || typeof bigscreenPlayerData.initialPlaybackTime === "number") {
+        initialPlaybackTime = createPlaybackTime(bigscreenPlayerData.initialPlaybackTime)
+      }
 
       DebugTool.staticMetric("version", Version)
 
-      if (typeof bigscreenPlayerData.initialPlaybackTime === "number") {
-        DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime)
-      } else if (typeof bigscreenPlayerData.initialPlaybackTime?.value === "number") {
-        DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime.value)
+      if (initialPlaybackTime) {
+        const { seconds, timeline } = initialPlaybackTime
+        DebugTool.staticMetric("initial-playback-time", [seconds, timeline])
       }
 
       if (typeof window.bigscreenPlayer?.playbackStrategy === "string") {
@@ -361,14 +375,19 @@ function BigscreenPlayer() {
     /**
      * Sets the current time of the media asset.
      * @function
-     * @param {Number} presentationTimeInSeconds - In seconds
+     * @param {number} seconds
+     * @param {Timeline} timeline
      */
-    setCurrentTime(presentationTimeInSeconds) {
-      DebugTool.apicall("setCurrentTime", [presentationTimeInSeconds])
+    setCurrentTime(seconds, timeline) {
+      const playbackTime = createPlaybackTime({ seconds, timeline })
+
+      DebugTool.apicall("setCurrentTime", [playbackTime.seconds, playbackTime.timeline])
 
       if (playerComponent) {
         // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
         isSeeking = true
+
+        const presentationTimeInSeconds = convertPlaybackTimeToPresentationTimeInSeconds(playbackTime)
 
         playerComponent.setCurrentTime(presentationTimeInSeconds)
 

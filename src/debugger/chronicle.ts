@@ -1,6 +1,7 @@
 import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 import { MediaKinds } from "../models/mediakinds"
+import { Timeline } from "../models/timeline"
 
 export enum EntryCategory {
   METRIC = "metric",
@@ -40,7 +41,7 @@ type CDNsAvailable = CreateMetric<"cdns-available", string[]>
 type CurrentUrl = CreateMetric<"current-url", string>
 type Duration = CreateMetric<"duration", number>
 type FramesDropped = CreateMetric<"frames-dropped", number>
-type InitialPlaybackTime = CreateMetric<"initial-playback-time", number>
+type InitialPlaybackTime = CreateMetric<"initial-playback-time", [time: number, timeline: Timeline]>
 type MediaElementEnded = CreateMetric<"ended", HTMLMediaElement["ended"]>
 type MediaElementPaused = CreateMetric<"paused", HTMLMediaElement["paused"]>
 type MediaElementPlaybackRate = CreateMetric<"playback-rate", HTMLMediaElement["playbackRate"]>

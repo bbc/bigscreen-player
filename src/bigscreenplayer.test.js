@@ -238,7 +238,7 @@ describe("Bigscreen Player", () => {
 
       it("treats initial playback time as presentation time when timeline isn't specified", async () => {
         bigscreenPlayerData.initialPlaybackTime = {
-          value: 100,
+          seconds: 100,
         }
 
         await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
@@ -256,7 +256,7 @@ describe("Bigscreen Player", () => {
 
       it("does not convert initial playback time if it is passed in as a presentation time", async () => {
         bigscreenPlayerData.initialPlaybackTime = {
-          value: 100,
+          seconds: 100,
           timeline: Timeline.PRESENTATION_TIME,
         }
 
@@ -275,7 +275,7 @@ describe("Bigscreen Player", () => {
 
       it("converts initial playback time to a presentation time if input is a media sample time", async () => {
         bigscreenPlayerData.initialPlaybackTime = {
-          value: 100,
+          seconds: 100,
           timeline: Timeline.MEDIA_SAMPLE_TIME,
         }
 
@@ -298,7 +298,7 @@ describe("Bigscreen Player", () => {
 
       it("converts initial playback time to null if input is an availability time for a static stream", async () => {
         bigscreenPlayerData.initialPlaybackTime = {
-          value: 100,
+          seconds: 100,
           timeline: Timeline.AVAILABILITY_TIME,
         }
 
@@ -321,7 +321,7 @@ describe("Bigscreen Player", () => {
 
       it("converts initial playback time to a presentation time if input is an availability time for a dynamic stream", async () => {
         bigscreenPlayerData.initialPlaybackTime = {
-          value: 1731045700000,
+          seconds: 1731045700,
           timeline: Timeline.AVAILABILITY_TIME,
         }
 
@@ -810,6 +810,37 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.setCurrentTime(60)
 
       expect(mockPlayerComponentInstance.setCurrentTime).not.toHaveBeenCalled()
+    })
+
+    it("converts a media sample time to presentation time", async () => {
+      mockMediaSources.time.mockReturnValue({ presentationTimeOffsetInMilliseconds: 7200000 })
+
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      bigscreenPlayer.setCurrentTime(7250, Timeline.MEDIA_SAMPLE_TIME)
+
+      expect(mockPlayerComponentInstance.setCurrentTime).toHaveBeenCalledWith(50)
+      expect(mockPlayerComponentInstance.setCurrentTime).toHaveBeenCalledTimes(1)
+    })
+
+    it("converts an availability time to presentation time", async () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        availabilityStartTimeInMilliseconds: 7200000,
+      })
+
+      mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 105 })
+
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      bigscreenPlayer.setCurrentTime(7230, Timeline.AVAILABILITY_TIME)
+
+      expect(mockPlayerComponentInstance.setCurrentTime).toHaveBeenCalledWith(30)
+      expect(mockPlayerComponentInstance.setCurrentTime).toHaveBeenCalledTimes(1)
+    })
+
+    it("throws an error on a non-numerical value", () => {
+      expect(() => bigscreenPlayer.setCurrentTime(null)).toThrow(TypeError)
     })
   })
 
