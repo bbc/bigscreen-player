@@ -42,22 +42,28 @@ function getMPDPresentationTimeOffsetInMilliseconds(mpd: Element): number {
 }
 
 function parseMPD(manifestEl: Document): Promise<TimeInfo> {
-  const mpd = manifestEl.querySelector("MPD")
+  return new Promise<TimeInfo>((resolve, reject) => {
+    const mpd = manifestEl.querySelector("MPD")
 
-  if (mpd == null) {
-    return Promise.reject(new TypeError("Could not find an 'MPD' tag in the document"))
-  }
+    if (mpd == null) {
+      return reject(new TypeError("Could not find an 'MPD' tag in the document"))
+    }
 
-  const manifestType = getMPDType(mpd)
-  const presentationTimeOffsetInMilliseconds = getMPDPresentationTimeOffsetInMilliseconds(mpd)
-  const availabilityStartTimeInMilliseconds = getMPDAvailabilityStartTimeInMilliseconds(mpd)
-  const timeShiftBufferDepthInMilliseconds = getMPDTimeShiftBufferDepthInMilliseconds(mpd)
+    const manifestType = getMPDType(mpd)
+    const presentationTimeOffsetInMilliseconds = getMPDPresentationTimeOffsetInMilliseconds(mpd)
+    const availabilityStartTimeInMilliseconds = getMPDAvailabilityStartTimeInMilliseconds(mpd)
+    const timeShiftBufferDepthInMilliseconds = getMPDTimeShiftBufferDepthInMilliseconds(mpd)
 
-  return Promise.resolve({
-    manifestType,
-    timeShiftBufferDepthInMilliseconds,
-    availabilityStartTimeInMilliseconds,
-    presentationTimeOffsetInMilliseconds,
+    return resolve({
+      manifestType,
+      timeShiftBufferDepthInMilliseconds,
+      availabilityStartTimeInMilliseconds,
+      presentationTimeOffsetInMilliseconds,
+    })
+  }).catch((reason: unknown) => {
+    const errorWithCode = (isError(reason) ? reason : new Error("manifest-dash-parse-error")) as ErrorWithCode
+    errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
+    throw errorWithCode
   })
 }
 
@@ -83,7 +89,7 @@ function parseM3U8(manifest: string): Promise<TimeInfo> {
       presentationTimeOffsetInMilliseconds: programDateTimeInMilliseconds,
     })
   }).catch((reason: unknown) => {
-    const errorWithCode = (isError(reason) ? reason : new Error("manifest-dash-parse-error")) as ErrorWithCode
+    const errorWithCode = (isError(reason) ? reason : new Error("manifest-hls-parse-error")) as ErrorWithCode
     errorWithCode.code = PluginEnums.ERROR_CODES.MANIFEST_PARSE
     throw errorWithCode
   })
