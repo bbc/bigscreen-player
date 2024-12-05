@@ -1315,11 +1315,9 @@ describe("Bigscreen Player", () => {
     it("should call pause on the strategy", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      bigscreenPlayer.pause({ disableAutoResume: true })
+      bigscreenPlayer.pause()
 
-      expect(mockPlayerComponentInstance.pause).toHaveBeenCalledWith(
-        expect.objectContaining({ disableAutoResume: true })
-      )
+      expect(mockPlayerComponentInstance.pause).toHaveBeenCalledTimes(1)
     })
 
     it("should set pauseTrigger to an app pause if user pause is false", async () => {
@@ -1344,6 +1342,20 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.registerForStateChanges(onStateChange)
 
       bigscreenPlayer.pause({ userPause: true })
+
+      dispatchMediaStateChange({ data: { state: MediaState.PAUSED } })
+
+      expect(onStateChange).toHaveBeenCalledWith(expect.objectContaining({ trigger: PauseTriggers.USER }))
+    })
+
+    it("should set pauseTrigger to a user pause if user pause is not defined", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      const onStateChange = jest.fn()
+
+      bigscreenPlayer.registerForStateChanges(onStateChange)
+
+      bigscreenPlayer.pause()
 
       dispatchMediaStateChange({ data: { state: MediaState.PAUSED } })
 

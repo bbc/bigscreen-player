@@ -53,9 +53,9 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     return playbackStrategy?.isEnded()
   }
 
-  function pause(opts) {
+  function pause() {
     if (transitions().canBePaused()) {
-      playbackStrategy?.pause({ pauseTrigger: opts.pauseTrigger })
+      playbackStrategy?.pause()
     }
   }
 

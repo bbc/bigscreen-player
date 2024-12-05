@@ -22,7 +22,7 @@ import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
 // TODO: Remove when this becomes a TypeScript file
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { InitData, InitCallbacks, SubtitlesCustomisationOptions } from "./types"
+import { InitData, InitCallbacks, SubtitlesCustomisationOptions, PlaybackTime } from "./types"
 import { ManifestType } from "./models/manifesttypes"
 import { Timeline } from "./models/timeline"
 
@@ -96,9 +96,8 @@ function BigscreenPlayer() {
   }
 
   function bigscreenPlayerDataLoaded({ media, enableSubtitles }) {
-    const initialPresentationTime = convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
-
-    mediaKind = media.kind
+    const initialPresentationTime =
+      initialPlaybackTime == null ? undefined : convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
     endOfStream =
       mediaSources.time().manifestType === ManifestType.DYNAMIC &&
@@ -130,6 +129,17 @@ function BigscreenPlayer() {
     )
   }
 
+  /**
+   * @typedef {Object} PlaybackTimeInit
+   * @property {number} seconds
+   * @property {Timeline} [timeline]
+   */
+
+  /**
+   * Normalise time input to the 'PlaybackTime' model, so the unit and timeline is explicit.
+   * @param {number | PlaybackTimeInit} init
+   * @returns {PlaybackTime}
+   */
   function createPlaybackTime(init) {
     if (typeof init === "number") {
       return { seconds: init, timeline: Timeline.PRESENTATION_TIME }
@@ -142,12 +152,8 @@ function BigscreenPlayer() {
     return { seconds: init.seconds, timeline: init.timeline ?? Timeline.PRESENTATION_TIME }
   }
 
-  function convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime) {
-    if (!initialPlaybackTime || typeof initialPlaybackTime === "number") {
-      return initialPlaybackTime
-    }
-
-    const { seconds, timeline } = initialPlaybackTime
+  function convertPlaybackTimeToPresentationTimeInSeconds(playbackTime) {
+    const { seconds, timeline } = playbackTime
 
     switch (timeline) {
       case Timeline.PRESENTATION_TIME:
@@ -243,7 +249,9 @@ function BigscreenPlayer() {
       DebugTool.setRootElement(playbackElement)
       resizer = Resizer()
 
-      if (bigscreenPlayerData.initialPlaybackTime || typeof bigscreenPlayerData.initialPlaybackTime === "number") {
+      mediaKind = bigscreenPlayerData.media.kind
+
+      if (bigscreenPlayerData.initialPlaybackTime || bigscreenPlayerData.initialPlaybackTime === 0) {
         initialPlaybackTime = createPlaybackTime(bigscreenPlayerData.initialPlaybackTime)
       }
 
@@ -481,13 +489,13 @@ function BigscreenPlayer() {
      * @function
      * @param {*} opts
      * @param {boolean} opts.userPause
-     * @param {boolean} opts.disableAutoResume
      */
     pause: (opts) => {
       DebugTool.apicall("pause")
 
-      pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
-      playerComponent.pause({ pauseTrigger, ...opts })
+      pauseTrigger = opts?.userPause || opts?.userPause == null ? PauseTriggers.USER : PauseTriggers.APP
+
+      playerComponent.pause()
     },
 
     /**

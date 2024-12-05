@@ -2,7 +2,6 @@ import LiveSupport from "./models/livesupport"
 import { ManifestType } from "./models/manifesttypes"
 import MediaKinds from "./models/mediakinds"
 import MediaState from "./models/mediastate"
-import PauseTriggers from "./models/pausetriggers"
 import { TransferFormat } from "./models/transferformats"
 import StrategyPicker from "./playbackstrategy/strategypicker"
 import PluginEnums from "./pluginenums"
@@ -177,9 +176,8 @@ describe("Player Component", () => {
   })
 
   describe("pause", () => {
-    it("should pass through Pause Trigger to the playback strategy", async () => {
+    it("should call pause on the playback strategy", async () => {
       mockStrategy.transitions.canBePaused.mockReturnValueOnce(true)
-      const pauseTrigger = PauseTriggers.APP
 
       const playerComponent = new PlayerComponent(
         createPlaybackElement(),
@@ -191,9 +189,9 @@ describe("Player Component", () => {
 
       await jest.runOnlyPendingTimersAsync()
 
-      playerComponent.pause({ pauseTrigger })
+      playerComponent.pause()
 
-      expect(mockStrategy.pause).toHaveBeenCalledWith(expect.objectContaining({ pauseTrigger }))
+      expect(mockStrategy.pause).toHaveBeenCalledTimes(1)
     })
   })
 

@@ -30,7 +30,7 @@ export type SubtitlesCustomisationOptions = Partial<{
 }>
 
 export type PlaybackTime = {
-  value: number
+  seconds: number
   timeline: Timeline
 }
 
