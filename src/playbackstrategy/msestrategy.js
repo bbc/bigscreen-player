@@ -677,6 +677,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
+      mediaPlayer.off(DashJSEvents.PLAYBACK_RATE_CHANGED, onPlaybackRateChanged)
 
       mediaPlayer = undefined
     }
