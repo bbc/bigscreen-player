@@ -97,6 +97,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
     QUOTA_EXCEEDED: "quotaExceeded",
+    PLAYBACK_RATE_CHANGED: "playbackRateChanged",
   }
 
   function onLoadedMetaData() {
@@ -563,6 +564,11 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
+    mediaPlayer.on(DashJSEvents.PLAYBACK_RATE_CHANGED, onPlaybackRateChanged)
+  }
+
+  function onPlaybackRateChanged(event) {
+    Plugins.interface.onPlaybackRateChanged(event)
   }
 
   function manifestLoadingFinished(event) {
