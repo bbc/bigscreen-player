@@ -234,6 +234,14 @@ function BigscreenPlayer() {
     return subtitles ? subtitles.available() : false
   }
 
+  function getTimeShiftBufferDepthInMilliseconds() {
+    return mediaSources.time()?.timeShiftBufferDepthInMilliseconds ?? null
+  }
+
+  function getPresentationTimeOffsetInMilliseconds() {
+    return mediaSources.time()?.presentationTimeOffsetInMilliseconds ?? null
+  }
+
   return /** @alias module:bigscreenplayer/bigscreenplayer */ {
     /**
      * Call first to initialise bigscreen player for playback.
@@ -703,6 +711,8 @@ function BigscreenPlayer() {
     convertPresentationTimeToAvailabilityTimeInMilliseconds,
     convertAvailabilityTimeToPresentationTimeInSeconds,
     getInitialPlaybackTime,
+    getTimeShiftBufferDepthInMilliseconds,
+    getPresentationTimeOffsetInMilliseconds,
   }
 }
 
