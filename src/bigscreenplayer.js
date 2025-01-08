@@ -82,7 +82,11 @@ function BigscreenPlayer() {
       callCallbacks(stateChangeCallbacks, stateObject)
     }
 
-    if (evt.data.seekableRange) {
+    if (
+      evt.data.seekableRange &&
+      typeof evt.data.seekableRange.start === "number" &&
+      typeof evt.data.seekableRange.end === "number"
+    ) {
       DebugTool.staticMetric("seekable-range", [evt.data.seekableRange.start, evt.data.seekableRange.end])
     }
 
