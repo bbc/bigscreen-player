@@ -453,9 +453,9 @@ function BigscreenPlayer() {
     /**
      * Returns an object including the current start and end times.
      * @function
-     * @returns {Object} {start: Number, end: Number}
+     * @returns {Object | null} {start: Number, end: Number}
      */
-    getSeekableRange: () => (playerComponent ? playerComponent.getSeekableRange() : {}),
+    getSeekableRange: () => playerComponent?.getSeekableRange() ?? null,
 
     /**
      * @function

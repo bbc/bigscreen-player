@@ -623,7 +623,7 @@ describe("Legacy Playback Adapter", () => {
     })
 
     it.each([LiveSupport.PLAYABLE, LiveSupport.RESTARTABLE])(
-      "should return an empty object for a dynamic stream on a %s device",
+      "should return null for a dynamic stream on a %s device",
       (liveSupport) => {
         mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
@@ -633,7 +633,7 @@ describe("Legacy Playback Adapter", () => {
 
         legacyAdapter.load("video/mp4", null)
 
-        expect(legacyAdapter.getSeekableRange()).toEqual({})
+        expect(legacyAdapter.getSeekableRange()).toBeNull()
       }
     )
   })

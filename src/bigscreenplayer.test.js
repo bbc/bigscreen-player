@@ -1196,8 +1196,8 @@ describe("Bigscreen Player", () => {
       expect(bigscreenPlayer.getSeekableRange().end).toBe(10)
     })
 
-    it("should return an empty object when bigscreen player has not been initialised", () => {
-      expect(bigscreenPlayer.getSeekableRange()).toEqual({})
+    it("should return null when bigscreen player has not been initialised", () => {
+      expect(bigscreenPlayer.getSeekableRange()).toBeNull()
     })
   })
 

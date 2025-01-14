@@ -283,7 +283,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         }
       }
 
-      return typeof mediaPlayer.getSeekableRange === "function" ? mediaPlayer.getSeekableRange() : {}
+      return typeof mediaPlayer.getSeekableRange === "function" ? mediaPlayer.getSeekableRange() : null
     },
     setPlaybackRate: (rate) => {
       if (typeof mediaPlayer.setPlaybackRate === "function") {
