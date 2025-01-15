@@ -401,7 +401,7 @@ function BigscreenPlayer() {
     setCurrentTime(seconds, timeline) {
       const playbackTime = createPlaybackTime({ seconds, timeline })
 
-      DebugTool.apicall("setCurrentTime", [playbackTime.seconds, playbackTime.timeline])
+      DebugTool.apicall("setCurrentTime", [playbackTime.seconds.toFixed(3), playbackTime.timeline])
 
       if (playerComponent) {
         // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
