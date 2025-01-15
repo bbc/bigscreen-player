@@ -1,6 +1,6 @@
 export type TimeShiftDetector = ReturnType<typeof createTimeShiftDetector>
 
-const MINUTE_IN_MILLISECONDS = 60000
+const TEN_SECONDS_IN_MILLISECONDS = 10000
 
 type SeekableRange = {
   start: number
@@ -52,7 +52,7 @@ export default function createTimeShiftDetector(onceDetected: () => void) {
       }
 
       lastSeekableRangeStart = currentSeekableRangeStart
-    }, MINUTE_IN_MILLISECONDS)
+    }, TEN_SECONDS_IN_MILLISECONDS)
   }
 
   function disconnect() {
