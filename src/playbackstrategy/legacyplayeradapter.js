@@ -243,7 +243,11 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         typeof mediaPlayer.beginPlaybackFrom === "function" &&
         (manifestType === ManifestType.STATIC || hasStartTime)
       ) {
-        currentTime = presentationTimeInSeconds || 0
+        // currentTime = 0 is interpreted as play from live point by many devices
+        const startTimeInSeconds =
+          manifestType === ManifestType.DYNAMIC && presentationTimeInSeconds === 0 ? 0.1 : presentationTimeInSeconds
+
+        currentTime = startTimeInSeconds || 0
         mediaPlayer.beginPlaybackFrom(currentTime)
       } else {
         mediaPlayer.beginPlayback()

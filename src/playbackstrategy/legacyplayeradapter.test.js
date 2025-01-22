@@ -223,7 +223,7 @@ describe("Legacy Playback Adapter", () => {
     )
 
     it.each([LiveSupport.RESTARTABLE, LiveSupport.SEEKABLE])(
-      "should begin playback from the start time for a dynamic stream on a %s device when start time is zero",
+      "should begin playback from .1s for a dynamic stream on a %s device when start time is zero",
       (liveSupport) => {
         mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
 
@@ -233,7 +233,7 @@ describe("Legacy Playback Adapter", () => {
 
         legacyAdapter.load("video/mp4", 0)
 
-        expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0)
+        expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0.1)
       }
     )
 

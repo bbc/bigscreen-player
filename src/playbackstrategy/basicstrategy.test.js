@@ -155,6 +155,15 @@ describe("HTML5 Strategy", () => {
       expect(videoElement.currentTime).toBe(0)
     })
 
+    it("should set currentTime to .1s if start time is zero (0) for a live stream", () => {
+      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      basicStrategy.load(null, 0)
+
+      expect(videoElement.currentTime).toBe(0.1)
+    })
+
     it("should call load on the media element", () => {
       const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
@@ -705,12 +714,12 @@ describe("HTML5 Strategy", () => {
 
       const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-      basicStrategy.load(null, 0)
+      basicStrategy.load(null, 5)
       basicStrategy.pause()
 
       expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
       expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledWith(
-        0,
+        5,
         { start: 0, end: 0 },
         expect.any(Function),
         expect.any(Function),

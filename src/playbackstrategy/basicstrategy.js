@@ -87,8 +87,12 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   }
 
   function setStartTime(presentationTimeInSeconds) {
-    if (presentationTimeInSeconds) {
-      mediaElement.currentTime = presentationTimeInSeconds
+    if (presentationTimeInSeconds || presentationTimeInSeconds === 0) {
+      // currentTime = 0 is interpreted as play from live point by many devices
+      const startTimeInSeconds =
+        manifestType === ManifestType.DYNAMIC && presentationTimeInSeconds === 0 ? 0.1 : presentationTimeInSeconds
+
+      mediaElement.currentTime = startTimeInSeconds
     }
   }
 
