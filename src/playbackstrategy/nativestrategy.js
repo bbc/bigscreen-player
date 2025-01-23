@@ -35,7 +35,7 @@ function NativeStrategy(mediaSources, mediaKind, playbackElement, isUHD) {
       mediaPlayer = Html5()
   }
 
-  if (mediaSources.time().manifestType === ManifestType.DYNAMIC) {
+  if (mediaSources.time()?.manifestType === ManifestType.DYNAMIC) {
     switch (window.bigscreenPlayer.liveSupport) {
       case "none":
         mediaPlayer = None(mediaPlayer, mediaSources)

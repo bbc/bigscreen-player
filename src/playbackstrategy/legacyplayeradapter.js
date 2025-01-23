@@ -5,7 +5,7 @@ import AllowedMediaTransitions from "../allowedmediatransitions"
 import LiveGlitchCurtain from "./liveglitchcurtain"
 
 function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
-  const manifestType = mediaSources.time().manifestType
+  const manifestType = mediaSources.time()?.manifestType
 
   const setSourceOpts = {
     disableSentinels:

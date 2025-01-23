@@ -323,7 +323,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     const presentationTimeInSeconds = mediaPlayer.getCurrentTime()
 
     return hasOffset()
-      ? presentationTimeInSeconds + mediaSources.time().presentationTimeOffsetInMilliseconds / 1000
+      ? presentationTimeInSeconds + mediaSources.time()?.presentationTimeOffsetInMilliseconds / 1000
       : presentationTimeInSeconds
   }
 

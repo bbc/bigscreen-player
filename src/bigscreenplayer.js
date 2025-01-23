@@ -104,13 +104,13 @@ function BigscreenPlayer() {
       initialPlaybackTime == null ? undefined : convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
     endOfStream =
-      mediaSources.time().manifestType === ManifestType.DYNAMIC &&
+      mediaSources.time()?.manifestType === ManifestType.DYNAMIC &&
       !initialPresentationTime &&
       initialPresentationTime !== 0
 
     readyHelper = ReadyHelper(
       initialPresentationTime,
-      mediaSources.time().manifestType,
+      mediaSources.time()?.manifestType,
       PlayerComponent.getLiveSupport(),
       playerReadyCallback
     )
@@ -176,7 +176,7 @@ function BigscreenPlayer() {
       ? null
       : presentationTimeToMediaSampleTimeInSeconds(
           presentationTimeInSeconds,
-          mediaSources.time().presentationTimeOffsetInMilliseconds
+          mediaSources.time()?.presentationTimeOffsetInMilliseconds
         )
   }
 
@@ -185,25 +185,25 @@ function BigscreenPlayer() {
       ? null
       : mediaSampleTimeToPresentationTimeInSeconds(
           mediaSampleTimeInSeconds,
-          mediaSources.time().presentationTimeOffsetInMilliseconds
+          mediaSources.time()?.presentationTimeOffsetInMilliseconds
         )
   }
 
   function convertPresentationTimeToAvailabilityTimeInMilliseconds(presentationTimeInSeconds) {
-    return mediaSources?.time() == null || mediaSources?.time().manifestType === ManifestType.STATIC
+    return mediaSources?.time() == null || mediaSources.time()?.manifestType === ManifestType.STATIC
       ? null
       : presentationTimeToAvailabilityTimeInMilliseconds(
           presentationTimeInSeconds,
-          mediaSources.time().availabilityStartTimeInMilliseconds
+          mediaSources.time()?.availabilityStartTimeInMilliseconds
         )
   }
 
   function convertAvailabilityTimeToPresentationTimeInSeconds(availabilityTimeInMilliseconds) {
-    return mediaSources?.time() == null || mediaSources?.time().manifestType === ManifestType.STATIC
+    return mediaSources?.time() == null || mediaSources.time()?.manifestType === ManifestType.STATIC
       ? null
       : availabilityTimeToPresentationTimeInSeconds(
           availabilityTimeInMilliseconds,
-          mediaSources.time().availabilityStartTimeInMilliseconds
+          mediaSources.time()?.availabilityStartTimeInMilliseconds
         )
   }
 
@@ -412,7 +412,7 @@ function BigscreenPlayer() {
         playerComponent.setCurrentTime(presentationTimeInSeconds)
 
         endOfStream =
-          mediaSources.time().manifestType === ManifestType.DYNAMIC &&
+          mediaSources.time()?.manifestType === ManifestType.DYNAMIC &&
           Math.abs(this.getSeekableRange().end - presentationTimeInSeconds) < END_OF_STREAM_TOLERANCE
       }
     },
@@ -464,7 +464,7 @@ function BigscreenPlayer() {
     isPlayingAtLiveEdge() {
       return (
         !!playerComponent &&
-        mediaSources.time().manifestType === ManifestType.DYNAMIC &&
+        mediaSources.time()?.manifestType === ManifestType.DYNAMIC &&
         Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
       )
     },
@@ -617,7 +617,7 @@ function BigscreenPlayer() {
      */
     canSeek() {
       return (
-        mediaSources.time().manifestType === ManifestType.STATIC ||
+        mediaSources.time()?.manifestType === ManifestType.STATIC ||
         DynamicWindowUtils.canSeek(getLiveSupport(), this.getSeekableRange())
       )
     },
@@ -628,7 +628,7 @@ function BigscreenPlayer() {
      */
     canPause() {
       return (
-        mediaSources.time().manifestType === ManifestType.STATIC ||
+        mediaSources.time()?.manifestType === ManifestType.STATIC ||
         DynamicWindowUtils.canPause(getLiveSupport(), this.getSeekableRange())
       )
     },

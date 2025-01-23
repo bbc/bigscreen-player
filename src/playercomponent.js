@@ -194,7 +194,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     const presentationTimeInSeconds = getCurrentTime()
     const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
       presentationTimeInSeconds,
-      mediaSources.time().availabilityStartTimeInMilliseconds
+      mediaSources.time()?.availabilityStartTimeInMilliseconds
     )
     const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
 
@@ -213,7 +213,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
         tearDownMediaElement()
         const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
           availabilityTimeInMilliseconds,
-          mediaSources.time().availabilityStartTimeInMilliseconds
+          mediaSources.time()?.availabilityStartTimeInMilliseconds
         )
         loadMedia(mediaMetaData.type, presentationTimeInSeconds, thenPause)
       })

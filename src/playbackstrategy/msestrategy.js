@@ -19,7 +19,7 @@ const DEFAULT_SETTINGS = {
 function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, customPlayerSettings = {}) {
   let mediaPlayer
   let mediaElement
-  const manifestType = mediaSources.time().manifestType
+  const manifestType = mediaSources.time()?.manifestType
 
   const playerSettings = Utils.merge(
     {
@@ -640,7 +640,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
       removeEventCallback,
       (event) => event !== MediaState.PAUSED,
       mediaPlayer.play,
-      mediaSources.time().timeShiftBufferDepthInMilliseconds / 1000
+      mediaSources.time()?.timeShiftBufferDepthInMilliseconds / 1000
     )
   }
 
