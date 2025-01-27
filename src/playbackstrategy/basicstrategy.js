@@ -10,7 +10,7 @@ import DynamicWindowUtils from "../dynamicwindowutils"
 
 function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   const CLAMP_OFFSET_SECONDS = 1.1
-  const manifestType = mediaSources.time()?.manifestType
+  const manifestType = mediaSources.time().manifestType
 
   let eventCallbacks = []
   let errorCallback
