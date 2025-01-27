@@ -2,7 +2,7 @@ import MediaSources from "./mediasources"
 import Plugins from "./plugins"
 import PluginEnums from "./pluginenums"
 import { MediaDescriptor, Connection } from "./types"
-import ManifestLoader from "./manifest/sourceloader"
+import SourceLoader from "./manifest/sourceloader"
 import { ManifestType } from "./models/manifesttypes"
 import { TransferFormat } from "./models/transferformats"
 import getError from "./testutils/geterror"
@@ -89,7 +89,7 @@ describe("Media Sources", () => {
     })
 
     it("resolves when manifest has been loaded", async () => {
-      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
         time: {
           manifestType: ManifestType.DYNAMIC,
           presentationTimeOffsetInMilliseconds: 1000,
@@ -120,9 +120,9 @@ describe("Media Sources", () => {
         { url: "http://source2.com/", cdn: "http://supplier2.com/" },
       ]
 
-      jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
+      jest.mocked(SourceLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
 
-      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
         time: {
           manifestType: ManifestType.STATIC,
           presentationTimeOffsetInMilliseconds: 0,
@@ -148,7 +148,7 @@ describe("Media Sources", () => {
     })
 
     it("rejects when all available manifest sources fail to load", async () => {
-      jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
+      jest.mocked(SourceLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
 
       const mediaSources = MediaSources()
 
@@ -191,7 +191,7 @@ describe("Media Sources", () => {
         failoverSort: mockFailoverFunction,
       }
 
-      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
         time: {
           manifestType: ManifestType.STATIC,
           presentationTimeOffsetInMilliseconds: 0,
@@ -219,7 +219,7 @@ describe("Media Sources", () => {
         { url: "http://source2.com/", cdn: "http://supplier2.com/" },
       ]
 
-      jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
+      jest.mocked(SourceLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
 
       const mediaSources = MediaSources()
 
@@ -241,6 +241,7 @@ describe("Media Sources", () => {
 
   describe("failover", () => {
     it.each([
+      [TransferFormat.PLAIN, ManifestType.STATIC],
       [TransferFormat.DASH, ManifestType.STATIC],
       [TransferFormat.DASH, ManifestType.DYNAMIC],
       [TransferFormat.HLS, ManifestType.STATIC],
@@ -250,7 +251,7 @@ describe("Media Sources", () => {
         { url: "http://source2.com/", cdn: "http://supplier2.com/" },
       ]
 
-      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
         transferFormat,
         time: {
           manifestType,
@@ -266,8 +267,8 @@ describe("Media Sources", () => {
 
       await mediaSources.failover({ isBufferingTimeoutError: true, code: 0, message: "A mocked failover reason" })
 
-      expect(ManifestLoader.load).toHaveBeenCalledTimes(1)
-      expect(ManifestLoader.load).toHaveBeenNthCalledWith(1, "http://source1.com/")
+      expect(SourceLoader.load).toHaveBeenCalledTimes(1)
+      expect(SourceLoader.load).toHaveBeenNthCalledWith(1, "http://source1.com/")
     })
 
     it("loads the manifest from the next url for a dynamic HLS stream", async () => {
@@ -277,7 +278,7 @@ describe("Media Sources", () => {
       ]
 
       // HLS manifests must be reloaded on failover to fetch accurate start time
-      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
         time: {
           manifestType: ManifestType.DYNAMIC,
           presentationTimeOffsetInMilliseconds: 1731406718000,
@@ -293,8 +294,8 @@ describe("Media Sources", () => {
 
       await mediaSources.failover({ isBufferingTimeoutError: true, code: 0, message: "A mocked failover reason" })
 
-      expect(ManifestLoader.load).toHaveBeenCalledTimes(2)
-      expect(ManifestLoader.load).toHaveBeenNthCalledWith(2, "http://source2.com/")
+      expect(SourceLoader.load).toHaveBeenCalledTimes(2)
+      expect(SourceLoader.load).toHaveBeenNthCalledWith(2, "http://source2.com/")
     })
 
     it("should fire onErrorHandled plugin with correct error code and message when there are sources to failover to", async () => {
@@ -303,7 +304,7 @@ describe("Media Sources", () => {
         { url: "http://source2.com/", cdn: "http://supplier2.com/" },
       ]
 
-      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
         time: {
           manifestType: ManifestType.STATIC,
           presentationTimeOffsetInMilliseconds: 0,
@@ -341,7 +342,7 @@ describe("Media Sources", () => {
     it("should not fire a plugin event when there are no sources to failover to", async () => {
       testMedia.urls = [{ url: "http://source1.com/", cdn: "http://supplier1.com/" }]
 
-      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
         time: {
           manifestType: ManifestType.STATIC,
           presentationTimeOffsetInMilliseconds: 0,
@@ -666,7 +667,7 @@ describe("Media Sources", () => {
         { url: "http://source2.com/", cdn: "http://cdn2.com" },
       ]
 
-      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
         time: {
           manifestType: ManifestType.STATIC,
           presentationTimeOffsetInMilliseconds: 0,
@@ -689,7 +690,7 @@ describe("Media Sources", () => {
       expect(mediaSources.transferFormat()).toEqual(TransferFormat.DASH)
       expect(mediaSources.currentSource()).toBe("http://source1.com/")
 
-      jest.mocked(ManifestLoader.load).mockResolvedValueOnce({
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
         time: {
           manifestType: ManifestType.STATIC,
           presentationTimeOffsetInMilliseconds: 100000,
@@ -718,7 +719,7 @@ describe("Media Sources", () => {
       const mediaSources = MediaSources()
       await mediaSources.init(testMedia)
 
-      jest.mocked(ManifestLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
+      jest.mocked(SourceLoader.load).mockRejectedValueOnce(new Error("A network error occured"))
 
       const error = await getError(async () => mediaSources.refresh())
 

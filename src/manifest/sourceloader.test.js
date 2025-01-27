@@ -34,7 +34,7 @@ describe("ManifestLoader", () => {
   it("rejects when resource is not a recognised manifest type", () =>
     expect(ManifestLoader.load("mock://some.url/")).rejects.toThrow("Invalid media url"))
 
-  describe("handling manifests", () => {
+  describe("handling sources", () => {
     beforeAll(() => {
       jest.spyOn(Plugins.interface, "onManifestParseError")
     })
@@ -43,7 +43,7 @@ describe("ManifestLoader", () => {
       jest.clearAllMocks()
     })
 
-    describe("fetching DASH manifests", () => {
+    describe("fetching DASH sources", () => {
       it.each([
         [ManifestType.STATIC, DashManifests.STATIC_NO_PTO()],
         [ManifestType.DYNAMIC, DashManifests.PTO_NO_TIMESHIFT()],
@@ -83,7 +83,7 @@ describe("ManifestLoader", () => {
       })
     })
 
-    describe("fetching HLS manifests", () => {
+    describe("fetching HLS sources", () => {
       const hlsMasterResponse =
         "#EXTM3U\n" +
         "#EXT-X-VERSION:2\n" +
@@ -149,6 +149,20 @@ describe("ManifestLoader", () => {
         expect(await getError(async () => ManifestLoader.load("http://foo.bar/test.m3u8"))).toEqual(
           new Error("Network error: Unable to retrieve HLS live playlist")
         )
+      })
+    })
+
+    describe("handling MP4 sources", () => {
+      it("resolves to metadata reflecting an on-demand stream", async () => {
+        const { transferFormat, time } = await ManifestLoader.load("http://foo.bar/test.mp4")
+
+        expect(transferFormat).toBe(TransferFormat.PLAIN)
+        expect(time).toEqual({
+          manifestType: ManifestType.STATIC,
+          presentationTimeOffsetInMilliseconds: 0,
+          timeShiftBufferDepthInMilliseconds: 0,
+          availabilityStartTimeInMilliseconds: 0,
+        })
       })
     })
   })
