@@ -5,7 +5,7 @@ import getError from "../testutils/geterror"
 import LoadUrl from "../utils/loadurl"
 import DashManifests from "./stubData/dashmanifests"
 import HlsManifests from "./stubData/hlsmanifests"
-import ManifestLoader from "./manifestloader"
+import ManifestLoader from "./sourceloader"
 
 jest.mock("../utils/loadurl")
 

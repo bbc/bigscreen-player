@@ -2,12 +2,12 @@ import MediaSources from "./mediasources"
 import Plugins from "./plugins"
 import PluginEnums from "./pluginenums"
 import { MediaDescriptor, Connection } from "./types"
-import ManifestLoader from "./manifest/manifestloader"
+import ManifestLoader from "./manifest/sourceloader"
 import { ManifestType } from "./models/manifesttypes"
 import { TransferFormat } from "./models/transferformats"
 import getError from "./testutils/geterror"
 
-jest.mock("./manifest/manifestloader", () => ({
+jest.mock("./manifest/sourceloader", () => ({
   default: {
     load: jest.fn(() =>
       Promise.resolve({
