@@ -113,6 +113,7 @@ describe("Media Source Extensions Playback Strategy", () => {
   const isMockedElement = (el) => el instanceof HTMLElement && el.__mocked__
 
   beforeAll(() => {
+    jest.useFakeTimers()
     MediaPlayer.mockReturnValue(mockDashMediaPlayer)
 
     jest.spyOn(document, "createElement").mockImplementation((elementType) => {
@@ -131,6 +132,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.clearAllTimers()
 
     eventHandlers = {}
 
