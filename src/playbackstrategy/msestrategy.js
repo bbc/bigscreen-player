@@ -525,7 +525,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
 
     const wholeSeconds = parseInt(presentationTimeInSeconds)
 
-    return wholeSeconds === 0 ? "" : `#t=${wholeSeconds}`
+    return `#t=${wholeSeconds}`
   }
 
   function setUpMediaListeners() {

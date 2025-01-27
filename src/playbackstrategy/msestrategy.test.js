@@ -237,7 +237,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       )
     })
 
-    it("should initialise MediaPlayer without any source anchor when time is zero", () => {
+    it("should initialise MediaPlayer with a source anchor when time is zero", () => {
       mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[0].url)
 
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
@@ -245,7 +245,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.load(null, 0)
 
       expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=0`)
     })
 
     it("should initialise MediaPlayer with a time anchor when a start time is given", () => {
@@ -292,7 +292,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       expect(mockDashInstance.initialize).toHaveBeenCalledTimes(1)
       expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=0`)
 
       // Player component would do this with its buffering timeout logic
       mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
@@ -300,7 +300,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.load(null, null)
 
       expect(mockDashInstance.initialize).toHaveBeenCalledTimes(1)
-      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[1].url)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[1].url}#t=0`)
     })
 
     it("should attach a new source with previous start time if loaded before there is a valid media element time", () => {
@@ -846,7 +846,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         mseStrategy.reset()
 
         mockMediaSources.currentSource.mockReturnValueOnce("http://example2.com")
-        mseStrategy.load(null, 0)
+        mseStrategy.load(null, null)
 
         expect(mockDashInstance.initialize).toHaveBeenCalledTimes(2)
         expect(mockDashInstance.initialize).toHaveBeenNthCalledWith(2, mediaElement, null, true)
@@ -1429,7 +1429,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         code: 25,
         message: "Mock manifest load fail",
       })
-      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[1].url)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[1].url}#t=0`)
       expect(mockDashInstance.attachSource).toHaveBeenCalledTimes(2)
     })
 
