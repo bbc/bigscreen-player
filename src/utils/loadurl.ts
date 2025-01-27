@@ -1,11 +1,13 @@
+import isError from "./iserror"
+
 type LoadUrlOpts = {
-  timeout: number | undefined
-  onTimeout: XMLHttpRequest["ontimeout"] | undefined
-  onLoad: (responseXML: Document | null, responseText: string, status: number) => void | undefined
-  onError: (params: { errorType: string; statusCode: number }) => void | undefined
-  method: string | undefined
-  data: Document | XMLHttpRequestBodyInit | null | undefined
   headers: { [key: string]: string }
+  timeout?: number
+  onTimeout?: XMLHttpRequest["ontimeout"]
+  onLoad?: (responseXML: Document | null, responseText: string, status: number) => void
+  onError?: (params: { errorType: string; statusCode: number }) => void
+  method?: string
+  data?: Document | XMLHttpRequestBodyInit | null
 }
 
 export default function LoadUrl(url: string | URL, opts: LoadUrlOpts) {
@@ -39,15 +41,15 @@ export default function LoadUrl(url: string | URL, opts: LoadUrlOpts) {
 
     if (opts.headers) {
       for (const header in opts.headers) {
-        if (opts.headers.hasOwnProperty(header)) {
+        if (Object.prototype.hasOwnProperty.call(opts.headers, header)) {
           xhr.setRequestHeader(header, opts.headers[header])
         }
       }
     }
     xhr.send(opts.data || null)
-  } catch ({ name }) {
+  } catch (error: unknown) {
     if (opts.onError) {
-      opts.onError({ errorType: name, statusCode: xhr.status })
+      opts.onError({ errorType: isError(error) ? error.name : "unknown", statusCode: xhr.status })
     }
   }
 }

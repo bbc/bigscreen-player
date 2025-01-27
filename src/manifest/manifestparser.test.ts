@@ -15,7 +15,7 @@ describe("ManifestParser", () => {
 
     jest.spyOn(Plugins.interface, "onManifestParseError")
 
-    jest.mocked(LoadUrl).mockImplementation((_, { onLoad }) => onLoad(null, new Date().toISOString(), 200))
+    jest.mocked(LoadUrl).mockImplementation((_, { onLoad }) => onLoad?.(null, new Date().toISOString(), 200))
   })
 
   beforeEach(() => {

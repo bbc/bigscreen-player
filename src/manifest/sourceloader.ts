@@ -1,9 +1,11 @@
-import ManifestParser from "./manifestparser"
+import ManifestParser, { TimeInfo } from "./manifestparser"
+import { ManifestType } from "../models/manifesttypes"
 import { TransferFormat } from "../models/transferformats"
 import LoadUrl from "../utils/loadurl"
+import isError from "../utils/iserror"
 
-function retrieveDashManifest(url) {
-  return new Promise((resolveLoad, rejectLoad) =>
+function retrieveDashManifest(url: string) {
+  return new Promise<Document | null>((resolveLoad, rejectLoad) =>
     LoadUrl(url, {
       method: "GET",
       headers: {},
@@ -21,7 +23,7 @@ function retrieveDashManifest(url) {
     })
     .then((time) => ({ time, transferFormat: TransferFormat.DASH }))
     .catch((error) => {
-      if (error.message.indexOf("DASH") !== -1) {
+      if (isError(error) && error.message.indexOf("DASH") !== -1) {
         throw error
       }
 
@@ -29,8 +31,8 @@ function retrieveDashManifest(url) {
     })
 }
 
-function retrieveHLSManifest(url) {
-  return new Promise((resolveLoad, rejectLoad) =>
+function retrieveHLSManifest(url: string) {
+  return new Promise<string | null>((resolveLoad, rejectLoad) =>
     LoadUrl(url, {
       method: "GET",
       headers: {},
@@ -61,8 +63,8 @@ function retrieveHLSManifest(url) {
   })
 }
 
-function retrieveHLSLivePlaylist(url) {
-  return new Promise((resolveLoad, rejectLoad) =>
+function retrieveHLSLivePlaylist(url: string) {
+  return new Promise<string | null>((resolveLoad, rejectLoad) =>
     LoadUrl(url, {
       method: "GET",
       headers: {},
@@ -81,22 +83,32 @@ function retrieveHLSLivePlaylist(url) {
     .then((time) => ({ time, transferFormat: TransferFormat.HLS }))
 }
 
-function getStreamUrl(data) {
+function getStreamUrl(data: string) {
   const match = /#EXT-X-STREAM-INF:.*[\n\r]+(.*)[\n\r]?/.exec(data)
 
-  if (match) {
-    return match[1]
-  }
+  return match ? match[1] : null
 }
 
 export default {
-  load: (mediaUrl) => {
+  load: (mediaUrl: string): Promise<{ transferFormat: TransferFormat; time: TimeInfo }> => {
     if (/\.mpd(\?.*)?$/.test(mediaUrl)) {
       return retrieveDashManifest(mediaUrl)
     }
 
     if (/\.m3u8(\?.*)?$/.test(mediaUrl)) {
       return retrieveHLSManifest(mediaUrl)
+    }
+
+    if (/\.mp4(\?.*)?$/.test(mediaUrl)) {
+      return Promise.resolve({
+        time: {
+          manifestType: ManifestType.STATIC,
+          presentationTimeOffsetInMilliseconds: 0,
+          timeShiftBufferDepthInMilliseconds: 0,
+          availabilityStartTimeInMilliseconds: 0,
+        },
+        transferFormat: TransferFormat.PLAIN,
+      })
     }
 
     return Promise.reject(new Error("Invalid media url"))
