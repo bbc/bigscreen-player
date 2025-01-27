@@ -54,10 +54,6 @@ function MediaSources() {
 
       updateDebugOutput()
 
-      if (media.type === "video/mp4") {
-        return resolve()
-      }
-
       return resolve(loadManifest())
     })
   }
