@@ -199,7 +199,6 @@ describe("readyHelper", () => {
   })
 
   describe("- Live, Playable/Restartable -", () => {
-    // TODO: this test passes even though seekable range with Infinity is not falsey
     it("calls the supplied callback regardless of seekable range if current time is positive for playable", () => {
       readyHelper = ReadyHelper(undefined, ManifestType.DYNAMIC, LiveSupport.PLAYABLE, callback)
 
@@ -207,14 +206,13 @@ describe("readyHelper", () => {
         timeUpdate: true,
         data: {
           currentTime: 60,
-          seekableRange: { start: Infinity, end: -Infinity },
+          seekableRange: null,
         },
       })
 
       expect(callback).toHaveBeenCalledTimes(1)
     })
 
-    // TODO: this test passes even though seekable range as an empty object is not falsey
     it("calls the supplied callback regardless of seekable range if current time is positive for restartable", () => {
       readyHelper = ReadyHelper(undefined, ManifestType.DYNAMIC, LiveSupport.RESTARTABLE, callback)
 
@@ -222,7 +220,7 @@ describe("readyHelper", () => {
         timeUpdate: true,
         data: {
           currentTime: 60,
-          seekableRange: {},
+          seekableRange: null,
         },
       })
 

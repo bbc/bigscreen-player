@@ -2,7 +2,7 @@ import { MediaState } from "./models/mediastate"
 import { LiveSupport } from "./models/livesupport"
 import { ManifestType } from "./models/manifesttypes"
 
-type SeekableRange = { start: number; end: number } | Record<string, never>
+type SeekableRange = { start: number; end: number } | null
 type State = { state?: MediaState }
 type Time = { currentTime?: number; seekableRange?: SeekableRange }
 
@@ -36,8 +36,7 @@ function ReadyHelper(
 
   function isValidTime({ currentTime, seekableRange }: Time) {
     if (manifestType === ManifestType.STATIC) return validateStaticTime(currentTime)
-    if (seekableRange) return validateLiveTime(currentTime, seekableRange)
-    return false
+    return validateLiveTime(currentTime, seekableRange)
   }
 
   function validateStaticTime(currentTime?: number) {
