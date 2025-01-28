@@ -177,6 +177,18 @@ function MediaSources() {
     return new Promise((resolve) => resolve(loadManifest()))
   }
 
+  function replace({ sources }: { sources: Connection[] }) {
+    mediaSources = sources.urls
+
+    updateDebugOutput()
+
+    if (needToGetManifest()) {
+      return loadManifest()
+    }
+
+    return Promise.resolve()
+  }
+
   function loadManifest(): Promise<void> {
     return ManifestLoader.load(getCurrentUrl())
       .then(({ time: newTime, transferFormat: newTransferFormat }) => {
@@ -358,6 +370,7 @@ function MediaSources() {
     failover,
     failoverSubtitles,
     refresh,
+    replace,
     currentSource: getCurrentUrl,
     currentSubtitlesSource: getCurrentSubtitlesUrl,
     currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,

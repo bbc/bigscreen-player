@@ -717,6 +717,14 @@ function BigscreenPlayer() {
     getInitialPlaybackTime,
     getTimeShiftBufferDepthInMilliseconds,
     getPresentationTimeOffsetInMilliseconds,
+
+    /**
+     * @function
+     * @param {Array} sources - Array of new media sources
+     */
+    replaceMediaSources: (sources) => {
+      playerComponent && playerComponent.replaceMediaSources(sources)
+    },
   }
 }
 

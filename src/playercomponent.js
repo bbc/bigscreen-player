@@ -321,6 +321,25 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     }
   }
 
+  function replaceMediaSources(sources) {
+    const time = getCurrentTime()
+    const oldWindowStartTime = getWindowStartTime()
+
+    const doLoadMedia = () => {
+      const windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000
+      const failoverTime = time - (windowOffset || 0)
+      const thenPause = isPaused()
+      tearDownMediaElement()
+      loadMedia(mediaMetaData.type, failoverTime, thenPause)
+    }
+
+    const doErrorCallback = () => {
+      bubbleFatalError(false, { code: "0000", message: "error replacing sources" })
+    }
+
+    mediaSources.replace(sources, doLoadMedia, doErrorCallback)
+  }
+
   function tearDown() {
     tearDownMediaElement()
     playbackStrategy?.tearDown()
@@ -347,6 +366,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     getSeekableRange,
     getPlayerElement,
     isPaused,
+    replaceMediaSources,
     tearDown,
   }
 }
