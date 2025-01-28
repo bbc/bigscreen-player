@@ -570,6 +570,16 @@ function BigscreenPlayer() {
     },
 
     /**
+     * @function
+     * @param {"audio" | "video" | "text" | "image"} type
+     * @returns {boolean} true if there is an 'alternate' role in any of the adaptation sets for the type
+     */
+    isADAvailable(type) {
+      const tracks = this.getTracksFor(type)
+      return tracks.some((track) => track.roles.includes("alternate"))
+    },
+
+    /**
      *
      * An enum may be used to set the on-screen position of any transport controls
      * (work in progress to remove this - UI concern).
