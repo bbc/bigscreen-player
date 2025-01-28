@@ -710,6 +710,8 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     load,
     getSeekableRange,
     getCurrentTime,
+    getTracksFor: (type) => mediaPlayer.getTracksFor(type),
+    setCurrentTrack: (track) => mediaPlayer.setCurrentTrack(track),
     getDuration,
     getPlayerElement: () => mediaElement,
     tearDown: () => {

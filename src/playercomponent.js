@@ -99,6 +99,14 @@ function PlayerComponent(
     return playbackStrategy && playbackStrategy.getSeekableRange()
   }
 
+  function getTracksFor(type) {
+    return playbackStrategy && playbackStrategy.getTracksFor(type)
+  }
+
+  function setCurrentTrack(track) {
+    return playbackStrategy && playbackStrategy.setCurrentTrack(track)
+  }
+
   function isPaused() {
     return playbackStrategy && playbackStrategy.isPaused()
   }
@@ -407,6 +415,8 @@ function PlayerComponent(
     getPlayerElement,
     isPaused,
     tearDown,
+    getTracksFor,
+    setCurrentTrack,
   }
 }
 

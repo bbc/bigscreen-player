@@ -431,6 +431,23 @@ function BigscreenPlayer() {
 
     /**
      * @function
+     * @param {"audio" | "video" | "text" | "image"} type
+     * @returns all the tracks for the corresponding type
+     */
+    getTracksFor: (type) => playerComponent && playerComponent.getTracksFor(type),
+
+    /**
+     * @function
+     * @param {Number} id of the track
+     * @param {"audio" | "video" | "text" | "image"} type
+     */
+    setCurrentTrack(id, type) {
+      const track = this.getTracksFor(type).find((track) => track.id === id)
+      playerComponent && playerComponent.setCurrentTrack(track)
+    },
+
+    /**
+     * @function
      * @returns if the player is paused.
      */
     isPaused: () => (playerComponent ? playerComponent.isPaused() : true),
