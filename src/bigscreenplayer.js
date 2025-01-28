@@ -438,6 +438,13 @@ function BigscreenPlayer() {
 
     /**
      * @function
+     * @param {"audio" | "video" | "text" | "image"} type
+     * @returns the current track for the corresponding type
+     */
+    getCurrentTrackFor: (type) => playerComponent && playerComponent.getCurrentTrackFor(type),
+
+    /**
+     * @function
      * @param {Number} id of the track
      * @param {"audio" | "video" | "text" | "image"} type
      */
@@ -571,12 +578,21 @@ function BigscreenPlayer() {
 
     /**
      * @function
-     * @param {"audio" | "video" | "text" | "image"} type
-     * @returns {boolean} true if there is an 'alternate' role in any of the adaptation sets for the type
+     * @returns {boolean} true if there is an 'alternate' role in any of the adaptation sets for the audio type
      */
-    isADAvailable(type) {
-      const tracks = this.getTracksFor(type)
+    isADAvailable() {
+      const tracks = this.getTracksFor("audio")
       return tracks.some((track) => track.roles.includes("alternate"))
+    },
+
+    /**
+     * @function
+     * @returns {boolean} true if there is an the AD audio track is current being used
+     */
+    isADEnabled() {
+      if (!this.isADAvailable()) return false
+      const currentAudioTrack = this.getCurrentTrackFor("audio")
+      return currentAudioTrack ? currentAudioTrack.roles.includes("alternate") : false
     },
 
     /**

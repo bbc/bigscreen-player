@@ -103,6 +103,10 @@ function PlayerComponent(
     return playbackStrategy && playbackStrategy.getTracksFor(type)
   }
 
+  function getCurrentTrackFor(type) {
+    return playbackStrategy && playbackStrategy.getCurrentTrackFor(type)
+  }
+
   function setCurrentTrack(track) {
     return playbackStrategy && playbackStrategy.setCurrentTrack(track)
   }
@@ -416,6 +420,7 @@ function PlayerComponent(
     isPaused,
     tearDown,
     getTracksFor,
+    getCurrentTrackFor,
     setCurrentTrack,
   }
 }
