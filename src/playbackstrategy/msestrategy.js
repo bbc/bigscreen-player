@@ -446,9 +446,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onTrackChangeRendered(event) {
-    DebugTool.info(
-      `${event.mediaType} track changed. ${event.newMediaInfo.roles.includes("alternate") ? "AD on." : "AD off."}`
-    )
+    DebugTool.info(`${event.mediaType} track changed. ${isADSimulcastEnabled() ? "AD on." : "AD off."}`)
   }
 
   function publishMediaState(mediaState) {
@@ -661,6 +659,48 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     )
   }
 
+  function isTrackADSimulcast(track) {
+    return (
+      track.roles.includes("alternate") &&
+      track.accessibilitiesWithSchemeIdUri.some(
+        (scheme) => scheme.schemeIdUri === "urn:tva:metadata:cs:AudioPurposeCS:2007" && scheme.value === "1"
+      )
+    )
+  }
+
+  function getADSimulcastTrack() {
+    const tracks = mediaPlayer.getTracksFor("audio")
+    return tracks.find((track) => isTrackADSimulcast(track))
+  }
+
+  function isADSimulcastAvailable() {
+    const tracks = mediaPlayer.getTracksFor("audio")
+    return tracks.some((track) => isTrackADSimulcast(track))
+  }
+
+  function isADSimulcastEnabled() {
+    if (!isADSimulcastAvailable()) return false
+    const currentAudioTrack = mediaPlayer.getCurrentTrackFor("audio")
+    return currentAudioTrack ? isTrackADSimulcast(currentAudioTrack) : false
+  }
+
+  function setADSimulcastOff() {
+    if (isADSimulcastEnabled()) {
+      const audioTracks = mediaPlayer.getTracksFor("audio")
+      const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
+      mediaPlayer.setCurrentTrack(mainTrack)
+    }
+  }
+
+  function setADSimulcastOn() {
+    if (!isADSimulcastEnabled()) {
+      const ADTrack = getADSimulcastTrack()
+      if (ADTrack) {
+        mediaPlayer.setCurrentTrack(ADTrack)
+      }
+    }
+  }
+
   function cleanUpMediaPlayer() {
     if (mediaPlayer) {
       mediaPlayer.destroy()
@@ -719,9 +759,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     load,
     getSeekableRange,
     getCurrentTime,
-    getTracksFor: (type) => mediaPlayer.getTracksFor(type),
-    getCurrentTrackFor: (type) => mediaPlayer.getCurrentTrackFor(type),
-    setCurrentTrack: (track) => mediaPlayer.setCurrentTrack(track),
+    isADSimulcastAvailable,
+    isADSimulcastEnabled,
+    setADSimulcastOn,
+    setADSimulcastOff,
     getDuration,
     getPlayerElement: () => mediaElement,
     tearDown: () => {

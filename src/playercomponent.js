@@ -99,16 +99,20 @@ function PlayerComponent(
     return playbackStrategy && playbackStrategy.getSeekableRange()
   }
 
-  function getTracksFor(type) {
-    return playbackStrategy && playbackStrategy.getTracksFor(type)
+  function isADSimulcastAvailable() {
+    return playbackStrategy && playbackStrategy.isADSimulcastAvailable()
   }
 
-  function getCurrentTrackFor(type) {
-    return playbackStrategy && playbackStrategy.getCurrentTrackFor(type)
+  function isADSimulcastEnabled() {
+    return playbackStrategy && playbackStrategy.isADSimulcastEnabled()
   }
 
-  function setCurrentTrack(track) {
-    return playbackStrategy && playbackStrategy.setCurrentTrack(track)
+  function setADSimulcastOn() {
+    playbackStrategy && playbackStrategy.setADSimulcastOn()
+  }
+
+  function setADSimulcastOff() {
+    playbackStrategy && playbackStrategy.setADSimulcastOff()
   }
 
   function isPaused() {
@@ -419,9 +423,10 @@ function PlayerComponent(
     getPlayerElement,
     isPaused,
     tearDown,
-    getTracksFor,
-    getCurrentTrackFor,
-    setCurrentTrack,
+    isADSimulcastAvailable,
+    isADSimulcastEnabled,
+    setADSimulcastOn,
+    setADSimulcastOff,
   }
 }
 

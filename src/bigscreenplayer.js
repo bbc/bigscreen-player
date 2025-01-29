@@ -431,30 +431,6 @@ function BigscreenPlayer() {
 
     /**
      * @function
-     * @param {"audio" | "video" | "text" | "image"} type
-     * @returns all the tracks for the corresponding type
-     */
-    getTracksFor: (type) => playerComponent && playerComponent.getTracksFor(type),
-
-    /**
-     * @function
-     * @param {"audio" | "video" | "text" | "image"} type
-     * @returns the current track for the corresponding type
-     */
-    getCurrentTrackFor: (type) => playerComponent && playerComponent.getCurrentTrackFor(type),
-
-    /**
-     * @function
-     * @param {Number} id of the track
-     * @param {"audio" | "video" | "text" | "image"} type
-     */
-    setCurrentTrack(id, type) {
-      const track = this.getTracksFor(type).find((track) => track.id === id)
-      playerComponent && playerComponent.setCurrentTrack(track)
-    },
-
-    /**
-     * @function
      * @returns if the player is paused.
      */
     isPaused: () => (playerComponent ? playerComponent.isPaused() : true),
@@ -578,22 +554,25 @@ function BigscreenPlayer() {
 
     /**
      * @function
-     * @returns {boolean} true if there is an 'alternate' role in any of the adaptation sets for the audio type
+     * @returns {boolean} true if there if an ADSimulcast trackis available
      */
-    isADAvailable() {
-      const tracks = this.getTracksFor("audio")
-      return tracks.some((track) => track.roles.includes("alternate"))
-    },
+    isADSimulcastAvailable: () => playerComponent && playerComponent.isADSimulcastAvailable(),
 
     /**
      * @function
      * @returns {boolean} true if there is an the AD audio track is current being used
      */
-    isADEnabled() {
-      if (!this.isADAvailable()) return false
-      const currentAudioTrack = this.getCurrentTrackFor("audio")
-      return currentAudioTrack ? currentAudioTrack.roles.includes("alternate") : false
-    },
+    isADSimulcastEnabled: () => playerComponent && playerComponent.isADSimulcastEnabled(),
+
+    /**
+     * @function
+     */
+    setADSimulcastOn: () => playerComponent && playerComponent.setADSimulcastOn(),
+
+    /**
+     * @function
+     */
+    setADSimulcastOff: () => playerComponent && playerComponent.setADSimulcastOff(),
 
     /**
      *
