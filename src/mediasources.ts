@@ -178,7 +178,7 @@ function MediaSources() {
   }
 
   function replace({ sources }: { sources: Connection[] }) {
-    mediaSources = sources.urls
+    mediaSources = sources
 
     updateDebugOutput()
 

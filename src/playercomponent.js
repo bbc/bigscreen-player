@@ -322,22 +322,21 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
   }
 
   function replaceMediaSources(sources) {
-    const time = getCurrentTime()
-    const oldWindowStartTime = getWindowStartTime()
-
-    const doLoadMedia = () => {
+    const onSuccess = () => {
+      const time = getCurrentTime()
+      const oldWindowStartTime = getWindowStartTime()
       const windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000
       const failoverTime = time - (windowOffset || 0)
-      const thenPause = isPaused()
+
       tearDownMediaElement()
-      loadMedia(mediaMetaData.type, failoverTime, thenPause)
+      loadMedia(mediaMetaData.type, failoverTime, isPaused())
     }
 
-    const doErrorCallback = () => {
+    const onError = () => {
       bubbleFatalError(false, { code: "0000", message: "error replacing sources" })
     }
 
-    mediaSources.replace(sources, doLoadMedia, doErrorCallback)
+    mediaSources.replace({ onSuccess, onError }, sources)
   }
 
   function tearDown() {
