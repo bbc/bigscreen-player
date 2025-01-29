@@ -336,7 +336,10 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
       bubbleFatalError(false, { code: "0000", message: "error replacing sources" })
     }
 
-    mediaSources.replace({ onSuccess, onError }, sources)
+    return mediaSources
+      .replace(sources)
+      .then(() => onSuccess())
+      .catch(() => onError())
   }
 
   function tearDown() {
