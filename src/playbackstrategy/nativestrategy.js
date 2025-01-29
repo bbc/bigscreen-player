@@ -12,20 +12,20 @@ import Restartable from "./modifiers/live/restartable"
 import Seekable from "./modifiers/live/seekable"
 import { ManifestType } from "../models/manifesttypes"
 
-const getBasePlayer = (mediaPlayer) => {
-  if (mediaPlayer === "cehtml") return Cehtml()
-  if (mediaPlayer === "samsungmaple") return SamsungMaple()
-  if (mediaPlayer === "samsungstreaming") return SamsungStreaming()
-  if (mediaPlayer === "samsungstreaming2015") return SamsungStreaming2015()
+const getBasePlayer = () => {
+  const configuredPlayer = window.bigscreenPlayer.mediaPlayer
+
+  if (configuredPlayer === "cehtml") return Cehtml()
+  if (configuredPlayer === "samsungmaple") return SamsungMaple()
+  if (configuredPlayer === "samsungstreaming") return SamsungStreaming()
+  if (configuredPlayer === "samsungstreaming2015") return SamsungStreaming2015()
 
   return Html5()
 }
 
 const getMediaPlayer = (mediaSources) => {
-  const configuredPlayer = window.bigscreenPlayer.mediaPlayer
+  const basePlayer = getBasePlayer()
   const liveSupport = window.bigscreenPlayer.liveSupport
-
-  const basePlayer = getBasePlayer(configuredPlayer)
 
   if (mediaSources.time().manifestType !== ManifestType.DYNAMIC) return basePlayer
 
