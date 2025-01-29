@@ -177,8 +177,8 @@ function MediaSources() {
     return new Promise((resolve) => resolve(loadManifest()))
   }
 
-  function replace({ sources }: { sources: Connection[] }) {
-    mediaSources = sources
+  function replace({ urls }: { urls: Connection[] }) {
+    mediaSources = urls
 
     updateDebugOutput()
 
