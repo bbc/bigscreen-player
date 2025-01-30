@@ -446,7 +446,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function onTrackChangeRendered(event) {
-    DebugTool.info(`${event.mediaType} track changed. ${isADSimulcastEnabled() ? "AD on." : "AD off."}`)
+    DebugTool.info(`${event.mediaType} track changed. ${isBroadcastMixADEnabled() ? "AD on." : "AD off."}`)
   }
 
   function publishMediaState(mediaState) {
@@ -659,7 +659,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     )
   }
 
-  function isTrackADSimulcast(track) {
+  function isTrackBroadcastMixAD(track) {
     return (
       track.roles.includes("alternate") &&
       track.accessibilitiesWithSchemeIdUri.some(
@@ -668,33 +668,33 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     )
   }
 
-  function getADSimulcastTrack() {
-    const tracks = mediaPlayer.getTracksFor("audio")
-    return tracks.find((track) => isTrackADSimulcast(track))
+  function getBroadcastMixADTrack() {
+    const audioTracks = mediaPlayer.getTracksFor("audio")
+    return audioTracks.find((track) => isTrackBroadcastMixAD(track))
   }
 
-  function isADSimulcastAvailable() {
-    const tracks = mediaPlayer.getTracksFor("audio")
-    return tracks.some((track) => isTrackADSimulcast(track))
+  function isBroadcastMixADAvailable() {
+    const audioTracks = mediaPlayer.getTracksFor("audio")
+    return audioTracks.some((track) => isTrackBroadcastMixAD(track))
   }
 
-  function isADSimulcastEnabled() {
-    if (!isADSimulcastAvailable()) return false
+  function isBroadcastMixADEnabled() {
+    if (!isBroadcastMixADAvailable()) return false
     const currentAudioTrack = mediaPlayer.getCurrentTrackFor("audio")
-    return currentAudioTrack ? isTrackADSimulcast(currentAudioTrack) : false
+    return currentAudioTrack ? isTrackBroadcastMixAD(currentAudioTrack) : false
   }
 
-  function setADSimulcastOff() {
-    if (isADSimulcastEnabled()) {
+  function setBroadcastMixADOff() {
+    if (isBroadcastMixADEnabled()) {
       const audioTracks = mediaPlayer.getTracksFor("audio")
       const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
       mediaPlayer.setCurrentTrack(mainTrack)
     }
   }
 
-  function setADSimulcastOn() {
-    if (!isADSimulcastEnabled()) {
-      const ADTrack = getADSimulcastTrack()
+  function setBroadcastMixADOn() {
+    if (!isBroadcastMixADEnabled()) {
+      const ADTrack = getBroadcastMixADTrack()
       if (ADTrack) {
         mediaPlayer.setCurrentTrack(ADTrack)
       }
@@ -759,10 +759,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     load,
     getSeekableRange,
     getCurrentTime,
-    isADSimulcastAvailable,
-    isADSimulcastEnabled,
-    setADSimulcastOn,
-    setADSimulcastOff,
+    isBroadcastMixADAvailable,
+    isBroadcastMixADEnabled,
+    setBroadcastMixADOn,
+    setBroadcastMixADOff,
     getDuration,
     getPlayerElement: () => mediaElement,
     tearDown: () => {
