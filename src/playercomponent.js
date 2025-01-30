@@ -99,20 +99,20 @@ function PlayerComponent(
     return playbackStrategy && playbackStrategy.getSeekableRange()
   }
 
-  function isADSimulcastAvailable() {
-    return playbackStrategy && playbackStrategy.isADSimulcastAvailable()
+  function isBroadcastMixADAvailable() {
+    return playbackStrategy && playbackStrategy.isBroadcastMixADAvailable()
   }
 
-  function isADSimulcastEnabled() {
-    return playbackStrategy && playbackStrategy.isADSimulcastEnabled()
+  function isBroadcastMixADEnabled() {
+    return playbackStrategy && playbackStrategy.isBroadcastMixADEnabled()
   }
 
-  function setADSimulcastOn() {
-    playbackStrategy && playbackStrategy.setADSimulcastOn()
+  function setBroadcastMixADOn() {
+    playbackStrategy && playbackStrategy.setBroadcastMixADOn()
   }
 
-  function setADSimulcastOff() {
-    playbackStrategy && playbackStrategy.setADSimulcastOff()
+  function setBroadcastMixADOff() {
+    playbackStrategy && playbackStrategy.setBroadcastMixADOff()
   }
 
   function isPaused() {
@@ -423,10 +423,10 @@ function PlayerComponent(
     getPlayerElement,
     isPaused,
     tearDown,
-    isADSimulcastAvailable,
-    isADSimulcastEnabled,
-    setADSimulcastOn,
-    setADSimulcastOff,
+    isBroadcastMixADAvailable,
+    isBroadcastMixADEnabled,
+    setBroadcastMixADOn,
+    setBroadcastMixADOff,
   }
 }
 

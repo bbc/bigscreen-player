@@ -554,25 +554,25 @@ function BigscreenPlayer() {
 
     /**
      * @function
-     * @returns {boolean} true if there if an ADSimulcast trackis available
+     * @returns {boolean} true if there if an BroadcastMixAD track is available
      */
-    isADSimulcastAvailable: () => playerComponent && playerComponent.isADSimulcastAvailable(),
+    isBroadcastMixADAvailable: () => playerComponent && playerComponent.isBroadcastMixADAvailable(),
 
     /**
      * @function
      * @returns {boolean} true if there is an the AD audio track is current being used
      */
-    isADSimulcastEnabled: () => playerComponent && playerComponent.isADSimulcastEnabled(),
+    isBroadcastMixADEnabled: () => playerComponent && playerComponent.isBroadcastMixADEnabled(),
 
     /**
      * @function
      */
-    setADSimulcastOn: () => playerComponent && playerComponent.setADSimulcastOn(),
+    setBroadcastMixADOn: () => playerComponent && playerComponent.setBroadcastMixADOn(),
 
     /**
      * @function
      */
-    setADSimulcastOff: () => playerComponent && playerComponent.setADSimulcastOff(),
+    setBroadcastMixADOff: () => playerComponent && playerComponent.setBroadcastMixADOff(),
 
     /**
      *
