@@ -669,13 +669,13 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
   }
 
   function getBroadcastMixADTrack() {
-    const tracks = mediaPlayer.getTracksFor("audio")
-    return tracks.find((track) => isTrackBroadcastMixAD(track))
+    const audioTracks = mediaPlayer.getTracksFor("audio")
+    return audioTracks.find((track) => isTrackBroadcastMixAD(track))
   }
 
   function isBroadcastMixADAvailable() {
-    const tracks = mediaPlayer.getTracksFor("audio")
-    return tracks.some((track) => isTrackBroadcastMixAD(track))
+    const audioTracks = mediaPlayer.getTracksFor("audio")
+    return audioTracks.some((track) => isTrackBroadcastMixAD(track))
   }
 
   function isBroadcastMixADEnabled() {

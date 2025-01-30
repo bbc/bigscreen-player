@@ -582,7 +582,7 @@ function BigscreenPlayer() {
 
     /**
      * @function
-     * @returns {boolean} true if there if an BroadcastMixAD track is available
+     * @returns {boolean} true if there if an AD track is available
      */
     isBroadcastMixADAvailable: () => playerComponent && playerComponent.isBroadcastMixADAvailable(),
 
