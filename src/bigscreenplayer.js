@@ -181,8 +181,8 @@ function BigscreenPlayer() {
     return subtitles ? subtitles.available() : false
   }
 
-  function callBroadcastMixADCallbacks() {
-    callCallbacks(broadcastMixADCallbacks)
+  function callBroadcastMixADCallbacks(enabled) {
+    callCallbacks(broadcastMixADCallbacks, { enabled })
   }
 
   return /** @alias module:bigscreenplayer/bigscreenplayer */ {
@@ -597,7 +597,7 @@ function BigscreenPlayer() {
      */
     setBroadcastMixADEnabled: (enabled) => {
       enabled ? playerComponent.setBroadcastMixADOn() : playerComponent.setBroadcastMixADOff()
-      callBroadcastMixADCallbacks()
+      callBroadcastMixADCallbacks(enabled)
     },
 
     /**
