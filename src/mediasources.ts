@@ -182,11 +182,7 @@ function MediaSources() {
 
     updateDebugOutput()
 
-    if (needToGetManifest()) {
-      return loadManifest()
-    }
-
-    return Promise.resolve()
+    return needToGetManifest() ? refresh() : Promise.resolve()
   }
 
   function loadManifest(): Promise<void> {
