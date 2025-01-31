@@ -183,7 +183,7 @@ function MediaSources() {
         time = newTime
         transferFormat = newTransferFormat
 
-        logManifestLoaded(newTransferFormat, newTime)
+        DebugTool.sourceLoaded({ ...time, transferFormat })
       })
       .catch((reason) => {
         DebugTool.error(`Failed to load manifest: ${isError(reason) ? reason.message : "cause n/a"}`)
@@ -307,31 +307,6 @@ function MediaSources() {
 
   function availableSubtitlesCdns(): string[] {
     return subtitlesSources.map((subtitleSource) => subtitleSource.cdn)
-  }
-
-  function logManifestLoaded(transferFormat: TransferFormat, time: TimeInfo) {
-    const {
-      manifestType,
-      availabilityStartTimeInMilliseconds,
-      presentationTimeOffsetInMilliseconds,
-      timeShiftBufferDepthInMilliseconds,
-    } = time
-
-    let logMessage = `Loaded ${manifestType} ${transferFormat} manifest.`
-
-    if (availabilityStartTimeInMilliseconds > 0) {
-      logMessage += ` AST: ${new Date(availabilityStartTimeInMilliseconds).toString()}`
-    }
-
-    if (timeShiftBufferDepthInMilliseconds > 0) {
-      logMessage += ` Time shift [s]: ${timeShiftBufferDepthInMilliseconds / 1000}`
-    }
-
-    if (presentationTimeOffsetInMilliseconds > 0) {
-      logMessage += ` PTO [s]: ${presentationTimeOffsetInMilliseconds / 1000}.`
-    }
-
-    DebugTool.info(logMessage)
   }
 
   function updateDebugOutput() {
