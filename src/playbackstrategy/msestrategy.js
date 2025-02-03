@@ -19,7 +19,15 @@ const DEFAULT_SETTINGS = {
   seekDurationPadding: 1.1,
 }
 
-function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
+function MSEStrategy(
+  mediaSources,
+  windowType,
+  mediaKind,
+  playbackElement,
+  isUHD,
+  enableBroadcastMixAD,
+  customPlayerSettings
+) {
   let mediaPlayer
   let mediaElement
 
@@ -304,6 +312,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     if (setMseDuration && (windowType === WindowTypes.SLIDING || windowType === WindowTypes.GROWING)) {
       // Workaround for no setLiveSeekableRange/clearLiveSeekableRange
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
+    }
+
+    if (isBroadcastMixADAvailable() && enableBroadcastMixAD) {
+      setBroadcastMixADOn()
     }
 
     emitPlayerInfo()
@@ -670,12 +682,12 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
   function getBroadcastMixADTrack() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks.find((track) => isTrackBroadcastMixAD(track))
+    return audioTracks?.find((track) => isTrackBroadcastMixAD(track))
   }
 
   function isBroadcastMixADAvailable() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks.some((track) => isTrackBroadcastMixAD(track))
+    return audioTracks?.some((track) => isTrackBroadcastMixAD(track))
   }
 
   function isBroadcastMixADEnabled() {

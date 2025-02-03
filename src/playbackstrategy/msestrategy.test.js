@@ -42,6 +42,9 @@ const mockDashInstance = {
   getActiveStream: jest.fn(() => ({
     getProcessors: jest.fn(() => []),
   })),
+  getTracksFor: jest.fn(),
+  getCurrentTrackFor: jest.fn(),
+  setCurrentTrack: jest.fn(),
 }
 
 const mockDashMediaPlayer = {
@@ -178,6 +181,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       windowType ?? WindowTypes.STATIC,
       mediaKind ?? MediaKinds.VIDEO,
       playbackElement,
+      false,
       false,
       customPlayerSettings || {}
     )

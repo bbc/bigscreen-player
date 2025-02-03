@@ -38,6 +38,7 @@ function PlayerComponent(
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
+        bigscreenPlayerData.enabledBroadcastMixAD,
         bigscreenPlayerData.media.playerSettings
       )
 
