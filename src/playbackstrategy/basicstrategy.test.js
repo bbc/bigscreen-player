@@ -3,8 +3,9 @@ import MediaKinds from "../models/mediakinds"
 import MediaState from "../models/mediastate"
 import TimeShiftDetector from "../utils/timeshiftdetector"
 import BasicStrategy from "./basicstrategy"
-import DynamicWindowUtils from "../dynamicwindowutils"
+import { autoResumeAtStartOfRange } from "../dynamicwindowutils"
 
+jest.mock("../dynamicwindowutils")
 jest.mock("../utils/timeshiftdetector")
 
 const mockTimeShiftDetector = {
@@ -28,8 +29,6 @@ describe("HTML5 Strategy", () => {
   let cdnArray
 
   beforeAll(() => {
-    jest.spyOn(DynamicWindowUtils, "autoResumeAtStartOfRange")
-
     TimeShiftDetector.mockImplementation((onceTimeShiftDetected) => {
       mockTimeShiftDetector.triggerTimeShiftDetected.mockImplementation(() => onceTimeShiftDetected())
 
@@ -717,8 +716,8 @@ describe("HTML5 Strategy", () => {
       basicStrategy.load(null, 5)
       basicStrategy.pause()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledWith(
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledWith(
         5,
         { start: 0, end: 0 },
         expect.any(Function),
@@ -737,7 +736,7 @@ describe("HTML5 Strategy", () => {
       basicStrategy.load(null, 0)
       basicStrategy.pause()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
 
     it("should start auto-resume timeout on seeked event if media element is paused and Time Shift Detector returns true for sliding", () => {
@@ -757,7 +756,7 @@ describe("HTML5 Strategy", () => {
 
       videoElement.dispatchEvent(new Event("seeked"))
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
     })
 
     it("should not start auto-resume timeout on seeked event if media element is paused and Time Shift Detector returns false for sliding", () => {
@@ -777,7 +776,7 @@ describe("HTML5 Strategy", () => {
 
       videoElement.dispatchEvent(new Event("seeked"))
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
 
     it("should start auto-resume timeout when Time Shift Detector callback fires while paused", () => {
@@ -796,7 +795,7 @@ describe("HTML5 Strategy", () => {
 
       mockTimeShiftDetector.triggerTimeShiftDetected()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
     })
 
     it("should not start auto-resume timeout when Time Shift Detector callback fires while unpaused", () => {
@@ -815,7 +814,7 @@ describe("HTML5 Strategy", () => {
 
       mockTimeShiftDetector.triggerTimeShiftDetected()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
   })
 })

@@ -4,7 +4,7 @@
 import MediaState from "./models/mediastate"
 import PlayerComponent from "./playercomponent"
 import PauseTriggers from "./models/pausetriggers"
-import DynamicWindowUtils from "./dynamicwindowutils"
+import { canPauseAndSeek } from "./dynamicwindowutils"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
@@ -618,7 +618,7 @@ function BigscreenPlayer() {
     canSeek() {
       return (
         mediaSources.time().manifestType === ManifestType.STATIC ||
-        DynamicWindowUtils.canSeek(getLiveSupport(), this.getSeekableRange())
+        canPauseAndSeek(getLiveSupport(), this.getSeekableRange())
       )
     },
 
@@ -629,7 +629,7 @@ function BigscreenPlayer() {
     canPause() {
       return (
         mediaSources.time().manifestType === ManifestType.STATIC ||
-        DynamicWindowUtils.canPause(getLiveSupport(), this.getSeekableRange())
+        canPauseAndSeek(getLiveSupport(), this.getSeekableRange())
       )
     },
 

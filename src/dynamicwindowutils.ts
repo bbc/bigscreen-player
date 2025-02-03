@@ -36,20 +36,10 @@ function isSeekableRangeBigEnough({ start, end }: SeekableRange): boolean {
   return end - start > FOUR_MINUTES
 }
 
-function supportsPause(liveSupport: LiveSupport): boolean {
-  return liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.RESTARTABLE
-}
-
-export function canPause(liveSupport: LiveSupport, seekableRange: unknown): boolean {
-  return supportsPause(liveSupport) && isSeekableRange(seekableRange) && isSeekableRangeBigEnough(seekableRange)
-}
-
-function supportsSeeking(liveSupport: LiveSupport): boolean {
-  return liveSupport === LiveSupport.SEEKABLE || liveSupport === LiveSupport.RESTARTABLE
-}
-
-export function canSeek(liveSupport: LiveSupport, seekableRange: unknown): boolean {
-  return supportsSeeking(liveSupport) && isSeekableRange(seekableRange) && isSeekableRangeBigEnough(seekableRange)
+export function canPauseAndSeek(liveSupport: LiveSupport, seekableRange: unknown): boolean {
+  return (
+    liveSupport === LiveSupport.SEEKABLE && isSeekableRange(seekableRange) && isSeekableRangeBigEnough(seekableRange)
+  )
 }
 
 export function autoResumeAtStartOfRange(
@@ -88,10 +78,4 @@ export function autoResumeAtStartOfRange(
       clearTimeout(autoResumeTimer)
     }
   }
-}
-
-export default {
-  autoResumeAtStartOfRange,
-  canPause,
-  canSeek,
 }

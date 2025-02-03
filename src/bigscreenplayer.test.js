@@ -1,4 +1,5 @@
 import BigscreenPlayer from "./bigscreenplayer"
+import { canPauseAndSeek } from "./dynamicwindowutils"
 import PlayerComponent from "./playercomponent"
 import Plugins from "./plugins"
 import ReadyHelper from "./readyhelper"
@@ -9,9 +10,8 @@ import { ManifestType } from "./models/manifesttypes"
 import { MediaKinds } from "./models/mediakinds"
 import MediaState from "./models/mediastate"
 import PauseTriggers from "./models/pausetriggers"
-import getError, { NoErrorThrownError } from "./testutils/geterror"
-import DynamicWindowUtils from "./dynamicwindowutils"
 import { Timeline } from "./models/timeline"
+import getError, { NoErrorThrownError } from "./testutils/geterror"
 
 let bigscreenPlayer
 let bigscreenPlayerData
@@ -53,11 +53,12 @@ const mockResizer = {
   isResized: jest.fn(),
 }
 
+jest.mock("./dynamicwindowutils")
 jest.mock("./mediasources", () => jest.fn(() => mockMediaSources))
 jest.mock("./playercomponent")
 jest.mock("./plugins")
-jest.mock("./debugger/debugtool")
 jest.mock("./resizer", () => jest.fn(() => mockResizer))
+jest.mock("./debugger/debugtool")
 jest.mock("./subtitles/subtitles", () => jest.fn(() => mockSubtitlesInstance))
 jest.mock("./readyhelper", () =>
   jest.fn((_a, _b, _c, onReady) => {
@@ -68,11 +69,6 @@ jest.mock("./readyhelper", () =>
     return mockReadyHelper
   })
 )
-jest.mock("./dynamicwindowutils", () => ({
-  autoResumeAtStartOfRange: jest.fn(),
-  canPause: jest.fn(),
-  canSeek: jest.fn(),
-}))
 
 function asyncInitialiseBigscreenPlayer(playbackEl, data, { noSuccessCallback = false, noErrorCallback = false } = {}) {
   return new Promise((resolve, reject) =>
@@ -1527,17 +1523,19 @@ describe("Bigscreen Player", () => {
     })
   })
 
-  describe("canSeek", () => {
+  describe("canPause", () => {
     it("should return true for on demand streams", async () => {
+      jest.mocked(mockMediaSources.time).mockReturnValue({ manifestType: ManifestType.STATIC })
+
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      expect(bigscreenPlayer.canSeek()).toBe(true)
+      expect(bigscreenPlayer.canPause()).toBe(true)
     })
 
     it("should call through to DynamicWindowUtils with correct arguments and return it's value for live streams", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+      jest.mocked(mockMediaSources.time).mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         presentationTimeOffsetInMilliseconds: 1731514400000,
         availabilityStartTimeInMilliseconds: 1731514400000,
@@ -1546,36 +1544,33 @@ describe("Bigscreen Player", () => {
 
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 60 })
 
-      jest.mocked(DynamicWindowUtils.canSeek).mockReturnValueOnce(true)
+      jest.mocked(canPauseAndSeek).mockReturnValueOnce(true)
 
-      expect(bigscreenPlayer.canSeek()).toBe(true)
-      expect(DynamicWindowUtils.canSeek).toHaveBeenCalledWith(LiveSupport.SEEKABLE, { start: 0, end: 60 })
+      expect(bigscreenPlayer.canPause()).toBe(true)
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
-        manifestType: ManifestType.DYNAMIC,
-        presentationTimeOffsetInMilliseconds: 1731514400000,
-        availabilityStartTimeInMilliseconds: 1731514400000,
-        timeShiftBufferDepthInMilliseconds: 7200000,
-      })
+      expect(canPauseAndSeek).toHaveBeenCalledWith(LiveSupport.SEEKABLE, { start: 0, end: 60 })
 
-      jest.mocked(DynamicWindowUtils.canSeek).mockReturnValueOnce(false)
+      jest.mocked(canPauseAndSeek).mockReturnValueOnce(false)
 
-      expect(bigscreenPlayer.canSeek()).toBe(false)
-      expect(DynamicWindowUtils.canSeek).toHaveBeenCalledWith(LiveSupport.SEEKABLE, { start: 0, end: 60 })
+      expect(bigscreenPlayer.canPause()).toBe(false)
+
+      expect(canPauseAndSeek).toHaveBeenCalledWith(LiveSupport.SEEKABLE, { start: 0, end: 60 })
     })
   })
 
-  describe("canPause", () => {
+  describe("canSeek", () => {
     it("should return true for on demand streams", async () => {
+      jest.mocked(mockMediaSources.time).mockReturnValue({ manifestType: ManifestType.STATIC })
+
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      expect(bigscreenPlayer.canPause()).toBe(true)
+      expect(bigscreenPlayer.canSeek()).toBe(true)
     })
 
     it("should call through to DynamicWindowUtils with correct arguments and return it's value for live streams", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
+      jest.mocked(mockMediaSources.time).mockReturnValue({
         manifestType: ManifestType.DYNAMIC,
         presentationTimeOffsetInMilliseconds: 1731514400000,
         availabilityStartTimeInMilliseconds: 1731514400000,
@@ -1584,22 +1579,17 @@ describe("Bigscreen Player", () => {
 
       mockPlayerComponentInstance.getSeekableRange.mockReturnValue({ start: 0, end: 60 })
 
-      jest.mocked(DynamicWindowUtils.canPause).mockReturnValueOnce(true)
+      jest.mocked(canPauseAndSeek).mockReturnValueOnce(true)
 
-      expect(bigscreenPlayer.canPause()).toBe(true)
-      expect(DynamicWindowUtils.canPause).toHaveBeenCalledWith(LiveSupport.SEEKABLE, { start: 0, end: 60 })
+      expect(bigscreenPlayer.canSeek()).toBe(true)
 
-      jest.mocked(mockMediaSources.time).mockReturnValueOnce({
-        manifestType: ManifestType.DYNAMIC,
-        presentationTimeOffsetInMilliseconds: 1731514400000,
-        availabilityStartTimeInMilliseconds: 1731514400000,
-        timeShiftBufferDepthInMilliseconds: 7200000,
-      })
+      expect(canPauseAndSeek).toHaveBeenCalledWith(LiveSupport.SEEKABLE, { start: 0, end: 60 })
 
-      jest.mocked(DynamicWindowUtils.canPause).mockReturnValueOnce(false)
+      jest.mocked(canPauseAndSeek).mockReturnValueOnce(false)
 
-      expect(bigscreenPlayer.canPause()).toBe(false)
-      expect(DynamicWindowUtils.canPause).toHaveBeenCalledWith(LiveSupport.SEEKABLE, { start: 0, end: 60 })
+      expect(bigscreenPlayer.canSeek()).toBe(false)
+
+      expect(canPauseAndSeek).toHaveBeenCalledWith(LiveSupport.SEEKABLE, { start: 0, end: 60 })
     })
   })
 

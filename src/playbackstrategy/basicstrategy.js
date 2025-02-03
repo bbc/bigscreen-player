@@ -6,7 +6,7 @@ import MediaState from "../models/mediastate"
 import handlePlayPromise from "../utils/handleplaypromise"
 import TimeShiftDetector from "../utils/timeshiftdetector"
 import DOMHelpers from "../domhelpers"
-import DynamicWindowUtils from "../dynamicwindowutils"
+import { autoResumeAtStartOfRange } from "../dynamicwindowutils"
 
 function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   const CLAMP_OFFSET_SECONDS = 1.1
@@ -193,7 +193,7 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   }
 
   function startAutoResumeTimeout() {
-    DynamicWindowUtils.autoResumeAtStartOfRange(
+    autoResumeAtStartOfRange(
       getCurrentTime(),
       getSeekableRange(),
       addEventCallback,

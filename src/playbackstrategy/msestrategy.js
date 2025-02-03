@@ -5,7 +5,7 @@ import MediaKinds from "../models/mediakinds"
 import Plugins from "../plugins"
 import ManifestModifier from "../manifest/manifestmodifier"
 import LiveSupport from "../models/livesupport"
-import DynamicWindowUtils from "../dynamicwindowutils"
+import { autoResumeAtStartOfRange } from "../dynamicwindowutils"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
@@ -633,7 +633,7 @@ function MSEStrategy(mediaSources, mediaKind, playbackElement, _isUHD = false, c
   }
 
   function startAutoResumeTimeout() {
-    DynamicWindowUtils.autoResumeAtStartOfRange(
+    autoResumeAtStartOfRange(
       getCurrentTime(),
       getSeekableRange(), // DVRWindowLength < timeShift ? { start: sr.start + timeshift - dvr, end: timeShift } : getSeekableRange
       addEventCallback,

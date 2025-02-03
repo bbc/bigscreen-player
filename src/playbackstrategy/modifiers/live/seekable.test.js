@@ -1,8 +1,9 @@
 import MediaPlayerBase from "../mediaplayerbase"
 import SeekableMediaPlayer from "./seekable"
 import TimeShiftDetector from "../../../utils/timeshiftdetector"
-import DynamicWindowUtils from "../../../dynamicwindowutils"
+import { autoResumeAtStartOfRange } from "../../../dynamicwindowutils"
 
+jest.mock("../../../dynamicwindowutils")
 jest.mock("../../../utils/timeshiftdetector")
 
 function createMockMediaPlayer() {
@@ -55,8 +56,6 @@ describe("Seekable HMTL5 Live Player", () => {
   let player
 
   beforeAll(() => {
-    jest.spyOn(DynamicWindowUtils, "autoResumeAtStartOfRange")
-
     TimeShiftDetector.mockImplementation((onceTimeShiftDetected) => {
       mockTimeShiftDetector.triggerTimeShiftDetected.mockImplementation(() => onceTimeShiftDetected())
 
@@ -284,8 +283,8 @@ describe("Seekable HMTL5 Live Player", () => {
       seekableMediaPlayer.beginPlaybackFrom(0)
       seekableMediaPlayer.pause()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledWith(
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledWith(
         10,
         { start: 0, end: 100 },
         expect.any(Function),
@@ -312,7 +311,7 @@ describe("Seekable HMTL5 Live Player", () => {
       seekableMediaPlayer.beginPlaybackFrom(0)
       seekableMediaPlayer.pause()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
 
     it("should start auto-resume timeout when Time Shift Detector callback fires while paused", () => {
@@ -331,7 +330,7 @@ describe("Seekable HMTL5 Live Player", () => {
 
       mockTimeShiftDetector.triggerTimeShiftDetected()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
     })
 
     it("should not start auto-resume timeout when Time Shift Detector callback fires while unpaused", () => {
@@ -350,7 +349,7 @@ describe("Seekable HMTL5 Live Player", () => {
 
       mockTimeShiftDetector.triggerTimeShiftDetected()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
 
     it("should disconect from the Time Shift Detector on a call to reset", () => {
