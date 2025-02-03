@@ -697,19 +697,15 @@ function MSEStrategy(
   }
 
   function setBroadcastMixADOff() {
-    if (isBroadcastMixADEnabled()) {
-      const audioTracks = mediaPlayer.getTracksFor("audio")
-      const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
-      mediaPlayer.setCurrentTrack(mainTrack)
-    }
+    const audioTracks = mediaPlayer.getTracksFor("audio")
+    const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
+    mediaPlayer.setCurrentTrack(mainTrack)
   }
 
   function setBroadcastMixADOn() {
-    if (!isBroadcastMixADEnabled()) {
-      const ADTrack = getBroadcastMixADTrack()
-      if (ADTrack) {
-        mediaPlayer.setCurrentTrack(ADTrack)
-      }
+    const ADTrack = getBroadcastMixADTrack()
+    if (ADTrack) {
+      mediaPlayer.setCurrentTrack(ADTrack)
     }
   }
 
