@@ -133,7 +133,8 @@ function BigscreenPlayer() {
       mediaSources,
       windowType,
       mediaStateUpdateCallback,
-      playerErrorCallback
+      playerErrorCallback,
+      callBroadcastMixADCallbacks
     )
 
     subtitles = Subtitles(

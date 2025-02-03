@@ -14,7 +14,8 @@ function PlayerComponent(
   mediaSources,
   windowType,
   stateUpdateCallback,
-  errorCallback
+  errorCallback,
+  callBroadcastMixADCallbacks
 ) {
   const transferFormat = bigscreenPlayerData.media.transferFormat
 
@@ -39,7 +40,8 @@ function PlayerComponent(
         playbackElement,
         bigscreenPlayerData.media.isUHD,
         bigscreenPlayerData.enabledBroadcastMixAD,
-        bigscreenPlayerData.media.playerSettings
+        bigscreenPlayerData.media.playerSettings,
+        callBroadcastMixADCallbacks
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)

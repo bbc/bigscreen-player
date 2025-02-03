@@ -26,7 +26,8 @@ function MSEStrategy(
   playbackElement,
   isUHD,
   enableBroadcastMixAD,
-  customPlayerSettings
+  customPlayerSettings,
+  callBroadcastMixADCallbacks
 ) {
   let mediaPlayer
   let mediaElement
@@ -316,6 +317,7 @@ function MSEStrategy(
 
     if (isBroadcastMixADAvailable() && enableBroadcastMixAD) {
       setBroadcastMixADOn()
+      callBroadcastMixADCallbacks(true)
     }
 
     emitPlayerInfo()
