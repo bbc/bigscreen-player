@@ -141,6 +141,10 @@ describe("Bigscreen Player", () => {
       getWindowEndTime: jest.fn(),
       setPlaybackRate: jest.fn(),
       getPlaybackRate: jest.fn(),
+      isBroadcastMixADAvailable: jest.fn(),
+      isBroadcastMixADEnabled: jest.fn(),
+      setBroadcastMixADOn: jest.fn(),
+      setBroadcastMixADOff: jest.fn(),
     }
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
@@ -1247,6 +1251,39 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.clearResize()
 
       expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("setBroadcastMixADEnabled", () => {
+    it("should turn broadcastMixAD on/off when a value is passed in", () => {
+      initialiseBigscreenPlayer()
+      bigscreenPlayer.setBroadcastMixADEnabled(true)
+
+      expect(mockPlayerComponentInstance.setBroadcastMixADOn).toHaveBeenCalledTimes(1)
+
+      bigscreenPlayer.setBroadcastMixADEnabled(false)
+
+      expect(mockPlayerComponentInstance.setBroadcastMixADOn).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("isBroadcastMixADEnabled", () => {
+    it("calls through to playercomponent enabled when called", () => {
+      initialiseBigscreenPlayer()
+
+      bigscreenPlayer.isBroadcastMixADEnabled()
+
+      expect(mockPlayerComponentInstance.isBroadcastMixADEnabled).toHaveBeenCalled()
+    })
+  })
+
+  describe("isBroadcastMixADAvailable", () => {
+    it("calls through to playercomponent available when called", () => {
+      initialiseBigscreenPlayer()
+
+      bigscreenPlayer.isBroadcastMixADAvailable()
+
+      expect(mockPlayerComponentInstance.isBroadcastMixADAvailable).toHaveBeenCalled()
     })
   })
 
