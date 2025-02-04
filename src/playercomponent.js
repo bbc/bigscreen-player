@@ -39,8 +39,8 @@ function PlayerComponent(
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        bigscreenPlayerData.enableBroadcastMixAD,
         bigscreenPlayerData.media.playerSettings,
+        bigscreenPlayerData.enableBroadcastMixAD,
         callBroadcastMixADCallbacks
       )
 
@@ -103,19 +103,19 @@ function PlayerComponent(
   }
 
   function isBroadcastMixADAvailable() {
-    return playbackStrategy && playbackStrategy.isBroadcastMixADAvailable()
+    return playbackStrategy && playbackStrategy.isBroadcastMixADAvailable?.()
   }
 
   function isBroadcastMixADEnabled() {
-    return playbackStrategy && playbackStrategy.isBroadcastMixADEnabled()
+    return playbackStrategy && playbackStrategy.isBroadcastMixADEnabled?.()
   }
 
   function setBroadcastMixADOn() {
-    playbackStrategy && playbackStrategy.setBroadcastMixADOn()
+    playbackStrategy && playbackStrategy.setBroadcastMixADOn?.()
   }
 
   function setBroadcastMixADOff() {
-    playbackStrategy && playbackStrategy.setBroadcastMixADOff()
+    playbackStrategy && playbackStrategy.setBroadcastMixADOff?.()
   }
 
   function isPaused() {
