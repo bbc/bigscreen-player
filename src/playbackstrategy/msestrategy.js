@@ -456,8 +456,8 @@ function MSEStrategy(
 
   function onTrackChangeRendered(event) {
     DebugTool.info(
-      `${event.mediaType} track changed. ${
-        event.mediaType === "audio" ? (isBroadcastMixADEnabled() ? "BroadcastMixAD on." : "BroadcastMixAD off.") : ""
+      `${event.mediaType} track changed.${
+        event.mediaType === "audio" ? (isBroadcastMixADEnabled() ? " BroadcastMixAD on." : " BroadcastMixAD off.") : ""
       }`
     )
     callBroadcastMixADCallbacks(isBroadcastMixADEnabled())
@@ -701,7 +701,6 @@ function MSEStrategy(
   }
 
   function isBroadcastMixADEnabled() {
-    if (!isBroadcastMixADAvailable()) return false
     const currentAudioTrack = mediaPlayer.getCurrentTrackFor("audio")
     return currentAudioTrack ? isTrackBroadcastMixAD(currentAudioTrack) : false
   }
