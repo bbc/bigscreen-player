@@ -45,6 +45,7 @@ const mockDashInstance = {
   getTracksFor: jest.fn(),
   getCurrentTrackFor: jest.fn(),
   setCurrentTrack: jest.fn(),
+  setInitialMediaSettingsFor: jest.fn(),
 }
 
 const mockDashMediaPlayer = {
@@ -182,8 +183,9 @@ describe("Media Source Extensions Playback Strategy", () => {
       mediaKind ?? MediaKinds.VIDEO,
       playbackElement,
       false,
+      customPlayerSettings || {},
       false,
-      customPlayerSettings || {}
+      () => {}
     )
   }
 

@@ -25,8 +25,8 @@ function MSEStrategy(
   mediaKind,
   playbackElement,
   isUHD,
-  enableBroadcastMixAD,
   customPlayerSettings,
+  enableBroadcastMixAD,
   callBroadcastMixADCallbacks
 ) {
   let mediaPlayer
@@ -315,11 +315,6 @@ function MSEStrategy(
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
-    if (isBroadcastMixADAvailable() && enableBroadcastMixAD) {
-      setBroadcastMixADOn()
-      callBroadcastMixADCallbacks(true)
-    }
-
     emitPlayerInfo()
   }
 
@@ -460,7 +455,12 @@ function MSEStrategy(
   }
 
   function onTrackChangeRendered(event) {
-    DebugTool.info(`${event.mediaType} track changed. ${isBroadcastMixADEnabled() ? "AD on." : "AD off."}`)
+    DebugTool.info(
+      `${event.mediaType} track changed. ${
+        event.mediaType === "audio" ? (isBroadcastMixADEnabled() ? "BroadcastMixAD on." : "BroadcastMixAD off.") : ""
+      }`
+    )
+    callBroadcastMixADCallbacks(isBroadcastMixADEnabled())
   }
 
   function publishMediaState(mediaState) {
@@ -535,6 +535,14 @@ function MSEStrategy(
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
     mediaPlayer.initialize(mediaElement, null, true)
+
+    if (enableBroadcastMixAD) {
+      mediaPlayer.setInitialMediaSettingsFor("audio", {
+        role: "alternate",
+        accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+      })
+    }
+
     modifySource(playbackTime)
   }
 
@@ -684,12 +692,12 @@ function MSEStrategy(
 
   function getBroadcastMixADTrack() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks?.find((track) => isTrackBroadcastMixAD(track))
+    return audioTracks.find((track) => isTrackBroadcastMixAD(track))
   }
 
   function isBroadcastMixADAvailable() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks?.some((track) => isTrackBroadcastMixAD(track))
+    return audioTracks.some((track) => isTrackBroadcastMixAD(track))
   }
 
   function isBroadcastMixADEnabled() {

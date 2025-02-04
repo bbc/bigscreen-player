@@ -598,7 +598,6 @@ function BigscreenPlayer() {
      */
     setBroadcastMixADEnabled: (enabled) => {
       enabled ? playerComponent.setBroadcastMixADOn() : playerComponent.setBroadcastMixADOff()
-      callBroadcastMixADCallbacks(enabled)
     },
 
     /**
