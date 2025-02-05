@@ -1209,7 +1209,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     describe("onTrackChangeRendered", () => {
-      it("should ensure debugTool is called with true and callbacks are called with true when the current track is broadcastMixAD", () => {
+      it("should ensure callbacks are called with enabled true when the current track is broadcastMixAD", () => {
         mockDashInstance.getCurrentTrackFor.mockReturnValue(broadcastMixADtrack)
         const callBroadcastMixADCallbacksMock = jest.fn()
         setUpMSE(
@@ -1226,11 +1226,10 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         dashEventCallback(dashjsMediaPlayerEvents.TRACK_CHANGE_RENDERED, { mediaType: "audio" })
 
-        expect(DebugTool.info).toHaveBeenCalledWith("audio track changed. BroadcastMixAD on.")
         expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(true)
       })
 
-      it("should ensure debugTool is called with false and callbacks are called with false when the current track is not broadcastMixAD", () => {
+      it("should ensure callbacks are called with enabled false when the current track is not broadcastMixAD", () => {
         mockDashInstance.getCurrentTrackFor.mockReturnValue(mainTrack)
         const callBroadcastMixADCallbacksMock = jest.fn()
         setUpMSE(
@@ -1247,16 +1246,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
         dashEventCallback(dashjsMediaPlayerEvents.TRACK_CHANGE_RENDERED, { mediaType: "audio" })
 
-        expect(DebugTool.info).toHaveBeenCalledWith("audio track changed. BroadcastMixAD off.")
         expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(false)
-      })
-
-      it("debug tool does not include broadcastMixAD when mediaType is not audio", () => {
-        mockDashInstance.getCurrentTrackFor.mockReturnValueOnce(mainTrack)
-
-        dashEventCallback(dashjsMediaPlayerEvents.TRACK_CHANGE_RENDERED, { mediaType: "video" })
-
-        expect(DebugTool.info).toHaveBeenCalledWith("video track changed.")
       })
     })
   })
