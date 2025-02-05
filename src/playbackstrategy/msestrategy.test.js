@@ -593,7 +593,10 @@ describe("Media Source Extensions Playback Strategy", () => {
       setUpMSE(undefined, undefined, undefined, undefined, undefined, undefined, true)
       mseStrategy.load(WindowTypes.STATIC, 10)
 
-      expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenCalled()
+      expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenCalledWith("audio", {
+        accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+        role: "alternate",
+      })
     })
 
     it("does not set initial audio track settings when enableBroadcastMixAD is false", () => {
