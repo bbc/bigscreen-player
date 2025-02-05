@@ -1260,10 +1260,12 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.setBroadcastMixADEnabled(true)
 
       expect(mockPlayerComponentInstance.setBroadcastMixADOn).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setBroadcastMixADOff).toHaveBeenCalledTimes(0)
 
       bigscreenPlayer.setBroadcastMixADEnabled(false)
 
       expect(mockPlayerComponentInstance.setBroadcastMixADOn).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setBroadcastMixADOff).toHaveBeenCalledTimes(1)
     })
   })
 
