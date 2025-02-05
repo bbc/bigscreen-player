@@ -66,7 +66,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
-    TRACK_CHANGE_RENDERED: "trackChangeRendered",
+    CURRENT_TRACK_CHANGED: "currentTrackChanged",
   }
 
   let mseStrategy
@@ -1224,7 +1224,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         )
         mseStrategy.load(WindowTypes.STATIC, 10)
 
-        dashEventCallback(dashjsMediaPlayerEvents.TRACK_CHANGE_RENDERED, { mediaType: "audio" })
+        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { mediaType: "audio" })
 
         expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(true)
       })
@@ -1244,7 +1244,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         )
         mseStrategy.load(WindowTypes.STATIC, 10)
 
-        dashEventCallback(dashjsMediaPlayerEvents.TRACK_CHANGE_RENDERED, { mediaType: "audio" })
+        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { mediaType: "audio" })
 
         expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(false)
       })

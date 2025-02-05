@@ -106,7 +106,7 @@ function MSEStrategy(
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
     QUOTA_EXCEEDED: "quotaExceeded",
-    TRACK_CHANGE_RENDERED: "trackChangeRendered",
+    CURRENT_TRACK_CHANGED: "currentTrackChanged",
   }
 
   function onLoadedMetaData() {
@@ -454,7 +454,7 @@ function MSEStrategy(
     Plugins.interface.onFragmentContentLengthMismatch(event)
   }
 
-  function onTrackChangeRendered(event) {
+  function onCurrentTrackChanged(event) {
     DebugTool.info(
       `${event.mediaType} track changed.${
         event.mediaType === "audio" ? (isBroadcastMixADEnabled() ? " BroadcastMixAD on." : " BroadcastMixAD off.") : ""
@@ -590,7 +590,7 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
-    mediaPlayer.on(DashJSEvents.TRACK_CHANGE_RENDERED, onTrackChangeRendered)
+    mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
   }
 
   function manifestLoadingFinished(event) {
@@ -736,7 +736,7 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
-      mediaPlayer.off(DashJSEvents.TRACK_CHANGE_RENDERED, onTrackChangeRendered)
+      mediaPlayer.off(DashJSEvents.TRACK_CHANGE_RENDERED, onCurrentTrackChanged)
 
       mediaPlayer = undefined
     }
