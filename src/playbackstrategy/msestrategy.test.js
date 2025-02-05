@@ -1154,7 +1154,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     describe("isBroadcastMixADAvailable()", () => {
       it("returns true when there is a broadcastMixAD track", () => {
-        mockDashInstance.getTracksFor.mockReturnValueOnce([broadcastMixADtrack])
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, broadcastMixADtrack])
 
         expect(mseStrategy.isBroadcastMixADAvailable()).toBe(true)
       })
@@ -1182,7 +1182,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     describe("setBroadcastMixADOff()", () => {
       it("switches to the main track", () => {
-        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack])
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, broadcastMixADtrack])
 
         mseStrategy.setBroadcastMixADOff()
 
@@ -1192,7 +1192,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     describe("setBroadcastMixADOn()", () => {
       it("switches to the broadcastMixAD track if present", () => {
-        mockDashInstance.getTracksFor.mockReturnValueOnce([broadcastMixADtrack])
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, broadcastMixADtrack])
 
         mseStrategy.setBroadcastMixADOn()
 
