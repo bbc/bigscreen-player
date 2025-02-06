@@ -1224,7 +1224,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         )
         mseStrategy.load(WindowTypes.STATIC, 10)
 
-        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { mediaType: "audio" })
+        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { newMediaInfo: { type: "audio" } })
 
         expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(true)
       })
@@ -1244,7 +1244,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         )
         mseStrategy.load(WindowTypes.STATIC, 10)
 
-        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { mediaType: "audio" })
+        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { newMediaInfo: { type: "audio" } })
 
         expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(false)
       })

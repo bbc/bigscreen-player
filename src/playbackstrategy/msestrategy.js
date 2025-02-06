@@ -455,9 +455,10 @@ function MSEStrategy(
   }
 
   function onCurrentTrackChanged(event) {
+    const mediaType = event.newMediaInfo.type
     DebugTool.info(
-      `${event.mediaType} track changed.${
-        event.mediaType === "audio" ? (isBroadcastMixADEnabled() ? " BroadcastMixAD on." : " BroadcastMixAD off.") : ""
+      `${mediaType} track changed.${
+        mediaType === "audio" ? (isBroadcastMixADEnabled() ? " BroadcastMixAD on." : " BroadcastMixAD off.") : ""
       }`
     )
     callBroadcastMixADCallbacks(isBroadcastMixADEnabled())
