@@ -608,6 +608,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
   }
 
+  function customiseSubtitles(options) {
+    return mediaPlayer && mediaPlayer.updateSettings({ streaming: { text: { imsc: { options } } } })
+  }
+
   function getDuration() {
     return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.duration() : 0
   }
@@ -777,6 +781,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         startAutoResumeTimeout()
       }
     },
+    customiseSubtitles,
     play: () => mediaPlayer.play(),
     setCurrentTime: (time) => {
       publishedSeekEvent = false
