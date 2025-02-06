@@ -1,5 +1,4 @@
 > This tutorial assumes you have read [Getting Started](https://bbc.github.io/bigscreen-player/api/tutorial-00-getting-started.html)
->
 
 ## Live Playback Capability
 
@@ -11,10 +10,12 @@ window.bigscreenPlayer.liveSupport: 'playable' // default
 
 LiveSupport can be one of:
 
-- `none`
-- `playable`
-- `restartable`
-- `seekable`
+- `none` -- Live playback will fail
+- `playable` -- Can only play from the live point
+- `restartable` -- Can start playback from any (available) point in the stream. Can't pause or seek.
+- `seekable` -- Can start playback from any (available) point in the stream. Can pause and seek.
+
+Note! The `cehtml` player has only been tested with `liveSupport: playable`. Features such as seeking likely won't work as expected.
 
 ## Requirements for DASH
 

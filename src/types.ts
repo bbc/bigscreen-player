@@ -1,17 +1,18 @@
 import { MediaPlayerSettingClass } from "dashjs"
+import { Timeline } from "./models/timeline"
 
-type Connection = {
+export type Connection = {
   cdn: string
   url: string
 }
 
-type CaptionsConnection = Connection & {
-  segmentLenght: number
+export type CaptionsConnection = Connection & {
+  segmentLength: number
 }
 
 type Settings = MediaPlayerSettingClass & {
   failoverResetTime: number
-  failoverSort: (sources: string[]) => string[]
+  failoverSort: (sources: Connection[]) => Connection[]
   streaming: {
     seekDurationPadding: number
   }
@@ -28,26 +29,30 @@ export type SubtitlesCustomisationOptions = Partial<{
   size: number
 }>
 
+export type PlaybackTime = {
+  seconds: number
+  timeline: Timeline
+}
+
+export type MediaDescriptor = {
+  kind: "audio" | "video"
+  /** f.ex. 'video/mp4' */
+  mimeType: string
+  /** source type. f.ex. 'application/dash+xml' */
+  type: string
+  urls: Connection[]
+  captions?: CaptionsConnection[]
+  /** Location for a captions file */
+  captionsUrl?: string
+  playerSettings?: Partial<Settings>
+  subtitlesCustomisation?: SubtitlesCustomisationOptions
+  subtitlesRequestTimeout?: number
+}
+
 export type InitData = {
-  media: {
-    kind: "audio" | "video"
-    /** f.ex. 'video/mp4' */
-    mimeType: string
-    /** source type. f.ex. 'application/dash+xml' */
-    type: string
-    urls: Connection[]
-    captions?: CaptionsConnection[]
-    /** Location for a captions file */
-    captionsUrl?: string
-    playerSettings?: Partial<Settings>
-    subtitlesCustomisation?: SubtitlesCustomisationOptions
-    subtitlesRequestTimeout?: number
-  }
-  /**
-   * @deprecated
-   * Date object with server time offset
-   */
-  serverDate?: Date
+  media: MediaDescriptor
+  enableSubtitles?: boolean
+  initialPlaybackTime?: number | PlaybackTime
 }
 
 export type InitCallbacks = {

@@ -1,58 +1,100 @@
-import TimeUtils from "./timeutils"
+import {
+  availabilityTimeToPresentationTimeInSeconds,
+  durationToSeconds,
+  mediaSampleTimeToPresentationTimeInSeconds,
+  presentationTimeToAvailabilityTimeInMilliseconds,
+  presentationTimeToMediaSampleTimeInSeconds,
+} from "./timeutils"
 
-describe("Time utils", () => {
-  describe("Duration to seconds", () => {
-    const testCases: [string, number | undefined][] = [
-      ["PT2H", 7200],
-      ["PT2H30S", 7230],
-      ["PT2H30M30S", 9030],
-      ["PT30M30S", 1830],
-      ["PT30S", 30],
-      ["PT58M59.640S", 3539.64],
-      ["P1DT12H", undefined], // Technically valid, but code does not handle days
-      ["PT1D", undefined],
-      ["", undefined],
-      ["foobar", undefined],
-    ]
+describe("Duration to seconds", () => {
+  const testCases: [string, number | undefined][] = [
+    ["PT2H", 7200],
+    ["PT2H30S", 7230],
+    ["PT2H30M30S", 9030],
+    ["PT30M30S", 1830],
+    ["PT30S", 30],
+    ["PT58M59.640S", 3539.64],
+    ["P1DT12H", undefined], // Technically valid, but code does not handle days
+    ["PT1D", undefined],
+    ["", undefined],
+    ["foobar", undefined],
+  ]
 
-    it.each(testCases)("Converts duration of %s to %s seconds", (duration: string, expected?: number) => {
-      expect(TimeUtils.durationToSeconds(duration)).toBe(expected)
-    })
+  it.each(testCases)("Converts duration of %s to %s seconds", (duration: string, expected?: number) => {
+    expect(durationToSeconds(duration)).toBe(expected)
+  })
+})
+
+describe("converting between timelines", () => {
+  it.each([
+    [0, 0, 0],
+    [10, 10000, 0],
+    [10, 1732633437000, 1732633427000],
+  ])(
+    "converts a presentation time %d to availability time %d given availability start time %d",
+    (presentationTimeInSeconds, expectedAvailabilityTimeInMilliseconds, availabilityStartTimeInMilliseconds) => {
+      const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
+        presentationTimeInSeconds,
+        availabilityStartTimeInMilliseconds
+      )
+
+      expect(availabilityTimeInMilliseconds).toBe(expectedAvailabilityTimeInMilliseconds)
+    }
+  )
+
+  it.each([
+    [0, 0, 0],
+    [10000, 10, 0],
+    [1732633437000, 10, 1732633427000],
+  ])(
+    "converts an availability time %d to presentation time %d given availability start time %d",
+    (availabilityTimeInMilliseconds, expectedPresentationTimeInSeconds, availabilityStartTimeInMilliseconds) => {
+      const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
+        availabilityTimeInMilliseconds,
+        availabilityStartTimeInMilliseconds
+      )
+
+      expect(presentationTimeInSeconds).toBe(expectedPresentationTimeInSeconds)
+    }
+  )
+
+  it("converts availability time to presentation time 0 if it's less than the availability start time", () => {
+    expect(availabilityTimeToPresentationTimeInSeconds(1732633427000, 1732633437000)).toBe(0)
   })
 
-  describe("Calculate Sliding Window Seek Offset", () => {
-    const realDateNow = global.Date.now
+  it.each([
+    [0, 0, 0],
+    [10, 10, 0],
+    [1732633437, 10, 1732633427000],
+  ])(
+    "converts a media sample time %d to presentation time %d given presentation time offset %d",
+    (mediaSampleTimeInSeconds, expectedPresentationTimeInSeconds, presentationTimeOffsetInMilliseconds) => {
+      const presentationTimeInSeconds = mediaSampleTimeToPresentationTimeInSeconds(
+        mediaSampleTimeInSeconds,
+        presentationTimeOffsetInMilliseconds
+      )
 
-    beforeEach(() => {
-      global.Date.now = () => new Date("2019-10-22T10:59:20.000Z").getTime()
-    })
+      expect(presentationTimeInSeconds).toBe(expectedPresentationTimeInSeconds)
+    }
+  )
 
-    afterEach(() => {
-      global.Date.now = realDateNow
-    })
+  it.each([
+    [0, 0, 0],
+    [10, 10, 0],
+    [10, 1732633437, 1732633427000],
+  ])(
+    "converts a presentation time %d to media sample time %d given presentation time offset %d",
+    (presentationTimeInSeconds, expectedMediaSampleTimeInSeconds, presentationTimeOffsetInMilliseconds) => {
+      const mediaSampleTimeInSeconds = presentationTimeToMediaSampleTimeInSeconds(
+        presentationTimeInSeconds,
+        presentationTimeOffsetInMilliseconds
+      )
 
-    it("should return the relative time in seconds including the time a user spent seeking", () => {
-      const time = 4000
+      expect(mediaSampleTimeInSeconds).toBe(expectedMediaSampleTimeInSeconds)
+    }
+  )
 
-      // Note the 5 minute (300 second difference)
-      const dvrInfoRangeStart = new Date("2019-10-22T09:00:00.000Z").getTime() / 1000
-      const timeCorrection = new Date("2019-10-22T08:55:00.000Z").getTime() / 1000
-
-      const pausedTime = new Date("2019-10-22T10:59:00.000Z").getTime()
-      // mock Date.now is 20 seconds later. Slow seeking!
-
-      expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(3680)
-    })
-
-    it("should return the relative time in seconds if paused time is 0", () => {
-      const time = 4000
-
-      // Note the 5 minute (300 second difference)
-      const dvrInfoRangeStart = new Date("2019-10-22T09:00:00.000Z").getTime() / 1000
-      const timeCorrection = new Date("2019-10-22T08:55:00.000Z").getTime() / 1000
-      const pausedTime = 0
-
-      expect(TimeUtils.calculateSlidingWindowSeekOffset(time, dvrInfoRangeStart, timeCorrection, pausedTime)).toBe(3700)
-    })
+  it("converts media sample time to presentation time 0 if it's less than presentation time offset", () => {
+    expect(mediaSampleTimeToPresentationTimeInSeconds(1732633427, 1732633437000)).toBe(0)
   })
 })

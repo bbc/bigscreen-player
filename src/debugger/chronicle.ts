@@ -1,6 +1,9 @@
 import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 import { MediaKinds } from "../models/mediakinds"
+import { Timeline } from "../models/timeline"
+import { TransferFormat } from "../models/transferformats"
+import { TimeInfo } from "../manifest/manifestparser"
 
 export enum EntryCategory {
   METRIC = "metric",
@@ -40,7 +43,7 @@ type CDNsAvailable = CreateMetric<"cdns-available", string[]>
 type CurrentUrl = CreateMetric<"current-url", string>
 type Duration = CreateMetric<"duration", number>
 type FramesDropped = CreateMetric<"frames-dropped", number>
-type InitialPlaybackTime = CreateMetric<"initial-playback-time", number>
+type InitialPlaybackTime = CreateMetric<"initial-playback-time", [time: number, timeline: Timeline]>
 type MediaElementEnded = CreateMetric<"ended", HTMLMediaElement["ended"]>
 type MediaElementPaused = CreateMetric<"paused", HTMLMediaElement["paused"]>
 type MediaElementPlaybackRate = CreateMetric<"playback-rate", HTMLMediaElement["playbackRate"]>
@@ -88,12 +91,13 @@ type CreateTrace<Kind extends string, Data extends Primitives | Record<string, P
 
 type ApiCall = CreateTrace<"apicall", { functionName: string; functionArgs: any[] }>
 type BufferedRanges = CreateTrace<"buffered-ranges", { kind: MediaKinds; buffered: [start: number, end: number][] }>
-type Error = CreateTrace<"error", { name?: string; message: string }>
+type Error = CreateTrace<"error", { name: string; message: string }>
 type Event = CreateTrace<"event", { eventType: string; eventTarget: string }>
 type Gap = CreateTrace<"gap", { from: number; to: number }>
 type QuotaExceeded = CreateTrace<"quota-exceeded", { bufferLevel: number; time: number }>
 type SessionStart = CreateTrace<"session-start", number>
 type SessionEnd = CreateTrace<"session-end", number>
+type SourceLoaded = CreateTrace<"source-loaded", TimeInfo & { transferFormat: TransferFormat }>
 type StateChange = CreateTrace<"state-change", MediaState>
 
 export type Trace =
@@ -105,6 +109,7 @@ export type Trace =
   | QuotaExceeded
   | SessionStart
   | SessionEnd
+  | SourceLoaded
   | StateChange
 
 export type TraceKind = Trace["kind"]

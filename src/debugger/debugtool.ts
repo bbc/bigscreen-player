@@ -1,7 +1,10 @@
 import { MediaState } from "../models/mediastate"
 import { MediaKinds } from "../models/mediakinds"
+import { TransferFormat } from "../models/transferformats"
 import Chronicle, { MetricForKind, MetricKind, TimestampedEntry, isTrace } from "./chronicle"
 import DebugViewController from "./debugviewcontroller"
+import { TimeInfo } from "../manifest/manifestparser"
+import isError from "../utils/iserror"
 
 export const LogLevels = {
   ERROR: 0,
@@ -47,7 +50,7 @@ function shouldDisplayEntry(entry: TimestampedEntry): boolean {
   )
 }
 
-function DebugTool() {
+function createDebugTool() {
   let chronicle = new Chronicle()
   let currentLogLevel: LogLevel = LogLevels.INFO
   let viewController = new DebugViewController()
@@ -116,12 +119,9 @@ function DebugTool() {
       return
     }
 
-    const data = parts.length < 2 ? parts[0] : parts.join(" ")
+    const { name, message } = parts.length === 1 && isError(parts[0]) ? parts[0] : new Error(parts.join(" "))
 
-    chronicle.trace(
-      "error",
-      typeof data === "object" && "message" in data ? { name: data.name, message: data.message } : { message: data }
-    )
+    chronicle.trace("error", { name, message })
   }
 
   function event(eventType: string, eventTarget = "unknown") {
@@ -142,6 +142,10 @@ function DebugTool() {
     }
 
     chronicle.info(parts.join(" "))
+  }
+
+  function sourceLoaded(sourceInfo: TimeInfo & { transferFormat: TransferFormat }) {
+    chronicle.trace("source-loaded", sourceInfo)
   }
 
   function statechange(value: MediaState) {
@@ -214,6 +218,7 @@ function DebugTool() {
     gap,
     quotaExceeded,
     info,
+    sourceLoaded,
     statechange,
     warn,
     dynamicMetric,
@@ -225,6 +230,6 @@ function DebugTool() {
   }
 }
 
-const DebugToolInstance = DebugTool() satisfies DebugTool
+const DebugTool = createDebugTool() satisfies DebugTool
 
-export default DebugToolInstance
+export default DebugTool

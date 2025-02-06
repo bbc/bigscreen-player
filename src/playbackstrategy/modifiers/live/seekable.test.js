@@ -1,57 +1,91 @@
 import MediaPlayerBase from "../mediaplayerbase"
 import SeekableMediaPlayer from "./seekable"
-import WindowTypes from "../../../models/windowtypes"
+import TimeShiftDetector from "../../../utils/timeshiftdetector"
+import { autoResumeAtStartOfRange } from "../../../dynamicwindowutils"
+
+jest.mock("../../../dynamicwindowutils")
+jest.mock("../../../utils/timeshiftdetector")
+
+function createMockMediaPlayer() {
+  const eventCallbacks = []
+
+  function dispatchEvent(event) {
+    for (const callback of eventCallbacks) {
+      callback(event)
+    }
+  }
+
+  return {
+    dispatchEvent,
+    addEventCallback: jest
+      .fn()
+      .mockImplementation((component, callback) => eventCallbacks.push(callback.bind(component))),
+    removeEventCallback: jest.fn(),
+    removeAllEventCallbacks: jest.fn(),
+    beginPlayback: jest.fn(),
+    initialiseMedia: jest.fn(),
+    stop: jest.fn(),
+    reset: jest.fn(),
+    getState: jest.fn(),
+    getSource: jest.fn(),
+    getMimeType: jest.fn(),
+    getPlayerElement: jest.fn(),
+    pause: jest.fn(),
+    resume: jest.fn(),
+    beginPlaybackFrom: jest.fn(),
+    playFrom: jest.fn(),
+    getCurrentTime: jest.fn(),
+    getSeekableRange: jest.fn(),
+    toPaused: jest.fn(),
+    toPlaying: jest.fn(),
+  }
+}
+
+const mockTimeShiftDetector = {
+  disconnect: jest.fn(),
+  isSeekableRangeSliding: jest.fn(),
+  observe: jest.fn(),
+  // Mock function to fake time shift detection
+  triggerTimeShiftDetected: jest.fn(),
+}
 
 describe("Seekable HMTL5 Live Player", () => {
   const callback = () => {}
   const sourceContainer = document.createElement("div")
 
   let player
-  let seekableMediaPlayer
 
-  function wrapperTests(action, expectedReturn) {
-    if (expectedReturn) {
-      player[action].mockReturnValue(expectedReturn)
+  beforeAll(() => {
+    TimeShiftDetector.mockImplementation((onceTimeShiftDetected) => {
+      mockTimeShiftDetector.triggerTimeShiftDetected.mockImplementation(() => onceTimeShiftDetected())
 
-      expect(seekableMediaPlayer[action]()).toBe(expectedReturn)
-    } else {
-      seekableMediaPlayer[action]()
-
-      expect(player[action]).toHaveBeenCalledTimes(1)
-    }
-  }
-
-  function initialiseSeekableMediaPlayer(windowType) {
-    seekableMediaPlayer = SeekableMediaPlayer(player, windowType)
-  }
+      return mockTimeShiftDetector
+    })
+  })
 
   beforeEach(() => {
-    player = {
-      beginPlayback: jest.fn(),
-      initialiseMedia: jest.fn(),
-      stop: jest.fn(),
-      reset: jest.fn(),
-      getState: jest.fn(),
-      getSource: jest.fn(),
-      getMimeType: jest.fn(),
-      addEventCallback: jest.fn(),
-      removeEventCallback: jest.fn(),
-      removeAllEventCallbacks: jest.fn(),
-      getPlayerElement: jest.fn(),
-      pause: jest.fn(),
-      resume: jest.fn(),
-      beginPlaybackFrom: jest.fn(),
-      playFrom: jest.fn(),
-      getCurrentTime: jest.fn(),
-      getSeekableRange: jest.fn(),
-      toPaused: jest.fn(),
-      toPlaying: jest.fn(),
-    }
+    jest.clearAllMocks()
+
+    player = createMockMediaPlayer()
   })
 
   describe("methods call the appropriate media player methods", () => {
+    let seekableMediaPlayer
+
+    function wrapperTests(action, expectedReturn) {
+      if (expectedReturn) {
+        player[action].mockReturnValue(expectedReturn)
+
+        expect(seekableMediaPlayer[action]()).toBe(expectedReturn)
+      } else {
+        seekableMediaPlayer[action]()
+
+        expect(player[action]).toHaveBeenCalledTimes(1)
+      }
+    }
+
     beforeEach(() => {
-      initialiseSeekableMediaPlayer()
+      seekableMediaPlayer = SeekableMediaPlayer(player)
     })
 
     it("calls beginPlayback on the media player", () => {
@@ -145,7 +179,7 @@ describe("Seekable HMTL5 Live Player", () => {
         },
       }
 
-      initialiseSeekableMediaPlayer()
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
 
       seekableMediaPlayer.beginPlayback()
 
@@ -153,242 +187,197 @@ describe("Seekable HMTL5 Live Player", () => {
     })
   })
 
-  describe("calls the mediaplayer with the correct media Type", () => {
-    beforeEach(() => {
-      initialiseSeekableMediaPlayer()
-    })
-
-    it("for static video", () => {
-      seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "", "", sourceContainer)
-
-      expect(player.initialiseMedia).toHaveBeenCalledWith(
-        MediaPlayerBase.TYPE.LIVE_VIDEO,
-        "",
-        "",
-        sourceContainer,
-        undefined
-      )
-    })
-
-    it("for live video", () => {
-      seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.LIVE_VIDEO, "", "", sourceContainer)
+  describe("initialise the mediaplayer", () => {
+    it.each([
+      [MediaPlayerBase.TYPE.LIVE_VIDEO, MediaPlayerBase.TYPE.VIDEO],
+      [MediaPlayerBase.TYPE.LIVE_VIDEO, MediaPlayerBase.TYPE.LIVE_VIDEO],
+      [MediaPlayerBase.TYPE.LIVE_AUDIO, MediaPlayerBase.TYPE.AUDIO],
+    ])("should initialise the Media Player with the correct type %s for a %s stream", (expectedType, streamType) => {
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+      seekableMediaPlayer.initialiseMedia(streamType, "http://mock.url", "mockMimeType", sourceContainer)
 
       expect(player.initialiseMedia).toHaveBeenCalledWith(
-        MediaPlayerBase.TYPE.LIVE_VIDEO,
-        "",
-        "",
-        sourceContainer,
-        undefined
-      )
-    })
-
-    it("for static audio", () => {
-      seekableMediaPlayer.initialiseMedia(MediaPlayerBase.TYPE.AUDIO, "", "", sourceContainer)
-
-      expect(player.initialiseMedia).toHaveBeenCalledWith(
-        MediaPlayerBase.TYPE.LIVE_AUDIO,
-        "",
-        "",
+        expectedType,
+        "http://mock.url",
+        "mockMimeType",
         sourceContainer,
         undefined
       )
     })
   })
 
-  describe("Pausing and Auto-Resume", () => {
-    let mockCallback = []
-
-    function startPlaybackAndPause(startTime, disableAutoResume) {
-      seekableMediaPlayer.beginPlaybackFrom(startTime || 0)
-      seekableMediaPlayer.pause({ disableAutoResume })
-    }
-
-    beforeEach(() => {
-      jest.useFakeTimers()
-
-      initialiseSeekableMediaPlayer(WindowTypes.SLIDING)
-
+  describe("pause", () => {
+    it("should call pause on the Media Player when attempting to pause more than 8 seconds from the start of the seekable range", () => {
+      player.getCurrentTime.mockReturnValue(10)
       player.getSeekableRange.mockReturnValue({ start: 0 })
-      player.getCurrentTime.mockReturnValue(20)
 
-      player.addEventCallback.mockImplementation((self, callback) => {
-        mockCallback.push(callback)
-      })
-    })
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
 
-    afterEach(() => {
-      jest.useRealTimers()
-      mockCallback = []
-    })
-
-    it("calls resume when approaching the start of the buffer", () => {
-      startPlaybackAndPause(20, false)
-
-      jest.advanceTimersByTime(12 * 1000)
-
-      expect(player.resume).toHaveBeenCalledWith()
-    })
-
-    it("does not call resume when approaching the start of the buffer with the disableAutoResume option", () => {
-      startPlaybackAndPause(20, true)
-
-      jest.advanceTimersByTime(11 * 1000)
-
-      expect(player.resume).not.toHaveBeenCalledWith()
-    })
-
-    it("does not call resume if paused after the auto resume point", () => {
-      startPlaybackAndPause(20, false)
-
-      jest.advanceTimersByTime(11 * 1000)
-
-      expect(player.resume).not.toHaveBeenCalledWith()
-    })
-
-    it("does not auto-resume if the video is no longer paused", () => {
-      startPlaybackAndPause(20, false)
-
-      for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({ state: MediaPlayerBase.STATE.PLAYING })
-      }
-
-      jest.advanceTimersByTime(12 * 1000)
-
-      expect(player.resume).not.toHaveBeenCalled()
-    })
-
-    it("Calls resume when paused is called multiple times", () => {
-      startPlaybackAndPause(0, false)
-
-      const event = { state: MediaPlayerBase.STATE.PLAYING, currentTime: 25 }
-      for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index](event)
-      }
-
+      seekableMediaPlayer.beginPlaybackFrom(0)
       seekableMediaPlayer.pause()
 
-      event.currentTime = 30
-      for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index](event)
-      }
+      expect(player.pause).toHaveBeenCalledTimes(1)
+    })
 
+    it("will 'fake pause' if attempting to pause within 8 seconds of the start of the seekable range", () => {
+      player.getCurrentTime.mockReturnValue(7)
+      player.getSeekableRange.mockReturnValue({ start: 0 })
+
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
+
+      seekableMediaPlayer.beginPlaybackFrom(7)
       seekableMediaPlayer.pause()
-      // uses real time to determine pause intervals
-      // if debugging the time to the buffer will be decreased by the time spent.
-      jest.advanceTimersByTime(22 * 1000)
-
-      expect(player.resume).toHaveBeenCalledTimes(1)
-    })
-
-    it("calls auto-resume immeditetly if paused after an autoresume", () => {
-      startPlaybackAndPause(20, false)
-
-      jest.advanceTimersByTime(12 * 1000)
-
-      player.getSeekableRange.mockReturnValue({ start: 12 })
-
-      seekableMediaPlayer.pause()
-
-      jest.advanceTimersByTime(1)
-
-      expect(player.resume).toHaveBeenCalledTimes(1)
-      expect(player.toPaused).toHaveBeenCalledTimes(1)
-      expect(player.toPlaying).toHaveBeenCalledTimes(1)
-    })
-
-    it("does not calls autoresume immeditetly if paused after an auto-resume with disableAutoResume options", () => {
-      startPlaybackAndPause(20, true)
-
-      jest.advanceTimersByTime(12 * 1000)
-      player.getSeekableRange.mockReturnValue({ start: 12 })
-
-      jest.advanceTimersByTime(1)
-
-      expect(player.resume).not.toHaveBeenCalledTimes(1)
-    })
-
-    it("auto-resume is not cancelled by a paused event state", () => {
-      startPlaybackAndPause(20, false)
-
-      for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({ state: MediaPlayerBase.STATE.PAUSED })
-      }
-
-      jest.advanceTimersByTime(12 * 1000)
-
-      expect(player.resume).toHaveBeenCalledTimes(1)
-    })
-
-    it("auto-resume is not cancelled by a status event", () => {
-      startPlaybackAndPause(20, false)
-
-      for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({ type: MediaPlayerBase.EVENT.STATUS })
-      }
-
-      jest.advanceTimersByTime(12 * 1000)
-
-      expect(player.resume).toHaveBeenCalledTimes(1)
-    })
-
-    it("will fake pause if attempting to pause at the start of playback", () => {
-      player.getCurrentTime.mockReturnValue(0)
-      startPlaybackAndPause(0, false)
 
       expect(player.toPaused).toHaveBeenCalledTimes(1)
       expect(player.toPlaying).toHaveBeenCalledTimes(1)
+      expect(player.pause).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("Auto-Resume", () => {
+    it("provides the seekable range to the time shift detector once metadata loaded", () => {
+      player.getSeekableRange.mockReturnValue({ start: 0, end: 10 })
+
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
+
+      expect(mockTimeShiftDetector.observe).not.toHaveBeenCalled()
+
+      player.dispatchEvent({ type: MediaPlayerBase.EVENT.METADATA })
+
+      expect(mockTimeShiftDetector.observe).toHaveBeenCalledWith(seekableMediaPlayer.getSeekableRange)
     })
 
-    it("time spend buffering is deducted when considering time to auto-resume", () => {
-      startPlaybackAndPause(0, false)
+    it("should start auto-resume timeout when pausing and Time Shift Detector returns true for sliding", () => {
+      mockTimeShiftDetector.isSeekableRangeSliding.mockReturnValueOnce(true)
 
-      seekableMediaPlayer.resume()
-      player.resume.mockClear()
+      player.getCurrentTime.mockReturnValue(10)
+      player.getSeekableRange.mockReturnValue({ start: 0, end: 100 })
 
-      for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({ state: MediaPlayerBase.STATE.BUFFERING, currentTime: 20 })
-      }
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
 
-      jest.advanceTimersByTime(11 * 1000)
-
-      for (let index = 0; index < mockCallback.length; index++) {
-        mockCallback[index]({ state: MediaPlayerBase.STATE.PLAYING, currentTime: 20 })
-      }
-      player.getSeekableRange.mockReturnValue({ start: 20 })
-
+      seekableMediaPlayer.beginPlaybackFrom(0)
       seekableMediaPlayer.pause()
 
-      jest.advanceTimersByTime(3 * 1000)
-
-      expect(player.toPlaying).toHaveBeenCalledTimes(1)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledWith(
+        10,
+        { start: 0, end: 100 },
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        seekableMediaPlayer.resume
+      )
     })
 
-    it("should not call autoresume immeditetly if paused after an auto-resume with disableAutoResume options", () => {
-      startPlaybackAndPause(20, true)
+    it("should not start auto-resume timeout when Time Shift Detector returns false for sliding", () => {
+      mockTimeShiftDetector.isSeekableRangeSliding.mockReturnValueOnce(false)
 
-      jest.advanceTimersByTime(12 * 1000)
-
-      jest.advanceTimersByTime(1)
-
-      expect(player.resume).not.toHaveBeenCalledTimes(1)
-    })
-
-    it("Should auto resume when paused after a seek", () => {
+      player.getCurrentTime.mockReturnValue(10)
       player.getSeekableRange.mockReturnValue({ start: 0 })
-      player.getCurrentTime.mockReturnValue(100)
 
-      startPlaybackAndPause(100, false)
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
 
-      player.getCurrentTime.mockReturnValue(50)
-      player.getState.mockReturnValue(MediaPlayerBase.STATE.PAUSED)
-
-      seekableMediaPlayer.playFrom(50)
-
+      seekableMediaPlayer.beginPlaybackFrom(0)
       seekableMediaPlayer.pause()
 
-      jest.advanceTimersByTime(42 * 1000)
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
+    })
 
-      expect(player.resume).toHaveBeenCalledTimes(1)
+    it("should start auto-resume timeout when Time Shift Detector callback fires while paused", () => {
+      player.getCurrentTime.mockReturnValue(10)
+      player.getSeekableRange.mockReturnValue({ start: 0 })
+
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
+
+      player.getState.mockReturnValueOnce(MediaPlayerBase.STATE.PAUSED)
+
+      mockTimeShiftDetector.triggerTimeShiftDetected()
+
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+    })
+
+    it("should not start auto-resume timeout when Time Shift Detector callback fires while unpaused", () => {
+      player.getCurrentTime.mockReturnValue(10)
+      player.getSeekableRange.mockReturnValue({ start: 0 })
+
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
+
+      player.getState.mockReturnValueOnce(MediaPlayerBase.STATE.PLAYING)
+
+      mockTimeShiftDetector.triggerTimeShiftDetected()
+
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
+    })
+
+    it("should disconect from the Time Shift Detector on a call to reset", () => {
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
+
+      seekableMediaPlayer.reset()
+
+      expect(mockTimeShiftDetector.disconnect).toHaveBeenCalled()
+    })
+
+    it("should disconect from the Time Shift Detector on a call to stop", () => {
+      const seekableMediaPlayer = SeekableMediaPlayer(player)
+      seekableMediaPlayer.initialiseMedia(
+        MediaPlayerBase.TYPE.VIDEO,
+        "http://mock.url",
+        "mockMimeType",
+        sourceContainer
+      )
+
+      seekableMediaPlayer.stop()
+
+      expect(mockTimeShiftDetector.disconnect).toHaveBeenCalled()
     })
   })
 })

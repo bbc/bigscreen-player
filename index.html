@@ -22,11 +22,8 @@
             playbackElement.style.height = "720px"
             playbackElement.style.width = "1280px"
 
-            let windowType = "staticWindow"
-            let enableSubtitles = false
-
             let minimalData = {
-                initialPlaybackTime: 30,
+                initialPlaybackTime: { seconds: 30 },
                 media: {
                     captions: [],
                     type: "application/dash+xml",
@@ -43,7 +40,7 @@
                 },
             }
 
-            player.init(playbackElement, minimalData, windowType, enableSubtitles, {
+            player.init(playbackElement, minimalData, {
                 onSuccess: function () {
                     player.toggleDebug()
                 },
