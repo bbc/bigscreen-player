@@ -16,5 +16,8 @@
   },
   "live-streaming": {
     "title": "Live"
+  },
+  "XX-mocking": {
+    "title": "Mocking Playback (deprecated)"
   }
 }
