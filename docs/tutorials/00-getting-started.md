@@ -67,7 +67,7 @@ playbackElement.id = 'BigscreenPlayback'
 
 body.appendChild(playbackElement)
 
-bigscreenPlayer.init(playbackElement, optionalData)
+bigscreenPlayer.init(playbackElement, minimalData)
 ```
 
 ## All Options
