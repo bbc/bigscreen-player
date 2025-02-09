@@ -30,6 +30,8 @@ const mockDashInstance = {
   isReady: jest.fn(),
   refreshManifest: jest.fn(),
   getDashMetrics: jest.fn(),
+  getTargetLiveDelay: jest.fn(),
+  getCurrentLiveLatency: jest.fn(),
   getDashAdapter: jest.fn(),
   getBitrateInfoListFor: jest.fn(),
   getAverageThroughput: jest.fn(),
@@ -42,13 +44,14 @@ const mockDashInstance = {
   getActiveStream: jest.fn(() => ({
     getProcessors: jest.fn(() => []),
   })),
+  setXHRWithCredentialsForType: jest.fn(),
 }
 
 const mockDashMediaPlayer = {
   create: jest.fn(() => mockDashInstance),
 }
 
-jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
+jest.mock("dashjs", () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
 jest.mock("../dynamicwindowutils")
 jest.mock("../debugger/debugtool")
 
