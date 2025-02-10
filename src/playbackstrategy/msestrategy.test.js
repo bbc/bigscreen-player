@@ -4,7 +4,7 @@ import MediaKinds from "../models/mediakinds"
 import { ManifestType } from "../models/manifesttypes"
 import { MediaState } from "../models/mediastate"
 import Utils from "../utils/playbackutils"
-import DynamicWindowUtils from "../dynamicwindowutils"
+import { autoResumeAtStartOfRange } from "../dynamicwindowutils"
 import Plugins from "../plugins"
 import MSEStrategy from "./msestrategy"
 
@@ -1175,7 +1175,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       mseStrategy.pause()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
 
     it("should not start autoresume timeout when paused on a dynamic stream without timeshift", () => {
@@ -1191,7 +1191,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       mseStrategy.pause()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
 
     it("should start autoresume timeout when paused on a dynamic stream with timeshift", () => {
@@ -1207,8 +1207,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       mseStrategy.pause()
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledWith(
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledWith(
         0,
         { start: 0, end: 100 },
         expect.any(Function),
@@ -1238,7 +1238,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       mediaElement.dispatchEvent(new Event("seeking"))
       mediaElement.dispatchEvent(new Event("seeked"))
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(2)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(2)
     })
 
     it("should not start autoresume timeout when playing and seeking", () => {
@@ -1258,7 +1258,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       mediaElement.dispatchEvent(new Event("seeking"))
       mediaElement.dispatchEvent(new Event("seeked"))
 
-      expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
   })
 

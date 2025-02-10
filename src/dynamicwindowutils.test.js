@@ -1,4 +1,4 @@
-import { autoResumeAtStartOfRange, canPause, canSeek } from "./dynamicwindowutils"
+import { autoResumeAtStartOfRange, canPauseAndSeek } from "./dynamicwindowutils"
 import LiveSupport from "./models/livesupport"
 
 describe("autoResumeAtStartOfRange", () => {
@@ -143,44 +143,22 @@ describe("autoResumeAtStartOfRange", () => {
 
 describe("canPause", () => {
   it("can't pause no live support", () => {
-    expect(canPause(LiveSupport.NONE, { start: 0, end: 30 * 60 })).toBe(false)
+    expect(canPauseAndSeek(LiveSupport.NONE, { start: 0, end: 30 * 60 })).toBe(false)
   })
 
   it("can't pause playable", () => {
-    expect(canPause(LiveSupport.PLAYABLE, { start: 0, end: 30 * 60 })).toBe(false)
+    expect(canPauseAndSeek(LiveSupport.PLAYABLE, { start: 0, end: 30 * 60 })).toBe(false)
   })
 
-  it("can pause restartable", () => {
-    expect(canPause(LiveSupport.RESTARTABLE, { start: 0, end: 30 * 60 })).toBe(true)
+  it("can't pause restartable", () => {
+    expect(canPauseAndSeek(LiveSupport.RESTARTABLE, { start: 0, end: 30 * 60 })).toBe(false)
   })
 
   it("can pause seekable", () => {
-    expect(canPause(LiveSupport.SEEKABLE, { start: 0, end: 30 * 60 })).toBe(true)
+    expect(canPauseAndSeek(LiveSupport.SEEKABLE, { start: 0, end: 30 * 60 })).toBe(true)
   })
 
   it("can't pause a seekable range less than 4 minutes", () => {
-    expect(canPause(LiveSupport.SEEKABLE, { start: 0, end: 3 * 60 })).toBe(false)
-  })
-})
-
-describe("canSeek", () => {
-  it("can't seek no live support", () => {
-    expect(canSeek(LiveSupport.NONE, { start: 0, end: 30 * 60 })).toBe(false)
-  })
-
-  it("can't seek playable", () => {
-    expect(canSeek(LiveSupport.PLAYABLE, { start: 0, end: 30 * 60 })).toBe(false)
-  })
-
-  it("can seek restartable", () => {
-    expect(canSeek(LiveSupport.RESTARTABLE, { start: 0, end: 30 * 60 })).toBe(true)
-  })
-
-  it("can seek seekable", () => {
-    expect(canSeek(LiveSupport.SEEKABLE, { start: 0, end: 30 * 60 })).toBe(true)
-  })
-
-  it("can't seek a seekable range less than 4 minutes", () => {
-    expect(canSeek(LiveSupport.SEEKABLE, { start: 0, end: 3 * 60 })).toBe(false)
+    expect(canPauseAndSeek(LiveSupport.SEEKABLE, { start: 0, end: 3 * 60 })).toBe(false)
   })
 })

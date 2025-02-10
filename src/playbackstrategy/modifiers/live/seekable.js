@@ -1,5 +1,5 @@
 import MediaPlayerBase from "../mediaplayerbase"
-import DynamicWindowUtils from "../../../dynamicwindowutils"
+import { autoResumeAtStartOfRange } from "../../../dynamicwindowutils"
 import TimeShiftDetector from "../../../utils/timeshiftdetector"
 
 function SeekableLivePlayer(mediaPlayer) {
@@ -55,7 +55,7 @@ function SeekableLivePlayer(mediaPlayer) {
   }
 
   function startAutoResumeTimeout() {
-    DynamicWindowUtils.autoResumeAtStartOfRange(
+    autoResumeAtStartOfRange(
       mediaPlayer.getCurrentTime(),
       mediaPlayer.getSeekableRange(),
       addEventCallback,

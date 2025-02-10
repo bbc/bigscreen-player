@@ -196,6 +196,7 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
       "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/unbound-method": "off",
       "max-nested-callbacks": "off",
       "sonarjs/no-identical-functions": "off",
       "unicorn/consistent-function-scoping": "off",
