@@ -1,57 +1,69 @@
 <!doctype html>
 <html>
-    <head>
-        <meta charset="utf-8" />
-        <title>bigscreen-player</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-    </head>
-    <body>
-        <script type="module">
-            import { BigscreenPlayer } from "./dist-local/esm/main.js"
 
-            window.bigscreenPlayer = { playbackStrategy: "msestrategy" }
+<head>
+    <meta charset="utf-8" />
+    <title>bigscreen-player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
 
-            let player = BigscreenPlayer()
-            let playbackElement = document.createElement("div")
+<body>
+    <div>
+        <div id="playback" />
+    </div>
+    <div style="min-height: 300px;">
+        <canvas id="chart" />
+    </div>
 
-            window.bsp_player = player
+    <script type="module">
+        import { BigscreenPlayer } from "./dist-local/esm/main.js"
 
-            document.body.appendChild(playbackElement)
+        window.bigscreenPlayer = { playbackStrategy: "msestrategy" }
 
-            playbackElement.style.position = "absolute"
-            playbackElement.style.height = "720px"
-            playbackElement.style.width = "1280px"
+        let player = BigscreenPlayer()
 
-            let windowType = "staticWindow"
-            let enableSubtitles = false
+        let playbackElement = document.getElementById('playback');
 
-            let minimalData = {
-                initialPlaybackTime: 30,
-                media: {
-                    captions: [],
-                    type: "application/dash+xml",
-                    mimeType: "video/mp4",
-                    kind: "video",
-                    urls: [
-                        {
-                            // Content from DASH IF testing assests (used in their reference player)
-                            // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
-                            url: "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd",
-                            cdn: "dash.akamaized.net",
-                        },
-                    ],
-                },
-            }
+        window.bsp_player = player
 
-            player.init(playbackElement, minimalData, windowType, enableSubtitles, {
-                onSuccess: function () {
-                    player.toggleDebug()
-                },
-                onError: function (error) {
-                    player.toggleDebug()
-                    throw new Error("Initialisation failed.", { cause: error })
-                },
-            })
-        </script>
-    </body>
+        document.body.appendChild(playbackElement)
+
+        playbackElement.style.position = "absolute"
+        playbackElement.style.height = "720px"
+        playbackElement.style.width = "1280px"
+
+        let windowType = "staticWindow"
+        let enableSubtitles = false
+
+        let minimalData = {
+            initialPlaybackTime: 30,
+            media: {
+                captions: [],
+                type: "application/dash+xml",
+                mimeType: "video/mp4",
+                kind: "video",
+                urls: [
+                    {
+                        // Content from DASH IF testing assests (used in their reference player)
+                        // https://reference.dashif.org/dash.js/v2.9.2/samples/dash-if-reference-player/index.htm
+                        url: "https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd",
+                        cdn: "dash.akamaized.net",
+                    },
+                ],
+            },
+        }
+
+        player.init(playbackElement, minimalData, windowType, enableSubtitles, {
+            onSuccess: function () {
+                player.toggleDebug()
+            },
+            onError: function (error) {
+                player.toggleDebug()
+                throw new Error("Initialisation failed.", { cause: error })
+            },
+        })
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+
 </html>

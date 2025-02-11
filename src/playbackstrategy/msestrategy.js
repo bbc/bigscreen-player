@@ -694,6 +694,90 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     }
   }
 
+  function initChart() {
+    window.bufferData = [];
+    window.bitrateData = [];
+    window.labels = [];
+
+    // Set up the chart
+    const ctx = document.querySelector('#chart').getContext('2d');
+
+    window.chart = new Chart(ctx, {
+      type: 'line', // Line chart
+      data: {
+        labels:  [], 
+        datasets: [{
+          label: 'Bitrate (bps)', 
+          data: [], 
+          borderColor: 'rgba(75, 192, 192, 1)', 
+          borderWidth: 2,
+          fill: false,
+          yAxisID: 'y1',
+        }, {
+          label: 'Buffer (seconds)', 
+          data: [],
+          borderColor: 'rgba(255, 99, 132, 1)', 
+          borderWidth: 2,
+          fill: false,
+          yAxisID: 'y2',
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y1: {
+            // First y-axis (for bitrate)
+            id: 'y1', // Assign this to the 'y1' scale for bitrate
+            type: 'linear',
+            position: 'left', // Position the bitrate scale on the left
+            ticks: {
+              beginAtZero: true,
+              max: 20000, // Maximum value for bitrate axis
+              min: 0,
+              stepSize: 2500 // Step size for bitrate ticks
+            },
+            title: {
+              display: true,
+              text: 'Bitrate'
+            }
+          },
+          y2: {
+            // Second y-axis (for buffer)
+            id: 'y2', // Assign this to the 'y2' scale for buffer
+            type: 'linear',
+            position: 'right', // Position the buffer scale on the right
+            ticks: {
+              beginAtZero: true,
+              max: 60, // Maximum value for buffer axis
+              min: 0,
+              stepSize: 1 // Step size for buffer ticks
+            },
+            title: {
+              display: true,
+              text: 'Buffer'
+            }
+          }
+        }
+      }
+    })
+  }
+
+  function updateChart(newBitrate, newBuffer) {
+    const chart = window.chart;
+
+    console.log(`newBitrate ${newBitrate} newBuffer ${newBuffer}`);
+
+    window.bitrateData.push(newBitrate);
+    window.bufferData.push(newBuffer);
+    window.labels.push(window.labels.length + 1);
+
+    chart.data.datasets[0].data = window.bitrateData;
+    chart.data.datasets[1].data =  window.bufferData;
+    chart.data.labels = window.labels;
+    chart.update();
+  }
+
   return {
     transitions: {
       canBePaused: () => true,
@@ -750,7 +834,22 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
         startAutoResumeTimeout()
       }
     },
-    play: () => mediaPlayer.play(),
+    play: () => {
+      mediaPlayer.play();
+
+      initChart();
+
+      window.timer = [];
+
+      setInterval(() => {
+         const dashMetrics = mediaPlayer.getDashMetrics()
+         const buffer = dashMetrics.getCurrentBufferLevel('video');
+         const bitrate = currentPlaybackBitrate('video');
+         updateChart(bitrate, buffer);
+         window.timer.push(new Date().toISOString);
+         console.log(`***** chart ${window.timer.length} *****`);
+      }, 1000);
+    },
     setCurrentTime: (time) => {
       publishedSeekEvent = false
       isSeeking = true
