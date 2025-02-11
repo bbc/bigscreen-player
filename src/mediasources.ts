@@ -173,16 +173,19 @@ function MediaSources() {
     )
   }
 
-  function refresh() {
+  function refresh(): Promise<void> {
     return new Promise((resolve) => resolve(loadManifest()))
   }
 
-  function replace({ urls }: { urls: Connection[] }) {
+  function replace({ urls }: { urls: Connection[] }): Promise<void> {
     mediaSources = urls
-
     updateDebugOutput()
 
-    return needToGetManifest() ? refresh() : Promise.resolve()
+    if (needToGetManifest()) {
+      return refresh()
+    }
+
+    return Promise.resolve()
   }
 
   function loadManifest(): Promise<void> {
