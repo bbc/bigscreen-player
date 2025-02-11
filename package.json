@@ -64,7 +64,7 @@
   },
   "dependencies": {
     "chart.js": "^4.4.7",
-    "dashjs": "github:bbc/dash.js#e99147b4e8910b977c7a24779f7f2e6df8a6b0d2",
+    "dashjs": "github:bbc/dash.js#4497f312dbadb3c498fdbd51afce7d614477db13",
     "smp-imsc": "github:bbc/imscJS#v1.0.3"
   },
   "repository": {
