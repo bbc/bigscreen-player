@@ -19,7 +19,16 @@ const DEFAULT_SETTINGS = {
   seekDurationPadding: 1.1,
 }
 
-function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD, customPlayerSettings) {
+function MSEStrategy(
+  mediaSources,
+  windowType,
+  mediaKind,
+  playbackElement,
+  isUHD,
+  customPlayerSettings,
+  enableBroadcastMixAD,
+  callBroadcastMixADCallbacks
+) {
   let mediaPlayer
   let mediaElement
 
@@ -97,6 +106,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
     QUOTA_EXCEEDED: "quotaExceeded",
+    CURRENT_TRACK_CHANGED: "currentTrackChanged",
   }
 
   function onLoadedMetaData() {
@@ -444,6 +454,16 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     Plugins.interface.onFragmentContentLengthMismatch(event)
   }
 
+  function onCurrentTrackChanged(event) {
+    const mediaType = event.newMediaInfo.type
+    DebugTool.info(
+      `${mediaType} track changed.${
+        mediaType === "audio" ? (isBroadcastMixADEnabled() ? " BroadcastMixAD on." : " BroadcastMixAD off.") : ""
+      }`
+    )
+    callBroadcastMixADCallbacks(isBroadcastMixADEnabled())
+  }
+
   function publishMediaState(mediaState) {
     for (let index = 0; index < eventCallbacks.length; index++) {
       eventCallbacks[index](mediaState)
@@ -516,6 +536,14 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
     mediaPlayer.initialize(mediaElement, null, true)
+
+    if (enableBroadcastMixAD) {
+      mediaPlayer.setInitialMediaSettingsFor("audio", {
+        role: "alternate",
+        accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+      })
+    }
+
     modifySource(playbackTime)
   }
 
@@ -563,6 +591,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
+    mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
   }
 
   function manifestLoadingFinished(event) {
@@ -653,6 +682,43 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     )
   }
 
+  function isTrackBroadcastMixAD(track) {
+    return (
+      track.roles.includes("alternate") &&
+      track.accessibilitiesWithSchemeIdUri.some(
+        (scheme) => scheme.schemeIdUri === "urn:tva:metadata:cs:AudioPurposeCS:2007" && scheme.value === "1"
+      )
+    )
+  }
+
+  function getBroadcastMixADTrack() {
+    const audioTracks = mediaPlayer.getTracksFor("audio")
+    return audioTracks.find((track) => isTrackBroadcastMixAD(track))
+  }
+
+  function isBroadcastMixADAvailable() {
+    const audioTracks = mediaPlayer.getTracksFor("audio")
+    return audioTracks.some((track) => isTrackBroadcastMixAD(track))
+  }
+
+  function isBroadcastMixADEnabled() {
+    const currentAudioTrack = mediaPlayer.getCurrentTrackFor("audio")
+    return currentAudioTrack ? isTrackBroadcastMixAD(currentAudioTrack) : false
+  }
+
+  function setBroadcastMixADOff() {
+    const audioTracks = mediaPlayer.getTracksFor("audio")
+    const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
+    mediaPlayer.setCurrentTrack(mainTrack)
+  }
+
+  function setBroadcastMixADOn() {
+    const ADTrack = getBroadcastMixADTrack()
+    if (ADTrack) {
+      mediaPlayer.setCurrentTrack(ADTrack)
+    }
+  }
+
   function cleanUpMediaPlayer() {
     if (mediaPlayer) {
       mediaPlayer.destroy()
@@ -671,6 +737,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
       mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
+      mediaPlayer.off(DashJSEvents.TRACK_CHANGE_RENDERED, onCurrentTrackChanged)
 
       mediaPlayer = undefined
     }
@@ -710,6 +777,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     load,
     getSeekableRange,
     getCurrentTime,
+    isBroadcastMixADAvailable,
+    isBroadcastMixADEnabled,
+    setBroadcastMixADOn,
+    setBroadcastMixADOff,
     getDuration,
     getPlayerElement: () => mediaElement,
     tearDown: () => {

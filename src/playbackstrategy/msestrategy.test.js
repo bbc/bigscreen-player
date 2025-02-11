@@ -42,6 +42,10 @@ const mockDashInstance = {
   getActiveStream: jest.fn(() => ({
     getProcessors: jest.fn(() => []),
   })),
+  getTracksFor: jest.fn(),
+  getCurrentTrackFor: jest.fn(),
+  setCurrentTrack: jest.fn(),
+  setInitialMediaSettingsFor: jest.fn(),
 }
 
 const mockDashMediaPlayer = {
@@ -62,6 +66,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
+    CURRENT_TRACK_CHANGED: "currentTrackChanged",
   }
 
   let mseStrategy
@@ -166,7 +171,16 @@ describe("Media Source Extensions Playback Strategy", () => {
     }
   })
 
-  function setUpMSE(timeCorrection, windowType, mediaKind, windowStartTimeMS, windowEndTimeMS, customPlayerSettings) {
+  function setUpMSE(
+    timeCorrection,
+    windowType,
+    mediaKind,
+    windowStartTimeMS,
+    windowEndTimeMS,
+    customPlayerSettings,
+    enableBroadcastMixAD,
+    callBroadcastMixADCallbacks
+  ) {
     mockTimeModel = {
       correction: timeCorrection ?? 0,
       windowStartTime: windowStartTimeMS ?? 0,
@@ -179,7 +193,9 @@ describe("Media Source Extensions Playback Strategy", () => {
       mediaKind ?? MediaKinds.VIDEO,
       playbackElement,
       false,
-      customPlayerSettings || {}
+      customPlayerSettings || {},
+      enableBroadcastMixAD ?? false,
+      callBroadcastMixADCallbacks ?? (() => {})
     )
   }
 
@@ -569,6 +585,25 @@ describe("Media Source Extensions Playback Strategy", () => {
       })
 
       expect(mediaSources.availableSources()).toHaveLength(3)
+    })
+  })
+
+  describe("Sets up mediaPlayer respecting enableBroadcastMixAD", () => {
+    it("sets initial audio track settings when enableBroadcastMixAD is true", () => {
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, undefined, true)
+      mseStrategy.load(WindowTypes.STATIC, 10)
+
+      expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenCalledWith("audio", {
+        accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+        role: "alternate",
+      })
+    })
+
+    it("does not set initial audio track settings when enableBroadcastMixAD is false", () => {
+      setUpMSE(undefined, undefined, undefined, undefined, undefined, undefined, false)
+      mseStrategy.load(WindowTypes.STATIC, 10)
+
+      expect(mockDashInstance.setInitialMediaSettingsFor).not.toHaveBeenCalled()
     })
   })
 
@@ -1100,6 +1135,118 @@ describe("Media Source Extensions Playback Strategy", () => {
         mseStrategy.setCurrentTime(90)
 
         expect(mockDashInstance.seek).toHaveBeenCalledWith(78.9)
+      })
+    })
+  })
+
+  describe("broadcastMixAD", () => {
+    const broadcastMixADtrack = {
+      roles: ["alternate"],
+      accessibilitiesWithSchemeIdUri: [{ schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" }],
+    }
+
+    const mainTrack = { roles: ["main"] }
+
+    beforeEach(() => {
+      setUpMSE()
+      mseStrategy.load(WindowTypes.STATIC, 10)
+    })
+
+    describe("isBroadcastMixADAvailable()", () => {
+      it("returns true when there is a broadcastMixAD track", () => {
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, broadcastMixADtrack])
+
+        expect(mseStrategy.isBroadcastMixADAvailable()).toBe(true)
+      })
+
+      it("returns false when there is no broadcastMixAD track", () => {
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack])
+
+        expect(mseStrategy.isBroadcastMixADAvailable()).toBe(false)
+      })
+    })
+
+    describe("isBroadcastMixADEnabled()", () => {
+      it("returns true when the current audio track is broadcastMixAD", () => {
+        mockDashInstance.getCurrentTrackFor.mockReturnValueOnce(broadcastMixADtrack)
+
+        expect(mseStrategy.isBroadcastMixADEnabled()).toBe(true)
+      })
+
+      it("returns false when the current track is not broadcastMixAD", () => {
+        mockDashInstance.getCurrentTrackFor.mockReturnValueOnce(mainTrack)
+
+        expect(mseStrategy.isBroadcastMixADEnabled()).toBe(false)
+      })
+    })
+
+    describe("setBroadcastMixADOff()", () => {
+      it("switches to the main track", () => {
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, broadcastMixADtrack])
+
+        mseStrategy.setBroadcastMixADOff()
+
+        expect(mockDashInstance.setCurrentTrack).toHaveBeenCalledWith(mainTrack)
+      })
+    })
+
+    describe("setBroadcastMixADOn()", () => {
+      it("switches to the broadcastMixAD track if present", () => {
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, broadcastMixADtrack])
+
+        mseStrategy.setBroadcastMixADOn()
+
+        expect(mockDashInstance.setCurrentTrack).toHaveBeenCalledWith(broadcastMixADtrack)
+      })
+
+      it("does not switch to the broadcastMixAD if not present", () => {
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack])
+
+        mseStrategy.setBroadcastMixADOn()
+
+        expect(mockDashInstance.setCurrentTrack).not.toHaveBeenCalled()
+      })
+    })
+
+    describe("onTrackChangeRendered", () => {
+      it("should ensure callbacks are called with enabled true when the current track is broadcastMixAD", () => {
+        mockDashInstance.getCurrentTrackFor.mockReturnValue(broadcastMixADtrack)
+        const callBroadcastMixADCallbacksMock = jest.fn()
+        setUpMSE(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          callBroadcastMixADCallbacksMock
+        )
+        mseStrategy.load(WindowTypes.STATIC, 10)
+
+        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { newMediaInfo: { type: "audio" } })
+
+        expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(true)
+      })
+
+      it("should ensure callbacks are called with enabled false when the current track is not broadcastMixAD", () => {
+        mockDashInstance.getCurrentTrackFor.mockReturnValue(mainTrack)
+        const callBroadcastMixADCallbacksMock = jest.fn()
+        setUpMSE(
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          callBroadcastMixADCallbacksMock
+        )
+        mseStrategy.load(WindowTypes.STATIC, 10)
+
+        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { newMediaInfo: { type: "audio" } })
+
+        expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(false)
       })
     })
   })

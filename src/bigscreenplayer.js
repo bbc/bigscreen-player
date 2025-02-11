@@ -24,6 +24,7 @@ function BigscreenPlayer() {
   let stateChangeCallbacks = []
   let timeUpdateCallbacks = []
   let subtitleCallbacks = []
+  let broadcastMixADCallbacks = []
 
   let playerReadyCallback
   let playerErrorCallback
@@ -132,7 +133,8 @@ function BigscreenPlayer() {
       mediaSources,
       windowType,
       mediaStateUpdateCallback,
-      playerErrorCallback
+      playerErrorCallback,
+      callBroadcastMixADCallbacks
     )
 
     subtitles = Subtitles(
@@ -178,6 +180,10 @@ function BigscreenPlayer() {
 
   function isSubtitlesAvailable() {
     return subtitles ? subtitles.available() : false
+  }
+
+  function callBroadcastMixADCallbacks(enabled) {
+    callCallbacks(broadcastMixADCallbacks, { enabled })
   }
 
   return /** @alias module:bigscreenplayer/bigscreenplayer */ {
@@ -254,6 +260,7 @@ function BigscreenPlayer() {
       stateChangeCallbacks = []
       timeUpdateCallbacks = []
       subtitleCallbacks = []
+      broadcastMixADCallbacks = []
       endOfStream = undefined
       mediaKind = undefined
       pauseTrigger = undefined
@@ -327,6 +334,28 @@ function BigscreenPlayer() {
       const indexOf = subtitleCallbacks.indexOf(callback)
       if (indexOf !== -1) {
         subtitleCallbacks.splice(indexOf, 1)
+      }
+    },
+
+    /**
+     * Pass a function to be called whenever BroadcastMixAD is enabled or disabled.
+     * @function
+     * @param {Function} callback
+     */
+    registerForBroadcastMixADChanges: (callback) => {
+      broadcastMixADCallbacks.push(callback)
+      return callback
+    },
+
+    /**
+     * Unregisters a previously registered callback for changes to BroadcastMixAD.
+     * @function
+     * @param {Function} callback
+     */
+    unregisterForBroadcastMixADChanges: (callback) => {
+      const indexOf = broadcastMixADCallbacks.indexOf(callback)
+      if (indexOf !== -1) {
+        broadcastMixADCallbacks.splice(indexOf, 1)
       }
     },
 
@@ -550,6 +579,25 @@ function BigscreenPlayer() {
       if (subtitles) {
         subtitles.clearExample()
       }
+    },
+
+    /**
+     * @function
+     * @returns {boolean} true if there if an AD track is available
+     */
+    isBroadcastMixADAvailable: () => playerComponent && playerComponent.isBroadcastMixADAvailable(),
+
+    /**
+     * @function
+     * @returns {boolean} true if there is an the AD audio track is current being used
+     */
+    isBroadcastMixADEnabled: () => playerComponent && playerComponent.isBroadcastMixADEnabled(),
+
+    /**
+     * @function
+     */
+    setBroadcastMixADEnabled: (enabled) => {
+      enabled ? playerComponent.setBroadcastMixADOn() : playerComponent.setBroadcastMixADOff()
     },
 
     /**

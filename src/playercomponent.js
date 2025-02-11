@@ -14,7 +14,8 @@ function PlayerComponent(
   mediaSources,
   windowType,
   stateUpdateCallback,
-  errorCallback
+  errorCallback,
+  callBroadcastMixADCallbacks
 ) {
   const transferFormat = bigscreenPlayerData.media.transferFormat
 
@@ -38,7 +39,9 @@ function PlayerComponent(
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        bigscreenPlayerData.media.playerSettings
+        bigscreenPlayerData.media.playerSettings,
+        bigscreenPlayerData.enableBroadcastMixAD,
+        callBroadcastMixADCallbacks
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)
@@ -97,6 +100,22 @@ function PlayerComponent(
 
   function getSeekableRange() {
     return playbackStrategy && playbackStrategy.getSeekableRange()
+  }
+
+  function isBroadcastMixADAvailable() {
+    return playbackStrategy && playbackStrategy.isBroadcastMixADAvailable?.()
+  }
+
+  function isBroadcastMixADEnabled() {
+    return playbackStrategy && playbackStrategy.isBroadcastMixADEnabled?.()
+  }
+
+  function setBroadcastMixADOn() {
+    playbackStrategy && playbackStrategy.setBroadcastMixADOn?.()
+  }
+
+  function setBroadcastMixADOff() {
+    playbackStrategy && playbackStrategy.setBroadcastMixADOff?.()
   }
 
   function isPaused() {
@@ -407,6 +426,10 @@ function PlayerComponent(
     getPlayerElement,
     isPaused,
     tearDown,
+    isBroadcastMixADAvailable,
+    isBroadcastMixADEnabled,
+    setBroadcastMixADOn,
+    setBroadcastMixADOff,
   }
 }
 
