@@ -1367,6 +1367,26 @@ describe("Player Component", () => {
       expect(mockStrategy.load).toHaveBeenCalled()
     })
 
+    it("calculates the failoverTime", async () => {
+      mockStrategy.getCurrentTime.mockReturnValue(100)
+
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
+
+      await playerComponent.replaceMediaSources(sources)
+
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+    })
+
     it("bubbles error if replace promise rejects", async () => {
       const code = "0000"
       const message = "error replacing sources"
