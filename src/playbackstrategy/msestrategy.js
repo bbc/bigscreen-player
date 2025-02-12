@@ -126,6 +126,10 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
 
     window.timer = []
 
+    if (window.timerRef) {
+      clearInterval(window.timerRef)
+    }
+
     window.timerRef = setInterval(() => {
       const dashMetrics = mediaPlayer.getDashMetrics()
       const buffer = dashMetrics.getCurrentBufferLevel("video")
