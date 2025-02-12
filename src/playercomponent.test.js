@@ -59,6 +59,7 @@ const mockMediaSources = {
   failover: jest.fn().mockResolvedValue(),
   reset: jest.fn().mockResolvedValue(),
   time: jest.fn(),
+  replace: jest.fn(),
 }
 
 describe("Player Component", () => {
@@ -87,6 +88,7 @@ describe("Player Component", () => {
     })
 
     mockMediaSources.failover.mockResolvedValue()
+    mockMediaSources.replace.mockResolvedValue()
 
     bigscreenPlayerData = {
       media: {
@@ -983,7 +985,7 @@ describe("Player Component", () => {
 
       mockMediaSources.failover.mockResolvedValueOnce()
 
-      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING) // ensures the following waiting is 'mid playback'
+      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING) // ensures the following waiting is "mid playback"
       mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(1)
@@ -1322,6 +1324,102 @@ describe("Player Component", () => {
       playerComponent.tearDown()
 
       expect(mockStrategy.tearDown).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("replaceMediaSources", () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
+
+    const cdn = "http://replacedcdn.com"
+    const url = "http://replacedurl.com/"
+    const sources = [{ cdn, url }]
+
+    const replace = async (onStateUpdate) => {
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        onStateUpdate ?? jest.fn(),
+        jest.fn()
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+      await playerComponent.replaceMediaSources(sources)
+    }
+
+    it("calls through to media sources", async () => {
+      await replace()
+
+      expect(mockMediaSources.replace).toHaveBeenCalledWith(sources)
+    })
+
+    it("tears down the media element if media source replace succeeds", async () => {
+      await replace()
+
+      expect(mockStrategy.reset).toHaveBeenCalled()
+    })
+
+    it("loads media if media source replace succeeds", async () => {
+      await replace()
+
+      expect(mockStrategy.load).toHaveBeenCalled()
+    })
+
+    it("calculates the failoverTime", async () => {
+      mockStrategy.getCurrentTime.mockReturnValue(100)
+
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
+
+      await playerComponent.replaceMediaSources(sources)
+
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+    })
+
+    it("bubbles error if replace promise rejects", async () => {
+      const code = "0000"
+      const message = "error replacing sources"
+
+      mockMediaSources.replace.mockRejectedValueOnce()
+      jest.spyOn(Plugins.interface, "onFatalError")
+      const onStateUpdate = jest.fn()
+
+      await replace(onStateUpdate)
+
+      const expectedStatusUpdate = {
+        data: {
+          currentTime: undefined,
+          duration: undefined,
+          seekableRange: undefined,
+          state: MediaState.FATAL_ERROR,
+        },
+        isBufferingTimeoutError: false,
+        timeUpdate: false,
+        code,
+        message,
+      }
+
+      const expectedOnFatalErrorMessage = expect.objectContaining({
+        status: PluginEnums.STATUS.FATAL,
+        stateType: PluginEnums.TYPE.ERROR,
+        isBufferingTimeoutError: false,
+        code,
+        message,
+      })
+
+      expect(onStateUpdate).toHaveBeenCalledWith(expectedStatusUpdate)
+      expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(expectedOnFatalErrorMessage)
     })
   })
 })

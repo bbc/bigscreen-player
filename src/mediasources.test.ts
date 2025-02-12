@@ -6,6 +6,9 @@ import SourceLoader from "./manifest/sourceloader"
 import { ManifestType } from "./models/manifesttypes"
 import { TransferFormat } from "./models/transferformats"
 import getError from "./testutils/geterror"
+import DebugTool from "./debugger/debugtool"
+
+jest.mock("./debugger/debugtool")
 
 jest.mock("./manifest/sourceloader", () => ({
   default: {
@@ -778,6 +781,58 @@ describe("Media Sources", () => {
       jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT_MS)
 
       expect(mediaSources.availableSources()).toEqual([])
+    })
+  })
+
+  describe("replace", () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it("replaces the media sources", async () => {
+      const cdn = "http://replacedcdn.com"
+      const url = "http://replacedurl.com/"
+
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      await mediaSources.replace([{ cdn, url }])
+
+      expect(mediaSources.currentSource()).toBe(url)
+    })
+
+    it("updates debug output after a replace", async () => {
+      const cdn = "http://replacedcdn.com"
+      const url = "http://replacedurl.com/"
+
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      await mediaSources.replace([{ cdn, url }])
+
+      expect(DebugTool.dynamicMetric).toHaveBeenCalledWith("cdns-available", [cdn])
+      expect(DebugTool.dynamicMetric).toHaveBeenCalledWith("current-url", url)
+    })
+
+    it("refreshes the manifest if needed", async () => {
+      const cdn = "http://replacedcdn.com"
+      const url = "http://replacedurl.com/"
+
+      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
+        time: {
+          manifestType: ManifestType.DYNAMIC,
+          presentationTimeOffsetInMilliseconds: 1731406718000,
+          availabilityStartTimeInMilliseconds: 1731406718000,
+          timeShiftBufferDepthInMilliseconds: 0,
+        },
+        transferFormat: TransferFormat.HLS,
+      })
+
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      await mediaSources.replace([{ cdn, url }])
+      expect(SourceLoader.load).toHaveBeenCalledTimes(2)
     })
   })
 })

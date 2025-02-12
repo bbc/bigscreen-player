@@ -173,8 +173,19 @@ function MediaSources() {
     )
   }
 
-  function refresh() {
+  function refresh(): Promise<void> {
     return new Promise((resolve) => resolve(loadManifest()))
+  }
+
+  function replace(sources: Connection[]): Promise<void> {
+    mediaSources = sources
+    updateDebugOutput()
+
+    if (needToGetManifest()) {
+      return refresh()
+    }
+
+    return Promise.resolve()
   }
 
   function loadManifest(): Promise<void> {
@@ -333,6 +344,7 @@ function MediaSources() {
     failover,
     failoverSubtitles,
     refresh,
+    replace,
     currentSource: getCurrentUrl,
     currentSubtitlesSource: getCurrentSubtitlesUrl,
     currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,

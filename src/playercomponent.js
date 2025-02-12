@@ -309,6 +309,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
 
     // guard against attempting to call _stateUpdateCallback after a tearDown
     // can happen if tearing down whilst an async cdn failover is being attempted
+
     if (_stateUpdateCallback) {
       _stateUpdateCallback(stateUpdateData)
     }
@@ -319,6 +320,27 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     if (thenPause) {
       pause()
     }
+  }
+
+  function replaceMediaSources(sources) {
+    return mediaSources
+      .replace(sources)
+      .then(() => {
+        const presentationTimeInSeconds = getCurrentTime()
+        const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
+          presentationTimeInSeconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
+        )
+
+        const windowOffset = (mediaSources.time().windowStartTime - availabilityTimeInMilliseconds) / 1000
+        const failoverTime = presentationTimeInSeconds - (windowOffset || 0)
+
+        tearDownMediaElement()
+        loadMedia(mediaMetaData.type, failoverTime, isPaused())
+      })
+      .catch(() => {
+        bubbleFatalError(false, { code: "0000", message: "error replacing sources" })
+      })
   }
 
   function tearDown() {
@@ -347,6 +369,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     getSeekableRange,
     getPlayerElement,
     isPaused,
+    replaceMediaSources,
     tearDown,
   }
 }
