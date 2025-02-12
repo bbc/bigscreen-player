@@ -1332,47 +1332,33 @@ describe("Player Component", () => {
     const url = "http://replacedurl.com/"
     const sources = [{ cdn, url }]
 
-    it("calls through to media sources", async () => {
+    const replace = async (onStateUpdate) => {
       const playerComponent = new PlayerComponent(
         createPlaybackElement(),
         bigscreenPlayerData,
         mockMediaSources,
-        jest.fn(),
+        onStateUpdate ?? jest.fn(),
         jest.fn()
       )
 
       await jest.runOnlyPendingTimersAsync()
       await playerComponent.replaceMediaSources(sources)
+    }
+
+    it("calls through to media sources", async () => {
+      await replace()
 
       expect(mockMediaSources.replace).toHaveBeenCalledWith(sources)
     })
 
     it("tears down the media element if media source replace succeeds", async () => {
-      const playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn()
-      )
-
-      await jest.runOnlyPendingTimersAsync()
-      await playerComponent.replaceMediaSources(sources)
+      await replace()
 
       expect(mockStrategy.reset).toHaveBeenCalled()
     })
 
     it("loads media if media source replace succeeds", async () => {
-      const playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn()
-      )
-
-      await jest.runOnlyPendingTimersAsync()
-      await playerComponent.replaceMediaSources(sources)
+      await replace()
 
       expect(mockStrategy.load).toHaveBeenCalled()
     })
@@ -1382,16 +1368,7 @@ describe("Player Component", () => {
       jest.spyOn(Plugins.interface, "onFatalError")
       const onStateUpdate = jest.fn()
 
-      const playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        onStateUpdate,
-        jest.fn()
-      )
-
-      await jest.runOnlyPendingTimersAsync()
-      await playerComponent.replaceMediaSources(sources)
+      await replace(onStateUpdate)
 
       expect(onStateUpdate).toHaveBeenCalledWith({
         data: {
