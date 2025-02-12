@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 import MediaState from "./models/mediastate"
 import PauseTriggers from "./models/pausetriggers"
 import WindowTypes from "./models/windowtypes"
@@ -8,50 +9,50 @@ import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Version from "./version"
 
-var sourceList
-var source
-var cdn
+let sourceList
+let source
+let cdn
 
-var timeUpdateCallbacks = []
-var subtitleCallbacks = []
-var stateChangeCallbacks = []
-var broadcastMixADCallbacks = []
+let timeUpdateCallbacks = []
+let subtitleCallbacks = []
+let stateChangeCallbacks = []
+let broadcastMixADCallbacks = []
 
-var currentTime
-var isSeeking
-var seekableRange
-var duration
-var liveWindowStart
-var pausedState = true
-var endedState
-var mediaKind
-var windowType
-var subtitlesAvailable
-var subtitlesEnabled
-var subtitlesHidden
-var broadcastMixADAvailable
-var broadcastMixADEnabled
-var endOfStream
-var canSeekState
-var canPauseState
-var shallowClone
-var mockModes = {
+let currentTime
+let isSeeking
+let seekableRange
+let duration
+let liveWindowStart
+let pausedState = true
+let endedState
+let mediaKind
+let windowType
+let subtitlesAvailable
+let subtitlesEnabled
+let subtitlesHidden
+let broadcastMixADAvailable
+let broadcastMixADEnabled
+let endOfStream
+let canSeekState
+let canPauseState
+let shallowClone
+const mockModes = {
   NONE: 0,
   PLAIN: 1,
   JASMINE: 2,
 }
-var mockStatus = { currentlyMocked: false, mode: mockModes.NONE }
-var initialised
-var fatalErrorBufferingTimeout
+let mockStatus = { currentlyMocked: false, mode: mockModes.NONE }
+let initialised
+let fatalErrorBufferingTimeout
 
-var autoProgress
-var autoProgressInterval
-var initialBuffering = false
+let autoProgress
+let autoProgressInterval
+let initialBuffering = false
 
-var liveWindowData
-var manifestError
+let liveWindowData
+let manifestError
 
-var excludedFuncs = [
+let excludedFuncs = [
   "getDebugLogs",
   "mock",
   "mockJasmine",
@@ -67,10 +68,10 @@ var excludedFuncs = [
 ]
 
 function startProgress(progressCause) {
-  setTimeout(function () {
+  setTimeout(() => {
     if (!autoProgressInterval) {
       mockingHooks.changeState(MediaState.PLAYING, progressCause)
-      autoProgressInterval = setInterval(function () {
+      autoProgressInterval = setInterval(() => {
         if (windowType !== WindowTypes.STATIC && seekableRange.start && seekableRange.end) {
           seekableRange.start += 0.5
           seekableRange.end += 0.5
@@ -96,7 +97,7 @@ function mock(BigscreenPlayer, opts) {
   autoProgress = opts && opts.autoProgress
 
   if (opts && opts.excludedFuncs) {
-    excludedFuncs = excludedFuncs.concat(opts.excludedFuncs)
+    excludedFuncs = [...excludedFuncs, ...opts.excludedFuncs]
   }
 
   if (mockStatus.currentlyMocked) {
@@ -105,15 +106,15 @@ function mock(BigscreenPlayer, opts) {
   shallowClone = PlaybackUtils.clone(BigscreenPlayer)
 
   // Divert existing functions
-  for (var func in BigscreenPlayer) {
+  for (const func in BigscreenPlayer) {
     if (BigscreenPlayer[func] && mockFunctions[func]) {
       BigscreenPlayer[func] = mockFunctions[func]
     } else if (!PlaybackUtils.contains(excludedFuncs, func)) {
-      throw new Error(func + " was not mocked or included in the exclusion list")
+      throw new Error(`${func} was not mocked or included in the exclusion list`)
     }
   }
   // Add extra functions
-  for (var hook in mockingHooks) {
+  for (const hook in mockingHooks) {
     BigscreenPlayer[hook] = mockingHooks[hook]
   }
   mockStatus = { currentlyMocked: true, mode: mockModes.PLAIN }
@@ -123,23 +124,22 @@ function mockJasmine(BigscreenPlayer, opts) {
   autoProgress = opts && opts.autoProgress
 
   if (opts && opts.excludedFuncs) {
-    excludedFuncs = excludedFuncs.concat(opts.excludedFuncs)
+    excludedFuncs = [...excludedFuncs, ...opts.excludedFuncs]
   }
 
   if (mockStatus.currentlyMocked) {
     throw new Error("mockJasmine() was called while BigscreenPlayer was already mocked")
   }
 
-  for (var fn in BigscreenPlayer) {
+  for (const fn in BigscreenPlayer) {
     if (BigscreenPlayer[fn] && mockFunctions[fn]) {
-      // eslint-disable-next-line no-undef
       spyOn(BigscreenPlayer, fn).and.callFake(mockFunctions[fn])
     } else if (!PlaybackUtils.contains(excludedFuncs, fn)) {
-      throw new Error(fn + " was not mocked or included in the exclusion list")
+      throw new Error(`${fn} was not mocked or included in the exclusion list`)
     }
   }
 
-  for (var hook in mockingHooks) {
+  for (const hook in mockingHooks) {
     BigscreenPlayer[hook] = mockingHooks[hook]
   }
   mockStatus = { currentlyMocked: true, mode: mockModes.JASMINE }
@@ -151,12 +151,12 @@ function unmock(BigscreenPlayer) {
   }
 
   // Remove extra functions
-  for (var hook in mockingHooks) {
+  for (const hook in mockingHooks) {
     delete BigscreenPlayer[hook]
   }
   // Undo divert existing functions (plain mock only)
   if (mockStatus.mode === mockModes.PLAIN) {
-    for (var func in shallowClone) {
+    for (const func in shallowClone) {
       BigscreenPlayer[func] = shallowClone[func]
     }
   }
@@ -168,11 +168,11 @@ function unmock(BigscreenPlayer) {
 }
 
 function callSubtitlesCallbacks(enabled) {
-  callCallbacks(subtitleCallbacks, { enabled: enabled })
+  callCallbacks(subtitleCallbacks, { enabled })
 }
 
-var mockFunctions = {
-  init: function (playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
+const mockFunctions = {
+  init(playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
     currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0
     liveWindowStart = undefined
     pausedState = true
@@ -215,43 +215,35 @@ var mockFunctions = {
       callbacks.onSuccess()
     }
   },
-  registerForTimeUpdates: function (callback) {
+  registerForTimeUpdates(callback) {
     timeUpdateCallbacks.push(callback)
     return callback
   },
-  unregisterForTimeUpdates: function (callback) {
-    timeUpdateCallbacks = timeUpdateCallbacks.filter(function (existingCallback) {
-      return callback !== existingCallback
-    })
+  unregisterForTimeUpdates(callback) {
+    timeUpdateCallbacks = timeUpdateCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
-  registerForSubtitleChanges: function (callback) {
+  registerForSubtitleChanges(callback) {
     subtitleCallbacks.push(callback)
     return callback
   },
-  unregisterForSubtitleChanges: function (callback) {
-    subtitleCallbacks = subtitleCallbacks.filter(function (existingCallback) {
-      return callback !== existingCallback
-    })
+  unregisterForSubtitleChanges(callback) {
+    subtitleCallbacks = subtitleCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
-  registerForBroadcastMixADChanges: function (callback) {
+  registerForBroadcastMixADChanges(callback) {
     broadcastMixADCallbacks.push(callback)
     return callback
   },
-  unregisterForBroadcastMixADChanges: function (callback) {
-    broadcastMixADCallbacks = broadcastMixADCallbacks.filter(function (existingCallback) {
-      return callback !== existingCallback
-    })
+  unregisterForBroadcastMixADChanges(callback) {
+    broadcastMixADCallbacks = broadcastMixADCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
-  registerForStateChanges: function (callback) {
+  registerForStateChanges(callback) {
     stateChangeCallbacks.push(callback)
     return callback
   },
-  unregisterForStateChanges: function (callback) {
-    stateChangeCallbacks = stateChangeCallbacks.filter(function (existingCallback) {
-      return callback !== existingCallback
-    })
+  unregisterForStateChanges(callback) {
+    stateChangeCallbacks = stateChangeCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
-  setCurrentTime: function (time) {
+  setCurrentTime(time) {
     currentTime = time
     isSeeking = true
     if (autoProgress) {
@@ -263,95 +255,93 @@ var mockFunctions = {
       mockingHooks.progressTime(currentTime)
     }
   },
-  getCurrentTime: function () {
+  getCurrentTime() {
     return currentTime
   },
-  getMediaKind: function () {
+  getMediaKind() {
     return mediaKind
   },
-  getWindowType: function () {
+  getWindowType() {
     return windowType
   },
-  getSeekableRange: function () {
+  getSeekableRange() {
     return seekableRange
   },
-  getDuration: function () {
+  getDuration() {
     return duration
   },
-  isPaused: function () {
+  isPaused() {
     return pausedState
   },
-  isEnded: function () {
+  isEnded() {
     return endedState
   },
-  play: function () {
+  play() {
     if (autoProgress) {
       startProgress("other")
     } else {
       mockingHooks.changeState(MediaState.PLAYING, "other")
     }
   },
-  pause: function (opts) {
+  pause(opts) {
     mockingHooks.changeState(MediaState.PAUSED, "other", opts)
   },
-  setSubtitlesEnabled: function (value) {
+  setSubtitlesEnabled(value) {
     subtitlesEnabled = value
     callSubtitlesCallbacks(value)
   },
-  isSubtitlesEnabled: function () {
+  isSubtitlesEnabled() {
     return subtitlesEnabled
   },
-  isSubtitlesAvailable: function () {
+  isSubtitlesAvailable() {
     return subtitlesAvailable
   },
-  customiseSubtitles: function () {},
-  renderSubtitleExample: function () {},
-  setBroadcastMixADEnabled: function (value) {
+  customiseSubtitles() {},
+  renderSubtitleExample() {},
+  setBroadcastMixADEnabled(value) {
     broadcastMixADEnabled = value
   },
-  isBroadcastMixADEnabled: function () {
+  isBroadcastMixADEnabled() {
     return broadcastMixADEnabled
   },
-  isBroadcastMixADAvailable: function () {
+  isBroadcastMixADAvailable() {
     return broadcastMixADAvailable
   },
-  setTransportControlsPosition: function (position) {},
-  canSeek: function () {
+  setTransportControlsPosition() {},
+  canSeek() {
     return canSeekState
   },
-  canPause: function () {
+  canPause() {
     return canPauseState
   },
-  convertVideoTimeSecondsToEpochMs: function (seconds) {
+  convertVideoTimeSecondsToEpochMs(seconds) {
     return liveWindowStart ? liveWindowStart + seconds * 1000 : undefined
   },
-  transitions: function () {
+  transitions() {
     return {
-      canBePaused: function () {
+      canBePaused() {
         return true
       },
-      canBeginSeek: function () {
+      canBeginSeek() {
         return true
       },
     }
   },
-  isPlayingAtLiveEdge: function () {
+  isPlayingAtLiveEdge() {
     return false
   },
-  resize: function () {
+  resize() {
     subtitlesHidden = this.isSubtitlesEnabled()
     this.setSubtitlesEnabled(subtitlesHidden)
   },
-  clearResize: function () {
+  clearResize() {
     this.setSubtitlesEnabled(subtitlesHidden)
   },
-  getPlayerElement: function () {
-    return
-  },
-  getFrameworkVersion: function () {
+  getPlayerElement() {},
+  getFrameworkVersion() {
     return Version
   },
-  tearDown: function () {
+  tearDown() {
     manifestError = false
     if (!initialised) {
       return
@@ -378,13 +368,13 @@ var mockFunctions = {
 
     initialised = false
   },
-  registerPlugin: function (plugin) {
+  registerPlugin(plugin) {
     Plugins.registerPlugin(plugin)
   },
-  unregisterPlugin: function (plugin) {
+  unregisterPlugin(plugin) {
     Plugins.unregisterPlugin(plugin)
   },
-  getLiveWindowData: function () {
+  getLiveWindowData() {
     if (windowType === WindowTypes.STATIC) {
       return {}
     }
@@ -397,10 +387,11 @@ var mockFunctions = {
   },
 }
 
-var mockingHooks = {
-  changeState: function (state, eventTrigger, opts) {
+const mockingHooks = {
+  changeState(state, eventTrigger, opts) {
+    // eslint-disable-next-line no-param-reassign
     eventTrigger = eventTrigger || "device"
-    var pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
+    const pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
 
     pausedState = state === MediaState.PAUSED || state === MediaState.STOPPED || state === MediaState.ENDED
     endedState = state === MediaState.ENDED
@@ -433,7 +424,7 @@ var mockingHooks = {
       )
     }
 
-    var stateObject = { state: state }
+    const stateObject = { state }
     if (state === MediaState.PAUSED) {
       stateObject.trigger = pauseTrigger
       endOfStream = false
@@ -451,51 +442,51 @@ var mockingHooks = {
     callCallbacks(stateChangeCallbacks, stateObject)
 
     if (autoProgress) {
-      if (state !== MediaState.PLAYING) {
-        stopProgress()
-      } else {
+      if (state === MediaState.PLAYING) {
         startProgress()
+      } else {
+        stopProgress()
       }
     }
   },
-  progressTime: function (time) {
+  progressTime(time) {
     currentTime = time
     callCallbacks(timeUpdateCallbacks, {
       currentTime: time,
-      endOfStream: endOfStream,
+      endOfStream,
     })
   },
-  setEndOfStream: function (isEndOfStream) {
+  setEndOfStream(isEndOfStream) {
     endOfStream = isEndOfStream
   },
-  setDuration: function (mediaDuration) {
+  setDuration(mediaDuration) {
     duration = mediaDuration
   },
-  setSeekableRange: function (newSeekableRange) {
+  setSeekableRange(newSeekableRange) {
     seekableRange = newSeekableRange
   },
-  setMediaKind: function (kind) {
+  setMediaKind(kind) {
     mediaKind = kind
   },
-  setWindowType: function (type) {
+  setWindowType(type) {
     windowType = type
   },
-  setCanSeek: function (value) {
+  setCanSeek(value) {
     canSeekState = value
   },
-  setCanPause: function (value) {
+  setCanPause(value) {
     canPauseState = value
   },
-  setLiveWindowStart: function (value) {
+  setLiveWindowStart(value) {
     liveWindowStart = value
   },
-  setSubtitlesAvailable: function (value) {
+  setSubtitlesAvailable(value) {
     subtitlesAvailable = value
   },
-  getSource: function () {
+  getSource() {
     return source
   },
-  triggerError: function () {
+  triggerError() {
     fatalErrorBufferingTimeout = false
     Plugins.interface.onError(
       new PluginData({
@@ -507,10 +498,10 @@ var mockingHooks = {
     this.changeState(MediaState.WAITING)
     stopProgress()
   },
-  triggerManifestError: function () {
+  triggerManifestError() {
     manifestError = true
   },
-  triggerErrorHandled: function () {
+  triggerErrorHandled() {
     if (sourceList && sourceList.length > 1) {
       sourceList.shift()
       source = sourceList[0].url
@@ -531,7 +522,7 @@ var mockingHooks = {
         status: PluginEnums.STATUS.FAILOVER,
         stateType: PluginEnums.TYPE.ERROR,
         isBufferingTimeoutError: fatalErrorBufferingTimeout,
-        cdn: cdn,
+        cdn,
       })
     )
 
@@ -540,16 +531,16 @@ var mockingHooks = {
       startProgress()
     }
   },
-  setInitialBuffering: function (value) {
+  setInitialBuffering(value) {
     initialBuffering = value
   },
-  setLiveWindowData: function (newLiveWindowData) {
+  setLiveWindowData(newLiveWindowData) {
     liveWindowData = newLiveWindowData
   },
 }
 
 export default {
-  mock: mock,
-  unmock: unmock,
-  mockJasmine: mockJasmine,
+  mock,
+  unmock,
+  mockJasmine,
 }
