@@ -114,6 +114,7 @@ describe("Bigscreen Player", () => {
       setPlaybackRate: jest.fn(),
       getPlaybackRate: jest.fn(),
       tearDown: jest.fn(),
+      replaceMediaSources: jest.fn(),
     }
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
@@ -1622,6 +1623,17 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.getDebugLogs()
 
       expect(DebugTool.getDebugLogs).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("replaceMediaSources", () => {
+    it("should call through to player component", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      const sources = "foo"
+      bigscreenPlayer.replaceMediaSources(sources)
+
+      expect(mockPlayerComponentInstance.replaceMediaSources).toHaveBeenCalledWith(sources)
     })
   })
 })
