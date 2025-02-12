@@ -1368,6 +1368,9 @@ describe("Player Component", () => {
     })
 
     it("bubbles error if replace promise rejects", async () => {
+      const code = "0000"
+      const message = "error replacing sources"
+
       mockMediaSources.replace.mockRejectedValueOnce()
       jest.spyOn(Plugins.interface, "onFatalError")
       const onStateUpdate = jest.fn()
@@ -1383,8 +1386,8 @@ describe("Player Component", () => {
         },
         isBufferingTimeoutError: false,
         timeUpdate: false,
-        code: "0000",
-        message: "error replacing sources",
+        code,
+        message,
       })
 
       expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(
@@ -1392,8 +1395,8 @@ describe("Player Component", () => {
           status: PluginEnums.STATUS.FATAL,
           stateType: PluginEnums.TYPE.ERROR,
           isBufferingTimeoutError: false,
-          code: "0000",
-          message: "error replacing sources",
+          code,
+          message,
         })
       )
     })
