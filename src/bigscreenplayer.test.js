@@ -1630,7 +1630,7 @@ describe("Bigscreen Player", () => {
     it("should call through to player component", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      const sources = "foo"
+      const sources = "https://newsource.com"
       bigscreenPlayer.replaceMediaSources(sources)
 
       expect(mockPlayerComponentInstance.replaceMediaSources).toHaveBeenCalledWith(sources)
