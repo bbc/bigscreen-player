@@ -22,8 +22,11 @@
             playbackElement.style.height = "720px"
             playbackElement.style.width = "1280px"
 
+            let windowType = "staticWindow"
+            let enableSubtitles = false
+
             let minimalData = {
-                initialPlaybackTime: { seconds: 30 },
+                initialPlaybackTime: 30,
                 media: {
                     captions: [],
                     type: "application/dash+xml",
@@ -40,20 +43,9 @@
                 },
             }
 
-            player.init(playbackElement, minimalData, {
+            player.init(playbackElement, minimalData, windowType, enableSubtitles, {
                 onSuccess: function () {
                     player.toggleDebug()
-
-                    //wait a bit, then try to update the sources, which should cause an immediate failover
-                    setTimeout(() => {
-                        let newSources = [
-                            {
-                                url: "https://rdmedia.bbc.co.uk/elephants_dream/1/client_manifest-all.mpd",
-                                cdn: "bbc_randd",
-                            },
-                        ]
-                        player.replaceMediaSources(newSources)
-                    }, 10000)
                 },
                 onError: function (error) {
                     player.toggleDebug()
