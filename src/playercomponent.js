@@ -309,6 +309,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
 
     // guard against attempting to call _stateUpdateCallback after a tearDown
     // can happen if tearing down whilst an async cdn failover is being attempted
+
     if (_stateUpdateCallback) {
       _stateUpdateCallback(stateUpdateData)
     }
