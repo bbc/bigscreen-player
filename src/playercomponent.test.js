@@ -1377,7 +1377,7 @@ describe("Player Component", () => {
 
       await replace(onStateUpdate)
 
-      expect(onStateUpdate).toHaveBeenCalledWith({
+      const expectedStatusUpdate = {
         data: {
           currentTime: undefined,
           duration: undefined,
@@ -1388,17 +1388,18 @@ describe("Player Component", () => {
         timeUpdate: false,
         code,
         message,
+      }
+
+      const expectedOnFatalErrorMessage = expect.objectContaining({
+        status: PluginEnums.STATUS.FATAL,
+        stateType: PluginEnums.TYPE.ERROR,
+        isBufferingTimeoutError: false,
+        code,
+        message,
       })
 
-      expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: PluginEnums.STATUS.FATAL,
-          stateType: PluginEnums.TYPE.ERROR,
-          isBufferingTimeoutError: false,
-          code,
-          message,
-        })
-      )
+      expect(onStateUpdate).toHaveBeenCalledWith(expectedStatusUpdate)
+      expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(expectedOnFatalErrorMessage)
     })
   })
 })
