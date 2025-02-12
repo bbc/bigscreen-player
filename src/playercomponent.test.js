@@ -1328,6 +1328,10 @@ describe("Player Component", () => {
   })
 
   describe("replaceMediaSources", () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
+
     const cdn = "http://replacedcdn.com"
     const url = "http://replacedurl.com/"
     const sources = [{ cdn, url }]
