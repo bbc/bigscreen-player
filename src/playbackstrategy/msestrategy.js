@@ -700,7 +700,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
     window.labels = [];
 
     // Set up the chart
-    const ctx = document.querySelector('#chart').getContext('2d');
+    const ctx = document.getElementById('chart').getContext('2d');
 
     window.chart = new Chart(ctx, {
       type: 'line', // Line chart
@@ -848,7 +848,7 @@ function MSEStrategy(mediaSources, windowType, mediaKind, playbackElement, isUHD
          updateChart(bitrate, buffer);
          window.timer.push(new Date().toISOString);
          console.log(`***** chart ${window.timer.length} *****`);
-      }, 1000);
+      }, 1000);q
     },
     setCurrentTime: (time) => {
       publishedSeekEvent = false
