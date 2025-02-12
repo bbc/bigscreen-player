@@ -15,6 +15,7 @@ var cdn
 var timeUpdateCallbacks = []
 var subtitleCallbacks = []
 var stateChangeCallbacks = []
+var broadcastMixADCallbacks = []
 
 var currentTime
 var isSeeking
@@ -28,6 +29,8 @@ var windowType
 var subtitlesAvailable
 var subtitlesEnabled
 var subtitlesHidden
+var broadcastMixADAvailable
+var broadcastMixADEnabled
 var endOfStream
 var canSeekState
 var canPauseState
@@ -178,6 +181,8 @@ var mockFunctions = {
     windowType = newWindowType || WindowTypes.STATIC
     subtitlesAvailable = true
     subtitlesEnabled = enableSubtitles
+    broadcastMixADAvailable = false
+    broadcastMixADEnabled = false
     canSeekState = true
     canPauseState = true
     sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls
@@ -225,6 +230,15 @@ var mockFunctions = {
   },
   unregisterForSubtitleChanges: function (callback) {
     subtitleCallbacks = subtitleCallbacks.filter(function (existingCallback) {
+      return callback !== existingCallback
+    })
+  },
+  registerForBroadcastMixADChanges: function (callback) {
+    broadcastMixADCallbacks.push(callback)
+    return callback
+  },
+  unregisterForBroadcastMixADChanges: function (callback) {
+    broadcastMixADCallbacks = broadcastMixADCallbacks.filter(function (existingCallback) {
       return callback !== existingCallback
     })
   },
@@ -292,6 +306,15 @@ var mockFunctions = {
   },
   customiseSubtitles: function () {},
   renderSubtitleExample: function () {},
+  setBroadcastMixADEnabled: function (value) {
+    broadcastMixADEnabled = value
+  },
+  isBroadcastMixADEnabled: function () {
+    return broadcastMixADEnabled
+  },
+  isBroadcastMixADAvailable: function () {
+    return broadcastMixADAvailable
+  },
   setTransportControlsPosition: function (position) {},
   canSeek: function () {
     return canSeekState
