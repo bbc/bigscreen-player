@@ -1380,11 +1380,7 @@ describe("Player Component", () => {
     it("bubbles error if replace promise rejects", async () => {
       mockMediaSources.replace.mockRejectedValueOnce()
       jest.spyOn(Plugins.interface, "onFatalError")
-
       const onStateUpdate = jest.fn()
-      const cdn = "http://replacedcdn.com"
-      const url = "http://replacedurl.com/"
-      const sources = [{ cdn, url }]
 
       const playerComponent = new PlayerComponent(
         createPlaybackElement(),
