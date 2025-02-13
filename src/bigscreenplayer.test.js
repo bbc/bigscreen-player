@@ -115,10 +115,10 @@ describe("Bigscreen Player", () => {
       getPlaybackRate: jest.fn(),
       tearDown: jest.fn(),
       replaceMediaSources: jest.fn(),
-      isBroadcastMixADAvailable: jest.fn(),
-      isBroadcastMixADEnabled: jest.fn(),
-      setBroadcastMixADOn: jest.fn(),
-      setBroadcastMixADOff: jest.fn(),
+      isAudioDescribedAvailable: jest.fn(),
+      isAudioDescribedEnabled: jest.fn(),
+      setAudioDescribedOn: jest.fn(),
+      setAudioDescribedOff: jest.fn(),
     }
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
@@ -1535,38 +1535,38 @@ describe("Bigscreen Player", () => {
     })
   })
 
-  describe("setBroadcastMixADEnabled", () => {
-    it("should turn broadcastMixAD on/off when a value is passed in", async () => {
+  describe("setAudioDescribedEnabled", () => {
+    it("should turn Audio Described on/off when a value is passed in", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
-      bigscreenPlayer.setBroadcastMixADEnabled(true)
+      bigscreenPlayer.setAudioDescribedEnabled(true)
 
-      expect(mockPlayerComponentInstance.setBroadcastMixADOn).toHaveBeenCalledTimes(1)
-      expect(mockPlayerComponentInstance.setBroadcastMixADOff).toHaveBeenCalledTimes(0)
+      expect(mockPlayerComponentInstance.setAudioDescribedOn).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setAudioDescribedOff).toHaveBeenCalledTimes(0)
 
-      bigscreenPlayer.setBroadcastMixADEnabled(false)
+      bigscreenPlayer.setAudioDescribedEnabled(false)
 
-      expect(mockPlayerComponentInstance.setBroadcastMixADOn).toHaveBeenCalledTimes(1)
-      expect(mockPlayerComponentInstance.setBroadcastMixADOff).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setAudioDescribedOn).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setAudioDescribedOff).toHaveBeenCalledTimes(1)
     })
   })
 
-  describe("isBroadcastMixADEnabled", () => {
+  describe("isAudioDescribedEnabled", () => {
     it("calls through to playercomponent enabled when called", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      bigscreenPlayer.isBroadcastMixADEnabled()
+      bigscreenPlayer.isAudioDescribedEnabled()
 
-      expect(mockPlayerComponentInstance.isBroadcastMixADEnabled).toHaveBeenCalled()
+      expect(mockPlayerComponentInstance.isAudioDescribedEnabled).toHaveBeenCalled()
     })
   })
 
-  describe("isBroadcastMixADAvailable", () => {
+  describe("isAudioDescribedAvailable", () => {
     it("calls through to playercomponent available when called", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
-      bigscreenPlayer.isBroadcastMixADAvailable()
+      bigscreenPlayer.isAudioDescribedAvailable()
 
-      expect(mockPlayerComponentInstance.isBroadcastMixADAvailable).toHaveBeenCalled()
+      expect(mockPlayerComponentInstance.isAudioDescribedAvailable).toHaveBeenCalled()
     })
   })
 

@@ -20,13 +20,10 @@ function MSEStrategy(
   mediaSources,
   mediaKind,
   playbackElement,
-  _isUHD,
-  extraPlayerSettings,
-  enableBroadcastMixAD,
-  callBroadcastMixADCallbacks
+  _isUHD = false,
+  customPlayerSettings = {},
+  audioDescribed = {}
 ) {
-  const customPlayerSettings = extraPlayerSettings ?? {}
-
   let mediaPlayer
   let mediaElement
   const manifestType = mediaSources.time().manifestType
@@ -453,10 +450,10 @@ function MSEStrategy(
     const mediaType = event.newMediaInfo.type
     DebugTool.info(
       `${mediaType} track changed.${
-        mediaType === "audio" ? (isBroadcastMixADEnabled() ? " Audio Described on." : " Audio Described off.") : ""
+        mediaType === "audio" ? (isAudioDescribedEnabled() ? " Audio Described on." : " Audio Described off.") : ""
       }`
     )
-    callBroadcastMixADCallbacks(isBroadcastMixADEnabled())
+    audioDescribed.callback && audioDescribed.callback(isAudioDescribedEnabled())
   }
 
   function publishMediaState(mediaState) {
@@ -520,7 +517,7 @@ function MSEStrategy(
     mediaPlayer.updateSettings(dashSettings)
     mediaPlayer.initialize(mediaElement, null, true)
 
-    if (enableBroadcastMixAD) {
+    if (audioDescribed.enable) {
       mediaPlayer.setInitialMediaSettingsFor("audio", {
         role: "alternate",
         accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
@@ -674,7 +671,7 @@ function MSEStrategy(
     )
   }
 
-  function isTrackBroadcastMixAD(track) {
+  function isTrackAudioDescribed(track) {
     return (
       track.roles.includes("alternate") &&
       track.accessibilitiesWithSchemeIdUri.some(
@@ -683,29 +680,29 @@ function MSEStrategy(
     )
   }
 
-  function getBroadcastMixADTrack() {
+  function getAudioDescribedTrack() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks.find((track) => isTrackBroadcastMixAD(track))
+    return audioTracks.find((track) => isTrackAudioDescribed(track))
   }
 
-  function isBroadcastMixADAvailable() {
+  function isAudioDescribedAvailable() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks.some((track) => isTrackBroadcastMixAD(track))
+    return audioTracks.some((track) => isTrackAudioDescribed(track))
   }
 
-  function isBroadcastMixADEnabled() {
+  function isAudioDescribedEnabled() {
     const currentAudioTrack = mediaPlayer.getCurrentTrackFor("audio")
-    return currentAudioTrack ? isTrackBroadcastMixAD(currentAudioTrack) : false
+    return currentAudioTrack ? isTrackAudioDescribed(currentAudioTrack) : false
   }
 
-  function setBroadcastMixADOff() {
+  function setAudioDescribedOff() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
     const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
     mediaPlayer.setCurrentTrack(mainTrack)
   }
 
-  function setBroadcastMixADOn() {
-    const ADTrack = getBroadcastMixADTrack()
+  function setAudioDescribedOn() {
+    const ADTrack = getAudioDescribedTrack()
     if (ADTrack) {
       mediaPlayer.setCurrentTrack(ADTrack)
     }
@@ -840,10 +837,10 @@ function MSEStrategy(
     load,
     getSeekableRange,
     getCurrentTime,
-    isBroadcastMixADAvailable,
-    isBroadcastMixADEnabled,
-    setBroadcastMixADOn,
-    setBroadcastMixADOff,
+    isAudioDescribedAvailable,
+    isAudioDescribedEnabled,
+    setAudioDescribedOn,
+    setAudioDescribedOff,
     getDuration,
     getPlayerElement: () => mediaElement,
     tearDown,
