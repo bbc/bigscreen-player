@@ -814,6 +814,17 @@ describe("Media Sources", () => {
       expect(DebugTool.dynamicMetric).toHaveBeenCalledWith("current-url", url)
     })
 
+    it("does not refresh the manifest if not needed", async () => {
+      const cdn = "http://replacedcdn.com"
+      const url = "http://replacedurl.com/"
+
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      await mediaSources.replace([{ cdn, url }])
+      expect(SourceLoader.load).toHaveBeenCalledTimes(1)
+    })
+
     it("refreshes the manifest if needed", async () => {
       const cdn = "http://replacedcdn.com"
       const url = "http://replacedurl.com/"
