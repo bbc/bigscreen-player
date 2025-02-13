@@ -115,6 +115,10 @@ describe("Bigscreen Player", () => {
       getPlaybackRate: jest.fn(),
       tearDown: jest.fn(),
       replaceMediaSources: jest.fn(),
+      isBroadcastMixADAvailable: jest.fn(),
+      isBroadcastMixADEnabled: jest.fn(),
+      setBroadcastMixADOn: jest.fn(),
+      setBroadcastMixADOff: jest.fn(),
     }
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
@@ -190,6 +194,7 @@ describe("Bigscreen Player", () => {
         bigscreenPlayerData,
         expect.any(Object),
         expect.any(Function),
+        expect.any(Function),
         expect.any(Function)
       )
     })
@@ -229,6 +234,7 @@ describe("Bigscreen Player", () => {
           }),
           expect.any(Object),
           expect.any(Function),
+          expect.any(Function),
           expect.any(Function)
         )
       })
@@ -246,6 +252,7 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
+          expect.any(Function),
           expect.any(Function),
           expect.any(Function)
         )
@@ -265,6 +272,7 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
+          expect.any(Function),
           expect.any(Function),
           expect.any(Function)
         )
@@ -289,6 +297,7 @@ describe("Bigscreen Player", () => {
           }),
           expect.any(Object),
           expect.any(Function),
+          expect.any(Function),
           expect.any(Function)
         )
       })
@@ -311,6 +320,7 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: null,
           }),
           expect.any(Object),
+          expect.any(Function),
           expect.any(Function),
           expect.any(Function)
         )
@@ -335,6 +345,7 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
+          expect.any(Function),
           expect.any(Function),
           expect.any(Function)
         )
@@ -1521,6 +1532,41 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.clearResize()
 
       expect(mockSubtitlesInstance.hide).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("setBroadcastMixADEnabled", () => {
+    it("should turn broadcastMixAD on/off when a value is passed in", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+      bigscreenPlayer.setBroadcastMixADEnabled(true)
+
+      expect(mockPlayerComponentInstance.setBroadcastMixADOn).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setBroadcastMixADOff).toHaveBeenCalledTimes(0)
+
+      bigscreenPlayer.setBroadcastMixADEnabled(false)
+
+      expect(mockPlayerComponentInstance.setBroadcastMixADOn).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setBroadcastMixADOff).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("isBroadcastMixADEnabled", () => {
+    it("calls through to playercomponent enabled when called", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      bigscreenPlayer.isBroadcastMixADEnabled()
+
+      expect(mockPlayerComponentInstance.isBroadcastMixADEnabled).toHaveBeenCalled()
+    })
+  })
+
+  describe("isBroadcastMixADAvailable", () => {
+    it("calls through to playercomponent available when called", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      bigscreenPlayer.isBroadcastMixADAvailable()
+
+      expect(mockPlayerComponentInstance.isBroadcastMixADAvailable).toHaveBeenCalled()
     })
   })
 

@@ -127,6 +127,8 @@ describe("Player Component", () => {
         MediaKinds.VIDEO,
         playbackElement,
         undefined,
+        undefined,
+        undefined,
         undefined
       )
       expect(mockPlaybackStrategyClass).toHaveBeenCalledTimes(1)
