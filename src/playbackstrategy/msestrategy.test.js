@@ -30,6 +30,8 @@ const mockDashInstance = {
   isReady: jest.fn(),
   refreshManifest: jest.fn(),
   getDashMetrics: jest.fn(),
+  getTargetLiveDelay: jest.fn(),
+  getCurrentLiveLatency: jest.fn(),
   getDashAdapter: jest.fn(),
   getBitrateInfoListFor: jest.fn(),
   getAverageThroughput: jest.fn(),
