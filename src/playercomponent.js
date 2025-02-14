@@ -1,3 +1,4 @@
+import setupAllTriggers from "./debugger/triggers"
 import MediaState from "./models/mediastate"
 import WindowTypes from "./models/windowtypes"
 import PluginData from "./plugindata"
@@ -30,6 +31,23 @@ function PlayerComponent(
   let mediaMetaData
   let fatalErrorTimeout
   let fatalError
+
+  let teardownTriggers
+
+  if (bigscreenPlayerData.signal) {
+    teardownTriggers = setupAllTriggers(
+      bigscreenPlayerData.signal,
+      [
+        "triggerfailover",
+        () =>
+          attemptCdnFailover({
+            code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+            message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+          }),
+      ],
+      ["triggerreload", ({ time }) => reloadMediaElement(time)]
+    )
+  }
 
   StrategyPicker()
     .then((strategy) => {
@@ -408,6 +426,11 @@ function PlayerComponent(
     mediaMetaData = undefined
     fatalErrorTimeout = undefined
     fatalError = undefined
+
+    if (typeof teardownTriggers === "function") {
+      teardownTriggers()
+      teardownTriggers = undefined
+    }
   }
 
   return {
