@@ -114,6 +114,11 @@ describe("Bigscreen Player", () => {
       setPlaybackRate: jest.fn(),
       getPlaybackRate: jest.fn(),
       tearDown: jest.fn(),
+      replaceMediaSources: jest.fn(),
+      isAudioDescribedAvailable: jest.fn(),
+      isAudioDescribedEnabled: jest.fn(),
+      setAudioDescribedOn: jest.fn(),
+      setAudioDescribedOff: jest.fn(),
     }
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
@@ -189,6 +194,7 @@ describe("Bigscreen Player", () => {
         bigscreenPlayerData,
         expect.any(Object),
         expect.any(Function),
+        expect.any(Function),
         expect.any(Function)
       )
     })
@@ -228,6 +234,7 @@ describe("Bigscreen Player", () => {
           }),
           expect.any(Object),
           expect.any(Function),
+          expect.any(Function),
           expect.any(Function)
         )
       })
@@ -245,6 +252,7 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
+          expect.any(Function),
           expect.any(Function),
           expect.any(Function)
         )
@@ -264,6 +272,7 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
+          expect.any(Function),
           expect.any(Function),
           expect.any(Function)
         )
@@ -288,6 +297,7 @@ describe("Bigscreen Player", () => {
           }),
           expect.any(Object),
           expect.any(Function),
+          expect.any(Function),
           expect.any(Function)
         )
       })
@@ -310,6 +320,7 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: null,
           }),
           expect.any(Object),
+          expect.any(Function),
           expect.any(Function),
           expect.any(Function)
         )
@@ -334,6 +345,7 @@ describe("Bigscreen Player", () => {
             initialPlaybackTime: 100,
           }),
           expect.any(Object),
+          expect.any(Function),
           expect.any(Function),
           expect.any(Function)
         )
@@ -1523,6 +1535,41 @@ describe("Bigscreen Player", () => {
     })
   })
 
+  describe("setAudioDescribedEnabled", () => {
+    it("should turn Audio Described on/off when a value is passed in", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+      bigscreenPlayer.setAudioDescribedEnabled(true)
+
+      expect(mockPlayerComponentInstance.setAudioDescribedOn).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setAudioDescribedOff).toHaveBeenCalledTimes(0)
+
+      bigscreenPlayer.setAudioDescribedEnabled(false)
+
+      expect(mockPlayerComponentInstance.setAudioDescribedOn).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setAudioDescribedOff).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("isAudioDescribedEnabled", () => {
+    it("calls through to playercomponent enabled when called", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      bigscreenPlayer.isAudioDescribedEnabled()
+
+      expect(mockPlayerComponentInstance.isAudioDescribedEnabled).toHaveBeenCalled()
+    })
+  })
+
+  describe("isAudioDescribedAvailable", () => {
+    it("calls through to playercomponent available when called", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      bigscreenPlayer.isAudioDescribedAvailable()
+
+      expect(mockPlayerComponentInstance.isAudioDescribedAvailable).toHaveBeenCalled()
+    })
+  })
+
   describe("canPause", () => {
     it("should return true for on demand streams", async () => {
       jest.mocked(mockMediaSources.time).mockReturnValue({ manifestType: ManifestType.STATIC })
@@ -1622,6 +1669,17 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.getDebugLogs()
 
       expect(DebugTool.getDebugLogs).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("replaceMediaSources", () => {
+    it("should call through to player component", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+      const sources = "https://newsource.com"
+      bigscreenPlayer.replaceMediaSources(sources)
+
+      expect(mockPlayerComponentInstance.replaceMediaSources).toHaveBeenCalledWith(sources)
     })
   })
 })

@@ -27,12 +27,15 @@ import { ManifestType } from "./models/manifesttypes"
 import { Timeline } from "./models/timeline"
 
 function BigscreenPlayer() {
-  let stateChangeCallbacks = []
-  let timeUpdateCallbacks = []
-  let subtitleCallbacks = []
+  const _callbacks = {
+    stateChange: [],
+    timeUpdate: [],
+    subtitle: [],
+    audioDescribed: [],
+    playerReady: undefined,
+    playerError: undefined,
+  }
 
-  let playerReadyCallback
-  let playerErrorCallback
   let mediaKind
   let initialPlaybackTime
   let playerComponent
@@ -49,7 +52,7 @@ function BigscreenPlayer() {
 
   function mediaStateUpdateCallback(evt) {
     if (evt.timeUpdate) {
-      callCallbacks(timeUpdateCallbacks, {
+      callCallbacks(_callbacks.timeUpdate, {
         currentTime: evt.data.currentTime,
         endOfStream,
       })
@@ -79,7 +82,7 @@ function BigscreenPlayer() {
       stateObject.endOfStream = endOfStream
       DebugTool.statechange(evt.data.state)
 
-      callCallbacks(stateChangeCallbacks, stateObject)
+      callCallbacks(_callbacks.stateChange, stateObject)
     }
 
     if (
@@ -112,7 +115,7 @@ function BigscreenPlayer() {
       initialPresentationTime,
       mediaSources.time().manifestType,
       PlayerComponent.getLiveSupport(),
-      playerReadyCallback
+      _callbacks.playerReady
     )
 
     playerComponent = PlayerComponent(
@@ -120,7 +123,8 @@ function BigscreenPlayer() {
       { media, initialPlaybackTime: initialPresentationTime },
       mediaSources,
       mediaStateUpdateCallback,
-      playerErrorCallback
+      _callbacks.playerError,
+      callAudioDescribedCallbacks
     )
 
     subtitles = Subtitles(
@@ -218,7 +222,7 @@ function BigscreenPlayer() {
   }
 
   function callSubtitlesCallbacks(enabled) {
-    callCallbacks(subtitleCallbacks, { enabled })
+    callCallbacks(_callbacks.subtitle, { enabled })
   }
 
   function setSubtitlesEnabled(enabled) {
@@ -244,6 +248,10 @@ function BigscreenPlayer() {
 
   function getPresentationTimeOffsetInMilliseconds() {
     return mediaSources.time()?.presentationTimeOffsetInMilliseconds ?? null
+  }
+
+  function callAudioDescribedCallbacks(enabled) {
+    callCallbacks(_callbacks.audioDescribed, { enabled })
   }
 
   return /** @alias module:bigscreenplayer/bigscreenplayer */ {
@@ -278,8 +286,8 @@ function BigscreenPlayer() {
         DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
       }
 
-      playerReadyCallback = callbacks.onSuccess
-      playerErrorCallback = callbacks.onError
+      _callbacks.playerReady = callbacks.onSuccess
+      _callbacks.playerError = callbacks.onError
 
       mediaSources = MediaSources()
 
@@ -314,9 +322,10 @@ function BigscreenPlayer() {
         mediaSources = undefined
       }
 
-      stateChangeCallbacks = []
-      timeUpdateCallbacks = []
-      subtitleCallbacks = []
+      _callbacks.stateChange = []
+      _callbacks.timeUpdate = []
+      _callbacks.subtitle = []
+      _callbacks.audioDescribed = []
       endOfStream = undefined
       mediaKind = undefined
       pauseTrigger = undefined
@@ -332,7 +341,7 @@ function BigscreenPlayer() {
      * @param {Function} callback
      */
     registerForStateChanges: (callback) => {
-      stateChangeCallbacks.push(callback)
+      _callbacks.stateChange.push(callback)
       return callback
     },
 
@@ -342,9 +351,9 @@ function BigscreenPlayer() {
      * @param {Function} callback
      */
     unregisterForStateChanges: (callback) => {
-      const indexOf = stateChangeCallbacks.indexOf(callback)
+      const indexOf = _callbacks.stateChange.indexOf(callback)
       if (indexOf !== -1) {
-        stateChangeCallbacks.splice(indexOf, 1)
+        _callbacks.stateChange.splice(indexOf, 1)
       }
     },
 
@@ -354,7 +363,7 @@ function BigscreenPlayer() {
      * @param {Function} callback
      */
     registerForTimeUpdates: (callback) => {
-      timeUpdateCallbacks.push(callback)
+      _callbacks.timeUpdate.push(callback)
       return callback
     },
 
@@ -364,9 +373,9 @@ function BigscreenPlayer() {
      * @param {Function} callback
      */
     unregisterForTimeUpdates: (callback) => {
-      const indexOf = timeUpdateCallbacks.indexOf(callback)
+      const indexOf = _callbacks.timeUpdate.indexOf(callback)
       if (indexOf !== -1) {
-        timeUpdateCallbacks.splice(indexOf, 1)
+        _callbacks.timeUpdate.splice(indexOf, 1)
       }
     },
 
@@ -376,7 +385,7 @@ function BigscreenPlayer() {
      * @param {Function} callback
      */
     registerForSubtitleChanges: (callback) => {
-      subtitleCallbacks.push(callback)
+      _callbacks.subtitle.push(callback)
       return callback
     },
 
@@ -386,9 +395,31 @@ function BigscreenPlayer() {
      * @param {Function} callback
      */
     unregisterForSubtitleChanges: (callback) => {
-      const indexOf = subtitleCallbacks.indexOf(callback)
+      const indexOf = _callbacks.subtitle.indexOf(callback)
       if (indexOf !== -1) {
-        subtitleCallbacks.splice(indexOf, 1)
+        _callbacks.subtitle.splice(indexOf, 1)
+      }
+    },
+
+    /**
+     * Pass a function to be called whenever Audio Described is enabled or disabled.
+     * @function
+     * @param {Function} callback
+     */
+    registerForAudioDescribedChanges: (callback) => {
+      _callbacks.audioDescribed.push(callback)
+      return callback
+    },
+
+    /**
+     * Unregisters a previously registered callback for changes to Audio Described.
+     * @function
+     * @param {Function} callback
+     */
+    unregisterForAudioDescribedChanges: (callback) => {
+      const indexOf = _callbacks.audioDescribed.indexOf(callback)
+      if (indexOf !== -1) {
+        _callbacks.audioDescribed.splice(indexOf, 1)
       }
     },
 
@@ -599,6 +630,25 @@ function BigscreenPlayer() {
     },
 
     /**
+     * @function
+     * @returns {boolean} true if an Audio Described track is available
+     */
+    isAudioDescribedAvailable: () => playerComponent && playerComponent.isAudioDescribedAvailable(),
+
+    /**
+     * @function
+     * @returns {boolean} true if the Audio Described track is currently being used
+     */
+    isAudioDescribedEnabled: () => playerComponent && playerComponent.isAudioDescribedEnabled(),
+
+    /**
+     * @function
+     */
+    setAudioDescribedEnabled: (enabled) => {
+      enabled ? playerComponent.setAudioDescribedOn() : playerComponent.setAudioDescribedOff()
+    },
+
+    /**
      *
      * An enum may be used to set the on-screen position of any transport controls
      * (work in progress to remove this - UI concern).
@@ -717,6 +767,14 @@ function BigscreenPlayer() {
     getInitialPlaybackTime,
     getTimeShiftBufferDepthInMilliseconds,
     getPresentationTimeOffsetInMilliseconds,
+
+    /**
+     * @function
+     * @param {Array} sources - Array of new media sources
+     */
+    replaceMediaSources: (sources) => {
+      playerComponent && playerComponent.replaceMediaSources(sources)
+    },
   }
 }
 

@@ -9,7 +9,14 @@ import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 
-function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, stateUpdateCallback, errorCallback) {
+function PlayerComponent(
+  playbackElement,
+  bigscreenPlayerData,
+  mediaSources,
+  stateUpdateCallback,
+  errorCallback,
+  callBroadcastMixADCallbacks
+) {
   let _stateUpdateCallback = stateUpdateCallback
 
   let mediaKind = bigscreenPlayerData.media.kind
@@ -28,7 +35,9 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        bigscreenPlayerData.media.playerSettings
+        bigscreenPlayerData.media.playerSettings,
+        bigscreenPlayerData.enableBroadcastMixAD,
+        callBroadcastMixADCallbacks
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)
@@ -77,6 +86,22 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
 
   function getSeekableRange() {
     return playbackStrategy?.getSeekableRange()
+  }
+
+  function isBroadcastMixADAvailable() {
+    return playbackStrategy && playbackStrategy.isBroadcastMixADAvailable?.()
+  }
+
+  function isBroadcastMixADEnabled() {
+    return playbackStrategy && playbackStrategy.isBroadcastMixADEnabled?.()
+  }
+
+  function setBroadcastMixADOn() {
+    playbackStrategy && playbackStrategy.setBroadcastMixADOn?.()
+  }
+
+  function setBroadcastMixADOff() {
+    playbackStrategy && playbackStrategy.setBroadcastMixADOff?.()
   }
 
   function isPaused() {
@@ -309,6 +334,7 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
 
     // guard against attempting to call _stateUpdateCallback after a tearDown
     // can happen if tearing down whilst an async cdn failover is being attempted
+
     if (_stateUpdateCallback) {
       _stateUpdateCallback(stateUpdateData)
     }
@@ -319,6 +345,27 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     if (thenPause) {
       pause()
     }
+  }
+
+  function replaceMediaSources(sources) {
+    return mediaSources
+      .replace(sources)
+      .then(() => {
+        const presentationTimeInSeconds = getCurrentTime()
+        const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
+          presentationTimeInSeconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
+        )
+
+        const windowOffset = (mediaSources.time().windowStartTime - availabilityTimeInMilliseconds) / 1000
+        const failoverTime = presentationTimeInSeconds - (windowOffset || 0)
+
+        tearDownMediaElement()
+        loadMedia(mediaMetaData.type, failoverTime, isPaused())
+      })
+      .catch(() => {
+        bubbleFatalError(false, { code: "0000", message: "error replacing sources" })
+      })
   }
 
   function tearDown() {
@@ -347,7 +394,12 @@ function PlayerComponent(playbackElement, bigscreenPlayerData, mediaSources, sta
     getSeekableRange,
     getPlayerElement,
     isPaused,
+    replaceMediaSources,
     tearDown,
+    isBroadcastMixADAvailable,
+    isBroadcastMixADEnabled,
+    setBroadcastMixADOn,
+    setBroadcastMixADOff,
   }
 }
 
