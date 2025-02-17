@@ -22,8 +22,10 @@ function MSEStrategy(
   playbackElement,
   _isUHD = false,
   customPlayerSettings = {},
-  audioDescribed = {}
+  audioDescribedOpts = {}
 ) {
+  const audioDescribed = { callback: undefined, enabled: false, ...audioDescribedOpts }
+
   let mediaPlayer
   let mediaElement
   const manifestType = mediaSources.time().manifestType

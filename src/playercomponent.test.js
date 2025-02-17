@@ -128,8 +128,7 @@ describe("Player Component", () => {
         playbackElement,
         undefined,
         undefined,
-        undefined,
-        undefined
+        { callback: undefined, enabled: undefined }
       )
       expect(mockPlaybackStrategyClass).toHaveBeenCalledTimes(1)
 

@@ -15,7 +15,7 @@ function PlayerComponent(
   mediaSources,
   stateUpdateCallback,
   errorCallback,
-  callBroadcastMixADCallbacks
+  audioDescribedCallback
 ) {
   let _stateUpdateCallback = stateUpdateCallback
 
@@ -36,8 +36,10 @@ function PlayerComponent(
         playbackElement,
         bigscreenPlayerData.media.isUHD,
         bigscreenPlayerData.media.playerSettings,
-        bigscreenPlayerData.enableBroadcastMixAD,
-        callBroadcastMixADCallbacks
+        {
+          enabled: bigscreenPlayerData.enableAudioDescribed,
+          callack: audioDescribedCallback,
+        }
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)
@@ -88,20 +90,20 @@ function PlayerComponent(
     return playbackStrategy?.getSeekableRange()
   }
 
-  function isBroadcastMixADAvailable() {
-    return playbackStrategy && playbackStrategy.isBroadcastMixADAvailable?.()
+  function isAudioDescribedAvailable() {
+    return playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.()
   }
 
-  function isBroadcastMixADEnabled() {
-    return playbackStrategy && playbackStrategy.isBroadcastMixADEnabled?.()
+  function isAudioDescribedEnabled() {
+    return playbackStrategy && playbackStrategy.isAudioDescribedEnabled?.()
   }
 
-  function setBroadcastMixADOn() {
-    playbackStrategy && playbackStrategy.setBroadcastMixADOn?.()
+  function setAudioDescribedOn() {
+    playbackStrategy && playbackStrategy.setAudioDescribedOn?.()
   }
 
-  function setBroadcastMixADOff() {
-    playbackStrategy && playbackStrategy.setBroadcastMixADOff?.()
+  function setAudioDescribedOff() {
+    playbackStrategy && playbackStrategy.setAudioDescribedOff?.()
   }
 
   function isPaused() {
@@ -396,10 +398,10 @@ function PlayerComponent(
     isPaused,
     replaceMediaSources,
     tearDown,
-    isBroadcastMixADAvailable,
-    isBroadcastMixADEnabled,
-    setBroadcastMixADOn,
-    setBroadcastMixADOff,
+    isAudioDescribedAvailable,
+    isAudioDescribedEnabled,
+    setAudioDescribedOn,
+    setAudioDescribedOff,
   }
 }
 
