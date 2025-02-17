@@ -46,6 +46,7 @@ export default function LoadUrl(url: string | URL, opts: LoadUrlOpts) {
         }
       }
     }
+
     xhr.send(opts.data || null)
   } catch (error: unknown) {
     if (opts.onError) {

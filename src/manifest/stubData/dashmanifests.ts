@@ -1,4 +1,4 @@
-const DASH_MANIFEST_STRINGS = {
+export const DASH_MANIFEST_STRINGS = {
   BAD_ATTRIBUTES: `<?xml version="1.0" encoding="UTF-8"?>
   <MPD
   type="invalid"

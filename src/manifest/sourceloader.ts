@@ -4,13 +4,27 @@ import { TransferFormat } from "../models/transferformats"
 import LoadUrl from "../utils/loadurl"
 import isError from "../utils/iserror"
 
+function parseXmlString(text: string): Document {
+  const parser = new DOMParser()
+
+  const document = parser.parseFromString(text, "application/xml")
+
+  // DOMParser lists the XML errors in the document
+  if (document.querySelector("parsererror") != null) {
+    throw new TypeError(`Failed to parse input string to XML`)
+  }
+
+  return document
+}
+
 function retrieveDashManifest(url: string) {
   return new Promise<Document | null>((resolveLoad, rejectLoad) =>
     LoadUrl(url, {
       method: "GET",
       headers: {},
       timeout: 10000,
-      onLoad: (responseXML) => resolveLoad(responseXML),
+      // Try to parse ourselves if the XHR parser failed due to f.ex. content-type
+      onLoad: (responseXML, responseText) => resolveLoad(responseXML || parseXmlString(responseText)),
       onError: () => rejectLoad(new Error("Network error: Unable to retrieve DASH manifest")),
     })
   )
