@@ -108,6 +108,7 @@ function PlayerComponent(
     const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
 
     if (useGenericImplementation) {
+      audioDescribedCallback(true)
       return mediaSources.setAudioDescribedOn()
     }
 
@@ -119,6 +120,7 @@ function PlayerComponent(
     const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
 
     if (useGenericImplementation) {
+      audioDescribedCallback(false)
       return mediaSources.setAudioDescribedOff()
     }
 
