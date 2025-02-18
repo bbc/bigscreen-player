@@ -38,7 +38,7 @@ function PlayerComponent(
         bigscreenPlayerData.media.playerSettings,
         {
           enable: bigscreenPlayerData.enableAudioDescribed,
-          callack: audioDescribedCallback,
+          callback: audioDescribedCallback,
         }
       )
 
@@ -91,19 +91,39 @@ function PlayerComponent(
   }
 
   function isAudioDescribedAvailable() {
-    return playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.()
+    const genericAD = mediaSources.isAudioDescribedAvailable()
+    const playbackStrategyProvidedAD = playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.()
+
+    return genericAD || playbackStrategyProvidedAD
   }
 
   function isAudioDescribedEnabled() {
-    return playbackStrategy && playbackStrategy.isAudioDescribedEnabled?.()
+    const genericAD = mediaSources.isAudioDescribedEnabled()
+    const playbackStrategyProvidedAD = playbackStrategy && playbackStrategy.isAudioDescribedEnabled?.()
+
+    return genericAD || playbackStrategyProvidedAD
   }
 
   function setAudioDescribedOn() {
+    const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
+
+    if (useGenericImplementation) {
+      return mediaSources.setAudioDescribedOn()
+    }
+
     playbackStrategy && playbackStrategy.setAudioDescribedOn?.()
+    return Promise.resolve()
   }
 
   function setAudioDescribedOff() {
+    const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
+
+    if (useGenericImplementation) {
+      return mediaSources.setAudioDescribedOff()
+    }
+
     playbackStrategy && playbackStrategy.setAudioDescribedOff?.()
+    return Promise.resolve()
   }
 
   function isPaused() {

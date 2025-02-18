@@ -5,7 +5,7 @@ import PluginData from "./plugindata"
 import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/sourceloader"
 import { TransferFormat } from "./models/transferformats"
-import { CaptionsConnection, Connection, MediaDescriptor } from "./types"
+import { AudioDescribedConnection, CaptionsConnection, Connection, MediaDescriptor } from "./types"
 import { TimeInfo } from "./manifest/manifestparser"
 import isError from "./utils/iserror"
 import { ManifestType } from "./models/manifesttypes"
@@ -20,12 +20,14 @@ type FailoverParams = {
 }
 
 function MediaSources() {
+  let previousSources: Connection[] | undefined
   let mediaSources: Connection[] = []
   let failedOverSources: Connection[] = []
   let failoverResetTokens: number[] = []
   let time: TimeInfo | null = null
   let transferFormat: TransferFormat | null = null
   let subtitlesSources: CaptionsConnection[] = []
+  let audioDescribedSources: AudioDescribedConnection[] = []
   // Default 5000 can be overridden with media.subtitlesRequestTimeout
   let subtitlesRequestTimeout = 5000
   let failoverResetTimeMs = 120000
@@ -51,6 +53,9 @@ function MediaSources() {
 
       mediaSources = media.urls ? (PlaybackUtils.cloneArray(media.urls) as Connection[]) : []
       subtitlesSources = media.captions ? (PlaybackUtils.cloneArray(media.captions) as CaptionsConnection[]) : []
+      audioDescribedSources = media.audioDescribed
+        ? (PlaybackUtils.cloneArray(media.audioDescribed) as AudioDescribedConnection[])
+        : []
 
       updateDebugOutput()
 
@@ -186,6 +191,23 @@ function MediaSources() {
     }
 
     return Promise.resolve()
+  }
+
+  function isAudioDescribedAvailable(): boolean {
+    return audioDescribedSources.length > 0
+  }
+
+  function isAudioDescribedEnabled(): boolean {
+    return audioDescribedSources.some((source) => source.url === mediaSources[0].url)
+  }
+
+  function setAudioDescribedOn(): Promise<void> {
+    previousSources = mediaSources
+    return replace(audioDescribedSources)
+  }
+
+  function setAudioDescribedOff(): Promise<void> {
+    return previousSources ? replace(previousSources) : Promise.resolve()
   }
 
   function loadManifest(): Promise<void> {
@@ -345,6 +367,10 @@ function MediaSources() {
     failoverSubtitles,
     refresh,
     replace,
+    isAudioDescribedAvailable,
+    isAudioDescribedEnabled,
+    setAudioDescribedOn,
+    setAudioDescribedOff,
     currentSource: getCurrentUrl,
     currentSubtitlesSource: getCurrentSubtitlesUrl,
     currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,

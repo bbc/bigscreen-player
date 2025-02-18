@@ -643,10 +643,10 @@ function BigscreenPlayer() {
 
     /**
      * @function
+     * @returns {Promise<void>}
      */
-    setAudioDescribedEnabled: (enabled) => {
-      enabled ? playerComponent.setAudioDescribedOn() : playerComponent.setAudioDescribedOff()
-    },
+    setAudioDescribedEnabled: (enabled) =>
+      enabled ? playerComponent.setAudioDescribedOn() : playerComponent.setAudioDescribedOff(),
 
     /**
      *
