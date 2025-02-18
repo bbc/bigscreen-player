@@ -37,7 +37,7 @@ function PlayerComponent(
         bigscreenPlayerData.media.isUHD,
         bigscreenPlayerData.media.playerSettings,
         {
-          enabled: bigscreenPlayerData.enableAudioDescribed,
+          enable: bigscreenPlayerData.enableAudioDescribed,
           callack: audioDescribedCallback,
         }
       )

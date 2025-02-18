@@ -24,7 +24,7 @@ function MSEStrategy(
   customPlayerSettings = {},
   audioDescribedOpts = {}
 ) {
-  const audioDescribed = { callback: undefined, enabled: false, ...audioDescribedOpts }
+  const audioDescribed = { callback: undefined, enable: false, ...audioDescribedOpts }
 
   let mediaPlayer
   let mediaElement

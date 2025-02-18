@@ -102,7 +102,7 @@ function BigscreenPlayer() {
     }
   }
 
-  function bigscreenPlayerDataLoaded({ media, enableSubtitles }) {
+  function bigscreenPlayerDataLoaded({ media, enableSubtitles, enableAudioDescribed }) {
     const initialPresentationTime =
       initialPlaybackTime == null ? undefined : convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
@@ -120,7 +120,7 @@ function BigscreenPlayer() {
 
     playerComponent = PlayerComponent(
       playbackElement,
-      { media, initialPlaybackTime: initialPresentationTime },
+      { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime },
       mediaSources,
       mediaStateUpdateCallback,
       _callbacks.playerError,
