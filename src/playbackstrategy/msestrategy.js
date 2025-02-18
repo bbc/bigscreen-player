@@ -728,7 +728,7 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
-      mediaPlayer.off(DashJSEvents.TRACK_CHANGE_RENDERED, onCurrentTrackChanged)
+      mediaPlayer.off(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
 
       mediaPlayer = undefined
     }
