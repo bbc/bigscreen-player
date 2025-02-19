@@ -374,6 +374,7 @@ function PlayerComponent(
   }
 
   function replaceMediaSources(sources) {
+    const wasPaused = isPaused()
     return mediaSources
       .replace(sources)
       .then(() => {
@@ -387,7 +388,7 @@ function PlayerComponent(
         const failoverTime = presentationTimeInSeconds - (windowOffset || 0)
 
         tearDownMediaElement()
-        loadMedia(mediaMetaData.type, failoverTime, isPaused())
+        loadMedia(mediaMetaData.type, failoverTime, wasPaused)
       })
       .catch(() => {
         bubbleFatalError(false, { code: "0000", message: "error replacing sources" })
