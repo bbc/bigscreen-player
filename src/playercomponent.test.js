@@ -132,7 +132,7 @@ describe("Player Component", () => {
       )
       expect(mockPlaybackStrategyClass).toHaveBeenCalledTimes(1)
 
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", undefined)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", undefined, true)
     })
 
     it("should trigger the error callback when strategyPicker rejects", async () => {
@@ -961,7 +961,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(10000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -995,7 +995,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1026,7 +1026,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(5000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1132,7 +1132,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20)
+      expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20, true)
     })
 
     it("should fire error cleared on the plugins when failover completes", async () => {
@@ -1385,7 +1385,7 @@ describe("Player Component", () => {
 
       await playerComponent.replaceMediaSources(sources)
 
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
     })
 
     it("bubbles error if replace promise rejects", async () => {
