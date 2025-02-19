@@ -23,7 +23,6 @@ function PlayerComponent(
   let isInitialPlay = true
   let errorTimeoutID = null
 
-  let previousSources
   let playbackStrategy
   let mediaMetaData
   let fatalErrorTimeout
@@ -109,9 +108,9 @@ function PlayerComponent(
     const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
 
     if (useGenericImplementation) {
-      audioDescribedCallback(true)
-      previousSources = mediaSources.getCurrentSources()
-      return replaceMediaSources(mediaSources.getAudioDescribedSources())
+      return replaceMediaSources(mediaSources.getAudioDescribedSources()).then(() => {
+        audioDescribedCallback(true)
+      })
     }
 
     playbackStrategy && playbackStrategy.setAudioDescribedOn?.()
@@ -122,12 +121,9 @@ function PlayerComponent(
     const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
 
     if (useGenericImplementation) {
-      audioDescribedCallback(false)
-      return previousSources
-        ? replaceMediaSources(previousSources).then(() => {
-            previousSources = undefined
-          })
-        : Promise.resolve()
+      return replaceMediaSources(mediaSources.getMainSources()).then(() => {
+        audioDescribedCallback(false)
+      })
     }
 
     playbackStrategy && playbackStrategy.setAudioDescribedOff?.()
