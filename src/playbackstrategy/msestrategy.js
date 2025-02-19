@@ -58,8 +58,13 @@ function MSEStrategy(
     ? DEFAULT_SETTINGS.liveDelay
     : playerSettings.streaming?.delay?.liveDelay
   let failoverPresentationTimeInSeconds
-  let refreshFailoverPresentationTimeInSeconds
   let isEnded = false
+  const cached = {
+    seekableRange: undefined,
+    duration: 0,
+    // Was refreshFailoverPresentationTimeInSeconds, maybe rename
+    currentTime: 0,
+  }
 
   let dashMetrics
   let lastError
@@ -480,13 +485,14 @@ function MSEStrategy(
     return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.isPaused() : undefined
   }
 
-  function load(mimeType, presentationTimeInSeconds) {
+  function load(mimeType, presentationTimeInSeconds, autoPlay = true) {
     if (mediaPlayer) {
-      modifySource(refreshFailoverPresentationTimeInSeconds || failoverPresentationTimeInSeconds)
+      mediaPlayer.setAutoPlay(autoPlay)
+      modifySource(cached.currentTime || failoverPresentationTimeInSeconds)
     } else {
       failoverPresentationTimeInSeconds = presentationTimeInSeconds
       setUpMediaElement(playbackElement)
-      setUpMediaPlayer(presentationTimeInSeconds)
+      setUpMediaPlayer(presentationTimeInSeconds, autoPlay)
       setUpMediaListeners()
     }
   }
@@ -512,12 +518,12 @@ function MSEStrategy(
     return settings
   }
 
-  function setUpMediaPlayer(presentationTimeInSeconds) {
+  function setUpMediaPlayer(presentationTimeInSeconds, autoPlay) {
     const dashSettings = getDashSettings(playerSettings)
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
-    mediaPlayer.initialize(mediaElement, null, true)
+    mediaPlayer.initialize(mediaElement, null, autoPlay)
 
     if (audioDescribed.enable) {
       mediaPlayer.setInitialMediaSettingsFor("audio", {
@@ -604,23 +610,28 @@ function MSEStrategy(
 
       // FIX: Dash.js briefly returns `null` on a failover for the first time update
       if (dvrInfo) {
-        return { start: dvrInfo.range.start, end: dvrInfo.range.end - liveDelay }
+        const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end - liveDelay }
+        cached.seekableRange = Utils.clone(seekableRange)
+        cached.duration = getDuration()
+        return seekableRange
       }
     }
 
-    return { start: 0, end: getDuration() }
+    return cached.seekableRange || { start: 0, end: getDuration() }
   }
 
   function getDuration() {
-    return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.duration() : 0
+    const duration = mediaPlayer && mediaPlayer.isReady() && mediaPlayer.duration()
+
+    return typeof duration === "number" && !isNaN(duration) ? duration : cached.duration
   }
 
   function getCurrentTime() {
-    return mediaElement?.currentTime ?? 0
+    return (mediaElement?.currentTime || failoverPresentationTimeInSeconds) ?? 0
   }
 
   function refreshManifestBeforeSeek(presentationTimeInSeconds) {
-    refreshFailoverPresentationTimeInSeconds = presentationTimeInSeconds
+    cached.currentTime = presentationTimeInSeconds
 
     mediaPlayer.refreshManifest((manifest) => {
       const mediaPresentationDuration = manifest?.mediaPresentationDuration
@@ -758,13 +769,14 @@ function MSEStrategy(
 
       // FIX: Dash.js briefly returns `null` on a failover for the first time update
       if (dvrInfo) {
-        const { range } = dvrInfo
-
-        return { start: range.start, end: range.end - seekDurationPadding }
+        const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end - seekDurationPadding }
+        cached.seekableRange = Utils.clone(seekableRange)
+        cached.duration = getDuration()
+        return seekableRange
       }
     }
 
-    return { start: 0, end: getDuration() - seekDurationPadding }
+    return cached.seekableRange || { start: 0, end: getDuration() - seekDurationPadding }
   }
 
   function clampPresentationTimeToSafeRange(presentationTimeInSeconds) {
