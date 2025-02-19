@@ -664,7 +664,7 @@ function MSEStrategy(
   function startAutoResumeTimeout() {
     autoResumeAtStartOfRange(
       getCurrentTime(),
-      getSeekableRange(),
+      getSafelySeekableRange(),
       addEventCallback,
       removeEventCallback,
       (event) => event !== MediaState.PAUSED,
@@ -762,8 +762,6 @@ function MSEStrategy(
 
         return { start: range.start, end: range.end - seekDurationPadding }
       }
-
-      return { start: range.start, end: range.end - seekDurationPadding }
     }
 
     return { start: 0, end: getDuration() - seekDurationPadding }

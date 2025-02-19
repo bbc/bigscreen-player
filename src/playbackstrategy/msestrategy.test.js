@@ -1230,7 +1230,11 @@ describe("Media Source Extensions Playback Strategy", () => {
         presentationTimeOffsetInMilliseconds: 0,
       })
 
-      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      const seekDurationPadding = 0
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { seekDurationPadding },
+      })
+
       mseStrategy.load(null, 0)
 
       mseStrategy.pause()

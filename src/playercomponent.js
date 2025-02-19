@@ -380,6 +380,7 @@ function PlayerComponent(
       presentationTimeInSeconds,
       mediaSources.time().availabilityStartTimeInMilliseconds
     )
+
     return mediaSources
       .replace(sources)
       .then(() => {
