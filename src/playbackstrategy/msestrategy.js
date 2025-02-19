@@ -664,7 +664,7 @@ function MSEStrategy(
   function startAutoResumeTimeout() {
     autoResumeAtStartOfRange(
       getCurrentTime(),
-      getSeekableRange(), // DVRWindowLength < timeShift ? { start: sr.start + timeshift - dvr, end: timeShift } : getSeekableRange
+      getSeekableRange(),
       addEventCallback,
       removeEventCallback,
       (event) => event !== MediaState.PAUSED,
