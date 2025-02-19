@@ -375,20 +375,21 @@ function PlayerComponent(
 
   function replaceMediaSources(sources) {
     const wasPaused = isPaused()
+    const presentationTimeInSeconds = getCurrentTime()
+    const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
+      presentationTimeInSeconds,
+      mediaSources.time().availabilityStartTimeInMilliseconds
+    )
     return mediaSources
       .replace(sources)
       .then(() => {
-        const presentationTimeInSeconds = getCurrentTime()
-        const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
-          presentationTimeInSeconds,
+        const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
+          availabilityTimeInMilliseconds,
           mediaSources.time().availabilityStartTimeInMilliseconds
         )
 
-        const windowOffset = (mediaSources.time().windowStartTime - availabilityTimeInMilliseconds) / 1000
-        const failoverTime = presentationTimeInSeconds - (windowOffset || 0)
-
         tearDownMediaElement()
-        loadMedia(mediaMetaData.type, failoverTime, wasPaused)
+        loadMedia(mediaMetaData.type, presentationTimeInSeconds, wasPaused)
       })
       .catch(() => {
         bubbleFatalError(false, { code: "0000", message: "error replacing sources" })
