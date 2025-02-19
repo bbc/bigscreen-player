@@ -20,7 +20,6 @@ type FailoverParams = {
 }
 
 function MediaSources() {
-  let previousSources: Connection[] | undefined
   let mediaSources: Connection[] = []
   let failedOverSources: Connection[] = []
   let failoverResetTokens: number[] = []
@@ -198,16 +197,15 @@ function MediaSources() {
   }
 
   function isAudioDescribedEnabled(): boolean {
-    return audioDescribedSources.some((source) => source.url === mediaSources[0].url)
+    return audioDescribedSources.some((source: Connection) => source.url === mediaSources[0].url)
   }
 
-  function setAudioDescribedOn(): Promise<void> {
-    previousSources = mediaSources
-    return replace(audioDescribedSources)
+  function getAudioDescribedSources(): Connection[] {
+    return audioDescribedSources
   }
 
-  function setAudioDescribedOff(): Promise<void> {
-    return previousSources ? replace(previousSources) : Promise.resolve()
+  function getCurrentSources(): Connection[] {
+    return mediaSources
   }
 
   function loadManifest(): Promise<void> {
@@ -369,8 +367,8 @@ function MediaSources() {
     replace,
     isAudioDescribedAvailable,
     isAudioDescribedEnabled,
-    setAudioDescribedOn,
-    setAudioDescribedOff,
+    getAudioDescribedSources,
+    getCurrentSources,
     currentSource: getCurrentUrl,
     currentSubtitlesSource: getCurrentSubtitlesUrl,
     currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,
