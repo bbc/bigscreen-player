@@ -367,7 +367,7 @@ function PlayerComponent(
   }
 
   function loadMedia(type, presentationTimeInSeconds, thenPause) {
-    playbackStrategy?.load(type, presentationTimeInSeconds)
+    playbackStrategy?.load(type, presentationTimeInSeconds, !thenPause)
     if (thenPause) {
       pause()
     }
