@@ -80,15 +80,13 @@ class DebugViewController {
     return mediaStateMetrics.includes(kind)
   }
 
-  private mergeMediaState<Kind extends MediaStateMetrics>(
-    entry: Timestamped<MetricForKind<Kind>>
-  ): Timestamped<MediaStateUnion> {
+  private mergeMediaState(entry: Timestamped<MetricForKind<MediaStateMetrics>>): Timestamped<MediaStateUnion> {
     const prevData =
       this.latestMetricByKey["media-element-state"] == null
         ? {}
         : (this.latestMetricByKey["media-element-state"] as StaticEntryForKind<"media-element-state">).data
 
-    const { kind, data } = entry as TimestampedMetric
+    const { kind, data } = entry
 
     return {
       ...entry,
@@ -223,6 +221,31 @@ class DebugViewController {
         return `Playback session started at ${new Date(data).toISOString().replace("T", " ")}`
       case "session-end":
         return `Playback session ended at ${new Date(data).toISOString().replace("T", " ")}`
+      case "source-loaded": {
+        const {
+          transferFormat,
+          manifestType,
+          availabilityStartTimeInMilliseconds,
+          presentationTimeOffsetInMilliseconds,
+          timeShiftBufferDepthInMilliseconds,
+        } = data
+
+        let logMessage = `Loaded ${manifestType} ${transferFormat} source.`
+
+        if (availabilityStartTimeInMilliseconds > 0) {
+          logMessage += ` AST: ${new Date(availabilityStartTimeInMilliseconds).toString()}`
+        }
+
+        if (timeShiftBufferDepthInMilliseconds > 0) {
+          logMessage += ` Time shift [s]: ${timeShiftBufferDepthInMilliseconds / 1000}`
+        }
+
+        if (presentationTimeOffsetInMilliseconds > 0) {
+          logMessage += ` PTO [s]: ${presentationTimeOffsetInMilliseconds / 1000}.`
+        }
+
+        return logMessage
+      }
       case "quota-exceeded": {
         const { bufferLevel, time } = data
         return `Quota exceeded with buffer level ${bufferLevel} at chunk start time ${time}`
@@ -280,13 +303,19 @@ class DebugViewController {
     if (kind === "seekable-range") {
       const [start, end] = data as MetricForKind<"seekable-range">["data"]
 
-      return `${formatDate(new Date(start))} - ${formatDate(new Date(end))}`
+      return `${formatDate(new Date(start * 1000))} - ${formatDate(new Date(end * 1000))}`
     }
 
     if (kind === "representation-audio" || kind === "representation-video") {
       const [qualityIndex, bitrate] = data
 
       return `${qualityIndex} (${bitrate} kbps)`
+    }
+
+    if (kind === "initial-playback-time") {
+      const [seconds, timeline] = data
+
+      return `${seconds}s ${timeline}`
     }
 
     return data.join(", ")

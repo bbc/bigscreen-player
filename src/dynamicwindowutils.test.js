@@ -1,9 +1,12 @@
-import DynamicWindowUtils from "./dynamicwindowutils"
+import { autoResumeAtStartOfRange, canPauseAndSeek } from "./dynamicwindowutils"
+import LiveSupport from "./models/livesupport"
 
 describe("autoResumeAtStartOfRange", () => {
   const currentTime = 20
+
   const seekableRange = {
     start: 0,
+    end: 7200,
   }
 
   let resume
@@ -11,8 +14,16 @@ describe("autoResumeAtStartOfRange", () => {
   let removeEventCallback
   let checkNotPauseEvent
 
-  beforeEach(() => {
+  afterAll(() => {
+    jest.useRealTimers()
+  })
+
+  beforeAll(() => {
     jest.useFakeTimers()
+  })
+
+  beforeEach(() => {
+    jest.clearAllTimers()
 
     resume = jest.fn()
     addEventCallback = jest.fn()
@@ -20,36 +31,29 @@ describe("autoResumeAtStartOfRange", () => {
     checkNotPauseEvent = jest.fn()
   })
 
-  afterEach(() => {
-    jest.useRealTimers()
-  })
+  it.each([
+    [0, 7200, 20],
+    [3600, 10800, 3620],
+  ])(
+    "resumes play when the start of the seekable range (%d - %d) catches up to current time %d",
+    (seekableRangeStart, seekableRangeEnd, currentTime) => {
+      const seekableRange = {
+        start: seekableRangeStart,
+        end: seekableRangeEnd,
+      }
 
-  it("resumes play when the current time is equal to the start of the seekable range", () => {
-    DynamicWindowUtils.autoResumeAtStartOfRange(
-      currentTime,
-      seekableRange,
-      addEventCallback,
-      removeEventCallback,
-      undefined,
-      resume
-    )
+      autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
-    jest.advanceTimersByTime(20000)
+      jest.advanceTimersByTime(20000)
 
-    expect(addEventCallback).toHaveBeenCalledTimes(1)
-    expect(removeEventCallback).toHaveBeenCalledTimes(1)
-    expect(resume).toHaveBeenCalledTimes(1)
-  })
+      expect(addEventCallback).toHaveBeenCalledTimes(1)
+      expect(removeEventCallback).toHaveBeenCalledTimes(1)
+      expect(resume).toHaveBeenCalledTimes(1)
+    }
+  )
 
-  it("resumes play when the current time at the start of the seekable range within a threshold", () => {
-    DynamicWindowUtils.autoResumeAtStartOfRange(
-      currentTime,
-      seekableRange,
-      addEventCallback,
-      removeEventCallback,
-      undefined,
-      resume
-    )
+  it("resumes play when the start of the seekable range is within a threshold of current time", () => {
+    autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(15000)
 
@@ -58,15 +62,8 @@ describe("autoResumeAtStartOfRange", () => {
     expect(resume).toHaveBeenCalledTimes(1)
   })
 
-  it("resumes play when the current time at the start of the seekable range at the threshold", () => {
-    DynamicWindowUtils.autoResumeAtStartOfRange(
-      currentTime,
-      seekableRange,
-      addEventCallback,
-      removeEventCallback,
-      undefined,
-      resume
-    )
+  it("resumes play when the start of the seekable range is at the threshold of current time", () => {
+    autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(12000)
 
@@ -75,15 +72,26 @@ describe("autoResumeAtStartOfRange", () => {
     expect(resume).toHaveBeenCalledTimes(1)
   })
 
-  it("does not resume play when the current time is past the start of the seekable range plus the threshold", () => {
-    DynamicWindowUtils.autoResumeAtStartOfRange(
-      currentTime,
-      seekableRange,
-      addEventCallback,
-      removeEventCallback,
-      undefined,
-      resume
-    )
+  it("resumes play when the start of the time shift buffer is at the threshold of current time", () => {
+    const seekableRange = { start: 0, end: 7170 }
+
+    autoResumeAtStartOfRange(30, seekableRange, addEventCallback, removeEventCallback, undefined, resume, 7200)
+
+    expect(addEventCallback).toHaveBeenCalledTimes(1)
+
+    jest.advanceTimersByTime(40000)
+
+    expect(resume).not.toHaveBeenCalled()
+    expect(removeEventCallback).not.toHaveBeenCalled()
+
+    jest.advanceTimersByTime(20000)
+
+    expect(resume).toHaveBeenCalledTimes(1)
+    expect(removeEventCallback).toHaveBeenCalledTimes(1)
+  })
+
+  it("does not resume play when the start of the seekable range has not caught up to current time", () => {
+    autoResumeAtStartOfRange(currentTime, seekableRange, addEventCallback, removeEventCallback, undefined, resume)
 
     jest.advanceTimersByTime(10000)
 
@@ -97,7 +105,7 @@ describe("autoResumeAtStartOfRange", () => {
 
     addEventCallback.mockImplementation((_, callback) => callback())
 
-    DynamicWindowUtils.autoResumeAtStartOfRange(
+    autoResumeAtStartOfRange(
       currentTime,
       seekableRange,
       addEventCallback,
@@ -117,7 +125,7 @@ describe("autoResumeAtStartOfRange", () => {
 
     addEventCallback.mockImplementation((_, callback) => callback())
 
-    DynamicWindowUtils.autoResumeAtStartOfRange(
+    autoResumeAtStartOfRange(
       currentTime,
       seekableRange,
       addEventCallback,
@@ -130,5 +138,27 @@ describe("autoResumeAtStartOfRange", () => {
 
     expect(removeEventCallback).toHaveBeenCalledTimes(1)
     expect(resume).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe("canPause", () => {
+  it("can't pause no live support", () => {
+    expect(canPauseAndSeek(LiveSupport.NONE, { start: 0, end: 30 * 60 })).toBe(false)
+  })
+
+  it("can't pause playable", () => {
+    expect(canPauseAndSeek(LiveSupport.PLAYABLE, { start: 0, end: 30 * 60 })).toBe(false)
+  })
+
+  it("can't pause restartable", () => {
+    expect(canPauseAndSeek(LiveSupport.RESTARTABLE, { start: 0, end: 30 * 60 })).toBe(false)
+  })
+
+  it("can pause seekable", () => {
+    expect(canPauseAndSeek(LiveSupport.SEEKABLE, { start: 0, end: 30 * 60 })).toBe(true)
+  })
+
+  it("can't pause a seekable range less than 4 minutes", () => {
+    expect(canPauseAndSeek(LiveSupport.SEEKABLE, { start: 0, end: 3 * 60 })).toBe(false)
   })
 })

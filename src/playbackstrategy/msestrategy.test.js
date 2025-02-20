@@ -1,19 +1,33 @@
+import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
+import ManifestModifier from "../manifest/manifestmodifier"
 import MediaKinds from "../models/mediakinds"
-import WindowTypes from "../models/windowtypes"
-import MediaSources from "../mediasources"
-import LiveSupport from "../models/livesupport"
-import MSEStrategy from "./msestrategy"
-import TimeUtils from "../utils/timeutils"
-import DynamicWindowUtils from "../dynamicwindowutils"
-import Plugins from "../plugins"
-import DebugTool from "../debugger/debugtool"
+import { ManifestType } from "../models/manifesttypes"
+import { MediaState } from "../models/mediastate"
 import Utils from "../utils/playbackutils"
-import PauseTriggers from "../models/pausetriggers"
+import { autoResumeAtStartOfRange } from "../dynamicwindowutils"
+import Plugins from "../plugins"
+import MSEStrategy from "./msestrategy"
+
+jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn() }))
+jest.mock("../dynamicwindowutils")
+jest.mock("../debugger/debugtool")
+jest.mock("../manifest/manifestmodifier")
+
+const mockDashAdapter = {
+  getIndexForRepresentation: jest.fn().mockReturnValue(0),
+}
+
+const mockDashMetrics = {
+  getCurrentDVRInfo: jest.fn(),
+  getCurrentBufferLevel: jest.fn().mockReturnValue(0),
+  getCurrentRepresentationSwitch: jest.fn().mockReturnValue(0),
+  getCurrentIndexForRepresentation: jest.fn().mockReturnValue(1),
+}
 
 const mockDashInstance = {
   initialize: jest.fn(),
   retrieveManifest: jest.fn(),
-  refreshManifest: jest.fn(),
+  refreshManifest: jest.fn().mockImplementation((onRefresh) => onRefresh({})),
   getDebug: jest.fn(),
   getSource: jest.fn(),
   on: jest.fn(),
@@ -28,9 +42,8 @@ const mockDashInstance = {
   play: jest.fn(),
   seek: jest.fn(),
   isReady: jest.fn(),
-  refreshManifest: jest.fn(),
-  getDashMetrics: jest.fn(),
-  getDashAdapter: jest.fn(),
+  getDashMetrics: jest.fn().mockReturnValue(mockDashMetrics),
+  getDashAdapter: jest.fn().mockReturnValue(mockDashAdapter),
   getBitrateInfoListFor: jest.fn(),
   getAverageThroughput: jest.fn(),
   getDVRWindowSize: jest.fn(),
@@ -52,9 +65,15 @@ const mockDashMediaPlayer = {
   create: jest.fn(() => mockDashInstance),
 }
 
-jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn(() => mockDashMediaPlayer) }))
-jest.mock("../dynamicwindowutils")
-jest.mock("../debugger/debugtool")
+const mockMediaSources = {
+  init: jest.fn().mockResolvedValue(),
+  tearDown: jest.fn(),
+  time: jest.fn(),
+  failoverResetTime: jest.fn().mockReturnValue(10),
+  currentSource: jest.fn().mockReturnValue(""),
+  availableSources: jest.fn().mockReturnValue([]),
+  failover: jest.fn().mockResolvedValue(),
+}
 
 describe("Media Source Extensions Playback Strategy", () => {
   const dashjsMediaPlayerEvents = {
@@ -66,30 +85,31 @@ describe("Media Source Extensions Playback Strategy", () => {
     METRIC_ADDED: "metricAdded",
     METRIC_CHANGED: "metricChanged",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
+    STREAM_INITIALIZED: "streamInitialized",
     CURRENT_TRACK_CHANGED: "currentTrackChanged",
   }
 
-  let mseStrategy
-  let eventCallbacks
-  let dashEventCallback
   let eventHandlers
   let playbackElement
   let cdnArray = []
-  let mediaSources
   let mediaElement
-  let testManifestObject
-  let mockTimeModel
+
+  const originalCreateElement = document.createElement
+
+  function dispatchDashEvent(eventType, event) {
+    if (typeof eventHandlers[eventType] !== "function") {
+      return
+    }
+
+    eventHandlers[eventType].call(eventType, event)
+  }
 
   const mockMediaElement = (mediaKind) => {
-    const mediaEl = document.createElement(mediaKind)
+    const mediaEl = originalCreateElement.call(document, mediaKind)
 
     mediaEl.__mocked__ = true
 
-    jest.spyOn(mediaEl, "addEventListener").mockImplementation((eventType, handler) => {
-      eventHandlers[eventType] = handler
-      eventCallbacks = (eventType, event) => eventHandlers[eventType].call(this, event)
-    })
-
+    jest.spyOn(mediaEl, "addEventListener")
     jest.spyOn(mediaEl, "removeEventListener")
 
     return mediaEl
@@ -97,110 +117,92 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   const isMockedElement = (el) => el instanceof HTMLElement && el.__mocked__
 
+  beforeAll(() => {
+    jest.useFakeTimers()
+    MediaPlayer.mockReturnValue(mockDashMediaPlayer)
+
+    jest.spyOn(document, "createElement").mockImplementation((elementType) => {
+      if (["audio", "video"].includes(elementType)) {
+        mediaElement = mockMediaElement(elementType)
+        return mediaElement
+      }
+
+      return originalCreateElement.call(document, elementType)
+    })
+
+    mockDashInstance.on.mockImplementation((eventType, handler) => {
+      eventHandlers[eventType] = handler
+    })
+  })
+
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.clearAllTimers()
+
     eventHandlers = {}
+
     delete window.bigscreenPlayer
 
     mediaElement = undefined
 
     window.bigscreenPlayer = {}
 
-    // For DVRInfo Based Seekable Range
-    mockDashInstance.duration.mockReturnValue(101)
+    mockMediaSources.time.mockReturnValue({
+      manifestType: ManifestType.STATIC,
+      presentationTimeOffsetInMilliseconds: 0,
+      availabilityStartTimeInMilliseconds: 0,
+      timeShiftBufferDepthInMilliseconds: 0,
+    })
+
+    mockDashInstance.duration.mockReturnValue(100)
     mockDashInstance.isReady.mockReturnValue(true)
-    mockDashInstance.getDVRWindowSize.mockReturnValue(101)
 
-    mockDashInstance.on.mockImplementation((eventType, handler) => {
-      eventHandlers[eventType] = handler
-      dashEventCallback = (eventType, event) =>
-        eventHandlers[eventType] ? eventHandlers[eventType].call(eventType, event) : null
-    })
+    mockDashMetrics.getCurrentDVRInfo.mockReturnValue({ range: { start: 0, end: 100 } })
 
-    mockDashInstance.getDashMetrics.mockReturnValue({
-      getCurrentDVRInfo: () => ({ range: { start: 0, end: 101 } }),
-      getCurrentBufferLevel: () => "buffer",
-      getCurrentRepresentationSwitch: () => 0,
-      getCurrentIndexForRepresentation: () => 1,
-    })
+    playbackElement = originalCreateElement.call(document, "div")
 
-    mockDashInstance.getDashAdapter.mockReturnValue({
-      getIndexForRepresentation: () => 0,
-    })
-
-    playbackElement = document.createElement("div")
-
-    jest.spyOn(document, "createElement").mockImplementationOnce((elementType) => {
-      if (["audio", "video"].includes(elementType)) {
-        mediaElement = mockMediaElement(elementType)
-        return mediaElement
-      }
-
-      return document.createElement(elementType)
-    })
-
-    cdnArray = [
-      { url: "http://testcdn1/test/", cdn: "http://testcdn1/test/" },
-      { url: "http://testcdn2/test/", cdn: "http://testcdn2/test/" },
-      { url: "http://testcdn3/test/", cdn: "http://testcdn3/test/" },
-    ]
-
-    const mediaSourceCallbacks = {
-      onSuccess: jest.fn(),
-      onError: jest.fn(),
-    }
-
-    mediaSources = new MediaSources()
-    jest.spyOn(mediaSources, "time")
-    jest.spyOn(mediaSources, "failover")
-    mediaSources.init(
-      { urls: cdnArray, captions: [] },
-      new Date(),
-      WindowTypes.STATIC,
-      LiveSupport.SEEKABLE,
-      mediaSourceCallbacks
-    )
-
-    testManifestObject = {
-      type: "manifestLoaded",
-      data: {
-        Period: {
-          BaseURL: "dash/",
-        },
-      },
-    }
+    cdnArray = [{ url: "http://cdn1.com/" }, { url: "http://cdn2.com/" }, { url: "http://cdn3.com/" }]
   })
 
-  function setUpMSE(
-    timeCorrection,
-    windowType,
-    mediaKind,
-    windowStartTimeMS,
-    windowEndTimeMS,
-    customPlayerSettings,
-    enableBroadcastMixAD,
-    callBroadcastMixADCallbacks
-  ) {
-    mockTimeModel = {
-      correction: timeCorrection ?? 0,
-      windowStartTime: windowStartTimeMS ?? 0,
-      windowEndTime: windowEndTimeMS ?? 0,
-    }
+  describe("Load for the first time (when there is no current mediaPlayer)", () => {
+    it("should create a video element and add as a child of the input playback element", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-    mseStrategy = MSEStrategy(
-      mediaSources,
-      windowType ?? WindowTypes.STATIC,
-      mediaKind ?? MediaKinds.VIDEO,
-      playbackElement,
-      false,
-      customPlayerSettings || {},
-      enableBroadcastMixAD ?? false,
-      callBroadcastMixADCallbacks ?? (() => {})
-    )
-  }
+      expect(playbackElement.childElementCount).toBe(0)
 
-  describe("Settings", () => {
-    it("does not pass BSP Specific Settings to Dash", () => {
+      mseStrategy.load(null, 0)
+
+      expect(playbackElement.childElementCount).toBe(1)
+      expect(playbackElement.firstChild).toBeInstanceOf(HTMLVideoElement)
+      expect(playbackElement.firstChild).toBe(mediaElement)
+      expect(isMockedElement(playbackElement.firstChild)).toBe(true)
+    })
+
+    it("should create a audio element and add as a child of the input playback element", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.AUDIO, playbackElement)
+
+      expect(playbackElement.childElementCount).toBe(0)
+
+      mseStrategy.load(null, 0)
+
+      expect(playbackElement.childElementCount).toBe(1)
+
+      expect(playbackElement.firstChild).toBeInstanceOf(HTMLAudioElement)
+      expect(playbackElement.firstChild).toBe(mediaElement)
+      expect(isMockedElement(playbackElement.firstChild)).toBe(true)
+    })
+
+    it("should initialise MediaPlayer with the expected parameters when no start time is present", () => {
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[0].url)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null)
+
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
+    })
+
+    it("does not pass BSP specific settings to Dash", () => {
       const liveDelay = 20
       const failoverResetTime = 2
       const seekDurationPadding = 0
@@ -209,7 +211,8 @@ describe("Media Source Extensions Playback Strategy", () => {
       const dashSettings = { streaming: { delay: { liveDelay } } }
       const customPlayerSettings = Utils.merge(bspSettings, dashSettings)
 
-      setUpMSE(0, undefined, undefined, 0, 0, customPlayerSettings)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, customPlayerSettings)
+
       mseStrategy.load(null, 0)
 
       expect(mockDashInstance.updateSettings).toHaveBeenCalledWith(
@@ -238,176 +241,30 @@ describe("Media Source Extensions Playback Strategy", () => {
         })
       )
     })
-  })
 
-  describe("Transitions", () => {
-    it("canBePaused() Transition is true", () => {
-      setUpMSE()
+    it("should initialise MediaPlayer with a source anchor when time is zero", () => {
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[0].url)
 
-      expect(mseStrategy.transitions.canBePaused()).toBe(true)
-    })
-
-    it("canBeginSeek() Transition is true", () => {
-      setUpMSE()
-
-      expect(mseStrategy.transitions.canBeginSeek()).toBe(true)
-    })
-  })
-
-  describe("Load when there is no mediaPlayer", () => {
-    it("should create a video element and add it to the media element", () => {
-      setUpMSE(null, null, MediaKinds.VIDEO)
-
-      expect(playbackElement.childElementCount).toBe(0)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       mseStrategy.load(null, 0)
-
-      expect(playbackElement.childElementCount).toBe(1)
-      expect(playbackElement.firstChild).toBeInstanceOf(HTMLVideoElement)
-      expect(playbackElement.firstChild).toBe(mediaElement)
-      expect(isMockedElement(playbackElement.firstChild)).toBe(true)
-    })
-
-    it("should create an audio element and add it to the media element", () => {
-      setUpMSE(null, null, MediaKinds.AUDIO)
-
-      expect(playbackElement.childElementCount).toBe(0)
-
-      mseStrategy.load(null, 0)
-
-      expect(playbackElement.childElementCount).toBe(1)
-
-      expect(playbackElement.firstChild).toBeInstanceOf(HTMLAudioElement)
-      expect(playbackElement.firstChild).toBe(mediaElement)
-      expect(isMockedElement(playbackElement.firstChild)).toBe(true)
-    })
-
-    it("should initialise MediaPlayer with the expected parameters when no start time is present", () => {
-      setUpMSE()
-      mseStrategy.load(null)
 
       expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=0`)
     })
 
-    it("should modify the manifest when dashjs fires a manifest loaded event", () => {
-      setUpMSE()
-      mseStrategy.load(null, 0)
+    it("should initialise MediaPlayer with a time anchor when a start time is given", () => {
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[0].url)
 
-      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 15)
 
-      const baseUrlArray = [
-        {
-          "__text": `${cdnArray[0].url}dash/`,
-          "dvb:priority": 0,
-          "dvb:weight": 0,
-          "serviceLocation": cdnArray[0].url,
-        },
-        {
-          "__text": `${cdnArray[1].url}dash/`,
-          "dvb:priority": 1,
-          "dvb:weight": 0,
-          "serviceLocation": cdnArray[1].url,
-        },
-        {
-          "__text": `${cdnArray[2].url}dash/`,
-          "dvb:priority": 2,
-          "dvb:weight": 0,
-          "serviceLocation": cdnArray[2].url,
-        },
-      ]
-
-      expect(testManifestObject.data.BaseURL_asArray).toEqual(baseUrlArray)
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=15`)
     })
 
-    describe("for STATIC window", () => {
-      it("should initialise MediaPlayer with the expected parameters when startTime is zero", () => {
-        setUpMSE()
-        mseStrategy.load(null, 0)
-
-        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
-      })
-
-      it("should initialise MediaPlayer with the expected parameters when startTime is set", () => {
-        setUpMSE()
-        mseStrategy.load(null, 15)
-
-        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=15`)
-      })
-
-      it("should clamp the seek to the end of the seekable range", () => {
-        const seekDurationPadding = 0
-
-        setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { seekDurationPadding } })
-        mseStrategy.load(null, 0)
-
-        mseStrategy.setCurrentTime(1000)
-        expect(mockDashInstance.seek).toHaveBeenCalledWith(101)
-      })
-    })
-
-    describe("for SLIDING window", () => {
-      beforeEach(() => {
-        setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100000, 200000)
-        mediaSources.time.mockReturnValue(mockTimeModel)
-        mockDashInstance.getSource.mockReturnValue("src")
-      })
-
-      it("should initialise MediaPlayer with the expected parameters when startTime is zero", () => {
-        mseStrategy.load(null, 0)
-
-        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=101`)
-      })
-
-      it("should initialise MediaPlayer with the expected parameters when startTime is set to 0.1", () => {
-        mseStrategy.load(null, 0.1)
-
-        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=101`)
-      })
-
-      it("should initialise MediaPlayer with the expected parameters when startTime is set", () => {
-        mseStrategy.load(null, 60)
-
-        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=160`)
-      })
-    })
-
-    describe("for GROWING window", () => {
-      beforeEach(() => {
-        setUpMSE(0, WindowTypes.GROWING, MediaKinds.VIDEO, 100000, 200000)
-        mediaSources.time.mockReturnValue(mockTimeModel)
-        mockDashInstance.getSource.mockReturnValue("src")
-      })
-
-      it("should initialise MediaPlayer with the expected parameters when startTime is zero", () => {
-        mseStrategy.load(null, 0)
-
-        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=posix:101`)
-      })
-
-      it("should initialise MediaPlayer with the expected parameters when startTime is set to 0.1", () => {
-        mseStrategy.load(null, 0.1)
-
-        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=posix:101`)
-      })
-
-      it("should initialise MediaPlayer with the expected parameters when startTime is set", () => {
-        mseStrategy.load(null, 60)
-
-        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=posix:160`)
-      })
-    })
-
-    it("should set up bindings to MediaPlayer Events correctly", () => {
-      setUpMSE()
+    it("should set up bindings to MediaPlayer events correctly", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 0)
 
       expect(mediaElement.addEventListener).toHaveBeenCalledWith("timeupdate", expect.any(Function))
@@ -432,166 +289,413 @@ describe("Media Source Extensions Playback Strategy", () => {
   })
 
   describe("Load when a mediaPlayer exists (e.g. CDN failover)", () => {
-    const noop = () => {}
-    let failoverInfo
+    it("should attach a new source", () => {
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[0].url)
 
-    beforeEach(() => {
-      failoverInfo = { isBufferingTimeoutError: false }
-    })
-
-    it("should attach a new source with the expected parameters", () => {
-      setUpMSE()
-
-      mockDashInstance.getSource.mockReturnValue("src")
-
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 0)
 
+      expect(mockDashInstance.initialize).toHaveBeenCalledTimes(1)
       expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=0`)
 
       // Player component would do this with its buffering timeout logic
-      mediaSources.failover(noop, noop, failoverInfo)
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
 
-      mseStrategy.load(null, 0)
+      mseStrategy.load(null, null)
 
-      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[1].url)
+      expect(mockDashInstance.initialize).toHaveBeenCalledTimes(1)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[1].url}#t=0`)
     })
 
-    it("should attach a new source with the expected parameters called before we have a valid currentTime", () => {
-      setUpMSE()
+    it("should attach a new source with previous start time if loaded before there is a valid media element time", () => {
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[0].url)
 
-      mockDashInstance.getSource.mockReturnValue("src")
-
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 45)
 
       expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=45`)
 
-      mediaSources.failover(noop, noop, failoverInfo)
-      mseStrategy.load(null, 0)
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
+      mseStrategy.load(null, null)
 
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[1].url}#t=45`)
 
-      mediaSources.failover(noop, noop, failoverInfo)
-      mseStrategy.load(null, 0)
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[2].url)
+      mseStrategy.load(null, null)
 
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[2].url}#t=45`)
     })
 
     it("should attach a new source with expected parameters at the current playback time", () => {
-      setUpMSE()
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[0].url)
 
-      mockDashInstance.getSource.mockReturnValue("src")
-
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 45)
 
       expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=45`)
 
-      mediaSources.failover(noop, noop, failoverInfo)
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
 
       mediaElement.currentTime = 86
-      eventHandlers.timeupdate()
-      mseStrategy.load(null, 0)
+      mediaElement.dispatchEvent(new Event("timeupdate"))
+
+      mseStrategy.load(null, null)
 
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[1].url}#t=86`)
     })
+  })
 
-    it.each(Object.entries(MediaKinds))(
-      "attaches a new '%s' source to play back at current MPD time for SLIDING window",
-      (_, mediaKind) => {
-        setUpMSE(51, WindowTypes.SLIDING, mediaKind, 51000, 251000)
-        mediaSources.time.mockReturnValue(mockTimeModel)
-        mockDashInstance.getSource.mockReturnValue("src")
+  describe("responding to dash.js events", () => {
+    it("should call mediaSources failover on dash baseUrl changed event", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-        mseStrategy.load(null, 0)
-
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=52`)
-
-        mediaSources.failover(jest.fn(), jest.fn(), failoverInfo)
-
-        mockDashInstance.getDashMetrics.mockReturnValueOnce({
-          getCurrentDVRInfo: (kind) => (kind === mediaKind ? { time: 124, range: { start: 124, end: 324 } } : null),
-        })
-
-        eventHandlers.timeupdate()
-        mseStrategy.load(null, 0)
-
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[1].url}#t=124`)
-      }
-    )
-
-    it("should fire download error event when in growing window", () => {
-      jest.spyOn(Plugins.interface, "onErrorHandled")
-      setUpMSE()
-
-      mseStrategy.load(cdnArray, WindowTypes.GROWING, 3)
-
-      eventHandlers.error({
-        errorMessage: "Boom",
+      dispatchDashEvent(dashjsMediaPlayerEvents.BASE_URL_SELECTED, {
+        baseUrl: {
+          url: "http://example.com",
+          serviceLocation: "http://example.com",
+        },
       })
 
-      expect(Plugins.interface.onErrorHandled).not.toHaveBeenCalledWith()
+      expect(mockMediaSources.failover).toHaveBeenCalledWith({
+        isBufferingTimeoutError: false,
+        code: undefined,
+        message: undefined,
+        serviceLocation: "http://example.com",
+      })
     })
 
-    it("should call plugin handler on dash download manifest error", () => {
-      setUpMSE()
-      const mockErrorCallback = jest.fn()
-      mseStrategy.addErrorCallback(null, mockErrorCallback)
-      mseStrategy.load(cdnArray, WindowTypes.GROWING, 3)
+    it("should call mediaSources failover on dash baseUrl changed event including last known error", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
       const testError = {
         error: {
-          event: {
-            id: "manifest",
+          code: 9999,
+          message: "Mock error",
+        },
+      }
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, testError)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.BASE_URL_SELECTED, {
+        baseUrl: {
+          url: "http://example.com",
+          serviceLocation: "http://example.com",
+        },
+      })
+
+      expect(mockMediaSources.failover).toHaveBeenCalledWith({
+        isBufferingTimeoutError: false,
+        code: 9999,
+        message: "Mock error",
+        serviceLocation: "http://example.com",
+      })
+    })
+
+    it("should call ManifestModifier on dash.js manifest loaded event", () => {
+      mockMediaSources.availableSources.mockReturnValueOnce([cdnArray[0].url, cdnArray[1].url, cdnArray[2].url])
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      const testManifestLoadedEvent = {
+        type: "manifestLoaded",
+        data: {
+          Period: {
+            BaseURL: "dash/",
           },
         },
       }
 
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, testError)
+      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestLoadedEvent)
 
-      expect(mockErrorCallback).toHaveBeenCalled()
+      expect(ManifestModifier.filter).toHaveBeenCalledWith(
+        {
+          Period: {
+            BaseURL: "dash/",
+          },
+        },
+        {}
+      )
+
+      expect(ManifestModifier.generateBaseUrls).toHaveBeenCalledWith(
+        {
+          Period: {
+            BaseURL: "dash/",
+          },
+        },
+        [cdnArray[0].url, cdnArray[1].url, cdnArray[2].url]
+      )
     })
 
-    it("should call mediaSources failover on dash baseUrl changed event", () => {
-      setUpMSE()
-      mseStrategy.load(WindowTypes.STATIC, 10)
+    it("should call onManifestLoaded plugin with the manifest object dash.js manifest loaded event", () => {
+      const onManifestLoadedSpy = jest.spyOn(Plugins.interface, "onManifestLoaded")
 
-      expect(mediaSources.availableSources()).toHaveLength(3)
-      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-      eventHandlers.baseUrlSelected({
-        baseUrl: {
-          url: cdnArray[1].cdn,
-          serviceLocation: cdnArray[1].cdn,
+      const testManifestLoadedEvent = {
+        type: "manifestLoaded",
+        data: {
+          Period: {
+            BaseURL: "dash/",
+          },
+        },
+      }
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestLoadedEvent)
+
+      expect(onManifestLoadedSpy).toHaveBeenCalledWith({
+        Period: {
+          BaseURL: "dash/",
+        },
+        manifestLoadCount: 0,
+        manifestRequestTime: undefined,
+      })
+    })
+
+    it("refreshes the manifest on a validity change for dynamic streams", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, {
+        type: "manifestValidityChanged",
+        data: {
+          Period: {
+            BaseURL: "dash/",
+          },
         },
       })
 
-      expect(mediaSources.availableSources()).toHaveLength(2)
+      expect(mockDashInstance.refreshManifest).toHaveBeenCalledTimes(1)
     })
 
-    it("should call mediaSources failover on dash baseUrl changed event but do nothing on the current url", () => {
-      setUpMSE()
-      mseStrategy.load(WindowTypes.STATIC, 10)
+    it("does not refresh the manifest on a validity change for a static stream", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.STATIC })
 
-      expect(mediaSources.availableSources()).toHaveLength(3)
-      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-      eventHandlers.baseUrlSelected({
-        baseUrl: {
-          url: cdnArray[0].cdn,
-          serviceLocation: cdnArray[0].cdn,
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, {
+        type: "manifestValidityChanged",
+        data: {
+          Period: {
+            BaseURL: "dash/",
+          },
         },
       })
 
-      expect(mediaSources.availableSources()).toHaveLength(3)
+      expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
+    })
+
+    it("should call plugins with the combined playback bitrate on quality change rendered dash.js event", () => {
+      jest.spyOn(Plugins.interface, "onPlayerInfoUpdated")
+
+      mockDashInstance.getBitrateInfoListFor.mockReturnValue([
+        { bitrate: 1024000 },
+        { bitrate: 200000 },
+        { bitrate: 3000000 },
+      ])
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, {
+        mediaType: "video",
+        oldQuality: 0,
+        newQuality: 1,
+        type: "qualityChangeRendered",
+      })
+
+      expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
+        playbackBitrate: 2048,
+        bufferLength: undefined,
+      })
+    })
+
+    it("should call plugins with video playback buffer length on metric added dash.js event", () => {
+      jest.spyOn(Plugins.interface, "onPlayerInfoUpdated")
+      mockDashMetrics.getCurrentBufferLevel.mockReturnValueOnce(15)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.METRIC_ADDED, {
+        mediaType: "video",
+        metric: "BufferLevel",
+      })
+
+      expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
+        playbackBitrate: undefined,
+        bufferLength: 15,
+      })
+    })
+
+    it("should not call plugins with audio playback buffer length when mediaKind is video on metric added dash.js event", () => {
+      jest.spyOn(Plugins.interface, "onPlayerInfoUpdated")
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.METRIC_ADDED, {
+        mediaType: "audio",
+        metric: "BufferLevel",
+      })
+
+      expect(Plugins.interface.onPlayerInfoUpdated).not.toHaveBeenCalled()
+    })
+
+    it("should call onFragmentContentLengthMismatch plugin on FRAGMENT_CONTENT_LENGTH_MISMATCH", () => {
+      jest.spyOn(Plugins.interface, "onFragmentContentLengthMismatch")
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, {
+        responseUrl: "example.com",
+        mediaType: "video/mp4",
+        headerLength: 12,
+        bodyLength: 13,
+      })
+
+      expect(Plugins.interface.onFragmentContentLengthMismatch).toHaveBeenCalledWith({
+        responseUrl: "example.com",
+        mediaType: "video/mp4",
+        headerLength: 12,
+        bodyLength: 13,
+      })
+    })
+  })
+
+  describe("responding to media element events", () => {
+    it.each([
+      [MediaState.PLAYING, "playing"],
+      [MediaState.PAUSED, "pause"],
+      [MediaState.WAITING, "waiting"],
+      [MediaState.WAITING, "seeking"],
+      [MediaState.ENDED, "ended"],
+    ])("should report media state %i for a %s event", (expectedMediaState, eventType) => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mediaElement.dispatchEvent(new Event(eventType))
+
+      expect(onEvent).toHaveBeenCalledWith(expectedMediaState)
+
+      expect(onEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it(`should report media state ${MediaState.PLAYING} for a seeked event while unpaused`, () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mockDashInstance.isPaused.mockReturnValueOnce(false)
+
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(onEvent).toHaveBeenCalledWith(MediaState.PLAYING)
+      expect(onEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it(`should report media state ${MediaState.PAUSED} for a seeked event while paused`, () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mockDashInstance.isPaused.mockReturnValueOnce(true)
+
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(onEvent).toHaveBeenCalledWith(MediaState.PAUSED)
+      expect(onEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it("should only trigger any event listeners once for any seeking/waiting events during a seek", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(60)
+
+      mediaElement.dispatchEvent(new Event("seeking"))
+      mediaElement.dispatchEvent(new Event("waiting"))
+      mediaElement.dispatchEvent(new Event("waiting"))
+
+      expect(onEvent).toHaveBeenCalledTimes(1)
+    })
+
+    it("should trigger any event listeners for seeking/waiting events outside a seek", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const onEvent = jest.fn()
+
+      mseStrategy.addEventCallback(null, onEvent)
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(60)
+
+      mediaElement.dispatchEvent(new Event("seeking"))
+      mediaElement.dispatchEvent(new Event("waiting"))
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(onEvent).toHaveBeenCalledTimes(2)
+
+      mediaElement.dispatchEvent(new Event("waiting"))
+
+      expect(onEvent).toHaveBeenCalledTimes(3)
+    })
+  })
+
+  describe("Transitions", () => {
+    it("always returns true for canBePaused()", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      expect(mseStrategy.transitions.canBePaused()).toBe(true)
+    })
+
+    it("always returns true for canBeginSeek()", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      expect(mseStrategy.transitions.canBeginSeek()).toBe(true)
     })
   })
 
   describe("Sets up mediaPlayer respecting enableBroadcastMixAD", () => {
     it("sets initial audio track settings when enableBroadcastMixAD is true", () => {
-      setUpMSE(undefined, undefined, undefined, undefined, undefined, undefined, true)
-      mseStrategy.load(WindowTypes.STATIC, 10)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, true)
+
+      mseStrategy.load(null, 10)
 
       expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenCalledWith("audio", {
         accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
@@ -600,44 +704,74 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("does not set initial audio track settings when enableBroadcastMixAD is false", () => {
-      setUpMSE(undefined, undefined, undefined, undefined, undefined, undefined, false)
-      mseStrategy.load(WindowTypes.STATIC, 10)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, false)
+
+      mseStrategy.load(null, 10)
 
       expect(mockDashInstance.setInitialMediaSettingsFor).not.toHaveBeenCalled()
     })
   })
 
   describe("getSeekableRange()", () => {
-    it("returns the correct start and end time", () => {
-      setUpMSE()
-      mseStrategy.load(null, 45)
+    it("returns zero to duration for a static stream", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.STATIC })
 
-      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 101 })
+      mockDashInstance.duration.mockReturnValueOnce(300)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 300 })
     })
 
-    it("returns the end time taking the live delay into account for a live stream", () => {
-      const customPlayerSettings = { streaming: { delay: { liveDelay: 20 } } }
+    it("accounts for live delay for a dynamic stream", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
 
-      setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
-      mseStrategy.load(null, 45)
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValueOnce({ range: { start: 180, end: 360 } })
 
-      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 81 })
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { delay: { liveDelay: 20 } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 180, end: 340 })
     })
 
     it("returns the end time ignoring the live delay for an on demand stream", () => {
-      const customPlayerSettings = { streaming: { delay: { liveDelay: 20 } } }
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.STATIC })
 
-      setUpMSE(0, WindowTypes.STATIC, MediaKinds.VIDEO, 100, 1000, customPlayerSettings)
-      mseStrategy.load(null, 45)
+      mockDashInstance.duration.mockReturnValueOnce(105)
 
-      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 101 })
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { delay: { liveDelay: 20 } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 105 })
+    })
+
+    it("falls back to using duration if DVR range is unavailable", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
+
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValueOnce(null)
+      mockDashInstance.duration.mockReturnValueOnce(180)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { delay: { liveDelay: 20 } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 180 })
     })
   })
 
   describe("getCurrentTime()", () => {
-    it("returns the correct time from the DASH Mediaplayer", () => {
-      setUpMSE()
-
+    it("returns the correct time", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 0)
 
       expect(mseStrategy.getCurrentTime()).toBe(0)
@@ -648,7 +782,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("returns 0 when MediaPlayer is undefined", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       expect(mseStrategy.getCurrentTime()).toBe(0)
     })
@@ -656,15 +790,25 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   describe("getDuration()", () => {
     it("returns the correct duration from the DASH Mediaplayer", () => {
-      setUpMSE()
+      mockDashInstance.duration.mockReturnValueOnce(180)
 
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 0)
 
-      expect(mseStrategy.getDuration()).toBe(101)
+      expect(mseStrategy.getDuration()).toBe(180)
     })
 
     it("returns 0 when the MediaPlayer is undefined", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      expect(mseStrategy.getDuration()).toBe(0)
+    })
+
+    it("returns 0 when the MediaPlayer is not ready", () => {
+      mockDashInstance.isReady.mockReturnValue(false)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
       expect(mseStrategy.getDuration()).toBe(0)
     })
@@ -672,8 +816,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   describe("getPlayerElement()", () => {
     it("returns the media player video element", () => {
-      setUpMSE()
-
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 0)
 
       expect(mseStrategy.getPlayerElement()).toBeInstanceOf(HTMLVideoElement)
@@ -681,8 +824,7 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("returns the media player audio element", () => {
-      setUpMSE(null, null, "audio")
-
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.AUDIO, playbackElement)
       mseStrategy.load(null, 0)
 
       expect(mseStrategy.getPlayerElement()).toBeInstanceOf(HTMLAudioElement)
@@ -699,7 +841,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       })
 
       it("should destroy the player and listeners", () => {
-        setUpMSE()
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
         mseStrategy.load(null, 0)
 
         expect(playbackElement.childElementCount).toBe(1)
@@ -724,27 +866,17 @@ describe("Media Source Extensions Playback Strategy", () => {
       })
 
       it("should setup player and element on a load after a reset", () => {
-        setUpMSE()
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
         mseStrategy.load(null, 0)
 
         mseStrategy.reset()
 
-        jest.clearAllMocks()
+        mockMediaSources.currentSource.mockReturnValueOnce("http://example2.com")
+        mseStrategy.load(null, null)
 
-        jest.spyOn(document, "createElement").mockImplementationOnce((elementType) => {
-          if (["audio", "video"].includes(elementType)) {
-            mediaElement = mockMediaElement(elementType)
-            return mediaElement
-          }
-
-          return document.createElement(elementType)
-        })
-
-        mseStrategy.load(null, 0)
-
-        expect(mockDashInstance.initialize).toHaveBeenCalledTimes(1)
-        expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-        expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
+        expect(mockDashInstance.initialize).toHaveBeenCalledTimes(2)
+        expect(mockDashInstance.initialize).toHaveBeenNthCalledWith(2, mediaElement, null, true)
+        expect(mockDashInstance.attachSource).toHaveBeenNthCalledWith(2, "http://example2.com")
 
         expect(playbackElement.childElementCount).toBe(1)
         expect(playbackElement.firstChild).toBeInstanceOf(HTMLVideoElement)
@@ -752,6 +884,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         expect(isMockedElement(playbackElement.firstChild)).toBe(true)
       })
     })
+
     describe("when resetMSEPlayer is configured as false", () => {
       beforeEach(() => {
         window.bigscreenPlayer.overrides = {
@@ -760,7 +893,8 @@ describe("Media Source Extensions Playback Strategy", () => {
       })
 
       it("should not destroy the player or listeners", () => {
-        setUpMSE()
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
         mseStrategy.load(null, 0)
         mseStrategy.reset()
 
@@ -784,7 +918,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   describe("tearDown()", () => {
     it("should destroy the MediaPlayer", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       mseStrategy.tearDown()
@@ -793,7 +928,8 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("should tear down bindings to MediaPlayer Events correctly", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       mseStrategy.tearDown()
@@ -824,7 +960,8 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("should remove the video element", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       expect(playbackElement.childElementCount).toBe(1)
@@ -837,48 +974,43 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   describe("isEnded()", () => {
     it("should be set to false on initialisation of the strategy", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       expect(mseStrategy.isEnded()).toBe(false)
     })
 
     it("should be set to true when we get an ended event", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
-      eventCallbacks("ended")
+      mediaElement.dispatchEvent(new Event("ended"))
 
       expect(mseStrategy.isEnded()).toBe(true)
     })
 
-    it("should be set to false when we get a playing event", () => {
-      setUpMSE()
+    it.each(["playing", "waiting"])("should be set to false when we get a %s event", (eventType) => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
-      eventCallbacks("playing")
+      mediaElement.dispatchEvent(new Event(eventType))
 
       expect(mseStrategy.isEnded()).toBe(false)
     })
 
-    it("should be set to false when we get a waiting event", () => {
-      setUpMSE()
+    it("should be set to false when we get another event after an ended event", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
-      eventCallbacks("waiting")
-
-      expect(mseStrategy.isEnded()).toBe(false)
-    })
-
-    it("should be set to true when we get a completed event then false when we start initial buffering from playing", () => {
-      setUpMSE()
-      mseStrategy.load(null, 0)
-
-      eventCallbacks("ended")
+      mediaElement.dispatchEvent(new Event("ended"))
 
       expect(mseStrategy.isEnded()).toBe(true)
 
-      eventCallbacks("waiting")
+      mediaElement.dispatchEvent(new Event("seeking"))
 
       expect(mseStrategy.isEnded()).toBe(false)
     })
@@ -886,7 +1018,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   describe("isPaused()", () => {
     it("should correctly return the paused state from the MediaPlayer when not paused", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       mockDashInstance.isPaused.mockReturnValue(false)
@@ -895,7 +1028,8 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("should correctly return the paused state from the MediaPlayer when paused", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       mockDashInstance.isPaused.mockReturnValue(true)
@@ -906,7 +1040,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   describe("pause()", () => {
     it("should call through to MediaPlayer's pause function", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       mseStrategy.pause()
@@ -917,7 +1052,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   describe("play()", () => {
     it("should call through to MediaPlayer's play function", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       mseStrategy.play()
@@ -928,7 +1064,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   describe("setCurrentTime()", () => {
     it("should call through to MediaPlayer's seek function", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       mseStrategy.setCurrentTime(12)
@@ -936,8 +1073,9 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(12)
     })
 
-    it("should clamp the seek to the start of the seekable range", () => {
-      setUpMSE()
+    it("should clamp the seek to the start of the safely seekable range", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       mseStrategy.setCurrentTime(-0.1)
@@ -945,197 +1083,208 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.seek).toHaveBeenCalledWith(0)
     })
 
-    it("clamps a seek to the end of the seekable range by seek duration padding", () => {
-      const seekDurationPadding = 0.1
+    it("should clamp the seek to the end of the safely seekable range", () => {
+      mockDashInstance.duration.mockReturnValueOnce(600)
 
-      setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { seekDurationPadding } })
+      const seekDurationPadding = 0
 
-      mseStrategy.load(null, 0)
-
-      mseStrategy.setCurrentTime(101)
-
-      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
-    })
-
-    it("clamps a seek to the end of the seekable range by live delay", () => {
-      const liveDelay = 1.1
-
-      setUpMSE(undefined, undefined, undefined, undefined, undefined, { streaming: { delay: { liveDelay } } })
-
-      mseStrategy.load(null, 0)
-
-      mseStrategy.setCurrentTime(101)
-
-      expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
-    })
-
-    it("clamps a seek to end by the greatest value of seek duration padding and live delay", () => {
-      const seekDurationPadding = 0.1
-      const liveDelay = seekDurationPadding - 0.01
-
-      setUpMSE(undefined, undefined, undefined, undefined, undefined, {
-        streaming: { seekDurationPadding, delay: { liveDelay } },
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { seekDurationPadding },
       })
 
       mseStrategy.load(null, 0)
 
-      mseStrategy.setCurrentTime(101)
+      mseStrategy.setCurrentTime(1000)
 
-      expect(mockDashInstance.seek).toHaveBeenCalledWith(100.9)
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(600)
+    })
+
+    it("clamps a seek to the end of the safely seekable range by seek duration padding", () => {
+      mockDashInstance.duration.mockReturnValueOnce(360)
+
+      const seekDurationPadding = 0.1
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { seekDurationPadding },
+      })
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(360)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(359.9)
     })
 
     it("clamps a seek to end using the default seek duration padding when not passed in", () => {
-      setUpMSE()
+      mockDashInstance.duration.mockReturnValueOnce(100)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       mseStrategy.load(null, 0)
 
-      mseStrategy.setCurrentTime(101)
+      mseStrategy.setCurrentTime(100)
 
-      expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(98.9)
     })
 
-    describe("sliding window", () => {
-      beforeEach(() => {
-        setUpMSE(0, WindowTypes.SLIDING, MediaKinds.VIDEO, 100, 1000, { streaming: { delay: { liveDelay: 1.1 } } })
-        mseStrategy.load(null, 0)
-        mockDashInstance.play.mockReset()
-      })
+    it("seeks relative to the DVR range for dynamic streams", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
 
-      it("should set current time on the video element", () => {
-        mseStrategy.setCurrentTime(12)
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValue({ range: { start: 180, end: 360 } })
 
-        expect(mockDashInstance.seek).toHaveBeenCalledWith(12)
-      })
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-      it("should always clamp the seek to the start of the seekable range", () => {
-        mseStrategy.setCurrentTime(-0.1)
+      mseStrategy.load(null, 0)
 
-        expect(mediaElement.currentTime).toBe(0)
-      })
+      mseStrategy.setCurrentTime(240)
 
-      it("should always clamp the seek to 1.1s before the end of the seekable range", () => {
-        mseStrategy.setCurrentTime(101)
-
-        expect(mockDashInstance.seek).toHaveBeenCalledWith(99.9)
-      })
-
-      it("should start autoresume timeout when paused", () => {
-        mseStrategy.pause()
-
-        expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
-      })
-
-      it("should not start autoresume timeout when paused and disableAutoResume is set", () => {
-        const opts = {
-          disableAutoResume: true,
-        }
-
-        mseStrategy.pause(opts)
-
-        expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
-      })
-
-      it("should start auto resume timeout when paused and seeking", () => {
-        mockDashInstance.isPaused.mockReturnValue(true)
-
-        mseStrategy.pause()
-        mseStrategy.setCurrentTime()
-
-        eventCallbacks("seeked")
-
-        expect(DynamicWindowUtils.autoResumeAtStartOfRange).toHaveBeenCalledTimes(2)
-      })
-
-      it("should not try to autoresume when playing and seeking", () => {
-        mockDashInstance.isPaused.mockReturnValue(false)
-
-        mseStrategy.setCurrentTime()
-        eventCallbacks("seeked")
-
-        expect(DynamicWindowUtils.autoResumeAtStartOfRange).not.toHaveBeenCalled()
-      })
-
-      describe("seek offset", () => {
-        beforeEach(() => {
-          jest.useFakeTimers()
-        })
-
-        afterEach(() => {
-          jest.useRealTimers()
-        })
-
-        it("should calculate seek offset time when paused before seeking", () => {
-          jest.spyOn(TimeUtils, "calculateSlidingWindowSeekOffset")
-          mseStrategy.pause()
-          mseStrategy.setCurrentTime(101)
-
-          expect(TimeUtils.calculateSlidingWindowSeekOffset).toHaveBeenCalledTimes(1)
-        })
-
-        it("should calculate seek offset time correctly during user pause", () => {
-          jest.spyOn(TimeUtils, "calculateSlidingWindowSeekOffset")
-
-          mseStrategy.pause({ pauseTrigger: PauseTriggers.USER })
-          jest.advanceTimersByTime(5000)
-
-          mseStrategy.pause({ pauseTrigger: PauseTriggers.APP })
-          jest.advanceTimersByTime(6000)
-
-          mseStrategy.setCurrentTime(15)
-
-          expect(mockDashInstance.seek).toHaveBeenCalledWith(9)
-        })
-
-        it("should calculate seek offset time correctly if the session has previously had a user pause", () => {
-          jest.spyOn(TimeUtils, "calculateSlidingWindowSeekOffset")
-
-          mseStrategy.pause({ pauseTrigger: PauseTriggers.USER })
-          jest.advanceTimersByTime(3000)
-          mseStrategy.play()
-
-          jest.advanceTimersByTime(2000)
-          mseStrategy.pause({ pauseTrigger: PauseTriggers.APP })
-          jest.advanceTimersByTime(6000)
-
-          mseStrategy.setCurrentTime(15)
-
-          expect(mockDashInstance.seek).toHaveBeenCalledWith(9)
-        })
-      })
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(60)
     })
 
-    describe("growing window", () => {
-      beforeEach(() => {
-        setUpMSE(0, WindowTypes.GROWING, undefined, undefined, undefined, { streaming: { delay: { liveDelay: 1.1 } } })
+    it("refreshes the manifest when seeking forward in a dynamic stream", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
 
-        mseStrategy.load(null, 0)
-        mediaElement.currentTime = 50
-        mockDashInstance.refreshManifest.mockReset()
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValue({ range: { start: 180, end: 360 } })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      mediaElement.currentTime = 200
+
+      mseStrategy.setCurrentTime(240)
+
+      expect(mockDashInstance.refreshManifest).toHaveBeenCalled()
+    })
+
+    it("does not refresh the manifest when seeking backward in a dynamic stream", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
+
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValue({ range: { start: 180, end: 360 } })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      mediaElement.currentTime = 260
+
+      mseStrategy.setCurrentTime(240)
+
+      expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
+    })
+
+    it("should clamp seek time to the manifest's duration when it is present in the refreshed manifest", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
+
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValue({ range: { start: 180, end: 360 } })
+
+      mockDashInstance.refreshManifest.mockImplementationOnce((onRefresh) =>
+        onRefresh({ mediaPresentationDuration: 230 })
+      )
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      mseStrategy.setCurrentTime(240)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(50)
+    })
+  })
+
+  describe("autoresume", () => {
+    it("should not start autoresume timeout when paused on a static stream", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.STATIC })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      mseStrategy.pause()
+
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
+    })
+
+    it("should not start autoresume timeout when paused on a dynamic stream without timeshift", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
       })
 
-      it("should perform a seek without refreshing the manifest if seek time is less than current time", () => {
-        mseStrategy.setCurrentTime(40)
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-        expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
+      mseStrategy.pause()
 
-        expect(mockDashInstance.seek).toHaveBeenCalledWith(40)
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
+    })
+
+    it("should start autoresume timeout when paused on a dynamic stream with timeshift", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
       })
 
-      it("should call seek on media player with the original user requested seek time when manifest refreshes but doesnt have a duration", () => {
-        mockDashInstance.refreshManifest.mockImplementation((callback) => callback({}))
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-        mseStrategy.setCurrentTime(60)
+      mseStrategy.pause()
 
-        expect(mockDashInstance.seek).toHaveBeenCalledWith(60)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(1)
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledWith(
+        0,
+        { start: 0, end: 100 },
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        mockDashInstance.play,
+        72000
+      )
+    })
+
+    it("should start auto resume timeout when paused and seeking", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
       })
 
-      it("should call seek on media player with the time clamped to new end when manifest refreshes and contains a duration", () => {
-        mockDashInstance.refreshManifest.mockImplementation((callback) => callback({ mediaPresentationDuration: 80 }))
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
 
-        mseStrategy.setCurrentTime(90)
+      mseStrategy.pause()
+      mediaElement.dispatchEvent(new Event("pause"))
+      mockDashInstance.isPaused.mockReturnValue(true)
 
-        expect(mockDashInstance.seek).toHaveBeenCalledWith(78.9)
+      mseStrategy.setCurrentTime(300)
+      mediaElement.dispatchEvent(new Event("seeking"))
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(autoResumeAtStartOfRange).toHaveBeenCalledTimes(2)
+    })
+
+    it("should not start autoresume timeout when playing and seeking", () => {
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
       })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      mockDashInstance.isPaused.mockReturnValue(false)
+
+      mseStrategy.setCurrentTime(300)
+      mediaElement.dispatchEvent(new Event("seeking"))
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      expect(autoResumeAtStartOfRange).not.toHaveBeenCalled()
     })
   })
 
@@ -1147,13 +1296,12 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     const mainTrack = { roles: ["main"] }
 
-    beforeEach(() => {
-      setUpMSE()
-      mseStrategy.load(WindowTypes.STATIC, 10)
-    })
-
     describe("isBroadcastMixADAvailable()", () => {
       it("returns true when there is a broadcastMixAD track", () => {
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+        mseStrategy.load(null, 10)
+
         mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, broadcastMixADtrack])
 
         expect(mseStrategy.isBroadcastMixADAvailable()).toBe(true)
@@ -1161,6 +1309,10 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       it("returns false when there is no broadcastMixAD track", () => {
         mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack])
+
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+        mseStrategy.load(null, 10)
 
         expect(mseStrategy.isBroadcastMixADAvailable()).toBe(false)
       })
@@ -1170,11 +1322,19 @@ describe("Media Source Extensions Playback Strategy", () => {
       it("returns true when the current audio track is broadcastMixAD", () => {
         mockDashInstance.getCurrentTrackFor.mockReturnValueOnce(broadcastMixADtrack)
 
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+        mseStrategy.load(null, 10)
+
         expect(mseStrategy.isBroadcastMixADEnabled()).toBe(true)
       })
 
       it("returns false when the current track is not broadcastMixAD", () => {
         mockDashInstance.getCurrentTrackFor.mockReturnValueOnce(mainTrack)
+
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+        mseStrategy.load(null, 10)
 
         expect(mseStrategy.isBroadcastMixADEnabled()).toBe(false)
       })
@@ -1183,6 +1343,10 @@ describe("Media Source Extensions Playback Strategy", () => {
     describe("setBroadcastMixADOff()", () => {
       it("switches to the main track", () => {
         mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, broadcastMixADtrack])
+
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+        mseStrategy.load(null, 10)
 
         mseStrategy.setBroadcastMixADOff()
 
@@ -1194,6 +1358,10 @@ describe("Media Source Extensions Playback Strategy", () => {
       it("switches to the broadcastMixAD track if present", () => {
         mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, broadcastMixADtrack])
 
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+        mseStrategy.load(null, 10)
+
         mseStrategy.setBroadcastMixADOn()
 
         expect(mockDashInstance.setCurrentTrack).toHaveBeenCalledWith(broadcastMixADtrack)
@@ -1201,6 +1369,10 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       it("does not switch to the broadcastMixAD if not present", () => {
         mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack])
+
+        const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+        mseStrategy.load(null, 10)
 
         mseStrategy.setBroadcastMixADOn()
 
@@ -1211,40 +1383,44 @@ describe("Media Source Extensions Playback Strategy", () => {
     describe("onTrackChangeRendered", () => {
       it("should ensure callbacks are called with enabled true when the current track is broadcastMixAD", () => {
         mockDashInstance.getCurrentTrackFor.mockReturnValue(broadcastMixADtrack)
+
         const callBroadcastMixADCallbacksMock = jest.fn()
-        setUpMSE(
+
+        const mseStrategy = MSEStrategy(
+          mockMediaSources,
+          MediaKinds.VIDEO,
+          playbackElement,
           undefined,
           undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
+          false,
           callBroadcastMixADCallbacksMock
         )
-        mseStrategy.load(WindowTypes.STATIC, 10)
 
-        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { newMediaInfo: { type: "audio" } })
+        mseStrategy.load(null, 10)
+
+        dispatchDashEvent(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { newMediaInfo: { type: "audio" } })
 
         expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(true)
       })
 
       it("should ensure callbacks are called with enabled false when the current track is not broadcastMixAD", () => {
         mockDashInstance.getCurrentTrackFor.mockReturnValue(mainTrack)
+
         const callBroadcastMixADCallbacksMock = jest.fn()
-        setUpMSE(
+
+        const mseStrategy = MSEStrategy(
+          mockMediaSources,
+          MediaKinds.VIDEO,
+          playbackElement,
           undefined,
           undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
-          undefined,
+          false,
           callBroadcastMixADCallbacksMock
         )
-        mseStrategy.load(WindowTypes.STATIC, 10)
 
-        dashEventCallback(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { newMediaInfo: { type: "audio" } })
+        mseStrategy.load(null, 10)
+
+        dispatchDashEvent(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { newMediaInfo: { type: "audio" } })
 
         expect(callBroadcastMixADCallbacksMock).toHaveBeenCalledWith(false)
       })
@@ -1253,7 +1429,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
   describe("Playback Rate", () => {
     it("should call through to MediaPlayer's setPlaybackRate function", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
       mseStrategy.setPlaybackRate(2)
@@ -1262,8 +1439,10 @@ describe("Media Source Extensions Playback Strategy", () => {
     })
 
     it("should call through to MediaPlayer's getPlaybackRate function and returns correct value", () => {
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
+
       mockDashInstance.getPlaybackRate.mockReturnValue(1.5)
 
       const rate = mseStrategy.getPlaybackRate()
@@ -1283,531 +1462,274 @@ describe("Media Source Extensions Playback Strategy", () => {
       ])
     })
 
-    afterEach(() => {
-      mockDashInstance.setMediaDuration.mockReset()
-    })
-
-    describe("overrides dynamic stream duration", () => {
-      it("when mseDurationOverride configration property is true and window type is sliding", () => {
-        window.bigscreenPlayer.overrides = {
-          mseDurationOverride: true,
-        }
-
-        setUpMSE(0, WindowTypes.SLIDING)
-        mseStrategy.load(null, 0)
-
-        eventHandlers.streamInitialized()
-
-        expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-      })
-
-      it("when mseDurationOverride configration property is true and window type is growing", () => {
-        window.bigscreenPlayer.overrides = {
-          mseDurationOverride: true,
-        }
-
-        setUpMSE(0, WindowTypes.GROWING)
-        mseStrategy.load(null, 0)
-
-        eventHandlers.streamInitialized()
-
-        expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-      })
-    })
-
-    describe("does not override stream duration", () => {
-      it("when mseDurationOverride configration property is true and window type is static", () => {
-        window.bigscreenPlayer.overrides = {
-          mseDurationOverride: true,
-        }
-
-        setUpMSE(0, WindowTypes.STATIC)
-        mseStrategy.load(null, 0)
-
-        eventHandlers.streamInitialized()
-
-        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-      })
-
-      it("when mseDurationOverride configration property is false and window type is static", () => {
-        window.bigscreenPlayer.overrides = {
-          mseDurationOverride: false,
-        }
-
-        setUpMSE(0, WindowTypes.STATIC)
-        mseStrategy.load(null, 0)
-
-        eventHandlers.streamInitialized()
-
-        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-      })
-
-      it("when mseDurationOverride configration property is false and window type is sliding", () => {
-        window.bigscreenPlayer.overrides = {
-          mseDurationOverride: false,
-        }
-
-        setUpMSE(0, WindowTypes.SLIDING)
-        mseStrategy.load(null, 0)
-
-        eventHandlers.streamInitialized()
-
-        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-      })
-
-      it("when mseDurationOverride configration property is false and window type is growing", () => {
-        window.bigscreenPlayer.overrides = {
-          mseDurationOverride: false,
-        }
-
-        setUpMSE(0, WindowTypes.GROWING)
-        mseStrategy.load(null, 0)
-
-        eventHandlers.streamInitialized()
-
-        expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
-      })
-    })
-  })
-
-  describe("onManifestLoaded", () => {
-    it("calls onManifestLoaded plugin with the manifest when dashjs loads it", () => {
-      const onManifestLoadedSpy = jest.spyOn(Plugins.interface, "onManifestLoaded")
-      setUpMSE(0, WindowTypes.SLIDING)
-      mseStrategy.load(null, 0)
-      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_LOADED, testManifestObject)
-
-      expect(onManifestLoadedSpy).toHaveBeenCalledWith(expect.any(Object))
-    })
-  })
-
-  describe("onManifestValidityChanged", () => {
-    beforeEach(() => {
-      mockDashInstance.refreshManifest.mockReset()
-    })
-
-    it("calls refreshManifest on mediaPlayer with a growing window", () => {
-      setUpMSE(0, WindowTypes.GROWING)
-      mseStrategy.load(null, 0)
-      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
-
-      expect(mockDashInstance.refreshManifest).toHaveBeenCalledTimes(1)
-    })
-
-    it("does not call refreshManifest on mediaPlayer with a sliding window", () => {
-      setUpMSE(0, WindowTypes.SLIDING)
-
-      mseStrategy.load(null, 0)
-      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
-
-      expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
-    })
-
-    it("does not call refreshManifest on mediaPlayer with a static window", () => {
-      setUpMSE(0, WindowTypes.STATIC)
-
-      mseStrategy.load(null, 0)
-      dashEventCallback(dashjsMediaPlayerEvents.MANIFEST_VALIDITY_CHANGED, testManifestObject)
-
-      expect(mockDashInstance.refreshManifest).not.toHaveBeenCalled()
-    })
-  })
-
-  describe("onMetricAdded and onQualityChangeRendered", () => {
-    const mockEvent = {
-      mediaType: "video",
-      oldQuality: 0,
-      newQuality: 1,
-      type: "qualityChangeRendered",
-    }
-
-    const mockOnPlayerInfoUpdated = jest.fn()
-
-    beforeEach(() => {
-      jest.spyOn(Plugins.interface, "onPlayerInfoUpdated").mockReturnValue(mockOnPlayerInfoUpdated)
-      jest.spyOn(Plugins.interface, "onErrorHandled")
-      mockOnPlayerInfoUpdated.mockReset()
-    })
-
-    it("should call plugins with the combined playback bitrate", () => {
-      setUpMSE()
-      mockDashInstance.getBitrateInfoListFor.mockReturnValue([
-        { bitrate: 1024000 },
-        { bitrate: 200000 },
-        { bitrate: 3000000 },
-      ])
-      mseStrategy.load(null, 0)
-
-      dashEventCallback(dashjsMediaPlayerEvents.QUALITY_CHANGE_RENDERED, mockEvent)
-
-      expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-        playbackBitrate: 2048,
-        bufferLength: undefined,
-      })
-    })
-
-    it("should call plugins with video playback buffer length", () => {
-      const mockBufferEvent = {
-        mediaType: "video",
-        metric: "BufferLevel",
+    it("does not override duration for a static stream when mseDurationOverride is false", () => {
+      window.bigscreenPlayer.overrides = {
+        mseDurationOverride: false,
       }
 
-      setUpMSE()
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.STATIC,
+        presentationTimeOffsetInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 0,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
-      dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent)
+      dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
 
-      expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
-        playbackBitrate: undefined,
-        bufferLength: "buffer",
-      })
+      expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalled()
     })
 
-    it("should not call plugins with audio playback buffer length when mediaKind is video", () => {
-      const mockBufferEvent = {
-        mediaType: "audio",
-        metric: "BufferLevel",
+    it("does not override duration for a static stream when mseDurationOverride is true", () => {
+      window.bigscreenPlayer.overrides = {
+        mseDurationOverride: true,
       }
 
-      setUpMSE()
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.STATIC,
+        presentationTimeOffsetInMilliseconds: 0,
+        availabilityStartTimeInMilliseconds: 0,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
       mseStrategy.load(null, 0)
 
-      dashEventCallback(dashjsMediaPlayerEvents.METRIC_ADDED, mockBufferEvent)
+      dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
 
-      expect(Plugins.interface.onPlayerInfoUpdated).not.toHaveBeenCalledWith()
+      expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalled()
+    })
+
+    it("does not override duration for a dynamic stream when mseDurationOverride is false", () => {
+      window.bigscreenPlayer.overrides = {
+        mseDurationOverride: false,
+      }
+
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
+
+      expect(mockDashInstance.setMediaDuration).not.toHaveBeenCalled()
+    })
+
+    it("does override duration for a dynamic stream when mseDurationOverride is true", () => {
+      window.bigscreenPlayer.overrides = {
+        mseDurationOverride: true,
+      }
+
+      mockMediaSources.time.mockReturnValue({
+        manifestType: ManifestType.DYNAMIC,
+        timeShiftBufferDepthInMilliseconds: 72000000,
+        availabilityStartTimeInMilliseconds: 1731974400000,
+        presentationTimeOffsetInMilliseconds: 0,
+      })
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
+
+      expect(mockDashInstance.setMediaDuration).toHaveBeenCalledWith(Number.MAX_SAFE_INTEGER)
     })
   })
 
-  describe("Error handling", () => {
-    it("should not fire error handled event on initial load", () => {
-      const mockEvent = {
-        mediaType: "video",
-        type: "baseUrlSelected",
-        baseUrl: {
-          serviceLocation: "cdn1",
-        },
-      }
+  describe("handling errors", () => {
+    it("should trigger any error listeners on a unhandled dash.js error", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
-      setUpMSE()
+      const mockErrorCallback = jest.fn()
+
+      mseStrategy.addErrorCallback(null, mockErrorCallback)
+
       mseStrategy.load(null, 0)
 
-      dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, mockEvent)
-
-      expect(Plugins.interface.onErrorHandled).not.toHaveBeenCalledWith()
-    })
-
-    it("should not publish error event on init segment download error if more than one CDN available", () => {
-      const mockEvent = {
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
         error: {
-          message: "initial segment download error",
-          code: 28,
+          code: 9999,
         },
-      }
+      })
 
-      setUpMSE()
+      expect(mockErrorCallback).toHaveBeenCalledWith({ code: 9999 })
+    })
+
+    it("should failover with correct parameters on a dash.js manifest download error", async () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
 
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
 
-      expect(mockErrorCallback).not.toHaveBeenCalled()
-    })
-
-    it("should publish error event on init segment download error if only one CDN available", () => {
-      const mockEvent = {
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
         error: {
-          message: "initial segment download error",
-          code: 28,
-        },
-      }
-
-      setUpMSE()
-
-      const mockErrorCallback = jest.fn()
-      mseStrategy.addErrorCallback(null, mockErrorCallback)
-
-      mseStrategy.load(null, 0)
-
-      const noop = () => {}
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      expect(mockErrorCallback).toHaveBeenCalled()
-    })
-
-    it("should not publish error event on content download error if more than one CDN available", () => {
-      const mockEvent = {
-        error: {
-          message: "content download error",
-          code: 27,
-        },
-      }
-
-      setUpMSE()
-
-      const mockErrorCallback = jest.fn()
-      mseStrategy.addErrorCallback(null, mockErrorCallback)
-
-      mseStrategy.load(null, 0)
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      expect(mockErrorCallback).not.toHaveBeenCalled()
-    })
-
-    it("should publish error event on content download error if only one CDN available", () => {
-      const mockEvent = {
-        error: {
-          message: "content download error",
-          code: 27,
-        },
-      }
-
-      setUpMSE()
-
-      const mockErrorCallback = jest.fn()
-      mseStrategy.addErrorCallback(null, mockErrorCallback)
-
-      mseStrategy.load(null, 0)
-
-      const noop = () => {}
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: true })
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      expect(mockErrorCallback).toHaveBeenCalled()
-    })
-
-    it("should initiate a failover with correct parameters on manifest download error", () => {
-      const mockEvent = {
-        error: {
-          message: "manifest download error",
           code: 25,
+          message: "Mock manifest load fail",
         },
-      }
+      })
 
-      setUpMSE()
+      await jest.runOnlyPendingTimersAsync()
 
-      mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
+      expect(mockErrorCallback).not.toHaveBeenCalled()
 
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
-
-      const failoverParams = {
+      expect(mockMediaSources.failover).toHaveBeenCalledWith({
         isBufferingTimeoutError: false,
-        currentTime: mseStrategy.getCurrentTime(),
-        duration: mseStrategy.getDuration(),
-        code: mockEvent.error.code,
-        message: mockEvent.error.message,
-      }
-
-      expect(mediaSources.failover).toHaveBeenCalledWith(mseStrategy.load, expect.any(Function), failoverParams)
+        currentTime: 0,
+        duration: 100,
+        code: 25,
+        message: "Mock manifest load fail",
+      })
+      expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[1].url}#t=0`)
+      expect(mockDashInstance.attachSource).toHaveBeenCalledTimes(2)
     })
 
-    it("should not publish error event on manifest download error when it is possible to failover", () => {
-      const mockEvent = {
-        error: {
-          message: "manifest download error",
-          code: 25,
-        },
-      }
-
-      setUpMSE()
+    it("should trigger any error listeners when cdn failover fails following a dash.js manifest download error", async () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
 
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
+      mockMediaSources.failover.mockRejectedValueOnce(new Error("mock failover reject"))
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
+        error: {
+          code: 25,
+          message: "Mock manifest load fail",
+        },
+      })
+
+      await jest.runOnlyPendingTimersAsync()
+
+      expect(mockErrorCallback).toHaveBeenCalledWith({ code: 25, message: "Mock manifest load fail" })
+      expect(mockDashInstance.attachSource).toHaveBeenCalledTimes(1)
+    })
+
+    it("should not trigger any error listeners on an init segment download error if more than one CDN available", () => {
+      mockMediaSources.availableSources.mockReturnValueOnce(["mock://cdn1.com/mpd/", "mock://cdn2.com/mpd/"])
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const mockErrorCallback = jest.fn()
+
+      mseStrategy.addErrorCallback(null, mockErrorCallback)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
+        error: {
+          message: "initial segment download error",
+          code: 28,
+        },
+      })
 
       expect(mockErrorCallback).not.toHaveBeenCalled()
     })
 
-    it("should publish an error event on manifest download error when there are no more sources to CDN failover to", () => {
-      const mockEvent = {
-        error: {
-          message: "manifest download error",
-          code: 25,
-        },
-      }
+    it("should trigger any error listeners on an init segment download error if only one CDN available", () => {
+      mockMediaSources.availableSources.mockReturnValueOnce(["mock://cdn1.com/mpd/"])
 
-      const noop = () => {}
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: false })
-      mediaSources.failover(noop, noop, { isBufferingTimeoutError: false })
-
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
 
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
+        error: {
+          message: "initial segment download error",
+          code: 28,
+        },
+      })
 
-      expect(mockErrorCallback).toHaveBeenCalledWith({ code: 25, message: "manifest download error" })
+      expect(mockErrorCallback).toHaveBeenCalledWith({
+        message: "initial segment download error",
+        code: 28,
+      })
+
+      expect(mockErrorCallback).toHaveBeenCalledTimes(1)
     })
 
-    it("should publish an error event for any other error propagated from dash.js", () => {
-      const mockEvent = {
-        error: {
-          message: "MEDIA_ERR_ABORTED (message from element)",
-          code: 1,
-        },
-      }
+    it("should not trigger any error listeners on a content download error if more than one CDN available", () => {
+      mockMediaSources.availableSources.mockReturnValueOnce(["mock://cdn1.com/mpd/", "mock://cdn2.com/mpd/"])
 
-      setUpMSE()
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const mockErrorCallback = jest.fn()
+
+      mseStrategy.addErrorCallback(null, mockErrorCallback)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
+        error: {
+          message: "content download error",
+          code: 27,
+        },
+      })
+
+      expect(mockErrorCallback).not.toHaveBeenCalled()
+    })
+
+    it("should trigger any error listeners on an content download error if only one CDN available", () => {
+      mockMediaSources.availableSources.mockReturnValueOnce(["mock://cdn1.com/mpd/"])
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
       const mockErrorCallback = jest.fn()
       mseStrategy.addErrorCallback(null, mockErrorCallback)
 
       mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
 
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
+        error: {
+          message: "content download error",
+          code: 27,
+        },
+      })
 
-      expect(mockErrorCallback).toHaveBeenCalledWith({ code: 1, message: "MEDIA_ERR_ABORTED (message from element)" })
+      expect(mockErrorCallback).toHaveBeenCalledWith({
+        message: "content download error",
+        code: 27,
+      })
+
+      expect(mockErrorCallback).toHaveBeenCalledTimes(1)
     })
 
-    it("should reset the media player immediately if an unsupported codec error is thrown", () => {
-      const mockEvent = {
+    it("should reset the media player and trigger any error listeners if an unsupported codec error is thrown", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      const mockErrorCallback = jest.fn()
+      mseStrategy.addErrorCallback(null, mockErrorCallback)
+
+      mseStrategy.load(null, 0)
+
+      dispatchDashEvent(dashjsMediaPlayerEvents.ERROR, {
         error: {
           message: "videoCodec is not supported",
           code: 30,
         },
-      }
-
-      setUpMSE()
-
-      const mockErrorCallback = jest.fn()
-      mseStrategy.addErrorCallback(null, mockErrorCallback)
-
-      mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockEvent)
+      })
 
       expect(mockDashInstance.reset).toHaveBeenCalled()
       expect(mockErrorCallback).toHaveBeenCalledWith({ code: 30, message: "videoCodec is not supported" })
-    })
-
-    it("should initiate a failover with the previous error code and message on baseurlselected", () => {
-      const mockErrorEvent = {
-        error: {
-          message: "content download error",
-          code: 27,
-        },
-      }
-
-      setUpMSE()
-
-      mseStrategy.load(null, 0)
-      mediaElement.currentTime = 10
-
-      dashEventCallback(dashjsMediaPlayerEvents.ERROR, mockErrorEvent)
-      expect(mediaSources.failover).not.toHaveBeenCalled()
-
-      const mockBaseUrlEvent = {
-        mediaType: "video",
-        type: "baseUrlSelected",
-        baseUrl: {
-          serviceLocation: "cdn1",
-        },
-      }
-
-      dashEventCallback(dashjsMediaPlayerEvents.BASE_URL_SELECTED, mockBaseUrlEvent)
-
-      const failoverParams = {
-        isBufferingTimeoutError: false,
-        serviceLocation: "cdn1",
-        code: mockErrorEvent.error.code,
-        message: mockErrorEvent.error.message,
-      }
-
-      expect(mediaSources.failover).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), failoverParams)
-    })
-  })
-
-  describe("seeking and waiting events", () => {
-    let eventCallbackSpy
-
-    beforeEach(() => {
-      setUpMSE()
-      eventCallbackSpy = jest.fn()
-      mseStrategy.addEventCallback(this, eventCallbackSpy)
-      mseStrategy.load(null, 0)
-      mseStrategy.play()
-    })
-
-    it("should call the event callback once when seeking", () => {
-      mseStrategy.pause()
-
-      mseStrategy.setCurrentTime(60)
-
-      eventCallbacks("seeking")
-      eventCallbacks("waiting")
-
-      expect(eventCallbackSpy).toHaveBeenCalledTimes(1)
-    })
-
-    it("should call the event callback more than once when not seeking", () => {
-      eventCallbacks("waiting")
-      eventCallbacks("waiting")
-
-      expect(eventCallbackSpy).toHaveBeenCalledTimes(2)
-    })
-  })
-
-  describe("plugins", () => {
-    it("fires onFragmentContentLengthMismatch when dash.js fires FRAGMENT_CONTENT_LENGTH_MISMATCH", () => {
-      const mockFragmentContentLengthMismatchEvent = {
-        responseUrl: "example.com",
-        mediaType: "video/mp4",
-        headerLength: 12,
-        bodyLength: 13,
-      }
-
-      jest.spyOn(Plugins.interface, "onFragmentContentLengthMismatch")
-
-      setUpMSE()
-      mseStrategy.load(null, 0)
-
-      dashEventCallback(
-        dashjsMediaPlayerEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH,
-        mockFragmentContentLengthMismatchEvent
-      )
-
-      expect(Plugins.interface.onFragmentContentLengthMismatch).toHaveBeenCalledWith(
-        mockFragmentContentLengthMismatchEvent
-      )
-    })
-  })
-
-  describe("gap jumps", () => {
-    it("logs a seek triggered by a gap to the debugger", () => {
-      setUpMSE()
-      mseStrategy.load(null, 0)
-      dashEventCallback("gapCausedInternalSeek", { duration: 0.3, seekTime: 33.3 })
-
-      expect(DebugTool.gap).toHaveBeenCalledTimes(1)
-      expect(DebugTool.gap).toHaveBeenCalledWith(33, 33.3)
-    })
-
-    it("logs a seek to end triggered by a gap to the debugger", () => {
-      setUpMSE()
-      mseStrategy.load(null, 0)
-
-      dashEventCallback("gapCausedSeekToPeriodEnd", { duration: 0.3, seekTime: 33.3 })
-
-      expect(DebugTool.gap).toHaveBeenCalledTimes(1)
-      expect(DebugTool.gap).toHaveBeenCalledWith(33, 33.3)
     })
   })
 })

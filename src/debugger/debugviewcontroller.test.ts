@@ -39,8 +39,8 @@ describe("Debug View", () => {
   })
 
   it.each([
-    [0, 3600000, "00:00:00 - 01:00:00"],
-    [1518018558259, 1518019158259, "15:49:18 - 15:59:18"],
+    [0, 3600, "00:00:00 - 01:00:00"],
+    [1518018558, 1518019158, "15:49:18 - 15:59:18"],
   ])("converts a seekable range %i-%i in a metric into a human-readable string %s-%s", (start, end, expected) => {
     const controller = new ViewController()
     const chronicle = new Chronicle()

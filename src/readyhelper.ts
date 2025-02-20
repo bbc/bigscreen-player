@@ -1,14 +1,14 @@
 import { MediaState } from "./models/mediastate"
-import { WindowTypes } from "./models/windowtypes"
 import { LiveSupport } from "./models/livesupport"
+import { ManifestType } from "./models/manifesttypes"
 
-type SeekableRange = { start: number; end: number }
+type SeekableRange = { start: number; end: number } | null
 type State = { state?: MediaState }
 type Time = { currentTime?: number; seekableRange?: SeekableRange }
 
 function ReadyHelper(
   initialPlaybackTime: number | undefined,
-  windowType: WindowTypes,
+  manifestType: ManifestType,
   liveSupport: LiveSupport,
   callback?: () => void
 ) {
@@ -35,11 +35,8 @@ function ReadyHelper(
   }
 
   function isValidTime({ currentTime, seekableRange }: Time) {
-    const isStatic = windowType === WindowTypes.STATIC
-
-    if (isStatic) return validateStaticTime(currentTime)
-    if (seekableRange) return validateLiveTime(currentTime, seekableRange)
-    return false
+    if (manifestType === ManifestType.STATIC) return validateStaticTime(currentTime)
+    return validateLiveTime(currentTime, seekableRange)
   }
 
   function validateStaticTime(currentTime?: number) {
@@ -50,7 +47,7 @@ function ReadyHelper(
   }
 
   function validateLiveTime(currentTime?: number, seekableRange?: SeekableRange) {
-    if (liveSupport === LiveSupport.PLAYABLE) {
+    if (liveSupport === LiveSupport.PLAYABLE || liveSupport === LiveSupport.RESTARTABLE) {
       return currentTime ? currentTime >= 0 : false
     }
 

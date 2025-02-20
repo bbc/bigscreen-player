@@ -5,15 +5,14 @@ import Plugins from "../plugins"
 import Renderer from "./renderer"
 
 jest.mock("../utils/loadurl")
-
 jest.mock("../plugins", () => ({
-    interface: {
-      onSubtitlesTimeout: jest.fn(),
-      onSubtitlesXMLError: jest.fn(),
-      onSubtitlesRenderError: jest.fn(),
-      onSubtitlesTransformError: jest.fn(),
-    },
-  }))
+  interface: {
+    onSubtitlesTimeout: jest.fn(),
+    onSubtitlesXMLError: jest.fn(),
+    onSubtitlesRenderError: jest.fn(),
+    onSubtitlesTransformError: jest.fn(),
+  },
+}))
 
 const mockRender = () => document.createElement("div")
 
@@ -23,10 +22,10 @@ const mockStart = jest.fn()
 const mockStop = jest.fn()
 
 Renderer.mockImplementation(() => ({
-    start: mockStart,
-    stop: mockStop,
-    render: mockRender,
-  }))
+  start: mockStart,
+  stop: mockStop,
+  render: mockRender,
+}))
 
 describe("Legacy Subtitles", () => {
   const mockMediaPlayer = {
@@ -41,7 +40,7 @@ describe("Legacy Subtitles", () => {
   let subtitlesUrl
   let subtitlesCdn
   let mockMediaSources
-  let avalailableSourceCount
+  let availableSourcesCount
 
   beforeEach(() => {
     LoadUrl.mockImplementation((url, callbackObject) => {
@@ -51,21 +50,23 @@ describe("Legacy Subtitles", () => {
     subtitlesUrl = "http://stub-captions.test"
     subtitlesCdn = "supplier1"
     mockMediaSources = {
-      currentSubtitlesSource: jest.fn(),
-      failoverSubtitles: jest.fn(),
       subtitlesRequestTimeout: jest.fn(),
-      currentSubtitlesCdn: jest.fn(),
+      currentSubtitlesSource: jest.fn().mockReturnValue(subtitlesUrl),
+      currentSubtitlesCdn: jest.fn().mockReturnValue(subtitlesCdn),
+      failoverSubtitles: jest.fn().mockImplementation(
+        () =>
+          new Promise((resolve, reject) => {
+            if (availableSourcesCount > 1) {
+              availableSourcesCount--
+              return resolve()
+            }
+
+            return reject()
+          })
+      ),
     }
-    mockMediaSources.currentSubtitlesSource.mockReturnValue(subtitlesUrl)
-    mockMediaSources.currentSubtitlesCdn.mockReturnValue(subtitlesCdn)
-    mockMediaSources.failoverSubtitles.mockImplementation((postFailoverAction, failoverErrorAction) => {
-      if (avalailableSourceCount > 1) {
-        avalailableSourceCount--
-        postFailoverAction()
-      } else {
-        failoverErrorAction()
-      }
-    })
+
+    mockMediaSources.failoverSubtitles
   })
 
   afterEach(() => {
@@ -107,13 +108,13 @@ describe("Legacy Subtitles", () => {
   })
 
   it("Should try to failover to the next url if responseXML from the loader is invalid", () => {
-    avalailableSourceCount = 1
+    availableSourcesCount = 1
     LoadUrl.mockImplementation((url, callbackObject) => {
       callbackObject.onError({ statusCode: 404 })
     })
     legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
 
-    expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledWith(expect.any(Function), expect.any(Function), {
+    expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledWith({
       statusCode: 404,
     })
     expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledTimes(1)

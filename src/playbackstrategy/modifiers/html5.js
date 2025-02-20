@@ -467,6 +467,8 @@ function Html5() {
 
   function onMetadata() {
     metadataLoaded()
+
+    emitEvent(MediaPlayerBase.EVENT.METADATA)
   }
 
   function exitBuffering() {
