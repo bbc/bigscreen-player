@@ -33,7 +33,7 @@ function MediaSources() {
   let failoverResetTimeMs = 120000
   let failoverSort: ((sources: Connection[]) => Connection[]) | null = null
 
-  function init(media: MediaDescriptor): Promise<void> {
+  function init(media: MediaDescriptor, enableAudioDescribed?: boolean): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!media.urls?.length) {
         return reject(new Error("Media Sources urls are undefined"))
@@ -51,12 +51,15 @@ function MediaSources() {
         failoverSort = media.playerSettings.failoverSort
       }
 
-      mediaSources = media.urls ? (PlaybackUtils.cloneArray(media.urls) as Connection[]) : []
       mainSources = media.urls ? (PlaybackUtils.cloneArray(media.urls) as Connection[]) : []
       subtitlesSources = media.captions ? (PlaybackUtils.cloneArray(media.captions) as CaptionsConnection[]) : []
       audioDescribedSources = media.audioDescribed
         ? (PlaybackUtils.cloneArray(media.audioDescribed) as AudioDescribedConnection[])
         : []
+
+      mediaSources = enableAudioDescribed
+        ? (PlaybackUtils.cloneArray(audioDescribedSources) as AudioDescribedConnection[])
+        : (PlaybackUtils.cloneArray(mainSources) as Connection[])
 
       updateDebugOutput()
 

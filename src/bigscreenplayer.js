@@ -292,7 +292,7 @@ function BigscreenPlayer() {
       mediaSources = MediaSources()
 
       mediaSources
-        .init(bigscreenPlayerData.media)
+        .init(bigscreenPlayerData.media, bigscreenPlayerData.enableAudioDescribed)
         .then(() => bigscreenPlayerDataLoaded(bigscreenPlayerData))
         .catch((reason) => {
           if (typeof callbacks?.onError === "function") {
