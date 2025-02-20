@@ -92,16 +92,16 @@ function PlayerComponent(
 
   function isAudioDescribedAvailable() {
     const genericAD = mediaSources.isAudioDescribedAvailable()
-    const playbackStrategyProvidedAD = playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.()
+    const playbackStrategyProvidedAD = () => playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.()
 
-    return genericAD || playbackStrategyProvidedAD
+    return genericAD || playbackStrategyProvidedAD()
   }
 
   function isAudioDescribedEnabled() {
     const genericAD = mediaSources.isAudioDescribedEnabled()
-    const playbackStrategyProvidedAD = playbackStrategy && playbackStrategy.isAudioDescribedEnabled?.()
+    const playbackStrategyProvidedAD = () => playbackStrategy && playbackStrategy.isAudioDescribedEnabled?.()
 
-    return genericAD || playbackStrategyProvidedAD
+    return genericAD || playbackStrategyProvidedAD()
   }
 
   function setAudioDescribedOn() {
@@ -112,6 +112,8 @@ function PlayerComponent(
         audioDescribedCallback(true)
       })
     }
+
+    if (!isAudioDescribedAvailable()) return
 
     playbackStrategy && playbackStrategy.setAudioDescribedOn?.()
     return Promise.resolve()
@@ -125,6 +127,8 @@ function PlayerComponent(
         audioDescribedCallback(false)
       })
     }
+
+    if (!isAudioDescribedAvailable()) return
 
     playbackStrategy && playbackStrategy.setAudioDescribedOff?.()
     return Promise.resolve()
