@@ -761,8 +761,6 @@ function MSEStrategy(
 
         return { start: range.start, end: range.end - seekDurationPadding }
       }
-
-      return { start: range.start, end: range.end - seekDurationPadding }
     }
 
     return { start: 0, end: getDuration() - seekDurationPadding }
