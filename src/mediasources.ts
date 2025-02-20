@@ -57,9 +57,10 @@ function MediaSources() {
         ? (PlaybackUtils.cloneArray(media.audioDescribed) as AudioDescribedConnection[])
         : []
 
-      mediaSources = enableAudioDescribed
-        ? (PlaybackUtils.cloneArray(audioDescribedSources) as AudioDescribedConnection[])
-        : (PlaybackUtils.cloneArray(mainSources) as Connection[])
+      mediaSources =
+        enableAudioDescribed && isAudioDescribedAvailable()
+          ? (PlaybackUtils.cloneArray(audioDescribedSources) as AudioDescribedConnection[])
+          : (PlaybackUtils.cloneArray(mainSources) as Connection[])
 
       updateDebugOutput()
 
