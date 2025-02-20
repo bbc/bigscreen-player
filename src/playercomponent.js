@@ -98,10 +98,11 @@ function PlayerComponent(
   }
 
   function isAudioDescribedEnabled() {
-    const genericAD = mediaSources.isAudioDescribedEnabled()
+    const genericADAvailable = mediaSources.isAudioDescribedAvailable()
+    const genericADEnabled = mediaSources.isAudioDescribedEnabled()
     const playbackStrategyProvidedAD = () => playbackStrategy && playbackStrategy.isAudioDescribedEnabled?.()
 
-    return genericAD || playbackStrategyProvidedAD()
+    return genericADAvailable ? genericADEnabled : playbackStrategyProvidedAD()
   }
 
   function setAudioDescribedOn() {
