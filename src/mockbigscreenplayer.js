@@ -1,13 +1,13 @@
 /* eslint-disable no-use-before-define */
 import MediaState from "./models/mediastate"
 import PauseTriggers from "./models/pausetriggers"
-import WindowTypes from "./models/windowtypes"
 import PlaybackUtils from "./utils/playbackutils"
 import callCallbacks from "./utils/callcallbacks"
 import Plugins from "./plugins"
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Version from "./version"
+import { ManifestType } from "./main"
 
 let sourceList
 let source
@@ -22,11 +22,12 @@ let currentTime
 let isSeeking
 let seekableRange
 let duration
-let liveWindowStart
+let initialPlaybackTime = null
+let liveWindowStart = 0
 let pausedState = true
 let endedState
 let mediaKind
-let windowType
+let manifestType
 let subtitlesAvailable
 let subtitlesEnabled
 let subtitlesHidden
@@ -49,7 +50,6 @@ let autoProgress
 let autoProgressInterval
 let initialBuffering = false
 
-let liveWindowData
 let manifestError
 
 let excludedFuncs = [
@@ -60,23 +60,29 @@ let excludedFuncs = [
   "toggleDebug",
   "getLogLevels",
   "setLogLevel",
-  "convertEpochMsToVideoTimeSeconds",
-  "clearSubtitleExample",
-  "areSubtitlesCustomisable",
   "setPlaybackRate",
   "getPlaybackRate",
+  "clearSubtitleExample",
+  "areSubtitlesCustomisable",
+  "convertAvailabilityTimeToPresentationTimeInSeconds",
+  "convertMediaSampleTimeToPresentationTimeInSeconds",
+  "convertPresentationTimeToAvailabilityTimeInMilliseconds",
+  "convertPresentationTimeToMediaSampleTimeInSeconds",
 ]
 
 function startProgress(progressCause) {
   setTimeout(() => {
     if (!autoProgressInterval) {
       mockingHooks.changeState(MediaState.PLAYING, progressCause)
+
       autoProgressInterval = setInterval(() => {
-        if (windowType !== WindowTypes.STATIC && seekableRange.start && seekableRange.end) {
+        if (manifestType !== ManifestType.STATIC && seekableRange.start && seekableRange.end) {
           seekableRange.start += 0.5
           seekableRange.end += 0.5
         }
+
         mockingHooks.progressTime(currentTime + 0.5)
+
         if (currentTime >= duration) {
           clearInterval(autoProgressInterval)
           mockingHooks.changeState(MediaState.ENDED)
@@ -172,24 +178,25 @@ function callSubtitlesCallbacks(enabled) {
 }
 
 const mockFunctions = {
-  init(playbackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks) {
-    currentTime = (bigscreenPlayerData && bigscreenPlayerData.initialPlaybackTime) || 0
-    liveWindowStart = undefined
+  init(playbackElement, bigscreenPlayerData, callbacks) {
+    initialPlaybackTime =
+      typeof bigscreenPlayerData?.initialPlaybackTime === "number" ? bigscreenPlayerData.initialPlaybackTime : null
+    currentTime = initialPlaybackTime == null ? 0 : initialPlaybackTime
+    liveWindowStart = 0
     pausedState = true
     endedState = false
-    mediaKind = (bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.kind) || "video"
-    windowType = newWindowType || WindowTypes.STATIC
+    mediaKind = bigscreenPlayerData?.media?.kind || "video"
     subtitlesAvailable = true
-    subtitlesEnabled = enableSubtitles
+    subtitlesEnabled = bigscreenPlayerData?.enableSubtitles ?? false
     broadcastMixADAvailable = false
     broadcastMixADEnabled = false
     canSeekState = true
     canPauseState = true
-    sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls
-    source = sourceList && sourceList[0].url
-    cdn = sourceList && sourceList[0].cdn
+    sourceList = bigscreenPlayerData?.media?.urls
+    source = sourceList?.[0].url
+    cdn = sourceList?.[0].cdn
 
-    duration = windowType === WindowTypes.STATIC ? 4808 : Infinity
+    duration = manifestType === ManifestType.STATIC ? 4808 : Infinity
     seekableRange = { start: 0, end: 4808 }
 
     if (manifestError) {
@@ -207,11 +214,11 @@ const mockFunctions = {
 
     initialised = true
 
-    if (enableSubtitles) {
+    if (subtitlesEnabled) {
       callSubtitlesCallbacks(true)
     }
 
-    if (callbacks && callbacks.onSuccess) {
+    if (callbacks?.onSuccess) {
       callbacks.onSuccess()
     }
   },
@@ -244,8 +251,9 @@ const mockFunctions = {
     stateChangeCallbacks = stateChangeCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
   setCurrentTime(time) {
-    currentTime = time
+    currentTime = time - liveWindowStart
     isSeeking = true
+
     if (autoProgress) {
       mockingHooks.changeState(MediaState.WAITING, "other")
       if (!pausedState) {
@@ -256,16 +264,21 @@ const mockFunctions = {
     }
   },
   getCurrentTime() {
-    return currentTime
+    return currentTime + liveWindowStart
+  },
+  getInitialPlaybackTime() {
+    return initialPlaybackTime
   },
   getMediaKind() {
     return mediaKind
   },
   getWindowType() {
-    return windowType
+    return manifestType === ManifestType.STATIC ? "staticWindow" : "slidingWindow"
   },
   getSeekableRange() {
-    return seekableRange
+    return seekableRange?.start && seekableRange?.end
+      ? { start: seekableRange.start + liveWindowStart, end: seekableRange.end + liveWindowStart }
+      : seekableRange
   },
   getDuration() {
     return duration
@@ -313,9 +326,6 @@ const mockFunctions = {
   },
   canPause() {
     return canPauseState
-  },
-  convertVideoTimeSecondsToEpochMs(seconds) {
-    return liveWindowStart ? liveWindowStart + seconds * 1000 : undefined
   },
   transitions() {
     return {
@@ -374,16 +384,11 @@ const mockFunctions = {
   unregisterPlugin(plugin) {
     Plugins.unregisterPlugin(plugin)
   },
-  getLiveWindowData() {
-    if (windowType === WindowTypes.STATIC) {
-      return {}
-    }
-    return {
-      windowStartTime: liveWindowData.windowStartTime,
-      windowEndTime: liveWindowData.windowEndTime,
-      initialPlaybackTime: liveWindowData.initialPlaybackTime,
-      serverDate: liveWindowData.serverDate,
-    }
+  getPresentationTimeOffsetInMilliseconds() {
+    return 0
+  },
+  getTimeShiftBufferDepthInMilliseconds() {
+    return manifestType === ManifestType.STATIC ? 0 : 7200000
   },
 }
 
@@ -450,9 +455,9 @@ const mockingHooks = {
     }
   },
   progressTime(time) {
-    currentTime = time
+    currentTime = time + liveWindowStart
     callCallbacks(timeUpdateCallbacks, {
-      currentTime: time,
+      currentTime: time + liveWindowStart,
       endOfStream,
     })
   },
@@ -469,7 +474,7 @@ const mockingHooks = {
     mediaKind = kind
   },
   setWindowType(type) {
-    windowType = type
+    manifestType = type === "staticWindow" ? "static" : "dynamic"
   },
   setCanSeek(value) {
     canSeekState = value
@@ -533,9 +538,6 @@ const mockingHooks = {
   },
   setInitialBuffering(value) {
     initialBuffering = value
-  },
-  setLiveWindowData(newLiveWindowData) {
-    liveWindowData = newLiveWindowData
   },
 }
 
