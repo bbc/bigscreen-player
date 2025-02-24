@@ -113,7 +113,6 @@ describe("Bigscreen Player", () => {
       tearDown: jest.fn(),
       setPlaybackRate: jest.fn(),
       getPlaybackRate: jest.fn(),
-      tearDown: jest.fn(),
       replaceMediaSources: jest.fn(),
       isAudioDescribedAvailable: jest.fn(),
       isAudioDescribedEnabled: jest.fn(),
