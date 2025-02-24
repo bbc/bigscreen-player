@@ -112,7 +112,8 @@ function PlayerComponent(
 
     if (useGenericImplementation) {
       shouldPause &&
-        playbackStrategy?.addMediaPlayerEventCallback(function pauseCallback(event) {
+        playbackStrategy.addMediaPlayerEventCallback &&
+        playbackStrategy.addMediaPlayerEventCallback(function pauseCallback(event) {
           if (event.type === MediaPlayerBase.EVENT.METADATA) {
             playbackStrategy.pause()
             playbackStrategy.removeMediaPlayerEventCallback(pauseCallback)
