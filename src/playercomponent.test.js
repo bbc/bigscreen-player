@@ -7,6 +7,7 @@ import StrategyPicker from "./playbackstrategy/strategypicker"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
+import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
 
 jest.mock("./playbackstrategy/strategypicker")
 
@@ -17,7 +18,7 @@ function createPlaybackElement() {
   return el
 }
 
-function createMockPlaybackStrategy(liveSupport = LiveSupport.SEEKABLE) {
+function createMockPlaybackStrategy(liveSupport = LiveSupport.SEEKABLE, extraFields = {}) {
   let eventCallback, errorCallback, timeUpdateCallback
 
   return {
@@ -52,6 +53,7 @@ function createMockPlaybackStrategy(liveSupport = LiveSupport.SEEKABLE) {
       canBeginSeek: jest.fn().mockReturnValue(true),
     },
     isPaused: jest.fn().mockReturnValue(false),
+    ...extraFields,
   }
 }
 
@@ -59,6 +61,9 @@ const mockMediaSources = {
   failover: jest.fn().mockResolvedValue(),
   reset: jest.fn().mockResolvedValue(),
   time: jest.fn(),
+  replace: jest.fn(),
+  isAudioDescribedAvailable: jest.fn(),
+  getAudioDescribedSources: jest.fn().mockResolvedValue(),
 }
 
 describe("Player Component", () => {
@@ -87,6 +92,7 @@ describe("Player Component", () => {
     })
 
     mockMediaSources.failover.mockResolvedValue()
+    mockMediaSources.replace.mockResolvedValue()
 
     bigscreenPlayerData = {
       media: {
@@ -126,12 +132,11 @@ describe("Player Component", () => {
         playbackElement,
         undefined,
         undefined,
-        undefined,
-        undefined
+        { callback: undefined, enabled: undefined }
       )
       expect(mockPlaybackStrategyClass).toHaveBeenCalledTimes(1)
 
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", undefined)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", undefined, true)
     })
 
     it("should trigger the error callback when strategyPicker rejects", async () => {
@@ -960,7 +965,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(10000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -994,7 +999,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1025,7 +1030,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(5000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1131,7 +1136,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20)
+      expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20, true)
     })
 
     it("should fire error cleared on the plugins when failover completes", async () => {
@@ -1324,6 +1329,141 @@ describe("Player Component", () => {
       playerComponent.tearDown()
 
       expect(mockStrategy.tearDown).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("Audio Described", () => {
+    it("calls pause on Legacy Strategy when MediaPlayerBase.EVENT.METADATA is emitted after a replace when using the Generic Implementation", async () => {
+      let capturedCallback
+
+      mockMediaSources.isAudioDescribedAvailable.mockReturnValueOnce(true)
+
+      const addMediaPlayerEventCallback = jest.fn().mockImplementation((thisArg, callback) => {
+        capturedCallback = { thisArg, callback }
+      })
+
+      const removeMediaPlayerEventCallback = jest.fn()
+
+      const mockPlaybackStrategy = createMockPlaybackStrategy(LiveSupport.SEEKABLE, {
+        addMediaPlayerEventCallback,
+        removeMediaPlayerEventCallback,
+      })
+
+      mockPlaybackStrategy.isPaused.mockReturnValueOnce(true)
+
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockPlaybackStrategy)
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        { ...bigscreenPlayerData, enableAudioDescribed: true },
+        mockMediaSources,
+        jest.fn(),
+        jest.fn(),
+        jest.fn()
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      playerComponent.setAudioDescribedOn()
+
+      capturedCallback.callback.call(capturedCallback.thisArg, { type: MediaPlayerBase.EVENT.METADATA })
+
+      expect(mockPlaybackStrategy.pause).toHaveBeenCalled()
+      expect(removeMediaPlayerEventCallback).toHaveBeenCalledWith(capturedCallback.callback)
+    })
+  })
+
+  describe("replaceMediaSources", () => {
+    const cdn = "http://replacedcdn.com"
+    const url = "http://replacedurl.com/"
+    const sources = [{ cdn, url }]
+
+    const replace = async (onStateUpdate) => {
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        onStateUpdate ?? jest.fn(),
+        jest.fn()
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+      await playerComponent.replaceMediaSources(sources)
+    }
+
+    it("calls through to media sources", async () => {
+      await replace()
+
+      expect(mockMediaSources.replace).toHaveBeenCalledWith(sources)
+    })
+
+    it("tears down the media element if media source replace succeeds", async () => {
+      await replace()
+
+      expect(mockStrategy.reset).toHaveBeenCalled()
+    })
+
+    it("loads media if media source replace succeeds", async () => {
+      await replace()
+
+      expect(mockStrategy.load).toHaveBeenCalled()
+    })
+
+    it("calculates the failoverTime", async () => {
+      mockStrategy.getCurrentTime.mockReturnValue(100)
+
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
+
+      await playerComponent.replaceMediaSources(sources)
+
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
+    })
+
+    it("bubbles error if replace promise rejects", async () => {
+      const code = "0000"
+      const message = "error replacing sources"
+
+      mockMediaSources.replace.mockRejectedValueOnce()
+      jest.spyOn(Plugins.interface, "onFatalError")
+      const onStateUpdate = jest.fn()
+
+      await replace(onStateUpdate)
+
+      const expectedStatusUpdate = {
+        data: {
+          currentTime: undefined,
+          duration: undefined,
+          seekableRange: undefined,
+          state: MediaState.FATAL_ERROR,
+        },
+        isBufferingTimeoutError: false,
+        timeUpdate: false,
+        code,
+        message,
+      }
+
+      const expectedOnFatalErrorMessage = expect.objectContaining({
+        status: PluginEnums.STATUS.FATAL,
+        stateType: PluginEnums.TYPE.ERROR,
+        isBufferingTimeoutError: false,
+        code,
+        message,
+      })
+
+      expect(onStateUpdate).toHaveBeenCalledWith(expectedStatusUpdate)
+      expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(expectedOnFatalErrorMessage)
     })
   })
 })

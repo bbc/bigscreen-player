@@ -8,6 +8,7 @@ import {
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
+import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
 
 function PlayerComponent(
   playbackElement,
@@ -15,7 +16,7 @@ function PlayerComponent(
   mediaSources,
   stateUpdateCallback,
   errorCallback,
-  callBroadcastMixADCallbacks
+  audioDescribedCallback
 ) {
   let _stateUpdateCallback = stateUpdateCallback
 
@@ -36,8 +37,10 @@ function PlayerComponent(
         playbackElement,
         bigscreenPlayerData.media.isUHD,
         bigscreenPlayerData.media.playerSettings,
-        bigscreenPlayerData.enableBroadcastMixAD,
-        callBroadcastMixADCallbacks
+        {
+          enable: bigscreenPlayerData.enableAudioDescribed,
+          callback: audioDescribedCallback,
+        }
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)
@@ -88,20 +91,64 @@ function PlayerComponent(
     return playbackStrategy?.getSeekableRange()
   }
 
-  function isBroadcastMixADAvailable() {
-    return playbackStrategy && playbackStrategy.isBroadcastMixADAvailable?.()
+  function isAudioDescribedAvailable() {
+    const genericAD = mediaSources.isAudioDescribedAvailable()
+    const playbackStrategyProvidedAD = () => playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.()
+
+    return genericAD || playbackStrategyProvidedAD()
   }
 
-  function isBroadcastMixADEnabled() {
-    return playbackStrategy && playbackStrategy.isBroadcastMixADEnabled?.()
+  function isAudioDescribedEnabled() {
+    const genericADAvailable = mediaSources.isAudioDescribedAvailable()
+    const genericADEnabled = mediaSources.isAudioDescribedEnabled()
+    const playbackStrategyProvidedAD = () => playbackStrategy && playbackStrategy.isAudioDescribedEnabled?.()
+
+    return genericADAvailable ? genericADEnabled : playbackStrategyProvidedAD()
   }
 
-  function setBroadcastMixADOn() {
-    playbackStrategy && playbackStrategy.setBroadcastMixADOn?.()
+  function setupPauseAfterLoad() {
+    isPaused() &&
+      playbackStrategy.addMediaPlayerEventCallback &&
+      playbackStrategy.addMediaPlayerEventCallback(this, function pauseCallback(event) {
+        if (event.type === MediaPlayerBase.EVENT.METADATA) {
+          playbackStrategy.pause()
+          playbackStrategy.removeMediaPlayerEventCallback(pauseCallback)
+        }
+      })
   }
 
-  function setBroadcastMixADOff() {
-    playbackStrategy && playbackStrategy.setBroadcastMixADOff?.()
+  function setAudioDescribedOn() {
+    const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
+
+    if (useGenericImplementation) {
+      setupPauseAfterLoad()
+
+      return replaceMediaSources(mediaSources.getAudioDescribedSources()).then(() => {
+        audioDescribedCallback(true)
+      })
+    }
+
+    if (!isAudioDescribedAvailable()) return
+
+    playbackStrategy && playbackStrategy.setAudioDescribedOn?.()
+    return Promise.resolve()
+  }
+
+  function setAudioDescribedOff() {
+    const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
+
+    if (useGenericImplementation) {
+      setupPauseAfterLoad()
+
+      return replaceMediaSources(mediaSources.getMainSources()).then(() => {
+        audioDescribedCallback(false)
+      })
+    }
+
+    if (!isAudioDescribedAvailable()) return
+
+    playbackStrategy && playbackStrategy.setAudioDescribedOff?.()
+    return Promise.resolve()
   }
 
   function isPaused() {
@@ -334,16 +381,41 @@ function PlayerComponent(
 
     // guard against attempting to call _stateUpdateCallback after a tearDown
     // can happen if tearing down whilst an async cdn failover is being attempted
+
     if (_stateUpdateCallback) {
       _stateUpdateCallback(stateUpdateData)
     }
   }
 
   function loadMedia(type, presentationTimeInSeconds, thenPause) {
-    playbackStrategy?.load(type, presentationTimeInSeconds)
+    playbackStrategy?.load(type, presentationTimeInSeconds, !thenPause)
     if (thenPause) {
       pause()
     }
+  }
+
+  function replaceMediaSources(sources) {
+    const wasPaused = isPaused()
+    const presentationTimeInSeconds = getCurrentTime()
+    const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
+      presentationTimeInSeconds,
+      mediaSources.time().availabilityStartTimeInMilliseconds
+    )
+
+    return mediaSources
+      .replace(sources)
+      .then(() => {
+        const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
+          availabilityTimeInMilliseconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
+        )
+
+        tearDownMediaElement()
+        loadMedia(mediaMetaData.type, presentationTimeInSeconds, wasPaused)
+      })
+      .catch(() => {
+        bubbleFatalError(false, { code: "0000", message: "error replacing sources" })
+      })
   }
 
   function tearDown() {
@@ -372,11 +444,12 @@ function PlayerComponent(
     getSeekableRange,
     getPlayerElement,
     isPaused,
+    replaceMediaSources,
     tearDown,
-    isBroadcastMixADAvailable,
-    isBroadcastMixADEnabled,
-    setBroadcastMixADOn,
-    setBroadcastMixADOff,
+    isAudioDescribedAvailable,
+    isAudioDescribedEnabled,
+    setAudioDescribedOn,
+    setAudioDescribedOff,
   }
 }
 

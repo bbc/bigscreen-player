@@ -10,6 +10,8 @@ export type CaptionsConnection = Connection & {
   segmentLength: number
 }
 
+export type AudioDescribedConnection = Connection
+
 type Settings = MediaPlayerSettingClass & {
   failoverResetTime: number
   failoverSort: (sources: Connection[]) => Connection[]
@@ -42,6 +44,7 @@ export type MediaDescriptor = {
   type: string
   urls: Connection[]
   captions?: CaptionsConnection[]
+  audioDescribed?: AudioDescribedConnection[]
   /** Location for a captions file */
   captionsUrl?: string
   playerSettings?: Partial<Settings>
@@ -52,6 +55,7 @@ export type MediaDescriptor = {
 export type InitData = {
   media: MediaDescriptor
   enableSubtitles?: boolean
+  enableAudioDescribed?: boolean
   initialPlaybackTime?: number | PlaybackTime
 }
 

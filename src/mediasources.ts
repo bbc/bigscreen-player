@@ -5,7 +5,7 @@ import PluginData from "./plugindata"
 import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/sourceloader"
 import { TransferFormat } from "./models/transferformats"
-import { CaptionsConnection, Connection, MediaDescriptor } from "./types"
+import { AudioDescribedConnection, CaptionsConnection, Connection, MediaDescriptor } from "./types"
 import { TimeInfo } from "./manifest/manifestparser"
 import isError from "./utils/iserror"
 import { ManifestType } from "./models/manifesttypes"
@@ -21,17 +21,19 @@ type FailoverParams = {
 
 function MediaSources() {
   let mediaSources: Connection[] = []
+  let mainSources: Connection[] = []
   let failedOverSources: Connection[] = []
   let failoverResetTokens: number[] = []
   let time: TimeInfo | null = null
   let transferFormat: TransferFormat | null = null
   let subtitlesSources: CaptionsConnection[] = []
+  let audioDescribedSources: AudioDescribedConnection[] = []
   // Default 5000 can be overridden with media.subtitlesRequestTimeout
   let subtitlesRequestTimeout = 5000
   let failoverResetTimeMs = 120000
   let failoverSort: ((sources: Connection[]) => Connection[]) | null = null
 
-  function init(media: MediaDescriptor): Promise<void> {
+  function init(media: MediaDescriptor, enableAudioDescribed?: boolean): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!media.urls?.length) {
         return reject(new Error("Media Sources urls are undefined"))
@@ -49,8 +51,16 @@ function MediaSources() {
         failoverSort = media.playerSettings.failoverSort
       }
 
-      mediaSources = media.urls ? (PlaybackUtils.cloneArray(media.urls) as Connection[]) : []
+      mainSources = media.urls ? (PlaybackUtils.cloneArray(media.urls) as Connection[]) : []
       subtitlesSources = media.captions ? (PlaybackUtils.cloneArray(media.captions) as CaptionsConnection[]) : []
+      audioDescribedSources = media.audioDescribed
+        ? (PlaybackUtils.cloneArray(media.audioDescribed) as AudioDescribedConnection[])
+        : []
+
+      mediaSources =
+        enableAudioDescribed && isAudioDescribedAvailable()
+          ? (PlaybackUtils.cloneArray(audioDescribedSources) as AudioDescribedConnection[])
+          : (PlaybackUtils.cloneArray(mainSources) as Connection[])
 
       updateDebugOutput()
 
@@ -173,8 +183,42 @@ function MediaSources() {
     )
   }
 
-  function refresh() {
+  function refresh(): Promise<void> {
     return new Promise((resolve) => resolve(loadManifest()))
+  }
+
+  function replace(sources: Connection[]): Promise<void> {
+    const sameObject = (first: object, second: object) => {
+      const normStringify = (obj: object) => JSON.stringify(obj)?.split("").sort().join("")
+      return normStringify(first) === normStringify(second)
+    }
+
+    if (sameObject(sources, mediaSources)) return Promise.resolve()
+
+    mediaSources = sources
+    updateDebugOutput()
+
+    if (needToGetManifest()) {
+      return refresh()
+    }
+
+    return Promise.resolve()
+  }
+
+  function isAudioDescribedAvailable(): boolean {
+    return audioDescribedSources.length > 0
+  }
+
+  function isAudioDescribedEnabled(): boolean {
+    return audioDescribedSources.some((source: Connection) => source.url === mediaSources[0].url)
+  }
+
+  function getAudioDescribedSources(): Connection[] {
+    return audioDescribedSources
+  }
+
+  function getMainSources(): Connection[] {
+    return mainSources
   }
 
   function loadManifest(): Promise<void> {
@@ -333,6 +377,11 @@ function MediaSources() {
     failover,
     failoverSubtitles,
     refresh,
+    replace,
+    getMainSources,
+    isAudioDescribedAvailable,
+    isAudioDescribedEnabled,
+    getAudioDescribedSources,
     currentSource: getCurrentUrl,
     currentSubtitlesSource: getCurrentSubtitlesUrl,
     currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,

@@ -16,7 +16,7 @@ let cdn
 let timeUpdateCallbacks = []
 let subtitleCallbacks = []
 let stateChangeCallbacks = []
-let broadcastMixADCallbacks = []
+let audioDescribedCallbacks = []
 
 let currentTime
 let isSeeking
@@ -30,8 +30,8 @@ let windowType
 let subtitlesAvailable
 let subtitlesEnabled
 let subtitlesHidden
-let broadcastMixADAvailable
-let broadcastMixADEnabled
+let audioDescribedAvailable
+let audioDescribedEnabled
 let endOfStream
 let canSeekState
 let canPauseState
@@ -181,8 +181,8 @@ const mockFunctions = {
     windowType = newWindowType || WindowTypes.STATIC
     subtitlesAvailable = true
     subtitlesEnabled = enableSubtitles
-    broadcastMixADAvailable = false
-    broadcastMixADEnabled = false
+    audioDescribedAvailable = false
+    audioDescribedEnabled = false
     canSeekState = true
     canPauseState = true
     sourceList = bigscreenPlayerData && bigscreenPlayerData.media && bigscreenPlayerData.media.urls
@@ -229,12 +229,12 @@ const mockFunctions = {
   unregisterForSubtitleChanges(callback) {
     subtitleCallbacks = subtitleCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
-  registerForBroadcastMixADChanges(callback) {
-    broadcastMixADCallbacks.push(callback)
+  registerForaudioDescribedChanges(callback) {
+    audioDescribedCallbacks.push(callback)
     return callback
   },
-  unregisterForBroadcastMixADChanges(callback) {
-    broadcastMixADCallbacks = broadcastMixADCallbacks.filter((existingCallback) => callback !== existingCallback)
+  unregisterForaudioDescribedChanges(callback) {
+    audioDescribedCallbacks = audioDescribedCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
   registerForStateChanges(callback) {
     stateChangeCallbacks.push(callback)
@@ -298,14 +298,14 @@ const mockFunctions = {
   },
   customiseSubtitles() {},
   renderSubtitleExample() {},
-  setBroadcastMixADEnabled(value) {
-    broadcastMixADEnabled = value
+  setaudioDescribedEnabled(value) {
+    audioDescribedEnabled = value
   },
-  isBroadcastMixADEnabled() {
-    return broadcastMixADEnabled
+  isaudioDescribedEnabled() {
+    return audioDescribedEnabled
   },
-  isBroadcastMixADAvailable() {
-    return broadcastMixADAvailable
+  isaudioDescribedAvailable() {
+    return audioDescribedAvailable
   },
   setTransportControlsPosition() {},
   canSeek() {
