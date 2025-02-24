@@ -7,6 +7,7 @@ import StrategyPicker from "./playbackstrategy/strategypicker"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
+import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
 
 jest.mock("./playbackstrategy/strategypicker")
 
@@ -17,7 +18,7 @@ function createPlaybackElement() {
   return el
 }
 
-function createMockPlaybackStrategy(liveSupport = LiveSupport.SEEKABLE) {
+function createMockPlaybackStrategy(liveSupport = LiveSupport.SEEKABLE, extraFields = {}) {
   let eventCallback, errorCallback, timeUpdateCallback
 
   return {
@@ -52,6 +53,7 @@ function createMockPlaybackStrategy(liveSupport = LiveSupport.SEEKABLE) {
       canBeginSeek: jest.fn().mockReturnValue(true),
     },
     isPaused: jest.fn().mockReturnValue(false),
+    ...extraFields,
   }
 }
 
@@ -60,6 +62,8 @@ const mockMediaSources = {
   reset: jest.fn().mockResolvedValue(),
   time: jest.fn(),
   replace: jest.fn(),
+  isAudioDescribedAvailable: jest.fn(),
+  getAudioDescribedSources: jest.fn().mockResolvedValue(),
 }
 
 describe("Player Component", () => {
@@ -1328,11 +1332,50 @@ describe("Player Component", () => {
     })
   })
 
-  describe("replaceMediaSources", () => {
-    beforeEach(() => {
-      jest.clearAllMocks()
-    })
+  describe("Audio Described", () => {
+    it("calls pause on Legacy Strategy when MediaPlayerBase.EVENT.METADATA is emitted after a replace when using the Generic Implementation", async () => {
+      let capturedCallback
 
+      mockMediaSources.isAudioDescribedAvailable.mockReturnValueOnce(true)
+
+      const addMediaPlayerEventCallback = jest.fn().mockImplementation((thisArg, callback) => {
+        capturedCallback = { thisArg, callback }
+      })
+
+      const removeMediaPlayerEventCallback = jest.fn()
+
+      const mockPlaybackStrategy = createMockPlaybackStrategy(LiveSupport.SEEKABLE, {
+        addMediaPlayerEventCallback,
+        removeMediaPlayerEventCallback,
+      })
+
+      mockPlaybackStrategy.isPaused.mockReturnValueOnce(true)
+
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockPlaybackStrategy)
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        { ...bigscreenPlayerData, enableAudioDescribed: true },
+        mockMediaSources,
+        jest.fn(),
+        jest.fn(),
+        jest.fn()
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      playerComponent.setAudioDescribedOn()
+
+      capturedCallback.callback.call(capturedCallback.thisArg, { type: MediaPlayerBase.EVENT.METADATA })
+
+      expect(mockPlaybackStrategy.pause).toHaveBeenCalled()
+      expect(removeMediaPlayerEventCallback).toHaveBeenCalledWith(capturedCallback.callback)
+    })
+  })
+
+  describe("replaceMediaSources", () => {
     const cdn = "http://replacedcdn.com"
     const url = "http://replacedurl.com/"
     const sources = [{ cdn, url }]

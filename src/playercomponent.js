@@ -106,19 +106,22 @@ function PlayerComponent(
     return genericADAvailable ? genericADEnabled : playbackStrategyProvidedAD()
   }
 
+  function setupPauseAfterLoad() {
+    isPaused() &&
+      playbackStrategy.addMediaPlayerEventCallback &&
+      playbackStrategy.addMediaPlayerEventCallback(this, function pauseCallback(event) {
+        if (event.type === MediaPlayerBase.EVENT.METADATA) {
+          playbackStrategy.pause()
+          playbackStrategy.removeMediaPlayerEventCallback(pauseCallback)
+        }
+      })
+  }
+
   function setAudioDescribedOn() {
-    const shouldPause = isPaused()
     const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
 
     if (useGenericImplementation) {
-      shouldPause &&
-        playbackStrategy.addMediaPlayerEventCallback &&
-        playbackStrategy.addMediaPlayerEventCallback(function pauseCallback(event) {
-          if (event.type === MediaPlayerBase.EVENT.METADATA) {
-            playbackStrategy.pause()
-            playbackStrategy.removeMediaPlayerEventCallback(pauseCallback)
-          }
-        })
+      setupPauseAfterLoad()
 
       return replaceMediaSources(mediaSources.getAudioDescribedSources()).then(() => {
         audioDescribedCallback(true)
@@ -135,6 +138,8 @@ function PlayerComponent(
     const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
 
     if (useGenericImplementation) {
+      setupPauseAfterLoad()
+
       return replaceMediaSources(mediaSources.getMainSources()).then(() => {
         audioDescribedCallback(false)
       })
