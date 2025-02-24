@@ -70,6 +70,8 @@ let excludedFuncs = [
   "convertPresentationTimeToMediaSampleTimeInSeconds",
 ]
 
+let compatibilityFuncs = ["getWindowType", "convertVideoTimeSecondsToEpochMs", "convertEpochMsToVideoTimeSeconds"]
+
 function startProgress(progressCause) {
   setTimeout(() => {
     if (!autoProgressInterval) {
@@ -100,10 +102,14 @@ function stopProgress() {
 }
 
 function mock(BigscreenPlayer, opts) {
-  autoProgress = opts && opts.autoProgress
+  autoProgress = opts?.autoProgress
 
-  if (opts && opts.excludedFuncs) {
+  if (opts?.excludedFuncs) {
     excludedFuncs = [...excludedFuncs, ...opts.excludedFuncs]
+  }
+
+  if (opts?.compatibilityFuncs) {
+    compatibilityFuncs = [...compatibilityFuncs, ...opts.compatibilityFuncs]
   }
 
   if (mockStatus.currentlyMocked) {
@@ -123,6 +129,14 @@ function mock(BigscreenPlayer, opts) {
   for (const hook in mockingHooks) {
     BigscreenPlayer[hook] = mockingHooks[hook]
   }
+
+  // Add compatibility functions
+  for (let funcsSoFar = 0; funcsSoFar < compatibilityFuncs.length; funcsSoFar += 1) {
+    const funcName = compatibilityFuncs[funcsSoFar]
+
+    BigscreenPlayer[funcName] = mockFunctions[funcName]
+  }
+
   mockStatus = { currentlyMocked: true, mode: mockModes.PLAIN }
 }
 
@@ -389,6 +403,12 @@ const mockFunctions = {
   },
   getTimeShiftBufferDepthInMilliseconds() {
     return manifestType === ManifestType.STATIC ? 0 : 7200000
+  },
+  convertVideoTimeSecondsToEpochMs(seconds) {
+    return seconds
+  },
+  convertEpochMsToVideoTimeSeconds(milliseconds) {
+    return milliseconds
   },
 }
 
