@@ -24,7 +24,6 @@ function SamsungStreaming() {
   let currentTime
 
   let eventCallbacks = []
-  let eventCallback
 
   let playerPlugin
   let tvmwPlugin
@@ -770,9 +769,8 @@ function SamsungStreaming() {
   }
 
   return {
-    addEventCallback: (thisArg, newCallback) => {
-      eventCallback = (event) => newCallback.call(thisArg, event)
-      eventCallbacks.push(eventCallback)
+    addEventCallback: (thisArg, callback) => {
+      eventCallbacks.push((event) => callback.call(thisArg, event))
     },
 
     removeEventCallback: (callback) => {

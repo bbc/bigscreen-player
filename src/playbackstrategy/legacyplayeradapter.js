@@ -231,6 +231,10 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
+    addMediaPlayerEventCallback: (thisArg, callback) =>
+      callback && typeof callback === "function" && mediaPlayer.addEventCallback(thisArg, callback),
+    removeMediaPlayerEventCallback: (callback) =>
+      callback && typeof callback === "function" && mediaPlayer.removeEventCallback(callback),
     load: (mimeType, presentationTimeInSeconds) => {
       setupExitSeekWorkarounds(mimeType)
       isPaused = false

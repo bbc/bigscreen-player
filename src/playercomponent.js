@@ -8,6 +8,7 @@ import {
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
+import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
 
 function PlayerComponent(
   playbackElement,
@@ -106,9 +107,18 @@ function PlayerComponent(
   }
 
   function setAudioDescribedOn() {
+    const shouldPause = isPaused()
     const useGenericImplementation = mediaSources.isAudioDescribedAvailable()
 
     if (useGenericImplementation) {
+      shouldPause &&
+        playbackStrategy?.addMediaPlayerEventCallback(function pauseCallback(event) {
+          if (event.type === MediaPlayerBase.EVENT.METADATA) {
+            playbackStrategy.pause()
+            playbackStrategy.removeMediaPlayerEventCallback(pauseCallback)
+          }
+        })
+
       return replaceMediaSources(mediaSources.getAudioDescribedSources()).then(() => {
         audioDescribedCallback(true)
       })
