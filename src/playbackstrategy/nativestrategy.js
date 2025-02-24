@@ -36,7 +36,7 @@ const getMediaPlayer = (mediaSources) => {
   return Playable(basePlayer, mediaSources)
 }
 
-const NativeStrategy = (mediaSources, mediaKind, playbackElement, isUHD) =>
+const NativeStrategy = (mediaSources, _mediaKind, playbackElement, isUHD) =>
   LegacyAdapter(mediaSources, playbackElement, isUHD, getMediaPlayer(mediaSources))
 
 NativeStrategy.getLiveSupport = () => window.bigscreenPlayer.liveSupport

@@ -986,7 +986,7 @@ describe("Player Component", () => {
 
       mockMediaSources.failover.mockResolvedValueOnce()
 
-      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING) // ensures the following waiting is "mid playback"
+      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING) // ensures the following waiting is 'mid playback'
       mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(1)

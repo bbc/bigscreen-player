@@ -6,7 +6,7 @@ There are three options available:
 - `nativestrategy`
 - `basicstrategy`
 
-Your app should write this globally to the window before initialising Bigscreen Player. This enables only the required media player code to be loaded. For example, if MSE playback is not needed, the _dashjs_ library does not have to be loaded.
+Your app should write this to the `globalThis` object (i.e. the `window` on browsers) before initialising Bigscreen Player. This enables only the required media player code to be loaded. For example, if MSE playback is not needed, the _dashjs_ library does not have to be loaded.
 
 ```javascript
 window.bigscreenPayer.playbackStrategy = "msestrategy" // OR 'nativestrategy' OR 'basicstategy'

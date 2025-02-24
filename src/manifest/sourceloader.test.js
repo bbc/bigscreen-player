@@ -3,7 +3,7 @@ import { TransferFormat } from "../models/transferformats"
 import Plugins from "../plugins"
 import getError from "../testutils/geterror"
 import LoadUrl from "../utils/loadurl"
-import DashManifests from "./stubData/dashmanifests"
+import DashManifests, { DASH_MANIFEST_STRINGS } from "./stubData/dashmanifests"
 import HlsManifests from "./stubData/hlsmanifests"
 import ManifestLoader from "./sourceloader"
 
@@ -47,14 +47,12 @@ describe("ManifestLoader", () => {
       it.each([
         [ManifestType.STATIC, DashManifests.STATIC_NO_PTO()],
         [ManifestType.DYNAMIC, DashManifests.PTO_NO_TIMESHIFT()],
-      ])("resolves to parsed metadata for a valid DASH '%s' manifest", async (windowType, manifestEl) => {
+      ])("resolves to parsed metadata for a valid DASH '%s' manifest", async (_, manifestEl) => {
         LoadUrl.mockImplementationOnce((url, config) => {
           config.onLoad(manifestEl)
         })
 
-        const { transferFormat, time } = await ManifestLoader.load("mock://some.manifest/test.mpd", {
-          windowType,
-        })
+        const { transferFormat, time } = await ManifestLoader.load("mock://some.manifest/test.mpd")
 
         expect(transferFormat).toBe(TransferFormat.DASH)
         expect(time).toEqual(expect.any(Object))
@@ -70,6 +68,21 @@ describe("ManifestLoader", () => {
         expect(await getError(async () => ManifestLoader.load("http://foo.bar/test.mpd"))).toEqual(
           new Error("Unable to retrieve DASH XML response")
         )
+      })
+
+      it("falls back to a DOMParser if the XMLHTTPRequest client's parser fails", async () => {
+        jest.spyOn(DOMParser.prototype, "parseFromString")
+
+        LoadUrl.mockImplementationOnce((url, config) => config.onLoad(null, DASH_MANIFEST_STRINGS.STATIC_NO_PTO))
+
+        const { transferFormat, time } = await ManifestLoader.load("mock://some.manifest/test.mpd")
+
+        expect(transferFormat).toBe(TransferFormat.DASH)
+        expect(time).toEqual(expect.any(Object))
+
+        expect(Plugins.interface.onManifestParseError).not.toHaveBeenCalled()
+
+        expect(DOMParser.prototype.parseFromString).toHaveBeenCalledTimes(1)
       })
 
       it("rejects when network request fails", async () => {
