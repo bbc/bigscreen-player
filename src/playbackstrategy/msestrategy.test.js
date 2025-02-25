@@ -1364,7 +1364,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         expect(mseStrategy.isAudioDescribedAvailable()).toBe(true)
       })
 
-      it("returns false when there is no Audio Descirbed track", () => {
+      it("returns false when there is no Audio Described track", () => {
         const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
         mseStrategy.load(null, 10)
 
