@@ -1381,7 +1381,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       })
     })
 
-    describe("onTrackChangeRendered", () => {
+    describe("onCurrentTrackChanged", () => {
       it("should ensure callbacks are called with enabled true when the current track is Audio Described", () => {
         mockDashInstance.getCurrentTrackFor.mockReturnValue(audioDescribedtrack)
         const callAudioDescribedCallbacksMock = jest.fn()
