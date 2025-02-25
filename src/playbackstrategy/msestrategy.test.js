@@ -756,7 +756,26 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 105 })
     })
 
-    it("falls back to using duration if DVR range is unavailable", () => {
+    it("falls back to using the default cached seekableRange if DVR range is unavailable", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
+
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValueOnce({ range: { start: 180, end: 360 } })
+      mockDashInstance.duration.mockReturnValueOnce(180)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { delay: { liveDelay: 20 } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 180, end: 340 })
+
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValueOnce(null)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 180, end: 340 })
+    })
+
+    it("falls back to using duration if DVR range is unavailable and seekableRange cache is undefined", () => {
       mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
 
       mockDashMetrics.getCurrentDVRInfo.mockReturnValueOnce(null)
@@ -769,6 +788,21 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.load(null, 0)
 
       expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 180 })
+    })
+
+    it("falls back to using the default cached duration if DVR range is unavailable, there's no cache seekableRange and there's no duration", () => {
+      mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
+
+      mockDashMetrics.getCurrentDVRInfo.mockReturnValueOnce(null)
+      mockDashInstance.duration.mockReturnValueOnce(NaN)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { delay: { liveDelay: 20 } },
+      })
+
+      mseStrategy.load(null, 0)
+
+      expect(mseStrategy.getSeekableRange()).toEqual({ start: 0, end: 0 })
     })
   })
 
