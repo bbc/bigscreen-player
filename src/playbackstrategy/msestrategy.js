@@ -611,8 +611,10 @@ function MSEStrategy(
       // FIX: Dash.js briefly returns `null` on a failover for the first time update
       if (dvrInfo) {
         const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end - liveDelay }
+        // Save good seekable range and duration values
         cached.seekableRange = Utils.clone(seekableRange)
         cached.duration = getDuration()
+
         return seekableRange
       }
     }
@@ -623,11 +625,12 @@ function MSEStrategy(
   function getDuration() {
     const duration = mediaPlayer && mediaPlayer.isReady() && mediaPlayer.duration()
 
+    // If duration is a number, return that, else return cached value (default 0)
     return typeof duration === "number" && !isNaN(duration) ? duration : cached.duration
   }
 
   function getCurrentTime() {
-    return (mediaElement?.currentTime || failoverPresentationTimeInSeconds) ?? 0
+    return mediaElement?.currentTime || cached.currentTime
   }
 
   function refreshManifestBeforeSeek(presentationTimeInSeconds) {
