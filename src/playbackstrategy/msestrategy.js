@@ -775,6 +775,7 @@ function MSEStrategy(
         const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end - seekDurationPadding }
         cached.seekableRange = Utils.clone(seekableRange)
         cached.duration = getDuration()
+
         return seekableRange
       }
     }
