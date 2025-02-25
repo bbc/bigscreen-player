@@ -50,6 +50,7 @@ function createMediaDescriptor(): MediaDescriptor {
     type: "application/dash+xml",
     urls: [{ url: "http://source1.com/", cdn: "http://supplier1.com/" }],
     captions: [{ url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH }],
+    audioDescribed: [{ url: "http://audiodescribedsource1.com/", cdn: "http://supplier1.com/" }],
     playerSettings: {},
   }
 }
@@ -239,6 +240,22 @@ describe("Media Sources", () => {
         code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
         message: PluginEnums.ERROR_MESSAGES.MANIFEST,
       })
+    })
+
+    it("sets sources to main sources when audio described is not initialised with enabled", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      expect(mediaSources.currentSource()).toBe("http://source1.com/")
+    })
+
+    it("sets sources to audio described sources when audio described is initialised with enabled", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia, true)
+
+      expect(mediaSources.currentSource()).toBe("http://audiodescribedsource1.com/")
     })
   })
 
