@@ -62,6 +62,10 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   }
 
   function onPlaying(event) {
+    // Guard against a playing event being fired when currentTime is NaN
+    if (parseInt(event.currentTime) !== 0) {
+      currentTime = event.currentTime
+    }
     currentTime = event.currentTime
     isPaused = false
     isEnded = false
