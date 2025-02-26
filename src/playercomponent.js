@@ -9,6 +9,7 @@ import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
+import { DebugTool } from "./main"
 
 function PlayerComponent(
   playbackElement,
@@ -111,6 +112,7 @@ function PlayerComponent(
       playbackStrategy.addMediaPlayerEventCallback &&
       playbackStrategy.addMediaPlayerEventCallback(this, function pauseCallback(event) {
         if (event.type === MediaPlayerBase.EVENT.METADATA) {
+          DebugTool.info("calling pause callback")
           playbackStrategy.pause()
           playbackStrategy.removeMediaPlayerEventCallback(pauseCallback)
         }
