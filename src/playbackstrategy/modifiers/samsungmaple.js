@@ -18,7 +18,6 @@ function SamsungMaple() {
   let currentTime
 
   let eventCallbacks = []
-  let eventCallback
 
   function initialiseMedia(type, url, mediaMimeType) {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
@@ -578,12 +577,8 @@ function SamsungMaple() {
   }
 
   return {
-    addEventCallback: (thisArg, newCallback) => {
-      eventCallback = (event) => {
-        newCallback.call(thisArg, event)
-      }
-
-      eventCallbacks.push(eventCallback)
+    addEventCallback: (thisArg, callback) => {
+      eventCallbacks.push((event) => callback.call(thisArg, event))
     },
 
     removeEventCallback: (callback) => {
