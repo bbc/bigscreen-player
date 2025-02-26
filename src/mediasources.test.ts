@@ -575,6 +575,34 @@ describe("Media Sources", () => {
 
       expect(mediaSources.currentSource()).toBe("http://source2.com")
     })
+
+    it("fails over correctly after sources have been replaced", async () => {
+      testMedia.urls = [
+        { url: "http://source1.com", cdn: "http://cdn1.com" },
+        { url: "http://source2.com", cdn: "http://cdn2.com" },
+      ]
+
+      testMedia.audioDescribed = [
+        { url: "http://audiodescribedsource1.com", cdn: "http://audiodescribedcdn1.com" },
+        { url: "http://audiodescribedsource2.com", cdn: "http://audiodescribedcdn2.com" },
+      ]
+
+      const mediaSources = MediaSources()
+      await mediaSources.init(testMedia)
+
+      await mediaSources.failover({
+        isBufferingTimeoutError: true,
+        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+        duration: 100,
+        currentTime: 94,
+      })
+
+      await mediaSources.replace(mediaSources.getAudioDescribedSources())
+      await mediaSources.replace(mediaSources.getMainSources())
+
+      expect(mediaSources.currentSource()).toBe("http://source2.com")
+    })
   })
 
   describe("Subtitle Sources", () => {
