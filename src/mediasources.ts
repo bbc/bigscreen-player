@@ -195,7 +195,11 @@ function MediaSources() {
 
     if (sameObject(sources, mediaSources)) return Promise.resolve()
 
-    mediaSources = sources
+    const filteredSources = sources.filter(
+      (source) => !failedOverSources.some((failedOverSource) => sameObject(source, failedOverSource))
+    )
+
+    mediaSources = filteredSources
     updateDebugOutput()
 
     if (needToGetManifest()) {
