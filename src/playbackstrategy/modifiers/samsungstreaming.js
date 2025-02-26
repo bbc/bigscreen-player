@@ -763,18 +763,16 @@ function SamsungStreaming() {
       }
     }
 
-    for (let index = 0; index < eventCallbacks.length; index++) {
-      eventCallbacks[index](event)
-    }
+    eventCallbacks.forEach((callbackObj) => callbackObj.callback.call(callbackObj.thisArg, event))
   }
 
   return {
     addEventCallback: (thisArg, callback) => {
-      eventCallbacks.push((event) => callback.call(thisArg, event))
+      eventCallbacks.push({ thisArg, callback })
     },
 
     removeEventCallback: (callback) => {
-      const index = eventCallbacks.indexOf(callback)
+      const index = eventCallbacks.findIndex((callbackObj) => callbackObj.callback === callback)
 
       if (index !== -1) {
         eventCallbacks.splice(index, 1)

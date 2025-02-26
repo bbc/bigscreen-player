@@ -58,90 +58,89 @@ describe("HTML5 Base", () => {
 
     jest.spyOn(document, "createElement").mockImplementation((type) => {
       switch (type) {
-      case "source": {
-        return mockSourceElement
+        case "source":
+          return mockSourceElement
+
+        case "video":
+          return mockVideoMediaElement
+
+        case "audio":
+          return mockAudioMediaElement
+
+        // No default
       }
-      case "video": {
-        return mockVideoMediaElement
-      }
-      case "audio": {
-        return mockAudioMediaElement
-      }
-      // No default
-      } 
-        return sourceContainer
-      
+      return sourceContainer
     })
 
     jest.spyOn(mockVideoMediaElement, "addEventListener").mockImplementation((name, methodCall) => {
       switch (name) {
-      case "loadedmetadata": {
-        metaDataCallback = methodCall
-      
-      break;
-      }
-      case "canplay": {
-        finishedBufferingCallback = methodCall
-      
-      break;
-      }
-      case "error": {
-        errorCallback = methodCall
-      
-      break;
-      }
-      case "ended": {
-        endedCallback = methodCall
-      
-      break;
-      }
-      case "waiting": {
-        waitingCallback = methodCall
-      
-      break;
-      }
-      case "playing": {
-        playingCallback = methodCall
-      
-      break;
-      }
-      case "timeupdate": {
-        timeupdateCallback = methodCall
-      
-      break;
-      }
-      // No default
+        case "loadedmetadata":
+          metaDataCallback = methodCall
+
+          break
+
+        case "canplay":
+          finishedBufferingCallback = methodCall
+
+          break
+
+        case "error":
+          errorCallback = methodCall
+
+          break
+
+        case "ended":
+          endedCallback = methodCall
+
+          break
+
+        case "waiting":
+          waitingCallback = methodCall
+
+          break
+
+        case "playing":
+          playingCallback = methodCall
+
+          break
+
+        case "timeupdate":
+          timeupdateCallback = methodCall
+
+          break
+
+        // No default
       }
     })
 
     jest.spyOn(mockAudioMediaElement, "addEventListener").mockImplementation((name, methodCall) => {
       switch (name) {
-      case "loadedmetadata": {
-        metaDataCallback = methodCall
-      
-      break;
-      }
-      case "canplay": {
-        finishedBufferingCallback = methodCall
-      
-      break;
-      }
-      case "error": {
-        errorCallback = methodCall
-      
-      break;
-      }
-      case "ended": {
-        endedCallback = methodCall
-      
-      break;
-      }
-      case "waiting": {
-        waitingCallback = methodCall
-      
-      break;
-      }
-      // No default
+        case "loadedmetadata":
+          metaDataCallback = methodCall
+
+          break
+
+        case "canplay":
+          finishedBufferingCallback = methodCall
+
+          break
+
+        case "error":
+          errorCallback = methodCall
+
+          break
+
+        case "ended":
+          endedCallback = methodCall
+
+          break
+
+        case "waiting":
+          waitingCallback = methodCall
+
+          break
+
+        // No default
       }
     })
 
@@ -3213,6 +3212,41 @@ describe("HTML5 Base", () => {
       waitForSentinels()
 
       expect(recentEvents).not.toContain(MediaPlayerBase.EVENT.SENTINEL_PAUSE)
+    })
+  })
+
+  describe("addEventCallback", () => {
+    it("should call the callback on update", () => {
+      const spy = jest.fn()
+
+      player.addEventCallback(this, spy)
+      player.beginPlayback()
+
+      expect(spy).toHaveBeenCalled()
+    })
+  })
+
+  describe("removeEventCallback", () => {
+    it("should remove the callback", () => {
+      const spy = jest.fn()
+
+      player.addEventCallback(this, spy)
+      player.removeEventCallback(spy)
+      player.beginPlayback()
+
+      expect(spy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("removeAllEventCallbacks", () => {
+    it("should remove all the callbacks", () => {
+      const spy = jest.fn()
+
+      player.addEventCallback(this, spy)
+      player.removeAllEventCallbacks()
+      player.beginPlayback()
+
+      expect(spy).not.toHaveBeenCalled()
     })
   })
 })

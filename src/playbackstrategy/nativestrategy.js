@@ -13,7 +13,7 @@ import Seekable from "./modifiers/live/seekable"
 import { ManifestType } from "../models/manifesttypes"
 
 const getBasePlayer = () => {
-  const configuredPlayer = window.bigscreenPlayer.mediaPlayer
+  const configuredPlayer = window.bigscreenPlayer?.mediaPlayer
 
   if (configuredPlayer === "cehtml") return Cehtml()
   if (configuredPlayer === "samsungmaple") return SamsungMaple()
@@ -25,7 +25,7 @@ const getBasePlayer = () => {
 
 const getMediaPlayer = (mediaSources) => {
   const basePlayer = getBasePlayer()
-  const liveSupport = window.bigscreenPlayer.liveSupport
+  const liveSupport = window.bigscreenPlayer?.liveSupport
 
   if (mediaSources.time().manifestType !== ManifestType.DYNAMIC) return basePlayer
 

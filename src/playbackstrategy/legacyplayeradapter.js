@@ -20,7 +20,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   let isEnded = false
   let duration = 0
 
-  let eventCallback
+  let eventCallbacks = []
   let errorCallback
   let timeUpdateCallback
   let currentTime
@@ -149,9 +149,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   }
 
   function publishMediaState(mediaState) {
-    if (eventCallback) {
-      eventCallback(mediaState)
-    }
+    eventCallbacks.forEach((callbackObj) => callbackObj.callback.call(callbackObj.thisArg, mediaState))
   }
 
   function publishError(mediaError) {
@@ -173,8 +171,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   function setupExitSeekWorkarounds(mimeType) {
     handleErrorOnExitingSeek = manifestType === ManifestType.DYNAMIC && mimeType === "application/dash+xml"
 
-    const deviceFailsPlayAfterPauseOnExitSeek =
-      window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.pauseOnExitSeek
+    const deviceFailsPlayAfterPauseOnExitSeek = window.bigscreenPlayer?.overrides?.pauseOnExitSeek
     delayPauseOnExitSeek = handleErrorOnExitingSeek || deviceFailsPlayAfterPauseOnExitSeek
   }
 
@@ -225,8 +222,18 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
   return {
     transitions,
-    addEventCallback: (thisArg, newCallback) => {
-      eventCallback = (event) => newCallback.call(thisArg, event)
+    addEventCallback: (thisArg, callback) => {
+      eventCallbacks.push({
+        thisArg,
+        callback,
+      })
+    },
+    removeEventCallback: (callback) => {
+      const index = eventCallbacks.find((callbackObj) => callbackObj.callback === callback)
+
+      if (index !== -1) {
+        eventCallbacks.splice(index, 1)
+      }
     },
     addErrorCallback: (thisArg, newErrorCallback) => {
       errorCallback = (event) => newErrorCallback.call(thisArg, event)
@@ -236,6 +243,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     },
     addMediaPlayerEventCallback: (thisArg, callback) =>
       callback && typeof callback === "function" && mediaPlayer.addEventCallback(thisArg, callback),
+
     removeMediaPlayerEventCallback: (callback) =>
       callback && typeof callback === "function" && mediaPlayer.removeEventCallback(callback),
     load: (mimeType, presentationTimeInSeconds) => {
@@ -338,7 +346,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         liveGlitchCurtain.tearDown()
         liveGlitchCurtain = undefined
       }
-      eventCallback = undefined
+      eventCallbacks = []
       errorCallback = undefined
       timeUpdateCallback = undefined
     },
