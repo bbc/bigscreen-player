@@ -386,6 +386,12 @@ function PlayerComponent(
     if (thenPause) {
       pause()
     }
+
+    if (bigscreenPlayerData.enableAudioDescribed && mediaSources.isAudioDescribedAvailable()) {
+      DebugTool.info("Source initialised. Audio Described on.")
+    } else if (mediaSources.isAudioDescribedAvailable()) {
+      DebugTool.info("Source initialised. Audio Described off.")
+    }
   }
 
   function replaceMediaSources(sources) {
