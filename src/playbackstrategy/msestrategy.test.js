@@ -1347,7 +1347,7 @@ describe("Media Source Extensions Playback Strategy", () => {
   })
 
   describe("Audio Described", () => {
-    const audioDescribedtrack = {
+    const audioDescribedTrack = {
       roles: ["alternate"],
       accessibilitiesWithSchemeIdUri: [{ schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" }],
     }
@@ -1359,7 +1359,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
         mseStrategy.load(null, 10)
 
-        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, audioDescribedtrack])
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, audioDescribedTrack])
 
         expect(mseStrategy.isAudioDescribedAvailable()).toBe(true)
       })
@@ -1379,7 +1379,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
         mseStrategy.load(null, 10)
 
-        mockDashInstance.getCurrentTrackFor.mockReturnValueOnce(audioDescribedtrack)
+        mockDashInstance.getCurrentTrackFor.mockReturnValueOnce(audioDescribedTrack)
 
         expect(mseStrategy.isAudioDescribedEnabled()).toBe(true)
       })
@@ -1399,7 +1399,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
         mseStrategy.load(null, 10)
 
-        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, audioDescribedtrack])
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, audioDescribedTrack])
 
         mseStrategy.setAudioDescribedOff()
 
@@ -1412,11 +1412,11 @@ describe("Media Source Extensions Playback Strategy", () => {
         const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
         mseStrategy.load(null, 10)
 
-        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, audioDescribedtrack])
+        mockDashInstance.getTracksFor.mockReturnValueOnce([mainTrack, audioDescribedTrack])
 
         mseStrategy.setAudioDescribedOn()
 
-        expect(mockDashInstance.setCurrentTrack).toHaveBeenCalledWith(audioDescribedtrack)
+        expect(mockDashInstance.setCurrentTrack).toHaveBeenCalledWith(audioDescribedTrack)
       })
 
       it("does not switch to the Audio Described track if not present", () => {
@@ -1433,7 +1433,8 @@ describe("Media Source Extensions Playback Strategy", () => {
 
     describe("onCurrentTrackChanged", () => {
       it("should ensure callbacks are called with enabled true when the current track is Audio Described", () => {
-        mockDashInstance.getCurrentTrackFor.mockReturnValue(audioDescribedtrack)
+        mockDashInstance.getCurrentTrackFor.mockReturnValue(audioDescribedTrack)
+        mockDashInstance.getTracksFor.mockReturnValue([mainTrack, audioDescribedTrack])
         const callAudioDescribedCallbacksMock = jest.fn()
         const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, {
           callback: callAudioDescribedCallbacksMock,
@@ -1447,6 +1448,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       it("should ensure callbacks are called with enabled false when the current track is not Audio Described", () => {
         mockDashInstance.getCurrentTrackFor.mockReturnValue(mainTrack)
+        mockDashInstance.getTracksFor.mockReturnValue([mainTrack, audioDescribedTrack])
         const callAudioDescribedCallbacksMock = jest.fn()
         const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, {
           callback: callAudioDescribedCallbacksMock,

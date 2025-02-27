@@ -63,6 +63,7 @@ const mockMediaSources = {
   time: jest.fn(),
   replace: jest.fn(),
   isAudioDescribedAvailable: jest.fn(),
+  isAudioDescribedEnabled: jest.fn(),
   getAudioDescribedSources: jest.fn().mockResolvedValue(),
 }
 
@@ -1336,7 +1337,8 @@ describe("Player Component", () => {
     it("calls pause on Legacy Strategy when MediaPlayerBase.EVENT.METADATA is emitted after a replace when using the Generic Implementation", async () => {
       let capturedCallback
 
-      mockMediaSources.isAudioDescribedAvailable.mockReturnValueOnce(true)
+      mockMediaSources.isAudioDescribedAvailable.mockReturnValue(true)
+      mockMediaSources.isAudioDescribedEnabled.mockReturnValue(true)
 
       const addMediaPlayerEventCallback = jest.fn().mockImplementation((thisArg, callback) => {
         capturedCallback = { thisArg, callback }

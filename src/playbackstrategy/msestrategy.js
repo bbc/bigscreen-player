@@ -454,6 +454,8 @@ function MSEStrategy(
   }
 
   function onCurrentTrackChanged(event) {
+    if (!isAudioDescribedAvailable()) return
+
     const mediaType = event.newMediaInfo.type
     DebugTool.info(
       `${mediaType} track changed.${

@@ -123,8 +123,6 @@ function PlayerComponent(
 
     setupPauseAfterLoad()
     return replaceMediaSources(sources).then(() => {
-      DebugTool.info(`Source changed. Audio Described ${to ? "on" : "off"}.`)
-
       audioDescribedCallback(to)
     })
   }
@@ -387,10 +385,13 @@ function PlayerComponent(
       pause()
     }
 
-    if (bigscreenPlayerData.enableAudioDescribed && mediaSources.isAudioDescribedAvailable()) {
-      DebugTool.info("Source initialised. Audio Described on.")
+    if (
+      (bigscreenPlayerData.enableAudioDescribed && mediaSources.isAudioDescribedAvailable()) ||
+      mediaSources.isAudioDescribedEnabled()
+    ) {
+      DebugTool.info("Source changed. Audio Described on.")
     } else if (mediaSources.isAudioDescribedAvailable()) {
-      DebugTool.info("Source initialised. Audio Described off.")
+      DebugTool.info("Source changed. Audio Described off.")
     }
   }
 
