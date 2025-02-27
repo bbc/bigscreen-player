@@ -9,6 +9,7 @@ import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
+import DebugTool from "./debugger/debugtool"
 
 function PlayerComponent(
   playbackElement,
@@ -122,6 +123,8 @@ function PlayerComponent(
 
     setupPauseAfterLoad()
     return replaceMediaSources(sources).then(() => {
+      DebugTool.info(`Source changed. Audio Described ${to ? "on" : "off"}.`)
+
       audioDescribedCallback(to)
     })
   }
