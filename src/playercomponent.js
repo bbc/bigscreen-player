@@ -131,7 +131,7 @@ function PlayerComponent(
 
   function setAudioDescribedOn() {
     if (mediaSources.isAudioDescribedAvailable()) return genericAudioDescribedSwitch(true)
-    if (!isAudioDescribedAvailable()) return
+    if (!(playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.())) return
 
     playbackStrategy && playbackStrategy.setAudioDescribedOn?.()
     return Promise.resolve()
@@ -139,7 +139,7 @@ function PlayerComponent(
 
   function setAudioDescribedOff() {
     if (mediaSources.isAudioDescribedAvailable()) return genericAudioDescribedSwitch(false)
-    if (!isAudioDescribedAvailable()) return
+    if (!(playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.())) return
 
     playbackStrategy && playbackStrategy.setAudioDescribedOff?.()
     return Promise.resolve()
