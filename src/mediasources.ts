@@ -357,12 +357,20 @@ function MediaSources() {
     return subtitlesSources.map((subtitleSource) => subtitleSource.cdn)
   }
 
+  function availableAudioDescribedCdns(): string[] {
+    return audioDescribedSources.map((adSource) => adSource.cdn)
+  }
+
   function updateDebugOutput() {
     DebugTool.dynamicMetric("cdns-available", availableCdns())
     DebugTool.dynamicMetric("current-url", stripQueryParamsAndHash(getCurrentUrl()))
 
     DebugTool.dynamicMetric("subtitle-cdns-available", availableSubtitlesCdns())
     DebugTool.dynamicMetric("subtitle-current-url", stripQueryParamsAndHash(getCurrentSubtitlesUrl()))
+
+    if (isAudioDescribedAvailable()) {
+      DebugTool.dynamicMetric("audio-described-cdns-available", availableAudioDescribedCdns())
+    }
   }
 
   function tearDown() {
