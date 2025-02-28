@@ -354,12 +354,10 @@ function MediaSources() {
   }
 
   function availableAudioDescribedCdns(): string[] {
-    console.log("AD: ")
-    console.table(audioDescribedSources)
-    console.log("Failover: ")
-    console.table(failedOverSources)
     const adCdns = audioDescribedSources.map((adSource) => adSource.cdn)
-    return adCdns.filter((adCdn) => failedOverSources.map((failedOverSources) => failedOverSources.cdn).includes(adCdn))
+    return adCdns.filter(
+      (adCdn) => !failedOverSources.map((failedOverSources) => failedOverSources.cdn).includes(adCdn)
+    )
   }
 
   function updateDebugOutput() {
