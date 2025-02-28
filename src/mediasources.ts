@@ -358,7 +358,8 @@ function MediaSources() {
   }
 
   function availableAudioDescribedCdns(): string[] {
-    return audioDescribedSources.map((adSource) => adSource.cdn)
+    const adCdns = audioDescribedSources.map((adSource) => adSource.cdn)
+    return adCdns.filter((adCdn) => failedOverSources.some((source) => source.cdn === adCdn))
   }
 
   function updateDebugOutput() {
