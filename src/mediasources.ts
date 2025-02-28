@@ -193,7 +193,9 @@ function MediaSources() {
       return normStringify(first) === normStringify(second)
     }
 
-    if (sameObject(sources, mediaSources)) return Promise.resolve()
+    const allSources = [...mediaSources, ...failedOverSources]
+
+    if (sources.every((source) => allSources.includes(source))) return Promise.resolve()
 
     const filteredSources = sources.filter(
       (source) => !failedOverSources.some((failedOverSource) => sameObject(source, failedOverSource))
