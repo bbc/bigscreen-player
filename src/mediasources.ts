@@ -188,17 +188,11 @@ function MediaSources() {
   }
 
   function replace(sources: Connection[]): Promise<void> {
-    const sameObject = (first: object, second: object) => {
-      const normStringify = (obj: object) => JSON.stringify(obj)?.split("").sort().join("")
-      return normStringify(first) === normStringify(second)
-    }
-
-    const allSources = [...mediaSources, ...failedOverSources]
-
-    if (sources.every((source) => allSources.includes(source))) return Promise.resolve()
-
     const filteredSources = sources.filter(
-      (source) => !failedOverSources.some((failedOverSource) => sameObject(source, failedOverSource))
+      (source) =>
+        !failedOverSources.some(
+          (failedOverSource) => source.cdn === failedOverSource.cdn && source.url === failedOverSource.url
+        )
     )
 
     mediaSources = filteredSources
