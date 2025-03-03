@@ -5,8 +5,9 @@ const config: Config = {
   showSeed: true,
   transform: {
     "\\.[j]sx?$": "babel-jest",
-    "\\.[t]sx?$": "ts-jest",
+    "(\\.d)?\\.[t]s?$": "ts-jest",
   },
+  moduleFileExtensions: ["js", "ts", "d.ts", "json"],
 }
 
 export default config

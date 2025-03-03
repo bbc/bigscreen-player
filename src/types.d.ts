@@ -1,5 +1,5 @@
-import { MediaPlayerSettingClass } from "dashjs"
-import { Timeline } from "./models/timeline"
+import { type MediaPlayerSettingClass } from "dashjs"
+import { type Timeline } from "./models/timeline"
 
 export type Connection = {
   cdn: string
@@ -9,8 +9,6 @@ export type Connection = {
 export type CaptionsConnection = Connection & {
   segmentLength: number
 }
-
-export type AudioDescribedConnection = Connection
 
 type Settings = MediaPlayerSettingClass & {
   failoverResetTime: number
@@ -44,7 +42,7 @@ export type MediaDescriptor = {
   type: string
   urls: Connection[]
   captions?: CaptionsConnection[]
-  audioDescribed?: AudioDescribedConnection[]
+  audioDescribed?: Connection[]
   /** Location for a captions file */
   captionsUrl?: string
   playerSettings?: Partial<Settings>

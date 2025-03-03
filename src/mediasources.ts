@@ -1,3 +1,5 @@
+import type { CaptionsConnection, Connection, MediaDescriptor } from "./types"
+
 import PlaybackUtils from "./utils/playbackutils"
 import Plugins from "./plugins"
 import PluginEnums from "./pluginenums"
@@ -5,7 +7,6 @@ import PluginData from "./plugindata"
 import DebugTool from "./debugger/debugtool"
 import ManifestLoader from "./manifest/sourceloader"
 import { TransferFormat } from "./models/transferformats"
-import { AudioDescribedConnection, CaptionsConnection, Connection, MediaDescriptor } from "./types"
 import { TimeInfo } from "./manifest/manifestparser"
 import isError from "./utils/iserror"
 import { ManifestType } from "./models/manifesttypes"
@@ -64,9 +65,7 @@ function MediaSources() {
       }
 
       sources[SourceType.MEDIA] = PlaybackUtils.cloneArray(media.urls ?? []) as Connection[]
-      sources[SourceType.AUDIO_DESCRIBED] = PlaybackUtils.cloneArray(
-        media.audioDescribed ?? []
-      ) as AudioDescribedConnection[]
+      sources[SourceType.AUDIO_DESCRIBED] = PlaybackUtils.cloneArray(media.audioDescribed ?? []) as Connection[]
 
       subtitlesSources = PlaybackUtils.cloneArray(media.captions ?? []) as CaptionsConnection[]
 
