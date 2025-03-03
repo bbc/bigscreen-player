@@ -20,11 +20,15 @@ import Version from "./version"
 import Resizer from "./resizer"
 import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
-// TODO: Remove when this becomes a TypeScript file
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { InitData, InitCallbacks, SubtitlesCustomisationOptions, PlaybackTime } from "./types"
 import { ManifestType } from "./models/manifesttypes"
 import { Timeline } from "./models/timeline"
+
+/**
+ * @typedef {import('./types.ts').InitData} InitData
+ * @typedef {import('./types.ts').InitCallbacks} InitCallbacks
+ * @typedef {import('./types.ts').SubtitlesCustomisationOptions} SubtitlesCustomisationOptions
+ * @typedef {import('./types.ts').PlaybackTime} PlaybackTime
+ */
 
 function BigscreenPlayer() {
   const _callbacks = {

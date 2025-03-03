@@ -12,6 +12,7 @@ import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
 import DebugTool from "./debugger/debugtool"
 
 /**
+ * @typedef {import('./types.d.ts').InitData} InitData
  * @typedef {import('./mediasources').MediaSources} MediaSources
  */
 
@@ -31,7 +32,7 @@ import DebugTool from "./debugger/debugtool"
 /**
  *
  * @param {HTMLMediaElement} playbackElement HTML Media Element to use for Playback
- * @param {Object} bigscreenPlayerData Player Initialisation Data
+ * @param {InitData} bigscreenPlayerData Player Initialisation Data
  * @param {ReturnType<MediaSources>} mediaSources Media Sources instance
  * @param {(data: StateUpdateData) => void} stateUpdateCallback Callback for State Changes
  * @param {(error: any) => void} errorCallback Callback for Errors

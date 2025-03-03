@@ -7,7 +7,7 @@ import Plugins from "./plugins"
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Version from "./version"
-import { ManifestType } from "./main"
+import { ManifestType } from "./models/manifesttypes"
 
 let sourceList
 let source
