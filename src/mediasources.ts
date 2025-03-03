@@ -19,21 +19,33 @@ type FailoverParams = {
   serviceLocation?: string
 }
 
+export enum SourceType {
+  MEDIA,
+  AUDIO_DESCRIBED,
+}
+
+type Sources = { [key in SourceType]: Connection[] }
+
 function MediaSources() {
-  let mediaSources: Connection[] = []
-  let mainSources: Connection[] = []
-  let failedOverSources: Connection[] = []
+  let failoverSort: ((sources: Connection[]) => Connection[]) | null = null
+
+  const sources: Sources = {
+    [SourceType.MEDIA]: [],
+    [SourceType.AUDIO_DESCRIBED]: [],
+  }
+
+  let subtitlesSources: CaptionsConnection[] = []
+  let current: SourceType = SourceType.MEDIA
+
   let failoverResetTokens: number[] = []
   let time: TimeInfo | null = null
   let transferFormat: TransferFormat | null = null
-  let subtitlesSources: CaptionsConnection[] = []
-  let audioDescribedSources: AudioDescribedConnection[] = []
-  // Default 5000 can be overridden with media.subtitlesRequestTimeout
+
+  // Can be overridden with media.subtitlesRequestTimeout
   let subtitlesRequestTimeout = 5000
   let failoverResetTimeMs = 120000
-  let failoverSort: ((sources: Connection[]) => Connection[]) | null = null
 
-  function init(media: MediaDescriptor, enableAudioDescribed?: boolean): Promise<void> {
+  function init(media: MediaDescriptor, setAudioDescribedOn?: boolean): Promise<void> {
     return new Promise((resolve, reject) => {
       if (!media.urls?.length) {
         return reject(new Error("Media Sources urls are undefined"))
@@ -51,16 +63,14 @@ function MediaSources() {
         failoverSort = media.playerSettings.failoverSort
       }
 
-      mainSources = media.urls ? (PlaybackUtils.cloneArray(media.urls) as Connection[]) : []
-      subtitlesSources = media.captions ? (PlaybackUtils.cloneArray(media.captions) as CaptionsConnection[]) : []
-      audioDescribedSources = media.audioDescribed
-        ? (PlaybackUtils.cloneArray(media.audioDescribed) as AudioDescribedConnection[])
-        : []
+      sources[SourceType.MEDIA] = PlaybackUtils.cloneArray(media.urls ?? []) as Connection[]
+      sources[SourceType.AUDIO_DESCRIBED] = PlaybackUtils.cloneArray(
+        media.audioDescribed ?? []
+      ) as AudioDescribedConnection[]
 
-      mediaSources =
-        enableAudioDescribed && isAudioDescribedAvailable()
-          ? (PlaybackUtils.cloneArray(audioDescribedSources) as AudioDescribedConnection[])
-          : (PlaybackUtils.cloneArray(mainSources) as Connection[])
+      subtitlesSources = PlaybackUtils.cloneArray(media.captions ?? []) as CaptionsConnection[]
+
+      if (setAudioDescribedOn) current = SourceType.AUDIO_DESCRIBED
 
       updateDebugOutput()
 
@@ -93,11 +103,7 @@ function MediaSources() {
       updateCdns(failoverParams.serviceLocation)
       updateDebugOutput()
 
-      if (!needToGetManifest()) {
-        return resolve()
-      }
-
-      return resolve(loadManifest())
+      return needToGetManifest() ? resolve(loadManifest()) : resolve()
     })
   }
 
@@ -187,41 +193,20 @@ function MediaSources() {
     return new Promise((resolve) => resolve(loadManifest()))
   }
 
-  function replace(sources: Connection[]): Promise<void> {
-    const filteredSources = sources.filter(
-      (source) =>
-        !failedOverSources.some(
-          (failedOverSource) => source.cdn === failedOverSource.cdn && source.url === failedOverSource.url
-        )
-    )
-
-    mediaSources = filteredSources
-    updateDebugOutput()
-
-    if (needToGetManifest()) {
-      return refresh()
-    }
-
-    return Promise.resolve()
-  }
-
   function isAudioDescribedAvailable(): boolean {
-    return audioDescribedSources.length > 0
+    return sources[SourceType.AUDIO_DESCRIBED].length > 0
   }
 
   function isAudioDescribedEnabled(): boolean {
-    const cdns = mediaSources.map((mediaSource) => mediaSource.cdn)
-    const urls = mediaSources.map((mediaSource) => mediaSource.url)
-
-    return audioDescribedSources.some((source: Connection) => cdns.includes(source.cdn) && urls.includes(source.url))
+    return current === SourceType.AUDIO_DESCRIBED
   }
 
-  function getAudioDescribedSources(): Connection[] {
-    return audioDescribedSources
-  }
+  function setAudioDescribed(to: boolean): Promise<void> {
+    current = to ? SourceType.AUDIO_DESCRIBED : SourceType.MEDIA
 
-  function getMainSources(): Connection[] {
-    return mainSources
+    updateDebugOutput()
+
+    return new Promise((resolve) => (needToGetManifest() ? resolve(loadManifest()) : resolve()))
   }
 
   function loadManifest(): Promise<void> {
@@ -251,7 +236,7 @@ function MediaSources() {
   }
 
   function getCurrentUrl(): string {
-    return mediaSources.length > 0 ? mediaSources[0].url.toString() : ""
+    return sources[current].length > 0 ? sources[current][0].url.toString() : ""
   }
 
   function getCurrentSubtitlesUrl(): string {
@@ -271,7 +256,7 @@ function MediaSources() {
   }
 
   function availableUrls(): string[] {
-    return mediaSources.map((mediaSource) => mediaSource.url)
+    return sources[SourceType.MEDIA].map((mediaSource) => mediaSource.url)
   }
 
   function generateTime(): TimeInfo | null {
@@ -282,22 +267,16 @@ function MediaSources() {
     return transferFormat
   }
 
-  function updateFailedOverSources(mediaSource: Connection) {
-    failedOverSources.push(mediaSource)
-
+  function updateFailedOverSources(mediaSource: Connection, currentSources: SourceType) {
     if (failoverSort) {
-      mediaSources = failoverSort(mediaSources)
+      sources[currentSources] = failoverSort(sources[currentSources])
     }
 
     const failoverResetToken = setTimeout(() => {
-      const source = failedOverSources.shift()
-
-      if (source == null || mediaSources.length === 0) {
-        return
-      }
+      if (mediaSource == null || sources[currentSources].length === 0) return
 
       DebugTool.info(`${mediaSource.cdn} has been added back in to available CDNs`)
-      mediaSources.push(source)
+      sources[currentSources].push(mediaSource)
       updateDebugOutput()
     }, failoverResetTimeMs)
 
@@ -305,42 +284,42 @@ function MediaSources() {
   }
 
   function updateCdns(serviceLocation: string | undefined): void {
-    const source = mediaSources.shift()
+    const currentSources = current
 
-    if (source == null) {
-      return
-    }
+    const source = sources[currentSources].shift()
 
-    updateFailedOverSources(source)
+    if (source == null) return
+    updateFailedOverSources(source, currentSources)
 
-    if (serviceLocation == null) {
-      return
-    }
-
+    if (serviceLocation == null) return
     moveMediaSourceToFront(serviceLocation)
   }
 
   function moveMediaSourceToFront(serviceLocation: string): void {
-    let serviceLocationIdx = mediaSources
+    const currentSources = current
+
+    let serviceLocationIdx = sources[currentSources]
       .map((mediaSource) => stripQueryParamsAndHash(mediaSource.url))
       .indexOf(stripQueryParamsAndHash(serviceLocation))
 
     if (serviceLocationIdx < 0) serviceLocationIdx = 0
 
-    mediaSources.unshift(mediaSources.splice(serviceLocationIdx, 1)[0])
+    sources[currentSources].unshift(sources[currentSources].splice(serviceLocationIdx, 1)[0])
   }
 
   function hasSourcesToFailoverTo(): boolean {
-    return mediaSources.length > 1
+    return sources[current].length > 1
   }
 
   function emitCdnFailover(failoverInfo: FailoverParams) {
+    const currentSources = current
+
     const evt = new PluginData({
       status: PluginEnums.STATUS.FAILOVER,
       stateType: PluginEnums.TYPE.ERROR,
       isBufferingTimeoutError: failoverInfo.isBufferingTimeoutError,
-      cdn: mediaSources[0].cdn,
-      newCdn: mediaSources[1].cdn,
+      cdn: sources[currentSources][0]?.cdn,
+      newCdn: sources[currentSources][1]?.cdn,
       code: failoverInfo.code,
       message: failoverInfo.message,
     })
@@ -349,7 +328,7 @@ function MediaSources() {
   }
 
   function availableCdns(): string[] {
-    return mediaSources.map((mediaSource) => mediaSource.cdn)
+    return sources[current].map((mediaSource) => mediaSource.cdn)
   }
 
   function availableSubtitlesCdns(): string[] {
@@ -369,8 +348,10 @@ function MediaSources() {
 
     time = null
     transferFormat = null
-    mediaSources = []
-    failedOverSources = []
+
+    sources[SourceType.MEDIA] = []
+    sources[SourceType.AUDIO_DESCRIBED] = []
+
     failoverResetTokens = []
     subtitlesSources = []
   }
@@ -380,11 +361,9 @@ function MediaSources() {
     failover,
     failoverSubtitles,
     refresh,
-    replace,
-    getMainSources,
     isAudioDescribedAvailable,
     isAudioDescribedEnabled,
-    getAudioDescribedSources,
+    setAudioDescribed,
     currentSource: getCurrentUrl,
     currentSubtitlesSource: getCurrentSubtitlesUrl,
     currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,
@@ -399,3 +378,4 @@ function MediaSources() {
 }
 
 export default MediaSources
+export type MediaSources = typeof MediaSources

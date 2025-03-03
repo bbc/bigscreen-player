@@ -11,6 +11,32 @@ import Plugins from "./plugins"
 import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
 import DebugTool from "./debugger/debugtool"
 
+/**
+ * @typedef {import('./mediasources').MediaSources} MediaSources
+ */
+
+/**
+ * @typedef {{
+ *   data: {
+ *     currentTime: number,
+ *     seekableRange: { start: number, end: number },
+ *     state: MediaState,
+ *     duration: number
+ *   },
+ *   timeUpdate: boolean,
+ *   isBufferingTimeoutError: boolean
+ * }} StateUpdateData
+ */
+
+/**
+ *
+ * @param {HTMLMediaElement} playbackElement HTML Media Element to use for Playback
+ * @param {Object} bigscreenPlayerData Player Initialisation Data
+ * @param {ReturnType<MediaSources>} mediaSources Media Sources instance
+ * @param {(data: StateUpdateData) => void} stateUpdateCallback Callback for State Changes
+ * @param {(error: any) => void} errorCallback Callback for Errors
+ * @param {(to: boolean) => void} audioDescribedCallback Callback for AD Changes
+ */
 function PlayerComponent(
   playbackElement,
   bigscreenPlayerData,
@@ -119,27 +145,41 @@ function PlayerComponent(
   }
 
   function genericAudioDescribedSwitch(to) {
-    const sources = to ? mediaSources.getAudioDescribedSources() : mediaSources.getMainSources()
-
     setupPauseAfterLoad()
-    return replaceMediaSources(sources).then(() => {
-      audioDescribedCallback(to)
-    })
+
+    const wasPaused = isPaused()
+    const presentationTimeInSeconds = getCurrentTime()
+    const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
+      presentationTimeInSeconds,
+      mediaSources.time().availabilityStartTimeInMilliseconds
+    )
+
+    return mediaSources
+      .setAudioDescribed(to)
+      .then(() => {
+        const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
+          availabilityTimeInMilliseconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
+        )
+
+        tearDownMediaElement()
+        loadMedia(mediaMetaData.type, presentationTimeInSeconds, wasPaused)
+
+        audioDescribedCallback(to)
+      })
+      .catch(() => {
+        bubbleFatalError(false, {
+          code: "0000",
+          message: `error switching ${to ? "to" : "from"} audio described`,
+        })
+      })
   }
 
-  function setAudioDescribedOn() {
-    if (mediaSources.isAudioDescribedAvailable()) return genericAudioDescribedSwitch(true)
-    if (!(playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.())) return
+  function setAudioDescribed(to) {
+    if (mediaSources.isAudioDescribedAvailable()) return genericAudioDescribedSwitch(to)
+    if (!(playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.())) return Promise.resolve()
 
-    playbackStrategy && playbackStrategy.setAudioDescribedOn?.()
-    return Promise.resolve()
-  }
-
-  function setAudioDescribedOff() {
-    if (mediaSources.isAudioDescribedAvailable()) return genericAudioDescribedSwitch(false)
-    if (!(playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.())) return
-
-    playbackStrategy && playbackStrategy.setAudioDescribedOff?.()
+    playbackStrategy && playbackStrategy[to ? "setAudioDescribedOn" : "setAudioDescribedOff"]?.()
     return Promise.resolve()
   }
 
@@ -392,30 +432,6 @@ function PlayerComponent(
     }
   }
 
-  function replaceMediaSources(sources) {
-    const wasPaused = isPaused()
-    const presentationTimeInSeconds = getCurrentTime()
-    const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
-      presentationTimeInSeconds,
-      mediaSources.time().availabilityStartTimeInMilliseconds
-    )
-
-    return mediaSources
-      .replace(sources)
-      .then(() => {
-        const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
-          availabilityTimeInMilliseconds,
-          mediaSources.time().availabilityStartTimeInMilliseconds
-        )
-
-        tearDownMediaElement()
-        loadMedia(mediaMetaData.type, presentationTimeInSeconds, wasPaused)
-      })
-      .catch(() => {
-        bubbleFatalError(false, { code: "0000", message: "error replacing sources" })
-      })
-  }
-
   function tearDown() {
     tearDownMediaElement()
     playbackStrategy?.tearDown()
@@ -442,12 +458,10 @@ function PlayerComponent(
     getSeekableRange,
     getPlayerElement,
     isPaused,
-    replaceMediaSources,
     tearDown,
     isAudioDescribedAvailable,
     isAudioDescribedEnabled,
-    setAudioDescribedOn,
-    setAudioDescribedOff,
+    setAudioDescribed,
   }
 }
 

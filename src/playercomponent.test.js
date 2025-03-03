@@ -61,10 +61,9 @@ const mockMediaSources = {
   failover: jest.fn().mockResolvedValue(),
   reset: jest.fn().mockResolvedValue(),
   time: jest.fn(),
-  replace: jest.fn(),
   isAudioDescribedAvailable: jest.fn(),
   isAudioDescribedEnabled: jest.fn(),
-  getAudioDescribedSources: jest.fn().mockResolvedValue(),
+  setAudioDescribed: jest.fn(),
 }
 
 describe("Player Component", () => {
@@ -93,7 +92,6 @@ describe("Player Component", () => {
     })
 
     mockMediaSources.failover.mockResolvedValue()
-    mockMediaSources.replace.mockResolvedValue()
 
     bigscreenPlayerData = {
       media: {
@@ -1339,6 +1337,7 @@ describe("Player Component", () => {
 
       mockMediaSources.isAudioDescribedAvailable.mockReturnValueOnce(true)
       mockMediaSources.isAudioDescribedEnabled.mockReturnValueOnce(true)
+      mockMediaSources.setAudioDescribed.mockResolvedValueOnce()
 
       const addMediaPlayerEventCallback = jest.fn().mockImplementation((thisArg, callback) => {
         capturedCallback = { thisArg, callback }
@@ -1368,104 +1367,12 @@ describe("Player Component", () => {
 
       await jest.runOnlyPendingTimersAsync()
 
-      playerComponent.setAudioDescribedOn()
+      playerComponent.setAudioDescribed(true)
 
       capturedCallback.callback.call(capturedCallback.thisArg, { type: MediaPlayerBase.EVENT.METADATA })
 
       expect(mockPlaybackStrategy.pause).toHaveBeenCalled()
       expect(removeMediaPlayerEventCallback).toHaveBeenCalledWith(capturedCallback.callback)
-    })
-  })
-
-  describe("replaceMediaSources", () => {
-    const cdn = "http://replacedcdn.com"
-    const url = "http://replacedurl.com/"
-    const sources = [{ cdn, url }]
-
-    const replace = async (onStateUpdate) => {
-      const playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        onStateUpdate ?? jest.fn(),
-        jest.fn()
-      )
-
-      await jest.runOnlyPendingTimersAsync()
-      await playerComponent.replaceMediaSources(sources)
-    }
-
-    it("calls through to media sources", async () => {
-      await replace()
-
-      expect(mockMediaSources.replace).toHaveBeenCalledWith(sources)
-    })
-
-    it("tears down the media element if media source replace succeeds", async () => {
-      await replace()
-
-      expect(mockStrategy.reset).toHaveBeenCalled()
-    })
-
-    it("loads media if media source replace succeeds", async () => {
-      await replace()
-
-      expect(mockStrategy.load).toHaveBeenCalled()
-    })
-
-    it("calculates the failoverTime", async () => {
-      mockStrategy.getCurrentTime.mockReturnValue(100)
-
-      const playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn()
-      )
-
-      await jest.runOnlyPendingTimersAsync()
-
-      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
-
-      await playerComponent.replaceMediaSources(sources)
-
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
-    })
-
-    it("bubbles error if replace promise rejects", async () => {
-      const code = "0000"
-      const message = "error replacing sources"
-
-      mockMediaSources.replace.mockRejectedValueOnce()
-      jest.spyOn(Plugins.interface, "onFatalError")
-      const onStateUpdate = jest.fn()
-
-      await replace(onStateUpdate)
-
-      const expectedStatusUpdate = {
-        data: {
-          currentTime: undefined,
-          duration: undefined,
-          seekableRange: undefined,
-          state: MediaState.FATAL_ERROR,
-        },
-        isBufferingTimeoutError: false,
-        timeUpdate: false,
-        code,
-        message,
-      }
-
-      const expectedOnFatalErrorMessage = expect.objectContaining({
-        status: PluginEnums.STATUS.FATAL,
-        stateType: PluginEnums.TYPE.ERROR,
-        isBufferingTimeoutError: false,
-        code,
-        message,
-      })
-
-      expect(onStateUpdate).toHaveBeenCalledWith(expectedStatusUpdate)
-      expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(expectedOnFatalErrorMessage)
     })
   })
 })

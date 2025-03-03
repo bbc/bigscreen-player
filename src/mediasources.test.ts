@@ -6,9 +6,6 @@ import SourceLoader from "./manifest/sourceloader"
 import { ManifestType } from "./models/manifesttypes"
 import { TransferFormat } from "./models/transferformats"
 import getError from "./testutils/geterror"
-import DebugTool from "./debugger/debugtool"
-
-jest.mock("./debugger/debugtool")
 
 jest.mock("./manifest/sourceloader", () => ({
   default: {
@@ -575,34 +572,6 @@ describe("Media Sources", () => {
 
       expect(mediaSources.currentSource()).toBe("http://source2.com")
     })
-
-    it("fails over correctly after sources have been replaced", async () => {
-      testMedia.urls = [
-        { url: "http://source1.com", cdn: "http://cdn1.com" },
-        { url: "http://source2.com", cdn: "http://cdn2.com" },
-      ]
-
-      testMedia.audioDescribed = [
-        { url: "http://audiodescribedsource1.com", cdn: "http://audiodescribedcdn1.com" },
-        { url: "http://audiodescribedsource2.com", cdn: "http://audiodescribedcdn2.com" },
-      ]
-
-      const mediaSources = MediaSources()
-      await mediaSources.init(testMedia)
-
-      await mediaSources.failover({
-        isBufferingTimeoutError: true,
-        code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
-        message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
-        duration: 100,
-        currentTime: 94,
-      })
-
-      await mediaSources.replace(mediaSources.getAudioDescribedSources())
-      await mediaSources.replace(mediaSources.getMainSources())
-
-      expect(mediaSources.currentSource()).toBe("http://source2.com")
-    })
   })
 
   describe("Subtitle Sources", () => {
@@ -826,69 +795,6 @@ describe("Media Sources", () => {
       jest.advanceTimersByTime(FAILOVER_RESET_TIMEOUT_MS)
 
       expect(mediaSources.availableSources()).toEqual([])
-    })
-  })
-
-  describe("replace", () => {
-    beforeEach(() => {
-      jest.clearAllMocks()
-    })
-
-    it("replaces the media sources", async () => {
-      const cdn = "http://replacedcdn.com"
-      const url = "http://replacedurl.com/"
-
-      const mediaSources = MediaSources()
-      await mediaSources.init(testMedia)
-
-      await mediaSources.replace([{ cdn, url }])
-
-      expect(mediaSources.currentSource()).toBe(url)
-    })
-
-    it("updates debug output after a replace", async () => {
-      const cdn = "http://replacedcdn.com"
-      const url = "http://replacedurl.com/"
-
-      const mediaSources = MediaSources()
-      await mediaSources.init(testMedia)
-
-      await mediaSources.replace([{ cdn, url }])
-
-      expect(DebugTool.dynamicMetric).toHaveBeenCalledWith("cdns-available", [cdn])
-      expect(DebugTool.dynamicMetric).toHaveBeenCalledWith("current-url", url)
-    })
-
-    it("does not refresh the manifest if not needed", async () => {
-      const cdn = "http://replacedcdn.com"
-      const url = "http://replacedurl.com/"
-
-      const mediaSources = MediaSources()
-      await mediaSources.init(testMedia)
-
-      await mediaSources.replace([{ cdn, url }])
-      expect(SourceLoader.load).toHaveBeenCalledTimes(1)
-    })
-
-    it("refreshes the manifest if needed", async () => {
-      const cdn = "http://replacedcdn.com"
-      const url = "http://replacedurl.com/"
-
-      jest.mocked(SourceLoader.load).mockResolvedValueOnce({
-        time: {
-          manifestType: ManifestType.DYNAMIC,
-          presentationTimeOffsetInMilliseconds: 1731406718000,
-          availabilityStartTimeInMilliseconds: 1731406718000,
-          timeShiftBufferDepthInMilliseconds: 0,
-        },
-        transferFormat: TransferFormat.HLS,
-      })
-
-      const mediaSources = MediaSources()
-      await mediaSources.init(testMedia)
-
-      await mediaSources.replace([{ cdn, url }])
-      expect(SourceLoader.load).toHaveBeenCalledTimes(2)
     })
   })
 })

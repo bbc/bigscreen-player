@@ -113,11 +113,9 @@ describe("Bigscreen Player", () => {
       tearDown: jest.fn(),
       setPlaybackRate: jest.fn(),
       getPlaybackRate: jest.fn(),
-      replaceMediaSources: jest.fn(),
       isAudioDescribedAvailable: jest.fn(),
       isAudioDescribedEnabled: jest.fn(),
-      setAudioDescribedOn: jest.fn(),
-      setAudioDescribedOff: jest.fn(),
+      setAudioDescribed: jest.fn(),
     }
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
@@ -1534,23 +1532,25 @@ describe("Bigscreen Player", () => {
     })
   })
 
-  describe("setAudioDescribedEnabled", () => {
-    it("should turn Audio Described on/off when a value is passed in", async () => {
+  describe("setAudioDescribed", () => {
+    it("should call through to PlayerComponent.setAudioDescribed", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
-      bigscreenPlayer.setAudioDescribedEnabled(true)
+      bigscreenPlayer.setAudioDescribed(true)
 
-      expect(mockPlayerComponentInstance.setAudioDescribedOn).toHaveBeenCalledTimes(1)
-      expect(mockPlayerComponentInstance.setAudioDescribedOff).toHaveBeenCalledTimes(0)
+      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenCalledWith(true)
+      expect(mockPlayerComponentInstance.setAudioDescribed).not.toHaveBeenCalledWith(false)
 
-      bigscreenPlayer.setAudioDescribedEnabled(false)
+      bigscreenPlayer.setAudioDescribed(false)
 
-      expect(mockPlayerComponentInstance.setAudioDescribedOn).toHaveBeenCalledTimes(1)
-      expect(mockPlayerComponentInstance.setAudioDescribedOff).toHaveBeenCalledTimes(1)
+      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenCalledTimes(2)
+      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenCalledWith(true)
+      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenCalledWith(false)
     })
   })
 
   describe("isAudioDescribedEnabled", () => {
-    it("calls through to playercomponent enabled when called", async () => {
+    it("calls through to PlayerComponent.isAudioDescribedEnabled", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       bigscreenPlayer.isAudioDescribedEnabled()
@@ -1560,7 +1560,7 @@ describe("Bigscreen Player", () => {
   })
 
   describe("isAudioDescribedAvailable", () => {
-    it("calls through to playercomponent available when called", async () => {
+    it("calls through to PlayerComponent.isAudioDescribedAvailable", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
 
       bigscreenPlayer.isAudioDescribedAvailable()
@@ -1668,17 +1668,6 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.getDebugLogs()
 
       expect(DebugTool.getDebugLogs).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  describe("replaceMediaSources", () => {
-    it("should call through to player component", async () => {
-      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
-
-      const sources = "https://newsource.com"
-      bigscreenPlayer.replaceMediaSources(sources)
-
-      expect(mockPlayerComponentInstance.replaceMediaSources).toHaveBeenCalledWith(sources)
     })
   })
 })

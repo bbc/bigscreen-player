@@ -645,8 +645,7 @@ function BigscreenPlayer() {
      * @function
      * @returns {Promise<void>}
      */
-    setAudioDescribedEnabled: (enabled) =>
-      enabled ? playerComponent.setAudioDescribedOn() : playerComponent.setAudioDescribedOff(),
+    setAudioDescribed: (enabled) => playerComponent.setAudioDescribed(enabled),
 
     /**
      *
@@ -767,14 +766,6 @@ function BigscreenPlayer() {
     getInitialPlaybackTime,
     getTimeShiftBufferDepthInMilliseconds,
     getPresentationTimeOffsetInMilliseconds,
-
-    /**
-     * @function
-     * @param {Array} sources - Array of new media sources
-     */
-    replaceMediaSources: (sources) => {
-      playerComponent && playerComponent.replaceMediaSources(sources)
-    },
   }
 }
 
