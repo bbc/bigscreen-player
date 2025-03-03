@@ -316,7 +316,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function isValidTime(time) {
-    return time >= 0
+    // A newly loaded video element reports currentTime as 0
+    return time > 0
   }
 
   function getCurrentTime() {
