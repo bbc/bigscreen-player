@@ -210,7 +210,10 @@ function MediaSources() {
   }
 
   function isAudioDescribedEnabled(): boolean {
-    return audioDescribedSources.some((source: Connection) => source.url === mediaSources[0].url)
+    const cdns = mediaSources.map((mediaSource) => mediaSource.cdn)
+    const urls = mediaSources.map((mediaSource) => mediaSource.url)
+
+    return audioDescribedSources.some((source: Connection) => cdns.includes(source.cdn) && urls.includes(source.url))
   }
 
   function getAudioDescribedSources(): Connection[] {
@@ -353,23 +356,12 @@ function MediaSources() {
     return subtitlesSources.map((subtitleSource) => subtitleSource.cdn)
   }
 
-  function availableAudioDescribedCdns(): string[] {
-    const adCdns = audioDescribedSources.map((adSource) => adSource.cdn)
-    return adCdns.filter(
-      (adCdn) => !failedOverSources.map((failedOverSources) => failedOverSources.cdn).includes(adCdn)
-    )
-  }
-
   function updateDebugOutput() {
-    DebugTool.dynamicMetric("cdns-available", availableCdns())
+    DebugTool.dynamicMetric(`${isAudioDescribedEnabled() ? "audio-described-" : ""}cdns-available`, availableCdns())
     DebugTool.dynamicMetric("current-url", stripQueryParamsAndHash(getCurrentUrl()))
 
     DebugTool.dynamicMetric("subtitle-cdns-available", availableSubtitlesCdns())
     DebugTool.dynamicMetric("subtitle-current-url", stripQueryParamsAndHash(getCurrentSubtitlesUrl()))
-
-    if (isAudioDescribedAvailable()) {
-      DebugTool.dynamicMetric("audio-described-cdns-available", availableAudioDescribedCdns())
-    }
   }
 
   function tearDown() {
