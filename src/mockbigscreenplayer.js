@@ -250,11 +250,11 @@ const mockFunctions = {
   unregisterForSubtitleChanges(callback) {
     subtitleCallbacks = subtitleCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
-  registerForaudioDescribedChanges(callback) {
+  registerForAudioDescribedChanges(callback) {
     audioDescribedCallbacks.push(callback)
     return callback
   },
-  unregisterForaudioDescribedChanges(callback) {
+  unregisterForAudioDescribedChanges(callback) {
     audioDescribedCallbacks = audioDescribedCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
   registerForStateChanges(callback) {
@@ -325,13 +325,13 @@ const mockFunctions = {
   },
   customiseSubtitles() {},
   renderSubtitleExample() {},
-  setaudioDescribedEnabled(value) {
+  setAudioDescribedEnabled(value) {
     audioDescribedEnabled = value
   },
-  isaudioDescribedEnabled() {
+  isAudioDescribedEnabled() {
     return audioDescribedEnabled
   },
-  isaudioDescribedAvailable() {
+  isAudioDescribedAvailable() {
     return audioDescribedAvailable
   },
   setTransportControlsPosition() {},
