@@ -255,7 +255,7 @@ function MediaSources() {
   }
 
   function availableUrls(): string[] {
-    return sources[SourceType.MEDIA].map((mediaSource) => mediaSource.url)
+    return sources[current].map((mediaSource) => mediaSource.url)
   }
 
   function generateTime(): TimeInfo | null {
