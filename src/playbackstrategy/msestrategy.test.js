@@ -834,6 +834,17 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mseStrategy.getCurrentTime()).toBe(10)
     })
 
+    it("returns the last known good time value, if currentTime is 0", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      mediaElement.currentTime = 10
+      expect(mseStrategy.getCurrentTime()).toBe(10)
+
+      mediaElement.currentTime = 0
+      expect(mseStrategy.getCurrentTime()).toBe(10)
+    })
+
     it("returns 0 when MediaPlayer is undefined", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 

@@ -632,10 +632,16 @@ function MSEStrategy(
   }
 
   function getCurrentTime() {
-    return mediaElement?.currentTime || cached.currentTime
+    const currentTime = mediaElement?.currentTime
+    if (currentTime && !isNaN(currentTime)) {
+      cached.currentTime = currentTime
+    }
+
+    return currentTime || cached.currentTime
   }
 
   function refreshManifestBeforeSeek(presentationTimeInSeconds) {
+    // Is this needed?
     cached.currentTime = presentationTimeInSeconds
 
     mediaPlayer.refreshManifest((manifest) => {
