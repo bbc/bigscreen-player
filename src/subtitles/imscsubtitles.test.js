@@ -916,6 +916,25 @@ describe("IMSC Subtitles", () => {
         expect(LoadUrl).not.toHaveBeenCalled()
       })
 
+      it("does not load segments when currentTime is zero", () => {
+        captions = [
+          {
+            type: "application/ttml+xml",
+            url: "mock://some.media/captions/$segment$.m4s",
+            cdn: "foo",
+            segmentLength: 3.84,
+          },
+        ]
+
+        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+
+        mockMediaPlayer.getCurrentTime.mockReturnValue(0)
+
+        jest.advanceTimersByTime(UPDATE_INTERVAL)
+
+        expect(LoadUrl).not.toHaveBeenCalled()
+      })
+
       it("stops loading all segments when the XML transform fails for some segment", () => {
         fromXML.mockImplementationOnce(() => {
           throw new Error("An error occured during transformation.")
