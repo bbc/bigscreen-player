@@ -1,9 +1,24 @@
 import MediaPlayerBase from "../mediaplayerbase"
-import WindowTypes from "../../../models/windowtypes"
-import DynamicWindowUtils from "../../../dynamicwindowutils"
+import { autoResumeAtStartOfRange } from "../../../dynamicwindowutils"
+import TimeShiftDetector from "../../../utils/timeshiftdetector"
 
-function SeekableLivePlayer(mediaPlayer, windowType) {
+function SeekableLivePlayer(mediaPlayer) {
   const AUTO_RESUME_WINDOW_START_CUSHION_SECONDS = 8
+
+  const timeShiftDetector = TimeShiftDetector(() => {
+    if (getState() !== MediaPlayerBase.STATE.PAUSED) {
+      return
+    }
+
+    startAutoResumeTimeout()
+  })
+
+  mediaPlayer.addEventCallback(null, (event) => {
+    if (event.type === MediaPlayerBase.EVENT.METADATA) {
+      // Avoid observing the seekable range before metadata loads
+      timeShiftDetector.observe(getSeekableRange)
+    }
+  })
 
   function addEventCallback(thisArg, callback) {
     mediaPlayer.addEventCallback(thisArg, callback)
@@ -21,72 +36,88 @@ function SeekableLivePlayer(mediaPlayer, windowType) {
     mediaPlayer.resume()
   }
 
+  function getState() {
+    return mediaPlayer.getState()
+  }
+
+  function getSeekableRange() {
+    return mediaPlayer.getSeekableRange()
+  }
+
+  function reset() {
+    timeShiftDetector.disconnect()
+    mediaPlayer.reset()
+  }
+
+  function stop() {
+    timeShiftDetector.disconnect()
+    mediaPlayer.stop()
+  }
+
+  function startAutoResumeTimeout() {
+    autoResumeAtStartOfRange(
+      mediaPlayer.getCurrentTime(),
+      mediaPlayer.getSeekableRange(),
+      addEventCallback,
+      removeEventCallback,
+      MediaPlayerBase.unpausedEventCheck,
+      resume
+    )
+  }
+
   return {
-    initialiseMedia: function initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts) {
-      if (mediaType === MediaPlayerBase.TYPE.AUDIO) {
-        mediaType = MediaPlayerBase.TYPE.LIVE_AUDIO
-      } else {
-        mediaType = MediaPlayerBase.TYPE.LIVE_VIDEO
-      }
+    initialiseMedia: function initialiseMedia(mediaKind, sourceUrl, mimeType, sourceContainer, opts) {
+      const mediaType =
+        mediaKind === MediaPlayerBase.TYPE.AUDIO ? MediaPlayerBase.TYPE.LIVE_AUDIO : MediaPlayerBase.TYPE.LIVE_VIDEO
 
       mediaPlayer.initialiseMedia(mediaType, sourceUrl, mimeType, sourceContainer, opts)
     },
 
     beginPlayback: function beginPlayback() {
-      if (
-        window.bigscreenPlayer &&
-        window.bigscreenPlayer.overrides &&
-        window.bigscreenPlayer.overrides.forceBeginPlaybackToEndOfWindow
-      ) {
+      if (window.bigscreenPlayer?.overrides?.forceBeginPlaybackToEndOfWindow) {
         mediaPlayer.beginPlaybackFrom(Infinity)
       } else {
         mediaPlayer.beginPlayback()
       }
     },
 
-    beginPlaybackFrom: function beginPlaybackFrom(offset) {
-      mediaPlayer.beginPlaybackFrom(offset)
+    beginPlaybackFrom: function beginPlaybackFrom(presentationTimeInSeconds) {
+      mediaPlayer.beginPlaybackFrom(presentationTimeInSeconds)
     },
 
-    playFrom: function playFrom(offset) {
-      mediaPlayer.playFrom(offset)
+    playFrom: function playFrom(presentationTimeInSeconds) {
+      mediaPlayer.playFrom(presentationTimeInSeconds)
     },
 
-    pause: function pause(opts) {
-      const secondsUntilStartOfWindow = mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start
-      opts = opts || {}
-
-      if (opts.disableAutoResume) {
-        mediaPlayer.pause()
-      } else if (secondsUntilStartOfWindow <= AUTO_RESUME_WINDOW_START_CUSHION_SECONDS) {
+    pause: function pause() {
+      if (
+        mediaPlayer.getCurrentTime() - mediaPlayer.getSeekableRange().start <=
+        AUTO_RESUME_WINDOW_START_CUSHION_SECONDS
+      ) {
         mediaPlayer.toPaused()
         mediaPlayer.toPlaying()
-      } else {
-        mediaPlayer.pause()
-        if (windowType === WindowTypes.SLIDING) {
-          DynamicWindowUtils.autoResumeAtStartOfRange(
-            mediaPlayer.getCurrentTime(),
-            mediaPlayer.getSeekableRange(),
-            addEventCallback,
-            removeEventCallback,
-            MediaPlayerBase.unpausedEventCheck,
-            resume
-          )
-        }
+
+        return
+      }
+
+      mediaPlayer.pause()
+
+      if (timeShiftDetector.isSeekableRangeSliding()) {
+        startAutoResumeTimeout()
       }
     },
 
-    resume: resume,
-    stop: () => mediaPlayer.stop(),
-    reset: () => mediaPlayer.reset(),
-    getState: () => mediaPlayer.getState(),
+    resume,
+    stop,
+    reset,
+    getState,
     getSource: () => mediaPlayer.getSource(),
     getCurrentTime: () => mediaPlayer.getCurrentTime(),
-    getSeekableRange: () => mediaPlayer.getSeekableRange(),
+    getSeekableRange,
     getMimeType: () => mediaPlayer.getMimeType(),
-    addEventCallback: addEventCallback,
-    removeEventCallback: removeEventCallback,
-    removeAllEventCallbacks: removeAllEventCallbacks,
+    addEventCallback,
+    removeEventCallback,
+    removeAllEventCallbacks,
     getPlayerElement: () => mediaPlayer.getPlayerElement(),
     getLiveSupport: () => MediaPlayerBase.LIVE_SUPPORT.SEEKABLE,
   }

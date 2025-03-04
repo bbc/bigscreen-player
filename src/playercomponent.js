@@ -1,24 +1,22 @@
+import LiveSupport from "./models/livesupport"
 import MediaState from "./models/mediastate"
-import WindowTypes from "./models/windowtypes"
+import StrategyPicker from "./playbackstrategy/strategypicker"
+import {
+  presentationTimeToAvailabilityTimeInMilliseconds,
+  availabilityTimeToPresentationTimeInSeconds,
+} from "./utils/timeutils"
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
-import TransferFormats from "./models/transferformats"
-import LiveSupport from "./models/livesupport"
-import PlaybackStrategyModel from "./models/playbackstrategy"
-import StrategyPicker from "./playbackstrategy/strategypicker"
 
 function PlayerComponent(
   playbackElement,
   bigscreenPlayerData,
   mediaSources,
-  windowType,
   stateUpdateCallback,
-  errorCallback
+  errorCallback,
+  callBroadcastMixADCallbacks
 ) {
-  const transferFormat = bigscreenPlayerData.media.transferFormat
-
-  let _windowType = windowType
   let _stateUpdateCallback = stateUpdateCallback
 
   let mediaKind = bigscreenPlayerData.media.kind
@@ -34,11 +32,12 @@ function PlayerComponent(
     .then((strategy) => {
       playbackStrategy = strategy(
         mediaSources,
-        _windowType,
         mediaKind,
         playbackElement,
         bigscreenPlayerData.media.isUHD,
-        bigscreenPlayerData.media.playerSettings
+        bigscreenPlayerData.media.playerSettings,
+        bigscreenPlayerData.enableBroadcastMixAD,
+        callBroadcastMixADCallbacks
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)
@@ -56,18 +55,16 @@ function PlayerComponent(
     })
 
   function play() {
-    playbackStrategy && playbackStrategy.play()
+    playbackStrategy?.play()
   }
 
   function isEnded() {
-    return playbackStrategy && playbackStrategy.isEnded()
+    return playbackStrategy?.isEnded()
   }
 
-  function pause(opts = {}) {
+  function pause() {
     if (transitions().canBePaused()) {
-      const disableAutoResume = _windowType === WindowTypes.GROWING ? true : opts.disableAutoResume
-
-      playbackStrategy && playbackStrategy.pause({ disableAutoResume, pauseTrigger: opts.pauseTrigger })
+      playbackStrategy?.pause()
     }
   }
 
@@ -80,98 +77,66 @@ function PlayerComponent(
   }
 
   function getDuration() {
-    return playbackStrategy && playbackStrategy.getDuration()
-  }
-
-  function getWindowStartTime() {
-    return mediaSources && mediaSources.time().windowStartTime
-  }
-
-  function getWindowEndTime() {
-    return mediaSources && mediaSources.time().windowEndTime
+    return playbackStrategy?.getDuration()
   }
 
   function getPlayerElement() {
     let element = null
-    if (playbackStrategy && playbackStrategy.getPlayerElement) {
+    if (playbackStrategy?.getPlayerElement) {
       element = playbackStrategy.getPlayerElement()
     }
     return element
   }
 
   function getCurrentTime() {
-    return playbackStrategy && playbackStrategy.getCurrentTime()
+    return playbackStrategy?.getCurrentTime()
   }
 
   function getSeekableRange() {
-    return playbackStrategy && playbackStrategy.getSeekableRange()
+    return playbackStrategy?.getSeekableRange()
+  }
+
+  function isBroadcastMixADAvailable() {
+    return playbackStrategy && playbackStrategy.isBroadcastMixADAvailable?.()
+  }
+
+  function isBroadcastMixADEnabled() {
+    return playbackStrategy && playbackStrategy.isBroadcastMixADEnabled?.()
+  }
+
+  function setBroadcastMixADOn() {
+    playbackStrategy && playbackStrategy.setBroadcastMixADOn?.()
+  }
+
+  function setBroadcastMixADOff() {
+    playbackStrategy && playbackStrategy.setBroadcastMixADOff?.()
   }
 
   function isPaused() {
-    return playbackStrategy && playbackStrategy.isPaused()
+    return playbackStrategy?.isPaused()
   }
 
-  function setCurrentTime(time) {
+  function setCurrentTime(presentationTimeInSeconds) {
     if (transitions().canBeginSeek()) {
-      isNativeHLSRestartable() ? reloadMediaElement(time) : playbackStrategy && playbackStrategy.setCurrentTime(time)
+      playbackStrategy?.setCurrentTime(presentationTimeInSeconds)
     }
   }
 
   function setPlaybackRate(rate) {
-    playbackStrategy && playbackStrategy.setPlaybackRate(rate)
+    playbackStrategy?.setPlaybackRate(rate)
   }
 
   function getPlaybackRate() {
-    return playbackStrategy && playbackStrategy.getPlaybackRate()
-  }
-
-  function isNativeHLSRestartable() {
-    return (
-      window.bigscreenPlayer.playbackStrategy === PlaybackStrategyModel.NATIVE &&
-      transferFormat === TransferFormats.HLS &&
-      _windowType !== WindowTypes.STATIC &&
-      getLiveSupport() === LiveSupport.RESTARTABLE
-    )
-  }
-
-  function reloadMediaElement(time) {
-    const originalWindowStartOffset = getWindowStartTime()
-
-    const doSeek = () => {
-      const windowOffset = mediaSources.time().windowStartTime - originalWindowStartOffset
-      const seekableRange = playbackStrategy && playbackStrategy.getSeekableRange()
-
-      let seekToTime = time - windowOffset / 1000
-      let thenPause = playbackStrategy && playbackStrategy.isPaused()
-
-      tearDownMediaElement()
-
-      if (seekToTime > seekableRange.end - seekableRange.start - 30) {
-        seekToTime = undefined
-        thenPause = false
-      }
-
-      loadMedia(mediaMetaData.type, seekToTime, thenPause)
-    }
-
-    const onError = () => {
-      tearDownMediaElement()
-      bubbleFatalError(false, {
-        code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
-        message: PluginEnums.ERROR_MESSAGES.MANIFEST,
-      })
-    }
-
-    mediaSources.refresh(doSeek, onError)
+    return playbackStrategy?.getPlaybackRate()
   }
 
   function transitions() {
-    return playbackStrategy && playbackStrategy.transitions
+    return playbackStrategy?.transitions
   }
 
   function tearDownMediaElement() {
     clearTimeouts()
-    playbackStrategy && playbackStrategy.reset()
+    playbackStrategy?.reset()
   }
 
   function eventCallback(mediaState) {
@@ -259,31 +224,35 @@ function PlayerComponent(
   }
 
   function attemptCdnFailover(mediaError) {
-    const time = getCurrentTime()
-    const oldWindowStartTime = getWindowStartTime()
+    const presentationTimeInSeconds = getCurrentTime()
+    const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
+      presentationTimeInSeconds,
+      mediaSources.time().availabilityStartTimeInMilliseconds
+    )
     const bufferingTimeoutError = mediaError.code === PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT
 
     const failoverParams = {
       isBufferingTimeoutError: bufferingTimeoutError,
-      currentTime: getCurrentTime(),
+      currentTime: presentationTimeInSeconds,
       duration: getDuration(),
       code: mediaError.code,
       message: mediaError.message,
     }
 
-    const doLoadMedia = () => {
-      const thenPause = isPaused()
-      const windowOffset = (mediaSources.time().windowStartTime - oldWindowStartTime) / 1000
-      const failoverTime = time - (windowOffset || 0)
-      tearDownMediaElement()
-      loadMedia(mediaMetaData.type, failoverTime, thenPause)
-    }
-
-    const doErrorCallback = () => {
-      bubbleFatalError(bufferingTimeoutError, mediaError)
-    }
-
-    mediaSources.failover(doLoadMedia, doErrorCallback, failoverParams)
+    mediaSources
+      .failover(failoverParams)
+      .then(() => {
+        const thenPause = isPaused()
+        tearDownMediaElement()
+        const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
+          availabilityTimeInMilliseconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
+        )
+        loadMedia(mediaMetaData.type, presentationTimeInSeconds, thenPause)
+      })
+      .catch(() => {
+        bubbleFatalError(bufferingTimeoutError, mediaError)
+      })
   }
 
   function clearFatalErrorTimeout() {
@@ -362,8 +331,8 @@ function PlayerComponent(
         state,
         duration: getDuration(),
       },
-      timeUpdate: opts && opts.timeUpdate,
-      isBufferingTimeoutError: (opts && opts.isBufferingTimeoutError) || false,
+      timeUpdate: opts?.timeUpdate ?? false,
+      isBufferingTimeoutError: opts?.isBufferingTimeoutError ?? false,
     }
 
     if (opts && opts.code > -1 && opts.message) {
@@ -378,8 +347,8 @@ function PlayerComponent(
     }
   }
 
-  function loadMedia(type, startTime, thenPause) {
-    playbackStrategy && playbackStrategy.load(type, startTime)
+  function loadMedia(type, presentationTimeInSeconds, thenPause) {
+    playbackStrategy?.load(type, presentationTimeInSeconds)
     if (thenPause) {
       pause()
     }
@@ -387,11 +356,10 @@ function PlayerComponent(
 
   function tearDown() {
     tearDownMediaElement()
-    playbackStrategy && playbackStrategy.tearDown()
+    playbackStrategy?.tearDown()
     playbackStrategy = null
     isInitialPlay = true
     errorTimeoutID = undefined
-    _windowType = undefined
     mediaKind = undefined
     _stateUpdateCallback = undefined
     mediaMetaData = undefined
@@ -411,17 +379,19 @@ function PlayerComponent(
     setCurrentTime,
     getCurrentTime,
     getDuration,
-    getWindowStartTime,
-    getWindowEndTime,
     getSeekableRange,
     getPlayerElement,
     isPaused,
     tearDown,
+    isBroadcastMixADAvailable,
+    isBroadcastMixADEnabled,
+    setBroadcastMixADOn,
+    setBroadcastMixADOff,
   }
 }
 
 function getLiveSupport() {
-  return (window.bigscreenPlayer && window.bigscreenPlayer.liveSupport) || LiveSupport.SEEKABLE
+  return window.bigscreenPlayer?.liveSupport || LiveSupport.SEEKABLE
 }
 
 PlayerComponent.getLiveSupport = getLiveSupport

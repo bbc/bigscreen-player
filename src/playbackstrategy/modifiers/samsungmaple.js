@@ -316,6 +316,8 @@ function SamsungMaple() {
       start: 0,
       end: playerPlugin.GetDuration() / 1000,
     }
+
+    _emitEvent(MediaPlayerBase.EVENT.METADATA)
   }
 
   function _onCurrentTime(timeInMillis) {

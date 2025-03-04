@@ -21,9 +21,9 @@ Accepted
 
 ## Consequences
 
-* Using sinon makes it simpler to provide custom responses to network requests.
-* Another third party library is now pulled into bigscreen-player as a dev dependency.
+- Using sinon makes it simpler to provide custom responses to network requests.
+- Another third party library is now pulled into bigscreen-player as a dev dependency.
 
 ## Further Reading
 
-See https://sinonjs.org/ for more information
+See <https://sinonjs.org/> for more information

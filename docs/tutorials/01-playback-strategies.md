@@ -6,17 +6,17 @@ There are three options available:
 - `nativestrategy`
 - `basicstrategy`
 
-Your app should write this globally to the window before initialising Bigscreen Player. This enables only the required media player code to be loaded. For example, if MSE playback is not needed, the *dashjs* library does not have to be loaded.
+Your app should write this to the `globalThis` object (i.e. the `window` on browsers) before initialising Bigscreen Player. This enables only the required media player code to be loaded. For example, if MSE playback is not needed, the _dashjs_ library does not have to be loaded.
 
 ```javascript
-window.bigscreenPayer.playbackStrategy = 'msestrategy' // OR 'nativestrategy' OR 'basicstategy'
+window.bigscreenPayer.playbackStrategy = "msestrategy" // OR 'nativestrategy' OR 'basicstategy'
 ```
 
 The player will require in the correct strategy file at runtime.
 
 ## MSE Strategy
 
-The MSE strategy utilises the open source [*dashjs*](https://github.com/Dash-Industry-Forum/dash.js/wiki) library. Dashjs handles much of the playback, and the strategy interacts with this to provide a consistent interface. No other dependencies are requried.
+The MSE strategy utilises the open source [_dashjs_](https://github.com/Dash-Industry-Forum/dash.js/wiki) library. Dashjs handles much of the playback, and the strategy interacts with this to provide a consistent interface. No other dependencies are requried.
 
 ## Native Strategy
 
@@ -28,11 +28,16 @@ We have migrated TAL media player implementations into the Native Strategy, so t
 - `SAMSUNG_STREAMING`
 - `SAMSUNG_STREAMING_2015`
 
-This requires additional config, to select which implementation to use and indicate the device's live playback capability:
+This requires additional config to select which media player implementation to use.
 
 ```javascript
-window.bigscreenPlayer.liveSupport: 'seekable', // OR 'none' OR 'playable' OR 'restartable'; defaults to 'playable'
-window.bigscreenPlayer.mediaPlayer: 'html5' // OR 'cehtml'; defaults to 'html5'
+window.bigscreenPlayer.mediaPlayer: 'html5'
+```
+
+You must also indicate the device's live playback capability. There's more info in [the documentation on live-streaming](https://bbc.github.io/bigscreen-player/api/tutorial-live-streaming.html)
+
+```javascript
+window.bigscreenPlayer.liveSupport = "seekable"
 ```
 
 ## Basic Strategy

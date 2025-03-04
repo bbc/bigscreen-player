@@ -1,3 +1,4 @@
+import { ManifestType, TransferFormat } from "../main"
 import DebugTool, { LogLevels } from "./debugtool"
 import DebugViewController from "./debugviewcontroller"
 
@@ -103,7 +104,7 @@ describe("Debug Tool", () => {
   })
 })
 
-describe("Debug Tool", () => {
+describe("initialised Debug Tool", () => {
   beforeEach(() => {
     DebugTool.init()
   })
@@ -149,7 +150,7 @@ describe("Debug Tool", () => {
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ kind: "error", data: { message: "something went wrong" } }),
+        expect.objectContaining({ kind: "error", data: { name: "Error", message: "something went wrong" } }),
       ])
     })
 
@@ -236,6 +237,34 @@ describe("Debug Tool", () => {
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
         expect.objectContaining({ kind: "apicall", data: { functionName: "setCurrentTime", functionArgs: [30] } }),
+      ])
+    })
+  })
+
+  describe("logging manifest loaded", () => {
+    it("appends the manifest loaded trace to the log", () => {
+      jest.advanceTimersByTime(1)
+
+      DebugTool.sourceLoaded({
+        manifestType: ManifestType.STATIC,
+        transferFormat: TransferFormat.DASH,
+        availabilityStartTimeInMilliseconds: 0,
+        presentationTimeOffsetInMilliseconds: 0,
+        timeShiftBufferDepthInMilliseconds: 0,
+      })
+
+      expect(DebugTool.getDebugLogs()).toEqual([
+        expect.objectContaining({ kind: "session-start" }),
+        expect.objectContaining({
+          kind: "source-loaded",
+          data: {
+            manifestType: ManifestType.STATIC,
+            transferFormat: TransferFormat.DASH,
+            availabilityStartTimeInMilliseconds: 0,
+            presentationTimeOffsetInMilliseconds: 0,
+            timeShiftBufferDepthInMilliseconds: 0,
+          },
+        }),
       ])
     })
   })
