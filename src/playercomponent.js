@@ -165,8 +165,6 @@ function PlayerComponent(
 
         tearDownMediaElement()
         loadMedia(mediaMetaData.type, presentationTimeInSeconds, wasPaused)
-
-        audioDescribedCallback(to)
       })
       .catch(() => {
         bubbleFatalError(false, {
@@ -427,8 +425,10 @@ function PlayerComponent(
     }
 
     if (mediaSources.isAudioDescribedEnabled()) {
+      audioDescribedCallback(true)
       DebugTool.info("Source changed. Audio Described on.")
     } else if (mediaSources.isAudioDescribedAvailable()) {
+      audioDescribedCallback(false)
       DebugTool.info("Source changed. Audio Described off.")
     }
   }
