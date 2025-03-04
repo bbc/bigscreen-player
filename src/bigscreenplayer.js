@@ -4,12 +4,16 @@
 import MediaState from "./models/mediastate"
 import PlayerComponent from "./playercomponent"
 import PauseTriggers from "./models/pausetriggers"
-import DynamicWindowUtils from "./dynamicwindowutils"
-import WindowTypes from "./models/windowtypes"
+import { canPauseAndSeek } from "./dynamicwindowutils"
 import MockBigscreenPlayer from "./mockbigscreenplayer"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
-import SlidingWindowUtils from "./utils/timeutils"
+import {
+  presentationTimeToMediaSampleTimeInSeconds,
+  mediaSampleTimeToPresentationTimeInSeconds,
+  presentationTimeToAvailabilityTimeInMilliseconds,
+  availabilityTimeToPresentationTimeInSeconds,
+} from "./utils/timeutils"
 import callCallbacks from "./utils/callcallbacks"
 import MediaSources from "./mediasources"
 import Version from "./version"
@@ -18,24 +22,25 @@ import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
 // TODO: Remove when this becomes a TypeScript file
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { InitData, InitCallbacks, SubtitlesCustomisationOptions } from "./types"
+import { InitData, InitCallbacks, SubtitlesCustomisationOptions, PlaybackTime } from "./types"
+import { ManifestType } from "./models/manifesttypes"
+import { Timeline } from "./models/timeline"
 
 function BigscreenPlayer() {
   let stateChangeCallbacks = []
   let timeUpdateCallbacks = []
   let subtitleCallbacks = []
+  let broadcastMixADCallbacks = []
 
   let playerReadyCallback
   let playerErrorCallback
   let mediaKind
-  let initialPlaybackTimeEpoch
-  let serverDate
+  let initialPlaybackTime
   let playerComponent
   let resizer
   let pauseTrigger
   let isSeeking = false
   let endOfStream
-  let windowType
   let mediaSources
   let playbackElement
   let readyHelper
@@ -78,11 +83,12 @@ function BigscreenPlayer() {
       callCallbacks(stateChangeCallbacks, stateObject)
     }
 
-    if (evt.data.seekableRange) {
-      DebugTool.staticMetric("seekable-range", [
-        deviceTimeToDate(evt.data.seekableRange.start).getTime(),
-        deviceTimeToDate(evt.data.seekableRange.end).getTime(),
-      ])
+    if (
+      evt.data.seekableRange &&
+      typeof evt.data.seekableRange.start === "number" &&
+      typeof evt.data.seekableRange.end === "number"
+    ) {
+      DebugTool.staticMetric("seekable-range", [evt.data.seekableRange.start, evt.data.seekableRange.end])
     }
 
     if (evt.data.duration) {
@@ -94,63 +100,117 @@ function BigscreenPlayer() {
     }
   }
 
-  function deviceTimeToDate(time) {
-    return getWindowStartTime() ? new Date(convertVideoTimeSecondsToEpochMs(time)) : new Date(time * 1000)
-  }
+  function bigscreenPlayerDataLoaded({ media, enableSubtitles }) {
+    const initialPresentationTime =
+      initialPlaybackTime == null ? undefined : convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
-  function convertVideoTimeSecondsToEpochMs(seconds) {
-    return getWindowStartTime() ? getWindowStartTime() + seconds * 1000 : null
-  }
-
-  function bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles) {
-    if (windowType !== WindowTypes.STATIC) {
-      serverDate = bigscreenPlayerData.serverDate
-
-      initialPlaybackTimeEpoch = bigscreenPlayerData.initialPlaybackTime
-      // overwrite initialPlaybackTime with video time (it comes in as epoch time for a sliding/growing window)
-      bigscreenPlayerData.initialPlaybackTime = SlidingWindowUtils.convertToSeekableVideoTime(
-        bigscreenPlayerData.initialPlaybackTime,
-        mediaSources.time().windowStartTime
-      )
-    }
-
-    mediaKind = bigscreenPlayerData.media.kind
     endOfStream =
-      windowType !== WindowTypes.STATIC &&
-      !bigscreenPlayerData.initialPlaybackTime &&
-      bigscreenPlayerData.initialPlaybackTime !== 0
+      mediaSources.time().manifestType === ManifestType.DYNAMIC &&
+      !initialPresentationTime &&
+      initialPresentationTime !== 0
 
-    readyHelper = new ReadyHelper(
-      bigscreenPlayerData.initialPlaybackTime,
-      windowType,
+    readyHelper = ReadyHelper(
+      initialPresentationTime,
+      mediaSources.time().manifestType,
       PlayerComponent.getLiveSupport(),
       playerReadyCallback
     )
-    playerComponent = new PlayerComponent(
+
+    playerComponent = PlayerComponent(
       playbackElement,
-      bigscreenPlayerData,
+      { media, initialPlaybackTime: initialPresentationTime },
       mediaSources,
-      windowType,
       mediaStateUpdateCallback,
-      playerErrorCallback
+      playerErrorCallback,
+      callBroadcastMixADCallbacks
     )
 
     subtitles = Subtitles(
       playerComponent,
       enableSubtitles,
       playbackElement,
-      bigscreenPlayerData.media.subtitleCustomisation,
+      media.subtitleCustomisation,
       mediaSources,
       callSubtitlesCallbacks
     )
   }
 
-  function getWindowStartTime() {
-    return mediaSources && mediaSources.time().windowStartTime
+  /**
+   * @typedef {Object} PlaybackTimeInit
+   * @property {number} seconds
+   * @property {Timeline} [timeline]
+   */
+
+  /**
+   * Normalise time input to the 'PlaybackTime' model, so the unit and timeline is explicit.
+   * @param {number | PlaybackTimeInit} init
+   * @returns {PlaybackTime}
+   */
+  function createPlaybackTime(init) {
+    if (typeof init === "number") {
+      return { seconds: init, timeline: Timeline.PRESENTATION_TIME }
+    }
+
+    if (init == null || typeof init !== "object" || typeof init.seconds !== "number") {
+      throw new TypeError("A numerical playback time must be provided")
+    }
+
+    return { seconds: init.seconds, timeline: init.timeline ?? Timeline.PRESENTATION_TIME }
   }
 
-  function getWindowEndTime() {
-    return mediaSources && mediaSources.time().windowEndTime
+  function convertPlaybackTimeToPresentationTimeInSeconds(playbackTime) {
+    const { seconds, timeline } = playbackTime
+
+    switch (timeline) {
+      case Timeline.PRESENTATION_TIME:
+        return seconds
+      case Timeline.MEDIA_SAMPLE_TIME:
+        return convertMediaSampleTimeToPresentationTimeInSeconds(seconds)
+      case Timeline.AVAILABILITY_TIME:
+        return convertAvailabilityTimeToPresentationTimeInSeconds(seconds * 1000)
+      default:
+        return seconds
+    }
+  }
+
+  function convertPresentationTimeToMediaSampleTimeInSeconds(presentationTimeInSeconds) {
+    return mediaSources?.time() == null
+      ? null
+      : presentationTimeToMediaSampleTimeInSeconds(
+          presentationTimeInSeconds,
+          mediaSources.time().presentationTimeOffsetInMilliseconds
+        )
+  }
+
+  function convertMediaSampleTimeToPresentationTimeInSeconds(mediaSampleTimeInSeconds) {
+    return mediaSources?.time() == null
+      ? null
+      : mediaSampleTimeToPresentationTimeInSeconds(
+          mediaSampleTimeInSeconds,
+          mediaSources.time().presentationTimeOffsetInMilliseconds
+        )
+  }
+
+  function convertPresentationTimeToAvailabilityTimeInMilliseconds(presentationTimeInSeconds) {
+    return mediaSources?.time() == null || mediaSources?.time().manifestType === ManifestType.STATIC
+      ? null
+      : presentationTimeToAvailabilityTimeInMilliseconds(
+          presentationTimeInSeconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
+        )
+  }
+
+  function convertAvailabilityTimeToPresentationTimeInSeconds(availabilityTimeInMilliseconds) {
+    return mediaSources?.time() == null || mediaSources?.time().manifestType === ManifestType.STATIC
+      ? null
+      : availabilityTimeToPresentationTimeInSeconds(
+          availabilityTimeInMilliseconds,
+          mediaSources.time().availabilityStartTimeInMilliseconds
+        )
+  }
+
+  function getInitialPlaybackTime() {
+    return initialPlaybackTime
   }
 
   function toggleDebug() {
@@ -180,6 +240,18 @@ function BigscreenPlayer() {
     return subtitles ? subtitles.available() : false
   }
 
+  function getTimeShiftBufferDepthInMilliseconds() {
+    return mediaSources.time()?.timeShiftBufferDepthInMilliseconds ?? null
+  }
+
+  function getPresentationTimeOffsetInMilliseconds() {
+    return mediaSources.time()?.presentationTimeOffsetInMilliseconds ?? null
+  }
+
+  function callBroadcastMixADCallbacks(enabled) {
+    callCallbacks(broadcastMixADCallbacks, { enabled })
+  }
+
   return /** @alias module:bigscreenplayer/bigscreenplayer */ {
     /**
      * Call first to initialise bigscreen player for playback.
@@ -187,47 +259,44 @@ function BigscreenPlayer() {
      * @name init
      * @param {HTMLDivElement} playbackElement - The Div element where content elements should be rendered
      * @param {InitData} bigscreenPlayerData
-     * @param {WindowTypes} newWindowType
-     * @param {boolean} enableSubtitles - Enable subtitles on initialisation
      * @param {InitCallbacks} callbacks
      */
-    init: (newPlaybackElement, bigscreenPlayerData, newWindowType, enableSubtitles, callbacks = {}) => {
+    init: (newPlaybackElement, bigscreenPlayerData, callbacks = {}) => {
       playbackElement = newPlaybackElement
-      resizer = Resizer()
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
+      resizer = Resizer()
+
+      mediaKind = bigscreenPlayerData.media.kind
+
+      if (bigscreenPlayerData.initialPlaybackTime || bigscreenPlayerData.initialPlaybackTime === 0) {
+        initialPlaybackTime = createPlaybackTime(bigscreenPlayerData.initialPlaybackTime)
+      }
 
       DebugTool.staticMetric("version", Version)
 
-      if (typeof bigscreenPlayerData.initialPlaybackTime === "number") {
-        DebugTool.staticMetric("initial-playback-time", bigscreenPlayerData.initialPlaybackTime)
+      if (initialPlaybackTime) {
+        const { seconds, timeline } = initialPlaybackTime
+        DebugTool.staticMetric("initial-playback-time", [seconds, timeline])
       }
+
       if (typeof window.bigscreenPlayer?.playbackStrategy === "string") {
         DebugTool.staticMetric("strategy", window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy)
-      }
-
-      windowType = newWindowType
-      serverDate = bigscreenPlayerData.serverDate
-
-      if (serverDate) {
-        DebugTool.warn("Passing in server date is deprecated. Use <UTCTiming> on manifest.")
       }
 
       playerReadyCallback = callbacks.onSuccess
       playerErrorCallback = callbacks.onError
 
-      const mediaSourceCallbacks = {
-        onSuccess: () => bigscreenPlayerDataLoaded(bigscreenPlayerData, enableSubtitles),
-        onError: (error) => {
-          if (callbacks.onError) {
-            callbacks.onError(error)
-          }
-        },
-      }
-
       mediaSources = MediaSources()
 
-      mediaSources.init(bigscreenPlayerData.media, serverDate, windowType, getLiveSupport(), mediaSourceCallbacks)
+      mediaSources
+        .init(bigscreenPlayerData.media)
+        .then(() => bigscreenPlayerDataLoaded(bigscreenPlayerData))
+        .catch((reason) => {
+          if (typeof callbacks?.onError === "function") {
+            callbacks.onError(reason)
+          }
+        })
     },
 
     /**
@@ -254,10 +323,10 @@ function BigscreenPlayer() {
       stateChangeCallbacks = []
       timeUpdateCallbacks = []
       subtitleCallbacks = []
+      broadcastMixADCallbacks = []
       endOfStream = undefined
       mediaKind = undefined
       pauseTrigger = undefined
-      windowType = undefined
       resizer = undefined
       this.unregisterPlugin()
       DebugTool.tearDown()
@@ -331,19 +400,49 @@ function BigscreenPlayer() {
     },
 
     /**
+     * Pass a function to be called whenever BroadcastMixAD is enabled or disabled.
+     * @function
+     * @param {Function} callback
+     */
+    registerForBroadcastMixADChanges: (callback) => {
+      broadcastMixADCallbacks.push(callback)
+      return callback
+    },
+
+    /**
+     * Unregisters a previously registered callback for changes to BroadcastMixAD.
+     * @function
+     * @param {Function} callback
+     */
+    unregisterForBroadcastMixADChanges: (callback) => {
+      const indexOf = broadcastMixADCallbacks.indexOf(callback)
+      if (indexOf !== -1) {
+        broadcastMixADCallbacks.splice(indexOf, 1)
+      }
+    },
+
+    /**
      * Sets the current time of the media asset.
      * @function
-     * @param {Number} time - In seconds
+     * @param {number} seconds
+     * @param {Timeline} timeline
      */
-    setCurrentTime(time) {
-      DebugTool.apicall("setCurrentTime", [time])
+    setCurrentTime(seconds, timeline) {
+      const playbackTime = createPlaybackTime({ seconds, timeline })
+
+      DebugTool.apicall("setCurrentTime", [playbackTime.seconds.toFixed(3), playbackTime.timeline])
 
       if (playerComponent) {
         // this flag must be set before calling into playerComponent.setCurrentTime - as this synchronously fires a WAITING event (when native strategy).
         isSeeking = true
-        playerComponent.setCurrentTime(time)
+
+        const presentationTimeInSeconds = convertPlaybackTimeToPresentationTimeInSeconds(playbackTime)
+
+        playerComponent.setCurrentTime(presentationTimeInSeconds)
+
         endOfStream =
-          windowType !== WindowTypes.STATIC && Math.abs(this.getSeekableRange().end - time) < END_OF_STREAM_TOLERANCE
+          mediaSources.time().manifestType === ManifestType.DYNAMIC &&
+          Math.abs(this.getSeekableRange().end - presentationTimeInSeconds) < END_OF_STREAM_TOLERANCE
       }
     },
 
@@ -381,18 +480,11 @@ function BigscreenPlayer() {
     getMediaKind: () => mediaKind,
 
     /**
-     * Returns the current window type.
-     * @see {@link module:bigscreenplayer/models/windowtypes}
-     * @function
-     */
-    getWindowType: () => windowType,
-
-    /**
      * Returns an object including the current start and end times.
      * @function
-     * @returns {Object} {start: Number, end: Number}
+     * @returns {Object | null} {start: Number, end: Number}
      */
-    getSeekableRange: () => (playerComponent ? playerComponent.getSeekableRange() : {}),
+    getSeekableRange: () => playerComponent?.getSeekableRange() ?? null,
 
     /**
      * @function
@@ -401,26 +493,9 @@ function BigscreenPlayer() {
     isPlayingAtLiveEdge() {
       return (
         !!playerComponent &&
-        windowType !== WindowTypes.STATIC &&
+        mediaSources.time().manifestType === ManifestType.DYNAMIC &&
         Math.abs(this.getSeekableRange().end - this.getCurrentTime()) < END_OF_STREAM_TOLERANCE
       )
-    },
-
-    /**
-     * @function
-     * @return {Object} An object of the shape {windowStartTime: Number, windowEndTime: Number, initialPlaybackTime: Number, serverDate: Date}
-     */
-    getLiveWindowData: () => {
-      if (windowType === WindowTypes.STATIC) {
-        return {}
-      }
-
-      return {
-        windowStartTime: getWindowStartTime(),
-        windowEndTime: getWindowEndTime(),
-        initialPlaybackTime: initialPlaybackTimeEpoch,
-        serverDate,
-      }
     },
 
     /**
@@ -455,13 +530,13 @@ function BigscreenPlayer() {
      * @function
      * @param {*} opts
      * @param {boolean} opts.userPause
-     * @param {boolean} opts.disableAutoResume
      */
     pause: (opts) => {
       DebugTool.apicall("pause")
 
-      pauseTrigger = opts && opts.userPause === false ? PauseTriggers.APP : PauseTriggers.USER
-      playerComponent.pause({ pauseTrigger, ...opts })
+      pauseTrigger = opts?.userPause || opts?.userPause == null ? PauseTriggers.USER : PauseTriggers.APP
+
+      playerComponent.pause()
     },
 
     /**
@@ -553,6 +628,25 @@ function BigscreenPlayer() {
     },
 
     /**
+     * @function
+     * @returns {boolean} true if there if an AD track is available
+     */
+    isBroadcastMixADAvailable: () => playerComponent && playerComponent.isBroadcastMixADAvailable(),
+
+    /**
+     * @function
+     * @returns {boolean} true if there is an the AD audio track is current being used
+     */
+    isBroadcastMixADEnabled: () => playerComponent && playerComponent.isBroadcastMixADEnabled(),
+
+    /**
+     * @function
+     */
+    setBroadcastMixADEnabled: (enabled) => {
+      enabled ? playerComponent.setBroadcastMixADOn() : playerComponent.setBroadcastMixADOff()
+    },
+
+    /**
      *
      * An enum may be used to set the on-screen position of any transport controls
      * (work in progress to remove this - UI concern).
@@ -571,8 +665,8 @@ function BigscreenPlayer() {
      */
     canSeek() {
       return (
-        windowType === WindowTypes.STATIC ||
-        DynamicWindowUtils.canSeek(getWindowStartTime(), getWindowEndTime(), getLiveSupport(), this.getSeekableRange())
+        mediaSources.time().manifestType === ManifestType.STATIC ||
+        canPauseAndSeek(getLiveSupport(), this.getSeekableRange())
       )
     },
 
@@ -580,9 +674,12 @@ function BigscreenPlayer() {
      * @function
      * @return Returns whether the current media asset is pausable.
      */
-    canPause: () =>
-      windowType === WindowTypes.STATIC ||
-      DynamicWindowUtils.canPause(getWindowStartTime(), getWindowEndTime(), getLiveSupport()),
+    canPause() {
+      return (
+        mediaSources.time().manifestType === ManifestType.STATIC ||
+        canPauseAndSeek(getLiveSupport(), this.getSeekableRange())
+      )
+    },
 
     /**
      * Return a mock for in place testing.
@@ -639,24 +736,9 @@ function BigscreenPlayer() {
 
     /**
      * @function
-     * @param {Number} epochTime - Unix Epoch based time in milliseconds.
-     * @return the time in seconds within the current sliding window.
-     */
-    convertEpochMsToVideoTimeSeconds: (epochTime) =>
-      getWindowStartTime() ? Math.floor((epochTime - getWindowStartTime()) / 1000) : null,
-
-    /**
-     * @function
      * @return The runtime version of the library.
      */
     getFrameworkVersion: () => Version,
-
-    /**
-     * @function
-     * @param {Number} time - Seconds
-     * @return the time in milliseconds within the current sliding window.
-     */
-    convertVideoTimeSecondsToEpochMs,
 
     /**
      * Toggle the visibility of the debug tool overlay.
@@ -676,14 +758,16 @@ function BigscreenPlayer() {
      */
     setLogLevel: (level) => DebugTool.setLogLevel(level),
     getDebugLogs: () => DebugTool.getDebugLogs(),
+    convertPresentationTimeToMediaSampleTimeInSeconds,
+    convertMediaSampleTimeToPresentationTimeInSeconds,
+    convertPresentationTimeToAvailabilityTimeInMilliseconds,
+    convertAvailabilityTimeToPresentationTimeInSeconds,
+    getInitialPlaybackTime,
+    getTimeShiftBufferDepthInMilliseconds,
+    getPresentationTimeOffsetInMilliseconds,
   }
 }
 
-/**
- * @function
- * @param {TALDevice} device
- * @return the live support of the device.
- */
 function getLiveSupport() {
   return PlayerComponent.getLiveSupport()
 }

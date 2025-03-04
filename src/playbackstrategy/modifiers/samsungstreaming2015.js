@@ -561,6 +561,7 @@ function SamsungStreaming2015() {
       switch (eventType) {
         case PlayerEventCodes.STREAM_INFO_READY:
           _updateRange()
+          _emitEvent(MediaPlayerBase.EVENT.METADATA)
           break
 
         case PlayerEventCodes.CURRENT_PLAYBACK_TIME:

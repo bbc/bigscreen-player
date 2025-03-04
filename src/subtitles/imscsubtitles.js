@@ -10,9 +10,6 @@ const SEGMENTS_BUFFER_SIZE = 3
 const LOAD_ERROR_COUNT_MAX = 3
 
 function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
-  const windowStartEpochSeconds = mediaSources?.time().windowStartTime / 1000
-  const presentationTimeOffsetSeconds = mediaSources?.time().presentationTimeOffsetSeconds
-
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
   let currentSegmentRendered = {}
   let loadErrorCount = 0
@@ -26,8 +23,14 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     start()
   }
 
-  function getTimeOffset() {
-    return presentationTimeOffsetSeconds || windowStartEpochSeconds
+  function hasOffset() {
+    const { presentationTimeOffsetInMilliseconds } = mediaSources.time()
+
+    return (
+      typeof presentationTimeOffsetInMilliseconds === "number" &&
+      isFinite(presentationTimeOffsetInMilliseconds) &&
+      presentationTimeOffsetInMilliseconds > 0
+    )
   }
 
   function calculateSegmentNumber() {
@@ -36,7 +39,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     // Add 1 as the PTO gives segment '0' relative to the presentation time.
     // DASH segments use one-based indexing, so add 1 to the result of PTO.
     // (Imagine PTO was 0)
-    if (typeof presentationTimeOffsetSeconds === "number" && isFinite(presentationTimeOffsetSeconds)) {
+    if (hasOffset()) {
       return segmentNumber + 1
     }
 
@@ -146,16 +149,15 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function loadErrorFailover(opts) {
-    const errorCase = () => {
-      DebugTool.info("No more CDNs available for subtitle failover")
-    }
-
     const isWhole = isSubtitlesWhole()
 
     if (isWhole || (!isWhole && loadErrorLimit())) {
       stop()
       segments = []
-      mediaSources.failoverSubtitles(start, errorCase, opts)
+      mediaSources
+        .failoverSubtitles(opts)
+        .then(() => start())
+        .catch(() => DebugTool.info("No more CDNs available for subtitle failover"))
     }
   }
 
@@ -314,11 +316,16 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   }
 
   function isValidTime(time) {
-    return time >= getTimeOffset()
+    // A newly loaded video element reports currentTime as 0
+    return time > 0
   }
 
   function getCurrentTime() {
-    return isSubtitlesWhole() ? mediaPlayer.getCurrentTime() : getTimeOffset() + mediaPlayer.getCurrentTime()
+    const presentationTimeInSeconds = mediaPlayer.getCurrentTime()
+
+    return hasOffset()
+      ? presentationTimeInSeconds + mediaSources.time().presentationTimeOffsetInMilliseconds / 1000
+      : presentationTimeInSeconds
   }
 
   function start() {

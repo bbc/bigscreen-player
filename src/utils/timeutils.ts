@@ -1,4 +1,4 @@
-function durationToSeconds(duration: string) {
+export function durationToSeconds(duration: string) {
   const matches = duration.match(/^PT(\d+(?:[,.]\d+)?H)?(\d+(?:[,.]\d+)?M)?(\d+(?:[,.]\d+)?S)?/) || []
 
   const hours = parseFloat(matches[1] || "0") * 60 * 60
@@ -8,37 +8,36 @@ function durationToSeconds(duration: string) {
   return hours + mins + secs || undefined
 }
 
-function convertToSeekableVideoTime(epochTime: number, windowStartEpochTime: number) {
-  // Wont allow a 0 value for this due to device issue, this should be sorted in the TAL strategy.
-  return Math.max(0.1, convertToVideoTime(epochTime, windowStartEpochTime))
+export function presentationTimeToAvailabilityTimeInMilliseconds(
+  presentationTimeInSeconds: number,
+  availabilityStartTimeInMilliseconds: number
+): number {
+  return presentationTimeInSeconds * 1000 + availabilityStartTimeInMilliseconds
 }
 
-function convertToVideoTime(epochTime: number, windowStartEpochTime: number) {
-  return Math.floor(convertMilliSecondsToSeconds(epochTime - windowStartEpochTime))
+export function availabilityTimeToPresentationTimeInSeconds(
+  availabilityTimeInMilliseconds: number,
+  availabilityStartTimeInMilliseconds: number
+): number {
+  return availabilityTimeInMilliseconds < availabilityStartTimeInMilliseconds
+    ? 0
+    : (availabilityTimeInMilliseconds - availabilityStartTimeInMilliseconds) / 1000
 }
 
-function convertMilliSecondsToSeconds(timeInMilis: number) {
-  return Math.floor(timeInMilis / 1000)
+export function presentationTimeToMediaSampleTimeInSeconds(
+  presentationTimeInSeconds: number,
+  presentationTimeOffsetInMilliseconds: number
+): number {
+  return presentationTimeInSeconds + presentationTimeOffsetInMilliseconds / 1000
 }
 
-function calculateSlidingWindowSeekOffset(
-  time: number,
-  dvrInfoRangeStart: number,
-  timeCorrection: number,
-  slidingWindowPausedTime: number
-) {
-  const dashRelativeTime = time + timeCorrection - dvrInfoRangeStart
+export function mediaSampleTimeToPresentationTimeInSeconds(
+  mediaSampleTimeInSeconds: number,
+  presentationTimeOffsetInMilliseconds: number
+): number {
+  const presentationTimeOffsetInSeconds = presentationTimeOffsetInMilliseconds / 1000
 
-  if (slidingWindowPausedTime === 0) {
-    return dashRelativeTime
-  }
-
-  return dashRelativeTime - (Date.now() - slidingWindowPausedTime) / 1000
-}
-
-export default {
-  durationToSeconds,
-  convertToSeekableVideoTime,
-  convertToVideoTime,
-  calculateSlidingWindowSeekOffset,
+  return mediaSampleTimeInSeconds < presentationTimeOffsetInSeconds
+    ? 0
+    : mediaSampleTimeInSeconds - presentationTimeOffsetInSeconds
 }
