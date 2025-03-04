@@ -254,6 +254,15 @@ describe("Media Sources", () => {
 
       expect(mediaSources.currentSource()).toBe("http://audiodescribedsource1.com/")
     })
+
+    it("sets sources to main sources when audio described is initialised with enabled and audio described is not available", async () => {
+      const mediaSources = MediaSources()
+      testMedia.audioDescribed = []
+
+      await mediaSources.init(testMedia, true)
+
+      expect(mediaSources.currentSource()).toBe("http://source1.com/")
+    })
   })
 
   describe("failover", () => {
