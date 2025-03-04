@@ -69,7 +69,7 @@ function MediaSources() {
 
       subtitlesSources = PlaybackUtils.cloneArray(media.captions ?? []) as CaptionsConnection[]
 
-      if (setAudioDescribedOn) current = SourceType.AUDIO_DESCRIBED
+      if (setAudioDescribedOn && isAudioDescribedAvailable()) current = SourceType.AUDIO_DESCRIBED
 
       updateDebugOutput()
 
