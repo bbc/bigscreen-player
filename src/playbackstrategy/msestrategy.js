@@ -71,6 +71,7 @@ function MSEStrategy(
   let playerMetadata = {
     playbackBitrate: undefined,
     bufferLength: undefined,
+    latency: undefined,
     fragmentInfo: {
       requestTime: undefined,
       numDownloaded: undefined,
@@ -319,6 +320,7 @@ function MSEStrategy(
     Plugins.interface.onPlayerInfoUpdated({
       bufferLength: playerMetadata.bufferLength,
       playbackBitrate: playerMetadata.playbackBitrate,
+      latency: playerMetadata.latency,
     })
   }
 
@@ -427,13 +429,15 @@ function MSEStrategy(
       dashMetrics = mediaPlayer.getDashMetrics()
 
       if (dashMetrics) {
+        const dvrInfo = dashMetrics.getCurrentDVRInfo(event.mediaType)
         playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(event.mediaType)
+        playerMetadata.latency = dvrInfo.range.end - dvrInfo.time
         DebugTool.staticMetric("buffer-length", playerMetadata.bufferLength)
         Plugins.interface.onPlayerInfoUpdated({
           bufferLength: playerMetadata.bufferLength,
           playbackBitrate: playerMetadata.playbackBitrate,
+          latency: playerMetadata.latency,
         })
-        Plugins.interface.onDashMetrics(dashMetrics)
       }
     }
   }
