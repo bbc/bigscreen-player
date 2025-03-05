@@ -265,6 +265,43 @@ describe("Media Sources", () => {
     })
   })
 
+  describe("source change", () => {
+    it("returns true if an audio described source is available", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      expect(mediaSources.isAudioDescribedAvailable()).toBe(true)
+    })
+
+    it("returns false if an audio described source is not available", async () => {
+      const mediaSources = MediaSources()
+      testMedia.audioDescribed = []
+
+      await mediaSources.init(testMedia)
+
+      expect(mediaSources.isAudioDescribedAvailable()).toBe(false)
+    })
+
+    it("returns true if audio described is enabled", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+      await mediaSources.setAudioDescribed(true)
+
+      expect(mediaSources.isAudioDescribedEnabled()).toBe(true)
+    })
+
+    it("returns false if audio described is not enabled", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+      await mediaSources.setAudioDescribed(false)
+
+      expect(mediaSources.isAudioDescribedEnabled()).toBe(false)
+    })
+  })
+
   describe("failover", () => {
     it.each([
       [TransferFormat.PLAIN, ManifestType.STATIC],
