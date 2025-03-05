@@ -35,7 +35,7 @@ import DebugTool from "./debugger/debugtool"
  * @param {ReturnType<MediaSources>} mediaSources Media Sources instance
  * @param {(data: StateUpdateData) => void} stateUpdateCallback Callback for State Changes
  * @param {(error: any) => void} errorCallback Callback for Errors
- * @param {(to: boolean) => void} audioDescribedCallback Callback for AD Changes
+ * @param {(enable: boolean) => void} audioDescribedCallback Callback for AD Changes
  */
 function PlayerComponent(
   playbackElement,

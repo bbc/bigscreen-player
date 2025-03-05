@@ -178,6 +178,71 @@ describe("Player Component", () => {
       })
       expect(Plugins.interface.onErrorCleared).toHaveBeenCalledTimes(1)
     })
+
+    it("calls audioDescribedCallback with true if audio described is enabled", async () => {
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+      const mockAudioDescribedCallback = jest.fn()
+      mockMediaSources.isAudioDescribedEnabled.mockReturnValueOnce(true)
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playbackElement = createPlaybackElement()
+
+      const _playerComponent = await new PlayerComponent(
+        playbackElement,
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn(),
+        mockAudioDescribedCallback
+      )
+
+      expect(mockAudioDescribedCallback).toHaveBeenCalledWith(true)
+    })
+
+    it("calls audioDescribedCallback with false if audio described is available", async () => {
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+      const mockAudioDescribedCallback = jest.fn()
+      mockMediaSources.isAudioDescribedAvailable.mockReturnValueOnce(true)
+      mockMediaSources.isAudioDescribedEnabled.mockReturnValueOnce(false)
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playbackElement = createPlaybackElement()
+
+      const _playerComponent = await new PlayerComponent(
+        playbackElement,
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn(),
+        mockAudioDescribedCallback
+      )
+
+      expect(mockAudioDescribedCallback).toHaveBeenCalledWith(false)
+    })
+
+    it("does not call audioDescribedCallback if audio described is not available", async () => {
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+      const mockAudioDescribedCallback = jest.fn()
+      mockMediaSources.isAudioDescribedAvailable.mockReturnValueOnce(false)
+      mockMediaSources.isAudioDescribedEnabled.mockReturnValueOnce(false)
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playbackElement = createPlaybackElement()
+
+      const _playerComponent = await new PlayerComponent(
+        playbackElement,
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn(),
+        mockAudioDescribedCallback
+      )
+
+      expect(mockAudioDescribedCallback).not.toHaveBeenCalled()
+    })
   })
 
   describe("pause", () => {
