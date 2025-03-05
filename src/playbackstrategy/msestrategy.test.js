@@ -59,6 +59,7 @@ const mockDashInstance = {
   getCurrentTrackFor: jest.fn(),
   setCurrentTrack: jest.fn(),
   setInitialMediaSettingsFor: jest.fn(),
+  setXHRWithCredentialsForType: jest.fn(),
 }
 
 const mockDashMediaPlayer = {
