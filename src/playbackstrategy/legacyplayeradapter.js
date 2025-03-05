@@ -242,16 +242,19 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    load: (mimeType, presentationTimeInSeconds, shouldPause = false) => {
+    load: (mimeType, presentationTimeInSeconds, shouldPause) => {
       setupExitSeekWorkarounds(mimeType)
-      isPaused = shouldPause
+      isPaused = false
 
-      mediaPlayer.addEventCallback(this, function pauseCallback(event) {
-        if (event.type === MediaPlayerBase.EVENT.METADATA) {
-          mediaPlayer.pause()
-          mediaPlayer.removeEventCallback(pauseCallback)
-        }
-      })
+      if (shouldPause) {
+        mediaPlayer.addEventCallback(this, function pauseCallback(event) {
+          if (event.type === MediaPlayerBase.EVENT.METADATA) {
+            isPaused = true
+            mediaPlayer.pause()
+            mediaPlayer.removeEventCallback(pauseCallback)
+          }
+        })
+      }
 
       hasStartTime = presentationTimeInSeconds || presentationTimeInSeconds === 0
 

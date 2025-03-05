@@ -35,6 +35,7 @@ function createMockMediaPlayer(liveSupport = LiveSupport.SEEKABLE) {
     removeAllEventCallbacks: jest.fn(),
     reset: jest.fn(),
     stop: jest.fn(),
+    removeEventCallback: jest.fn(),
   }
 
   if (liveSupport === LiveSupport.RESTARTABLE) {
@@ -76,6 +77,7 @@ const MediaPlayerEvent = {
   STATUS: "status", // Event fired regularly during play
   SEEK_ATTEMPTED: "seek-attempted", // Event fired when a device using a seekfinishedemitevent modifier sets the source
   SEEK_FINISHED: "seek-finished", // Event fired when a device using a seekfinishedemitevent modifier has seeked successfully
+  METADATA: "metadata", // Event fired when media element loaded the init segment(s)
 }
 
 const MediaPlayerState = {
@@ -287,6 +289,18 @@ describe("Legacy Playback Adapter", () => {
           disableSentinels: false,
         }
       )
+    })
+
+    it("calls pause when the METADATA event is emitted and player should pause after load", async () => {
+      const mediaPlayer = createMockMediaPlayer()
+      const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
+      legacyAdapter.load("video/mp4", null, true)
+
+      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.METADATA })
+
+      expect(legacyAdapter.isPaused()).toBe(true)
+      expect(mediaPlayer.pause).toHaveBeenCalled()
+      expect(mediaPlayer.removeEventCallback).toHaveBeenCalled()
     })
   })
 
