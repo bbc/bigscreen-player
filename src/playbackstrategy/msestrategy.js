@@ -518,6 +518,9 @@ function MSEStrategy(
     mediaPlayer.updateSettings(dashSettings)
     mediaPlayer.initialize(mediaElement, null, true)
 
+    //Allow cookies to be sent with DVBReporting Requests
+    mediaPlayer.setXHRWithCredentialsForType("DVBReporting", true)
+
     if (enableBroadcastMixAD) {
       mediaPlayer.setInitialMediaSettingsFor("audio", {
         role: "alternate",
