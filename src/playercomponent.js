@@ -133,7 +133,7 @@ function PlayerComponent(
     return genericADAvailable ? genericADEnabled : playbackStrategyProvidedAD()
   }
 
-  function genericAudioDescribedSwitch(to) {
+  function genericAudioDescribedSwitch(enable) {
     const wasPaused = isPaused()
     const presentationTimeInSeconds = getCurrentTime()
     const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
@@ -142,7 +142,7 @@ function PlayerComponent(
     )
 
     return mediaSources
-      .setAudioDescribed(to)
+      .setAudioDescribed(enable)
       .then(() => {
         const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
           availabilityTimeInMilliseconds,
@@ -155,16 +155,20 @@ function PlayerComponent(
       .catch(() => {
         bubbleFatalError(false, {
           code: "0000",
-          message: `error switching ${to ? "to" : "from"} audio described`,
+          message: `error switching ${enable ? "to" : "from"} audio described`,
         })
       })
   }
 
-  function setAudioDescribed(to) {
-    if (mediaSources.isAudioDescribedAvailable()) return genericAudioDescribedSwitch(to)
-    if (!(playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.())) return Promise.resolve()
+  function setAudioDescribed(enable) {
+    if (mediaSources.isAudioDescribedAvailable()) return genericAudioDescribedSwitch(enable)
 
-    playbackStrategy && playbackStrategy[to ? "setAudioDescribedOn" : "setAudioDescribedOff"]?.()
+    if (playbackStrategy) {
+      if (!playbackStrategy.isAudioDescribedAvailable?.()) return Promise.resolve()
+
+      enable ? playbackStrategy.setAudioDescribedOn?.() : playbackStrategy.setAudioDescribedOff?.()
+    }
+
     return Promise.resolve()
   }
 

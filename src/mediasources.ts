@@ -200,8 +200,8 @@ function MediaSources() {
     return current === SourceType.AUDIO_DESCRIBED
   }
 
-  function setAudioDescribed(to: boolean): Promise<void> {
-    current = to ? SourceType.AUDIO_DESCRIBED : SourceType.MEDIA
+  function setAudioDescribed(enable: boolean): Promise<void> {
+    current = enable ? SourceType.AUDIO_DESCRIBED : SourceType.MEDIA
 
     updateDebugOutput()
 
