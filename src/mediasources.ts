@@ -335,7 +335,7 @@ function MediaSources() {
   }
 
   function updateDebugOutput() {
-    DebugTool.dynamicMetric(`${isAudioDescribedEnabled() ? "audio-described-" : ""}cdns-available`, availableCdns())
+    DebugTool.dynamicMetric("cdns-available", availableCdns())
     DebugTool.dynamicMetric("current-url", stripQueryParamsAndHash(getCurrentUrl()))
 
     DebugTool.dynamicMetric("subtitle-cdns-available", availableSubtitlesCdns())
