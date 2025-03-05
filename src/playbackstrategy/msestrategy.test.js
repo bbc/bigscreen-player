@@ -47,6 +47,7 @@ const mockDashInstance = {
   getBitrateInfoListFor: jest.fn(),
   getAverageThroughput: jest.fn(),
   getDVRWindowSize: jest.fn(),
+  getCurrentLiveLatency: jest.fn(),
   updateSettings: jest.fn(),
   setMediaDuration: jest.fn(),
   setPlaybackRate: jest.fn(),
