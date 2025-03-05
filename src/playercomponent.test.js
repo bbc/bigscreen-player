@@ -963,7 +963,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(10000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, false)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -997,7 +997,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, false)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1028,7 +1028,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(5000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, true)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, false)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1134,7 +1134,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20, true)
+      expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20, false)
     })
 
     it("should fire error cleared on the plugins when failover completes", async () => {
