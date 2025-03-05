@@ -294,7 +294,7 @@ describe("Legacy Playback Adapter", () => {
     it("calls pause when the METADATA event is emitted and player should pause after load", async () => {
       const mediaPlayer = createMockMediaPlayer()
       const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
-      legacyAdapter.load("video/mp4", null, true)
+      legacyAdapter.load("video/mp4", null, false)
 
       mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.METADATA })
 
