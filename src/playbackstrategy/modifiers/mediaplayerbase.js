@@ -16,6 +16,7 @@ const EVENT = {
   COMPLETE: "complete", // Event fired when media playback has reached the end of the media
   ERROR: "error", // Event fired when an error condition occurs
   STATUS: "status", // Event fired regularly during play
+  METADATA: "metadata", // Event fired when media element loaded the init segment(s)
   SENTINEL_ENTER_BUFFERING: "sentinel-enter-buffering", // Event fired when a sentinel has to act because the device has started buffering but not reported it
   SENTINEL_EXIT_BUFFERING: "sentinel-exit-buffering", // Event fired when a sentinel has to act because the device has finished buffering but not reported it
   SENTINEL_PAUSE: "sentinel-pause", // Event fired when a sentinel has to act because the device has failed to pause when expected
@@ -36,16 +37,12 @@ const TYPE = {
 }
 
 function unpausedEventCheck(event) {
-  if (event && event.state && event.type !== "status") {
-    return event.state !== STATE.PAUSED
-  } else {
-    return undefined
-  }
+  return event != null && event.state && event.type !== "status" ? event.state !== STATE.PAUSED : undefined
 }
 
 export default {
-  STATE: STATE,
-  EVENT: EVENT,
-  TYPE: TYPE,
-  unpausedEventCheck: unpausedEventCheck,
+  STATE,
+  EVENT,
+  TYPE,
+  unpausedEventCheck,
 }
