@@ -47,6 +47,7 @@ const mockDashInstance = {
   getBitrateInfoListFor: jest.fn(),
   getAverageThroughput: jest.fn(),
   getDVRWindowSize: jest.fn(),
+  getCurrentLiveLatency: jest.fn(),
   updateSettings: jest.fn(),
   setMediaDuration: jest.fn(),
   setPlaybackRate: jest.fn(),
@@ -537,6 +538,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
         playbackBitrate: undefined,
+        latency: undefined,
         bufferLength: 15,
       })
     })
