@@ -8,7 +8,6 @@ import {
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
-import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
 import DebugTool from "./debugger/debugtool"
 
 /**
@@ -134,20 +133,7 @@ function PlayerComponent(
     return genericADAvailable ? genericADEnabled : playbackStrategyProvidedAD()
   }
 
-  function setupPauseAfterLoad() {
-    isPaused() &&
-      playbackStrategy.addMediaPlayerEventCallback &&
-      playbackStrategy.addMediaPlayerEventCallback(this, function pauseCallback(event) {
-        if (event.type === MediaPlayerBase.EVENT.METADATA) {
-          playbackStrategy.pause()
-          playbackStrategy.removeMediaPlayerEventCallback(pauseCallback)
-        }
-      })
-  }
-
   function genericAudioDescribedSwitch(to) {
-    setupPauseAfterLoad()
-
     const wasPaused = isPaused()
     const presentationTimeInSeconds = getCurrentTime()
     const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
@@ -420,9 +406,6 @@ function PlayerComponent(
 
   function loadMedia(type, presentationTimeInSeconds, thenPause) {
     playbackStrategy?.load(type, presentationTimeInSeconds, !thenPause)
-    if (thenPause) {
-      pause()
-    }
 
     if (mediaSources.isAudioDescribedEnabled()) {
       audioDescribedCallback(true)

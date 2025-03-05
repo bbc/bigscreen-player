@@ -62,7 +62,6 @@ function MSEStrategy(
   const cached = {
     seekableRange: undefined,
     duration: 0,
-    // Was refreshFailoverPresentationTimeInSeconds, maybe rename
     currentTime: 0,
   }
 

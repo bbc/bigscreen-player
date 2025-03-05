@@ -7,7 +7,6 @@ import StrategyPicker from "./playbackstrategy/strategypicker"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
-import MediaPlayerBase from "./playbackstrategy/modifiers/mediaplayerbase"
 
 jest.mock("./playbackstrategy/strategypicker")
 
@@ -1328,51 +1327,6 @@ describe("Player Component", () => {
       playerComponent.tearDown()
 
       expect(mockStrategy.tearDown).toHaveBeenCalledTimes(1)
-    })
-  })
-
-  describe("Audio Described", () => {
-    it("calls pause on Legacy Strategy when MediaPlayerBase.EVENT.METADATA is emitted after a replace when using the Generic Implementation", async () => {
-      let capturedCallback
-
-      mockMediaSources.isAudioDescribedAvailable.mockReturnValueOnce(true)
-      mockMediaSources.isAudioDescribedEnabled.mockReturnValueOnce(true)
-      mockMediaSources.setAudioDescribed.mockResolvedValueOnce()
-
-      const addMediaPlayerEventCallback = jest.fn().mockImplementation((thisArg, callback) => {
-        capturedCallback = { thisArg, callback }
-      })
-
-      const removeMediaPlayerEventCallback = jest.fn()
-
-      const mockPlaybackStrategy = createMockPlaybackStrategy(LiveSupport.SEEKABLE, {
-        addMediaPlayerEventCallback,
-        removeMediaPlayerEventCallback,
-      })
-
-      mockPlaybackStrategy.isPaused.mockReturnValueOnce(true)
-
-      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockPlaybackStrategy)
-
-      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
-
-      const playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        { ...bigscreenPlayerData, enableAudioDescribed: true },
-        mockMediaSources,
-        jest.fn(),
-        jest.fn(),
-        jest.fn()
-      )
-
-      await jest.runOnlyPendingTimersAsync()
-
-      playerComponent.setAudioDescribed(true)
-
-      capturedCallback.callback.call(capturedCallback.thisArg, { type: MediaPlayerBase.EVENT.METADATA })
-
-      expect(mockPlaybackStrategy.pause).toHaveBeenCalled()
-      expect(removeMediaPlayerEventCallback).toHaveBeenCalledWith(capturedCallback.callback)
     })
   })
 })

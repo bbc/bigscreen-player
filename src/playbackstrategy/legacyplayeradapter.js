@@ -3,6 +3,7 @@ import MediaState from "../models/mediastate"
 import { ManifestType } from "../models/manifesttypes"
 import AllowedMediaTransitions from "../allowedmediatransitions"
 import LiveGlitchCurtain from "./liveglitchcurtain"
+import MediaPlayerBase from "./modifiers/mediaplayerbase"
 
 function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   const manifestType = mediaSources.time().manifestType
@@ -241,14 +242,16 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    addMediaPlayerEventCallback: (thisArg, callback) =>
-      callback && typeof callback === "function" && mediaPlayer.addEventCallback(thisArg, callback),
-
-    removeMediaPlayerEventCallback: (callback) =>
-      callback && typeof callback === "function" && mediaPlayer.removeEventCallback(callback),
-    load: (mimeType, presentationTimeInSeconds) => {
+    load: (mimeType, presentationTimeInSeconds, shouldPause = false) => {
       setupExitSeekWorkarounds(mimeType)
-      isPaused = false
+      isPaused = shouldPause
+
+      mediaPlayer.addEventCallback(this, function pauseCallback(event) {
+        if (event.type === MediaPlayerBase.EVENT.METADATA) {
+          mediaPlayer.pause()
+          mediaPlayer.removeEventCallback(pauseCallback)
+        }
+      })
 
       hasStartTime = presentationTimeInSeconds || presentationTimeInSeconds === 0
 
