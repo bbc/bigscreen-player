@@ -537,6 +537,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       expect(Plugins.interface.onPlayerInfoUpdated).toHaveBeenCalledWith({
         playbackBitrate: undefined,
+        latency: undefined,
         bufferLength: 15,
       })
     })
