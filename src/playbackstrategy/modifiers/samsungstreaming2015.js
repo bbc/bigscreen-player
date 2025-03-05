@@ -24,7 +24,6 @@ function SamsungStreaming2015() {
   let currentTime
 
   let eventCallbacks = []
-  let eventCallback
 
   let playerPlugin
   let tvmwPlugin
@@ -749,19 +748,19 @@ function SamsungStreaming2015() {
       }
     }
 
-    for (let index = 0; index < eventCallbacks.length; index++) {
-      eventCallbacks[index](event)
-    }
+    eventCallbacks.forEach((callbackObj) => callbackObj.callback.call(callbackObj.thisArg, event))
   }
 
   return {
-    addEventCallback: (thisArg, newCallback) => {
-      eventCallback = (event) => newCallback.call(thisArg, event)
-      eventCallbacks.push(eventCallback)
+    addEventCallback: (thisArg, callback) => {
+      eventCallbacks.push({
+        thisArg,
+        callback,
+      })
     },
 
     removeEventCallback: (callback) => {
-      const index = eventCallbacks.indexOf(callback)
+      const index = eventCallbacks.findIndex((callbackObj) => callbackObj.callback === callback)
 
       if (index !== -1) {
         eventCallbacks.splice(index, 1)

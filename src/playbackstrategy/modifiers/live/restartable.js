@@ -31,7 +31,7 @@ function RestartableLivePlayer(mediaPlayer) {
     getMimeType: () => mediaPlayer.getMimeType(),
     getPlayerElement: () => mediaPlayer.getPlayerElement(),
     addEventCallback: (thisArg, callback) => mediaPlayer.addEventCallback(thisArg, callback),
-    removeEventCallback: (thisArg, callback) => mediaPlayer.removeEventCallback(thisArg, callback),
+    removeEventCallback: (callback) => mediaPlayer.removeEventCallback(callback),
     removeAllEventCallbacks: () => mediaPlayer.removeAllEventCallbacks(),
   }
 }

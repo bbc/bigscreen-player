@@ -148,7 +148,7 @@ describe("cehtml Base", () => {
       const spy = jest.fn()
 
       player.addEventCallback(this, spy)
-      player.removeEventCallback(this, spy)
+      player.removeEventCallback(spy)
       player.beginPlayback()
 
       expect(spy).not.toHaveBeenCalled()

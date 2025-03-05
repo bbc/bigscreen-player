@@ -47,6 +47,7 @@ function createMediaDescriptor(): MediaDescriptor {
     type: "application/dash+xml",
     urls: [{ url: "http://source1.com/", cdn: "http://supplier1.com/" }],
     captions: [{ url: "http://subtitlessource1.com/", cdn: "http://supplier1.com/", segmentLength: SEGMENT_LENGTH }],
+    audioDescribed: [{ url: "http://audiodescribedsource1.com/", cdn: "http://supplier1.com/" }],
     playerSettings: {},
   }
 }
@@ -236,6 +237,68 @@ describe("Media Sources", () => {
         code: PluginEnums.ERROR_CODES.MANIFEST_LOAD,
         message: PluginEnums.ERROR_MESSAGES.MANIFEST,
       })
+    })
+
+    it("sets sources to main sources when audio described is not initialised with enabled", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      expect(mediaSources.currentSource()).toBe("http://source1.com/")
+    })
+
+    it("sets sources to audio described sources when audio described is initialised with enabled", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia, true)
+
+      expect(mediaSources.currentSource()).toBe("http://audiodescribedsource1.com/")
+    })
+
+    it("sets sources to main sources when audio described is initialised with enabled and audio described is not available", async () => {
+      const mediaSources = MediaSources()
+      testMedia.audioDescribed = []
+
+      await mediaSources.init(testMedia, true)
+
+      expect(mediaSources.currentSource()).toBe("http://source1.com/")
+    })
+  })
+
+  describe("source change", () => {
+    it("returns true if an audio described source is available", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+
+      expect(mediaSources.isAudioDescribedAvailable()).toBe(true)
+    })
+
+    it("returns false if an audio described source is not available", async () => {
+      const mediaSources = MediaSources()
+      testMedia.audioDescribed = []
+
+      await mediaSources.init(testMedia)
+
+      expect(mediaSources.isAudioDescribedAvailable()).toBe(false)
+    })
+
+    it("returns true if audio described is enabled", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+      await mediaSources.setAudioDescribed(true)
+
+      expect(mediaSources.isAudioDescribedEnabled()).toBe(true)
+    })
+
+    it("returns false if audio described is not enabled", async () => {
+      const mediaSources = MediaSources()
+
+      await mediaSources.init(testMedia)
+      await mediaSources.setAudioDescribed(false)
+
+      expect(mediaSources.isAudioDescribedEnabled()).toBe(false)
     })
   })
 

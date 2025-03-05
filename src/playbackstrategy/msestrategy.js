@@ -22,9 +22,10 @@ function MSEStrategy(
   playbackElement,
   _isUHD = false,
   customPlayerSettings = {},
-  enableBroadcastMixAD = false,
-  callBroadcastMixADCallbacks = null
+  audioDescribedOpts = {}
 ) {
+  const audioDescribed = { callback: undefined, enable: false, ...audioDescribedOpts }
+
   let mediaPlayer
   let mediaElement
   const manifestType = mediaSources.time().manifestType
@@ -57,8 +58,12 @@ function MSEStrategy(
     ? DEFAULT_SETTINGS.liveDelay
     : playerSettings.streaming?.delay?.liveDelay
   let failoverPresentationTimeInSeconds
-  let refreshFailoverPresentationTimeInSeconds
   let isEnded = false
+  const cached = {
+    seekableRange: undefined,
+    duration: 0,
+    currentTime: 0,
+  }
 
   let dashMetrics
   let lastError
@@ -448,13 +453,15 @@ function MSEStrategy(
   }
 
   function onCurrentTrackChanged(event) {
+    if (!isAudioDescribedAvailable()) return
+
     const mediaType = event.newMediaInfo.type
     DebugTool.info(
       `${mediaType} track changed.${
-        mediaType === "audio" ? (isBroadcastMixADEnabled() ? " BroadcastMixAD on." : " BroadcastMixAD off.") : ""
+        mediaType === "audio" ? (isAudioDescribedEnabled() ? " Audio Described on." : " Audio Described off.") : ""
       }`
     )
-    callBroadcastMixADCallbacks(isBroadcastMixADEnabled())
+    audioDescribed.callback && audioDescribed.callback(isAudioDescribedEnabled())
   }
 
   function publishMediaState(mediaState) {
@@ -479,13 +486,14 @@ function MSEStrategy(
     return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.isPaused() : undefined
   }
 
-  function load(mimeType, presentationTimeInSeconds) {
+  function load(mimeType, presentationTimeInSeconds, autoPlay = true) {
     if (mediaPlayer) {
-      modifySource(refreshFailoverPresentationTimeInSeconds || failoverPresentationTimeInSeconds)
+      mediaPlayer.setAutoPlay(autoPlay)
+      modifySource(cached.currentTime || failoverPresentationTimeInSeconds)
     } else {
       failoverPresentationTimeInSeconds = presentationTimeInSeconds
       setUpMediaElement(playbackElement)
-      setUpMediaPlayer(presentationTimeInSeconds)
+      setUpMediaPlayer(presentationTimeInSeconds, autoPlay)
       setUpMediaListeners()
     }
   }
@@ -511,14 +519,14 @@ function MSEStrategy(
     return settings
   }
 
-  function setUpMediaPlayer(presentationTimeInSeconds) {
+  function setUpMediaPlayer(presentationTimeInSeconds, autoPlay) {
     const dashSettings = getDashSettings(playerSettings)
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
-    mediaPlayer.initialize(mediaElement, null, true)
+    mediaPlayer.initialize(mediaElement, null, autoPlay)
 
-    if (enableBroadcastMixAD) {
+    if (audioDescribed.enable) {
       mediaPlayer.setInitialMediaSettingsFor("audio", {
         role: "alternate",
         accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
@@ -603,23 +611,37 @@ function MSEStrategy(
 
       // FIX: Dash.js briefly returns `null` on a failover for the first time update
       if (dvrInfo) {
-        return { start: dvrInfo.range.start, end: dvrInfo.range.end - liveDelay }
+        const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end - liveDelay }
+        // Save good seekable range and duration values
+        cached.seekableRange = Utils.clone(seekableRange)
+        cached.duration = getDuration()
+
+        return seekableRange
       }
     }
 
-    return { start: 0, end: getDuration() }
+    return cached.seekableRange || { start: 0, end: getDuration() }
   }
 
   function getDuration() {
-    return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.duration() : 0
+    const duration = mediaPlayer && mediaPlayer.isReady() && mediaPlayer.duration()
+
+    // If duration is a number, return that, else return cached value (default 0)
+    return typeof duration === "number" && !isNaN(duration) ? duration : cached.duration
   }
 
   function getCurrentTime() {
-    return mediaElement?.currentTime ?? 0
+    const currentTime = mediaElement?.currentTime
+    if (currentTime && !isNaN(currentTime)) {
+      cached.currentTime = currentTime
+    }
+
+    return currentTime || cached.currentTime
   }
 
   function refreshManifestBeforeSeek(presentationTimeInSeconds) {
-    refreshFailoverPresentationTimeInSeconds = presentationTimeInSeconds
+    // Is this needed?
+    cached.currentTime = presentationTimeInSeconds
 
     mediaPlayer.refreshManifest((manifest) => {
       const mediaPresentationDuration = manifest?.mediaPresentationDuration
@@ -663,7 +685,7 @@ function MSEStrategy(
   function startAutoResumeTimeout() {
     autoResumeAtStartOfRange(
       getCurrentTime(),
-      getSeekableRange(), // DVRWindowLength < timeShift ? { start: sr.start + timeshift - dvr, end: timeShift } : getSeekableRange
+      getSafelySeekableRange(),
       addEventCallback,
       removeEventCallback,
       (event) => event !== MediaState.PAUSED,
@@ -672,7 +694,7 @@ function MSEStrategy(
     )
   }
 
-  function isTrackBroadcastMixAD(track) {
+  function isTrackAudioDescribed(track) {
     return (
       track.roles.includes("alternate") &&
       track.accessibilitiesWithSchemeIdUri.some(
@@ -681,29 +703,29 @@ function MSEStrategy(
     )
   }
 
-  function getBroadcastMixADTrack() {
+  function getAudioDescribedTrack() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks.find((track) => isTrackBroadcastMixAD(track))
+    return audioTracks.find((track) => isTrackAudioDescribed(track))
   }
 
-  function isBroadcastMixADAvailable() {
+  function isAudioDescribedAvailable() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks.some((track) => isTrackBroadcastMixAD(track))
+    return audioTracks.some((track) => isTrackAudioDescribed(track))
   }
 
-  function isBroadcastMixADEnabled() {
+  function isAudioDescribedEnabled() {
     const currentAudioTrack = mediaPlayer.getCurrentTrackFor("audio")
-    return currentAudioTrack ? isTrackBroadcastMixAD(currentAudioTrack) : false
+    return currentAudioTrack ? isTrackAudioDescribed(currentAudioTrack) : false
   }
 
-  function setBroadcastMixADOff() {
+  function setAudioDescribedOff() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
     const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
     mediaPlayer.setCurrentTrack(mainTrack)
   }
 
-  function setBroadcastMixADOn() {
-    const ADTrack = getBroadcastMixADTrack()
+  function setAudioDescribedOn() {
+    const ADTrack = getAudioDescribedTrack()
     if (ADTrack) {
       mediaPlayer.setCurrentTrack(ADTrack)
     }
@@ -727,7 +749,7 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
-      mediaPlayer.off(DashJSEvents.TRACK_CHANGE_RENDERED, onCurrentTrackChanged)
+      mediaPlayer.off(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
 
       mediaPlayer = undefined
     }
@@ -757,13 +779,15 @@ function MSEStrategy(
 
       // FIX: Dash.js briefly returns `null` on a failover for the first time update
       if (dvrInfo) {
-        const { range } = dvrInfo
+        const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end - seekDurationPadding }
+        cached.seekableRange = Utils.clone(seekableRange)
+        cached.duration = getDuration()
 
-        return { start: range.start, end: range.end - seekDurationPadding }
+        return seekableRange
       }
     }
 
-    return { start: 0, end: getDuration() - seekDurationPadding }
+    return cached.seekableRange || { start: 0, end: getDuration() - seekDurationPadding }
   }
 
   function clampPresentationTimeToSafeRange(presentationTimeInSeconds) {
@@ -836,10 +860,10 @@ function MSEStrategy(
     load,
     getSeekableRange,
     getCurrentTime,
-    isBroadcastMixADAvailable,
-    isBroadcastMixADEnabled,
-    setBroadcastMixADOn,
-    setBroadcastMixADOff,
+    isAudioDescribedAvailable,
+    isAudioDescribedEnabled,
+    setAudioDescribedOn,
+    setAudioDescribedOff,
     getDuration,
     getPlayerElement: () => mediaElement,
     tearDown,

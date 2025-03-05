@@ -24,8 +24,8 @@ function SeekableLivePlayer(mediaPlayer) {
     mediaPlayer.addEventCallback(thisArg, callback)
   }
 
-  function removeEventCallback(thisArg, callback) {
-    mediaPlayer.removeEventCallback(thisArg, callback)
+  function removeEventCallback(callback) {
+    mediaPlayer.removeEventCallback(callback)
   }
 
   function removeAllEventCallbacks() {

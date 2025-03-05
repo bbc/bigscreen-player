@@ -3,6 +3,7 @@ import MediaState from "../models/mediastate"
 import { ManifestType } from "../models/manifesttypes"
 import AllowedMediaTransitions from "../allowedmediatransitions"
 import LiveGlitchCurtain from "./liveglitchcurtain"
+import MediaPlayerBase from "./modifiers/mediaplayerbase"
 
 function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   const manifestType = mediaSources.time().manifestType
@@ -20,7 +21,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   let isEnded = false
   let duration = 0
 
-  let eventCallback
+  let eventCallbacks = []
   let errorCallback
   let timeUpdateCallback
   let currentTime
@@ -62,7 +63,10 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   }
 
   function onPlaying(event) {
-    currentTime = event.currentTime
+    // Guard against a playing event being fired when currentTime is NaN
+    if (parseInt(event.currentTime) !== 0 && !isNaN(event.currentTime)) {
+      currentTime = event.currentTime
+    }
     isPaused = false
     isEnded = false
     duration = duration || event.duration
@@ -146,9 +150,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   }
 
   function publishMediaState(mediaState) {
-    if (eventCallback) {
-      eventCallback(mediaState)
-    }
+    eventCallbacks.forEach((callbackObj) => callbackObj.callback.call(callbackObj.thisArg, mediaState))
   }
 
   function publishError(mediaError) {
@@ -170,8 +172,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   function setupExitSeekWorkarounds(mimeType) {
     handleErrorOnExitingSeek = manifestType === ManifestType.DYNAMIC && mimeType === "application/dash+xml"
 
-    const deviceFailsPlayAfterPauseOnExitSeek =
-      window.bigscreenPlayer.overrides && window.bigscreenPlayer.overrides.pauseOnExitSeek
+    const deviceFailsPlayAfterPauseOnExitSeek = window.bigscreenPlayer?.overrides?.pauseOnExitSeek
     delayPauseOnExitSeek = handleErrorOnExitingSeek || deviceFailsPlayAfterPauseOnExitSeek
   }
 
@@ -222,8 +223,18 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
   return {
     transitions,
-    addEventCallback: (thisArg, newCallback) => {
-      eventCallback = (event) => newCallback.call(thisArg, event)
+    addEventCallback: (thisArg, callback) => {
+      eventCallbacks.push({
+        thisArg,
+        callback,
+      })
+    },
+    removeEventCallback: (callback) => {
+      const index = eventCallbacks.find((callbackObj) => callbackObj.callback === callback)
+
+      if (index !== -1) {
+        eventCallbacks.splice(index, 1)
+      }
     },
     addErrorCallback: (thisArg, newErrorCallback) => {
       errorCallback = (event) => newErrorCallback.call(thisArg, event)
@@ -231,9 +242,20 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    load: (mimeType, presentationTimeInSeconds) => {
+    load: (mimeType, presentationTimeInSeconds, autoPlay = true) => {
       setupExitSeekWorkarounds(mimeType)
       isPaused = false
+
+      // call pause upon metadata event firing
+      if (!autoPlay) {
+        mediaPlayer.addEventCallback(this, function pauseCallback(event) {
+          if (event.type === MediaPlayerBase.EVENT.METADATA) {
+            isPaused = true
+            mediaPlayer.pause()
+            mediaPlayer.removeEventCallback(pauseCallback)
+          }
+        })
+      }
 
       hasStartTime = presentationTimeInSeconds || presentationTimeInSeconds === 0
 
@@ -331,7 +353,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         liveGlitchCurtain.tearDown()
         liveGlitchCurtain = undefined
       }
-      eventCallback = undefined
+      eventCallbacks = []
       errorCallback = undefined
       timeUpdateCallback = undefined
     },

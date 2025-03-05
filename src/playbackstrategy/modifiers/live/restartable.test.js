@@ -83,9 +83,9 @@ describe("restartable HMTL5 Live Player", () => {
       const callback = jest.fn()
 
       restartableMediaPlayer.addEventCallback(thisArg, callback)
-      restartableMediaPlayer.removeEventCallback(thisArg, callback)
+      restartableMediaPlayer.removeEventCallback(callback)
 
-      expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback)
+      expect(player.removeEventCallback).toHaveBeenCalledWith(callback)
     })
 
     it("calls removeAllEventCallbacks on the media player", () => {

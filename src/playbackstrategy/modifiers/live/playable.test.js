@@ -79,11 +79,9 @@ describe("Playable HMTL5 Live Player", () => {
   })
 
   it("calls removeEventCallback on the media player", () => {
-    const thisArg = "arg"
+    playableMediaPlayer.removeEventCallback(callback)
 
-    playableMediaPlayer.removeEventCallback(thisArg, callback)
-
-    expect(player.removeEventCallback).toHaveBeenCalledWith(thisArg, callback)
+    expect(player.removeEventCallback).toHaveBeenCalledWith(callback)
   })
 
   it("calls removeAllEventCallbacks on the media player", () => {

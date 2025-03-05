@@ -7,7 +7,7 @@ import Plugins from "./plugins"
 import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Version from "./version"
-import { ManifestType } from "./main"
+import { ManifestType } from "./models/manifesttypes"
 
 let sourceList
 let source
@@ -16,7 +16,7 @@ let cdn
 let timeUpdateCallbacks = []
 let subtitleCallbacks = []
 let stateChangeCallbacks = []
-let broadcastMixADCallbacks = []
+let audioDescribedCallbacks = []
 
 let currentTime
 let isSeeking
@@ -31,8 +31,8 @@ let manifestType
 let subtitlesAvailable
 let subtitlesEnabled
 let subtitlesHidden
-let broadcastMixADAvailable
-let broadcastMixADEnabled
+let audioDescribedAvailable
+let audioDescribedEnabled
 let endOfStream
 let canSeekState
 let canPauseState
@@ -202,8 +202,8 @@ const mockFunctions = {
     mediaKind = bigscreenPlayerData?.media?.kind || "video"
     subtitlesAvailable = true
     subtitlesEnabled = bigscreenPlayerData?.enableSubtitles ?? false
-    broadcastMixADAvailable = false
-    broadcastMixADEnabled = false
+    audioDescribedAvailable = false
+    audioDescribedEnabled = false
     canSeekState = true
     canPauseState = true
     sourceList = bigscreenPlayerData?.media?.urls
@@ -250,12 +250,12 @@ const mockFunctions = {
   unregisterForSubtitleChanges(callback) {
     subtitleCallbacks = subtitleCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
-  registerForBroadcastMixADChanges(callback) {
-    broadcastMixADCallbacks.push(callback)
+  registerForAudioDescribedChanges(callback) {
+    audioDescribedCallbacks.push(callback)
     return callback
   },
-  unregisterForBroadcastMixADChanges(callback) {
-    broadcastMixADCallbacks = broadcastMixADCallbacks.filter((existingCallback) => callback !== existingCallback)
+  unregisterForAudioDescribedChanges(callback) {
+    audioDescribedCallbacks = audioDescribedCallbacks.filter((existingCallback) => callback !== existingCallback)
   },
   registerForStateChanges(callback) {
     stateChangeCallbacks.push(callback)
@@ -325,14 +325,14 @@ const mockFunctions = {
   },
   customiseSubtitles() {},
   renderSubtitleExample() {},
-  setBroadcastMixADEnabled(value) {
-    broadcastMixADEnabled = value
+  setAudioDescribedEnabled(value) {
+    audioDescribedEnabled = value
   },
-  isBroadcastMixADEnabled() {
-    return broadcastMixADEnabled
+  isAudioDescribedEnabled() {
+    return audioDescribedEnabled
   },
-  isBroadcastMixADAvailable() {
-    return broadcastMixADAvailable
+  isAudioDescribedAvailable() {
+    return audioDescribedAvailable
   },
   setTransportControlsPosition() {},
   canSeek() {

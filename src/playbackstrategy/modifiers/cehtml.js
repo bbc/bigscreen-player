@@ -58,13 +58,18 @@ function Cehtml() {
   }
 
   function addEventCallback(thisArg, callback) {
-    const eventCallback = (event) => callback.call(thisArg, event)
-
-    eventCallbacks.push({ from: callback, to: eventCallback })
+    eventCallbacks.push({
+      thisArg,
+      callback,
+    })
   }
 
-  function removeEventCallback(_thisArg, callback) {
-    eventCallbacks = eventCallbacks.filter((cb) => cb.from !== callback)
+  function removeEventCallback(callback) {
+    const index = eventCallbacks.findIndex((callbackObj) => callbackObj.callback === callback)
+
+    if (index !== -1) {
+      eventCallbacks.splice(index, 1)
+    }
   }
 
   function removeAllEventCallbacks() {
@@ -90,7 +95,7 @@ function Cehtml() {
       }
     }
 
-    eventCallbacks.forEach((callback) => callback.to(event))
+    eventCallbacks.forEach((callbackObj) => callbackObj.callback.call(callbackObj.thisArg, event))
   }
 
   function getClampedTime(seconds) {

@@ -176,6 +176,9 @@ export default tseslint.config(
       "unicorn/prefer-optional-catch-binding": "off",
       "unicorn/prefer-string-replace-all": "off",
 
+      // Not Sure about this one
+      "unicorn/prefer-set-has": "off",
+
       // HAS ISSUES
       "sonarjs/no-duplicate-string": "off",
       "unicorn/no-array-callback-reference": "off",
