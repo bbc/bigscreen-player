@@ -429,10 +429,7 @@ function MSEStrategy(
       dashMetrics = mediaPlayer.getDashMetrics()
 
       if (dashMetrics) {
-        const dvrInfo = dashMetrics.getCurrentDVRInfo(event.mediaType)
-        if (dvrInfo && dvrInfo.time) {
-          playerMetadata.latency = dvrInfo.range.end - dvrInfo.time
-        }
+        playerMetadata.latency = mediaPlayer.getCurrentLiveLatency()
         playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(event.mediaType)
         DebugTool.staticMetric("buffer-length", playerMetadata.bufferLength)
         Plugins.interface.onPlayerInfoUpdated({
