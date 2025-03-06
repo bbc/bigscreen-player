@@ -11,6 +11,8 @@ The `MediaSources` module manages AD by accepting separate sources for audio des
 - **Separate Source Management:**
   - `MediaSources` accepts a separate `media.audioDescribed` source, containing URLs and CDNs, distinct from the main media source.
   - Failover for AD sources occurs **independently** within this provided source.
+  - Example:
+    If CDN 'A' in the Audio Description source fails, failover occurs only within that AD source, independently of the main video source. If AD is turned off, and CDN 'A' is present for the main source, it will be available.
 - **Manifest Switching:**
   - Enabling or disabling AD triggers the loading of a new manifest from the appropriate URL within the provided AD source.
   - This effectively switches between the main and AD audio streams.
