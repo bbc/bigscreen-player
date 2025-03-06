@@ -154,7 +154,7 @@ function PlayerComponent(
       })
       .catch(() => {
         bubbleFatalError(false, {
-          code: "0000",
+          code: "0000", // change code?
           message: `error switching ${enable ? "to" : "from"} audio described`,
         })
       })
