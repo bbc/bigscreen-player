@@ -42,7 +42,6 @@ function MSEStrategy(
           bufferTimeAtTopQuality: 12,
           bufferTimeAtTopQualityLongForm: 15,
         },
-        lastMediaSettingsCachingInfo: { enabled: false },
       },
     },
     customPlayerSettings
