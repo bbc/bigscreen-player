@@ -112,6 +112,17 @@ const optionalData = {
       fontFamily: "Arial",
       backgroundColour: "black", // (css colour, hex)
     },
+    audioDescribed: [
+      // Multiple urls offer the ability to fail-over to another CDN if required
+      {
+        url: "https://example.com/video.mpd",
+        cdn: "origin", // For Debug Tool reference
+      },
+      {
+        url: "https://failover.example.com/video.mpd",
+        cdn: "failover",
+      },
+    ],
     playerSettings: {
       // See settings documentation for more details
       failoverResetTime: 60000,
