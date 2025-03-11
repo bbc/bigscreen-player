@@ -251,7 +251,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         mediaPlayer.addEventCallback(this, function pauseCallback(event) {
           if (event.type === MediaPlayerBase.EVENT.METADATA) {
             isPaused = true
-            setTimeout(mediaPlayer.pause(), 0)
+            mediaPlayer.pause()
             mediaPlayer.removeEventCallback(pauseCallback)
           }
         })
