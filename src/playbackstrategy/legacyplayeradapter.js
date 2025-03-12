@@ -213,6 +213,14 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     mediaPlayer.reset()
   }
 
+  function pause() {
+    if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
+      pauseOnExitSeek = true
+    } else {
+      mediaPlayer.pause()
+    }
+  }
+
   return {
     transitions,
     addEventCallback: (thisArg, callback) => {
@@ -242,8 +250,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       if (!autoPlay) {
         mediaPlayer.addEventCallback(this, function pauseCallback(event) {
           if (event.type === MediaPlayerBase.EVENT.STATUS) {
-            isPaused = true
-            mediaPlayer.pause()
+            pause()
             mediaPlayer.removeEventCallback(pauseCallback)
           }
         })
@@ -281,14 +288,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         }
       }
     },
-    pause: () => {
-      // TODO - transitions is checked in playerComponent. The check can be removed here.
-      if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
-        pauseOnExitSeek = true
-      } else {
-        mediaPlayer.pause()
-      }
-    },
+    pause,
     isPaused: () => isPaused,
     isEnded: () => isEnded,
     getDuration: () => duration,
