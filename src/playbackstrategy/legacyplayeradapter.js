@@ -246,10 +246,11 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       setupExitSeekWorkarounds(mimeType)
       isPaused = false
 
-      // call pause upon STATUS event firing
+      // call pause upon METADATA event firing
       if (!autoPlay) {
         mediaPlayer.addEventCallback(this, function pauseCallback(event) {
-          if (event.type === MediaPlayerBase.EVENT.STATUS) {
+          if (event.type === MediaPlayerBase.EVENT.METADATA) {
+            restartMediaPlayer()
             pause()
             mediaPlayer.removeEventCallback(pauseCallback)
           }
