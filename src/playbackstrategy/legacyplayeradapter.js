@@ -37,11 +37,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
   let liveGlitchCurtain
 
-  let strategy = window.bigscreenPlayer && window.bigscreenPlayer.playbackStrategy
-
   mediaPlayer.addEventCallback(this, eventHandler)
-
-  strategy = strategy.match(/.+(?=strategy)/g)[0]
 
   function eventHandler(event) {
     const handleEvent = {
@@ -163,10 +159,6 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     if (timeUpdateCallback) {
       timeUpdateCallback()
     }
-  }
-
-  function getStrategy() {
-    return strategy.toUpperCase()
   }
 
   function setupExitSeekWorkarounds(mimeType) {
@@ -339,7 +331,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         mediaPlayer.pause()
       }
     },
-    getStrategy: getStrategy(),
+    getStrategy: () => window.bigscreenPlayer?.playbackStrategy?.match(/.+(?=strategy)/g)[0].toUpperCase(),
     reset,
     tearDown: () => {
       mediaPlayer.removeAllEventCallbacks()
