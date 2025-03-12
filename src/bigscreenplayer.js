@@ -262,10 +262,10 @@ function BigscreenPlayer() {
      * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, callbacks = {}) => {
-      DebugTool.info("Running latest imsc")
       playbackElement = newPlaybackElement
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
+      DebugTool.info("Running latest imsc")
       resizer = Resizer()
 
       mediaKind = bigscreenPlayerData.media.kind
