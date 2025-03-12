@@ -230,6 +230,14 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     }
   }
 
+  function pause() {
+    if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
+      pauseOnExitSeek = true
+    } else {
+      mediaPlayer.pause()
+    }
+  }
+
   return {
     transitions,
     addEventCallback: (thisArg, callback) => {
@@ -259,7 +267,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       if (!autoPlay) {
         mediaPlayer.addEventCallback(this, function pauseCallback(event) {
           if (event.type === MediaPlayerBase.EVENT.METADATA) {
-            isPaused = true
+            pause()
             setCurrentTime(currentTime)
             mediaPlayer.removeEventCallback(pauseCallback)
           }
@@ -298,13 +306,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         }
       }
     },
-    pause: () => {
-      if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
-        pauseOnExitSeek = true
-      } else {
-        mediaPlayer.pause()
-      }
-    },
+    pause,
     isPaused: () => isPaused,
     isEnded: () => isEnded,
     getDuration: () => duration,
