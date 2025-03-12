@@ -199,7 +199,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null)
 
-      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null)
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(cdnArray[0].url)
     })
 
@@ -250,7 +250,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       mseStrategy.load(null, 0)
 
-      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null)
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=0`)
     })
 
@@ -260,7 +260,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 15)
 
-      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null)
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=15`)
     })
 
@@ -287,13 +287,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       )
       expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.METRIC_ADDED, expect.any(Function))
     })
-
-    it("calls initialize() with true when autoPlay is true", () => {
-      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-      mseStrategy.load(null, 45, true)
-
-      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
-    })
   })
 
   describe("Load when a mediaPlayer exists (e.g. CDN failover)", () => {
@@ -304,7 +297,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.load(null, 0)
 
       expect(mockDashInstance.initialize).toHaveBeenCalledTimes(1)
-      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null)
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=0`)
 
       // Player component would do this with its buffering timeout logic
@@ -322,7 +315,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 45)
 
-      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null)
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=45`)
 
       mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
@@ -342,7 +335,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 45)
 
-      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null, true)
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null)
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[0].url}#t=45`)
 
       mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
@@ -353,15 +346,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       mseStrategy.load(null, null)
 
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[1].url}#t=86`)
-    })
-
-    it("calls setAutoPlay() with true when autoPlay is true", () => {
-      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-      mseStrategy.load(null, 45)
-
-      mseStrategy.load(null, 45, true)
-
-      expect(mockDashInstance.setAutoPlay).toHaveBeenCalledWith(true)
     })
   })
 
@@ -939,7 +923,7 @@ describe("Media Source Extensions Playback Strategy", () => {
         mseStrategy.load(null, null)
 
         expect(mockDashInstance.initialize).toHaveBeenCalledTimes(2)
-        expect(mockDashInstance.initialize).toHaveBeenNthCalledWith(2, mediaElement, null, true)
+        expect(mockDashInstance.initialize).toHaveBeenNthCalledWith(2, mediaElement, null)
         expect(mockDashInstance.attachSource).toHaveBeenNthCalledWith(2, "http://example2.com")
 
         expect(playbackElement.childElementCount).toBe(1)

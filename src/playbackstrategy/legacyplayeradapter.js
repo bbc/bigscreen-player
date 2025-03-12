@@ -213,59 +213,30 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     mediaPlayer.reset()
   }
 
-  function pause() {
-    if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
-      pauseOnExitSeek = true
-    } else {
-      mediaPlayer.pause()
-    }
-  }
-
-  function addEventCallback(thisArg, callback) {
-    eventCallbacks.push({
-      thisArg,
-      callback,
-    })
-  }
-
-  function removeEventCallback(callback) {
-    const index = eventCallbacks.find((callbackObj) => callbackObj.callback === callback)
-
-    if (index !== -1) {
-      eventCallbacks.splice(index, 1)
-    }
-  }
-
   return {
     transitions,
-    addEventCallback,
-    removeEventCallback,
+    addEventCallback: (thisArg, callback) => {
+      eventCallbacks.push({
+        thisArg,
+        callback,
+      })
+    },
+    removeEventCallback: (callback) => {
+      const index = eventCallbacks.find((callbackObj) => callbackObj.callback === callback)
+
+      if (index !== -1) {
+        eventCallbacks.splice(index, 1)
+      }
+    },
     addErrorCallback: (thisArg, newErrorCallback) => {
       errorCallback = (event) => newErrorCallback.call(thisArg, event)
     },
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    load: (mimeType, presentationTimeInSeconds, autoPlay = true) => {
+    load: (mimeType, presentationTimeInSeconds) => {
       setupExitSeekWorkarounds(mimeType)
       isPaused = false
-
-      // call pause upon METADATA event firing followed by MediaState.PLAYING
-      if (!autoPlay) {
-        mediaPlayer.addEventCallback(this, function pauseCallback(event) {
-          if (event.type === MediaPlayerBase.EVENT.STATUS) {
-            DebugTool.info(`PAUSE CALLBACK: ${event.currentTime}`)
-            addEventCallback(this, function onPlayingCallback(event) {
-              if (event === MediaState.PLAYING) {
-                pause()
-                removeEventCallback(onPlayingCallback)
-              }
-            })
-
-            mediaPlayer.removeEventCallback(pauseCallback)
-          }
-        })
-      }
 
       hasStartTime = presentationTimeInSeconds || presentationTimeInSeconds === 0
 
@@ -299,7 +270,13 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         }
       }
     },
-    pause,
+    pause: () => {
+      if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
+        pauseOnExitSeek = true
+      } else {
+        mediaPlayer.pause()
+      }
+    },
     isPaused: () => isPaused,
     isEnded: () => isEnded,
     getDuration: () => duration,

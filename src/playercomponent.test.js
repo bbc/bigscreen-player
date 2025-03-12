@@ -138,7 +138,7 @@ describe("Player Component", () => {
       )
       expect(mockPlaybackStrategyClass).toHaveBeenCalledTimes(1)
 
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", undefined, true)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", undefined)
     })
 
     it("should trigger the error callback when strategyPicker rejects", async () => {
@@ -1245,7 +1245,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(10000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, false)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1279,7 +1279,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, false)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1310,7 +1310,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(5000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100, false)
+      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
 
       expect(mockMediaSources.failover).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -1416,7 +1416,7 @@ describe("Player Component", () => {
       await jest.advanceTimersByTimeAsync(20000)
 
       expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20, false)
+      expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20)
     })
 
     it("should fire error cleared on the plugins when failover completes", async () => {

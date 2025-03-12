@@ -13,9 +13,7 @@ import DebugTool from "./debugger/debugtool"
 /**
  * @typedef {import('./types.d.ts').InitData} InitData
  * @typedef {import('./mediasources').MediaSources} MediaSources
- */
-
-/**
+ *
  * @typedef {{
  *   data: {
  *     currentTime: number,
@@ -408,7 +406,11 @@ function PlayerComponent(
   }
 
   function loadMedia(type, presentationTimeInSeconds, autoPlay = true) {
-    playbackStrategy?.load(type, presentationTimeInSeconds, autoPlay)
+    playbackStrategy?.load(type, presentationTimeInSeconds)
+
+    if (!autoPlay) {
+      pause()
+    }
 
     if (mediaSources.isAudioDescribedEnabled()) {
       audioDescribedCallback(true)

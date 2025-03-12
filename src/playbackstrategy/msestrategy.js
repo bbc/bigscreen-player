@@ -486,14 +486,13 @@ function MSEStrategy(
     return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.isPaused() : undefined
   }
 
-  function load(mimeType, presentationTimeInSeconds, autoPlay = true) {
+  function load(mimeType, presentationTimeInSeconds) {
     if (mediaPlayer) {
-      mediaPlayer.setAutoPlay(autoPlay)
       modifySource(cached.currentTime || failoverPresentationTimeInSeconds)
     } else {
       failoverPresentationTimeInSeconds = presentationTimeInSeconds
       setUpMediaElement(playbackElement)
-      setUpMediaPlayer(presentationTimeInSeconds, autoPlay)
+      setUpMediaPlayer(presentationTimeInSeconds)
       setUpMediaListeners()
     }
   }
@@ -519,12 +518,12 @@ function MSEStrategy(
     return settings
   }
 
-  function setUpMediaPlayer(presentationTimeInSeconds, autoPlay) {
+  function setUpMediaPlayer(presentationTimeInSeconds) {
     const dashSettings = getDashSettings(playerSettings)
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
-    mediaPlayer.initialize(mediaElement, null, autoPlay)
+    mediaPlayer.initialize(mediaElement, null)
 
     if (audioDescribed.enable) {
       mediaPlayer.setInitialMediaSettingsFor("audio", {
