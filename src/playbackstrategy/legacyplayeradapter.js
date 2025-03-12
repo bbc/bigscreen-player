@@ -41,14 +41,14 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
   function eventHandler(event) {
     const handleEvent = {
-      "playing": onPlaying,
-      "paused": onPaused,
-      "buffering": onBuffering,
-      "seek-attempted": onSeekAttempted,
-      "seek-finished": onSeekFinished,
-      "status": onTimeUpdate,
-      "complete": onEnded,
-      "error": onError,
+      [MediaPlayerBase.EVENT.PLAYING]: onPlaying,
+      [MediaPlayerBase.EVENT.PAUSED]: onPaused,
+      [MediaPlayerBase.EVENT.BUFFERING]: onBuffering,
+      [MediaPlayerBase.EVENT.SEEK_ATTEMPTED]: onSeekAttempted,
+      [MediaPlayerBase.EVENT.SEEK_FINISHED]: onSeekFinished,
+      [MediaPlayerBase.EVENT.STATUS]: onTimeUpdate,
+      [MediaPlayerBase.EVENT.COMPLETE]: onEnded,
+      [MediaPlayerBase.EVENT.ERROR]: onError,
     }
 
     if (Object.prototype.hasOwnProperty.call(handleEvent, event.type)) {
@@ -213,23 +213,6 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     mediaPlayer.reset()
   }
 
-  function setCurrentTime(presentationTimeInSeconds) {
-    isEnded = false
-    currentTime = presentationTimeInSeconds
-
-    if (handleErrorOnExitingSeek || delayPauseOnExitSeek) {
-      targetSeekToTime = presentationTimeInSeconds
-      exitingSeek = true
-      pauseOnExitSeek = isPaused
-    }
-
-    mediaPlayer.playFrom && mediaPlayer.playFrom(presentationTimeInSeconds)
-
-    if (isPaused && !delayPauseOnExitSeek && typeof mediaPlayer.pause === "function") {
-      mediaPlayer.pause()
-    }
-  }
-
   function pause() {
     if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
       pauseOnExitSeek = true
@@ -238,21 +221,25 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     }
   }
 
+  function addEventCallback(thisArg, callback) {
+    eventCallbacks.push({
+      thisArg,
+      callback,
+    })
+  }
+
+  function removeEventCallback(callback) {
+    const index = eventCallbacks.find((callbackObj) => callbackObj.callback === callback)
+
+    if (index !== -1) {
+      eventCallbacks.splice(index, 1)
+    }
+  }
+
   return {
     transitions,
-    addEventCallback: (thisArg, callback) => {
-      eventCallbacks.push({
-        thisArg,
-        callback,
-      })
-    },
-    removeEventCallback: (callback) => {
-      const index = eventCallbacks.find((callbackObj) => callbackObj.callback === callback)
-
-      if (index !== -1) {
-        eventCallbacks.splice(index, 1)
-      }
-    },
+    addEventCallback,
+    removeEventCallback,
     addErrorCallback: (thisArg, newErrorCallback) => {
       errorCallback = (event) => newErrorCallback.call(thisArg, event)
     },
@@ -263,12 +250,17 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       setupExitSeekWorkarounds(mimeType)
       isPaused = false
 
-      // call pause upon METADATA event firing
+      // call pause upon METADATA event firing followed by MediaState.PLAYING
       if (!autoPlay) {
         mediaPlayer.addEventCallback(this, function pauseCallback(event) {
-          if (event.type === MediaPlayerBase.EVENT.METADATA) {
-            pause()
-            setCurrentTime(currentTime)
+          if (event.type === MediaPlayerBase.EVENT.STATUS) {
+            addEventCallback(this, function onPlayingCallback(event) {
+              if (event === MediaState.PLAYING) {
+                pause()
+                removeEventCallback(onPlayingCallback)
+              }
+            })
+
             mediaPlayer.removeEventCallback(pauseCallback)
           }
         })
@@ -333,7 +325,22 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       return 1
     },
     getCurrentTime: () => currentTime,
-    setCurrentTime,
+    setCurrentTime: (presentationTimeInSeconds) => {
+      isEnded = false
+      currentTime = presentationTimeInSeconds
+
+      if (handleErrorOnExitingSeek || delayPauseOnExitSeek) {
+        targetSeekToTime = presentationTimeInSeconds
+        exitingSeek = true
+        pauseOnExitSeek = isPaused
+      }
+
+      mediaPlayer.playFrom && mediaPlayer.playFrom(presentationTimeInSeconds)
+
+      if (isPaused && !delayPauseOnExitSeek && typeof mediaPlayer.pause === "function") {
+        mediaPlayer.pause()
+      }
+    },
     getStrategy: () => window.bigscreenPlayer?.playbackStrategy?.match(/.+(?=strategy)/g)[0].toUpperCase(),
     reset,
     tearDown: () => {
