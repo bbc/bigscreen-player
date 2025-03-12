@@ -262,7 +262,7 @@ function BigscreenPlayer() {
      * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, callbacks = {}) => {
-      console.log('mh-imsc')
+      DebugTool.info("Running latest imsc")
       playbackElement = newPlaybackElement
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
