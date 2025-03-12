@@ -723,7 +723,7 @@ function MSEStrategy(
     mediaPlayer.setCurrentTrack(mainTrack)
 
     // Feature Parity with Native
-    if (isPaused()) play()
+    if (isPaused()) mediaPlayer.play()
   }
 
   function setAudioDescribedOn() {
@@ -732,7 +732,7 @@ function MSEStrategy(
       mediaPlayer.setCurrentTrack(ADTrack)
 
       // Feature Parity with Native
-      if (isPaused()) play()
+      if (isPaused()) mediaPlayer.play()
     }
   }
 
