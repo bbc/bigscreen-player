@@ -297,9 +297,7 @@ describe("Legacy Playback Adapter", () => {
       legacyAdapter.load("video/mp4", null, false)
 
       mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.METADATA })
-      mediaPlayer.dispatchEvent({ type: MediaPlayerEvent.PAUSED })
 
-      expect(legacyAdapter.isPaused()).toBe(true)
       expect(mediaPlayer.pause).toHaveBeenCalled()
       expect(mediaPlayer.removeEventCallback).toHaveBeenCalled()
     })

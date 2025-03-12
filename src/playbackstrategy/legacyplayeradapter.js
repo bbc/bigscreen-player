@@ -213,10 +213,19 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     mediaPlayer.reset()
   }
 
-  function pause() {
-    if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
-      pauseOnExitSeek = true
-    } else {
+  function setCurrentTime(presentationTimeInSeconds) {
+    isEnded = false
+    currentTime = presentationTimeInSeconds
+
+    if (handleErrorOnExitingSeek || delayPauseOnExitSeek) {
+      targetSeekToTime = presentationTimeInSeconds
+      exitingSeek = true
+      pauseOnExitSeek = isPaused
+    }
+
+    mediaPlayer.playFrom && mediaPlayer.playFrom(presentationTimeInSeconds)
+
+    if (isPaused && !delayPauseOnExitSeek && typeof mediaPlayer.pause === "function") {
       mediaPlayer.pause()
     }
   }
@@ -250,8 +259,8 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       if (!autoPlay) {
         mediaPlayer.addEventCallback(this, function pauseCallback(event) {
           if (event.type === MediaPlayerBase.EVENT.METADATA) {
-            restartMediaPlayer()
-            pause()
+            isPaused = true
+            setCurrentTime(currentTime)
             mediaPlayer.removeEventCallback(pauseCallback)
           }
         })
@@ -289,7 +298,13 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         }
       }
     },
-    pause,
+    pause: () => {
+      if (delayPauseOnExitSeek && exitingSeek && transitions.canBePaused()) {
+        pauseOnExitSeek = true
+      } else {
+        mediaPlayer.pause()
+      }
+    },
     isPaused: () => isPaused,
     isEnded: () => isEnded,
     getDuration: () => duration,
@@ -316,22 +331,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       return 1
     },
     getCurrentTime: () => currentTime,
-    setCurrentTime: (presentationTimeInSeconds) => {
-      isEnded = false
-      currentTime = presentationTimeInSeconds
-
-      if (handleErrorOnExitingSeek || delayPauseOnExitSeek) {
-        targetSeekToTime = presentationTimeInSeconds
-        exitingSeek = true
-        pauseOnExitSeek = isPaused
-      }
-
-      mediaPlayer.playFrom && mediaPlayer.playFrom(presentationTimeInSeconds)
-
-      if (isPaused && !delayPauseOnExitSeek && typeof mediaPlayer.pause === "function") {
-        mediaPlayer.pause()
-      }
-    },
+    setCurrentTime,
     getStrategy: () => window.bigscreenPlayer?.playbackStrategy?.match(/.+(?=strategy)/g)[0].toUpperCase(),
     reset,
     tearDown: () => {
