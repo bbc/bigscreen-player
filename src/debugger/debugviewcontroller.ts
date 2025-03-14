@@ -1,3 +1,4 @@
+import { MediaKinds } from "../models/mediakinds"
 import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 import { Extends } from "../utils/types"
@@ -29,18 +30,47 @@ const DYNAMIC_ENTRY_LIMIT = 29 as const
 
 type Timestamp = Timestamped<{ category: "time" }>
 
-type MetricUnion<UnionKind extends string, MergedKind extends MetricKind> = {
+type MediaElementStates = Extends<MetricKind, "ended" | "paused" | "ready-state" | "seeking">
+
+type MediaElementState = {
   category: "union"
-  kind: UnionKind
-  data: { [Kind in MergedKind]?: MetricForKind<Kind>["data"] }
+  kind: "media-element-state"
+  data: { [State in MediaElementStates]?: MetricForKind<State>["data"] }
 }
 
-type MediaStateMetrics = Extends<MetricKind, "ended" | "paused" | "ready-state" | "seeking">
-type MediaStateUnion = MetricUnion<"media-element-state", MediaStateMetrics>
+type QualityMetricKind = Extends<MetricKind, "download-quality" | "playback-quality">
+
+type PlaybackQuality = {
+  category: "union"
+  kind: "playback-quality"
+  data: Record<
+    MediaKinds,
+    {
+      current?: { qualityIndex: number; bitrate: number }
+      max?: { qualityIndex: number; bitrate: number }
+    }
+  >
+}
+
+type DownloadQuality = {
+  category: "union"
+  kind: "download-quality"
+  data: Record<
+    MediaKinds,
+    {
+      current?: { qualityIndex: number; bitrate: number }
+      max?: { qualityIndex: number; bitrate: number }
+    }
+  >
+}
 
 type DynamicEntry = TimestampedMessage | TimestampedTrace | Timestamp
 
-type StaticEntry = TimestampedMetric | Timestamped<MediaStateUnion>
+type StaticEntry =
+  | Exclude<TimestampedMetric, MetricForKind<MediaElementStates | QualityMetricKind | "max-quality">>
+  | Timestamped<MediaElementState>
+  | Timestamped<DownloadQuality>
+  | Timestamped<PlaybackQuality>
 type StaticEntryKind = StaticEntry["kind"]
 type StaticEntryForKind<Kind extends StaticEntryKind> = Extract<StaticEntry, { kind: Kind }>
 
@@ -73,14 +103,14 @@ class DebugViewController {
   private dynamicEntries: DynamicEntry[] = []
   private latestMetricByKey: Partial<Record<StaticEntryKind, StaticEntry>> = {}
 
-  private isMerged(metric: TimestampedMetric): metric is Timestamped<MetricForKind<MediaStateMetrics>> {
+  private isMediaState(metric: TimestampedMetric): metric is Timestamped<MetricForKind<MediaElementStates>> {
     const { kind } = metric
     const mediaStateMetrics = ["ended", "paused", "ready-state", "seeking"]
 
     return mediaStateMetrics.includes(kind)
   }
 
-  private mergeMediaState(entry: Timestamped<MetricForKind<MediaStateMetrics>>): Timestamped<MediaStateUnion> {
+  private mergeMediaState(entry: Timestamped<MetricForKind<MediaElementStates>>): Timestamped<MediaElementState> {
     const prevData =
       this.latestMetricByKey["media-element-state"] == null
         ? {}
@@ -96,12 +126,89 @@ class DebugViewController {
     }
   }
 
+  private isQuality(metric: TimestampedMetric): metric is Timestamped<MetricForKind<QualityMetricKind>> {
+    const { kind } = metric
+
+    return ["download-quality", "playback-quality"].includes(kind)
+  }
+
+  private mergeQuality(
+    entry: Timestamped<MetricForKind<QualityMetricKind>>
+  ): Timestamped<PlaybackQuality | DownloadQuality> {
+    const {
+      kind: metricKind,
+      currentElementTime,
+      sessionTime,
+      data: [mediaKind, qualityIndex, bitrate],
+    } = entry
+
+    const prevEntry: PlaybackQuality | DownloadQuality =
+      this.latestMetricByKey[metricKind] == null
+        ? { category: "union", kind: metricKind, data: { audio: {}, video: {} } }
+        : (this.latestMetricByKey[metricKind] as Timestamped<PlaybackQuality | DownloadQuality>)
+
+    return {
+      ...prevEntry,
+      currentElementTime,
+      sessionTime,
+      data: {
+        ...prevEntry.data,
+        [mediaKind]: { ...prevEntry.data[mediaKind], current: { bitrate, qualityIndex } },
+      },
+    }
+  }
+
+  private mergeMaxQuality(
+    entry: Timestamped<MetricForKind<"max-quality">>,
+    target: QualityMetricKind
+  ): Timestamped<PlaybackQuality | DownloadQuality> {
+    const prevEntry: PlaybackQuality | DownloadQuality =
+      this.latestMetricByKey[target] == null
+        ? { category: "union", kind: target, data: { audio: {}, video: {} } }
+        : (this.latestMetricByKey[target] as Timestamped<PlaybackQuality | DownloadQuality>)
+
+    const {
+      currentElementTime,
+      sessionTime,
+      data: [mediaKind, qualityIndex, bitrate],
+    } = entry
+
+    return {
+      ...prevEntry,
+      currentElementTime,
+      sessionTime,
+      data: {
+        ...prevEntry.data,
+        [mediaKind]: {
+          ...prevEntry.data[mediaKind],
+          max: { qualityIndex, bitrate },
+        },
+      },
+    }
+  }
+
   private cacheEntry(entry: TimestampedEntry): void {
-    const { category } = entry
+    const { category, kind } = entry
 
     switch (category) {
       case EntryCategory.METRIC:
-        return this.cacheStaticEntry(this.isMerged(entry) ? this.mergeMediaState(entry) : entry)
+        if (this.isMediaState(entry)) {
+          this.cacheStaticEntry(this.mergeMediaState(entry))
+          return
+        }
+
+        if (this.isQuality(entry)) {
+          this.cacheStaticEntry(this.mergeQuality(entry))
+          return
+        }
+
+        if (kind === "max-quality") {
+          this.cacheStaticEntry(this.mergeMaxQuality(entry, "download-quality"))
+          this.cacheStaticEntry(this.mergeMaxQuality(entry, "playback-quality"))
+          return
+        }
+
+        return this.cacheStaticEntry(entry)
 
       case EntryCategory.MESSAGE:
       case EntryCategory.TRACE:
@@ -306,16 +413,21 @@ class DebugViewController {
       return `${formatDate(new Date(start * 1000))} - ${formatDate(new Date(end * 1000))}`
     }
 
-    if (kind === "representation-audio" || kind === "representation-video") {
-      const [qualityIndex, bitrate] = data
-
-      return `${qualityIndex} (${bitrate} kbps)`
-    }
-
     if (kind === "initial-playback-time") {
       const [seconds, timeline] = data
 
       return `${seconds}s ${timeline}`
+    }
+
+    if (kind === "download-quality" || kind === "playback-quality") {
+      return [...Object.entries(data)]
+        .map(
+          ([kind, { current, max }]) =>
+            `${kind}: ${((current?.bitrate ?? 0) / 1000).toFixed(0)} kbps (${current?.qualityIndex ?? 0}/${
+              max?.qualityIndex ?? 0
+            })`
+        )
+        .join(", ")
     }
 
     return data.join(", ")

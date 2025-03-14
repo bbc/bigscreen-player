@@ -45,6 +45,7 @@ const mockDashInstance = {
   getDashMetrics: jest.fn().mockReturnValue(mockDashMetrics),
   getDashAdapter: jest.fn().mockReturnValue(mockDashAdapter),
   getBitrateInfoListFor: jest.fn(),
+  getTopBitrateInfoFor: jest.fn(),
   getAverageThroughput: jest.fn(),
   getDVRWindowSize: jest.fn(),
   updateSettings: jest.fn(),
@@ -504,6 +505,8 @@ describe("Media Source Extensions Playback Strategy", () => {
         { bitrate: 200000 },
         { bitrate: 3000000 },
       ])
+
+      mockDashInstance.getTopBitrateInfoFor.mockReturnValue({ qualityIndex: 2, bitrate: 3000000 })
 
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 

@@ -310,10 +310,8 @@ function MSEStrategy(
   function emitPlayerInfo() {
     playerMetadata.playbackBitrate =
       mediaKind === MediaKinds.VIDEO
-        ? currentPlaybackBitrate(MediaKinds.VIDEO) + currentPlaybackBitrate(MediaKinds.AUDIO)
-        : currentPlaybackBitrate(MediaKinds.AUDIO)
-
-    DebugTool.dynamicMetric("bitrate", playerMetadata.playbackBitrate)
+        ? currentPlaybackBitrateInKbps(MediaKinds.VIDEO) + currentPlaybackBitrateInKbps(MediaKinds.AUDIO)
+        : currentPlaybackBitrateInKbps(MediaKinds.AUDIO)
 
     Plugins.interface.onPlayerInfoUpdated({
       bufferLength: playerMetadata.bufferLength,
@@ -336,22 +334,26 @@ function MSEStrategy(
       }))
   }
 
-  function currentPlaybackBitrate(mediaKind) {
+  function currentPlaybackBitrateInKbps(mediaKind) {
     const representationSwitch = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaKind)
+
     const representation = representationSwitch ? representationSwitch.to : ""
-    return playbackBitrateForRepresentation(representation, mediaKind)
+
+    return playbackBitrateForRepresentation(representation, mediaKind) / 1000
   }
 
   function playbackBitrateForRepresentation(representation, mediaKind) {
     const repIdx = mediaPlayer.getDashAdapter().getIndexForRepresentation(representation, 0)
+
     return playbackBitrateForRepresentationIndex(repIdx, mediaKind)
   }
 
   function playbackBitrateForRepresentationIndex(index, mediaKind) {
-    if (index === -1) return ""
+    if (index === -1) return 0
 
     const bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind)
-    return parseInt(bitrateInfoList[index].bitrate / 1000)
+
+    return bitrateInfoList[index].bitrate ?? 0
   }
 
   function logBitrate(abrType, { mediaType, oldQuality, newQuality }) {
@@ -371,17 +373,26 @@ function MSEStrategy(
       logBitrate("Requested", event)
     }
 
-    event.throughput = mediaPlayer.getAverageThroughput(mediaKind)
-
     Plugins.interface.onQualityChangeRequested(event)
   }
 
   function onQualityChangeRendered(event) {
     if (event.newQuality !== undefined) {
-      logBitrate("Rendered", event)
+      const { mediaType, newQuality } = event
+
+      DebugTool.dynamicMetric("playback-quality", [
+        mediaType,
+        newQuality,
+        playbackBitrateForRepresentationIndex(newQuality, mediaType),
+      ])
+
+      const { qualityIndex, bitrate } = mediaPlayer.getTopBitrateInfoFor(mediaType)
+
+      DebugTool.dynamicMetric("max-quality", [mediaType, qualityIndex, bitrate])
     }
 
     emitPlayerInfo()
+
     Plugins.interface.onQualityChangedRendered(event)
   }
 
@@ -422,6 +433,7 @@ function MSEStrategy(
     if (event.mediaType === "video" && event.metric === "DroppedFrames") {
       DebugTool.staticMetric("frames-dropped", event.value.droppedFrames)
     }
+
     if (event.mediaType === mediaKind && event.metric === "BufferLevel") {
       dashMetrics = mediaPlayer.getDashMetrics()
 
@@ -433,6 +445,22 @@ function MSEStrategy(
           playbackBitrate: playerMetadata.playbackBitrate,
         })
       }
+    }
+
+    if (event.metric === "RepSwitchList") {
+      const { mediaType, value: repSwitch } = event
+
+      const downloadQualityIndex = mediaPlayer.getDashAdapter().getIndexForRepresentation(repSwitch.to, 0)
+
+      DebugTool.dynamicMetric("download-quality", [
+        mediaType,
+        downloadQualityIndex,
+        playbackBitrateForRepresentationIndex(downloadQualityIndex, mediaType),
+      ])
+
+      const { qualityIndex: maxQualityIndex, bitrate: maxBitrate } = mediaPlayer.getTopBitrateInfoFor(mediaType)
+
+      DebugTool.dynamicMetric("max-quality", [mediaType, maxQualityIndex, maxBitrate])
     }
   }
 
