@@ -132,7 +132,6 @@ function PlayerComponent(
   }
 
   function genericAudioDescribedSwitch(enable) {
-    const autoPlay = !isPaused()
     const presentationTimeInSeconds = getCurrentTime()
     const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
       presentationTimeInSeconds,
@@ -148,7 +147,7 @@ function PlayerComponent(
         )
 
         tearDownMediaElement()
-        loadMedia(mediaMetaData.type, presentationTimeInSeconds, autoPlay)
+        loadMedia(mediaMetaData.type, presentationTimeInSeconds)
       })
       .catch(() => {
         bubbleFatalError(false, {
@@ -300,13 +299,12 @@ function PlayerComponent(
     mediaSources
       .failover(failoverParams)
       .then(() => {
-        const thenPause = isPaused()
         tearDownMediaElement()
         const presentationTimeInSeconds = availabilityTimeToPresentationTimeInSeconds(
           availabilityTimeInMilliseconds,
           mediaSources.time().availabilityStartTimeInMilliseconds
         )
-        loadMedia(mediaMetaData.type, presentationTimeInSeconds, thenPause)
+        loadMedia(mediaMetaData.type, presentationTimeInSeconds)
       })
       .catch(() => {
         bubbleFatalError(bufferingTimeoutError, mediaError)
@@ -405,12 +403,8 @@ function PlayerComponent(
     }
   }
 
-  function loadMedia(type, presentationTimeInSeconds, autoPlay = true) {
+  function loadMedia(type, presentationTimeInSeconds) {
     playbackStrategy?.load(type, presentationTimeInSeconds)
-
-    if (!autoPlay) {
-      pause()
-    }
 
     if (mediaSources.isAudioDescribedEnabled()) {
       audioDescribedCallback(true)
