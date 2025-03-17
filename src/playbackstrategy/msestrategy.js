@@ -721,18 +721,12 @@ function MSEStrategy(
     const audioTracks = mediaPlayer.getTracksFor("audio")
     const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
     mediaPlayer.setCurrentTrack(mainTrack)
-
-    // Feature Parity with Native
-    if (isPaused()) mediaPlayer.play()
   }
 
   function setAudioDescribedOn() {
     const ADTrack = getAudioDescribedTrack()
     if (ADTrack) {
       mediaPlayer.setCurrentTrack(ADTrack)
-
-      // Feature Parity with Native
-      if (isPaused()) mediaPlayer.play()
     }
   }
 
