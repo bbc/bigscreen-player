@@ -1543,9 +1543,8 @@ describe("Bigscreen Player", () => {
 
       bigscreenPlayer.setAudioDescribed(false)
 
-      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenCalledTimes(2)
-      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenCalledWith(true)
-      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenCalledWith(false)
+      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenNthCalledWith(1, true)
+      expect(mockPlayerComponentInstance.setAudioDescribed).toHaveBeenNthCalledWith(2, false)
     })
   })
 
