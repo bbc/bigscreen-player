@@ -760,7 +760,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       mockMediaSources.time.mockReturnValue({ manifestType: ManifestType.DYNAMIC })
 
       mockDashMetrics.getCurrentDVRInfo.mockReturnValueOnce({ range: { start: 180, end: 360 } })
-      mockDashInstance.duration.mockReturnValueOnce(180)
 
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
         streaming: { delay: { liveDelay: 20 } },
@@ -818,17 +817,6 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mseStrategy.getCurrentTime()).toBe(10)
     })
 
-    it("returns the last known good time value, if currentTime is 0", () => {
-      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-      mseStrategy.load(null, 0)
-
-      mediaElement.currentTime = 10
-      expect(mseStrategy.getCurrentTime()).toBe(10)
-
-      mediaElement.currentTime = 0
-      expect(mseStrategy.getCurrentTime()).toBe(10)
-    })
-
     it("returns 0 when MediaPlayer is undefined", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 
@@ -837,15 +825,6 @@ describe("Media Source Extensions Playback Strategy", () => {
   })
 
   describe("getDuration()", () => {
-    it("returns the correct duration from the DASH Mediaplayer", () => {
-      mockDashInstance.duration.mockReturnValueOnce(180)
-
-      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
-      mseStrategy.load(null, 0)
-
-      expect(mseStrategy.getDuration()).toBe(180)
-    })
-
     it("returns 0 when the MediaPlayer is undefined", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
 

@@ -605,41 +605,51 @@ function MSEStrategy(
   }
 
   function getSeekableRange() {
-    if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
-      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
-
-      // FIX: Dash.js briefly returns `null` on a failover for the first time update
-      if (dvrInfo) {
-        const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end - liveDelay }
-        // Save good seekable range and duration values
-        cached.seekableRange = Utils.clone(seekableRange)
-        cached.duration = getDuration()
-
-        return seekableRange
-      }
+    if (manifestType === ManifestType.STATIC || !mediaPlayer?.isReady()) {
+      return cached.seekableRange || { start: 0, end: getDuration() }
     }
 
-    return cached.seekableRange || { start: 0, end: getDuration() }
+    const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+
+    // FIX: Dash.js briefly returns `null` on a failover for the first time update
+    if (dvrInfo) {
+      const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end }
+      // Save good seekable range value
+      cached.seekableRange = Utils.clone(seekableRange)
+
+      return { start: seekableRange.start, end: seekableRange.end - liveDelay }
+    }
+
+    return cached.seekableRange
+      ? { ...cached.seekableRange, end: cached.seekableRange.end - liveDelay }
+      : { start: 0, end: getDuration() }
   }
 
   function getDuration() {
     const duration = mediaPlayer && mediaPlayer.isReady() && mediaPlayer.duration()
 
     // If duration is a number, return that, else return cached value (default 0)
-    return typeof duration === "number" && !isNaN(duration) ? duration : cached.duration
+    if (typeof duration === "number" && !isNaN(duration)) {
+      cached.duration = duration
+      return duration
+    }
+    return cached.duration
   }
 
   function getCurrentTime() {
     const currentTime = mediaElement?.currentTime
-    if (currentTime && !isNaN(currentTime)) {
-      cached.currentTime = currentTime
-    }
 
-    return currentTime || cached.currentTime
+    if (currentTime === 0) {
+      cached.currentTime = 0
+      return 0
+    } else if (currentTime && !isNaN(currentTime)) {
+      cached.currentTime = currentTime
+      return currentTime
+    }
+    return cached.currentTime
   }
 
   function refreshManifestBeforeSeek(presentationTimeInSeconds) {
-    // Is this needed?
     cached.currentTime = presentationTimeInSeconds
 
     mediaPlayer.refreshManifest((manifest) => {
@@ -773,20 +783,24 @@ function MSEStrategy(
   }
 
   function getSafelySeekableRange() {
-    if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
-      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
-
-      // FIX: Dash.js briefly returns `null` on a failover for the first time update
-      if (dvrInfo) {
-        const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end - seekDurationPadding }
-        cached.seekableRange = Utils.clone(seekableRange)
-        cached.duration = getDuration()
-
-        return seekableRange
-      }
+    if (manifestType === ManifestType.STATIC || !mediaPlayer?.isReady()) {
+      return cached.seekableRange || { start: 0, end: getDuration() - seekDurationPadding }
     }
 
-    return cached.seekableRange || { start: 0, end: getDuration() - seekDurationPadding }
+    const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+
+    // FIX: Dash.js briefly returns `null` on a failover for the first time update
+    if (dvrInfo) {
+      const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end }
+      // Save good seekable range value
+      cached.seekableRange = Utils.clone(seekableRange)
+
+      return { start: seekableRange.start, end: seekableRange.end - seekDurationPadding }
+    }
+
+    return cached.seekableRange
+      ? { ...cached.seekableRange, end: cached.seekableRange.end - seekDurationPadding }
+      : { start: 0, end: getDuration() - seekDurationPadding }
   }
 
   function clampPresentationTimeToSafeRange(presentationTimeInSeconds) {
