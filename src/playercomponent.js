@@ -150,9 +150,9 @@ function PlayerComponent(
         loadMedia(mediaMetaData.type, presentationTimeInSeconds)
       })
       .catch(() => {
-        bubbleFatalError(false, {
-          code: "0000", // change code?
-          message: `error switching ${enable ? "to" : "from"} audio described`,
+        bubbleFatalError(true, {
+          code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
         })
       })
   }
