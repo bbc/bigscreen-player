@@ -117,21 +117,21 @@ function PlayerComponent(
   }
 
   function isAudioDescribedAvailable() {
-    const genericAD = mediaSources.isAudioDescribedAvailable()
+    const sourceBasedAD = mediaSources.isAudioDescribedAvailable()
     const playbackStrategyProvidedAD = () => playbackStrategy && playbackStrategy.isAudioDescribedAvailable?.()
 
-    return genericAD || playbackStrategyProvidedAD()
+    return sourceBasedAD || playbackStrategyProvidedAD()
   }
 
   function isAudioDescribedEnabled() {
-    const genericADAvailable = mediaSources.isAudioDescribedAvailable()
-    const genericADEnabled = mediaSources.isAudioDescribedEnabled()
+    const sourceBasedADAvailable = mediaSources.isAudioDescribedAvailable()
+    const sourceBasedADEnabled = mediaSources.isAudioDescribedEnabled()
     const playbackStrategyProvidedAD = () => playbackStrategy && playbackStrategy.isAudioDescribedEnabled?.()
 
-    return genericADAvailable ? genericADEnabled : playbackStrategyProvidedAD()
+    return sourceBasedADAvailable ? sourceBasedADEnabled : playbackStrategyProvidedAD()
   }
 
-  function genericAudioDescribedSwitch(enable) {
+  function sourceBasedAudioDescribedSwitch(enable) {
     const presentationTimeInSeconds = getCurrentTime()
     const availabilityTimeInMilliseconds = presentationTimeToAvailabilityTimeInMilliseconds(
       presentationTimeInSeconds,
@@ -158,7 +158,7 @@ function PlayerComponent(
   }
 
   function setAudioDescribed(enable) {
-    if (mediaSources.isAudioDescribedAvailable()) return genericAudioDescribedSwitch(enable)
+    if (mediaSources.isAudioDescribedAvailable()) return sourceBasedAudioDescribedSwitch(enable)
 
     if (playbackStrategy) {
       if (!playbackStrategy.isAudioDescribedAvailable?.()) return Promise.resolve()

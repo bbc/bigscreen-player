@@ -2,9 +2,9 @@ BigscreenPlayer provides Audio Description (AD) support for accessible media pla
 
 ## Implementations
 
-BigscreenPlayer uses two distinct methods for handling AD: a generic approach and an MSE-specific approach.
+BigscreenPlayer uses two distinct methods for handling AD: a source switching approach and an MSE-specific approach.
 
-### 1. Generic Audio Description (MediaSources)
+### 1. Source Switching Audio Description (MediaSources)
 
 The `MediaSources` module manages AD by accepting separate sources for audio description tracks. This method is used when AD is provided as a distinct media resource.
 
@@ -34,7 +34,7 @@ Audio Described functionality can be interacted with through BigScreenPlayers AP
 
 - **`isAudioDescribedAvailable()`:**
   - Checks if AD tracks are available.
-  - If the generic implementation (MediaSources) provides AD, **this takes priority**.
+  - If the source switching implementation (MediaSources) provides AD, **this takes priority**.
 - **`isAudioDescribedEnabled()`:**
   - Checks if an AD track/source is currently active.
 - **`setAudioDescribed(enable)`:**
