@@ -28,7 +28,7 @@ You must provide a _playback strategy_ to use BigscreenPlayer:
 window.bigscreenPlayer.playbackStrategy = "msestrategy" // OR 'nativestrategy' OR 'basicstrategy'
 ```
 
-The `msestrategy` uses Dash.js under the hood. It is likely to be what you want. You should read [the documentation on playback strategies](https://bbc.github.io/bigscreen-player/api/tutorial-01-playback-strategies.html) if you want to use a native media player from your browser, you should also have a peek at the [documentation on settings and overrides](https://bbc.github.io/bigscreen-player/api/tutorial-02-settings-and-overrides.html)
+The `msestrategy` uses Dash.js under the hood. It is likely to be what you want. You should read [the documentation on playback strategies](https://bbc.github.io/bigscreen-player/api/tutorial-01-playback-strategies.html) if you want to use a native media player from your browser. You should also have a peek at the [documentation on settings and overrides](https://bbc.github.io/bigscreen-player/api/tutorial-02-settings-and-overrides.html)
 
 ### Minimal Data
 
