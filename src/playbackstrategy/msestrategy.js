@@ -57,7 +57,6 @@ function MSEStrategy(
   const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay)
     ? DEFAULT_SETTINGS.liveDelay
     : playerSettings.streaming?.delay?.liveDelay
-  let failoverPresentationTimeInSeconds
   let isEnded = false
   const cached = {
     seekableRange: undefined,
@@ -207,7 +206,7 @@ function MSEStrategy(
       isFinite(currentPresentationTimeInSeconds) &&
       parseInt(currentPresentationTimeInSeconds) > 0
     ) {
-      failoverPresentationTimeInSeconds = currentPresentationTimeInSeconds
+      cached.currentTime = currentPresentationTimeInSeconds
     }
 
     publishTimeUpdate()
@@ -488,9 +487,9 @@ function MSEStrategy(
 
   function load(mimeType, presentationTimeInSeconds) {
     if (mediaPlayer) {
-      modifySource(cached.currentTime || failoverPresentationTimeInSeconds)
+      modifySource(cached.currentTime)
     } else {
-      failoverPresentationTimeInSeconds = presentationTimeInSeconds
+      cached.currentTime = presentationTimeInSeconds
       setUpMediaElement(playbackElement)
       setUpMediaPlayer(presentationTimeInSeconds)
       setUpMediaListeners()
@@ -639,10 +638,7 @@ function MSEStrategy(
   function getCurrentTime() {
     const currentTime = mediaElement?.currentTime
 
-    if (currentTime === 0) {
-      cached.currentTime = 0
-      return 0
-    } else if (currentTime && !isNaN(currentTime)) {
+    if (currentTime && !isNaN(currentTime)) {
       cached.currentTime = currentTime
       return currentTime
     }
@@ -844,7 +840,6 @@ function MSEStrategy(
     eventCallbacks = []
     errorCallback = undefined
     timeUpdateCallback = undefined
-    failoverPresentationTimeInSeconds = undefined
     isEnded = undefined
     dashMetrics = undefined
     playerMetadata = {
