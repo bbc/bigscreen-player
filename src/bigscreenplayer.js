@@ -24,10 +24,9 @@ import { ManifestType } from "./models/manifesttypes"
 import { Timeline } from "./models/timeline"
 
 /**
- * @typedef {import('./types.ts').InitData} InitData
- * @typedef {import('./types.ts').InitCallbacks} InitCallbacks
- * @typedef {import('./types.ts').SubtitlesCustomisationOptions} SubtitlesCustomisationOptions
- * @typedef {import('./types.ts').PlaybackTime} PlaybackTime
+ * @import {
+ *   InitCallbacks, InitData, SubtitlesCustomisationOptions,PlaybackTime
+ * } from './types.ts'
  */
 
 function BigscreenPlayer() {
