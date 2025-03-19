@@ -11,8 +11,8 @@ import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
 
 /**
- * @typedef {import('./types.d.ts').InitData} InitData
- * @typedef {import('./mediasources').MediaSources} MediaSources
+ * @import { InitData } from './types.d.ts'
+ * @import { MediaSources } from './mediasources'
  *
  * @typedef {{
  *   data: {
