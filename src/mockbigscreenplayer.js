@@ -325,7 +325,7 @@ const mockFunctions = {
   },
   customiseSubtitles() {},
   renderSubtitleExample() {},
-  setAudioDescribedEnabled(value) {
+  setAudioDescribed(value) {
     audioDescribedEnabled = value
   },
   isAudioDescribedEnabled() {
