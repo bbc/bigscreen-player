@@ -489,7 +489,9 @@ function MSEStrategy(
     if (mediaPlayer) {
       modifySource(cached.currentTime)
     } else {
-      cached.currentTime = presentationTimeInSeconds
+      if (typeof presentationTimeInSeconds === "number" && isFinite(presentationTimeInSeconds)) {
+        cached.currentTime = presentationTimeInSeconds
+      }
       setUpMediaElement(playbackElement)
       setUpMediaPlayer(presentationTimeInSeconds)
       setUpMediaListeners()
@@ -628,7 +630,7 @@ function MSEStrategy(
     const duration = mediaPlayer && mediaPlayer.isReady() && mediaPlayer.duration()
 
     // If duration is a number, return that, else return cached value (default 0)
-    if (typeof duration === "number" && !isNaN(duration)) {
+    if (typeof duration === "number" && isFinite(duration)) {
       cached.duration = duration
       return duration
     }
@@ -638,7 +640,7 @@ function MSEStrategy(
   function getCurrentTime() {
     const currentTime = mediaElement?.currentTime
 
-    if (currentTime && !isNaN(currentTime)) {
+    if (typeof currentTime === "number" && isFinite(currentTime)) {
       cached.currentTime = currentTime
       return currentTime
     }
@@ -646,7 +648,9 @@ function MSEStrategy(
   }
 
   function refreshManifestBeforeSeek(presentationTimeInSeconds) {
-    cached.currentTime = presentationTimeInSeconds
+    if (typeof presentationTimeInSeconds === "number" && isFinite(presentationTimeInSeconds)) {
+      cached.currentTime = presentationTimeInSeconds
+    }
 
     mediaPlayer.refreshManifest((manifest) => {
       const mediaPresentationDuration = manifest?.mediaPresentationDuration
