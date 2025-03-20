@@ -287,6 +287,15 @@ describe("Media Source Extensions Playback Strategy", () => {
       )
       expect(mockDashInstance.on).toHaveBeenCalledWith(dashjsMediaPlayerEvents.METRIC_ADDED, expect.any(Function))
     })
+
+    it("should keep the cached current time at 0 when the load presentationTimeInSeconds is not a number", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null)
+
+      mediaElement.currentTime = 0
+      expect(mseStrategy.getCurrentTime()).toBe(0)
+    })
   })
 
   describe("Load when a mediaPlayer exists (e.g. CDN failover)", () => {
