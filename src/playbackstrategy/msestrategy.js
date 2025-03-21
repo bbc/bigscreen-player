@@ -458,7 +458,7 @@ function MSEStrategy(
       DebugTool.info(
         `${abrChangePart}${
           typeof playerMetadata.playbackBitrate === "number"
-            ? `. Total playback quality is ${playerMetadata.playbackBitrate.toFixed(0)} kbps`
+            ? `. Currently playing at ${playerMetadata.playbackBitrate.toFixed(0)} kbps`
             : ""
         }`
       )
