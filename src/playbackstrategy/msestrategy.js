@@ -356,39 +356,25 @@ function MSEStrategy(
     return bitrateInfoList[index].bitrate ?? 0
   }
 
-  function logBitrate(abrType, { mediaType, oldQuality, newQuality }) {
-    const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
-    const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
-
-    const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
-    const newRepresentation = `${newQuality} (${newBitrate} kbps)`
-
-    DebugTool.info(
-      `${mediaType} ABR Change ${abrType} From Representation ${oldRepresentation} to ${newRepresentation}`
-    )
-  }
-
   function onQualityChangeRequested(event) {
-    if (event.newQuality !== undefined) {
-      logBitrate("Requested", event)
-    }
-
     Plugins.interface.onQualityChangeRequested(event)
   }
 
   function onQualityChangeRendered(event) {
-    if (event.newQuality !== undefined) {
+    if (
+      event.newQuality !== undefined &&
+      (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
+    ) {
       const { mediaType, newQuality } = event
 
-      DebugTool.dynamicMetric("playback-quality", [
-        mediaType,
+      DebugTool.dynamicMetric(`${mediaType}-playback-quality`, [
         newQuality,
         playbackBitrateForRepresentationIndex(newQuality, mediaType),
       ])
 
       const { qualityIndex, bitrate } = mediaPlayer.getTopBitrateInfoFor(mediaType)
 
-      DebugTool.dynamicMetric("max-quality", [mediaType, qualityIndex, bitrate])
+      DebugTool.dynamicMetric(`${mediaType}-max-quality`, [qualityIndex, bitrate])
     }
 
     emitPlayerInfo()
@@ -447,20 +433,35 @@ function MSEStrategy(
       }
     }
 
-    if (event.metric === "RepSwitchList") {
+    if (
+      event.metric === "RepSwitchList" &&
+      (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
+    ) {
       const { mediaType, value: repSwitch } = event
 
       const downloadQualityIndex = mediaPlayer.getDashAdapter().getIndexForRepresentation(repSwitch.to, 0)
+      const downloadBitrate = playbackBitrateForRepresentationIndex(downloadQualityIndex, mediaType)
 
-      DebugTool.dynamicMetric("download-quality", [
-        mediaType,
+      DebugTool.dynamicMetric(`${mediaType}-download-quality`, [
         downloadQualityIndex,
         playbackBitrateForRepresentationIndex(downloadQualityIndex, mediaType),
       ])
 
       const { qualityIndex: maxQualityIndex, bitrate: maxBitrate } = mediaPlayer.getTopBitrateInfoFor(mediaType)
 
-      DebugTool.dynamicMetric("max-quality", [mediaType, maxQualityIndex, maxBitrate])
+      DebugTool.dynamicMetric(`${mediaType}-max-quality`, [maxQualityIndex, maxBitrate])
+
+      const downloadBitratePart = (downloadBitrate / 1000).toFixed(0)
+
+      const abrChangePart = `ABR change! Downloading ${mediaType} at quality ${downloadQualityIndex} (${downloadBitratePart} kbps)`
+
+      DebugTool.info(
+        `${abrChangePart}${
+          typeof playerMetadata.playbackBitrate === "number"
+            ? `. Total playback quality is ${playerMetadata.playbackBitrate.toFixed(0)} kbps`
+            : ""
+        }`
+      )
     }
   }
 

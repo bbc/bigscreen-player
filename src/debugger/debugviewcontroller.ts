@@ -1,4 +1,3 @@
-import { MediaKinds } from "../models/mediakinds"
 import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 import { Extends } from "../utils/types"
@@ -30,49 +29,46 @@ const DYNAMIC_ENTRY_LIMIT = 29 as const
 
 type Timestamp = Timestamped<{ category: "time" }>
 
-type MediaElementStates = Extends<MetricKind, "ended" | "paused" | "ready-state" | "seeking">
+type MediaElementStateKind = Extends<MetricKind, "ended" | "paused" | "ready-state" | "seeking">
 
 type MediaElementState = {
   category: "union"
   kind: "media-element-state"
-  data: { [State in MediaElementStates]?: MetricForKind<State>["data"] }
+  data: { [State in MediaElementStateKind]?: MetricForKind<State>["data"] }
 }
 
-type QualityMetricKind = Extends<MetricKind, "download-quality" | "playback-quality">
+type VideoQualityKind = Extends<MetricKind, "video-download-quality" | "video-max-quality" | "video-playback-quality">
+type AudioQualityKind = Extends<MetricKind, "audio-download-quality" | "audio-max-quality" | "audio-playback-quality">
 
-type PlaybackQuality = {
+type VideoQuality = {
   category: "union"
-  kind: "playback-quality"
-  data: Record<
-    MediaKinds,
-    {
-      current?: { qualityIndex: number; bitrate: number }
-      max?: { qualityIndex: number; bitrate: number }
-    }
-  >
+  kind: "video-quality"
+  data: {
+    max?: [qualityIndex: number, bitrate: number]
+    download?: [qualityIndex: number, bitrate: number]
+    playback?: [qualityIndex: number, bitrate: number]
+  }
 }
 
-type DownloadQuality = {
+type AudioQuality = {
   category: "union"
-  kind: "download-quality"
-  data: Record<
-    MediaKinds,
-    {
-      current?: { qualityIndex: number; bitrate: number }
-      max?: { qualityIndex: number; bitrate: number }
-    }
-  >
+  kind: "audio-quality"
+  data: {
+    max?: [qualityIndex: number, bitrate: number]
+    download?: [qualityIndex: number, bitrate: number]
+    playback?: [qualityIndex: number, bitrate: number]
+  }
 }
 
 type DynamicEntry = TimestampedMessage | TimestampedTrace | Timestamp
 
 type StaticEntry =
-  | Exclude<TimestampedMetric, MetricForKind<MediaElementStates | QualityMetricKind | "max-quality">>
+  | Exclude<TimestampedMetric, MetricForKind<MediaElementStateKind | AudioQualityKind | VideoQualityKind>>
   | Timestamped<MediaElementState>
-  | Timestamped<DownloadQuality>
-  | Timestamped<PlaybackQuality>
+  | Timestamped<AudioQuality>
+  | Timestamped<VideoQuality>
+
 type StaticEntryKind = StaticEntry["kind"]
-type StaticEntryForKind<Kind extends StaticEntryKind> = Extract<StaticEntry, { kind: Kind }>
 
 type FilterPredicate = (entry: TimestampedEntry) => boolean
 
@@ -103,18 +99,18 @@ class DebugViewController {
   private dynamicEntries: DynamicEntry[] = []
   private latestMetricByKey: Partial<Record<StaticEntryKind, StaticEntry>> = {}
 
-  private isMediaState(metric: TimestampedMetric): metric is Timestamped<MetricForKind<MediaElementStates>> {
+  private isMediaState(metric: TimestampedMetric): metric is Timestamped<MetricForKind<MediaElementStateKind>> {
     const { kind } = metric
     const mediaStateMetrics = ["ended", "paused", "ready-state", "seeking"]
 
     return mediaStateMetrics.includes(kind)
   }
 
-  private mergeMediaState(entry: Timestamped<MetricForKind<MediaElementStates>>): Timestamped<MediaElementState> {
+  private mergeMediaState(entry: Timestamped<MetricForKind<MediaElementStateKind>>): Timestamped<MediaElementState> {
     const prevData =
       this.latestMetricByKey["media-element-state"] == null
         ? {}
-        : (this.latestMetricByKey["media-element-state"] as StaticEntryForKind<"media-element-state">).data
+        : (this.latestMetricByKey["media-element-state"] as MediaElementState)
 
     const { kind, data } = entry
 
@@ -126,69 +122,64 @@ class DebugViewController {
     }
   }
 
-  private isQuality(metric: TimestampedMetric): metric is Timestamped<MetricForKind<QualityMetricKind>> {
+  private isAudioQuality(metric: TimestampedMetric): metric is Timestamped<MetricForKind<AudioQualityKind>> {
     const { kind } = metric
 
-    return ["download-quality", "playback-quality"].includes(kind)
+    return ["audio-max-quality", "audio-download-quality", "audio-playback-quality"].includes(kind)
   }
 
-  private mergeQuality(
-    entry: Timestamped<MetricForKind<QualityMetricKind>>
-  ): Timestamped<PlaybackQuality | DownloadQuality> {
-    const {
-      kind: metricKind,
-      currentElementTime,
-      sessionTime,
-      data: [mediaKind, qualityIndex, bitrate],
-    } = entry
+  private isVideoQuality(metric: TimestampedMetric): metric is Timestamped<MetricForKind<VideoQualityKind>> {
+    const { kind } = metric
 
-    const prevEntry: PlaybackQuality | DownloadQuality =
-      this.latestMetricByKey[metricKind] == null
-        ? { category: "union", kind: metricKind, data: { audio: {}, video: {} } }
-        : (this.latestMetricByKey[metricKind] as Timestamped<PlaybackQuality | DownloadQuality>)
+    return ["video-max-quality", "video-download-quality", "video-playback-quality"].includes(kind)
+  }
+
+  private mergeVideoQuality(entry: Timestamped<MetricForKind<VideoQualityKind>>): Timestamped<VideoQuality> {
+    const { sessionTime, currentElementTime, kind: metricKind, data: metricData } = entry
+
+    const prevEntry: VideoQuality =
+      this.latestMetricByKey["video-quality"] == null
+        ? { category: "union", kind: "video-quality", data: {} }
+        : (this.latestMetricByKey["video-quality"] as VideoQuality)
+
+    const keyForKind: Record<VideoQualityKind, string> = {
+      "video-max-quality": "max",
+      "video-download-quality": "download",
+      "video-playback-quality": "playback",
+    }
 
     return {
       ...prevEntry,
-      currentElementTime,
       sessionTime,
-      data: {
-        ...prevEntry.data,
-        [mediaKind]: { ...prevEntry.data[mediaKind], current: { bitrate, qualityIndex } },
-      },
+      currentElementTime,
+      data: { ...prevEntry.data, [keyForKind[metricKind]]: metricData },
     }
   }
 
-  private mergeMaxQuality(
-    entry: Timestamped<MetricForKind<"max-quality">>,
-    target: QualityMetricKind
-  ): Timestamped<PlaybackQuality | DownloadQuality> {
-    const prevEntry: PlaybackQuality | DownloadQuality =
-      this.latestMetricByKey[target] == null
-        ? { category: "union", kind: target, data: { audio: {}, video: {} } }
-        : (this.latestMetricByKey[target] as Timestamped<PlaybackQuality | DownloadQuality>)
+  private mergeAudioQuality(entry: Timestamped<MetricForKind<AudioQualityKind>>): Timestamped<AudioQuality> {
+    const { sessionTime, currentElementTime, kind: metricKind, data: metricData } = entry
 
-    const {
-      currentElementTime,
-      sessionTime,
-      data: [mediaKind, qualityIndex, bitrate],
-    } = entry
+    const prevEntry: AudioQuality =
+      this.latestMetricByKey["audio-quality"] == null
+        ? { category: "union", kind: "audio-quality", data: {} }
+        : (this.latestMetricByKey["audio-quality"] as AudioQuality)
+
+    const keyForKind: Record<AudioQualityKind, string> = {
+      "audio-max-quality": "max",
+      "audio-download-quality": "download",
+      "audio-playback-quality": "playback",
+    }
 
     return {
       ...prevEntry,
-      currentElementTime,
       sessionTime,
-      data: {
-        ...prevEntry.data,
-        [mediaKind]: {
-          ...prevEntry.data[mediaKind],
-          max: { qualityIndex, bitrate },
-        },
-      },
+      currentElementTime,
+      data: { ...prevEntry.data, [keyForKind[metricKind]]: metricData },
     }
   }
 
   private cacheEntry(entry: TimestampedEntry): void {
-    const { category, kind } = entry
+    const { category } = entry
 
     switch (category) {
       case EntryCategory.METRIC:
@@ -197,14 +188,13 @@ class DebugViewController {
           return
         }
 
-        if (this.isQuality(entry)) {
-          this.cacheStaticEntry(this.mergeQuality(entry))
+        if (this.isVideoQuality(entry)) {
+          this.cacheStaticEntry(this.mergeVideoQuality(entry))
           return
         }
 
-        if (kind === "max-quality") {
-          this.cacheStaticEntry(this.mergeMaxQuality(entry, "download-quality"))
-          this.cacheStaticEntry(this.mergeMaxQuality(entry, "playback-quality"))
+        if (this.isAudioQuality(entry)) {
+          this.cacheStaticEntry(this.mergeAudioQuality(entry))
           return
         }
 
@@ -408,7 +398,7 @@ class DebugViewController {
     }
 
     if (kind === "seekable-range") {
-      const [start, end] = data as MetricForKind<"seekable-range">["data"]
+      const [start, end] = data
 
       return `${formatDate(new Date(start * 1000))} - ${formatDate(new Date(end * 1000))}`
     }
@@ -419,15 +409,20 @@ class DebugViewController {
       return `${seconds}s ${timeline}`
     }
 
-    if (kind === "download-quality" || kind === "playback-quality") {
-      return [...Object.entries(data)]
-        .map(
-          ([kind, { current, max }]) =>
-            `${kind}: ${((current?.bitrate ?? 0) / 1000).toFixed(0)} kbps (${current?.qualityIndex ?? 0}/${
-              max?.qualityIndex ?? 0
-            })`
-        )
-        .join(", ")
+    if (kind === "audio-quality" || kind === "video-quality") {
+      const [maxQuality] = data.max ?? []
+      const [downloadQuality, downloadBitrate] = data.download ?? []
+      const [playbackQuality, playbackBitrate] = data.playback ?? []
+
+      const playbackPart = `${((playbackBitrate ?? 0) / 1000).toFixed(0)} kbps (${playbackQuality ?? 0}/${
+        maxQuality ?? 0
+      })`
+
+      if (playbackQuality === downloadQuality) {
+        return playbackPart
+      }
+
+      return `${playbackPart} - downloading ${((downloadBitrate ?? 0) / 1000).toFixed(0)} kbps`
     }
 
     return data.join(", ")

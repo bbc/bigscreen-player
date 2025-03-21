@@ -36,48 +36,54 @@ type CreateMetric<Kind extends string, Data extends Primitives> = {
   data: Data
 }
 
+type AudioDownloadQuality = CreateMetric<"audio-download-quality", [qualityIndex: number, bitrate: number]>
+type AudioPlaybackQuality = CreateMetric<"audio-playback-quality", [qualityIndex: number, bitrate: number]>
+type AudioMaxQuality = CreateMetric<"audio-max-quality", [qualityIndex: number, bitrate: number]>
 type AutoResume = CreateMetric<"auto-resume", number>
 type BufferLength = CreateMetric<"buffer-length", number>
 type CDNsAvailable = CreateMetric<"cdns-available", string[]>
 type CurrentUrl = CreateMetric<"current-url", string>
 type Duration = CreateMetric<"duration", number>
-type DownloadQuality = CreateMetric<"download-quality", [kind: MediaKinds, qualityIndex: number, bitrate: number]>
 type FramesDropped = CreateMetric<"frames-dropped", number>
 type InitialPlaybackTime = CreateMetric<"initial-playback-time", [time: number, timeline: Timeline]>
-type MaxQuality = CreateMetric<"max-quality", [kind: MediaKinds, qualityIndex: number, bitrate: number]>
 type MediaElementEnded = CreateMetric<"ended", HTMLMediaElement["ended"]>
 type MediaElementPaused = CreateMetric<"paused", HTMLMediaElement["paused"]>
 type MediaElementPlaybackRate = CreateMetric<"playback-rate", HTMLMediaElement["playbackRate"]>
 type MediaElementReadyState = CreateMetric<"ready-state", HTMLMediaElement["readyState"]>
 type MediaElementSeeking = CreateMetric<"seeking", HTMLMediaElement["seeking"]>
-type PlaybackQuality = CreateMetric<"playback-quality", [kind: MediaKinds, qualityIndex: number, bitrate: number]>
 type PlaybackStrategy = CreateMetric<"strategy", string>
 type SeekableRange = CreateMetric<"seekable-range", [start: number, end: number]>
 type SubtitleCDNsAvailable = CreateMetric<"subtitle-cdns-available", string[]>
 type SubtitleCurrentUrl = CreateMetric<"subtitle-current-url", string>
 type Version = CreateMetric<"version", string>
+type VideoDownloadQuality = CreateMetric<"video-download-quality", [qualityIndex: number, bitrate: number]>
+type VideoPlaybackQuality = CreateMetric<"video-playback-quality", [qualityIndex: number, bitrate: number]>
+type VideoMaxQuality = CreateMetric<"video-max-quality", [qualityIndex: number, bitrate: number]>
 
 export type Metric =
+  | AudioDownloadQuality
+  | AudioMaxQuality
+  | AudioPlaybackQuality
   | AutoResume
   | BufferLength
   | CDNsAvailable
   | CurrentUrl
-  | DownloadQuality
   | Duration
   | FramesDropped
   | InitialPlaybackTime
-  | MaxQuality
   | MediaElementEnded
   | MediaElementPaused
   | MediaElementPlaybackRate
   | MediaElementReadyState
   | MediaElementSeeking
-  | PlaybackQuality
   | PlaybackStrategy
   | SeekableRange
   | SubtitleCDNsAvailable
   | SubtitleCurrentUrl
   | Version
+  | VideoDownloadQuality
+  | VideoMaxQuality
+  | VideoPlaybackQuality
 
 export type MetricKind = Metric["kind"]
 export type MetricForKind<Kind extends MetricKind> = Extract<Metric, { kind: Kind }>
