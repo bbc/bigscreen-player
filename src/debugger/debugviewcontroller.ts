@@ -1,3 +1,4 @@
+import { MediaKinds } from "../models/mediakinds"
 import { MediaState } from "../models/mediastate"
 import getValues from "../utils/get-values"
 import { Extends } from "../utils/types"
@@ -29,7 +30,7 @@ const DYNAMIC_ENTRY_LIMIT = 29 as const
 
 type Timestamp = Timestamped<{ category: "time" }>
 
-type MediaElementStateKind = Extends<MetricKind, "ended" | "paused" | "ready-state" | "seeking">
+type MediaElementStateKind = Extends<MetricKind, "ended" | "paused" | "playback-rate" | "ready-state" | "seeking">
 
 type MediaElementState = {
   category: "union"
@@ -60,6 +61,12 @@ type AudioQuality = {
   }
 }
 
+type MaxBitrate = {
+  category: "union"
+  kind: "max-bitrate"
+  data: Record<MediaKinds, number>
+}
+
 type DynamicEntry = TimestampedMessage | TimestampedTrace | Timestamp
 
 type StaticEntry =
@@ -67,6 +74,7 @@ type StaticEntry =
   | Timestamped<MediaElementState>
   | Timestamped<AudioQuality>
   | Timestamped<VideoQuality>
+  | Timestamped<MaxBitrate>
 
 type StaticEntryKind = StaticEntry["kind"]
 
@@ -101,24 +109,24 @@ class DebugViewController {
 
   private isMediaState(metric: TimestampedMetric): metric is Timestamped<MetricForKind<MediaElementStateKind>> {
     const { kind } = metric
-    const mediaStateMetrics = ["ended", "paused", "ready-state", "seeking"]
+    const mediaStateMetrics = ["ended", "paused", "playback-rate", "ready-state", "seeking"]
 
     return mediaStateMetrics.includes(kind)
   }
 
   private mergeMediaState(entry: Timestamped<MetricForKind<MediaElementStateKind>>): Timestamped<MediaElementState> {
-    const prevData =
+    const prevEntry: MediaElementState =
       this.latestMetricByKey["media-element-state"] == null
-        ? {}
+        ? { category: "union", kind: "media-element-state", data: {} }
         : (this.latestMetricByKey["media-element-state"] as MediaElementState)
 
-    const { kind, data } = entry
+    const { sessionTime, currentElementTime, kind: metricKind, data: metricData } = entry
 
     return {
-      ...entry,
-      category: "union",
-      kind: "media-element-state",
-      data: { ...prevData, [kind]: data },
+      ...prevEntry,
+      sessionTime,
+      currentElementTime,
+      data: { ...prevEntry.data, [metricKind]: metricData },
     }
   }
 
@@ -178,14 +186,46 @@ class DebugViewController {
     }
   }
 
+  private mergeMaxBitrate(
+    entry: Timestamped<MetricForKind<"audio-max-quality" | "video-max-quality">>
+  ): Timestamped<MaxBitrate> {
+    const {
+      sessionTime,
+      currentElementTime,
+      kind: metricKind,
+      data: [, bitrate],
+    } = entry
+
+    const prevEntry: MaxBitrate =
+      this.latestMetricByKey["max-bitrate"] == null
+        ? { category: "union", kind: "max-bitrate", data: { audio: 0, video: 0 } }
+        : (this.latestMetricByKey["max-bitrate"] as MaxBitrate)
+
+    const keyForKind = {
+      "audio-max-quality": "audio",
+      "video-max-quality": "video",
+    } as const
+
+    return {
+      ...prevEntry,
+      sessionTime,
+      currentElementTime,
+      data: { ...prevEntry.data, [keyForKind[metricKind]]: bitrate },
+    }
+  }
+
   private cacheEntry(entry: TimestampedEntry): void {
-    const { category } = entry
+    const { category, kind } = entry
 
     switch (category) {
       case EntryCategory.METRIC:
         if (this.isMediaState(entry)) {
           this.cacheStaticEntry(this.mergeMediaState(entry))
           return
+        }
+
+        if (kind === "audio-max-quality" || kind === "video-max-quality") {
+          this.cacheStaticEntry(this.mergeMaxBitrate(entry))
         }
 
         if (this.isVideoQuality(entry)) {
@@ -356,16 +396,16 @@ class DebugViewController {
     id: string
     key: string
     value: boolean | number | string
-  } {
+  } | null {
     const { kind } = entry
 
     const parsedKey = kind.replace(/-/g, " ")
     const parsedValue = this.serialiseMetric(entry)
 
-    return { id: kind, key: parsedKey, value: parsedValue }
+    return parsedValue == null ? null : { id: kind, key: parsedKey, value: parsedValue }
   }
 
-  private serialiseMetric({ kind, data }: StaticEntry): boolean | number | string {
+  private serialiseMetric({ kind, data }: StaticEntry): boolean | number | string | null {
     if (typeof data !== "object") {
       return data
     }
@@ -375,7 +415,9 @@ class DebugViewController {
       const isWaiting = typeof data["ready-state"] === "number" && data["ready-state"] <= 2
 
       if (!isWaiting && !data.paused && !data.seeking) {
-        parts.push("playing")
+        parts.push(
+          data["playback-rate"] === 0 ? "halted at rate 0" : `playing at rate ${data["playback-rate"]?.toFixed(2)}`
+        )
       }
 
       if (isWaiting) {
@@ -423,6 +465,16 @@ class DebugViewController {
       }
 
       return `${playbackPart} - downloading ${((downloadBitrate ?? 0) / 1000).toFixed(0)} kbps`
+    }
+
+    if (kind === "max-bitrate") {
+      if (data.audio === 0) {
+        return null
+      }
+
+      const bitratePart = (((data.audio ?? 0) + (data.video ?? 0)) / 1000).toFixed(0)
+
+      return `${bitratePart} kbps`
     }
 
     return data.join(", ")
