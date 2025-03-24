@@ -702,7 +702,7 @@ describe("Media Source Extensions Playback Strategy", () => {
   })
 
   describe("Sets up mediaPlayer respecting audioDescribed.enable", () => {
-    it("sets initial audio track settings when audioDescribed.enable is true", () => {
+    it("sets audio described initial audio settings when audio described is enabled", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, {
         enable: true,
       })
@@ -714,13 +714,15 @@ describe("Media Source Extensions Playback Strategy", () => {
       })
     })
 
-    it("does not set initial audio track settings when audioDescribed.enable is false", () => {
+    it("sets main initial audio settings when audio described is not enabled", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, {
         enable: false,
       })
       mseStrategy.load(null, 10)
 
-      expect(mockDashInstance.setInitialMediaSettingsFor).not.toHaveBeenCalled()
+      expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenCalledWith("audio", {
+        role: "main",
+      })
     })
   })
 
