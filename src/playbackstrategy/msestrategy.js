@@ -42,6 +42,7 @@ function MSEStrategy(
           bufferTimeAtTopQuality: 12,
           bufferTimeAtTopQualityLongForm: 15,
         },
+        lastMediaSettingsCachingInfo: { enabled: false },
       },
     },
     customPlayerSettings
@@ -530,6 +531,10 @@ function MSEStrategy(
       mediaPlayer.setInitialMediaSettingsFor("audio", {
         role: "alternate",
         accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+      })
+    } else {
+      mediaPlayer.setInitialMediaSettingsFor("audio", {
+        role: "main",
       })
     }
 
