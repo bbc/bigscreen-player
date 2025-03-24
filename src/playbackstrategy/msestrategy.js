@@ -527,16 +527,17 @@ function MSEStrategy(
     mediaPlayer.updateSettings(dashSettings)
     mediaPlayer.initialize(mediaElement, null)
 
-    if (audioDescribed.enable) {
-      mediaPlayer.setInitialMediaSettingsFor("audio", {
-        role: "alternate",
-        accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
-      })
-    } else {
-      mediaPlayer.setInitialMediaSettingsFor("audio", {
-        role: "main",
-      })
-    }
+    mediaPlayer.setInitialMediaSettingsFor(
+      "audio",
+      audioDescribed.enable
+        ? {
+            role: "alternate",
+            accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+          }
+        : {
+            role: "main",
+          }
+    )
 
     modifySource(presentationTimeInSeconds)
   }
