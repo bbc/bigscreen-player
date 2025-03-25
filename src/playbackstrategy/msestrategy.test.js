@@ -42,6 +42,8 @@ const mockDashInstance = {
   play: jest.fn(),
   seek: jest.fn(),
   isReady: jest.fn(),
+  getTargetLiveDelay: jest.fn(),
+  getCurrentLiveLatency: jest.fn(),
   getDashMetrics: jest.fn().mockReturnValue(mockDashMetrics),
   getDashAdapter: jest.fn().mockReturnValue(mockDashAdapter),
   getBitrateInfoListFor: jest.fn(),
