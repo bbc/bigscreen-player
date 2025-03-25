@@ -702,7 +702,7 @@ describe("Media Source Extensions Playback Strategy", () => {
   })
 
   describe("Sets up mediaPlayer respecting audioDescribed.enable", () => {
-    it("sets audio described initial audio settings when audio described is enabled", () => {
+    it("sets initial audio settings to the audio described track when audio described is enabled", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, {
         enable: true,
       })
@@ -714,7 +714,7 @@ describe("Media Source Extensions Playback Strategy", () => {
       })
     })
 
-    it("sets main initial audio settings when audio described is not enabled", () => {
+    it("sets initial audio settings to main track when audio described is not enabled", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, {
         enable: false,
       })
