@@ -304,6 +304,14 @@ function MSEStrategy(
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
+    if (mediaKind === MediaKinds.VIDEO) {
+      dispatchDownloadQualityChangeForKind(MediaKinds.VIDEO)
+      dispatchMaxQualityChangeForKind(MediaKinds.VIDEO)
+    }
+
+    dispatchMaxQualityChangeForKind(MediaKinds.AUDIO)
+    dispatchDownloadQualityChangeForKind(MediaKinds.AUDIO)
+
     emitPlayerInfo()
   }
 
@@ -317,6 +325,31 @@ function MSEStrategy(
       bufferLength: playerMetadata.bufferLength,
       playbackBitrate: playerMetadata.playbackBitrate,
     })
+  }
+
+  function dispatchDownloadQualityChangeForKind(kind) {
+    const qualityIndex = mediaPlayer.getQualityFor(kind)
+    const bitrateInBps = playbackBitrateForRepresentationIndex(qualityIndex, kind)
+
+    DebugTool.dynamicMetric(`${kind}-download-quality`, [qualityIndex, bitrateInBps])
+
+    const bitratePart = (bitrateInBps / 1000).toFixed(0)
+
+    const abrChangePart = `ABR change! Downloading ${kind} at quality ${qualityIndex} (${bitratePart} kbps)`
+
+    DebugTool.info(
+      `${abrChangePart}${
+        typeof playerMetadata.playbackBitrate === "number"
+          ? `. Currently playing at ${playerMetadata.playbackBitrate.toFixed(0)} kbps`
+          : ""
+      }`
+    )
+  }
+
+  function dispatchMaxQualityChangeForKind(kind) {
+    const { qualityIndex, bitrate: bitrateInBps } = mediaPlayer.getTopBitrateInfoFor(kind)
+
+    DebugTool.dynamicMetric(`${kind}-max-quality`, [qualityIndex, bitrateInBps])
   }
 
   function getBufferedRanges() {
@@ -372,9 +405,7 @@ function MSEStrategy(
         playbackBitrateForRepresentationIndex(newQuality, mediaType),
       ])
 
-      const { qualityIndex, bitrate } = mediaPlayer.getTopBitrateInfoFor(mediaType)
-
-      DebugTool.dynamicMetric(`${mediaType}-max-quality`, [qualityIndex, bitrate])
+      dispatchMaxQualityChangeForKind(mediaType)
     }
 
     emitPlayerInfo()
@@ -437,31 +468,10 @@ function MSEStrategy(
       event.metric === "RepSwitchList" &&
       (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
     ) {
-      const { mediaType, value: repSwitch } = event
+      const { mediaType } = event
 
-      const downloadQualityIndex = mediaPlayer.getDashAdapter().getIndexForRepresentation(repSwitch.to, 0)
-      const downloadBitrate = playbackBitrateForRepresentationIndex(downloadQualityIndex, mediaType)
-
-      DebugTool.dynamicMetric(`${mediaType}-download-quality`, [
-        downloadQualityIndex,
-        playbackBitrateForRepresentationIndex(downloadQualityIndex, mediaType),
-      ])
-
-      const { qualityIndex: maxQualityIndex, bitrate: maxBitrate } = mediaPlayer.getTopBitrateInfoFor(mediaType)
-
-      DebugTool.dynamicMetric(`${mediaType}-max-quality`, [maxQualityIndex, maxBitrate])
-
-      const downloadBitratePart = (downloadBitrate / 1000).toFixed(0)
-
-      const abrChangePart = `ABR change! Downloading ${mediaType} at quality ${downloadQualityIndex} (${downloadBitratePart} kbps)`
-
-      DebugTool.info(
-        `${abrChangePart}${
-          typeof playerMetadata.playbackBitrate === "number"
-            ? `. Currently playing at ${playerMetadata.playbackBitrate.toFixed(0)} kbps`
-            : ""
-        }`
-      )
+      dispatchDownloadQualityChangeForKind(mediaType)
+      dispatchMaxQualityChangeForKind(mediaType)
     }
   }
 
