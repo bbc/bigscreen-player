@@ -226,4 +226,42 @@ describe("Samsung Maple", () => {
       })
     })
   })
+
+  describe("addEventCallback", () => {
+    it("should call the callback on update", () => {
+      const spy = jest.fn()
+
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
+      player.addEventCallback(this, spy)
+      player.beginPlayback()
+
+      expect(spy).toHaveBeenCalled()
+    })
+  })
+
+  describe("removeEventCallback", () => {
+    it("should remove the callback", () => {
+      const spy = jest.fn()
+
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
+      player.addEventCallback(this, spy)
+      player.removeEventCallback(spy)
+      player.beginPlayback()
+
+      expect(spy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("removeAllEventCallbacks", () => {
+    it("should remove all the callbacks", () => {
+      const spy = jest.fn()
+
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
+      player.addEventCallback(this, spy)
+      player.removeAllEventCallbacks()
+      player.beginPlayback()
+
+      expect(spy).not.toHaveBeenCalled()
+    })
+  })
 })
