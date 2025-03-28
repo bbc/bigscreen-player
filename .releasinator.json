@@ -1,0 +1,8 @@
+{
+  "publish": "release",
+  "versioning": "semver",
+  "tagPattern": "$.$.$",
+  "displayPattern": "$.$.$",
+  "enforceUserFacingLabel": false,
+  "projectType": "npm-like"
+}
