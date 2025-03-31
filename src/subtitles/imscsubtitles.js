@@ -237,11 +237,11 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     return segment
   }
 
-  function render(currentTime, xml) {
+  function render(currentTime, xml, overrideElementId) {
     removeCurrentSubtitlesElement()
 
     currentSubtitlesElement = document.createElement("div")
-    currentSubtitlesElement.id = "bsp_subtitles"
+    currentSubtitlesElement.id = overrideElementId || "bsp_subtitles"
     currentSubtitlesElement.style.position = "absolute"
     parentElement.appendChild(currentSubtitlesElement)
 
