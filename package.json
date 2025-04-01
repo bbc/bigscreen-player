@@ -1,6 +1,6 @@
 {
   "name": "bigscreen-player",
-  "version": "10.1.1",
+  "version": "10.1.0",
   "type": "module",
   "description": "Simplified media playback for bigscreen devices.",
   "main": "dist/esm/main.js",
@@ -65,7 +65,7 @@
     "typescript-eslint": "^7.2.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#9ce465f3977cf9dc4ab8fd23a859a7932220d419",
+    "dashjs": "github:bbc/dash.js#smp-v4.7.3-5",
     "smp-imsc": "github:bbc/imscJS#v1.0.3"
   },
   "repository": {
