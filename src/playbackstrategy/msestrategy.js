@@ -69,6 +69,10 @@ function MSEStrategy(
   let manifestLoadCount = 0
 
   let playerMetadata = {
+    downloadQuality: {
+      [MediaKinds.AUDIO]: undefined,
+      [MediaKinds.VIDEO]: undefined,
+    },
     playbackBitrate: undefined,
     bufferLength: undefined,
     fragmentInfo: {
@@ -328,22 +332,27 @@ function MSEStrategy(
   }
 
   function dispatchDownloadQualityChangeForKind(kind) {
+    const { qualityIndex: prevQualityIndex, bitrateInBps: prevBitrateInBps } =
+      playerMetadata.downloadQuality[kind] ?? {}
+
     const qualityIndex = mediaPlayer.getQualityFor(kind)
+
+    if (prevQualityIndex === qualityIndex) {
+      return
+    }
+
     const bitrateInBps = playbackBitrateForRepresentationIndex(qualityIndex, kind)
+
+    playerMetadata.downloadQuality[kind] = { bitrateInBps, qualityIndex }
 
     DebugTool.dynamicMetric(`${kind}-download-quality`, [qualityIndex, bitrateInBps])
 
-    const bitratePart = (bitrateInBps / 1000).toFixed(0)
+    const abrChangePart = `ABR ${kind} download quality switched`
+    const switchFromPart =
+      prevQualityIndex == null ? "" : ` from ${prevQualityIndex} (${(prevBitrateInBps / 1000).toFixed(0)} kbps)`
+    const switchToPart = ` to ${qualityIndex} (${(bitrateInBps / 1000).toFixed(0)} kbps)`
 
-    const abrChangePart = `ABR change! Downloading ${kind} at quality ${qualityIndex} (${bitratePart} kbps)`
-
-    DebugTool.info(
-      `${abrChangePart}${
-        typeof playerMetadata.playbackBitrate === "number"
-          ? `. Currently playing at ${playerMetadata.playbackBitrate.toFixed(0)} kbps`
-          : ""
-      }`
-    )
+    DebugTool.info(`${abrChangePart}${switchFromPart}${switchToPart}`)
   }
 
   function dispatchMaxQualityChangeForKind(kind) {

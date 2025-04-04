@@ -44,6 +44,7 @@ const mockDashInstance = {
   isReady: jest.fn(),
   getDashMetrics: jest.fn().mockReturnValue(mockDashMetrics),
   getDashAdapter: jest.fn().mockReturnValue(mockDashAdapter),
+  getQualityFor: jest.fn(),
   getBitrateInfoListFor: jest.fn(),
   getTopBitrateInfoFor: jest.fn(),
   getAverageThroughput: jest.fn(),
