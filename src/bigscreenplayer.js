@@ -140,8 +140,7 @@ function BigscreenPlayer() {
       subtitleContainer,
       media.subtitleCustomisation,
       mediaSources,
-      callSubtitlesCallbacks,
-      subtitleElementId
+      callSubtitlesCallbacks
     )
   }
 
@@ -279,7 +278,6 @@ function BigscreenPlayer() {
       resizer = Resizer()
 
       mediaKind = bigscreenPlayerData.media.kind
-      subtitleElementId = bigscreenPlayerData.subtitleElementId;
 
       if (bigscreenPlayerData.initialPlaybackTime || bigscreenPlayerData.initialPlaybackTime === 0) {
         initialPlaybackTime = createPlaybackTime(bigscreenPlayerData.initialPlaybackTime)
