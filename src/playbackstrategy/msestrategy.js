@@ -198,7 +198,7 @@ function MSEStrategy(
     DebugTool.updateElementTime(mediaElement.currentTime)
 
     if (!isNaN(mediaPlayer.getCurrentLiveLatency())) {
-      DebugTool.dynamicMetric("current-latency", mediaPlayer.getCurrentLiveLatency())
+      DebugTool.staticMetric("current-latency", mediaPlayer.getCurrentLiveLatency())
       DebugTool.staticMetric("target-latency", mediaPlayer.getTargetLiveDelay())
     }
 
