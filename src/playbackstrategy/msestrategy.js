@@ -199,7 +199,7 @@ function MSEStrategy(
 
     if (!isNaN(mediaPlayer.getCurrentLiveLatency())) {
       DebugTool.dynamicMetric("current-latency", mediaPlayer.getCurrentLiveLatency())
-      DebugTool.dynamicMetric("target-latency", mediaPlayer.getTargetLiveDelay())
+      DebugTool.staticMetric("target-latency", mediaPlayer.getTargetLiveDelay())
     }
 
     const currentPresentationTimeInSeconds = mediaElement.currentTime
