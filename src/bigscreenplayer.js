@@ -50,6 +50,7 @@ function BigscreenPlayer() {
   let playbackElement
   let readyHelper
   let subtitles
+  let subtitleElementId
 
   const END_OF_STREAM_TOLERANCE = 10
 
@@ -130,13 +131,21 @@ function BigscreenPlayer() {
       callAudioDescribedCallbacks
     )
 
+    console.log(`subtitleElementId ${subtitleElementId}`);
+    const subtitleElement = document.getElementById(subtitleElementId)
+    const subtitleContainer = subtitleElement || playbackElement
+
+    console.log(`subtitleContainer`)
+    console.log(subtitleContainer)
+
     subtitles = Subtitles(
       playerComponent,
       enableSubtitles,
-      playbackElement,
+      subtitleContainer,
       media.subtitleCustomisation,
       mediaSources,
-      callSubtitlesCallbacks
+      callSubtitlesCallbacks,
+      subtitleElementId
     )
   }
 
@@ -267,12 +276,14 @@ function BigscreenPlayer() {
      * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, callbacks = {}) => {
+      console.log(`bigscreenplayer: init!`)
       playbackElement = newPlaybackElement
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
       resizer = Resizer()
 
       mediaKind = bigscreenPlayerData.media.kind
+      subtitleElementId = bigscreenPlayerData.subtitleElementId;
 
       if (bigscreenPlayerData.initialPlaybackTime || bigscreenPlayerData.initialPlaybackTime === 0) {
         initialPlaybackTime = createPlaybackTime(bigscreenPlayerData.initialPlaybackTime)
