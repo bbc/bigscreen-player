@@ -131,12 +131,8 @@ function BigscreenPlayer() {
       callAudioDescribedCallbacks
     )
 
-    console.log(`subtitleElementId ${subtitleElementId}`);
     const subtitleElement = document.getElementById(subtitleElementId)
     const subtitleContainer = subtitleElement || playbackElement
-
-    console.log(`subtitleContainer`)
-    console.log(subtitleContainer)
 
     subtitles = Subtitles(
       playerComponent,
