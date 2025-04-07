@@ -40,6 +40,7 @@ type AutoResume = CreateMetric<"auto-resume", number>
 type BitRate = CreateMetric<"bitrate", number>
 type BufferLength = CreateMetric<"buffer-length", number>
 type CDNsAvailable = CreateMetric<"cdns-available", string[]>
+type CurrentLatency = CreateMetric<"current-latency", number>
 type CurrentUrl = CreateMetric<"current-url", string>
 type Duration = CreateMetric<"duration", number>
 type FramesDropped = CreateMetric<"frames-dropped", number>
@@ -55,6 +56,7 @@ type RepresentationVideo = CreateMetric<"representation-video", [qualityIndex: n
 type SeekableRange = CreateMetric<"seekable-range", [start: number, end: number]>
 type SubtitleCDNsAvailable = CreateMetric<"subtitle-cdns-available", string[]>
 type SubtitleCurrentUrl = CreateMetric<"subtitle-current-url", string>
+type TargetLatency = CreateMetric<"target-latency", number>
 type Version = CreateMetric<"version", string>
 
 export type Metric =
@@ -62,6 +64,7 @@ export type Metric =
   | BitRate
   | BufferLength
   | CDNsAvailable
+  | CurrentLatency
   | CurrentUrl
   | Duration
   | FramesDropped
@@ -77,6 +80,7 @@ export type Metric =
   | SeekableRange
   | SubtitleCDNsAvailable
   | SubtitleCurrentUrl
+  | TargetLatency
   | Version
 
 export type MetricKind = Metric["kind"]
