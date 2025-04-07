@@ -240,9 +240,6 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   function render(currentTime, xml) {
     removeCurrentSubtitlesElement()
 
-    console.log(`render`)
-    console.log(parentElement)
-
     currentSubtitlesElement = document.createElement("div")
     currentSubtitlesElement.id = "bsp_subtitles"
     currentSubtitlesElement.style.position = "absolute"
