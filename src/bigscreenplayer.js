@@ -106,7 +106,7 @@ function BigscreenPlayer() {
     }
   }
 
-  function bigscreenPlayerDataLoaded({ media, enableSubtitles, enableAudioDescribed }) {
+  function bigscreenPlayerDataLoaded({ media, enableSubtitles, enableAudioDescribed, subtitleElementId }) {
     const initialPresentationTime =
       initialPlaybackTime == null ? undefined : convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
