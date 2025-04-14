@@ -202,13 +202,13 @@ describe("initialised Debug Tool", () => {
     it("appends the metric to the log", () => {
       jest.advanceTimersByTime(1)
 
-      DebugTool.dynamicMetric("bitrate", 1000)
+      DebugTool.dynamicMetric("buffer-length", 10)
       DebugTool.dynamicMetric("seeking", true)
       DebugTool.dynamicMetric("seeking", false)
 
       expect(DebugTool.getDebugLogs()).toEqual([
         expect.objectContaining({ kind: "session-start" }),
-        expect.objectContaining({ kind: "bitrate", data: 1000 }),
+        expect.objectContaining({ kind: "buffer-length", data: 10 }),
         expect.objectContaining({ kind: "seeking", data: true }),
         expect.objectContaining({ kind: "seeking", data: false }),
       ])
