@@ -31,9 +31,8 @@ describe("Samsung Streaming 2015", () => {
     jest.spyOn(mockPlayerPlugin, "Execute").mockImplementation((command) => {
       if (command === "GetDuration") {
         return 100000
-      } 
-        return 1
-      
+      }
+      return 1
     })
     jest.spyOn(mockPlayerPlugin, "Close").mockImplementation(() => {})
     jest.spyOn(mockPlayerPlugin, "Open").mockImplementation(() => {})
@@ -263,6 +262,44 @@ describe("Samsung Streaming 2015", () => {
         expect(mockPlayerPlugin.Execute).toHaveBeenCalledWith("StartPlayback", 20)
         expect(recentEvents).toContain(MediaPlayerBase.EVENT.BUFFERING)
       })
+    })
+  })
+
+  describe("addEventCallback", () => {
+    it("should call the callback on update", () => {
+      const spy = jest.fn()
+
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
+      player.addEventCallback(this, spy)
+      player.beginPlayback()
+
+      expect(spy).toHaveBeenCalled()
+    })
+  })
+
+  describe("removeEventCallback", () => {
+    it("should remove the callback", () => {
+      const spy = jest.fn()
+
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
+      player.addEventCallback(this, spy)
+      player.removeEventCallback(spy)
+      player.beginPlayback()
+
+      expect(spy).not.toHaveBeenCalled()
+    })
+  })
+
+  describe("removeAllEventCallbacks", () => {
+    it("should remove all the callbacks", () => {
+      const spy = jest.fn()
+
+      player.initialiseMedia(MediaPlayerBase.TYPE.VIDEO, "testUrl", "testMimeType")
+      player.addEventCallback(this, spy)
+      player.removeAllEventCallbacks()
+      player.beginPlayback()
+
+      expect(spy).not.toHaveBeenCalled()
     })
   })
 })
