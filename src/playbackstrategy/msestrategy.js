@@ -742,12 +742,16 @@ function MSEStrategy(
     const audioTracks = mediaPlayer.getTracksFor("audio")
     const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
     mediaPlayer.setCurrentTrack(mainTrack)
+
+    if (isPaused()) mediaPlayer.play()
   }
 
   function setAudioDescribedOn() {
     const ADTrack = getAudioDescribedTrack()
     if (ADTrack) {
       mediaPlayer.setCurrentTrack(ADTrack)
+
+      if (isPaused()) mediaPlayer.play()
     }
   }
 
