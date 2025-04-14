@@ -197,6 +197,11 @@ function MSEStrategy(
   function onTimeUpdate() {
     DebugTool.updateElementTime(mediaElement.currentTime)
 
+    if (!isNaN(mediaPlayer.getCurrentLiveLatency())) {
+      DebugTool.staticMetric("current-latency", mediaPlayer.getCurrentLiveLatency())
+      DebugTool.staticMetric("target-latency", mediaPlayer.getTargetLiveDelay())
+    }
+
     const currentPresentationTimeInSeconds = mediaElement.currentTime
 
     // Note: Multiple consecutive CDN failover logic
