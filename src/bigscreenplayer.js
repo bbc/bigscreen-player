@@ -270,6 +270,7 @@ function BigscreenPlayer() {
       playbackElement = newPlaybackElement
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
+      DebugTool.info("***** RUNNING LATEST IMSC JS *****")
       resizer = Resizer()
 
       mediaKind = bigscreenPlayerData.media.kind
