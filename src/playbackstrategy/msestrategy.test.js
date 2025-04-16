@@ -1,4 +1,4 @@
-import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
+import { MediaPlayer } from "dashjs"
 import ManifestModifier from "../manifest/manifestmodifier"
 import MediaKinds from "../models/mediakinds"
 import { ManifestType } from "../models/manifesttypes"
@@ -8,7 +8,7 @@ import { autoResumeAtStartOfRange } from "../dynamicwindowutils"
 import Plugins from "../plugins"
 import MSEStrategy from "./msestrategy"
 
-jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn() }))
+jest.mock("dashjs", () => ({ MediaPlayer: jest.fn() }))
 jest.mock("../dynamicwindowutils")
 jest.mock("../debugger/debugtool")
 jest.mock("../manifest/manifestmodifier")
@@ -74,6 +74,7 @@ const mockMediaSources = {
   time: jest.fn(),
   failoverResetTime: jest.fn().mockReturnValue(10),
   currentSource: jest.fn().mockReturnValue(""),
+  currentProtectionData: jest.fn(),
   availableSources: jest.fn().mockReturnValue([]),
   failover: jest.fn().mockResolvedValue(),
 }

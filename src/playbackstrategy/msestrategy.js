@@ -527,9 +527,15 @@ function MSEStrategy(
 
   function setUpMediaPlayer(presentationTimeInSeconds) {
     const dashSettings = getDashSettings(playerSettings)
+    const protectionData = mediaSources.currentProtectionData()
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
+
+    if (protectionData) {
+      mediaPlayer.setProtectionData(protectionData)
+    }
+
     mediaPlayer.initialize(mediaElement, null)
 
     mediaPlayer.setInitialMediaSettingsFor(
