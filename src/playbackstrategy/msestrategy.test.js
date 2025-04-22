@@ -1,4 +1,4 @@
-import { MediaPlayer } from "dashjs"
+import { MediaPlayer } from "dashjs/index"
 import ManifestModifier from "../manifest/manifestmodifier"
 import MediaKinds from "../models/mediakinds"
 import { ManifestType } from "../models/manifesttypes"
@@ -8,7 +8,7 @@ import { autoResumeAtStartOfRange } from "../dynamicwindowutils"
 import Plugins from "../plugins"
 import MSEStrategy from "./msestrategy"
 
-jest.mock("dashjs", () => ({ MediaPlayer: jest.fn() }))
+jest.mock("dashjs/index", () => ({ MediaPlayer: jest.fn() }))
 jest.mock("../dynamicwindowutils")
 jest.mock("../debugger/debugtool")
 jest.mock("../manifest/manifestmodifier")

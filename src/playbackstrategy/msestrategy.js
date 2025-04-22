@@ -1,4 +1,4 @@
-import { MediaPlayer } from "dashjs"
+import { MediaPlayer } from "dashjs/index"
 import MediaState from "../models/mediastate"
 import DebugTool from "../debugger/debugtool"
 import MediaKinds from "../models/mediakinds"
