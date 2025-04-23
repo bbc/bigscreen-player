@@ -64,6 +64,7 @@ const mockDashInstance = {
   setCurrentTrack: jest.fn(),
   setInitialMediaSettingsFor: jest.fn(),
   setAutoPlay: jest.fn(),
+  setProtectionData: jest.fn(),
 }
 
 const mockDashMediaPlayer = {
@@ -246,6 +247,19 @@ describe("Media Source Extensions Playback Strategy", () => {
           streaming: expect.objectContaining({ seekDurationPadding }),
         })
       )
+    })
+
+    it("should use currentProtectionData when available", () => {
+      const mockData = { mockKey: "some-data" }
+      mockMediaSources.currentProtectionData.mockReturnValueOnce(mockData)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      expect(mockMediaSources.currentProtectionData).toHaveBeenCalled()
+      expect(mockDashInstance.setProtectionData).toHaveBeenCalledWith(mockData)
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null)
     })
 
     it("should initialise MediaPlayer with a source anchor when time is zero", () => {
