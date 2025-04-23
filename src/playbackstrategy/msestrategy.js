@@ -74,6 +74,10 @@ function MSEStrategy(
   let manifestLoadCount = 0
 
   let playerMetadata = {
+    downloadQuality: {
+      [MediaKinds.AUDIO]: undefined,
+      [MediaKinds.VIDEO]: undefined,
+    },
     playbackBitrate: undefined,
     bufferLength: undefined,
     fragmentInfo: {
@@ -314,21 +318,57 @@ function MSEStrategy(
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
+    if (mediaKind === MediaKinds.VIDEO) {
+      dispatchDownloadQualityChangeForKind(MediaKinds.VIDEO)
+      dispatchMaxQualityChangeForKind(MediaKinds.VIDEO)
+    }
+
+    dispatchMaxQualityChangeForKind(MediaKinds.AUDIO)
+    dispatchDownloadQualityChangeForKind(MediaKinds.AUDIO)
+
     emitPlayerInfo()
   }
 
   function emitPlayerInfo() {
     playerMetadata.playbackBitrate =
       mediaKind === MediaKinds.VIDEO
-        ? currentPlaybackBitrate(MediaKinds.VIDEO) + currentPlaybackBitrate(MediaKinds.AUDIO)
-        : currentPlaybackBitrate(MediaKinds.AUDIO)
-
-    DebugTool.dynamicMetric("bitrate", playerMetadata.playbackBitrate)
+        ? currentPlaybackBitrateInKbps(MediaKinds.VIDEO) + currentPlaybackBitrateInKbps(MediaKinds.AUDIO)
+        : currentPlaybackBitrateInKbps(MediaKinds.AUDIO)
 
     Plugins.interface.onPlayerInfoUpdated({
       bufferLength: playerMetadata.bufferLength,
       playbackBitrate: playerMetadata.playbackBitrate,
     })
+  }
+
+  function dispatchDownloadQualityChangeForKind(kind) {
+    const { qualityIndex: prevQualityIndex, bitrateInBps: prevBitrateInBps } =
+      playerMetadata.downloadQuality[kind] ?? {}
+
+    const qualityIndex = mediaPlayer.getQualityFor(kind)
+
+    if (prevQualityIndex === qualityIndex) {
+      return
+    }
+
+    const bitrateInBps = playbackBitrateForRepresentationIndex(qualityIndex, kind)
+
+    playerMetadata.downloadQuality[kind] = { bitrateInBps, qualityIndex }
+
+    DebugTool.dynamicMetric(`${kind}-download-quality`, [qualityIndex, bitrateInBps])
+
+    const abrChangePart = `ABR ${kind} download quality switched`
+    const switchFromPart =
+      prevQualityIndex == null ? "" : ` from ${prevQualityIndex} (${(prevBitrateInBps / 1000).toFixed(0)} kbps)`
+    const switchToPart = ` to ${qualityIndex} (${(bitrateInBps / 1000).toFixed(0)} kbps)`
+
+    DebugTool.info(`${abrChangePart}${switchFromPart}${switchToPart}`)
+  }
+
+  function dispatchMaxQualityChangeForKind(kind) {
+    const { qualityIndex, bitrate: bitrateInBps } = mediaPlayer.getTopBitrateInfoFor(kind)
+
+    DebugTool.dynamicMetric(`${kind}-max-quality`, [qualityIndex, bitrateInBps])
   }
 
   function getBufferedRanges() {
@@ -346,52 +386,49 @@ function MSEStrategy(
       }))
   }
 
-  function currentPlaybackBitrate(mediaKind) {
+  function currentPlaybackBitrateInKbps(mediaKind) {
     const representationSwitch = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaKind)
+
     const representation = representationSwitch ? representationSwitch.to : ""
-    return playbackBitrateForRepresentation(representation, mediaKind)
+
+    return playbackBitrateForRepresentation(representation, mediaKind) / 1000
   }
 
   function playbackBitrateForRepresentation(representation, mediaKind) {
     const repIdx = mediaPlayer.getDashAdapter().getIndexForRepresentation(representation, 0)
+
     return playbackBitrateForRepresentationIndex(repIdx, mediaKind)
   }
 
   function playbackBitrateForRepresentationIndex(index, mediaKind) {
-    if (index === -1) return ""
+    if (index === -1) return 0
 
     const bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind)
-    return parseInt(bitrateInfoList[index].bitrate / 1000)
-  }
 
-  function logBitrate(abrType, { mediaType, oldQuality, newQuality }) {
-    const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
-    const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
-
-    const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
-    const newRepresentation = `${newQuality} (${newBitrate} kbps)`
-
-    DebugTool.info(
-      `${mediaType} ABR Change ${abrType} From Representation ${oldRepresentation} to ${newRepresentation}`
-    )
+    return bitrateInfoList[index].bitrate ?? 0
   }
 
   function onQualityChangeRequested(event) {
-    if (event.newQuality !== undefined) {
-      logBitrate("Requested", event)
-    }
-
-    event.throughput = mediaPlayer.getAverageThroughput(mediaKind)
-
     Plugins.interface.onQualityChangeRequested(event)
   }
 
   function onQualityChangeRendered(event) {
-    if (event.newQuality !== undefined) {
-      logBitrate("Rendered", event)
+    if (
+      event.newQuality !== undefined &&
+      (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
+    ) {
+      const { mediaType, newQuality } = event
+
+      DebugTool.dynamicMetric(`${mediaType}-playback-quality`, [
+        newQuality,
+        playbackBitrateForRepresentationIndex(newQuality, mediaType),
+      ])
+
+      dispatchMaxQualityChangeForKind(mediaType)
     }
 
     emitPlayerInfo()
+
     Plugins.interface.onQualityChangedRendered(event)
   }
 
@@ -432,6 +469,7 @@ function MSEStrategy(
     if (event.mediaType === "video" && event.metric === "DroppedFrames") {
       DebugTool.staticMetric("frames-dropped", event.value.droppedFrames)
     }
+
     if (event.mediaType === mediaKind && event.metric === "BufferLevel") {
       dashMetrics = mediaPlayer.getDashMetrics()
 
@@ -443,6 +481,16 @@ function MSEStrategy(
           playbackBitrate: playerMetadata.playbackBitrate,
         })
       }
+    }
+
+    if (
+      event.metric === "RepSwitchList" &&
+      (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
+    ) {
+      const { mediaType } = event
+
+      dispatchDownloadQualityChangeForKind(mediaType)
+      dispatchMaxQualityChangeForKind(mediaType)
     }
   }
 
@@ -742,12 +790,16 @@ function MSEStrategy(
     const audioTracks = mediaPlayer.getTracksFor("audio")
     const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
     mediaPlayer.setCurrentTrack(mainTrack)
+
+    if (isPaused()) mediaPlayer.play()
   }
 
   function setAudioDescribedOn() {
     const ADTrack = getAudioDescribedTrack()
     if (ADTrack) {
       mediaPlayer.setCurrentTrack(ADTrack)
+
+      if (isPaused()) mediaPlayer.play()
     }
   }
 
