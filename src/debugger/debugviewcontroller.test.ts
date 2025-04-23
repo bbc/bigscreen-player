@@ -19,7 +19,7 @@ describe("Debug View", () => {
     const chronicle = new Chronicle()
     controller.showView()
 
-    chronicle.appendMetric("bitrate", 0)
+    chronicle.appendMetric("buffer-length", 0)
     chronicle.appendMetric("frames-dropped", 4)
     chronicle.appendMetric("duration", 30)
 
@@ -30,7 +30,7 @@ describe("Debug View", () => {
     expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
         static: [
-          { id: "bitrate", key: "bitrate", value: 0 },
+          { id: "buffer-length", key: "buffer length", value: 0 },
           { id: "frames-dropped", key: "frames dropped", value: 4 },
           { id: "duration", key: "duration", value: 30 },
         ],
@@ -278,7 +278,7 @@ describe("Debug View", () => {
     const chronicle = new Chronicle()
     controller.showView()
 
-    chronicle.appendMetric("bitrate", 0)
+    chronicle.appendMetric("buffer-length", 0)
 
     controller.addEntries(chronicle.retrieve())
     controller.addTime({ currentElementTime: 100, sessionTime: 0 })
@@ -290,7 +290,7 @@ describe("Debug View", () => {
     expect(DebugView.render).toHaveBeenCalledTimes(1)
     expect(DebugView.render).toHaveBeenCalledWith(
       expect.objectContaining({
-        static: [{ id: "bitrate", key: "bitrate", value: 0 }],
+        static: [{ id: "buffer-length", key: "buffer length", value: 0 }],
         dynamic: ["00:00:00.000 - Video time: 100.00"],
       })
     )
