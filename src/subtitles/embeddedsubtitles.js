@@ -1,8 +1,10 @@
+import { fromXML, generateISD, renderHTML } from "smp-imsc"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 
 function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
   let currentSubtitlesElement
+  let exampleSubtitlesElement
 
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
 
@@ -19,6 +21,55 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, 
     if (currentSubtitlesElement) {
       DOMHelpers.safeRemoveElement(currentSubtitlesElement)
       currentSubtitlesElement = undefined
+    }
+  }
+
+  function removeExampleSubtitlesElement() {
+    if (exampleSubtitlesElement) {
+      DOMHelpers.safeRemoveElement(exampleSubtitlesElement)
+      exampleSubtitlesElement = undefined
+    }
+  }
+
+  function renderExample(exampleXmlString, styleOpts, safePosition = {}) {
+    const exampleXml = fromXML(exampleXmlString)
+    removeExampleSubtitlesElement()
+
+    const customStyleOptions = transformStyleOptions(styleOpts)
+    const exampleStyle = Utils.merge(imscRenderOpts, customStyleOptions)
+
+    exampleSubtitlesElement = document.createElement("div")
+    exampleSubtitlesElement.id = "subtitlesPreview"
+    exampleSubtitlesElement.style.position = "absolute"
+
+    const elementWidth = parentElement.clientWidth
+    const elementHeight = parentElement.clientHeight
+    const topPixels = ((safePosition.top || 0) / 100) * elementHeight
+    const rightPixels = ((safePosition.right || 0) / 100) * elementWidth
+    const bottomPixels = ((safePosition.bottom || 0) / 100) * elementHeight
+    const leftPixels = ((safePosition.left || 0) / 100) * elementWidth
+
+    const renderWidth = elementWidth - leftPixels - rightPixels
+    const renderHeight = elementHeight - topPixels - bottomPixels
+
+    exampleSubtitlesElement.style.top = `${topPixels}px`
+    exampleSubtitlesElement.style.right = `${rightPixels}px`
+    exampleSubtitlesElement.style.bottom = `${bottomPixels}px`
+    exampleSubtitlesElement.style.left = `${leftPixels}px`
+    parentElement.appendChild(exampleSubtitlesElement)
+
+    renderSubtitle(exampleXml, 1, exampleSubtitlesElement, exampleStyle, renderHeight, renderWidth)
+  }
+
+  function renderSubtitle(xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
+    try {
+      const isd = generateISD(xml, currentTime)
+      renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
+    } catch (error) {
+      error.name = "SubtitlesRenderError"
+      DebugTool.error(error)
+
+      Plugins.interface.onSubtitlesRenderError()
     }
   }
 
@@ -82,7 +133,10 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, 
   return {
     start,
     stop,
+    updatePosition: () => {},
     customise,
+    renderExample,
+    clearExample: removeExampleSubtitlesElement,
     tearDown,
   }
 }

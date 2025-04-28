@@ -1,6 +1,19 @@
 import EmbeddedSubtitles from "./embeddedsubtitles"
+import { fromXML, generateISD, renderHTML } from "smp-imsc"
+
+jest.mock("smp-imsc")
 
 const UPDATE_INTERVAL = 750
+
+const mockImscDoc = {
+  getMediaTimeEvents: () => [1, 3, 8],
+  head: {
+    styling: {},
+  },
+  body: {
+    contents: [],
+  },
+}
 
 describe("Embedded Subtitles", () => {
   let subtitles
@@ -13,10 +26,17 @@ describe("Embedded Subtitles", () => {
     customiseSubtitles: jest.fn(),
   }
 
+  beforeAll(() => {
+    fromXML.mockReturnValue(mockImscDoc)
+    generateISD.mockReturnValue({ contents: ["mockContents"] })
+  })
+
   beforeEach(() => {
     jest.useFakeTimers()
     jest.clearAllMocks()
     jest.clearAllTimers()
+
+    mockMediaPlayer.getCurrentTime.mockReturnValue(0)
 
     // Reset the target HTML element between each test
     targetElement?.remove()
@@ -29,7 +49,11 @@ describe("Embedded Subtitles", () => {
     document.body.appendChild(targetElement)
 
     // Reset instance
+    subtitles?.stop()
+
+    // Reset instance
     subtitles?.tearDown()
+
     subtitles = null
     mockMediaPlayer.setSubtitles.mockClear()
   })
@@ -132,6 +156,79 @@ describe("Embedded Subtitles", () => {
       subtitles.customise(customStyleOpts)
 
       expect(mockMediaPlayer.customiseSubtitles).toHaveBeenCalledWith(expectedOpts)
+    })
+  })
+
+  describe("example rendering", () => {
+    it("should call fromXML, generate and render when renderExample is called", () => {
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, {})
+
+      subtitles.renderExample("", {}, {})
+
+      expect(fromXML).toHaveBeenCalledTimes(1)
+      expect(generateISD).toHaveBeenCalledTimes(1)
+      expect(renderHTML).toHaveBeenCalledTimes(1)
+    })
+
+    it("should call renderHTML with a preview element with the correct structure when no position info", () => {
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, {})
+
+      let exampleSubsElement = null
+      let height = null
+      let width = null
+
+      renderHTML.mockImplementation((isd, subsElement, _, renderHeight, renderWidth) => {
+        exampleSubsElement = subsElement
+        height = renderHeight
+        width = renderWidth
+      })
+
+      subtitles.renderExample("", {}, {})
+
+      expect(renderHTML).toHaveBeenCalledTimes(1)
+
+      expect(exampleSubsElement.style.top).toBe("0px")
+      expect(exampleSubsElement.style.right).toBe("0px")
+      expect(exampleSubsElement.style.bottom).toBe("0px")
+      expect(exampleSubsElement.style.left).toBe("0px")
+
+      expect(height).toBe(100)
+      expect(width).toBe(200)
+    })
+
+    it("should call renderHTML with a preview element with the correct structure when there is position info", () => {
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, {})
+
+      let exampleSubsElement = null
+      let height = null
+      let width = null
+
+      renderHTML.mockImplementation((isd, subsElement, _, renderHeight, renderWidth) => {
+        exampleSubsElement = subsElement
+        height = renderHeight
+        width = renderWidth
+      })
+
+      subtitles.renderExample(
+        "",
+        {},
+        {
+          top: 1,
+          right: 2,
+          bottom: 3,
+          left: 4,
+        }
+      )
+
+      expect(renderHTML).toHaveBeenCalledTimes(1)
+
+      expect(exampleSubsElement.style.top).toBe("1px")
+      expect(exampleSubsElement.style.right).toBe("4px")
+      expect(exampleSubsElement.style.bottom).toBe("3px")
+      expect(exampleSubsElement.style.left).toBe("8px")
+
+      expect(height).toBe(96)
+      expect(width).toBe(188)
     })
   })
 })
