@@ -22,9 +22,10 @@ function MSEStrategy(
   playbackElement,
   _isUHD = false,
   customPlayerSettings = {},
-  enableBroadcastMixAD = false,
-  callBroadcastMixADCallbacks = null
+  audioDescribedOpts = {}
 ) {
+  const audioDescribed = { callback: undefined, enable: false, ...audioDescribedOpts }
+
   let mediaPlayer
   let mediaElement
   const manifestType = mediaSources.time().manifestType
@@ -41,6 +42,7 @@ function MSEStrategy(
           bufferTimeAtTopQuality: 12,
           bufferTimeAtTopQualityLongForm: 15,
         },
+        lastMediaSettingsCachingInfo: { enabled: false },
       },
     },
     customPlayerSettings
@@ -56,9 +58,12 @@ function MSEStrategy(
   const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay)
     ? DEFAULT_SETTINGS.liveDelay
     : playerSettings.streaming?.delay?.liveDelay
-  let failoverPresentationTimeInSeconds
-  let refreshFailoverPresentationTimeInSeconds
   let isEnded = false
+  const cached = {
+    seekableRange: undefined,
+    duration: 0,
+    currentTime: 0,
+  }
 
   let dashMetrics
   let lastError
@@ -69,6 +74,10 @@ function MSEStrategy(
   let manifestLoadCount = 0
 
   let playerMetadata = {
+    downloadQuality: {
+      [MediaKinds.AUDIO]: undefined,
+      [MediaKinds.VIDEO]: undefined,
+    },
     playbackBitrate: undefined,
     bufferLength: undefined,
     fragmentInfo: {
@@ -193,6 +202,11 @@ function MSEStrategy(
   function onTimeUpdate() {
     DebugTool.updateElementTime(mediaElement.currentTime)
 
+    if (!isNaN(mediaPlayer.getCurrentLiveLatency())) {
+      DebugTool.staticMetric("current-latency", mediaPlayer.getCurrentLiveLatency())
+      DebugTool.staticMetric("target-latency", mediaPlayer.getTargetLiveDelay())
+    }
+
     const currentPresentationTimeInSeconds = mediaElement.currentTime
 
     // Note: Multiple consecutive CDN failover logic
@@ -203,7 +217,7 @@ function MSEStrategy(
       isFinite(currentPresentationTimeInSeconds) &&
       parseInt(currentPresentationTimeInSeconds) > 0
     ) {
-      failoverPresentationTimeInSeconds = currentPresentationTimeInSeconds
+      cached.currentTime = currentPresentationTimeInSeconds
     }
 
     publishTimeUpdate()
@@ -305,21 +319,57 @@ function MSEStrategy(
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
+    if (mediaKind === MediaKinds.VIDEO) {
+      dispatchDownloadQualityChangeForKind(MediaKinds.VIDEO)
+      dispatchMaxQualityChangeForKind(MediaKinds.VIDEO)
+    }
+
+    dispatchMaxQualityChangeForKind(MediaKinds.AUDIO)
+    dispatchDownloadQualityChangeForKind(MediaKinds.AUDIO)
+
     emitPlayerInfo()
   }
 
   function emitPlayerInfo() {
     playerMetadata.playbackBitrate =
       mediaKind === MediaKinds.VIDEO
-        ? currentPlaybackBitrate(MediaKinds.VIDEO) + currentPlaybackBitrate(MediaKinds.AUDIO)
-        : currentPlaybackBitrate(MediaKinds.AUDIO)
-
-    DebugTool.dynamicMetric("bitrate", playerMetadata.playbackBitrate)
+        ? currentPlaybackBitrateInKbps(MediaKinds.VIDEO) + currentPlaybackBitrateInKbps(MediaKinds.AUDIO)
+        : currentPlaybackBitrateInKbps(MediaKinds.AUDIO)
 
     Plugins.interface.onPlayerInfoUpdated({
       bufferLength: playerMetadata.bufferLength,
       playbackBitrate: playerMetadata.playbackBitrate,
     })
+  }
+
+  function dispatchDownloadQualityChangeForKind(kind) {
+    const { qualityIndex: prevQualityIndex, bitrateInBps: prevBitrateInBps } =
+      playerMetadata.downloadQuality[kind] ?? {}
+
+    const qualityIndex = mediaPlayer.getQualityFor(kind)
+
+    if (prevQualityIndex === qualityIndex) {
+      return
+    }
+
+    const bitrateInBps = playbackBitrateForRepresentationIndex(qualityIndex, kind)
+
+    playerMetadata.downloadQuality[kind] = { bitrateInBps, qualityIndex }
+
+    DebugTool.dynamicMetric(`${kind}-download-quality`, [qualityIndex, bitrateInBps])
+
+    const abrChangePart = `ABR ${kind} download quality switched`
+    const switchFromPart =
+      prevQualityIndex == null ? "" : ` from ${prevQualityIndex} (${(prevBitrateInBps / 1000).toFixed(0)} kbps)`
+    const switchToPart = ` to ${qualityIndex} (${(bitrateInBps / 1000).toFixed(0)} kbps)`
+
+    DebugTool.info(`${abrChangePart}${switchFromPart}${switchToPart}`)
+  }
+
+  function dispatchMaxQualityChangeForKind(kind) {
+    const { qualityIndex, bitrate: bitrateInBps } = mediaPlayer.getTopBitrateInfoFor(kind)
+
+    DebugTool.dynamicMetric(`${kind}-max-quality`, [qualityIndex, bitrateInBps])
   }
 
   function getBufferedRanges() {
@@ -337,52 +387,49 @@ function MSEStrategy(
       }))
   }
 
-  function currentPlaybackBitrate(mediaKind) {
+  function currentPlaybackBitrateInKbps(mediaKind) {
     const representationSwitch = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaKind)
+
     const representation = representationSwitch ? representationSwitch.to : ""
-    return playbackBitrateForRepresentation(representation, mediaKind)
+
+    return playbackBitrateForRepresentation(representation, mediaKind) / 1000
   }
 
   function playbackBitrateForRepresentation(representation, mediaKind) {
     const repIdx = mediaPlayer.getDashAdapter().getIndexForRepresentation(representation, 0)
+
     return playbackBitrateForRepresentationIndex(repIdx, mediaKind)
   }
 
   function playbackBitrateForRepresentationIndex(index, mediaKind) {
-    if (index === -1) return ""
+    if (index === -1) return 0
 
     const bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind)
-    return parseInt(bitrateInfoList[index].bitrate / 1000)
-  }
 
-  function logBitrate(abrType, { mediaType, oldQuality, newQuality }) {
-    const oldBitrate = isNaN(oldQuality) ? "--" : playbackBitrateForRepresentationIndex(oldQuality, mediaType)
-    const newBitrate = isNaN(newQuality) ? "--" : playbackBitrateForRepresentationIndex(newQuality, mediaType)
-
-    const oldRepresentation = isNaN(oldQuality) ? "Start" : `${oldQuality} (${oldBitrate} kbps)`
-    const newRepresentation = `${newQuality} (${newBitrate} kbps)`
-
-    DebugTool.info(
-      `${mediaType} ABR Change ${abrType} From Representation ${oldRepresentation} to ${newRepresentation}`
-    )
+    return bitrateInfoList[index].bitrate ?? 0
   }
 
   function onQualityChangeRequested(event) {
-    if (event.newQuality !== undefined) {
-      logBitrate("Requested", event)
-    }
-
-    event.throughput = mediaPlayer.getAverageThroughput(mediaKind)
-
     Plugins.interface.onQualityChangeRequested(event)
   }
 
   function onQualityChangeRendered(event) {
-    if (event.newQuality !== undefined) {
-      logBitrate("Rendered", event)
+    if (
+      event.newQuality !== undefined &&
+      (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
+    ) {
+      const { mediaType, newQuality } = event
+
+      DebugTool.dynamicMetric(`${mediaType}-playback-quality`, [
+        newQuality,
+        playbackBitrateForRepresentationIndex(newQuality, mediaType),
+      ])
+
+      dispatchMaxQualityChangeForKind(mediaType)
     }
 
     emitPlayerInfo()
+
     Plugins.interface.onQualityChangedRendered(event)
   }
 
@@ -423,6 +470,7 @@ function MSEStrategy(
     if (event.mediaType === "video" && event.metric === "DroppedFrames") {
       DebugTool.staticMetric("frames-dropped", event.value.droppedFrames)
     }
+
     if (event.mediaType === mediaKind && event.metric === "BufferLevel") {
       dashMetrics = mediaPlayer.getDashMetrics()
 
@@ -434,6 +482,16 @@ function MSEStrategy(
           playbackBitrate: playerMetadata.playbackBitrate,
         })
       }
+    }
+
+    if (
+      event.metric === "RepSwitchList" &&
+      (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
+    ) {
+      const { mediaType } = event
+
+      dispatchDownloadQualityChangeForKind(mediaType)
+      dispatchMaxQualityChangeForKind(mediaType)
     }
   }
 
@@ -449,13 +507,15 @@ function MSEStrategy(
   }
 
   function onCurrentTrackChanged(event) {
+    if (!isAudioDescribedAvailable()) return
+
     const mediaType = event.newMediaInfo.type
     DebugTool.info(
       `${mediaType} track changed.${
-        mediaType === "audio" ? (isBroadcastMixADEnabled() ? " BroadcastMixAD on." : " BroadcastMixAD off.") : ""
+        mediaType === "audio" ? (isAudioDescribedEnabled() ? " Audio Described on." : " Audio Described off.") : ""
       }`
     )
-    callBroadcastMixADCallbacks(isBroadcastMixADEnabled())
+    audioDescribed.callback && audioDescribed.callback(isAudioDescribedEnabled())
   }
 
   function publishMediaState(mediaState) {
@@ -482,9 +542,11 @@ function MSEStrategy(
 
   function load(mimeType, presentationTimeInSeconds) {
     if (mediaPlayer) {
-      modifySource(refreshFailoverPresentationTimeInSeconds || failoverPresentationTimeInSeconds)
+      modifySource(cached.currentTime)
     } else {
-      failoverPresentationTimeInSeconds = presentationTimeInSeconds
+      if (typeof presentationTimeInSeconds === "number" && isFinite(presentationTimeInSeconds)) {
+        cached.currentTime = presentationTimeInSeconds
+      }
       setUpMediaElement(playbackElement)
       setUpMediaPlayer(presentationTimeInSeconds)
       setUpMediaListeners()
@@ -518,19 +580,21 @@ function MSEStrategy(
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
-    mediaPlayer.initialize(mediaElement, null, true)
 
-    if (embeddedSubs) {
-      mediaPlayer.attachTTMLRenderingDiv(document.querySelector("#bsp_subtitles"))
-    }
+    mediaPlayer.initialize(mediaElement, null)
 
-    if (enableBroadcastMixAD) {
-      mediaPlayer.setInitialMediaSettingsFor("audio", {
-        role: "alternate",
-        accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
-      })
-    }
-
+    mediaPlayer.setInitialMediaSettingsFor(
+      "audio",
+      audioDescribed.enable
+        ? {
+            role: "alternate",
+            accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+          }
+        : {
+            role: "main",
+          }
+    )
+    
     modifySource(presentationTimeInSeconds)
   }
 
@@ -618,16 +682,24 @@ function MSEStrategy(
   }
 
   function getSeekableRange() {
-    if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
-      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
-
-      // FIX: Dash.js briefly returns `null` on a failover for the first time update
-      if (dvrInfo) {
-        return { start: dvrInfo.range.start, end: dvrInfo.range.end - liveDelay }
-      }
+    if (manifestType === ManifestType.STATIC || !mediaPlayer?.isReady()) {
+      return cached.seekableRange || { start: 0, end: getDuration() }
     }
 
-    return { start: 0, end: getDuration() }
+    const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+
+    // FIX: Dash.js briefly returns `null` on a failover for the first time update
+    if (dvrInfo) {
+      const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end }
+      // Save good seekable range value
+      cached.seekableRange = Utils.clone(seekableRange)
+
+      return { start: seekableRange.start, end: seekableRange.end - liveDelay }
+    }
+
+    return cached.seekableRange
+      ? { ...cached.seekableRange, end: cached.seekableRange.end - liveDelay }
+      : { start: 0, end: getDuration() }
   }
 
   function customiseSubtitles(options) {
@@ -635,15 +707,30 @@ function MSEStrategy(
   }
 
   function getDuration() {
-    return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.duration() : 0
+    const duration = mediaPlayer && mediaPlayer.isReady() && mediaPlayer.duration()
+
+    // If duration is a number, return that, else return cached value (default 0)
+    if (typeof duration === "number" && isFinite(duration)) {
+      cached.duration = duration
+      return duration
+    }
+    return cached.duration
   }
 
   function getCurrentTime() {
-    return mediaElement?.currentTime ?? 0
+    const currentTime = mediaElement?.currentTime
+
+    if (typeof currentTime === "number" && isFinite(currentTime)) {
+      cached.currentTime = currentTime
+      return currentTime
+    }
+    return cached.currentTime
   }
 
   function refreshManifestBeforeSeek(presentationTimeInSeconds) {
-    refreshFailoverPresentationTimeInSeconds = presentationTimeInSeconds
+    if (typeof presentationTimeInSeconds === "number" && isFinite(presentationTimeInSeconds)) {
+      cached.currentTime = presentationTimeInSeconds
+    }
 
     mediaPlayer.refreshManifest((manifest) => {
       const mediaPresentationDuration = manifest?.mediaPresentationDuration
@@ -687,7 +774,7 @@ function MSEStrategy(
   function startAutoResumeTimeout() {
     autoResumeAtStartOfRange(
       getCurrentTime(),
-      getSeekableRange(), // DVRWindowLength < timeShift ? { start: sr.start + timeshift - dvr, end: timeShift } : getSeekableRange
+      getSafelySeekableRange(),
       addEventCallback,
       removeEventCallback,
       (event) => event !== MediaState.PAUSED,
@@ -696,7 +783,7 @@ function MSEStrategy(
     )
   }
 
-  function isTrackBroadcastMixAD(track) {
+  function isTrackAudioDescribed(track) {
     return (
       track.roles.includes("alternate") &&
       track.accessibilitiesWithSchemeIdUri.some(
@@ -705,31 +792,35 @@ function MSEStrategy(
     )
   }
 
-  function getBroadcastMixADTrack() {
+  function getAudioDescribedTrack() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks.find((track) => isTrackBroadcastMixAD(track))
+    return audioTracks.find((track) => isTrackAudioDescribed(track))
   }
 
-  function isBroadcastMixADAvailable() {
+  function isAudioDescribedAvailable() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
-    return audioTracks.some((track) => isTrackBroadcastMixAD(track))
+    return audioTracks.some((track) => isTrackAudioDescribed(track))
   }
 
-  function isBroadcastMixADEnabled() {
+  function isAudioDescribedEnabled() {
     const currentAudioTrack = mediaPlayer.getCurrentTrackFor("audio")
-    return currentAudioTrack ? isTrackBroadcastMixAD(currentAudioTrack) : false
+    return currentAudioTrack ? isTrackAudioDescribed(currentAudioTrack) : false
   }
 
-  function setBroadcastMixADOff() {
+  function setAudioDescribedOff() {
     const audioTracks = mediaPlayer.getTracksFor("audio")
     const mainTrack = audioTracks.find((track) => track.roles.includes("main"))
     mediaPlayer.setCurrentTrack(mainTrack)
+
+    if (isPaused()) mediaPlayer.play()
   }
 
-  function setBroadcastMixADOn() {
-    const ADTrack = getBroadcastMixADTrack()
+  function setAudioDescribedOn() {
+    const ADTrack = getAudioDescribedTrack()
     if (ADTrack) {
       mediaPlayer.setCurrentTrack(ADTrack)
+
+      if (isPaused()) mediaPlayer.play()
     }
   }
 
@@ -751,7 +842,7 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP, onGapJump)
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
-      mediaPlayer.off(DashJSEvents.TRACK_CHANGE_RENDERED, onCurrentTrackChanged)
+      mediaPlayer.off(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
 
       mediaPlayer = undefined
     }
@@ -776,18 +867,24 @@ function MSEStrategy(
   }
 
   function getSafelySeekableRange() {
-    if (manifestType === ManifestType.DYNAMIC && mediaPlayer?.isReady()) {
-      const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
-
-      // FIX: Dash.js briefly returns `null` on a failover for the first time update
-      if (dvrInfo) {
-        const { range } = dvrInfo
-
-        return { start: range.start, end: range.end - seekDurationPadding }
-      }
+    if (manifestType === ManifestType.STATIC || !mediaPlayer?.isReady()) {
+      return cached.seekableRange || { start: 0, end: getDuration() - seekDurationPadding }
     }
 
-    return { start: 0, end: getDuration() - seekDurationPadding }
+    const dvrInfo = mediaPlayer.getDashMetrics().getCurrentDVRInfo(mediaKind)
+
+    // FIX: Dash.js briefly returns `null` on a failover for the first time update
+    if (dvrInfo) {
+      const seekableRange = { start: dvrInfo.range.start, end: dvrInfo.range.end }
+      // Save good seekable range value
+      cached.seekableRange = Utils.clone(seekableRange)
+
+      return { start: seekableRange.start, end: seekableRange.end - seekDurationPadding }
+    }
+
+    return cached.seekableRange
+      ? { ...cached.seekableRange, end: cached.seekableRange.end - seekDurationPadding }
+      : { start: 0, end: getDuration() - seekDurationPadding }
   }
 
   function clampPresentationTimeToSafeRange(presentationTimeInSeconds) {
@@ -831,7 +928,6 @@ function MSEStrategy(
     eventCallbacks = []
     errorCallback = undefined
     timeUpdateCallback = undefined
-    failoverPresentationTimeInSeconds = undefined
     isEnded = undefined
     dashMetrics = undefined
     playerMetadata = {
@@ -860,10 +956,10 @@ function MSEStrategy(
     load,
     getSeekableRange,
     getCurrentTime,
-    isBroadcastMixADAvailable,
-    isBroadcastMixADEnabled,
-    setBroadcastMixADOn,
-    setBroadcastMixADOff,
+    isAudioDescribedAvailable,
+    isAudioDescribedEnabled,
+    setAudioDescribedOn,
+    setAudioDescribedOff,
     getDuration,
     setSubtitles: (state) => {
       if (state) {
