@@ -54,7 +54,7 @@ function PlayerComponent(
   let fatalErrorTimeout
   let fatalError
 
-  StrategyPicker()
+  StrategyPicker(bigscreenPlayerData.customStrategies)
     .then((strategy) => {
       playbackStrategy = strategy(
         mediaSources,

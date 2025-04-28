@@ -3,8 +3,16 @@ import NativeStrategy from "./nativestrategy"
 import BasicStrategy from "./basicstrategy"
 import isError from "../utils/iserror"
 
-function StrategyPicker() {
+function StrategyPicker(registry) {
   return new Promise((resolve, reject) => {
+    // Custom options from strategyRegistry
+
+    const customStrategy = registry?.hasOwnProperty(window.bigscreenPlayer.playbackStrategy) ? registry[window.bigscreenPlayer.playbackStrategy] : null
+
+    if (customStrategy) {
+      return import(customStrategy).then(({ default: CustomStrategy }) => resolve(CustomStrategy))
+    }
+
     if (window.bigscreenPlayer.playbackStrategy === PlaybackStrategy.MSE) {
       return import("./msestrategy")
         .then(({ default: MSEStrategy }) => resolve(MSEStrategy))
