@@ -594,7 +594,9 @@ function MSEStrategy(
             role: "main",
           }
     )
-    
+
+    embeddedSubs && mediaPlayer.attachTTMLRenderingDiv(document.querySelector("#bsp_subtitles"))
+
     modifySource(presentationTimeInSeconds)
   }
 
