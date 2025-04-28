@@ -30,7 +30,7 @@
     "@babel/plugin-transform-runtime": "^7.23.9",
     "@babel/preset-env": "^7.23.8",
     "@babel/preset-typescript": "^7.23.3",
-    "@rollup/plugin-alias": "^5.1.0",
+    "@rollup/plugin-alias": "^5.1.1",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-inject": "^5.0.5",
@@ -64,7 +64,7 @@
     "typescript-eslint": "^7.2.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v4.7.3-6",
+    "dashjs": "github:bbc/rd-dash.js#rd-imsc-customisation",
     "smp-imsc": "github:bbc/imscJS#v1.0.3"
   },
   "repository": {
