@@ -579,12 +579,11 @@ function MSEStrategy(
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
+    mediaPlayer.initialize(mediaElement, null)
 
     if (protectionData) {
       mediaPlayer.setProtectionData(protectionData)
     }
-
-    mediaPlayer.initialize(mediaElement, null)
 
     mediaPlayer.setInitialMediaSettingsFor(
       "audio",
