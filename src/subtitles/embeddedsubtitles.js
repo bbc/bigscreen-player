@@ -1,6 +1,8 @@
 import { fromXML, generateISD, renderHTML } from "smp-imsc"
 import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
+import DebugTool from "../debugger/debugtool"
+import Plugins from "../plugins"
 
 function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
   let currentSubtitlesElement
