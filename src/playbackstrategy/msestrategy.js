@@ -33,7 +33,8 @@ function MSEStrategy(
   const playerSettings = Utils.merge(
     {
       debug: {
-        logLevel: 2,
+        logLevel: 5,
+        dispatchEvent: true,
       },
       streaming: {
         blacklistExpiryTime: mediaSources.failoverResetTime(),
@@ -495,7 +496,9 @@ function MSEStrategy(
   }
 
   function onDebugLog(event) {
-    DebugTool.debug(event.message)
+    if (event.message.indexOf("[Protection") > -1) {
+      DebugTool.info(event.message)
+    }
   }
 
   function onFragmentContentLengthMismatch(event) {
