@@ -78,14 +78,6 @@ describe("Embedded Subtitles", () => {
         })
       )
     })
-
-    it("Expect TTML rendering div to have been created", () => {
-      const autoStart = false
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement, null, {})
-
-      progressTime(1.5)
-      expect(targetElement.querySelector("#bsp_subtitles")).toBeTruthy()
-    })
   })
 
   describe("autoplay", () => {

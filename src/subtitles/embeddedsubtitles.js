@@ -5,25 +5,11 @@ import DebugTool from "../debugger/debugtool"
 import Plugins from "../plugins"
 
 function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
-  let currentSubtitlesElement
   let exampleSubtitlesElement
-
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
 
   if (autoStart) {
     start()
-    mediaPlayer.addEventCallback(this, onMediaPlayerReady)
-  }
-
-  function onMediaPlayerReady() {
-    mediaPlayer.removeEventCallback(this, onMediaPlayerReady)
-  }
-
-  function removeCurrentSubtitlesElement() {
-    if (currentSubtitlesElement) {
-      DOMHelpers.safeRemoveElement(currentSubtitlesElement)
-      currentSubtitlesElement = undefined
-    }
   }
 
   function removeExampleSubtitlesElement() {
@@ -75,18 +61,7 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, 
     }
   }
 
-  function addCurrentSubtitlesElement() {
-    removeCurrentSubtitlesElement()
-    currentSubtitlesElement = document.createElement("div")
-    currentSubtitlesElement.id = "bsp_subtitles"
-    currentSubtitlesElement.style.position = "absolute"
-    parentElement.appendChild(currentSubtitlesElement)
-  }
-
   function start() {
-    if (!currentSubtitlesElement) {
-      addCurrentSubtitlesElement()
-    }
     mediaPlayer.setSubtitles(true)
     customise(imscRenderOpts)
   }
@@ -129,8 +104,6 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, 
 
     return customStyles
   }
-
-  addCurrentSubtitlesElement()
 
   return {
     start,

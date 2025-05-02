@@ -28,6 +28,7 @@ function MSEStrategy(
 
   let mediaPlayer
   let mediaElement
+  let subtitleElement
   const manifestType = mediaSources.time().manifestType
 
   const playerSettings = Utils.merge(
@@ -553,6 +554,13 @@ function MSEStrategy(
     }
   }
 
+  function setUpSubtitleElement(playbackElement) {
+    subtitleElement = document.createElement("div")
+    subtitleElement.id = "bsp_subtitles"
+    subtitleElement.style.position = "absolute"
+    playbackElement.appendChild(subtitleElement, playbackElement.firstChild)
+  }
+
   function setUpMediaElement(playbackElement) {
     mediaElement = mediaKind === MediaKinds.AUDIO ? document.createElement("audio") : document.createElement("video")
 
@@ -595,7 +603,10 @@ function MSEStrategy(
           }
     )
 
-    embeddedSubs && mediaPlayer.attachTTMLRenderingDiv(document.querySelector("#bsp_subtitles"))
+    if (embeddedSubs) {
+      setUpSubtitleElement(playbackElement)
+      mediaPlayer.attachTTMLRenderingDiv(document.querySelector("#bsp_subtitles"))
+    }
 
     modifySource(presentationTimeInSeconds)
   }
