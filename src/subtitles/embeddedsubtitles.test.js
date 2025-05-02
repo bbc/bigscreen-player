@@ -18,6 +18,7 @@ const mockImscDoc = {
 describe("Embedded Subtitles", () => {
   let subtitles
   let targetElement
+  let subtitleElement
 
   const mockMediaPlayer = {
     getCurrentTime: jest.fn(),
@@ -41,6 +42,12 @@ describe("Embedded Subtitles", () => {
     // Reset the target HTML element between each test
     targetElement?.remove()
     targetElement = document.createElement("div")
+
+    subtitleElement?.remove()
+    subtitleElement = document.createElement("div")
+    subtitleElement.id = "bsp_subtitles"
+    subtitleElement.style.position = "absolute"
+    targetElement.appendChild(subtitleElement, targetElement.firstChild)
 
     jest.spyOn(targetElement, "clientWidth", "get").mockReturnValue(200)
     jest.spyOn(targetElement, "clientHeight", "get").mockReturnValue(100)

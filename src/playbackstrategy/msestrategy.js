@@ -874,8 +874,12 @@ function MSEStrategy(
       mediaElement.removeEventListener("ratechange", onRateChange)
 
       DOMHelpers.safeRemoveElement(mediaElement)
-
       mediaElement = undefined
+    }
+
+    if (subtitleElement) {
+      DOMHelpers.safeRemoveElement(subtitleElement)
+      subtitleElement = undefined
     }
   }
 

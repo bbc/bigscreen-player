@@ -8,9 +8,18 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, 
   let exampleSubtitlesElement
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
 
-  if (autoStart) {
-    start()
-  }
+  const observer = new MutationObserver((_, observer) => {
+    const element = parentElement.querySelector("#bsp_subtitles")
+    if (element) {
+      observer.disconnect()
+      if (autoStart) start()
+    }
+  })
+
+  observer.observe(parentElement, {
+    childList: true,
+    subtree: true,
+  })
 
   function removeExampleSubtitlesElement() {
     if (exampleSubtitlesElement) {
