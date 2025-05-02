@@ -29,6 +29,7 @@ function MSEStrategy(
   let mediaPlayer
   let mediaElement
   let subtitleElement
+  let subtitlesEnabled
   const manifestType = mediaSources.time().manifestType
 
   const playerSettings = Utils.merge(
@@ -670,22 +671,15 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.GAP_JUMP, onGapJump)
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
-    mediaPlayer.on(DashJSEvents.TEXT_TRACKS_ADDED, disableTextTracks)
+    mediaPlayer.on(DashJSEvents.TEXT_TRACKS_ADDED, handleTextTracks)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
     mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
   }
 
-  function disableTextTracks() {
+  function handleTextTracks() {
     const textTracks = mediaElement.textTracks
     for (let index = 0; index < textTracks.length; index++) {
-      textTracks[index].mode = "disabled"
-    }
-  }
-
-  function enableTextTracks() {
-    const textTracks = mediaElement.textTracks
-    for (let index = 0; index < textTracks.length; index++) {
-      textTracks[index].mode = "showing"
+      textTracks[index].mode = subtitlesEnabled ? "showing" : "disabled"
     }
   }
 
@@ -980,7 +974,8 @@ function MSEStrategy(
     getDuration,
     setSubtitles: (state) => {
       if (state) {
-        enableTextTracks()
+        subtitlesEnabled = true
+        handleTextTracks()
       }
       mediaPlayer.enableText(state)
     },
