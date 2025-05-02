@@ -605,7 +605,7 @@ function MSEStrategy(
 
     if (embeddedSubs) {
       setUpSubtitleElement(playbackElement)
-      mediaPlayer.attachTTMLRenderingDiv(document.querySelector("#bsp_subtitles"))
+      mediaPlayer.attachTTMLRenderingDiv(subtitleElement)
     }
 
     modifySource(presentationTimeInSeconds)
