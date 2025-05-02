@@ -21,6 +21,8 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, 
     subtree: true,
   })
 
+  if (autoStart) start()
+
   function removeExampleSubtitlesElement() {
     if (exampleSubtitlesElement) {
       DOMHelpers.safeRemoveElement(exampleSubtitlesElement)
