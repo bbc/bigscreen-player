@@ -790,6 +790,11 @@ function MSEStrategy(
     )
   }
 
+  function isSubtitlesAvailable() {
+    const textTracks = mediaPlayer.getTracksFor("text")
+    return (textTracks && textTracks.length > 0) ?? false
+  }
+
   function isTrackAudioDescribed(track) {
     return (
       track.roles.includes("alternate") &&
@@ -969,6 +974,7 @@ function MSEStrategy(
     getCurrentTime,
     isAudioDescribedAvailable,
     isAudioDescribedEnabled,
+    isSubtitlesAvailable,
     setAudioDescribedOn,
     setAudioDescribedOff,
     getDuration,

@@ -99,6 +99,10 @@ function PlayerComponent(
     }
   }
 
+  function isSubtitlesAvailable() {
+    return playbackStrategy && playbackStrategy.isSubtitlesAvailable()
+  }
+
   function setSubtitles(state) {
     if (playbackStrategy) {
       playbackStrategy.setSubtitles(state)
@@ -446,10 +450,10 @@ function PlayerComponent(
   return {
     play,
     pause,
-    setSubtitles,
     customiseSubtitles,
     transitions,
     isEnded,
+    isSubtitlesAvailable,
     setPlaybackRate,
     getPlaybackRate,
     setCurrentTime,
@@ -462,6 +466,7 @@ function PlayerComponent(
     isAudioDescribedAvailable,
     isAudioDescribedEnabled,
     setAudioDescribed,
+    setSubtitles,
   }
 }
 

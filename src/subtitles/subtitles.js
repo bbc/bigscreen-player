@@ -85,7 +85,7 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
 
   function available() {
     if (embeddedSubs) {
-      return true
+      return mediaPlayer && mediaPlayer.isSubtitlesAvailable()
     }
 
     const url = mediaSources.currentSubtitlesSource()

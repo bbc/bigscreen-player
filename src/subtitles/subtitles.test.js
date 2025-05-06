@@ -89,7 +89,10 @@ describe("Subtitles", () => {
       })
 
       it("implementation is available when embedded subtitles override is true", (done) => {
-        const mockMediaPlayer = {}
+        const mockMediaPlayer = {
+          isSubtitlesAvailable: jest.fn(() => true),
+        }
+
         const autoStart = true
 
         Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
@@ -101,7 +104,10 @@ describe("Subtitles", () => {
 
       it("implementation is available when embedded subtitles override is true, even if segmented URL is passed", (done) => {
         isSegmented = true
-        const mockMediaPlayer = {}
+        const mockMediaPlayer = {
+          isSubtitlesAvailable: jest.fn(() => true),
+        }
+
         const autoStart = true
 
         Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
