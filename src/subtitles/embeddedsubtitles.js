@@ -4,22 +4,9 @@ import Utils from "../utils/playbackutils"
 import DebugTool from "../debugger/debugtool"
 import Plugins from "../plugins"
 
-function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
+function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources, defaultStyleOpts) {
   let exampleSubtitlesElement
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
-
-  const observer = new MutationObserver((_, observer) => {
-    const element = parentElement.querySelector("#bsp_subtitles")
-    if (element) {
-      observer.disconnect()
-      if (autoStart) start()
-    }
-  })
-
-  observer.observe(parentElement, {
-    childList: true,
-    subtree: true,
-  })
 
   if (autoStart) start()
 

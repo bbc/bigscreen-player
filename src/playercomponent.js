@@ -43,6 +43,7 @@ function PlayerComponent(
   errorCallback,
   audioDescribedCallback
 ) {
+  let setSubtitlesState
   let _stateUpdateCallback = stateUpdateCallback
 
   let mediaKind = bigscreenPlayerData.media.kind
@@ -77,6 +78,8 @@ function PlayerComponent(
       mediaMetaData = bigscreenPlayerData.media
 
       loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime)
+
+      if (setSubtitlesState) playbackStrategy.setSubtitles(setSubtitlesState)
     })
     .catch((error) => {
       errorCallback && errorCallback(error)
@@ -97,7 +100,11 @@ function PlayerComponent(
   }
 
   function setSubtitles(state) {
-    return playbackStrategy && playbackStrategy.setSubtitles(state)
+    if (playbackStrategy) {
+      playbackStrategy.setSubtitles(state)
+    } else {
+      setSubtitlesState = state
+    }
   }
 
   function customiseSubtitles(styleOpts) {

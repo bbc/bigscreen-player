@@ -97,7 +97,7 @@ describe("Embedded Subtitles", () => {
       expect(mockMediaPlayer.setSubtitles).toHaveBeenCalledTimes(1)
     })
 
-    it("does not trigger the MSE player to enable subtitles immediately when set to autoplay", () => {
+    it("does not trigger the MSE player to enable subtitles immediately when autoplay is false", () => {
       const autoStart = false
 
       subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement, null, {})
