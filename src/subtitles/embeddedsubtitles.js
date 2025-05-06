@@ -7,6 +7,7 @@ import Plugins from "../plugins"
 function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources, defaultStyleOpts) {
   let exampleSubtitlesElement
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
+  let subtitlesEnabled = false
 
   if (autoStart) start()
 
@@ -60,11 +61,13 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources,
   }
 
   function start() {
+    subtitlesEnabled = true
     mediaPlayer.setSubtitles(true)
-    customise(imscRenderOpts)
+    setRenderOptions(imscRenderOpts)
   }
 
   function stop() {
+    subtitlesEnabled = false
     mediaPlayer.setSubtitles(false)
   }
 
@@ -72,10 +75,18 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources,
     stop()
   }
 
-  function customise(styleOpts) {
+  function setRenderOptions(styleOpts) {
     const customStyleOptions = transformStyleOptions(styleOpts)
     imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions)
     mediaPlayer.customiseSubtitles(imscRenderOpts)
+  }
+
+  function customise(styleOpts) {
+    setRenderOptions(styleOpts)
+    if (subtitlesEnabled) {
+      stop()
+      start()
+    }
   }
 
   // Opts: { backgroundColour: string (css colour, hex), fontFamily: string , size: number, lineHeight: number }
