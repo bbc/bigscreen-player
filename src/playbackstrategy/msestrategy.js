@@ -1,4 +1,4 @@
-import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
+import { MediaPlayer } from "dashjs/index"
 import MediaState from "../models/mediastate"
 import DebugTool from "../debugger/debugtool"
 import MediaKinds from "../models/mediakinds"
@@ -586,9 +586,14 @@ function MSEStrategy(
   function setUpMediaPlayer(presentationTimeInSeconds) {
     const dashSettings = getDashSettings(playerSettings)
     const embeddedSubs = window.bigscreenPlayer?.overrides?.embeddedSubtitles ?? false
+    const protectionData = mediaSources.currentProtectionData()
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
+
+    if (protectionData) {
+      mediaPlayer.setProtectionData(protectionData)
+    }
 
     mediaPlayer.initialize(mediaElement, null)
 

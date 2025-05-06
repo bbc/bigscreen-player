@@ -1,4 +1,4 @@
-import { MediaPlayer } from "dashjs/index_mediaplayerOnly"
+import { MediaPlayer } from "dashjs/index"
 import ManifestModifier from "../manifest/manifestmodifier"
 import MediaKinds from "../models/mediakinds"
 import { ManifestType } from "../models/manifesttypes"
@@ -8,7 +8,7 @@ import { autoResumeAtStartOfRange } from "../dynamicwindowutils"
 import Plugins from "../plugins"
 import MSEStrategy from "./msestrategy"
 
-jest.mock("dashjs/index_mediaplayerOnly", () => ({ MediaPlayer: jest.fn() }))
+jest.mock("dashjs/index", () => ({ MediaPlayer: jest.fn() }))
 jest.mock("../dynamicwindowutils")
 jest.mock("../debugger/debugtool")
 jest.mock("../manifest/manifestmodifier")
@@ -65,6 +65,7 @@ const mockDashInstance = {
   setCurrentTrack: jest.fn(),
   setInitialMediaSettingsFor: jest.fn(),
   setAutoPlay: jest.fn(),
+  setProtectionData: jest.fn(),
 }
 
 const mockDashMediaPlayer = {
@@ -77,6 +78,7 @@ const mockMediaSources = {
   time: jest.fn(),
   failoverResetTime: jest.fn().mockReturnValue(10),
   currentSource: jest.fn().mockReturnValue(""),
+  currentProtectionData: jest.fn(),
   availableSources: jest.fn().mockReturnValue([]),
   failover: jest.fn().mockResolvedValue(),
 }
@@ -246,6 +248,19 @@ describe("Media Source Extensions Playback Strategy", () => {
           streaming: expect.objectContaining({ seekDurationPadding }),
         })
       )
+    })
+
+    it("should use currentProtectionData when available", () => {
+      const mockData = { mockKey: "some-data" }
+      mockMediaSources.currentProtectionData.mockReturnValueOnce(mockData)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, 0)
+
+      expect(mockMediaSources.currentProtectionData).toHaveBeenCalled()
+      expect(mockDashInstance.setProtectionData).toHaveBeenCalledWith(mockData)
+      expect(mockDashInstance.initialize).toHaveBeenCalledWith(mediaElement, null)
     })
 
     it("should initialise MediaPlayer with a source anchor when time is zero", () => {
