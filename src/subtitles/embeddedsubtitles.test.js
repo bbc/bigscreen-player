@@ -88,7 +88,7 @@ describe("Embedded Subtitles", () => {
   })
 
   describe("autoplay", () => {
-    it("triggers the MSE player to enable subtitles immediately when set to autoplay", () => {
+    it("triggers the MSE player to enable subtitles immediately when autoplay is true", () => {
       const autoStart = true
 
       subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement, null, {})
@@ -155,6 +155,25 @@ describe("Embedded Subtitles", () => {
       subtitles.customise(customStyleOpts)
 
       expect(mockMediaPlayer.customiseSubtitles).toHaveBeenCalledWith(expectedOpts)
+    })
+
+    it("applies customisations immediately", () => {
+      const defaultStyleOpts = { backgroundColour: "black", fontFamily: "Arial" }
+      const customStyleOpts = { size: 0.7, lineHeight: 0.9 }
+
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, defaultStyleOpts)
+
+      mockMediaPlayer.getCurrentTime.mockReturnValueOnce(1)
+
+      subtitles.start()
+      expect(mockMediaPlayer.setSubtitles).toHaveBeenCalledWith(true)
+
+      mockMediaPlayer.setSubtitles.mockReset()
+
+      subtitles.customise(customStyleOpts)
+
+      expect(mockMediaPlayer.setSubtitles).toHaveBeenNthCalledWith(1, false)
+      expect(mockMediaPlayer.setSubtitles).toHaveBeenNthCalledWith(2, true)
     })
   })
 
