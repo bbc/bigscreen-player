@@ -375,6 +375,63 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       expect(mockDashInstance.attachSource).toHaveBeenCalledWith(`${cdnArray[1].url}#t=86`)
     })
+
+    it("should attach a new source with the correct track enabled when AD is available", () => {
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[0].url)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, {
+        enable: true,
+      })
+
+      mseStrategy.load(null, 45)
+
+      expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenCalledWith("audio", {
+        accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+        role: "alternate",
+      })
+
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
+      mseStrategy.load(null, null)
+
+      expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenNthCalledWith(2, "audio", {
+        accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+        role: "alternate",
+      })
+    })
+
+    it("should attach a new source with the correct track enabled when AD is not enabled", () => {
+      const audioDescribedTrack = {
+        roles: ["alternate"],
+        accessibilitiesWithSchemeIdUri: [{ schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" }],
+      }
+
+      const mainTrack = { roles: ["main"] }
+
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[0].url)
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, undefined, undefined, {
+        enable: true,
+      })
+
+      mseStrategy.load(null, 45)
+
+      expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenCalledWith("audio", {
+        accessibility: { schemeIdUri: "urn:tva:metadata:cs:AudioPurposeCS:2007", value: "1" },
+        role: "alternate",
+      })
+
+      mockDashInstance.getCurrentTrackFor.mockReturnValue(mainTrack)
+      mockDashInstance.getTracksFor.mockReturnValue([mainTrack, audioDescribedTrack])
+      mseStrategy.setAudioDescribedOff()
+      dispatchDashEvent(dashjsMediaPlayerEvents.CURRENT_TRACK_CHANGED, { newMediaInfo: { type: "audio" } })
+
+      mockMediaSources.currentSource.mockReturnValueOnce(cdnArray[1].url)
+      mseStrategy.load(null, null)
+
+      expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenNthCalledWith(2, "audio", {
+        role: "main",
+      })
+    })
   })
 
   describe("responding to dash.js events", () => {

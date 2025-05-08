@@ -508,13 +508,16 @@ function MSEStrategy(
   function onCurrentTrackChanged(event) {
     if (!isAudioDescribedAvailable()) return
 
+    audioDescribed.enable = isAudioDescribedEnabled()
     const mediaType = event.newMediaInfo.type
+
     DebugTool.info(
       `${mediaType} track changed.${
-        mediaType === "audio" ? (isAudioDescribedEnabled() ? " Audio Described on." : " Audio Described off.") : ""
+        mediaType === "audio" ? (audioDescribed.enable ? " Audio Described on." : " Audio Described off.") : ""
       }`
     )
-    audioDescribed.callback && audioDescribed.callback(isAudioDescribedEnabled())
+
+    audioDescribed.callback && audioDescribed.callback(audioDescribed.enable)
   }
 
   function publishMediaState(mediaState) {
@@ -586,6 +589,13 @@ function MSEStrategy(
 
     mediaPlayer.initialize(mediaElement, null)
 
+    modifySource(presentationTimeInSeconds)
+  }
+
+  function modifySource(presentationTimeInSeconds) {
+    const source = mediaSources.currentSource()
+    const anchor = buildSourceAnchor(presentationTimeInSeconds)
+
     mediaPlayer.setInitialMediaSettingsFor(
       "audio",
       audioDescribed.enable
@@ -597,13 +607,6 @@ function MSEStrategy(
             role: "main",
           }
     )
-
-    modifySource(presentationTimeInSeconds)
-  }
-
-  function modifySource(presentationTimeInSeconds) {
-    const source = mediaSources.currentSource()
-    const anchor = buildSourceAnchor(presentationTimeInSeconds)
 
     mediaPlayer.attachSource(`${source}${anchor}`)
   }
