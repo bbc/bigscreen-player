@@ -29,7 +29,7 @@ function MSEStrategy(
   let mediaPlayer
   let mediaElement
   let subtitleElement
-  let subtitlesEnabled
+  let subtitlesEnabled = false
   const manifestType = mediaSources.time().manifestType
 
   const playerSettings = Utils.merge(
@@ -39,12 +39,15 @@ function MSEStrategy(
       },
       streaming: {
         blacklistExpiryTime: mediaSources.failoverResetTime(),
+        lastMediaSettingsCachingInfo: { enabled: false },
         buffer: {
           bufferToKeep: 4,
           bufferTimeAtTopQuality: 12,
           bufferTimeAtTopQualityLongForm: 15,
         },
-        lastMediaSettingsCachingInfo: { enabled: false },
+        text: {
+          defaultEnabled: false,
+        },
       },
     },
     customPlayerSettings
@@ -682,14 +685,7 @@ function MSEStrategy(
   }
 
   function handleTextTracks() {
-    const textTracks = mediaElement.textTracks
-    for (let index = 0; index < textTracks.length; index++) {
-      textTracks[index].label === "888" && subtitlesEnabled
-        ? (textTracks[index].mode = "showing")
-        : (textTracks[index].mode = "disabled")
-
-      DebugTool.debug(`Text track seen in manifest with ID ${textTracks[index].label} it is ${textTracks[index].mode}.`)
-    }
+    mediaPlayer.enableText(subtitlesEnabled)
   }
 
   function manifestLoadingFinished(event) {
@@ -988,9 +984,10 @@ function MSEStrategy(
     setAudioDescribedOff,
     getDuration,
     setSubtitles: (state) => {
-      if (state) {
-        subtitlesEnabled = true
-        handleTextTracks()
+      subtitlesEnabled = state ?? false
+
+      if (mediaPlayer) {
+        mediaPlayer.enableText(subtitlesEnabled)
       }
     },
     getPlayerElement: () => mediaElement,
