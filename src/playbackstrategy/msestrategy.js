@@ -684,7 +684,9 @@ function MSEStrategy(
   function handleTextTracks() {
     const textTracks = mediaElement.textTracks
     for (let index = 0; index < textTracks.length; index++) {
-      textTracks[index].mode = subtitlesEnabled ? "showing" : "disabled"
+      textTracks[index].label === "888" && subtitlesEnabled
+        ? (textTracks[index].mode = "showing")
+        : (textTracks[index].mode = "disabled")
     }
   }
 
@@ -988,7 +990,6 @@ function MSEStrategy(
         subtitlesEnabled = true
         handleTextTracks()
       }
-      mediaPlayer.enableText(state)
     },
     getPlayerElement: () => mediaElement,
     tearDown,
