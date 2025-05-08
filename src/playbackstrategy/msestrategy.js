@@ -687,6 +687,8 @@ function MSEStrategy(
       textTracks[index].label === "888" && subtitlesEnabled
         ? (textTracks[index].mode = "showing")
         : (textTracks[index].mode = "disabled")
+
+      DebugTool.debug(`Text track seen in manifest with ID ${textTracks[index].label} it is ${textTracks[index].mode}.`)
     }
   }
 
