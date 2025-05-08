@@ -10,10 +10,12 @@ You provide subtitles to BigscreenPlayer by setting `media.captions` in the `.in
 
 ```js
 // 1️⃣ Add an array of caption blocks to your playback data.
-playbackData.media.captions = [/* caption blocks... */];
+playbackData.media.captions = [
+  /* caption blocks... */
+]
 
 // 2️⃣ Pass playback data that contains captions to the player.
-player.init(document.querySelector("video"), playbackData, /* other opts */);
+player.init(document.querySelector("video"), playbackData /* other opts */)
 ```
 
 1. `media.captions` MUST be an array containing at least one object.
@@ -34,7 +36,7 @@ const captions = [
   { url: "https://some.cdn/subtitles.xml" },
   { url: "https://other.cdn/subtitles.xml" },
   /* ... */
-];
+]
 ```
 
 Subtitles delivered as a whole do not require any additional metadata in the manifest to work.
@@ -49,13 +51,15 @@ const captions = [
   {
     url: "https://some.cdn/subtitles/$segment$.m4s",
     segmentLength: 3.84,
+    cdn: "default",
   },
   {
     url: "https://other.cdn/subtitles/$segment$.m4s",
     segmentLength: 3.84,
+    cdn: "default",
   },
   /* ... */
-];
+]
 ```
 
 The segment number is calculated from the presentation timeline. You MUST ensure your subtitle segments are enumerated to match your media segments and you account for offsets such as:
@@ -73,11 +77,23 @@ You can style the subtitles by setting `media.subtitleCustomisation` in the `.in
 
 ```js
 // 1️⃣ Create an object mapping out styles for your subtitles.
-playbackData.media.subtitleCustomisation = { lineHeight: 1.5, size: 1 };
+playbackData.media.subtitleCustomisation = { lineHeight: 1.5, size: 1 }
 
 // 2️⃣ Pass playback data that contains subtitle customisation (and captions) to the player.
-player.init(document.querySelector("video"), playbackData, /* other opts */);
+player.init(document.querySelector("video"), playbackData /* other opts */)
 ```
+
+### Low Latency Streams
+
+When using Dash.js with a low-latency MPD segments are delivered using Chunked Transfer Encoding (CTE) - the default side chain doesn't allow for delivery in this case.
+
+Whilst it is possible to collect chunks as they are delivered, wait until a full segment worth of subtitles have been delivered and pass these to the render function this breaks the low-latency workflow.
+
+An override has been added to allow subtitles to be rendered directly by Dash.js instead of the current side-chain.
+
+Subtitles can be enabled and disabled in the usual way using the `setSubtitlesEnabled()` function. However, they are signalled and delivered by the chosen MPD.
+
+Using Dash.js subtitles can be enabled using `window.bigscreenPlayer.overrides.embeddedSubtitles = true`.
 
 ##  Design
 

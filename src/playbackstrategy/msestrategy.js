@@ -28,6 +28,8 @@ function MSEStrategy(
 
   let mediaPlayer
   let mediaElement
+  let subtitleElement
+  let subtitlesEnabled = false
   const manifestType = mediaSources.time().manifestType
 
   const playerSettings = Utils.merge(
@@ -37,12 +39,15 @@ function MSEStrategy(
       },
       streaming: {
         blacklistExpiryTime: mediaSources.failoverResetTime(),
+        lastMediaSettingsCachingInfo: { enabled: false },
         buffer: {
           bufferToKeep: 4,
           bufferTimeAtTopQuality: 12,
           bufferTimeAtTopQualityLongForm: 15,
         },
-        lastMediaSettingsCachingInfo: { enabled: false },
+        text: {
+          defaultEnabled: false,
+        },
       },
     },
     customPlayerSettings
@@ -108,6 +113,7 @@ function MSEStrategy(
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
     QUOTA_EXCEEDED: "quotaExceeded",
+    TEXT_TRACKS_ADDED: "allTextTracksAdded",
     CURRENT_TRACK_CHANGED: "currentTrackChanged",
   }
 
@@ -552,6 +558,13 @@ function MSEStrategy(
     }
   }
 
+  function setUpSubtitleElement(playbackElement) {
+    subtitleElement = document.createElement("div")
+    subtitleElement.id = "bsp_subtitles"
+    subtitleElement.style.position = "absolute"
+    playbackElement.appendChild(subtitleElement, playbackElement.firstChild)
+  }
+
   function setUpMediaElement(playbackElement) {
     mediaElement = mediaKind === MediaKinds.AUDIO ? document.createElement("audio") : document.createElement("video")
 
@@ -575,6 +588,7 @@ function MSEStrategy(
 
   function setUpMediaPlayer(presentationTimeInSeconds) {
     const dashSettings = getDashSettings(playerSettings)
+    const embeddedSubs = window.bigscreenPlayer?.overrides?.embeddedSubtitles ?? false
     const protectionData = mediaSources.currentProtectionData()
 
     mediaPlayer = MediaPlayer().create()
@@ -598,13 +612,17 @@ function MSEStrategy(
           }
     )
 
+    if (embeddedSubs) {
+      setUpSubtitleElement(playbackElement)
+      mediaPlayer.attachTTMLRenderingDiv(subtitleElement)
+    }
+
     modifySource(presentationTimeInSeconds)
   }
 
   function modifySource(presentationTimeInSeconds) {
     const source = mediaSources.currentSource()
     const anchor = buildSourceAnchor(presentationTimeInSeconds)
-
     mediaPlayer.attachSource(`${source}${anchor}`)
   }
 
@@ -661,8 +679,13 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.GAP_JUMP, onGapJump)
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
+    mediaPlayer.on(DashJSEvents.TEXT_TRACKS_ADDED, handleTextTracks)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
     mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
+  }
+
+  function handleTextTracks() {
+    mediaPlayer.enableText(subtitlesEnabled)
   }
 
   function manifestLoadingFinished(event) {
@@ -689,6 +712,10 @@ function MSEStrategy(
     return cached.seekableRange
       ? { ...cached.seekableRange, end: cached.seekableRange.end - liveDelay }
       : { start: 0, end: getDuration() }
+  }
+
+  function customiseSubtitles(options) {
+    return mediaPlayer && mediaPlayer.updateSettings({ streaming: { text: { imsc: { options } } } })
   }
 
   function getDuration() {
@@ -766,6 +793,11 @@ function MSEStrategy(
       mediaPlayer.play,
       mediaSources.time().timeShiftBufferDepthInMilliseconds / 1000
     )
+  }
+
+  function isSubtitlesAvailable() {
+    const textTracks = mediaPlayer.getTracksFor("text")
+    return (textTracks && textTracks.length > 0) ?? false
   }
 
   function isTrackAudioDescribed(track) {
@@ -846,8 +878,12 @@ function MSEStrategy(
       mediaElement.removeEventListener("ratechange", onRateChange)
 
       DOMHelpers.safeRemoveElement(mediaElement)
-
       mediaElement = undefined
+    }
+
+    if (subtitleElement) {
+      DOMHelpers.safeRemoveElement(subtitleElement)
+      subtitleElement = undefined
     }
   }
 
@@ -943,9 +979,17 @@ function MSEStrategy(
     getCurrentTime,
     isAudioDescribedAvailable,
     isAudioDescribedEnabled,
+    isSubtitlesAvailable,
     setAudioDescribedOn,
     setAudioDescribedOff,
     getDuration,
+    setSubtitles: (state) => {
+      subtitlesEnabled = state ?? false
+
+      if (mediaPlayer) {
+        mediaPlayer.enableText(subtitlesEnabled)
+      }
+    },
     getPlayerElement: () => mediaElement,
     tearDown,
     reset: () => {
@@ -955,6 +999,7 @@ function MSEStrategy(
     },
     isEnded: () => isEnded,
     isPaused,
+    customiseSubtitles,
     pause,
     play: () => mediaPlayer.play(),
     setCurrentTime,

@@ -1,10 +1,13 @@
 /* eslint-disable jest/no-done-callback */
 import IMSCSubtitles from "./imscsubtitles"
 import LegacySubtitles from "./legacysubtitles"
+import EmbeddedSubtitles from "./embeddedsubtitles"
+
 import Subtitles from "./subtitles"
 
 jest.mock("./imscsubtitles")
 jest.mock("./legacysubtitles")
+jest.mock("./embeddedsubtitles")
 
 describe("Subtitles", () => {
   let isAvailable
@@ -69,6 +72,48 @@ describe("Subtitles", () => {
         Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
           expect(LegacySubtitles).not.toHaveBeenCalled()
           expect(IMSCSubtitles).not.toHaveBeenCalled()
+          done()
+        })
+      })
+    })
+
+    describe("embedded", () => {
+      beforeEach(() => {
+        window.bigscreenPlayer = {
+          overrides: {
+            embeddedSubtitles: true,
+          },
+        }
+
+        EmbeddedSubtitles.mockReset()
+      })
+
+      it("implementation is available when embedded subtitles override is true", (done) => {
+        const mockMediaPlayer = {
+          isSubtitlesAvailable: jest.fn(() => true),
+        }
+
+        const autoStart = true
+
+        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
+          expect(result).toBe(true)
+          expect(EmbeddedSubtitles).toHaveBeenCalledTimes(1)
+          done()
+        })
+      })
+
+      it("implementation is available when embedded subtitles override is true, even if segmented URL is passed", (done) => {
+        isSegmented = true
+        const mockMediaPlayer = {
+          isSubtitlesAvailable: jest.fn(() => true),
+        }
+
+        const autoStart = true
+
+        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
+          expect(LegacySubtitles).not.toHaveBeenCalled()
+          expect(IMSCSubtitles).not.toHaveBeenCalled()
+          expect(EmbeddedSubtitles).toHaveBeenCalledTimes(1)
           done()
         })
       })

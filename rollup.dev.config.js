@@ -1,5 +1,6 @@
 import PackageJSON from "./package.json" assert { type: "json" }
 
+import alias from "@rollup/plugin-alias"
 import babel from "@rollup/plugin-babel"
 import commonjs from "@rollup/plugin-commonjs"
 import resolve from "@rollup/plugin-node-resolve"
@@ -20,6 +21,9 @@ export default {
     format: "es",
   },
   plugins: [
+    alias({
+      entries: [{ find: "imsc", replacement: "smp-imsc" }],
+    }),
     replace({
       preventAssignment: true,
       __VERSION__: () => PackageJSON.version,
