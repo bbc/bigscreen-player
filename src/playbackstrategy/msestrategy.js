@@ -80,6 +80,7 @@ function MSEStrategy(
     },
     playbackBitrate: undefined,
     bufferLength: undefined,
+    latency: undefined,
     fragmentInfo: {
       requestTime: undefined,
       numDownloaded: undefined,
@@ -109,6 +110,7 @@ function MSEStrategy(
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
     QUOTA_EXCEEDED: "quotaExceeded",
     CURRENT_TRACK_CHANGED: "currentTrackChanged",
+    PLAYBACK_RATE_CHANGED: "playbackRateChanged",
   }
 
   function onLoadedMetaData() {
@@ -338,6 +340,7 @@ function MSEStrategy(
     Plugins.interface.onPlayerInfoUpdated({
       bufferLength: playerMetadata.bufferLength,
       playbackBitrate: playerMetadata.playbackBitrate,
+      latency: playerMetadata.latency,
     })
   }
 
@@ -474,11 +477,13 @@ function MSEStrategy(
       dashMetrics = mediaPlayer.getDashMetrics()
 
       if (dashMetrics) {
+        playerMetadata.latency = mediaPlayer.getCurrentLiveLatency()
         playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(event.mediaType)
         DebugTool.staticMetric("buffer-length", playerMetadata.bufferLength)
         Plugins.interface.onPlayerInfoUpdated({
           bufferLength: playerMetadata.bufferLength,
           playbackBitrate: playerMetadata.playbackBitrate,
+          latency: playerMetadata.latency,
         })
       }
     }
@@ -663,6 +668,11 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
     mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
+    mediaPlayer.on(DashJSEvents.PLAYBACK_RATE_CHANGED, onPlaybackRateChanged)
+  }
+
+  function onPlaybackRateChanged(event) {
+    Plugins.interface.onPlaybackRateChanged(event)
   }
 
   function manifestLoadingFinished(event) {
@@ -828,7 +838,7 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
       mediaPlayer.off(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
-
+      mediaPlayer.off(DashJSEvents.PLAYBACK_RATE_CHANGED, onPlaybackRateChanged)
       mediaPlayer = undefined
     }
 
