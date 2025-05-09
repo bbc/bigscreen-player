@@ -36,10 +36,13 @@ type CreateMetric<Kind extends string, Data extends Primitives> = {
   data: Data
 }
 
+type AudioDownloadQuality = CreateMetric<"audio-download-quality", [qualityIndex: number, bitrate: number]>
+type AudioPlaybackQuality = CreateMetric<"audio-playback-quality", [qualityIndex: number, bitrate: number]>
+type AudioMaxQuality = CreateMetric<"audio-max-quality", [qualityIndex: number, bitrate: number]>
 type AutoResume = CreateMetric<"auto-resume", number>
-type BitRate = CreateMetric<"bitrate", number>
 type BufferLength = CreateMetric<"buffer-length", number>
 type CDNsAvailable = CreateMetric<"cdns-available", string[]>
+type CurrentLatency = CreateMetric<"current-latency", number>
 type CurrentUrl = CreateMetric<"current-url", string>
 type Duration = CreateMetric<"duration", number>
 type FramesDropped = CreateMetric<"frames-dropped", number>
@@ -50,18 +53,23 @@ type MediaElementPlaybackRate = CreateMetric<"playback-rate", HTMLMediaElement["
 type MediaElementReadyState = CreateMetric<"ready-state", HTMLMediaElement["readyState"]>
 type MediaElementSeeking = CreateMetric<"seeking", HTMLMediaElement["seeking"]>
 type PlaybackStrategy = CreateMetric<"strategy", string>
-type RepresentationAudio = CreateMetric<"representation-audio", [qualityIndex: number, bitrate: number]>
-type RepresentationVideo = CreateMetric<"representation-video", [qualityIndex: number, bitrate: number]>
 type SeekableRange = CreateMetric<"seekable-range", [start: number, end: number]>
 type SubtitleCDNsAvailable = CreateMetric<"subtitle-cdns-available", string[]>
 type SubtitleCurrentUrl = CreateMetric<"subtitle-current-url", string>
+type TargetLatency = CreateMetric<"target-latency", number>
 type Version = CreateMetric<"version", string>
+type VideoDownloadQuality = CreateMetric<"video-download-quality", [qualityIndex: number, bitrate: number]>
+type VideoPlaybackQuality = CreateMetric<"video-playback-quality", [qualityIndex: number, bitrate: number]>
+type VideoMaxQuality = CreateMetric<"video-max-quality", [qualityIndex: number, bitrate: number]>
 
 export type Metric =
+  | AudioDownloadQuality
+  | AudioMaxQuality
+  | AudioPlaybackQuality
   | AutoResume
-  | BitRate
   | BufferLength
   | CDNsAvailable
+  | CurrentLatency
   | CurrentUrl
   | Duration
   | FramesDropped
@@ -72,12 +80,14 @@ export type Metric =
   | MediaElementReadyState
   | MediaElementSeeking
   | PlaybackStrategy
-  | RepresentationAudio
-  | RepresentationVideo
   | SeekableRange
   | SubtitleCDNsAvailable
   | SubtitleCurrentUrl
+  | TargetLatency
   | Version
+  | VideoDownloadQuality
+  | VideoMaxQuality
+  | VideoPlaybackQuality
 
 export type MetricKind = Metric["kind"]
 export type MetricForKind<Kind extends MetricKind> = Extract<Metric, { kind: Kind }>

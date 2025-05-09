@@ -70,16 +70,20 @@ function renderDynamicLogs(dynamic: string[]) {
   if (logContainer) logContainer.textContent = dynamic.join("\n")
 }
 
-function renderStaticLogs(staticLogs: Entry[]) {
+function renderStaticLogs(staticLogs: (Entry | null)[]) {
   staticLogs.forEach((entry) => renderStaticLog(entry))
 }
 
-function render({ dynamic: dynamicLogs, static: staticLogs }: { dynamic: string[]; static: Entry[] }) {
+function render({ dynamic: dynamicLogs, static: staticLogs }: { dynamic: string[]; static: (Entry | null)[] }) {
   renderDynamicLogs(dynamicLogs)
   renderStaticLogs(staticLogs)
 }
 
-function renderStaticLog(entry: Entry) {
+function renderStaticLog(entry: Entry | null) {
+  if (entry == null) {
+    return
+  }
+
   const { id, key, value } = entry
 
   const existingElement = document.querySelector(`#${id}`)

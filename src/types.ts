@@ -1,5 +1,5 @@
-import { MediaPlayerSettingClass } from "dashjs"
-import { Timeline } from "./models/timeline"
+import { ProtectionDataSet, type MediaPlayerSettingClass } from "dashjs"
+import { type Timeline } from "./models/timeline"
 
 export type Connection = {
   cdn: string
@@ -34,6 +34,8 @@ export type PlaybackTime = {
   timeline: Timeline
 }
 
+export type MediaProtectionData = ProtectionDataSet
+
 export type MediaDescriptor = {
   kind: "audio" | "video"
   /** f.ex. 'video/mp4' */
@@ -41,7 +43,9 @@ export type MediaDescriptor = {
   /** source type. f.ex. 'application/dash+xml' */
   type: string
   urls: Connection[]
+  protectionData?: MediaProtectionData
   captions?: CaptionsConnection[]
+  audioDescribed?: Connection[]
   /** Location for a captions file */
   captionsUrl?: string
   playerSettings?: Partial<Settings>
@@ -52,6 +56,7 @@ export type MediaDescriptor = {
 export type InitData = {
   media: MediaDescriptor
   enableSubtitles?: boolean
+  enableAudioDescribed?: boolean
   initialPlaybackTime?: number | PlaybackTime
 }
 
