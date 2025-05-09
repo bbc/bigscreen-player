@@ -593,8 +593,11 @@ function MSEStrategy(
   }
 
   function modifySource(presentationTimeInSeconds) {
-    const source = mediaSources.currentSource()
-    const anchor = buildSourceAnchor(presentationTimeInSeconds)
+    if (mediaPlayer.isReady()) {
+      // Reset source to apply media settings for the new source
+      // dash.js will reset media settings if a new source is attached while its initialised with a source
+      mediaPlayer.attachSource(null)
+    }
 
     mediaPlayer.setInitialMediaSettingsFor(
       "audio",
@@ -607,6 +610,9 @@ function MSEStrategy(
             role: "main",
           }
     )
+
+    const source = mediaSources.currentSource()
+    const anchor = buildSourceAnchor(presentationTimeInSeconds)
 
     mediaPlayer.attachSource(`${source}${anchor}`)
   }
