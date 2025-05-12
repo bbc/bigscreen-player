@@ -63,7 +63,7 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources,
   function start() {
     subtitlesEnabled = true
     mediaPlayer.setSubtitles(true)
-    setRenderOptions(imscRenderOpts)
+    mediaPlayer.customiseSubtitles(imscRenderOpts)
   }
 
   function stop() {
