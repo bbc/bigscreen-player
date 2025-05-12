@@ -75,14 +75,10 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources,
     stop()
   }
 
-  function setRenderOptions(styleOpts) {
+  function customise(styleOpts) {
     const customStyleOptions = transformStyleOptions(styleOpts)
     imscRenderOpts = Utils.merge(imscRenderOpts, customStyleOptions)
     mediaPlayer.customiseSubtitles(imscRenderOpts)
-  }
-
-  function customise(styleOpts) {
-    setRenderOptions(styleOpts)
     if (subtitlesEnabled) {
       stop()
       start()
