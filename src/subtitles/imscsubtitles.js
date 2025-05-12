@@ -245,6 +245,8 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     currentSubtitlesElement.style.position = "absolute"
     parentElement.appendChild(currentSubtitlesElement)
 
+    console.log(imscRenderOpts)
+
     renderSubtitle(
       xml,
       currentTime,
