@@ -582,6 +582,11 @@ function MSEStrategy(
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
+
+    if (protectionData) {
+      mediaPlayer.setProtectionData(protectionData)
+    }
+
     mediaPlayer.initialize(mediaElement, null)
 
     if (protectionData) {
