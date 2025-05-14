@@ -987,7 +987,6 @@ function MSEStrategy(
       subtitlesEnabled = state ?? false
 
       if (mediaPlayer) {
-        DebugTool.info(`Set Subtitles Called ${state} (${subtitlesEnabled})`)
         mediaPlayer.enableText(subtitlesEnabled)
       }
     },
