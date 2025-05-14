@@ -24,7 +24,6 @@ describe("Embedded Subtitles", () => {
     getCurrentTime: jest.fn(),
     setSubtitles: jest.fn(),
     addEventCallback: jest.fn(),
-    removeEventCallback: jest.fn(),
     customiseSubtitles: jest.fn(),
   }
 
@@ -90,10 +89,6 @@ describe("Embedded Subtitles", () => {
 
   describe("autoplay", () => {
     it("triggers the MSE player to enable subtitles immediately when autoplay is true", () => {
-      mockMediaPlayer.addEventCallback.mockImplementationOnce((fn) => {
-        fn()
-      })
-
       const autoStart = true
 
       subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement, null, {})

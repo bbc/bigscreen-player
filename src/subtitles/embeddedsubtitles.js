@@ -9,13 +9,7 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources,
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
   let subtitlesEnabled = false
 
-  // Call start upon first event
-  if (autoStart) {
-    mediaPlayer.addEventCallback(function startSubs() {
-      start()
-      mediaPlayer.removeEventCallback(startSubs)
-    })
-  }
+  if (autoStart) start()
 
   function removeExampleSubtitlesElement() {
     if (exampleSubtitlesElement) {
