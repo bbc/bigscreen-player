@@ -9,6 +9,8 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources,
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
   let subtitlesEnabled = false
 
+  DebugTool.info("Setting up Embedded Subtitles")
+
   if (autoStart) start()
 
   function removeExampleSubtitlesElement() {
