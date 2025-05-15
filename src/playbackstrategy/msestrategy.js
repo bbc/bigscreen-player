@@ -514,13 +514,16 @@ function MSEStrategy(
   function onCurrentTrackChanged(event) {
     if (!isAudioDescribedAvailable()) return
 
+    audioDescribed.enable = isAudioDescribedEnabled()
     const mediaType = event.newMediaInfo.type
+
     DebugTool.info(
       `${mediaType} track changed.${
-        mediaType === "audio" ? (isAudioDescribedEnabled() ? " Audio Described on." : " Audio Described off.") : ""
+        mediaType === "audio" ? (audioDescribed.enable ? " Audio Described on." : " Audio Described off.") : ""
       }`
     )
-    audioDescribed.callback && audioDescribed.callback(isAudioDescribedEnabled())
+
+    audioDescribed.callback && audioDescribed.callback(audioDescribed.enable)
   }
 
   function publishMediaState(mediaState) {
@@ -600,6 +603,16 @@ function MSEStrategy(
 
     mediaPlayer.initialize(mediaElement, null)
 
+    modifySource(presentationTimeInSeconds, embeddedSubs)
+  }
+
+  function modifySource(presentationTimeInSeconds, embeddedSubs) {
+    if (mediaPlayer.isReady()) {
+      // Reset source to apply media settings for the new source
+      // dash.js will reset media settings if a new source is attached while its initialised with a source
+      mediaPlayer.attachSource(null)
+    }
+
     mediaPlayer.setInitialMediaSettingsFor(
       "audio",
       audioDescribed.enable
@@ -612,18 +625,15 @@ function MSEStrategy(
           }
     )
 
+    const source = mediaSources.currentSource()
+    const anchor = buildSourceAnchor(presentationTimeInSeconds)
+
+    mediaPlayer.attachSource(`${source}${anchor}`)
+
     if (embeddedSubs) {
       setUpSubtitleElement(playbackElement)
       mediaPlayer.attachTTMLRenderingDiv(subtitleElement)
     }
-
-    modifySource(presentationTimeInSeconds)
-  }
-
-  function modifySource(presentationTimeInSeconds) {
-    const source = mediaSources.currentSource()
-    const anchor = buildSourceAnchor(presentationTimeInSeconds)
-    mediaPlayer.attachSource(`${source}${anchor}`)
   }
 
   /**
