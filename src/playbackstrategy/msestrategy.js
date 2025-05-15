@@ -603,10 +603,15 @@ function MSEStrategy(
 
     mediaPlayer.initialize(mediaElement, null)
 
-    modifySource(presentationTimeInSeconds, embeddedSubs)
+    if (embeddedSubs) {
+      setUpSubtitleElement(playbackElement)
+      mediaPlayer.attachTTMLRenderingDiv(subtitleElement)
+    }
+
+    modifySource(presentationTimeInSeconds)
   }
 
-  function modifySource(presentationTimeInSeconds, embeddedSubs) {
+  function modifySource(presentationTimeInSeconds) {
     if (mediaPlayer.isReady()) {
       // Reset source to apply media settings for the new source
       // dash.js will reset media settings if a new source is attached while its initialised with a source
@@ -624,11 +629,6 @@ function MSEStrategy(
             role: "main",
           }
     )
-
-    if (embeddedSubs) {
-      setUpSubtitleElement(playbackElement)
-      mediaPlayer.attachTTMLRenderingDiv(subtitleElement)
-    }
 
     const source = mediaSources.currentSource()
     const anchor = buildSourceAnchor(presentationTimeInSeconds)
