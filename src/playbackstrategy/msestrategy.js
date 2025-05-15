@@ -625,15 +625,15 @@ function MSEStrategy(
           }
     )
 
-    const source = mediaSources.currentSource()
-    const anchor = buildSourceAnchor(presentationTimeInSeconds)
-
-    mediaPlayer.attachSource(`${source}${anchor}`)
-
     if (embeddedSubs) {
       setUpSubtitleElement(playbackElement)
       mediaPlayer.attachTTMLRenderingDiv(subtitleElement)
     }
+
+    const source = mediaSources.currentSource()
+    const anchor = buildSourceAnchor(presentationTimeInSeconds)
+
+    mediaPlayer.attachSource(`${source}${anchor}`)
   }
 
   /**
