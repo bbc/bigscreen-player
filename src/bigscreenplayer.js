@@ -128,7 +128,7 @@ function BigscreenPlayer() {
       mediaSources.time().manifestType,
       PlayerComponent.getLiveSupport(),
       () => {
-        _callbacks.playerReady()
+        _callbacks.playerReady && _callbacks.playerReady()
         subtitles = Subtitles(
           playerComponent,
           enableSubtitles,
