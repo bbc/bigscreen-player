@@ -43,6 +43,7 @@ function PlayerComponent(
   errorCallback,
   audioDescribedCallback
 ) {
+  let setSubtitlesState
   let _stateUpdateCallback = stateUpdateCallback
 
   let mediaKind = bigscreenPlayerData.media.kind
@@ -77,6 +78,8 @@ function PlayerComponent(
       mediaMetaData = bigscreenPlayerData.media
 
       loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime)
+
+      if (setSubtitlesState) playbackStrategy.setSubtitles(setSubtitlesState)
     })
     .catch((error) => {
       errorCallback && errorCallback(error)
@@ -94,6 +97,22 @@ function PlayerComponent(
     if (transitions().canBePaused()) {
       playbackStrategy?.pause()
     }
+  }
+
+  function isSubtitlesAvailable() {
+    return playbackStrategy && playbackStrategy.isSubtitlesAvailable()
+  }
+
+  function setSubtitles(state) {
+    if (playbackStrategy) {
+      playbackStrategy.setSubtitles(state)
+    } else {
+      setSubtitlesState = state
+    }
+  }
+
+  function customiseSubtitles(styleOpts) {
+    return playbackStrategy && playbackStrategy.customiseSubtitles(styleOpts)
   }
 
   function getDuration() {
@@ -431,8 +450,10 @@ function PlayerComponent(
   return {
     play,
     pause,
+    customiseSubtitles,
     transitions,
     isEnded,
+    isSubtitlesAvailable,
     setPlaybackRate,
     getPlaybackRate,
     setCurrentTime,
@@ -445,6 +466,7 @@ function PlayerComponent(
     isAudioDescribedAvailable,
     isAudioDescribedEnabled,
     setAudioDescribed,
+    setSubtitles,
   }
 }
 

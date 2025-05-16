@@ -58,6 +58,7 @@ function createMockDashInstance() {
     time: jest.fn(),
     duration: jest.fn().mockReturnValue(100),
     attachSource: jest.fn(),
+    attachTTMLRenderingDiv: jest.fn(),
     reset: jest.fn(),
     destroy: jest.fn(),
     isPaused: jest.fn(),
@@ -1888,6 +1889,30 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       expect(mockDashInstance.reset).toHaveBeenCalled()
       expect(mockErrorCallback).toHaveBeenCalledWith({ code: 30, message: "videoCodec is not supported" })
+    })
+  })
+
+  describe("MSE embedded subtitles", () => {
+    it("Expect MSE strategy to create subtitle div when embedded subtitles is enabled", () => {
+      window.bigscreenPlayer = { overrides: { embeddedSubtitles: true } }
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      const subtitlesElement = playbackElement.querySelector("#bsp_subtitles")
+
+      expect(subtitlesElement).toBeTruthy()
+    })
+
+    it("Expect created div to have been attached to Dash.js", () => {
+      window.bigscreenPlayer = { overrides: { embeddedSubtitles: true } }
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+
+      const subtitlesElement = playbackElement.querySelector("#bsp_subtitles")
+
+      expect(mockDashInstance.attachTTMLRenderingDiv).toHaveBeenCalledWith(subtitlesElement)
     })
   })
 })
