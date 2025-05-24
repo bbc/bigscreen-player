@@ -328,5 +328,3 @@ class Chronicle {
 }
 
 export default Chronicle
-
-export { type ChronicleValidationError, type ChronicleValidationObject, validate } from "./validator"
