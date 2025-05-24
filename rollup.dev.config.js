@@ -1,4 +1,6 @@
-import PackageJSON from "./package.json" assert { type: "json" }
+import fs from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import alias from "@rollup/plugin-alias"
 import babel from "@rollup/plugin-babel"
@@ -8,6 +10,9 @@ import replace from "@rollup/plugin-replace"
 import liveReload from "rollup-plugin-livereload"
 import nodePolyfills from "rollup-plugin-polyfill-node"
 import serve from "rollup-plugin-serve"
+
+const packageJsonPath = join(dirname(fileURLToPath(import.meta.url)), "./package.json")
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"))
 
 const extensions = [".js", ".ts"]
 
@@ -26,7 +31,7 @@ export default {
     }),
     replace({
       preventAssignment: true,
-      __VERSION__: () => PackageJSON.version,
+      __VERSION__: () => packageJson.version,
     }),
     resolve({ extensions, preferBuiltins: false }),
     commonjs(),

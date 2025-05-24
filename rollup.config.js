@@ -1,9 +1,14 @@
-import PackageJSON from "./package.json" assert { type: "json" }
+import fs from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 import alias from "@rollup/plugin-alias"
 import replace from "@rollup/plugin-replace"
 import typescript from "@rollup/plugin-typescript"
 import { dts } from "rollup-plugin-dts"
+
+const packageJsonPath = join(dirname(fileURLToPath(import.meta.url)), "./package.json")
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"))
 
 export default [
   {
@@ -16,7 +21,7 @@ export default [
       }),
       replace({
         preventAssignment: true,
-        __VERSION__: () => PackageJSON.version,
+        __VERSION__: () => packageJson.version,
       }),
       typescript({
         tsconfig: "./tsconfig.dist.json",
