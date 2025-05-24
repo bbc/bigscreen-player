@@ -273,9 +273,9 @@ class Chronicle {
       this.metrics[kind] = []
     }
 
-    const metricsForKey = this.metrics[kind] as Timestamped<MetricForKind<Kind>>[]
+    const metricsForKey = this.metrics[kind]
 
-    if (metricsForKey.length + 1 === METRIC_ENTRY_THRESHOLD) {
+    if (metricsForKey && metricsForKey.length + 1 === METRIC_ENTRY_THRESHOLD) {
       this.trace(
         "error",
         new Error(
@@ -286,7 +286,7 @@ class Chronicle {
 
     const metric = this.timestamp({ kind, data, category: EntryCategory.METRIC } as MetricForKind<Kind>)
 
-    metricsForKey.push(metric)
+    if (metricsForKey) metricsForKey.push(metric)
 
     this.triggerUpdate(metric)
   }
@@ -302,7 +302,7 @@ class Chronicle {
       return null
     }
 
-    const metricsForKey = this.metrics[kind] as Timestamped<MetricForKind<Kind>>[]
+    const metricsForKey = this.metrics[kind]
 
     return metricsForKey[metricsForKey.length - 1] as MetricForKind<Kind>
   }
@@ -328,3 +328,5 @@ class Chronicle {
 }
 
 export default Chronicle
+
+export { type ChronicleValidationError, type ChronicleValidationObject, validate } from "./validator"
