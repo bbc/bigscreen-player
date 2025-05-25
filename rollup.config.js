@@ -29,11 +29,6 @@ export default [
     ],
   },
   {
-    input: "./dist/esm/__tmp/dts/main.d.ts",
-    output: [{ file: "./dist/esm/main.d.ts", format: "es" }],
-    plugins: [dts()],
-  },
-  {
     input: "./src/debugger/validator.ts",
     output: [{ dir: "dist/esm", format: "es" }],
     external: ["tslib"],
@@ -42,5 +37,15 @@ export default [
         tsconfig: "./tsconfig.dist.json",
       }),
     ],
+  },
+  {
+    input: "./dist/esm/__tmp/dts/main.d.ts",
+    output: [{ file: "./dist/esm/main.d.ts", format: "es" }],
+    plugins: [dts()],
+  },
+  {
+    input: "./dist/esm/__tmp/dts/debugger/validator.d.ts",
+    output: [{ file: "./dist/esm/validator.d.ts", format: "es" }],
+    plugins: [dts()],
   },
 ]
