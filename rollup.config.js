@@ -33,4 +33,14 @@ export default [
     output: [{ file: "./dist/esm/main.d.ts", format: "es" }],
     plugins: [dts()],
   },
+  {
+    input: "./src/debugger/validator.ts",
+    output: [{ dir: "dist/esm", format: "es" }],
+    external: ["tslib"],
+    plugins: [
+      typescript({
+        tsconfig: "./tsconfig.dist.json",
+      }),
+    ],
+  },
 ]

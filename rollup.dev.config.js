@@ -16,32 +16,44 @@ const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"))
 
 const extensions = [".js", ".ts"]
 
-export default {
-  input: "src/main.ts",
-  output: {
-    file: "dist-local/esm/main.js",
-    name: "bsp",
-    inlineDynamicImports: true,
-    sourcemap: true,
-    format: "es",
+export default [
+  {
+    input: "src/main.ts",
+    output: {
+      file: "dist-local/esm/main.js",
+      name: "bsp",
+      inlineDynamicImports: true,
+      sourcemap: true,
+      format: "es",
+    },
+    plugins: [
+      alias({
+        entries: [{ find: "imsc", replacement: "smp-imsc" }],
+      }),
+      replace({
+        preventAssignment: true,
+        __VERSION__: () => packageJson.version,
+      }),
+      resolve({ extensions, preferBuiltins: false }),
+      commonjs(),
+      nodePolyfills(),
+      babel({ extensions, babelHelpers: "bundled" }),
+      serve({
+        open: true,
+      }),
+      liveReload({
+        watch: ["index.html", "dist-local"],
+      }),
+    ],
   },
-  plugins: [
-    alias({
-      entries: [{ find: "imsc", replacement: "smp-imsc" }],
-    }),
-    replace({
-      preventAssignment: true,
-      __VERSION__: () => packageJson.version,
-    }),
-    resolve({ extensions, preferBuiltins: false }),
-    commonjs(),
-    nodePolyfills(),
-    babel({ extensions, babelHelpers: "bundled" }),
-    serve({
-      open: true,
-    }),
-    liveReload({
-      watch: ["index.html", "dist-local"],
-    }),
-  ],
-}
+  {
+    input: "./src/debugger/validator.ts",
+    output: [{ dir: "dist/esm", format: "es" }],
+    external: ["tslib"],
+    plugins: [
+      typescript({
+        tsconfig: "./tsconfig.dist.json",
+      }),
+    ],
+  },
+]
