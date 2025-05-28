@@ -991,7 +991,7 @@ function MSEStrategy(
     }
   }
 
-  function setPlaybackBitrate({ audio, video }) {
+  function setBitrate({ audio, video }) {
     mediaPlayer.updateSettings({
       streaming: {
         abr: {
@@ -1006,7 +1006,6 @@ function MSEStrategy(
         },
       },
     })
-    mediaPlayer.setPlaybackBitrate(rate)
   }
 
   return {
@@ -1053,7 +1052,7 @@ function MSEStrategy(
     setCurrentTime,
     setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
-    setPlaybackBitrate,
+    setBitrate,
   }
 }
 
