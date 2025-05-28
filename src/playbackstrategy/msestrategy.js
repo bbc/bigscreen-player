@@ -991,6 +991,24 @@ function MSEStrategy(
     }
   }
 
+  function setPlaybackBitrate({ audio, video }) {
+    mediaPlayer.updateSettings({
+      streaming: {
+        abr: {
+          initialBitrate: {
+            audio: audio || -1, // -1
+            video: video || -1,
+          },
+          autoSwitchBitrate: {
+            audio: !audio,
+            video: !video,
+          },
+        },
+      },
+    })
+    mediaPlayer.setPlaybackBitrate(rate)
+  }
+
   return {
     transitions: {
       canBePaused: () => true,
@@ -1035,6 +1053,7 @@ function MSEStrategy(
     setCurrentTime,
     setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
+    setPlaybackBitrate,
   }
 }
 

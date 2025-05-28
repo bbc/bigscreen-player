@@ -465,6 +465,17 @@ function BigscreenPlayer() {
     },
 
     /**
+     * Set the media element playback bitrate
+     *
+     * @param {Number} rate
+     */
+    setBitrate: (rate) => {
+      if (playerComponent) {
+        playerComponent.setBitrate(rate)
+      }
+    },
+
+    /**
      * Get the current playback rate
      * @function
      * @returns {Number} the current media playback rate

@@ -202,6 +202,10 @@ function PlayerComponent(
     playbackStrategy?.setPlaybackRate(rate)
   }
 
+  function setPlaybackBitrate(rate) {
+    playbackStrategy?.setPlaybackBitrate(rate)
+  }
+
   function getPlaybackRate() {
     return playbackStrategy?.getPlaybackRate()
   }
@@ -467,6 +471,7 @@ function PlayerComponent(
     isAudioDescribedEnabled,
     setAudioDescribed,
     setSubtitles,
+    setPlaybackBitrate,
   }
 }
 
