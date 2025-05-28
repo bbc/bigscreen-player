@@ -465,7 +465,7 @@ function BigscreenPlayer() {
     },
 
     /**
-     * Set the media element playback bitrate
+     * Set the media element bitrate
      *
      * @param {Number} rate
      */
