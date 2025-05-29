@@ -507,7 +507,7 @@ function MSEStrategy(
   }
 
   function onDebugLog(event) {
-    if (event.message.indexOf("[Protection") > -1) {
+    if (event.message.includes("[Protection")) {
       DebugTool.info(event.message)
     }
   }
