@@ -28,6 +28,8 @@ function MSEStrategy(
 
   let mediaPlayer
   let mediaElement
+  let subtitleElement
+  let subtitlesEnabled = false
   const manifestType = mediaSources.time().manifestType
 
   const playerSettings = Utils.merge(
@@ -38,12 +40,15 @@ function MSEStrategy(
       },
       streaming: {
         blacklistExpiryTime: mediaSources.failoverResetTime(),
+        lastMediaSettingsCachingInfo: { enabled: false },
         buffer: {
           bufferToKeep: 4,
           bufferTimeAtTopQuality: 12,
           bufferTimeAtTopQualityLongForm: 15,
         },
-        lastMediaSettingsCachingInfo: { enabled: false },
+        text: {
+          defaultEnabled: false,
+        },
       },
     },
     customPlayerSettings
@@ -81,6 +86,7 @@ function MSEStrategy(
     },
     playbackBitrate: undefined,
     bufferLength: undefined,
+    latency: undefined,
     fragmentInfo: {
       requestTime: undefined,
       numDownloaded: undefined,
@@ -109,7 +115,9 @@ function MSEStrategy(
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
     QUOTA_EXCEEDED: "quotaExceeded",
+    TEXT_TRACKS_ADDED: "allTextTracksAdded",
     CURRENT_TRACK_CHANGED: "currentTrackChanged",
+    PLAYBACK_RATE_CHANGED: "playbackRateChanged",
   }
 
   function onLoadedMetaData() {
@@ -339,6 +347,7 @@ function MSEStrategy(
     Plugins.interface.onPlayerInfoUpdated({
       bufferLength: playerMetadata.bufferLength,
       playbackBitrate: playerMetadata.playbackBitrate,
+      latency: playerMetadata.latency,
     })
   }
 
@@ -475,11 +484,13 @@ function MSEStrategy(
       dashMetrics = mediaPlayer.getDashMetrics()
 
       if (dashMetrics) {
+        playerMetadata.latency = mediaPlayer.getCurrentLiveLatency()
         playerMetadata.bufferLength = dashMetrics.getCurrentBufferLevel(event.mediaType)
         DebugTool.staticMetric("buffer-length", playerMetadata.bufferLength)
         Plugins.interface.onPlayerInfoUpdated({
           bufferLength: playerMetadata.bufferLength,
           playbackBitrate: playerMetadata.playbackBitrate,
+          latency: playerMetadata.latency,
         })
       }
     }
@@ -511,13 +522,16 @@ function MSEStrategy(
   function onCurrentTrackChanged(event) {
     if (!isAudioDescribedAvailable()) return
 
+    audioDescribed.enable = isAudioDescribedEnabled()
     const mediaType = event.newMediaInfo.type
+
     DebugTool.info(
       `${mediaType} track changed.${
-        mediaType === "audio" ? (isAudioDescribedEnabled() ? " Audio Described on." : " Audio Described off.") : ""
+        mediaType === "audio" ? (audioDescribed.enable ? " Audio Described on." : " Audio Described off.") : ""
       }`
     )
-    audioDescribed.callback && audioDescribed.callback(isAudioDescribedEnabled())
+
+    audioDescribed.callback && audioDescribed.callback(audioDescribed.enable)
   }
 
   function publishMediaState(mediaState) {
@@ -555,6 +569,13 @@ function MSEStrategy(
     }
   }
 
+  function setUpSubtitleElement(playbackElement) {
+    subtitleElement = document.createElement("div")
+    subtitleElement.id = "bsp_subtitles"
+    subtitleElement.style.position = "absolute"
+    playbackElement.appendChild(subtitleElement, playbackElement.firstChild)
+  }
+
   function setUpMediaElement(playbackElement) {
     mediaElement = mediaKind === MediaKinds.AUDIO ? document.createElement("audio") : document.createElement("video")
 
@@ -578,6 +599,7 @@ function MSEStrategy(
 
   function setUpMediaPlayer(presentationTimeInSeconds) {
     const dashSettings = getDashSettings(playerSettings)
+    const embeddedSubs = window.bigscreenPlayer?.overrides?.embeddedSubtitles ?? false
     const protectionData = mediaSources.currentProtectionData()
 
     mediaPlayer = MediaPlayer().create()
@@ -586,6 +608,21 @@ function MSEStrategy(
 
     if (protectionData) {
       mediaPlayer.setProtectionData(protectionData)
+    }
+
+    if (embeddedSubs) {
+      setUpSubtitleElement(playbackElement)
+      mediaPlayer.attachTTMLRenderingDiv(subtitleElement)
+    }
+
+    modifySource(presentationTimeInSeconds)
+  }
+
+  function modifySource(presentationTimeInSeconds) {
+    if (mediaPlayer.isReady()) {
+      // Reset source to apply media settings for the new source
+      // dash.js will reset media settings if a new source is attached while its initialised with a source
+      mediaPlayer.attachSource(null)
     }
 
     mediaPlayer.setInitialMediaSettingsFor(
@@ -600,10 +637,6 @@ function MSEStrategy(
           }
     )
 
-    modifySource(presentationTimeInSeconds)
-  }
-
-  function modifySource(presentationTimeInSeconds) {
     const source = mediaSources.currentSource()
     const anchor = buildSourceAnchor(presentationTimeInSeconds)
 
@@ -663,8 +696,18 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.GAP_JUMP, onGapJump)
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
+    mediaPlayer.on(DashJSEvents.TEXT_TRACKS_ADDED, handleTextTracks)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
     mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
+    mediaPlayer.on(DashJSEvents.PLAYBACK_RATE_CHANGED, onPlaybackRateChanged)
+  }
+
+  function onPlaybackRateChanged(event) {
+    Plugins.interface.onPlaybackRateChanged(event)
+  }
+
+  function handleTextTracks() {
+    mediaPlayer.enableText(subtitlesEnabled)
   }
 
   function manifestLoadingFinished(event) {
@@ -691,6 +734,20 @@ function MSEStrategy(
     return cached.seekableRange
       ? { ...cached.seekableRange, end: cached.seekableRange.end - liveDelay }
       : { start: 0, end: getDuration() }
+  }
+
+  function customiseSubtitles(options) {
+    return (
+      mediaPlayer &&
+      options &&
+      mediaPlayer.updateSettings({
+        streaming: {
+          text: {
+            imsc: { options },
+          },
+        },
+      })
+    )
   }
 
   function getDuration() {
@@ -770,6 +827,11 @@ function MSEStrategy(
     )
   }
 
+  function isSubtitlesAvailable() {
+    const textTracks = mediaPlayer.getTracksFor("text")
+    return (textTracks && textTracks.length > 0) ?? false
+  }
+
   function isTrackAudioDescribed(track) {
     return (
       track.roles.includes("alternate") &&
@@ -830,7 +892,7 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
       mediaPlayer.off(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
-
+      mediaPlayer.off(DashJSEvents.PLAYBACK_RATE_CHANGED, onPlaybackRateChanged)
       mediaPlayer = undefined
     }
 
@@ -848,8 +910,12 @@ function MSEStrategy(
       mediaElement.removeEventListener("ratechange", onRateChange)
 
       DOMHelpers.safeRemoveElement(mediaElement)
-
       mediaElement = undefined
+    }
+
+    if (subtitleElement) {
+      DOMHelpers.safeRemoveElement(subtitleElement)
+      subtitleElement = undefined
     }
   }
 
@@ -945,9 +1011,17 @@ function MSEStrategy(
     getCurrentTime,
     isAudioDescribedAvailable,
     isAudioDescribedEnabled,
+    isSubtitlesAvailable,
     setAudioDescribedOn,
     setAudioDescribedOff,
     getDuration,
+    setSubtitles: (state) => {
+      subtitlesEnabled = state ?? false
+
+      if (mediaPlayer) {
+        mediaPlayer.enableText(subtitlesEnabled)
+      }
+    },
     getPlayerElement: () => mediaElement,
     tearDown,
     reset: () => {
@@ -957,6 +1031,7 @@ function MSEStrategy(
     },
     isEnded: () => isEnded,
     isPaused,
+    customiseSubtitles,
     pause,
     play: () => mediaPlayer.play(),
     setCurrentTime,

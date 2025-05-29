@@ -114,13 +114,6 @@ function BigscreenPlayer() {
       !initialPresentationTime &&
       initialPresentationTime !== 0
 
-    readyHelper = ReadyHelper(
-      initialPresentationTime,
-      mediaSources.time().manifestType,
-      PlayerComponent.getLiveSupport(),
-      _callbacks.playerReady
-    )
-
     playerComponent = PlayerComponent(
       playbackElement,
       { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime },
@@ -130,13 +123,21 @@ function BigscreenPlayer() {
       callAudioDescribedCallbacks
     )
 
-    subtitles = Subtitles(
-      playerComponent,
-      enableSubtitles,
-      playbackElement,
-      media.subtitleCustomisation,
-      mediaSources,
-      callSubtitlesCallbacks
+    readyHelper = ReadyHelper(
+      initialPresentationTime,
+      mediaSources.time().manifestType,
+      PlayerComponent.getLiveSupport(),
+      () => {
+        _callbacks.playerReady && _callbacks.playerReady()
+        subtitles = Subtitles(
+          playerComponent,
+          enableSubtitles,
+          playbackElement,
+          media.subtitleCustomisation,
+          mediaSources,
+          callSubtitlesCallbacks
+        )
+      }
     )
   }
 
