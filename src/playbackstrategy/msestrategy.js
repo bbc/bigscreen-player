@@ -35,7 +35,7 @@ function MSEStrategy(
   const playerSettings = Utils.merge(
     {
       debug: {
-        logLevel: 5,
+        logLevel: 2,
         dispatchEvent: true,
       },
       streaming: {
