@@ -1016,8 +1016,6 @@ function MSEStrategy(
 
   // Returns bitrate (bits), for specified media kind
   function getBitrate(mediaKind = MediaKinds.VIDEO) {
-
-    /*
     console.log(`BSP: getBitrate for mediaKind ${mediaKind}`)
     const streamInfo = mediaPlayer.getActiveStream().getStreamInfo();
     const dashMetrics = mediaPlayer.getDashMetrics();
@@ -1026,30 +1024,10 @@ function MSEStrategy(
     if (dashMetrics && streamInfo) {
       console.log("dashMetrics and streamInfo set")
       const periodIdx = streamInfo.index
-      const repSwitch = dashMetrics.getCurrentRepresentationSwitch(mediaKind, true)
-      return repSwitch ? Math.round(dashAdapter.getBandwidthForRepresentation(repSwitch.to, periodIdx) / 1000) : NaN
+      return dashAdapter.getAdaptationForType(periodIdx, mediaKind, streamInfo)
     }
 
-    return -1;
-    */
-
-    const dashAdapter = mediaPlayer.getDashAdapter();
-    const streamInfo = mediaPlayer.getActiveStream()?.getStreamInfo();
-  
-    if (!dashAdapter || !streamInfo) {
-      console.warn('Dash adapter or stream info not available yet.');
-      return [];
-    }
-  
-    const bitrates = dashAdapter.getBitrateList(mediaKind, streamInfo);
-  
-    return bitrates.map(bitrate => ({
-      id: bitrate.id,
-      bandwidth: bitrate.bandwidth,           // in bits per second
-      width: bitrate.width,
-      height: bitrate.height,
-      codecs: bitrate.codecs
-    }));
+    return null
   }
 
   return {
