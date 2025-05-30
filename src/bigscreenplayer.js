@@ -465,23 +465,34 @@ function BigscreenPlayer() {
     },
 
     /**
-     * Set the media element bitrate
-     *
-     * @param {Number} rate
-     */
-    setBitrate: (rate) => {
-      console.log('BSP: setBitrate')
-      if (playerComponent) {
-        playerComponent.setBitrate(rate)
-      }
-    },
-
-    /**
      * Get the current playback rate
      * @function
      * @returns {Number} the current media playback rate
      */
     getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
+
+    /**
+     * Set the media element bitrate
+     *
+     * @param {Number} rate
+     */
+    setBitrate: (opts) => {
+      console.log(`setBitrate ${JSON.stringify(opts)}`)
+      if (playerComponent) {
+        playerComponent.setBitrate(opts)
+      }
+    },
+
+    /**
+     * Get the media element bitrate for audio/video media 
+     * @param {String} mediaKind
+     */
+    getBitrate: (mediaKind) => {
+      console.log(`getBitrate ${mediaKind}`)
+      if (playerComponent) {
+        playerComponent.getBitrate(mediaKind)
+      }
+    },
 
     /**
      * Returns the media asset's current time in seconds.
