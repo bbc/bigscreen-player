@@ -3,7 +3,10 @@
   "version": "10.7.0",
   "type": "module",
   "description": "Simplified media playback for bigscreen devices.",
-  "main": "dist/esm/main.js",
+  "exports": {
+    ".": "./dist/esm/main.js",
+    "./validator": "./dist/esm/validator.js"
+  },
   "browser": "dist/esm/main.js",
   "module": "dist/esm/main.js",
   "types": "dist/esm/main.d.ts",
