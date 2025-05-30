@@ -1017,8 +1017,8 @@ function MSEStrategy(
   // Returns bitrate (bits), for specified media kind
   function getBitrate(mediaKind = MediaKinds.VIDEO) {
     console.log(`BSP: getBitrate for mediaKind ${mediaKind}`)
-    const streamInfo = player.getActiveStream().getStreamInfo();
-    const dashMetrics = player.getDashMetrics();
+    const streamInfo = mediaPlayer.getActiveStream().getStreamInfo();
+    const dashMetrics = mediaPlayer.getDashMetrics();
 
     if (dashMetrics && streamInfo) {
       console.log("dashMetrics and streamInfo set")
