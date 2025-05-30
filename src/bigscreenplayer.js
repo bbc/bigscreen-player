@@ -470,6 +470,7 @@ function BigscreenPlayer() {
      * @param {Number} rate
      */
     setBitrate: (rate) => {
+      console.log('BSP: setBitrate')
       if (playerComponent) {
         playerComponent.setBitrate(rate)
       }

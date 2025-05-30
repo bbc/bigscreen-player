@@ -995,17 +995,17 @@ function MSEStrategy(
    * Force audio and video bitrates and
    * Disables auto switching when provided.
    */
-  function setBitrate({ audio, video }) {
+  function setBitrate({ audioBitrate, videoBitrate, disableAbr }) {
     mediaPlayer.updateSettings({
       streaming: {
         abr: {
           initialBitrate: {
-            audio: audio ?? -1,
-            video: video ?? -1,
+            audio: audioBitrate ?? -1,
+            video: videoBitrate ?? -1,
           },
           autoSwitchBitrate: {
-            audio: !audio,
-            video: !video,
+            audio: Boolean(!disableAbr),
+            video: Boolean(!disableAbr),
           },
         },
       },
