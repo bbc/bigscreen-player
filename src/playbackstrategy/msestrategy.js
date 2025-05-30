@@ -1023,10 +1023,7 @@ function MSEStrategy(
 
     if (dashMetrics && streamInfo) {
       console.log("dashMetrics and streamInfo set")
-      console.log('streamInfo')
-      console.log(streamInfo)
-      const periodIdx = streamInfo.index
-      return dashAdapter.getAdaptationForType(periodIdx, mediaKind, streamInfo)
+      return dashAdapter.getAdaptationForType(streamInfo, mediaKind)
     }
 
     return null
