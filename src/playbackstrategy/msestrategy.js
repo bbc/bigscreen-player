@@ -1016,10 +1016,18 @@ function MSEStrategy(
 
   // Returns bitrate (bits), for specified media kind
   function getBitrate(mediaKind = MediaKinds.VIDEO) {
-    const representationSwitch = mediaPlayer.getDashMetrics().getCurrentRepresentationSwitch(mediaKind)
-    const representation = representationSwitch ? representationSwitch.to : ""
+    console.log(`BSP: getBitrate for mediaKind ${mediaKind}`)
+    const streamInfo = player.getActiveStream().getStreamInfo();
+    const dashMetrics = player.getDashMetrics();
 
-    return playbackBitrateForRepresentation(representation, mediaKind)
+    if (dashMetrics && streamInfo) {
+      console.log("dashMetrics and streamInfo set")
+      const periodIdx = streamInfo.index
+      const repSwitch = dashMetrics.getCurrentRepresentationSwitch(mediaKind, true)
+      return repSwitch ? Math.round(dashAdapter.getBandwidthForRepresentation(repSwitch.to, periodIdx) / 1000) : NaN
+    }
+
+    return -1;
   }
 
   return {
