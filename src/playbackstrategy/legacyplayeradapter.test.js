@@ -293,6 +293,113 @@ describe("Legacy Playback Adapter", () => {
   })
 
   describe("play", () => {
+    describe("when playback has not started", () => {
+      it("should begin playback from zero if no start time is passed in for a static stream", () => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.STATIC })
+
+        const mediaPlayer = createMockMediaPlayer()
+
+        const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdapter.load("video/mp4", null, false)
+
+        expect(mediaPlayer.beginPlaybackFrom).not.toHaveBeenCalled()
+
+        legacyAdapter.play()
+
+        expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0)
+      })
+
+      it("should begin playback from the passed in start time for a static stream", () => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.STATIC })
+
+        const mediaPlayer = createMockMediaPlayer()
+
+        const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdapter.load("video/mp4", 50, false)
+
+        expect(mediaPlayer.beginPlaybackFrom).not.toHaveBeenCalled()
+
+        legacyAdapter.play()
+
+        expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(50)
+      })
+
+      it.each([LiveSupport.PLAYABLE, LiveSupport.RESTARTABLE, LiveSupport.SEEKABLE])(
+        "should begin playback at the live point for a dynamic stream on a %s device",
+        (liveSupport) => {
+          mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+          const mediaPlayer = createMockMediaPlayer(liveSupport)
+
+          const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
+
+          legacyAdapter.load("video/mp4", null, false)
+
+          expect(mediaPlayer.beginPlayback).not.toHaveBeenCalled()
+
+          legacyAdapter.play()
+
+          expect(mediaPlayer.beginPlayback).toHaveBeenCalledTimes(1)
+        }
+      )
+
+      it("should ignore start time and begin playback at the live point for a dynamic stream on a playable device", () => {
+        mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+        const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
+
+        const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdapter.load("video/mp4", 50, false)
+
+        expect(mediaPlayer.beginPlayback).not.toHaveBeenCalled()
+
+        legacyAdapter.play()
+
+        expect(mediaPlayer.beginPlayback).toHaveBeenCalledTimes(1)
+      })
+
+      it.each([LiveSupport.RESTARTABLE, LiveSupport.SEEKABLE])(
+        "should begin playback from the start time for a dynamic stream on a %s device",
+        (liveSupport) => {
+          mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+          const mediaPlayer = createMockMediaPlayer(liveSupport)
+
+          const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
+
+          legacyAdapter.load("video/mp4", 50, false)
+
+          expect(mediaPlayer.beginPlaybackFrom).not.toHaveBeenCalled()
+
+          legacyAdapter.play()
+
+          expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(50)
+        }
+      )
+
+      it.each([LiveSupport.RESTARTABLE, LiveSupport.SEEKABLE])(
+        "should begin playback from .1s for a dynamic stream on a %s device when start time is zero",
+        (liveSupport) => {
+          mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
+
+          const mediaPlayer = createMockMediaPlayer(liveSupport)
+
+          const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
+
+          legacyAdapter.load("video/mp4", 0, false)
+
+          expect(mediaPlayer.beginPlaybackFrom).not.toHaveBeenCalled()
+
+          legacyAdapter.play()
+
+          expect(mediaPlayer.beginPlaybackFrom).toHaveBeenCalledWith(0.1)
+        }
+      )
+    })
+
     describe("when the player supports playFrom()", () => {
       it("should play from 0 if the stream has ended", () => {
         const mediaPlayer = createMockMediaPlayer()
@@ -360,6 +467,8 @@ describe("Legacy Playback Adapter", () => {
 
         const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
 
+        legacyAdapter.load("video/mp4", null)
+
         mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
 
         legacyAdapter.play()
@@ -371,6 +480,8 @@ describe("Legacy Playback Adapter", () => {
         const mediaPlayer = createMockMediaPlayer(LiveSupport.PLAYABLE)
 
         const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, false, mediaPlayer)
+
+        legacyAdapter.load("video/mp4", null)
 
         mediaPlayer.getState.mockReturnValue(MediaPlayerState.PAUSED)
 

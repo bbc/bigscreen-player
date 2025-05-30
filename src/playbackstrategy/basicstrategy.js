@@ -45,9 +45,9 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
     }
   }
 
-  function load(_mimeType, startTime) {
+  function load(_mimeType, startTime, autoplay = true) {
     if (mediaElement == null) {
-      setUpMediaElement(startTime)
+      setUpMediaElement(startTime, autoplay)
       setUpMediaListeners()
 
       return
@@ -58,13 +58,13 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
     mediaElement.load()
   }
 
-  function setUpMediaElement(startTime) {
+  function setUpMediaElement(startTime, autoplay) {
     mediaElement = mediaKind === MediaKinds.AUDIO ? document.createElement("audio") : document.createElement("video")
 
     mediaElement.style.position = "absolute"
     mediaElement.style.width = "100%"
     mediaElement.style.height = "100%"
-    mediaElement.autoplay = true
+    mediaElement.autoplay = autoplay
     mediaElement.preload = "auto"
     mediaElement.src = mediaSources.currentSource()
 

@@ -326,6 +326,24 @@ describe("Media Source Extensions Playback Strategy", () => {
       mediaElement.currentTime = 0
       expect(mseStrategy.getCurrentTime()).toBe(0)
     })
+
+    it("should autoplay by default", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load()
+
+      expect(mockDashInstance.setAutoPlay).toHaveBeenCalledWith(true)
+      expect(mockDashInstance.setAutoPlay).toHaveBeenCalledTimes(1)
+    })
+
+    it("should respect autoplay setting", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, null, false)
+
+      expect(mockDashInstance.setAutoPlay).toHaveBeenCalledWith(false)
+      expect(mockDashInstance.setAutoPlay).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe("Load when a mediaPlayer exists (e.g. CDN failover)", () => {
@@ -452,6 +470,30 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.setInitialMediaSettingsFor).toHaveBeenNthCalledWith(2, "audio", {
         role: "main",
       })
+    })
+
+    it("should autoplay by default", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load()
+
+      mockDashInstance.isReady.mockReturnValue(true)
+
+      mseStrategy.load()
+
+      expect(mockDashInstance.setAutoPlay).toHaveBeenNthCalledWith(2, true)
+    })
+
+    it("should respect autoplay setting", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.load(null, null, false)
+
+      mockDashInstance.isReady.mockReturnValue(true)
+
+      mseStrategy.load(null, null, false)
+
+      expect(mockDashInstance.setAutoPlay).toHaveBeenNthCalledWith(2, false)
     })
   })
 

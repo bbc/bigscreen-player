@@ -39,13 +39,14 @@ describe("HTML5 Strategy", () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
+    document.body.replaceChildren()
+
     audioElement = document.createElement("audio")
     videoElement = document.createElement("video")
 
     jest.spyOn(videoElement, "pause").mockImplementation(() => {})
     jest.spyOn(videoElement, "play").mockImplementation(() => {})
     jest.spyOn(videoElement, "load").mockImplementation(() => {})
-    // jest.spyOn(audioElement, "load").mockImplementation(() => {})
 
     playbackElement = document.createElement("div")
     playbackElement.id = "app"
@@ -123,14 +124,26 @@ describe("HTML5 Strategy", () => {
       expect(videoElement.style.height).toBe("100%")
     })
 
-    it("should set the autoplay and preload properties correctly on the media element", () => {
+    it("should set preload property correctly on the media element", () => {
       const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       basicStrategy.load(null, 0)
 
       const videoElement = document.querySelector("video")
 
-      expect(videoElement.autoplay).toBe(true)
       expect(videoElement.preload).toBe("auto")
+    })
+
+    it.each([
+      [true, true],
+      [false, false],
+      [undefined, true],
+    ])(`should set autoplay property correctly when it is '%s'`, (autoplay, expected) => {
+      const basicStrategy = BasicStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      basicStrategy.load(null, 0, autoplay)
+
+      const videoElement = document.querySelector("video")
+
+      expect(videoElement.autoplay).toBe(expected)
     })
 
     it("should set the source url correctly on the media element", () => {

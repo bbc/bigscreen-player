@@ -553,17 +553,28 @@ function MSEStrategy(
     return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.isPaused() : undefined
   }
 
-  function load(mimeType, presentationTimeInSeconds) {
-    if (mediaPlayer) {
-      modifySource(cached.currentTime)
-    } else {
-      if (typeof presentationTimeInSeconds === "number" && isFinite(presentationTimeInSeconds)) {
-        cached.currentTime = presentationTimeInSeconds
+  /**
+   *
+   * @param {string} [mimeType]
+   * @param {number} [startTimeInSeconds]
+   * @param {boolean} [autoplay]
+   */
+  function load(mimeType, startTimeInSeconds, autoplay = true) {
+    const isInitialising = mediaPlayer == null
+
+    if (isInitialising) {
+      if (typeof startTimeInSeconds === "number" && isFinite(startTimeInSeconds)) {
+        cached.currentTime = startTimeInSeconds
       }
+
       setUpMediaElement(playbackElement)
-      setUpMediaPlayer(presentationTimeInSeconds)
+      setUpMediaPlayer()
       setUpMediaListeners()
     }
+
+    mediaPlayer.setAutoPlay(autoplay ?? true)
+
+    modifySource(isInitialising ? startTimeInSeconds : cached.currentTime)
   }
 
   function setUpSubtitleElement(playbackElement) {
@@ -594,7 +605,7 @@ function MSEStrategy(
     return settings
   }
 
-  function setUpMediaPlayer(presentationTimeInSeconds) {
+  function setUpMediaPlayer() {
     const dashSettings = getDashSettings(playerSettings)
     const embeddedSubs = window.bigscreenPlayer?.overrides?.embeddedSubtitles ?? false
     const protectionData = mediaSources.currentProtectionData()
@@ -612,8 +623,6 @@ function MSEStrategy(
       setUpSubtitleElement(playbackElement)
       mediaPlayer.attachTTMLRenderingDiv(subtitleElement)
     }
-
-    modifySource(presentationTimeInSeconds)
   }
 
   function modifySource(presentationTimeInSeconds) {

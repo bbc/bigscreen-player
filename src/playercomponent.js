@@ -77,7 +77,7 @@ function PlayerComponent(
 
       mediaMetaData = bigscreenPlayerData.media
 
-      loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime)
+      loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime, bigscreenPlayerData.autoplay)
 
       if (setSubtitlesState) playbackStrategy.setSubtitles(setSubtitlesState)
     })
@@ -422,8 +422,8 @@ function PlayerComponent(
     }
   }
 
-  function loadMedia(type, presentationTimeInSeconds) {
-    playbackStrategy?.load(type, presentationTimeInSeconds)
+  function loadMedia(type, presentationTimeInSeconds, autoplay = true) {
+    playbackStrategy?.load(type, presentationTimeInSeconds, autoplay)
 
     if (mediaSources.isAudioDescribedEnabled()) {
       audioDescribedCallback(true)

@@ -18,22 +18,22 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
   const transitions = new AllowedMediaTransitions(mediaPlayer)
 
-  let isEnded = false
+  let currentTime
+  let startTime
+  let targetSeekToTime
   let duration = 0
+  let isStarted = false
+  let isPaused
+  let isEnded = false
 
   let eventCallbacks = []
   let errorCallback
   let timeUpdateCallback
-  let currentTime
-  let isPaused
-  let hasStartTime
 
-  let handleErrorOnExitingSeek
-  let delayPauseOnExitSeek
-
-  let pauseOnExitSeek
   let exitingSeek
-  let targetSeekToTime
+  let pauseOnExitSeek
+  let delayPauseOnExitSeek
+  let handleErrorOnExitingSeek
 
   let liveGlitchCurtain
 
@@ -130,7 +130,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
       const overrides = streaming.overrides || doNotForceBeginPlaybackToEndOfWindow
       const shouldShowCurtain =
-        manifestType === ManifestType.DYNAMIC && (hasStartTime || overrides.forceBeginPlaybackToEndOfWindow)
+        manifestType === ManifestType.DYNAMIC && (hasStartTime() || overrides.forceBeginPlaybackToEndOfWindow)
 
       if (shouldShowCurtain) {
         liveGlitchCurtain = new LiveGlitchCurtain(playbackElement)
@@ -213,6 +213,27 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     mediaPlayer.reset()
   }
 
+  function hasStartTime() {
+    return startTime || startTime === 0
+  }
+
+  function beginPlayback() {
+    isStarted = true
+
+    if (
+      typeof mediaPlayer.beginPlaybackFrom === "function" &&
+      (manifestType === ManifestType.STATIC || hasStartTime())
+    ) {
+      // currentTime = 0 is interpreted as play from live point by many devices
+      const startTimeInSeconds = manifestType === ManifestType.DYNAMIC && startTime === 0 ? 0.1 : startTime
+
+      currentTime = startTimeInSeconds || 0
+      mediaPlayer.beginPlaybackFrom(currentTime)
+    } else {
+      mediaPlayer.beginPlayback()
+    }
+  }
+
   return {
     transitions,
     addEventCallback: (thisArg, callback) => {
@@ -234,40 +255,38 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    load: (mimeType, presentationTimeInSeconds) => {
+    load: (mimeType, presentationTimeInSeconds, autoplay = true) => {
       setupExitSeekWorkarounds(mimeType)
-      isPaused = false
 
-      hasStartTime = presentationTimeInSeconds || presentationTimeInSeconds === 0
+      startTime = presentationTimeInSeconds
+
+      isPaused = !autoplay
 
       mediaPlayer.initialiseMedia("video", mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
 
-      if (
-        typeof mediaPlayer.beginPlaybackFrom === "function" &&
-        (manifestType === ManifestType.STATIC || hasStartTime)
-      ) {
-        // currentTime = 0 is interpreted as play from live point by many devices
-        const startTimeInSeconds =
-          manifestType === ManifestType.DYNAMIC && presentationTimeInSeconds === 0 ? 0.1 : presentationTimeInSeconds
-
-        currentTime = startTimeInSeconds || 0
-        mediaPlayer.beginPlaybackFrom(currentTime)
-      } else {
-        mediaPlayer.beginPlayback()
+      if (autoplay) {
+        beginPlayback()
       }
     },
     play: () => {
       isPaused = false
+
+      if (!isStarted) {
+        beginPlayback()
+        return
+      }
+
       if (delayPauseOnExitSeek && exitingSeek) {
         pauseOnExitSeek = false
+        return
+      }
+
+      if (isEnded) {
+        mediaPlayer.playFrom?.(0)
+      } else if (transitions.canResume()) {
+        mediaPlayer.resume?.()
       } else {
-        if (isEnded) {
-          mediaPlayer.playFrom && mediaPlayer.playFrom(0)
-        } else if (transitions.canResume()) {
-          mediaPlayer.resume && mediaPlayer.resume()
-        } else {
-          mediaPlayer.playFrom && mediaPlayer.playFrom(currentTime)
-        }
+        mediaPlayer.playFrom?.(currentTime)
       }
     },
     pause: () => {

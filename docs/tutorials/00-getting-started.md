@@ -76,6 +76,7 @@ The full set of options for BigscreenPlayer is:
 
 ```javascript
 const optionalData = {
+  autoplay: true,
   initialPlaybackTime: 0, // Time (in seconds) to begin playback from
   enableSubtitles: false,
   media: {
