@@ -1019,6 +1019,7 @@ function MSEStrategy(
     console.log(`BSP: getBitrate for mediaKind ${mediaKind}`)
     const streamInfo = mediaPlayer.getActiveStream().getStreamInfo();
     const dashMetrics = mediaPlayer.getDashMetrics();
+    const dashAdapter = mediaPlayer.getDashAdapter()
 
     if (dashMetrics && streamInfo) {
       console.log("dashMetrics and streamInfo set")
