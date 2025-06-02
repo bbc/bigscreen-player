@@ -206,12 +206,12 @@ function PlayerComponent(
     return playbackStrategy?.getPlaybackRate()
   }
 
-  function setBitrate(rate) {
-    playbackStrategy?.setBitrate(rate)
+  function setQuality(opts) {
+    playbackStrategy?.setBitrate(opts)
   }
 
-  function getBitrate(mediaKind) {
-    playbackStrategy?.getBitrate(mediaKind)
+  function getQuality(mediaKind) {
+    playbackStrategy?.getQuality(mediaKind)
   }
 
   function transitions() {
@@ -475,8 +475,8 @@ function PlayerComponent(
     isAudioDescribedEnabled,
     setAudioDescribed,
     setSubtitles,
-    setBitrate,
-    getBitrate
+    setQuality,
+    getQuality
   }
 }
 

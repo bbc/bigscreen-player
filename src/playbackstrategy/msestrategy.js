@@ -995,38 +995,13 @@ function MSEStrategy(
    * Set audio and/or video bitrate and allow
    * Disabling ABR if disableAbr is truthy.
    */
-  function setBitrate({ audioBitrate, videoBitrate, disableAbr = false }) {
-    const isAbrEnabled = !disableAbr
-
-    mediaPlayer.updateSettings({
-      streaming: {
-        abr: {
-          initialBitrate: {
-            audio: audioBitrate ?? -1,
-            video: videoBitrate ?? -1,
-          },
-          autoSwitchBitrate: { 
-            audio: isAbrEnabled,
-            video: isAbrEnabled,
-          },
-        },
-      },
-    })
+  function setQuality({ mediaKind, qualityIndex, forceReplace = false }) {
+    mediaPlayer.setQualityFor(mediaKind, qualityIndex, forceReplace)
   }
 
   // Returns bitrate (bits), for specified media kind
-  function getBitrate(mediaKind = MediaKinds.VIDEO) {
-    console.log(`BSP: getBitrate for mediaKind ${mediaKind}`)
-    const streamInfo = mediaPlayer.getActiveStream().getStreamInfo();
-    const dashMetrics = mediaPlayer.getDashMetrics();
-    const dashAdapter = mediaPlayer.getDashAdapter()
-
-    if (dashMetrics && streamInfo) {
-      console.log("dashMetrics and streamInfo set")
-      return dashAdapter.getAdaptationForType(streamInfo, mediaKind)
-    }
-
-    return null
+  function getQuality(mediaKind = MediaKinds.VIDEO) {
+    return mediaPlayer.getQualityFor(mediaKind)
   }
 
   return {
@@ -1073,8 +1048,8 @@ function MSEStrategy(
     setCurrentTime,
     setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
-    setBitrate,
-    getBitrate
+    setQuality,
+    getQuality
   }
 }
 

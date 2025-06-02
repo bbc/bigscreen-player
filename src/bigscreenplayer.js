@@ -474,24 +474,21 @@ function BigscreenPlayer() {
     /**
      * Set the media element bitrate
      *
-     * @param {Number} rate
+     * @param {any} opts
      */
-    setBitrate: (opts) => {
-      console.log(`setBitrate ${JSON.stringify(opts)}`)
+    setQuality: (opts) => {
+      console.log(`setQuality ${JSON.stringify(opts)}`)
       if (playerComponent) {
-        playerComponent.setBitrate(opts)
+        playerComponent.setQuality(opts)
       }
     },
 
     /**
-     * Get the media element bitrate for audio/video media 
-     * @param {String} mediaKind
+     * Gets the media player quality index
      */
-    getBitrate: (mediaKind) => {
-      console.log(`getBitrate ${mediaKind}`)
-      if (playerComponent) {
-        playerComponent.getBitrate(mediaKind)
-      }
+    getQuality: (mediaType) => {
+      console.log(`getQuality ${mediaType}`)
+      return playerComponent && playerComponent.getQuality(mediaType)
     },
 
     /**
