@@ -207,7 +207,7 @@ function PlayerComponent(
   }
 
   function setQuality(opts) {
-    playbackStrategy?.setBitrate(opts)
+    playbackStrategy?.setQuality(opts)
   }
 
   function getQuality(mediaKind) {
