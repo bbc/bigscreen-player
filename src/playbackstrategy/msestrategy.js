@@ -217,7 +217,7 @@ function MSEStrategy(
     const currentPresentationTimeInSeconds = mediaElement.currentTime
 
     // Note: Multiple consecutive CDN failover logic
-      // A newly loaded video element will always report a 0 time update
+    // A newly loaded video element will always report a 0 time update
     // This is slightly unhelpful if we want to continue from a later point but consult failoverTime as the source of truth.
     if (
       typeof currentPresentationTimeInSeconds === "number" &&
@@ -995,13 +995,25 @@ function MSEStrategy(
    * Set audio and/or video bitrate and allow
    * Disabling ABR if disableAbr is truthy.
    */
-  function setQuality({ mediaKind, qualityIndex, forceReplace = false }) {
-    mediaPlayer.setQualityFor(mediaKind, qualityIndex, forceReplace)
-  }
-
-  // Returns bitrate (bits), for specified media kind
-  function getQuality(mediaKind = MediaKinds.VIDEO) {
-    return mediaPlayer.getQualityFor(mediaKind)
+  function setBitrate(mediaKind, minBitrate, maxBitrate) {
+    mediaPlayer.updateSettings({
+      streaming: {
+        abr: {
+          autoSwitchBitrate: {
+            audio: false,
+            video: false,
+          },
+          minBitrate: {
+            audio: mediaKind === MediaKinds.AUDIO ? minBitrate : -1,
+            video: mediaKind === MediaKinds.VIDEO ? minBitrate : -1,
+          },
+          maxBitrate: {
+            audio: mediaKind === MediaKinds.AUDIO ? maxBitrate : -1,
+            video: mediaKind === MediaKinds.VIDEO ? maxBitrate : -1,
+          },
+        },
+      },
+    })
   }
 
   return {
@@ -1048,8 +1060,7 @@ function MSEStrategy(
     setCurrentTime,
     setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
-    setQuality,
-    getQuality
+    setBitrate,
   }
 }
 

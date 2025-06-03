@@ -472,23 +472,12 @@ function BigscreenPlayer() {
     getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
 
     /**
-     * Set the media element bitrate
      *
-     * @param {any} opts
      */
-    setQuality: (opts) => {
-      console.log(`setQuality ${JSON.stringify(opts)}`)
+    setBitrate: (mediaKind, minBitrate, maxBitrate) => {
       if (playerComponent) {
-        playerComponent.setQuality(opts)
+        playerComponent.setBitrate(mediaKind, minBitrate, maxBitrate)
       }
-    },
-
-    /**
-     * Gets the media player quality index
-     */
-    getQuality: (mediaType) => {
-      console.log(`getQuality ${mediaType}`)
-      return playerComponent && playerComponent.getQuality(mediaType)
     },
 
     /**
