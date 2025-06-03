@@ -36,6 +36,7 @@ function MSEStrategy(
     {
       debug: {
         logLevel: 2,
+        dispatchEvent: true,
       },
       streaming: {
         blacklistExpiryTime: mediaSources.failoverResetTime(),
@@ -506,7 +507,11 @@ function MSEStrategy(
   }
 
   function onDebugLog(event) {
-    DebugTool.debug(event.message)
+    if (event.message.includes("[Protection")) {
+      DebugTool.info(event.message)
+    } else {
+      DebugTool.debug(event.message)
+    }
   }
 
   function onFragmentContentLengthMismatch(event) {
@@ -601,12 +606,11 @@ function MSEStrategy(
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
+    mediaPlayer.initialize(mediaElement, null)
 
     if (protectionData) {
       mediaPlayer.setProtectionData(protectionData)
     }
-
-    mediaPlayer.initialize(mediaElement, null)
 
     if (embeddedSubs) {
       setUpSubtitleElement(playbackElement)
