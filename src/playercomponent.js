@@ -451,8 +451,8 @@ function PlayerComponent(
     fatalError = undefined
   }
 
-  function setPlaybackBitrate(mediaKind, minBitrate, maxBitrate) {
-    playbackStrategy?.setPlaybackBitrate(mediaKind, minBitrate, maxBitrate)
+  function  setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate) {
+    playbackStrategy?.setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate)
   }
 
   return {
