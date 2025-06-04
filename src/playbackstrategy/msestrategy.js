@@ -995,17 +995,13 @@ function MSEStrategy(
    * Set audio and/or video bitrate and allow
    * Disabling ABR if disableAbr is truthy.
    */
-  function setBitrate(mediaKind, minBitrate, maxBitrate) {
+  function setPlaybackBitrate(mediaKind, minBitrate, maxBitrate) {
     mediaPlayer.updateSettings({
       streaming: {
         abr: {
           autoSwitchBitrate: {
             audio: false,
             video: false,
-          },
-          minBitrate: {
-            audio: mediaKind === MediaKinds.AUDIO ? minBitrate : -1,
-            video: mediaKind === MediaKinds.VIDEO ? minBitrate : -1,
           },
           maxBitrate: {
             audio: mediaKind === MediaKinds.AUDIO ? maxBitrate : -1,
@@ -1060,7 +1056,8 @@ function MSEStrategy(
     setCurrentTime,
     setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
-    setBitrate,
+    setPlaybackBitrate,
+    getPlaybackBitrate: (mediaKind) => currentPlaybackBitrateInKbps(mediaKind),
   }
 }
 

@@ -202,12 +202,12 @@ function PlayerComponent(
     playbackStrategy?.setPlaybackRate(rate)
   }
 
-  function getPlaybackRate() {
-    return playbackStrategy?.getPlaybackRate()
+  function getPlaybackBitrate(mediaKind) {
+    return playbackStrategy?.getPlaybackBitrate(mediaKind)
   }
 
-  function setBitrate(mediaKind, minBitrate, maxBitrate) {
-    playbackStrategy?.setBitrate(mediaKind, minBitrate, maxBitrate)
+  function getPlaybackRate() {
+    return playbackStrategy?.getPlaybackRate()
   }
 
   function transitions() {
@@ -451,6 +451,10 @@ function PlayerComponent(
     fatalError = undefined
   }
 
+  function setPlaybackBitrate(mediaKind, minBitrate, maxBitrate) {
+    playbackStrategy?.setPlaybackBitrate(mediaKind, minBitrate, maxBitrate)
+  }
+
   return {
     play,
     pause,
@@ -471,7 +475,8 @@ function PlayerComponent(
     isAudioDescribedEnabled,
     setAudioDescribed,
     setSubtitles,
-    setBitrate,
+    setPlaybackBitrate,
+    getPlaybackBitrate,
   }
 }
 
