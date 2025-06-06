@@ -1915,4 +1915,10 @@ describe("Media Source Extensions Playback Strategy", () => {
       expect(mockDashInstance.attachTTMLRenderingDiv).toHaveBeenCalledWith(subtitlesElement)
     })
   })
+
+  describe("Playback bitrate", () => {
+    it("setContrainedBitrateInKbps should call media player updateSettings", () => {})
+
+    it("getPlaybackBitrate returns the current playback bitrate in kbps", () => {})
+  })
 })

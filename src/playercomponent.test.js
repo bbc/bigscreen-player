@@ -1611,4 +1611,10 @@ describe("Player Component", () => {
       expect(mockStrategy.tearDown).toHaveBeenCalledTimes(1)
     })
   })
+
+  describe("Playback bitrate", () => {
+    it("setConstrainedBitrateInKbps calls the the strategy to update settings", () => {})
+
+    it("getPlaybackBitrate returns the strategy playback bitrate", () => {})
+  })
 })
