@@ -1167,6 +1167,14 @@ describe("Bigscreen Player", () => {
     })
   })
 
+  describe("set bitrate", () => {
+    it("should set bitrate on the strategy", async () => {})
+
+    it("should not set the bitrate if playerComponent is not initialised", async () => {})
+
+    it("should return the bitrate when requested", async () => {})
+  })
+
   describe("getCurrentTime", () => {
     it("should return the current time from the strategy", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)

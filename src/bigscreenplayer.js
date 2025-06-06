@@ -472,7 +472,7 @@ function BigscreenPlayer() {
     getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
 
     /**
-     * Set constrained bitrate ladder
+     * Set constrained bitrate given a min/max range and mediakind.
      */
     setConstrainedBitrateInKbps: (mediaKind, minBitrate, maxBitrate) => {
       if (playerComponent) {
@@ -481,7 +481,7 @@ function BigscreenPlayer() {
     },
 
     /**
-     * Get playback bitrate
+     * Returns current playback bitrate for media kind.
      */
     getPlaybackBitrate: (mediaKind) => {
       if (playerComponent) {
