@@ -414,7 +414,7 @@ function MSEStrategy(
 
     const bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind)
 
-    return bitrateInfoList[index].bitrate ?? 0
+    return bitrateInfoList?.[index].bitrate ?? 0
   }
 
   function onQualityChangeRequested(event) {
@@ -1056,7 +1056,7 @@ function MSEStrategy(
     setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
     setConstrainedBitrateInKbps,
-    getPlaybackBitrate: (mediaKind) => currentPlaybackBitrateInKbps(mediaKind)
+    getPlaybackBitrate: (mediaKind) => currentPlaybackBitrateInKbps(mediaKind),
   }
 }
 
