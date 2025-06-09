@@ -1612,9 +1612,34 @@ describe("Player Component", () => {
     })
   })
 
-  describe("Playback bitrate", () => {
-    it("setConstrainedBitrateInKbps calls the the strategy to update settings", () => {})
+  describe("Set and get playback bitrate", () => {
+    it("setConstrainedBitrateInKbps calls the the strategy to update settings", async () => {
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+      await jest.runOnlyPendingTimersAsync()
+      playerComponent.setConstrainedBitrateInKbps("video", 100, 200)
 
-    it("getPlaybackBitrate returns the strategy playback bitrate", () => {})
+      expect(mockStrategy.setConstrainedBitrateInKbps).toHaveBeenCalledWith("video", 100, 200)
+    })
+
+    it("getPlaybackBitrate returns the strategy playback bitrate", async () => {
+      mockStrategy.getPlaybackBitrate.mockReturnValueOnce(100)
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+      await jest.runOnlyPendingTimersAsync()
+
+      expect(playerComponent.getPlaybackBitrate()).toBe(100)
+      expect(mockStrategy.getPlaybackBitrate).toHaveBeenCalledTimes(1)
+    })
   })
 })

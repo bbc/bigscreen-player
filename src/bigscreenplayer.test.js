@@ -116,6 +116,8 @@ describe("Bigscreen Player", () => {
       isAudioDescribedAvailable: jest.fn(),
       isAudioDescribedEnabled: jest.fn(),
       setAudioDescribed: jest.fn(),
+      setConstrainedBitrateInKbps: jest.fn(),
+      getPlaybackBitrate: jest.fn(),
     }
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
@@ -1167,14 +1169,6 @@ describe("Bigscreen Player", () => {
     })
   })
 
-  describe("set bitrate", () => {
-    it("should set bitrate on the strategy", async () => {})
-
-    it("should not set the bitrate if playerComponent is not initialised", async () => {})
-
-    it("should return the bitrate when requested", async () => {})
-  })
-
   describe("getCurrentTime", () => {
     it("should return the current time from the strategy", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
@@ -1675,6 +1669,37 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.getDebugLogs()
 
       expect(DebugTool.getDebugLogs).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("Set and get playback bitrate", () => {
+    const mediaKind = "video"
+    const minBitrate = 100
+    const maxBitrate = 200
+
+    it("should set bitrate on the strategy", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+      bigscreenPlayer.setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate)
+
+      expect(mockPlayerComponentInstance.setConstrainedBitrateInKbps).toHaveBeenLastCalledWith(
+        mediaKind,
+        minBitrate,
+        maxBitrate
+      )
+    })
+
+    it("should not set the bitrate if playerComponent is not initialised", async () => {
+      bigscreenPlayer.setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate)
+
+      expect(mockPlayerComponentInstance).not.toHaveBeenCalled()
+    })
+
+    it("should return the bitrate given a media kind", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+      mockPlayerComponentInstance.getPlaybackBitrate.mockReturnValue(100)
+      bigscreenPlayer.getPlaybackBitrate(mediaKind)
+
+      expect(mockPlayerComponentInstance.getPlaybackBitrate()).toBe(100)
     })
   })
 })
