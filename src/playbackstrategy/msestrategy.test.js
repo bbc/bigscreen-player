@@ -89,6 +89,8 @@ function createMockDashInstance() {
     setInitialMediaSettingsFor: jest.fn(),
     setAutoPlay: jest.fn(),
     setProtectionData: jest.fn(),
+    setConstrainedBitrateInKbps: jest.fn(),
+    getPlaybackBitrate: jest.fn(),
   }
 }
 
@@ -1913,6 +1915,25 @@ describe("Media Source Extensions Playback Strategy", () => {
       const subtitlesElement = playbackElement.querySelector("#bsp_subtitles")
 
       expect(mockDashInstance.attachTTMLRenderingDiv).toHaveBeenCalledWith(subtitlesElement)
+    })
+  })
+
+  describe("Playback bitrate", () => {
+    it("setContrainedBitrateInKbps should call media player updateSettings", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+      mseStrategy.setConstrainedBitrateInKbps("video", 100, 200)
+
+      expect(mockDashInstance.updateSettings).toHaveBeenCalled()
+    })
+
+    it("getPlaybackBitrate returns the current playback bitrate in kbps", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+      mockDashInstance.getBitrateInfoListFor.mockReturnValue([{ bitrate: 100000 }])
+      const bitrate = mseStrategy.getPlaybackBitrate("video")
+
+      expect(bitrate).toBe(100)
     })
   })
 })

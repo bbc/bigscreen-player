@@ -472,6 +472,24 @@ function BigscreenPlayer() {
     getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
 
     /**
+     * Set constrained bitrate given a min/max range and mediakind.
+     */
+    setConstrainedBitrateInKbps: (mediaKind, minBitrate, maxBitrate) => {
+      if (playerComponent) {
+        playerComponent.setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate)
+      }
+    },
+
+    /**
+     * Returns current playback bitrate for media kind.
+     */
+    getPlaybackBitrate: (mediaKind) => {
+      if (playerComponent) {
+        return playerComponent.getPlaybackBitrate(mediaKind)
+      }
+    },
+
+    /**
      * Returns the media asset's current time in seconds.
      * @function
      * @returns {Number}

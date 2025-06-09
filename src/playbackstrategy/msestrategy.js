@@ -415,7 +415,7 @@ function MSEStrategy(
 
     const bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind)
 
-    return bitrateInfoList[index].bitrate ?? 0
+    return bitrateInfoList?.[index].bitrate ?? 0
   }
 
   function onQualityChangeRequested(event) {
@@ -995,6 +995,26 @@ function MSEStrategy(
     }
   }
 
+  /*
+   * Set constrained audio or video bitrate
+   */
+  function setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate) {
+    mediaPlayer.updateSettings({
+      streaming: {
+        abr: {
+          minBitrate: {
+            audio: mediaKind === MediaKinds.AUDIO ? minBitrate : -1,
+            video: mediaKind === MediaKinds.VIDEO ? minBitrate : -1,
+          },
+          maxBitrate: {
+            audio: mediaKind === MediaKinds.AUDIO ? maxBitrate : -1,
+            video: mediaKind === MediaKinds.VIDEO ? maxBitrate : -1,
+          },
+        },
+      },
+    })
+  }
+
   return {
     transitions: {
       canBePaused: () => true,
@@ -1039,6 +1059,8 @@ function MSEStrategy(
     setCurrentTime,
     setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
+    setConstrainedBitrateInKbps,
+    getPlaybackBitrate: (mediaKind) => currentPlaybackBitrateInKbps(mediaKind),
   }
 }
 
