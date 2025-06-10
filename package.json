@@ -64,7 +64,7 @@
     "typescript-eslint": "^7.2.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v4.7.3-7",
+    "dashjs": "github:bbc/rd-dash.js#buffer-level-reporting",
     "smp-imsc": "github:bbc/imscJS#v1.0.3"
   },
   "repository": {
