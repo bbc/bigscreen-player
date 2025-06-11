@@ -61,7 +61,7 @@ jest.mock("./resizer", () => jest.fn(() => mockResizer))
 jest.mock("./debugger/debugtool")
 jest.mock("./subtitles/subtitles", () => jest.fn(() => mockSubtitlesInstance))
 jest.mock("./readyhelper", () =>
-  jest.fn((_a, _b, _c, onReady) => {
+  jest.fn((_a, _b, _c, _d, onReady) => {
     if (typeof onReady === "function") {
       onReady()
     }
@@ -177,6 +177,7 @@ describe("Bigscreen Player", () => {
         365,
         ManifestType.STATIC,
         LiveSupport.SEEKABLE,
+        undefined,
         expect.any(Function)
       )
     })
