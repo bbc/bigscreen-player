@@ -474,9 +474,9 @@ function BigscreenPlayer() {
     /**
      * Set constrained bitrate given a min/max range and mediakind.
      */
-    setConstrainedBitrateInKbps: (mediaKind, minBitrate, maxBitrate) => {
+    setBitrateConstraint: (mediaKind, minBitrateKbps, maxBitrateKbps) => {
       if (playerComponent) {
-        playerComponent.setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate)
+        playerComponent.setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps)
       }
     },
 

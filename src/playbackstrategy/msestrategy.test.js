@@ -1919,10 +1919,10 @@ describe("Media Source Extensions Playback Strategy", () => {
   })
 
   describe("Playback bitrate", () => {
-    it("setContrainedBitrateInKbps should call media player updateSettings", () => {
+    it("setBitrateConstraint should call media player updateSettings", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 0)
-      mseStrategy.setConstrainedBitrateInKbps("video", 100, 200)
+      mseStrategy.setBitrateConstraint("video", 100, 200)
 
       expect(mockDashInstance.updateSettings).toHaveBeenCalled()
     })

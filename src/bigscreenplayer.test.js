@@ -1689,9 +1689,9 @@ describe("Bigscreen Player", () => {
     })
 
     it("should not set the bitrate if playerComponent is not initialised", async () => {
-      bigscreenPlayer.setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate)
+      bigscreenPlayer.setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps)
 
-      expect(mockPlayerComponentInstance.setConstrainedBitrateInKbps).not.toHaveBeenCalled()
+      expect(mockPlayerComponentInstance.setBitrateConstraint).not.toHaveBeenCalled()
     })
 
     it("should return the bitrate given a media kind", async () => {

@@ -998,17 +998,17 @@ function MSEStrategy(
   /*
    * Set constrained audio or video bitrate
    */
-  function setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate) {
+  function setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps) {
     mediaPlayer.updateSettings({
       streaming: {
         abr: {
           minBitrate: {
-            audio: mediaKind === MediaKinds.AUDIO ? minBitrate : -1,
-            video: mediaKind === MediaKinds.VIDEO ? minBitrate : -1,
+            audio: mediaKind === MediaKinds.AUDIO ? minBitratKbps : -1,
+            video: mediaKind === MediaKinds.VIDEO ? minBitrateKbps : -1,
           },
           maxBitrate: {
-            audio: mediaKind === MediaKinds.AUDIO ? maxBitrate : -1,
-            video: mediaKind === MediaKinds.VIDEO ? maxBitrate : -1,
+            audio: mediaKind === MediaKinds.AUDIO ? maxBitrateKbps : -1,
+            video: mediaKind === MediaKinds.VIDEO ? maxBitrateKbps : -1,
           },
         },
       },
@@ -1059,7 +1059,7 @@ function MSEStrategy(
     setCurrentTime,
     setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
-    setConstrainedBitrateInKbps,
+    setBitrateConstraint,
     getPlaybackBitrate: (mediaKind) => currentPlaybackBitrateInKbps(mediaKind),
   }
 }

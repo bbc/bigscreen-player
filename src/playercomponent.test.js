@@ -1615,7 +1615,7 @@ describe("Player Component", () => {
   })
 
   describe("Set and get playback bitrate", () => {
-    it("setConstrainedBitrateInKbps calls the the strategy to update settings", async () => {
+    it("setBitrateConstraint calls the the strategy to update settings", async () => {
       const playerComponent = new PlayerComponent(
         createPlaybackElement(),
         bigscreenPlayerData,
@@ -1624,9 +1624,9 @@ describe("Player Component", () => {
         jest.fn()
       )
       await jest.runOnlyPendingTimersAsync()
-      playerComponent.setConstrainedBitrateInKbps("video", 100, 200)
+      playerComponent.setBitrateConstraint("video", 100, 200)
 
-      expect(mockStrategy.setConstrainedBitrateInKbps).toHaveBeenCalledWith("video", 100, 200)
+      expect(mockStrategy.setBitrateConstraint).toHaveBeenCalledWith("video", 100, 200)
     })
 
     it("getPlaybackBitrate returns the strategy playback bitrate", async () => {

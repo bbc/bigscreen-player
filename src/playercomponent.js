@@ -447,8 +447,8 @@ function PlayerComponent(
     fatalError = undefined
   }
 
-  function setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate) {
-    playbackStrategy?.setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate)
+  function setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps) {
+    playbackStrategy?.setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps)
   }
 
   function getPlaybackBitrate(mediaKind) {
@@ -475,7 +475,7 @@ function PlayerComponent(
     isAudioDescribedEnabled,
     setAudioDescribed,
     setSubtitles,
-    setConstrainedBitrateInKbps,
+    setBitrateConstraint,
     getPlaybackBitrate,
   }
 }
