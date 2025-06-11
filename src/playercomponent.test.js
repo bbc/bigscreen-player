@@ -56,6 +56,8 @@ function createMockPlaybackStrategy(liveSupport = LiveSupport.SEEKABLE, extraFie
     isAudioDescribedEnabled: jest.fn(),
     setAudioDescribedOn: jest.fn(),
     setAudioDescribedOff: jest.fn(),
+    setBitrateConstraint: jest.fn(),
+    getPlaybackBitrate: jest.fn(),
     ...extraFields,
   }
 }
@@ -1609,6 +1611,37 @@ describe("Player Component", () => {
       playerComponent.tearDown()
 
       expect(mockStrategy.tearDown).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("Set and get playback bitrate", () => {
+    it("setBitrateConstraint calls the the strategy to update settings", async () => {
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+      await jest.runOnlyPendingTimersAsync()
+      playerComponent.setBitrateConstraint("video", 100, 200)
+
+      expect(mockStrategy.setBitrateConstraint).toHaveBeenCalledWith("video", 100, 200)
+    })
+
+    it("getPlaybackBitrate returns the strategy playback bitrate", async () => {
+      mockStrategy.getPlaybackBitrate.mockReturnValueOnce(100)
+      const playerComponent = new PlayerComponent(
+        createPlaybackElement(),
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+      await jest.runOnlyPendingTimersAsync()
+
+      expect(playerComponent.getPlaybackBitrate()).toBe(100)
+      expect(mockStrategy.getPlaybackBitrate).toHaveBeenCalledTimes(1)
     })
   })
 })
