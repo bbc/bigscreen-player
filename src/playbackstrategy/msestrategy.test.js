@@ -89,7 +89,7 @@ function createMockDashInstance() {
     setInitialMediaSettingsFor: jest.fn(),
     setAutoPlay: jest.fn(),
     setProtectionData: jest.fn(),
-    setConstrainedBitrateInKbps: jest.fn(),
+    setBitrateConstraint: jest.fn(),
     getPlaybackBitrate: jest.fn(),
   }
 }

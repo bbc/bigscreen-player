@@ -116,7 +116,7 @@ describe("Bigscreen Player", () => {
       isAudioDescribedAvailable: jest.fn(),
       isAudioDescribedEnabled: jest.fn(),
       setAudioDescribed: jest.fn(),
-      setConstrainedBitrateInKbps: jest.fn(),
+      setBitrateConstraint: jest.fn(),
       getPlaybackBitrate: jest.fn(),
     }
 
@@ -1674,17 +1674,17 @@ describe("Bigscreen Player", () => {
 
   describe("Set and get playback bitrate", () => {
     const mediaKind = "video"
-    const minBitrate = 100
-    const maxBitrate = 200
+    const minBitrateKbps = 100
+    const maxBitrateKbps = 200
 
     it("should set bitrate on the strategy", async () => {
       await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
-      bigscreenPlayer.setConstrainedBitrateInKbps(mediaKind, minBitrate, maxBitrate)
+      bigscreenPlayer.setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps)
 
-      expect(mockPlayerComponentInstance.setConstrainedBitrateInKbps).toHaveBeenLastCalledWith(
+      expect(mockPlayerComponentInstance.setBitrateConstraint).toHaveBeenLastCalledWith(
         mediaKind,
-        minBitrate,
-        maxBitrate
+        minBitrateKbps,
+        maxBitrateKbps
       )
     })
 

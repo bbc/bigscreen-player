@@ -56,7 +56,7 @@ function createMockPlaybackStrategy(liveSupport = LiveSupport.SEEKABLE, extraFie
     isAudioDescribedEnabled: jest.fn(),
     setAudioDescribedOn: jest.fn(),
     setAudioDescribedOff: jest.fn(),
-    setConstrainedBitrateInKbps: jest.fn(),
+    setBitrateConstraint: jest.fn(),
     getPlaybackBitrate: jest.fn(),
     ...extraFields,
   }
