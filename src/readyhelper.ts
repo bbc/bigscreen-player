@@ -10,6 +10,7 @@ function ReadyHelper(
   initialPlaybackTime: number | undefined,
   manifestType: ManifestType,
   liveSupport: LiveSupport,
+  autoplay?: boolean,
   callback?: () => void
 ) {
   let ready = false
@@ -22,7 +23,7 @@ function ReadyHelper(
     } else if (timeUpdate) {
       ready = isValidTime(data as Time)
     } else {
-      ready = isValidState(data as State) && isValidTime(data as Time)
+      ready = autoplay ? isValidState(data as State) && isValidTime(data as Time) : isValidState(data as State)
     }
 
     if (ready && callback) {
