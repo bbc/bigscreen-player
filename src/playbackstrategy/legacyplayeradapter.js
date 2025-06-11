@@ -266,6 +266,8 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
       if (autoplay) {
         beginPlayback()
+      } else {
+        publishMediaState(MediaState.PAUSED)
       }
     },
     play: () => {
