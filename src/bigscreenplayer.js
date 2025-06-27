@@ -670,6 +670,45 @@ function BigscreenPlayer() {
     setAudioDescribed: (enabled) => playerComponent.setAudioDescribed(enabled),
 
     /**
+     * Change the source without tearing down the entire media session. Should minimise UX disruption
+     *  - Maintain event handlers
+     *  - Maintain current media-element state (paused/playing etc)
+     *  - Re-request manifests & parsing
+     *
+     * @param {InitData} initData
+     * @returns {Promise<void>} Operation is complete, player is generally ready for API interraction
+     */
+    changeSource: (initData) => {
+      // Teardown and init media-sources
+      // call change source on PlayerComponent -> strategy layer for various implementations
+
+      const { url } = initData.media.urls[0]
+      const incommingPlaybackTime = initData.media.initialPlaybackTime
+      let time = 0
+
+      time = typeof incommingPlaybackTime === "number" ? incommingPlaybackTime : incommingPlaybackTime.seconds
+
+      // HACK way of doing things for most html based native devices
+
+      return new Promise((resolve, reject) => {
+        const playbackElement = playerComponent.getPlayerElement()
+
+        // Likely HTML5 strategy steps
+        playbackElement.autoplay = false
+        playbackElement.src = url
+
+        const oneTimeEvent = () => {
+          playbackElement.currentTime = time ?? 0
+          playbackElement.removeEventListener("loadedmetadata", oneTimeEvent)
+          resolve()
+        }
+
+        playbackElement.addEventListener("loadedmetadata", oneTimeEvent)
+        playbackElement.addEventListener("error", reject)
+      })
+    },
+
+    /**
      *
      * An enum may be used to set the on-screen position of any transport controls
      * (work in progress to remove this - UI concern).
