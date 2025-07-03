@@ -376,9 +376,11 @@ function MSEStrategy(
   }
 
   function dispatchMaxQualityChangeForKind(kind) {
-    const { qualityIndex, bitrate: bitrateInBps } = mediaPlayer.getTopBitrateInfoFor(kind)
+    const { qualityIndex, bitrate: bitrateInBps } = mediaPlayer.getTopBitrateInfoFor(kind) ?? {}
 
-    DebugTool.dynamicMetric(`${kind}-max-quality`, [qualityIndex, bitrateInBps])
+    if (qualityIndex && bitrateInBps) {
+      DebugTool.dynamicMetric(`${kind}-max-quality`, [qualityIndex, bitrateInBps])
+    }
   }
 
   function getBufferedRanges() {
@@ -415,7 +417,7 @@ function MSEStrategy(
 
     const bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind)
 
-    return bitrateInfoList?.[index].bitrate ?? 0
+    return bitrateInfoList?.[index]?.bitrate ?? 0
   }
 
   function onQualityChangeRequested(event) {
