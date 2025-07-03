@@ -867,6 +867,22 @@ function Html5() {
       }
     },
 
+    changeSource: (time, autoplay = false) => {
+      return new Promise((resolve, reject) => {
+        mediaElement.autoplay = autoplay
+        mediaElement.src = url
+
+        const oneTimeEvent = () => {
+          mediaElement.currentTime = time ?? 0
+          mediaElement.removeEventListener("loadedmetadata", oneTimeEvent)
+          resolve()
+        }
+
+        mediaElement.addEventListener("loadedmetadata", oneTimeEvent)
+        mediaElement.addEventListener("error", reject)
+      })
+    },
+
     getSeekableRange: () => {
       switch (getState()) {
         case MediaPlayerBase.STATE.STOPPED:

@@ -319,6 +319,11 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         mediaPlayer.pause()
       }
     },
+    changeSource: (time, autoplay) => {
+      if (typeof mediaPlayer.changeSource === "function") {
+        mediaPlayer.changeSource(time, autoplay)
+      }
+    },
     getStrategy: () => window.bigscreenPlayer?.playbackStrategy?.match(/.+(?=strategy)/g)[0].toUpperCase(),
     reset,
     tearDown: () => {

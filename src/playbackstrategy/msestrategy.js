@@ -606,7 +606,7 @@ function MSEStrategy(
 
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
-    mediaPlayer.initialize(mediaElement, null)
+    mediaPlayer.initialize(mediaElement, null, false)
 
     if (protectionData) {
       mediaPlayer.setProtectionData(protectionData)
@@ -618,6 +618,7 @@ function MSEStrategy(
     }
 
     modifySource(presentationTimeInSeconds)
+    mediaPlayer.play()
   }
 
   function modifySource(presentationTimeInSeconds) {
@@ -1043,6 +1044,11 @@ function MSEStrategy(
       if (mediaPlayer) {
         mediaPlayer.enableText(subtitlesEnabled)
       }
+    },
+    changeSource: (time, autoplay = false) => {
+      mediaElement.autoplay = autoplay
+      modifySource(time)
+      return Promise.resolve()
     },
     getPlayerElement: () => mediaElement,
     tearDown,

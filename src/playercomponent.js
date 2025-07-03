@@ -210,6 +210,10 @@ function PlayerComponent(
     return playbackStrategy?.transitions
   }
 
+  function changeSource (time, autoplay) {
+    return playbackStrategy?.changeSource(time, autoplay)
+  }
+
   function tearDownMediaElement() {
     clearTimeouts()
     playbackStrategy?.reset()
@@ -467,6 +471,7 @@ function PlayerComponent(
     setCurrentTime,
     getCurrentTime,
     getDuration,
+    changeSource,
     getSeekableRange,
     getPlayerElement,
     isPaused,

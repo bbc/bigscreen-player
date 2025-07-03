@@ -676,9 +676,10 @@ function BigscreenPlayer() {
      *  - Re-request manifests & parsing
      *
      * @param {InitData} initData
+     * @param {boolean} Autoplay
      * @returns {Promise<void>} Operation is complete, player is generally ready for API interraction
      */
-    changeSource: (initData) => {
+    changeSource: async (initData, autoplay = false) => {
       // Teardown and init media-sources
       // call change source on PlayerComponent -> strategy layer for various implementations
 
@@ -688,23 +689,15 @@ function BigscreenPlayer() {
 
       time = typeof incommingPlaybackTime === "number" ? incommingPlaybackTime : incommingPlaybackTime.seconds
 
-      // HACK way of doing things for most html based native devices
-
-      return new Promise((resolve, reject) => {
-        const playbackElement = playerComponent.getPlayerElement()
-
-        // Likely HTML5 strategy steps
-        playbackElement.autoplay = false
-        playbackElement.src = url
-
-        const oneTimeEvent = () => {
-          playbackElement.currentTime = time ?? 0
-          playbackElement.removeEventListener("loadedmetadata", oneTimeEvent)
-          resolve()
+      return new Promise( async (resolve, reject) => {
+        mediaSources.tearDown()
+        try {
+          await mediaSources.init(initData.media)
+          await playerComponent.changeSource(time, autoplay)
+          resolve('hooray - a new source')
+        } catch (err) {
+          reject('booo it failed!')
         }
-
-        playbackElement.addEventListener("loadedmetadata", oneTimeEvent)
-        playbackElement.addEventListener("error", reject)
       })
     },
 
