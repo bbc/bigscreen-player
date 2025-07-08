@@ -327,13 +327,15 @@ function MSEStrategy(
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
-    if (mediaKind === MediaKinds.VIDEO) {
+    if (mediaPlayer.getActiveStream()?.getHasVideoTrack()) {
       dispatchDownloadQualityChangeForKind(MediaKinds.VIDEO)
       dispatchMaxQualityChangeForKind(MediaKinds.VIDEO)
     }
 
-    dispatchMaxQualityChangeForKind(MediaKinds.AUDIO)
-    dispatchDownloadQualityChangeForKind(MediaKinds.AUDIO)
+    if (mediaPlayer.getActiveStream()?.getHasAudioTrack()) {
+      dispatchMaxQualityChangeForKind(MediaKinds.AUDIO)
+      dispatchDownloadQualityChangeForKind(MediaKinds.AUDIO)
+    }
 
     emitPlayerInfo()
   }
@@ -376,11 +378,9 @@ function MSEStrategy(
   }
 
   function dispatchMaxQualityChangeForKind(kind) {
-    const { qualityIndex, bitrate: bitrateInBps } = mediaPlayer.getTopBitrateInfoFor(kind) ?? {}
+    const { qualityIndex, bitrate: bitrateInBps } = mediaPlayer.getTopBitrateInfoFor(kind)
 
-    if (qualityIndex && bitrateInBps) {
-      DebugTool.dynamicMetric(`${kind}-max-quality`, [qualityIndex, bitrateInBps])
-    }
+    DebugTool.dynamicMetric(`${kind}-max-quality`, [qualityIndex, bitrateInBps])
   }
 
   function getBufferedRanges() {
@@ -417,7 +417,7 @@ function MSEStrategy(
 
     const bitrateInfoList = mediaPlayer.getBitrateInfoListFor(mediaKind)
 
-    return bitrateInfoList?.[index]?.bitrate ?? 0
+    return bitrateInfoList?.[index].bitrate ?? 0
   }
 
   function onQualityChangeRequested(event) {
