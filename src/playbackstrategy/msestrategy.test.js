@@ -1626,6 +1626,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       mockDashInstance.isReady.mockReturnValue(true)
       mockDashInstance.getTopBitrateInfoFor.mockReturnValue({ qualityIndex: 2, bitrate: 3000000 })
+      mockDashInstance.getActiveStream.mockReturnValue({ getHasVideoTrack: () => true, getHasAudioTrack: () => true })
 
       dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
 
@@ -1650,6 +1651,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       mockDashInstance.isReady.mockReturnValue(true)
       mockDashInstance.getTopBitrateInfoFor.mockReturnValue({ qualityIndex: 2, bitrate: 3000000 })
+      mockDashInstance.getActiveStream.mockReturnValue({ getHasVideoTrack: () => true, getHasAudioTrack: () => true })
 
       dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
 
@@ -1674,6 +1676,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       mockDashInstance.isReady.mockReturnValue(true)
       mockDashInstance.getTopBitrateInfoFor.mockReturnValue({ qualityIndex: 2, bitrate: 3000000 })
+      mockDashInstance.getActiveStream.mockReturnValue({ getHasVideoTrack: () => true, getHasAudioTrack: () => true })
 
       dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
 
@@ -1698,6 +1701,7 @@ describe("Media Source Extensions Playback Strategy", () => {
 
       mockDashInstance.isReady.mockReturnValue(true)
       mockDashInstance.getTopBitrateInfoFor.mockReturnValue({ qualityIndex: 2, bitrate: 3000000 })
+      mockDashInstance.getActiveStream.mockReturnValue({ getHasVideoTrack: () => true, getHasAudioTrack: () => true })
 
       dispatchDashEvent(dashjsMediaPlayerEvents.STREAM_INITIALIZED)
 
