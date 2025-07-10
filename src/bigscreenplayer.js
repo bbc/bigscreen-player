@@ -110,7 +110,7 @@ function BigscreenPlayer() {
       initialPlaybackTime == null ? undefined : convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
     endOfStream =
-      mediaSources.time().manifestType === ManifestType.DYNAMIC &&
+      mediaSources.time()?.manifestType === ManifestType.DYNAMIC &&
       !initialPresentationTime &&
       initialPresentationTime !== 0
 
