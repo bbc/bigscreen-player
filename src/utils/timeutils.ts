@@ -1,3 +1,5 @@
+import { TimeInfo } from "../manifest/manifestparser"
+import { TransferFormat } from "../models/transferformats"
 import ServerDate from "./serverdate"
 
 export function durationToSeconds(duration: string) {
@@ -44,11 +46,9 @@ export function mediaSampleTimeToPresentationTimeInSeconds(
     : mediaSampleTimeInSeconds - presentationTimeOffsetInSeconds
 }
 
-export function clampAvailability(
-  availabilityTimeInMilliseconds: number,
-  availabilityStartTimeInMilliseconds: number,
-  timeShiftBufferDepthInMilliseconds: number
-): number {
+function clampAvailabilityForDash(presentationTimeInSeconds: number, streamInfo: TimeInfo): number {
+  const { timeShiftBufferDepthInMilliseconds, availabilityStartTimeInMilliseconds } = streamInfo
+
   const currentUtc = ServerDate.now()
 
   const earliestUtc =
@@ -56,5 +56,38 @@ export function clampAvailability(
       ? currentUtc - timeShiftBufferDepthInMilliseconds
       : availabilityStartTimeInMilliseconds
 
-  return Math.min(Math.max(availabilityTimeInMilliseconds, earliestUtc), currentUtc)
+  const availabilityTimeInMillis = presentationTimeToAvailabilityTimeInMilliseconds(
+    presentationTimeInSeconds,
+    availabilityStartTimeInMilliseconds
+  )
+
+  const safeTimeInMillis = Math.min(Math.max(availabilityTimeInMillis, earliestUtc), currentUtc)
+
+  return availabilityTimeToPresentationTimeInSeconds(safeTimeInMillis, availabilityStartTimeInMilliseconds)
+}
+
+function clampAvailabilityForHls(presentationTimeInSeconds: number, streamInfo: TimeInfo): number {
+  const { presentationTimeOffsetInMilliseconds } = streamInfo
+
+  const mediaSampleTimeInSeconds = presentationTimeToMediaSampleTimeInSeconds(
+    presentationTimeInSeconds,
+    presentationTimeOffsetInMilliseconds
+  )
+
+  return mediaSampleTimeToPresentationTimeInSeconds(mediaSampleTimeInSeconds, presentationTimeOffsetInMilliseconds)
+}
+
+export function clampAvailability(
+  presentationTimeInSeconds: number,
+  transferFormat: TransferFormat,
+  streamInfo: TimeInfo
+): number {
+  switch (transferFormat) {
+    case TransferFormat.DASH:
+      return clampAvailabilityForDash(presentationTimeInSeconds, streamInfo)
+    case TransferFormat.HLS:
+      return clampAvailabilityForHls(presentationTimeInSeconds, streamInfo)
+    default:
+      throw new Error(`Cannot clamp to safe range for transfer format. (got ${transferFormat})`)
+  }
 }

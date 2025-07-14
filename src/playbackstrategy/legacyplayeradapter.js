@@ -4,11 +4,7 @@ import { ManifestType } from "../models/manifesttypes"
 import AllowedMediaTransitions from "../allowedmediatransitions"
 import LiveGlitchCurtain from "./liveglitchcurtain"
 import MediaPlayerBase from "./modifiers/mediaplayerbase"
-import {
-  availabilityTimeToPresentationTimeInSeconds,
-  clampAvailability,
-  presentationTimeToAvailabilityTimeInMilliseconds,
-} from "../utils/timeutils"
+import { clampAvailability } from "../utils/timeutils"
 
 function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   const manifestType = mediaSources.time().manifestType
@@ -227,20 +223,8 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       return presentationTimeInSeconds
     }
 
-    const { availabilityStartTimeInMilliseconds, timeShiftBufferDepthInMilliseconds } = mediaSources.time()
-
     // how native media players handle times for segments outside a manifest's available time range is undefined behaviour
-    const startTime = availabilityTimeToPresentationTimeInSeconds(
-      clampAvailability(
-        presentationTimeToAvailabilityTimeInMilliseconds(
-          presentationTimeInSeconds,
-          availabilityStartTimeInMilliseconds
-        ),
-        availabilityStartTimeInMilliseconds,
-        timeShiftBufferDepthInMilliseconds
-      ),
-      availabilityStartTimeInMilliseconds
-    )
+    const startTime = clampAvailability(presentationTimeInSeconds, mediaSources.time())
 
     // currentTime = 0 is interpreted as play from live point by many devices
     return startTime === 0 ? 0.1 : startTime

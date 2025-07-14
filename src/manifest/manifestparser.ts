@@ -83,14 +83,16 @@ function parseM3U8(manifest: string): Promise<TimeInfo> {
 
     const manifestType = hasM3U8EndList(manifest) ? ManifestType.STATIC : ManifestType.DYNAMIC
 
-    const livePoint = programDateTimeInMilliseconds + durationInMilliseconds
-    const liveDelay = ServerDate.now() - livePoint
+    const liveEdgeTimestampAtJoinTime = programDateTimeInMilliseconds + durationInMilliseconds
+
+    // only true when programme is live: then difference between last encoded and last available is ~consistent
+    const liveDelay = ServerDate.now() - liveEdgeTimestampAtJoinTime
 
     return resolve({
       manifestType,
       timeShiftBufferDepthInMilliseconds: 0,
       availabilityStartTimeInMilliseconds:
-        manifestType === ManifestType.STATIC ? 0 : programDateTimeInMilliseconds - liveDelay,
+        manifestType === ManifestType.STATIC ? 0 : programDateTimeInMilliseconds + liveDelay,
       presentationTimeOffsetInMilliseconds: programDateTimeInMilliseconds,
     })
   }).catch((reason: unknown) => {
