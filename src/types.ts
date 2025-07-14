@@ -58,6 +58,7 @@ export type InitData = {
   enableSubtitles?: boolean
   enableAudioDescribed?: boolean
   initialPlaybackTime?: number | PlaybackTime
+  offsetBetweenClientAndServerUTCInMilliseconds?: number
 }
 
 export type InitCallbacks = {

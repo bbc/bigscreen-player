@@ -4,6 +4,11 @@ import { ManifestType } from "../models/manifesttypes"
 import AllowedMediaTransitions from "../allowedmediatransitions"
 import LiveGlitchCurtain from "./liveglitchcurtain"
 import MediaPlayerBase from "./modifiers/mediaplayerbase"
+import {
+  availabilityTimeToPresentationTimeInSeconds,
+  clampAvailability,
+  presentationTimeToAvailabilityTimeInMilliseconds,
+} from "../utils/timeutils"
 
 function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   const manifestType = mediaSources.time().manifestType
@@ -213,6 +218,34 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     mediaPlayer.reset()
   }
 
+  function calcStartTime(presentationTimeInSeconds) {
+    if (presentationTimeInSeconds == null) {
+      return 0
+    }
+
+    if (manifestType === ManifestType.STATIC) {
+      return presentationTimeInSeconds
+    }
+
+    const { availabilityStartTimeInMilliseconds, timeShiftBufferDepthInMilliseconds } = mediaSources.time()
+
+    // how native media players handle times for segments outside a manifest's available time range is undefined behaviour
+    const startTime = availabilityTimeToPresentationTimeInSeconds(
+      clampAvailability(
+        presentationTimeToAvailabilityTimeInMilliseconds(
+          presentationTimeInSeconds,
+          availabilityStartTimeInMilliseconds
+        ),
+        availabilityStartTimeInMilliseconds,
+        timeShiftBufferDepthInMilliseconds
+      ),
+      availabilityStartTimeInMilliseconds
+    )
+
+    // currentTime = 0 is interpreted as play from live point by many devices
+    return startTime === 0 ? 0.1 : startTime
+  }
+
   return {
     transitions,
     addEventCallback: (thisArg, callback) => {
@@ -246,11 +279,8 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
         typeof mediaPlayer.beginPlaybackFrom === "function" &&
         (manifestType === ManifestType.STATIC || hasStartTime)
       ) {
-        // currentTime = 0 is interpreted as play from live point by many devices
-        const startTimeInSeconds =
-          manifestType === ManifestType.DYNAMIC && presentationTimeInSeconds === 0 ? 0.1 : presentationTimeInSeconds
+        currentTime = calcStartTime(presentationTimeInSeconds)
 
-        currentTime = startTimeInSeconds || 0
         mediaPlayer.beginPlaybackFrom(currentTime)
       } else {
         mediaPlayer.beginPlayback()

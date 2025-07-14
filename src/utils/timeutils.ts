@@ -1,3 +1,5 @@
+import ServerDate from "./serverdate"
+
 export function durationToSeconds(duration: string) {
   const matches = duration.match(/^PT(\d+(?:[,.]\d+)?H)?(\d+(?:[,.]\d+)?M)?(\d+(?:[,.]\d+)?S)?/) || []
 
@@ -40,4 +42,19 @@ export function mediaSampleTimeToPresentationTimeInSeconds(
   return mediaSampleTimeInSeconds < presentationTimeOffsetInSeconds
     ? 0
     : mediaSampleTimeInSeconds - presentationTimeOffsetInSeconds
+}
+
+export function clampAvailability(
+  availabilityTimeInMilliseconds: number,
+  availabilityStartTimeInMilliseconds: number,
+  timeShiftBufferDepthInMilliseconds: number
+): number {
+  const currentUtc = ServerDate.now()
+
+  const earliestUtc =
+    currentUtc - timeShiftBufferDepthInMilliseconds > availabilityStartTimeInMilliseconds
+      ? currentUtc - timeShiftBufferDepthInMilliseconds
+      : availabilityStartTimeInMilliseconds
+
+  return Math.min(Math.max(availabilityTimeInMilliseconds, earliestUtc), currentUtc)
 }

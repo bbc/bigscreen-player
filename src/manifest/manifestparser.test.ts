@@ -101,6 +101,8 @@ describe("ManifestParser", () => {
 
   describe("parsing a HLS manifest", () => {
     it("returns a TimeInfo for a manifest with a valid program date time and no end list", async () => {
+      jest.setSystemTime(Date.parse("2024-11-08 08:00:45"))
+
       const timeInfo: TimeInfo = await ManifestParser.parse({
         body: HlsManifests.VALID_PROGRAM_DATETIME_NO_ENDLIST,
         type: TransferFormat.HLS,

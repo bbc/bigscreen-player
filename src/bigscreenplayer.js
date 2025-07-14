@@ -22,6 +22,7 @@ import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
 import { ManifestType } from "./models/manifesttypes"
 import { Timeline } from "./models/timeline"
+import { setOffsetBetweenClientAndServer } from "./utils/serverdate"
 
 /**
  * @import {
@@ -277,6 +278,13 @@ function BigscreenPlayer() {
 
       if (bigscreenPlayerData.initialPlaybackTime || bigscreenPlayerData.initialPlaybackTime === 0) {
         initialPlaybackTime = createPlaybackTime(bigscreenPlayerData.initialPlaybackTime)
+      }
+
+      if (
+        typeof bigscreenPlayerData.offsetBetweenClientAndServerUTCInMilliseconds === "number" &&
+        isFinite(bigscreenPlayerData.offsetBetweenClientAndServerUTCInMilliseconds)
+      ) {
+        setOffsetBetweenClientAndServer(bigscreenPlayerData.offsetBetweenClientAndServerUTCInMilliseconds)
       }
 
       DebugTool.staticMetric("version", Version)

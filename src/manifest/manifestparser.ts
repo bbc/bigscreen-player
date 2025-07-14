@@ -6,6 +6,7 @@ import { ManifestType } from "../models/manifesttypes"
 import { TransferFormat, DASH, HLS } from "../models/transferformats"
 import isError from "../utils/iserror"
 import { ErrorWithCode } from "../models/errorcode"
+import ServerDate from "../utils/serverdate"
 
 export type TimeInfo = {
   manifestType: ManifestType
@@ -82,10 +83,14 @@ function parseM3U8(manifest: string): Promise<TimeInfo> {
 
     const manifestType = hasM3U8EndList(manifest) ? ManifestType.STATIC : ManifestType.DYNAMIC
 
+    const livePoint = programDateTimeInMilliseconds + durationInMilliseconds
+    const liveDelay = ServerDate.now() - livePoint
+
     return resolve({
       manifestType,
       timeShiftBufferDepthInMilliseconds: 0,
-      availabilityStartTimeInMilliseconds: manifestType === ManifestType.STATIC ? 0 : programDateTimeInMilliseconds,
+      availabilityStartTimeInMilliseconds:
+        manifestType === ManifestType.STATIC ? 0 : programDateTimeInMilliseconds - liveDelay,
       presentationTimeOffsetInMilliseconds: programDateTimeInMilliseconds,
     })
   }).catch((reason: unknown) => {
