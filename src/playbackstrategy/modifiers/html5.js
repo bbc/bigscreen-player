@@ -29,7 +29,7 @@ function Html5() {
   let ignoreNextPauseEvent = false
   let nearEndOfMedia
   let readyToPlayFrom
-  let initialAutoplay
+  let shouldAutoplay
 
   let mediaType
   let source
@@ -507,8 +507,10 @@ function Html5() {
       seekTo(targetSeekTime)
     } else {
       seekTo(targetSeekTime)
-      if (initialAutoplay === true) {
+      if (shouldAutoplay === true) {
         handlePlayPromise(mediaElement.play())
+      } else {
+        postBufferingState = MediaPlayerBase.STATE.PAUSED
       }
     }
 
@@ -660,7 +662,7 @@ function Html5() {
       opts = opts || {}
       disableSentinels = opts.disableSentinels
       disableSeekSentinel = opts.disableSeekSentinel
-      initialAutoplay = initialAutoplay
+      shouldAutoplay = initialAutoplay
       mediaType = type
       source = url
       mimeType = mediaMimeType
