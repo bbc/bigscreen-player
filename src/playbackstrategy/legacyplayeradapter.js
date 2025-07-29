@@ -234,13 +234,20 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    load: (mimeType, presentationTimeInSeconds) => {
+    load: (mimeType, presentationTimeInSeconds, initialAutoplay) => {
       setupExitSeekWorkarounds(mimeType)
       isPaused = false
 
       hasStartTime = presentationTimeInSeconds || presentationTimeInSeconds === 0
 
-      mediaPlayer.initialiseMedia("video", mediaSources.currentSource(), mimeType, playbackElement, setSourceOpts)
+      mediaPlayer.initialiseMedia(
+        "video",
+        mediaSources.currentSource(),
+        mimeType,
+        playbackElement,
+        setSourceOpts,
+        initialAutoplay
+      )
 
       if (
         typeof mediaPlayer.beginPlaybackFrom === "function" &&

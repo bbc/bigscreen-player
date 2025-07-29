@@ -30,6 +30,7 @@ function Cehtml() {
   let seekFinished
   let count
   let timeoutHappened
+  let initialAutoplay
 
   let disableSentinels
 
@@ -138,12 +139,13 @@ function Cehtml() {
     }
   }
 
-  function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts) {
+  function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts, initialAutoplay) {
     opts = opts || {}
     disableSentinels = opts.disableSentinels
     mediaType = type
     source = url
     mimeType = mediaMimeType
+    initialAutoplay = initialAutoplay
 
     emitSeekAttempted()
 
@@ -248,6 +250,10 @@ function Cehtml() {
         // Seeking past 0 requires calling play first when media has not been loaded
         toBuffering()
         playAndSetDeferredSeek(seconds)
+
+        if (initialAutoplay === false) {
+          pause()
+        }
         break
 
       default:

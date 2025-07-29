@@ -19,6 +19,7 @@ function SamsungStreaming2015() {
   let mediaType
   let source
   let mimeType
+  let initialAutoplay
 
   let range
   let currentTime
@@ -73,11 +74,12 @@ function SamsungStreaming2015() {
   const RANGE_UPDATE_TOLERANCE = 8
   const RANGE_END_TOLERANCE = 100
 
-  function initialiseMedia(type, url, mediaMimeType) {
+  function initialiseMedia(type, url, mediaMimeType, initialAutoplay) {
     if (this.getState() === MediaPlayerBase.STATE.EMPTY) {
       mediaType = type
       source = url
       mimeType = mediaMimeType
+      initialAutoplay = initialAutoplay
       _registerEventHandlers()
       _toStopped()
 
@@ -192,6 +194,9 @@ function SamsungStreaming2015() {
       case MediaPlayerBase.STATE.STOPPED:
         playerPlugin.Execute("StartPlayback", seekingTo)
         _toBuffering()
+        if (initialAutoplay === false) {
+          pause()
+        }
         break
 
       default:

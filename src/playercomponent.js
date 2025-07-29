@@ -47,6 +47,7 @@ function PlayerComponent(
   let _stateUpdateCallback = stateUpdateCallback
 
   let mediaKind = bigscreenPlayerData.media.kind
+  const initialAutoplay = bigscreenPlayerData.initialAutoplay
   let isInitialPlay = true
   let errorTimeoutID = null
 
@@ -423,7 +424,7 @@ function PlayerComponent(
   }
 
   function loadMedia(type, presentationTimeInSeconds) {
-    playbackStrategy?.load(type, presentationTimeInSeconds)
+    playbackStrategy?.load(type, presentationTimeInSeconds, initialAutoplay)
 
     if (mediaSources.isAudioDescribedEnabled()) {
       audioDescribedCallback(true)

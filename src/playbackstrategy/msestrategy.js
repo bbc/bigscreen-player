@@ -78,6 +78,7 @@ function MSEStrategy(
   let isSeeking = false
   let manifestRequestTime
   let manifestLoadCount = 0
+  let shouldInitialAutoplay = null
 
   let playerMetadata = {
     downloadQuality: {
@@ -558,7 +559,11 @@ function MSEStrategy(
     return mediaPlayer && mediaPlayer.isReady() ? mediaPlayer.isPaused() : undefined
   }
 
-  function load(mimeType, presentationTimeInSeconds) {
+  function load(mimeType, presentationTimeInSeconds, initialAutoplay) {
+    if (shouldInitialAutoplay === null) {
+      shouldInitialAutoplay = initialAutoplay
+    }
+
     if (mediaPlayer) {
       modifySource(cached.currentTime)
     } else {
@@ -584,6 +589,7 @@ function MSEStrategy(
     mediaElement.style.position = "absolute"
     mediaElement.style.width = "100%"
     mediaElement.style.height = "100%"
+    mediaElement.autoplay = false
 
     playbackElement.insertBefore(mediaElement, playbackElement.firstChild)
   }
@@ -607,6 +613,7 @@ function MSEStrategy(
     mediaPlayer = MediaPlayer().create()
     mediaPlayer.updateSettings(dashSettings)
     mediaPlayer.initialize(mediaElement, null)
+    mediaPlayer.setAutoPlay(shouldInitialAutoplay)
 
     if (protectionData) {
       mediaPlayer.setProtectionData(protectionData)
