@@ -19,6 +19,7 @@ function SamsungStreaming() {
   let mediaType
   let source
   let mimeType
+  let shouldAutoplay
 
   let range
   let currentTime
@@ -78,6 +79,7 @@ function SamsungStreaming() {
       mediaType = type
       source = url
       mimeType = mediaMimeType
+      shouldAutoplay = initialAutoplay
       _registerEventHandlers()
       _toStopped()
 
@@ -198,7 +200,7 @@ function SamsungStreaming() {
       case MediaPlayerBase.STATE.STOPPED:
         playerPlugin.Execute("StartPlayback", seekingTo)
         _toBuffering()
-        if (initialAutoplay === false) {
+        if (shouldAutoplay === false) {
           postBufferingState = MediaPlayerBase.STATE.PAUSED
         }
         break

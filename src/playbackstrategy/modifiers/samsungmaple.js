@@ -13,7 +13,7 @@ function SamsungMaple() {
   let mediaType
   let source
   let mimeType
-  let initialAutoplay
+  let shouldAutoplay
 
   let range
   let currentTime
@@ -25,7 +25,7 @@ function SamsungMaple() {
       mediaType = type
       source = url
       mimeType = mediaMimeType
-      initialAutoplay = initialAutoplay
+      shouldAutoplay = initialAutoplay
       _registerEventHandlers()
       _toStopped()
     } else {
@@ -129,7 +129,7 @@ function SamsungMaple() {
         _setDisplayFullScreenForVideo()
         playerPlugin.ResumePlay(_wrappedSource(), seekingTo)
         _toBuffering()
-        if (initialAutoplay === false) {
+        if (shouldAutoplay === false) {
           postBufferingState = MediaPlayerBase.STATE.PAUSED
         }
         break
