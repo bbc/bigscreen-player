@@ -130,7 +130,7 @@ function SamsungMaple() {
         playerPlugin.ResumePlay(_wrappedSource(), seekingTo)
         _toBuffering()
         if (initialAutoplay === false) {
-          pause()
+          postBufferingState = MediaPlayerBase.STATE.PAUSED
         }
         break
 
