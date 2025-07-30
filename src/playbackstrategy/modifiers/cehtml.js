@@ -247,12 +247,15 @@ function Cehtml() {
 
     switch (getState()) {
       case MediaPlayerBase.STATE.STOPPED:
-        // Seeking past 0 requires calling play first when media has not been loaded
-        toBuffering()
-        playAndSetDeferredSeek(seconds)
-
-        if (initialAutoplay === false) {
-          pause()
+        if (initialAutoplay === true) {
+          // Seeking past 0 requires calling play first when media has not been loaded
+          toBuffering()
+          playAndSetDeferredSeek(seconds)
+        } else {
+          // Seeking past 0 requires calling play first when media has not been loaded
+          toBuffering()
+          playAndSetDeferredSeek(seconds)
+          postBufferingState = MediaPlayerBase.STATE.PAUSED
         }
         break
 
