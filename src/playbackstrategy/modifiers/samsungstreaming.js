@@ -519,6 +519,7 @@ function SamsungStreaming() {
     }
 
     if (shouldAutoplay === false) {
+      DebugTool.info("Trying to pause via autoplay false")
       _tryPauseWithStateTransition()
       shouldAutoplay = null
     }
