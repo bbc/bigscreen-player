@@ -80,6 +80,7 @@ function SamsungStreaming() {
       source = url
       mimeType = mediaMimeType
       shouldAutoplay = initialAutoplay
+      DebugTool.info(`shouldAutoplay: ${shouldAutoplay}`)
       _registerEventHandlers()
       _toStopped()
 
