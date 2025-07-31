@@ -74,7 +74,7 @@ function SamsungStreaming() {
   const RANGE_UPDATE_TOLERANCE = 8
   const RANGE_END_TOLERANCE = 100
 
-  function initialiseMedia(type, url, mediaMimeType, opts, initialAutoplay) {
+  function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts, initialAutoplay) {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
       mediaType = type
       source = url

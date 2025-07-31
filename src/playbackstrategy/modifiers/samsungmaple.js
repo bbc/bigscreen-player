@@ -20,7 +20,7 @@ function SamsungMaple() {
 
   let eventCallbacks = []
 
-  function initialiseMedia(type, url, mediaMimeType, initialAutoplay) {
+  function initialiseMedia(type, url, mediaMimeType, sourceContainer, opts, initialAutoplay) {
     if (getState() === MediaPlayerBase.STATE.EMPTY) {
       mediaType = type
       source = url
