@@ -48,6 +48,7 @@ function PlayerComponent(
 
   let mediaKind = bigscreenPlayerData.media.kind
   const initialAutoplay = bigscreenPlayerData.initialAutoplay
+  DebugTool.info(`playercomponent initialAutoplay: ${initialAutoplay}`)
   let isInitialPlay = true
   let errorTimeoutID = null
 
