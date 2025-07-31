@@ -129,9 +129,6 @@ function SamsungMaple() {
         _setDisplayFullScreenForVideo()
         playerPlugin.ResumePlay(_wrappedSource(), seekingTo)
         _toBuffering()
-        if (shouldAutoplay === false) {
-          postBufferingState = MediaPlayerBase.STATE.PAUSED
-        }
         break
 
       default:
@@ -331,6 +328,11 @@ function SamsungMaple() {
 
     if (deferSeekingTo !== null) {
       _deferredSeek()
+    }
+
+    if (shouldAutoplay === false) {
+      _tryPauseWithStateTransition()
+      shouldAutoplay = null
     }
 
     if (tryingToPause) {

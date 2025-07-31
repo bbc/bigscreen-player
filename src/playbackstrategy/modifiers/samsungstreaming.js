@@ -200,12 +200,6 @@ function SamsungStreaming() {
       case MediaPlayerBase.STATE.STOPPED:
         playerPlugin.Execute("StartPlayback", seekingTo)
         _toBuffering()
-        if (shouldAutoplay === true) {
-        } else {
-          playerPlugin.Execute("StartPlayback", seekingTo)
-          _toBuffering()
-          postBufferingState = MediaPlayerBase.STATE.PAUSED
-        }
         break
 
       default:
@@ -522,6 +516,11 @@ function SamsungStreaming() {
 
     if (deferSeekingTo !== null) {
       _deferredSeek()
+    }
+
+    if (shouldAutoplay === false) {
+      _tryPauseWithStateTransition()
+      shouldAutoplay = null
     }
 
     if (tryingToPause) {
