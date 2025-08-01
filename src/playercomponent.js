@@ -456,7 +456,7 @@ function PlayerComponent(
   }
 
   function updateSettings(settings) {
-    playbackStrategy?.updateSettings(settings)
+    if (playbackStrategy?.updateSettings) playbackStrategy.updateSettings(settings)
   }
 
   return {

@@ -795,7 +795,7 @@ function BigscreenPlayer() {
      * @param {Partial<import("./types").Settings>} settings The settings to update the player with.
      */
     updateSettings(settings) {
-      playerComponent.updateSettings(settings)
+      playerComponent && playerComponent.updateSettings(settings)
     },
   }
 }
