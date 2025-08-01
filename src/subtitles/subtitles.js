@@ -3,6 +3,8 @@ import findSegmentTemplate from "../utils/findtemplate"
 
 function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
   const useLegacySubs = window.bigscreenPlayer?.overrides?.legacySubtitles ?? false
+  const embeddedSubs = window.bigscreenPlayer?.overrides?.embeddedSubtitles ?? false
+
   const isSeekableLiveSupport =
     window.bigscreenPlayer.liveSupport == null || window.bigscreenPlayer.liveSupport === "seekable"
 
@@ -14,6 +16,21 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
       import("./legacysubtitles.js")
         .then(({ default: LegacySubtitles }) => {
           subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+          callback(subtitlesEnabled)
+        })
+        .catch(() => {
+          Plugins.interface.onSubtitlesDynamicLoadError()
+        })
+    } else if (embeddedSubs) {
+      import("./embeddedsubtitles.js")
+        .then(({ default: EmbeddedSubtitles }) => {
+          subtitlesContainer = EmbeddedSubtitles(
+            mediaPlayer,
+            autoStart,
+            playbackElement,
+            mediaSources,
+            defaultStyleOpts
+          )
           callback(subtitlesEnabled)
         })
         .catch(() => {
@@ -67,6 +84,10 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
   }
 
   function available() {
+    if (embeddedSubs) {
+      return mediaPlayer && mediaPlayer.isSubtitlesAvailable()
+    }
+
     const url = mediaSources.currentSubtitlesSource()
 
     if (!(typeof url === "string" && url !== "")) {

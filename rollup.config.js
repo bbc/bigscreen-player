@@ -1,5 +1,6 @@
 import PackageJSON from "./package.json" assert { type: "json" }
 
+import alias from "@rollup/plugin-alias"
 import replace from "@rollup/plugin-replace"
 import typescript from "@rollup/plugin-typescript"
 import { dts } from "rollup-plugin-dts"
@@ -10,6 +11,9 @@ export default [
     external: [/^dashjs/, "smp-imsc", "tslib"],
     output: [{ dir: "dist/esm", format: "es" }],
     plugins: [
+      alias({
+        entries: [{ find: "imsc", replacement: "smp-imsc" }],
+      }),
       replace({
         preventAssignment: true,
         __VERSION__: () => PackageJSON.version,

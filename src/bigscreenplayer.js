@@ -114,13 +114,6 @@ function BigscreenPlayer() {
       !initialPresentationTime &&
       initialPresentationTime !== 0
 
-    readyHelper = ReadyHelper(
-      initialPresentationTime,
-      mediaSources.time().manifestType,
-      PlayerComponent.getLiveSupport(),
-      _callbacks.playerReady
-    )
-
     playerComponent = PlayerComponent(
       playbackElement,
       { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime, customStrategies },
@@ -130,13 +123,21 @@ function BigscreenPlayer() {
       callAudioDescribedCallbacks
     )
 
-    subtitles = Subtitles(
-      playerComponent,
-      enableSubtitles,
-      playbackElement,
-      media.subtitleCustomisation,
-      mediaSources,
-      callSubtitlesCallbacks
+    readyHelper = ReadyHelper(
+      initialPresentationTime,
+      mediaSources.time().manifestType,
+      PlayerComponent.getLiveSupport(),
+      () => {
+        _callbacks.playerReady && _callbacks.playerReady()
+        subtitles = Subtitles(
+          playerComponent,
+          enableSubtitles,
+          playbackElement,
+          media.subtitleCustomisation,
+          mediaSources,
+          callSubtitlesCallbacks
+        )
+      }
     )
   }
 
@@ -469,6 +470,24 @@ function BigscreenPlayer() {
      * @returns {Number} the current media playback rate
      */
     getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
+
+    /**
+     * Set constrained bitrate given a min/max range and mediakind.
+     */
+    setBitrateConstraint: (mediaKind, minBitrateKbps, maxBitrateKbps) => {
+      if (playerComponent) {
+        playerComponent.setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps)
+      }
+    },
+
+    /**
+     * Returns current playback bitrate for media kind.
+     */
+    getPlaybackBitrate: (mediaKind) => {
+      if (playerComponent) {
+        return playerComponent.getPlaybackBitrate(mediaKind)
+      }
+    },
 
     /**
      * Returns the media asset's current time in seconds.
