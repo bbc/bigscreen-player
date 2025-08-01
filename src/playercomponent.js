@@ -455,6 +455,10 @@ function PlayerComponent(
     return playbackStrategy?.getPlaybackBitrate(mediaKind)
   }
 
+  function updateSettings(settings) {
+    playbackStrategy?.updateSettings(settings)
+  }
+
   return {
     play,
     pause,
@@ -477,6 +481,7 @@ function PlayerComponent(
     setSubtitles,
     setBitrateConstraint,
     getPlaybackBitrate,
+    updateSettings,
   }
 }
 

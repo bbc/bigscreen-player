@@ -788,6 +788,15 @@ function BigscreenPlayer() {
     getInitialPlaybackTime,
     getTimeShiftBufferDepthInMilliseconds,
     getPresentationTimeOffsetInMilliseconds,
+
+    /**
+     * Updates the settings of an active player.
+     *
+     * @param {Partial<import("./types").Settings>} settings The settings to update the player with.
+     */
+    updateSettings(settings) {
+      playerComponent.updateSettings(settings)
+    },
   }
 }
 

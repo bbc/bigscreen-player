@@ -1017,6 +1017,29 @@ function MSEStrategy(
     })
   }
 
+  function updateSettings(settings) {
+    if (settings?.failoverResetTime) {
+      mediaSources.updateSettings({ failoverResetTime: settings.failoverResetTime })
+      mediaPlayer.updateSettings({ streaming: { blacklistExpiryTime: mediaSources.failoverResetTime() } })
+    }
+
+    if (settings?.failoverSort) {
+      mediaSources.updateSettings({ failoverSort: settings.failoverSort })
+    }
+
+    if (settings?.streaming?.seekDurationPadding) {
+      seekDurationPadding = settings.streaming.seekDurationPadding
+    }
+
+    // Remove BSP specific settings
+    delete settings.failoverResetTime
+    delete settings.failoverSort
+    delete settings.streaming?.seekDurationPadding
+
+    // If we still have settings, pass them to Dash
+    if (Object.keys(settings).length > 0) mediaPlayer.updateSettings(settings)
+  }
+
   return {
     transitions: {
       canBePaused: () => true,
@@ -1063,6 +1086,7 @@ function MSEStrategy(
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),
     setBitrateConstraint,
     getPlaybackBitrate: (mediaKind) => currentPlaybackBitrateInKbps(mediaKind),
+    updateSettings,
   }
 }
 
