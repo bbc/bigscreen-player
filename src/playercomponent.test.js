@@ -251,6 +251,30 @@ describe("Player Component", () => {
 
       expect(mockAudioDescribedCallback).not.toHaveBeenCalled()
     })
+
+    it("Calls through to the strategy's updateSettings if it exists", async () => {
+      const updateSettings = jest.fn()
+      const settings = { updatedSetting1: true, updatedSetting2: 1 }
+      const mockStrategy = createMockPlaybackStrategy(LiveSupport.SEEKABLE, { updateSettings })
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playbackElement = createPlaybackElement()
+
+      const playerComponent = new PlayerComponent(
+        playbackElement,
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        jest.fn()
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      playerComponent.updateSettings(settings)
+
+      expect(updateSettings).toHaveBeenCalledWith(settings)
+    })
   })
 
   describe("pause", () => {
