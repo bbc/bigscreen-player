@@ -107,6 +107,7 @@ const mockMediaSources = {
   currentProtectionData: jest.fn(),
   availableSources: jest.fn().mockReturnValue([]),
   failover: jest.fn().mockResolvedValue(),
+  updateSettings: jest.fn(),
 }
 
 describe("Media Source Extensions Playback Strategy", () => {
@@ -1938,6 +1939,76 @@ describe("Media Source Extensions Playback Strategy", () => {
       const bitrate = mseStrategy.getPlaybackBitrate("video")
 
       expect(bitrate).toBe(100)
+    })
+  })
+
+  describe("Update Settings", () => {
+    let mseStrategy
+
+    beforeEach(() => {
+      mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+      mseStrategy.load(null, 0)
+    })
+
+    it("updates Media Sources and Dash with a new failoverResetTime", () => {
+      const newFailoverResetTime = 42
+      const settings = { failoverResetTime: newFailoverResetTime }
+
+      mockMediaSources.failoverResetTime.mockReturnValueOnce(newFailoverResetTime)
+
+      mseStrategy.updateSettings(settings)
+
+      expect(mockMediaSources.updateSettings).toHaveBeenCalledWith(settings)
+      expect(mockDashInstance.updateSettings).toHaveBeenCalledWith({
+        streaming: {
+          blacklistExpiryTime: newFailoverResetTime,
+        },
+      })
+    })
+
+    it("updates Media Sources with a new failoverSort", () => {
+      const newFailoverSort = jest.fn()
+      const settings = { failoverSort: newFailoverSort }
+
+      mseStrategy.updateSettings(settings)
+
+      expect(mockMediaSources.updateSettings).toHaveBeenCalledWith(settings)
+    })
+
+    it("updates with a new seekDurationPadding", () => {
+      mockDashInstance.duration.mockReturnValueOnce(360)
+
+      const seekDurationPadding = 0.1
+
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement, false, {
+        streaming: { seekDurationPadding },
+      })
+
+      mseStrategy.load(null, 0)
+
+      mockDashInstance.isReady.mockReturnValue(true)
+      mseStrategy.setCurrentTime(360)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(359.9)
+
+      mediaElement.dispatchEvent(new Event("seeking"))
+      mediaElement.dispatchEvent(new Event("seeked"))
+
+      const newSeekDurationPadding = 1
+      const settings = { seekDurationPadding: newSeekDurationPadding }
+
+      mseStrategy.updateSettings(settings)
+      mseStrategy.setCurrentTime(360)
+
+      expect(mockDashInstance.seek).toHaveBeenCalledWith(359)
+    })
+
+    it("passes non BSP Extended settings to Dash", () => {
+      const settings = { someNonBSPExtendedSetting: true }
+
+      mseStrategy.updateSettings(settings)
+
+      expect(mockDashInstance.updateSettings).toHaveBeenCalledWith(settings)
     })
   })
 })

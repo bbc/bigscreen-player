@@ -58,13 +58,16 @@ function MSEStrategy(
   let errorCallback
   let timeUpdateCallback
 
-  const seekDurationPadding = isNaN(playerSettings.streaming?.seekDurationPadding)
+  let seekDurationPadding = isNaN(playerSettings.streaming?.seekDurationPadding)
     ? DEFAULT_SETTINGS.seekDurationPadding
     : playerSettings.streaming?.seekDurationPadding
+
   const liveDelay = isNaN(playerSettings.streaming?.delay?.liveDelay)
     ? DEFAULT_SETTINGS.liveDelay
     : playerSettings.streaming?.delay?.liveDelay
+
   let isEnded = false
+
   const cached = {
     seekableRange: undefined,
     duration: 0,
@@ -1017,24 +1020,27 @@ function MSEStrategy(
     })
   }
 
-  function updateSettings(settings) {
+  function updateSettings(playerSettings) {
+    const settings = Utils.deepClone(playerSettings)
+
     if (settings?.failoverResetTime) {
       mediaSources.updateSettings({ failoverResetTime: settings.failoverResetTime })
       mediaPlayer.updateSettings({ streaming: { blacklistExpiryTime: mediaSources.failoverResetTime() } })
+
+      delete settings.failoverResetTime
     }
 
     if (settings?.failoverSort) {
       mediaSources.updateSettings({ failoverSort: settings.failoverSort })
+
+      delete settings.failoverSort
     }
 
     if (settings?.streaming?.seekDurationPadding) {
       seekDurationPadding = settings.streaming.seekDurationPadding
-    }
 
-    // Remove BSP specific settings
-    delete settings.failoverResetTime
-    delete settings.failoverSort
-    delete settings.streaming?.seekDurationPadding
+      delete settings.streaming?.seekDurationPadding
+    }
 
     // If we still have settings, pass them to Dash
     if (Object.keys(settings).length > 0) mediaPlayer.updateSettings(settings)
