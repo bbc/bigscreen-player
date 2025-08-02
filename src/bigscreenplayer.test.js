@@ -118,6 +118,7 @@ describe("Bigscreen Player", () => {
       setAudioDescribed: jest.fn(),
       setBitrateConstraint: jest.fn(),
       getPlaybackBitrate: jest.fn(),
+      updateSettings: jest.fn(),
     }
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
@@ -1701,5 +1702,15 @@ describe("Bigscreen Player", () => {
 
       expect(mockPlayerComponentInstance.getPlaybackBitrate()).toBe(100)
     })
+  })
+
+  it("should call through to PlayerComponent.updateSettings when updateSettings is called", async () => {
+    const settings = { updatedSetting1: true, updatedSetting2: 1 }
+
+    await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+
+    bigscreenPlayer.updateSettings(settings)
+
+    expect(mockPlayerComponentInstance.updateSettings).toHaveBeenCalledWith(settings)
   })
 })

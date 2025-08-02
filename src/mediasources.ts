@@ -362,6 +362,14 @@ function MediaSources() {
     subtitlesSources = []
   }
 
+  function updateSettings(settings: {
+    failoverResetTime: typeof failoverResetTimeMs
+    failoverSort: typeof failoverSort
+  }) {
+    if (settings.failoverResetTime) failoverResetTimeMs = settings.failoverResetTime
+    if (settings.failoverSort) failoverSort = settings.failoverSort
+  }
+
   return {
     init,
     failover,
@@ -381,6 +389,7 @@ function MediaSources() {
     time: generateTime,
     transferFormat: getCurrentTransferFormat,
     tearDown,
+    updateSettings,
   }
 }
 

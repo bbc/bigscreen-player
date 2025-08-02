@@ -10,7 +10,7 @@ export type CaptionsConnection = Connection & {
   segmentLength: number
 }
 
-type Settings = MediaPlayerSettingClass & {
+export type Settings = MediaPlayerSettingClass & {
   failoverResetTime: number
   failoverSort: (sources: Connection[]) => Connection[]
   streaming: {
