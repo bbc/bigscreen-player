@@ -703,6 +703,7 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.TEXT_TRACKS_ADDED, handleTextTracks)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
     mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
+    mediaPlayer.on(DashJSEvents.PLAYBACK_STALLED_CAUSE_UNKNOWN, onPlaybackStalledCauseUnknown)
   }
 
   function handleTextTracks() {
@@ -891,6 +892,7 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
       mediaPlayer.off(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
+      mediaPlayer.off(DashJSEvents.PLAYBACK_STALLED_CAUSE_UNKNOWN, onPlaybackStalledCauseUnknown)
       mediaPlayer = undefined
     }
 
@@ -1009,6 +1011,10 @@ function MSEStrategy(
         },
       },
     })
+  }
+
+  function onPlaybackStalledCauseUnknown() {
+    DebugTool.warn("Playback stalled for an unknown reason")
   }
 
   return {
