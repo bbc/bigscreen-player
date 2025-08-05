@@ -203,7 +203,7 @@ function MSEStrategy(
   }
 
   function onRateChange() {
-    Plugins.interface.onPlaybackRateChanged(mediaElement.playbackRate)
+    Plugins.interface.onPlaybackRateChanged({ playbackRate: mediaElement.playbackRate })
     DebugTool.dynamicMetric("playback-rate", mediaElement.playbackRate)
   }
 
