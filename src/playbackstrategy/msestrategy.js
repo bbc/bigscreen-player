@@ -1014,8 +1014,10 @@ function MSEStrategy(
     })
   }
 
-  function onPlaybackStalledCauseUnknown() {
-    DebugTool.warn("Playback stalled for an unknown reason")
+  function onPlaybackStalledCauseUnknown(event) {
+    DebugTool.warn(
+      `Playback stalled for an unknown reason, total frames: ${event.totalVideoFrames}, time: ${event.time}`
+    )
   }
 
   return {
