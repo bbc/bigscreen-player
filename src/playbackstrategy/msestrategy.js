@@ -117,7 +117,7 @@ function MSEStrategy(
     QUOTA_EXCEEDED: "quotaExceeded",
     TEXT_TRACKS_ADDED: "allTextTracksAdded",
     CURRENT_TRACK_CHANGED: "currentTrackChanged",
-    PLAYBACK_STALLED_CAUSE_UNKNOWN: "playbackStalledCauseUnknown",
+    PLAYBACK_FROZEN: "playbackStalledCauseUnknown",
   }
 
   function onLoadedMetaData() {
@@ -704,7 +704,7 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.TEXT_TRACKS_ADDED, handleTextTracks)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
     mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
-    mediaPlayer.on(DashJSEvents.PLAYBACK_STALLED_CAUSE_UNKNOWN, onPlaybackStalledCauseUnknown)
+    mediaPlayer.on(DashJSEvents.PLAYBACK_FROZEN, onPlaybackFrozen)
   }
 
   function handleTextTracks() {
@@ -893,7 +893,7 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
       mediaPlayer.off(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
-      mediaPlayer.off(DashJSEvents.PLAYBACK_STALLED_CAUSE_UNKNOWN, onPlaybackStalledCauseUnknown)
+      mediaPlayer.off(DashJSEvents.PLAYBACK_FROZEN, onPlaybackFrozen)
       mediaPlayer = undefined
     }
 
@@ -1014,8 +1014,8 @@ function MSEStrategy(
     })
   }
 
-  function onPlaybackStalledCauseUnknown(event) {
-    DebugTool.warn(`Playback stalled for an unknown reason. Total frames - ${event.totalVideoFrames}`)
+  function onPlaybackFrozen(event) {
+    DebugTool.error(`${event.cause}. Total frames - ${event.totalVideoFrames}`)
   }
 
   return {
