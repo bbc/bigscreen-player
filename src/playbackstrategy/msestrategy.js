@@ -117,7 +117,7 @@ function MSEStrategy(
     QUOTA_EXCEEDED: "quotaExceeded",
     TEXT_TRACKS_ADDED: "allTextTracksAdded",
     CURRENT_TRACK_CHANGED: "currentTrackChanged",
-    PLAYBACK_FROZEN: "playbackStalledCauseUnknown",
+    PLAYBACK_FROZEN: "playbackFrozen",
   }
 
   function onLoadedMetaData() {
