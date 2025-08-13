@@ -5,10 +5,13 @@ import LoadURL from "../utils/loadurl"
 import DebugTool from "../debugger/debugtool"
 import Plugins from "../plugins"
 
-function LegacySubtitles(mediaPlayer, autoStart, parentElement, mediaSources) {
+function LegacySubtitles(mediaPlayer, parentElement, mediaSources, { alwaysOnTop = false, autoStart = false } = {}) {
   const container = document.createElement("div")
   let subtitlesRenderer
 
+  if (alwaysOnTop) {
+    parentElement.style.zIndex = 2147483647
+  }
   if (autoStart) {
     start()
   }

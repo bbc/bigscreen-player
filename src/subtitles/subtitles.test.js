@@ -57,11 +57,17 @@ describe("Subtitles", () => {
         const mockMediaPlayer = {}
         const autoStart = true
 
-        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
-          expect(result).toBe(true)
-          expect(LegacySubtitles).toHaveBeenCalledTimes(1)
-          done()
-        })
+        Subtitles(
+          mockMediaPlayer,
+          playbackElement,
+          mockMediaSources,
+          (result) => {
+            expect(result).toBe(true)
+            expect(LegacySubtitles).toHaveBeenCalledTimes(1)
+            done()
+          },
+          { autoStart }
+        )
       })
 
       it("implementation is not available when legacy subtitles override is true, but subtitles are segmented", (done) => {
@@ -69,11 +75,17 @@ describe("Subtitles", () => {
         const mockMediaPlayer = {}
         const autoStart = true
 
-        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
-          expect(LegacySubtitles).not.toHaveBeenCalled()
-          expect(IMSCSubtitles).not.toHaveBeenCalled()
-          done()
-        })
+        Subtitles(
+          mockMediaPlayer,
+          playbackElement,
+          mockMediaSources,
+          () => {
+            expect(LegacySubtitles).not.toHaveBeenCalled()
+            expect(IMSCSubtitles).not.toHaveBeenCalled()
+            done()
+          },
+          { autoStart }
+        )
       })
     })
 
@@ -95,11 +107,17 @@ describe("Subtitles", () => {
 
         const autoStart = true
 
-        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
-          expect(result).toBe(true)
-          expect(EmbeddedSubtitles).toHaveBeenCalledTimes(1)
-          done()
-        })
+        Subtitles(
+          mockMediaPlayer,
+          playbackElement,
+          mockMediaSources,
+          (result) => {
+            expect(result).toBe(true)
+            expect(EmbeddedSubtitles).toHaveBeenCalledTimes(1)
+            done()
+          },
+          { autoStart }
+        )
       })
 
       it("implementation is available when embedded subtitles override is true, even if segmented URL is passed", (done) => {
@@ -110,12 +128,18 @@ describe("Subtitles", () => {
 
         const autoStart = true
 
-        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, () => {
-          expect(LegacySubtitles).not.toHaveBeenCalled()
-          expect(IMSCSubtitles).not.toHaveBeenCalled()
-          expect(EmbeddedSubtitles).toHaveBeenCalledTimes(1)
-          done()
-        })
+        Subtitles(
+          mockMediaPlayer,
+          playbackElement,
+          mockMediaSources,
+          () => {
+            expect(LegacySubtitles).not.toHaveBeenCalled()
+            expect(IMSCSubtitles).not.toHaveBeenCalled()
+            expect(EmbeddedSubtitles).toHaveBeenCalledTimes(1)
+            done()
+          },
+          { autoStart }
+        )
       })
     })
 
@@ -124,11 +148,17 @@ describe("Subtitles", () => {
         const mockMediaPlayer = {}
         const autoStart = true
 
-        Subtitles(mockMediaPlayer, autoStart, playbackElement, null, mockMediaSources, (result) => {
-          expect(result).toBe(true)
-          expect(IMSCSubtitles).toHaveBeenCalledTimes(1)
-          done()
-        })
+        Subtitles(
+          mockMediaPlayer,
+          playbackElement,
+          mockMediaSources,
+          (result) => {
+            expect(result).toBe(true)
+            expect(IMSCSubtitles).toHaveBeenCalledTimes(1)
+            done()
+          },
+          { autoStart }
+        )
       })
     })
   })
@@ -146,7 +176,7 @@ describe("Subtitles", () => {
 
     const mockMediaPlayer = {}
     const autoStart = true
-    const customDefaultStyle = {}
+    const defaultStyleOpts = {}
 
     beforeAll(() => {
       // Mock one of the subtitle strategies with the interface
@@ -162,17 +192,25 @@ describe("Subtitles", () => {
 
     describe("construction", () => {
       it("calls subtitles strategy with the correct arguments", (done) => {
-        Subtitles(mockMediaPlayer, autoStart, playbackElement, customDefaultStyle, mockMediaSources, (result) => {
-          expect(result).toBe(true)
-          expect(IMSCSubtitles).toHaveBeenCalledWith(
-            mockMediaPlayer,
-            autoStart,
-            playbackElement,
-            mockMediaSources,
-            customDefaultStyle
-          )
-          done()
-        })
+        Subtitles(
+          mockMediaPlayer,
+          playbackElement,
+          mockMediaSources,
+          (result) => {
+            expect(result).toBe(true)
+            expect(IMSCSubtitles).toHaveBeenCalledWith(
+              mockMediaPlayer,
+              playbackElement,
+              mockMediaSources,
+              expect.objectContaining({
+                defaultStyleOpts,
+                autoStart,
+              })
+            )
+            done()
+          },
+          { autoStart, defaultStyleOpts }
+        )
       })
     })
 
@@ -180,9 +218,7 @@ describe("Subtitles", () => {
       it("should start subtitles when enabled and available", (done) => {
         const subtitles = Subtitles(
           mockMediaPlayer,
-          autoStart,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.enable()
@@ -190,6 +226,10 @@ describe("Subtitles", () => {
 
             expect(mockSubtitlesInterface.start).toHaveBeenCalledTimes(1)
             done()
+          },
+          {
+            autoStart,
+            defaultStyleOpts,
           }
         )
       })
@@ -197,9 +237,7 @@ describe("Subtitles", () => {
       it("should not start subtitles when disabled and available", (done) => {
         const subtitles = Subtitles(
           mockMediaPlayer,
-          autoStart,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.disable()
@@ -207,6 +245,10 @@ describe("Subtitles", () => {
 
             expect(mockSubtitlesInterface.start).not.toHaveBeenCalled()
             done()
+          },
+          {
+            autoStart,
+            defaultStyleOpts,
           }
         )
       })
@@ -216,9 +258,7 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          autoStart,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.enable()
@@ -226,6 +266,10 @@ describe("Subtitles", () => {
 
             expect(mockSubtitlesInterface.start).not.toHaveBeenCalled()
             done()
+          },
+          {
+            autoStart,
+            defaultStyleOpts,
           }
         )
       })
@@ -235,9 +279,7 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          autoStart,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.disable()
@@ -245,6 +287,10 @@ describe("Subtitles", () => {
 
             expect(mockSubtitlesInterface.start).not.toHaveBeenCalled()
             done()
+          },
+          {
+            autoStart,
+            defaultStyleOpts,
           }
         )
       })
@@ -256,15 +302,17 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          autoStart,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.hide()
 
             expect(mockSubtitlesInterface.stop).toHaveBeenCalledTimes(1)
             done()
+          },
+          {
+            autoStart,
+            defaultStyleOpts,
           }
         )
       })
@@ -276,15 +324,17 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          autoStart,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.enable()
 
             expect(subtitles.enabled()).toBe(true)
             done()
+          },
+          {
+            autoStart,
+            defaultStyleOpts,
           }
         )
       })
@@ -296,9 +346,7 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          autoStart,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.disable()
@@ -306,6 +354,10 @@ describe("Subtitles", () => {
             expect(mockSubtitlesInterface.stop).not.toHaveBeenCalled()
             expect(subtitles.enabled()).toBe(false)
             done()
+          },
+          {
+            autoStart,
+            defaultStyleOpts,
           }
         )
       })
@@ -317,13 +369,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          autoStart,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.enabled()).toBe(true)
             done()
+          },
+          {
+            autoStart,
+            defaultStyleOpts,
           }
         )
       })
@@ -333,15 +387,17 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          false,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.enable()
 
             expect(subtitles.enabled()).toBe(true)
             done()
+          },
+          {
+            autoStart: false,
+            defaultStyleOpts,
           }
         )
       })
@@ -351,13 +407,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          false,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.enabled()).toBe(false)
             done()
+          },
+          {
+            autoStart: false,
+            defaultStyleOpts,
           }
         )
       })
@@ -367,15 +425,17 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.disable()
 
             expect(subtitles.enabled()).toBe(false)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -388,13 +448,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.available()).toBe(true)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -405,13 +467,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.available()).toBe(true)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -428,13 +492,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.available()).toBe(true)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -445,13 +511,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.available()).toBe(true)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -469,13 +537,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.available()).toBe(false)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -490,13 +560,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.available()).toBe(false)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -511,13 +583,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.available()).toBe(false)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -527,13 +601,15 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          false,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             expect(subtitles.available()).toBe(false)
             done()
+          },
+          {
+            autoStart: false,
+            defaultStyleOpts,
           }
         )
       })
@@ -543,15 +619,17 @@ describe("Subtitles", () => {
       it("calls through to subtitlesContainer updatePosition", (done) => {
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.setPosition("center")
 
             expect(mockSubtitlesInterface.updatePosition).toHaveBeenCalledWith("center")
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -563,15 +641,17 @@ describe("Subtitles", () => {
 
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.customise(customStyleObj)
 
             expect(mockSubtitlesInterface.customise).toHaveBeenCalledWith(customStyleObj, true)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -581,9 +661,7 @@ describe("Subtitles", () => {
       it("calls subtitlesContainer renderExample function with correct values", (done) => {
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             const exampleXMLString = "<tt></tt>"
@@ -597,6 +675,10 @@ describe("Subtitles", () => {
               safePosition
             )
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -606,15 +688,17 @@ describe("Subtitles", () => {
       it("calls subtitlesContainer clearExample function", (done) => {
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.clearExample()
 
             expect(mockSubtitlesInterface.clearExample).toHaveBeenCalledTimes(1)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })
@@ -624,15 +708,17 @@ describe("Subtitles", () => {
       it("calls through to subtitlesContainer tearDown", (done) => {
         const subtitles = Subtitles(
           mockMediaPlayer,
-          true,
           playbackElement,
-          customDefaultStyle,
           mockMediaSources,
           () => {
             subtitles.tearDown()
 
             expect(mockSubtitlesInterface.tearDown).toHaveBeenCalledTimes(1)
             done()
+          },
+          {
+            autoStart: true,
+            defaultStyleOpts,
           }
         )
       })

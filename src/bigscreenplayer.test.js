@@ -207,11 +207,12 @@ describe("Bigscreen Player", () => {
 
       expect(jest.mocked(Subtitles)).toHaveBeenCalledWith(
         expect.any(Object),
-        true,
         expect.any(HTMLDivElement),
-        undefined,
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
+        expect.objectContaining({
+          autoStart: true,
+        })
       )
     })
 
