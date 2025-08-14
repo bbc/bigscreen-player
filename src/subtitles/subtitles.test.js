@@ -192,6 +192,8 @@ describe("Subtitles", () => {
 
     describe("construction", () => {
       it("calls subtitles strategy with the correct arguments", (done) => {
+        const alwaysOnTop = true
+
         Subtitles(
           mockMediaPlayer,
           playbackElement,
@@ -205,11 +207,12 @@ describe("Subtitles", () => {
               expect.objectContaining({
                 defaultStyleOpts,
                 autoStart,
+                alwaysOnTop,
               })
             )
             done()
           },
-          { autoStart, defaultStyleOpts }
+          { autoStart, defaultStyleOpts, alwaysOnTop }
         )
       })
     })

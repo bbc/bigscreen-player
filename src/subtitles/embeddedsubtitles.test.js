@@ -252,4 +252,18 @@ describe("Embedded Subtitles", () => {
       expect(width).toBe(188)
     })
   })
+
+  describe("always on top", () => {
+    it("should set the parent element's z-index to the maximum value when alwaysOnTop is true", () => {
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement, { alwaysOnTop: true })
+
+      expect(targetElement.style.zIndex).toBe("2147483647")
+    })
+
+    it("should not set the parent element's z-index when alwaysOnTop is false", () => {
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement, { alwaysOnTop: false })
+
+      expect(targetElement.style.zIndex).toBe("")
+    })
+  })
 })

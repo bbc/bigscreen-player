@@ -1329,4 +1329,18 @@ describe("IMSC Subtitles", () => {
       })
     })
   })
+
+  describe("always on top", () => {
+    it("should set the parent element's z-index to the maximum value when alwaysOnTop is true", () => {
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { alwaysOnTop: true })
+
+      expect(targetElement.style.zIndex).toBe("2147483647")
+    })
+
+    it("should not set the parent element's z-index when alwaysOnTop is false", () => {
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { alwaysOnTop: false })
+
+      expect(targetElement.style.zIndex).toBe("")
+    })
+  })
 })

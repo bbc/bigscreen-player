@@ -32,10 +32,10 @@ describe("Legacy Subtitles", () => {
     getDuration: jest.fn(),
   }
 
-  const parentElement = document.createElement("div")
   const loadUrlStubResponseXml = "<?xml>"
   const loadUrlStubResponseText = "loadUrlStubResponseText"
 
+  let parentElement
   let legacySubtitles
   let subtitlesUrl
   let subtitlesCdn
@@ -47,6 +47,7 @@ describe("Legacy Subtitles", () => {
       callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200)
     })
 
+    parentElement = document.createElement("div")
     subtitlesUrl = "http://stub-captions.test"
     subtitlesCdn = "supplier1"
     mockMediaSources = {
@@ -203,6 +204,20 @@ describe("Legacy Subtitles", () => {
       legacySubtitles.updatePosition(TransportControlPosition.CONTROLS_WITH_INFO)
 
       expect(parentElement.firstChild.className).not.toContain("controlsVisible")
+    })
+  })
+
+  describe("always on top", () => {
+    it("should set the parent element's z-index to the maximum value when alwaysOnTop is true", () => {
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { alwaysOnTop: true })
+
+      expect(parentElement.style.zIndex).toBe("2147483647")
+    })
+
+    it("should not set the parent element's z-index when alwaysOnTop is false", () => {
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { alwaysOnTop: false })
+
+      expect(parentElement.style.zIndex).toBe("")
     })
   })
 })
