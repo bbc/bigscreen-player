@@ -7,6 +7,7 @@ import StrategyPicker from "./playbackstrategy/strategypicker"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
+import { AbortError, AbortStages } from "./utils/abortutils"
 
 jest.mock("./playbackstrategy/strategypicker")
 
@@ -73,7 +74,9 @@ const mockMediaSources = {
 
 const mockAbortSignal = {
   aborted: false,
-  throwIfAborted: jest.fn(),
+  throwIfAborted(abortStage) {
+    if (this.aborted) throw new AbortError(abortStage)
+  },
 }
 
 describe("Player Component", () => {
@@ -116,6 +119,8 @@ describe("Player Component", () => {
       },
       enableAudioDescribed: false,
     }
+
+    mockAbortSignal.aborted = false
   })
 
   describe("construction", () => {
@@ -267,6 +272,56 @@ describe("Player Component", () => {
       await jest.runOnlyPendingTimersAsync()
 
       expect(mockAudioDescribedCallback).not.toHaveBeenCalled()
+    })
+
+    it("throws an abort error if bigscreen player has been torn down", async () => {
+      mockAbortSignal.aborted = true
+
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+      const errorCallback = jest.fn()
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playbackElement = createPlaybackElement()
+
+      const _playerComponent = new PlayerComponent(
+        playbackElement,
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        errorCallback,
+        jest.fn(),
+        mockAbortSignal
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      expect(errorCallback).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "AbortError", abortStage: AbortStages.PLAYER_COMPONENT })
+      )
+    })
+
+    it("does not throw an error if bigscreen player has not been torn down", async () => {
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+      const errorCallback = jest.fn()
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playbackElement = createPlaybackElement()
+
+      const _playerComponent = new PlayerComponent(
+        playbackElement,
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        errorCallback,
+        jest.fn(),
+        mockAbortSignal
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      expect(errorCallback).not.toHaveBeenCalled()
     })
   })
 
