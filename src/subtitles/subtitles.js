@@ -36,7 +36,6 @@ function Subtitles(
       import("./embeddedsubtitles.js")
         .then(({ default: EmbeddedSubtitles }) => {
           subtitlesContainer = EmbeddedSubtitles(mediaPlayer, playbackElement, {
-            alwaysOnTop,
             autoStart,
             defaultStyleOpts,
           })

@@ -209,15 +209,25 @@ describe("Legacy Subtitles", () => {
 
   describe("always on top", () => {
     it("should set the parent element's z-index to the maximum value when alwaysOnTop is true", () => {
-      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { alwaysOnTop: true })
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, {
+        autoStart: true,
+        alwaysOnTop: true,
+      })
 
-      expect(parentElement.style.zIndex).toBe("2147483647")
+      const subtitlesElement = parentElement.firstChild
+
+      expect(subtitlesElement.style.zIndex).toBe("2147483647")
     })
 
     it("should not set the parent element's z-index when alwaysOnTop is false", () => {
-      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { alwaysOnTop: false })
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, {
+        autoStart: true,
+        alwaysOnTop: false,
+      })
 
-      expect(parentElement.style.zIndex).toBe("")
+      const subtitlesElement = parentElement.firstChild
+
+      expect(subtitlesElement.style.zIndex).toBe("")
     })
   })
 })

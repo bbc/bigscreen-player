@@ -24,9 +24,6 @@ function IMSCSubtitles(
   let currentSubtitlesElement
   let updateInterval
 
-  if (alwaysOnTop) {
-    parentElement.style.zIndex = 2147483647
-  }
   if (autoStart) start()
 
   function hasOffset() {
@@ -251,6 +248,9 @@ function IMSCSubtitles(
     currentSubtitlesElement = document.createElement("div")
     currentSubtitlesElement.id = "bsp_subtitles"
     currentSubtitlesElement.style.position = "absolute"
+
+    if (alwaysOnTop) currentSubtitlesElement.style.zIndex = 2147483647
+
     parentElement.appendChild(currentSubtitlesElement)
 
     renderSubtitle(
@@ -288,6 +288,9 @@ function IMSCSubtitles(
     exampleSubtitlesElement.style.right = `${rightPixels}px`
     exampleSubtitlesElement.style.bottom = `${bottomPixels}px`
     exampleSubtitlesElement.style.left = `${leftPixels}px`
+
+    if (alwaysOnTop) exampleSubtitlesElement.style.zIndex = 2147483647
+
     parentElement.appendChild(exampleSubtitlesElement)
 
     renderSubtitle(exampleXml, 1, exampleSubtitlesElement, exampleStyle, renderHeight, renderWidth)

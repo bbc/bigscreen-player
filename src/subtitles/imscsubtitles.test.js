@@ -83,13 +83,10 @@ describe("IMSC Subtitles", () => {
     }),
   }
 
-  beforeAll(() => {
-    fromXML.mockReturnValue(mockImscDoc)
-
-    generateISD.mockReturnValue({ contents: ["mockContents"] })
-  })
-
   beforeEach(() => {
+    fromXML.mockReturnValue(mockImscDoc)
+    generateISD.mockReturnValue({ contents: ["mockContents"] })
+
     jest.useFakeTimers()
     jest.clearAllMocks()
     jest.clearAllTimers()
@@ -1331,16 +1328,34 @@ describe("IMSC Subtitles", () => {
   })
 
   describe("always on top", () => {
-    it("should set the parent element's z-index to the maximum value when alwaysOnTop is true", () => {
-      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { alwaysOnTop: true })
+    it("should set the container element's z-index to the maximum value when alwaysOnTop is true", () => {
+      captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      expect(targetElement.style.zIndex).toBe("2147483647")
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+        autoStart: true,
+        alwaysOnTop: true,
+      })
+
+      setTime(1.5)
+
+      const container = document.querySelector("#bsp_subtitles")
+
+      expect(container.style.zIndex).toBe("2147483647")
     })
 
-    it("should not set the parent element's z-index when alwaysOnTop is false", () => {
-      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { alwaysOnTop: false })
+    it("should not set the container element's z-index when alwaysOnTop is false", () => {
+      captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      expect(targetElement.style.zIndex).toBe("")
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+        autoStart: true,
+        alwaysOnTop: false,
+      })
+
+      setTime(1.5)
+
+      const container = document.querySelector("#bsp_subtitles")
+
+      expect(container.style.zIndex).toBe("")
     })
   })
 })

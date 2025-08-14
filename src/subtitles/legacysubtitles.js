@@ -9,9 +9,6 @@ function LegacySubtitles(mediaPlayer, parentElement, mediaSources, { alwaysOnTop
   const container = document.createElement("div")
   let subtitlesRenderer
 
-  if (alwaysOnTop) {
-    parentElement.style.zIndex = 2147483647
-  }
   if (autoStart) {
     start()
   }
@@ -74,6 +71,8 @@ function LegacySubtitles(mediaPlayer, parentElement, mediaSources, { alwaysOnTop
       container.style.paddingLeft = "32px"
       container.style.paddingBottom = "40px"
     }
+
+    if (alwaysOnTop) container.style.zIndex = 2147483647
 
     // TODO: We don't need this extra Div really... can we get rid of render() and use the passed in container?
     subtitlesRenderer = Renderer("playerCaptions", xml, mediaPlayer)
