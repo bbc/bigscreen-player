@@ -1,6 +1,6 @@
 import { AbortStages, AbortSignal, AbortError } from "./abortutils"
 
-class NoErrorThrownError extends Error {}
+import getError from "../testutils/geterror"
 
 describe("AbortError", () => {
   it("should set name, message, and abortStage correctly with custom message", () => {
@@ -29,16 +29,6 @@ describe("AbortSignal", () => {
   })
 
   it("should throw AbortError if aborted", async () => {
-    const getError = async <TError>(call: () => unknown): Promise<TError> => {
-      try {
-        await call()
-
-        throw new NoErrorThrownError()
-      } catch (error: unknown) {
-        return error as TError
-      }
-    }
-
     signal.abort()
 
     const error = await getError(() => signal.throwIfAborted(AbortStages.PLAYER_COMPONENT))
