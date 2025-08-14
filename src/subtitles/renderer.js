@@ -3,15 +3,13 @@ import Transformer from "./transformer"
 import Plugins from "../plugins"
 
 function Renderer(id, captionsXML, mediaPlayer) {
-  let transformedSubtitles
+  const outputElement = document.createElement("div")
+  const transformedSubtitles = Transformer().transformXML(captionsXML)
+
   let liveItems = []
   let interval = 0
-  let outputElement
 
-  outputElement = document.createElement("div")
   outputElement.id = id
-
-  transformedSubtitles = Transformer().transformXML(captionsXML)
 
   start()
 
@@ -49,8 +47,8 @@ function Renderer(id, captionsXML, mediaPlayer) {
       updateCaptions(time)
 
       confirmCaptionsRendered()
-    } catch (e) {
-      DebugTool.info("Exception while rendering subtitles: " + e)
+    } catch (error) {
+      DebugTool.info(`Exception while rendering subtitles: ${error}`)
       Plugins.interface.onSubtitlesRenderError()
     }
   }
@@ -67,28 +65,27 @@ function Renderer(id, captionsXML, mediaPlayer) {
   }
 
   function cleanOldCaptions(time) {
-    const live = liveItems
-    for (let i = live.length - 1; i >= 0; i--) {
-      if (live[i].removeFromDomIfExpired(time)) {
-        live.splice(i, 1)
+    for (let idx = liveItems.length - 1; idx >= 0; idx--) {
+      if (liveItems[idx].removeFromDomIfExpired(time)) {
+        liveItems.splice(idx, 1)
       }
     }
   }
 
   function addNewCaptions(time) {
-    const live = liveItems
     const fresh = transformedSubtitles.subtitlesForTime(time)
-    liveItems = live.concat(fresh)
-    for (let i = 0, j = fresh.length; i < j; i++) {
+    liveItems = [...liveItems, ...fresh]
+
+    for (let idx = 0; idx < fresh.length; idx++) {
       // TODO: Probably start adding to the DOM here rather than calling through.
-      fresh[i].addToDom(outputElement)
+      fresh[idx].addToDom(outputElement)
     }
   }
 
   return {
-    render: render,
-    start: start,
-    stop: stop,
+    render,
+    start,
+    stop,
   }
 }
 

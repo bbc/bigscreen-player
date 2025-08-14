@@ -9,7 +9,12 @@ import findSegmentTemplate from "../utils/findtemplate"
 const SEGMENTS_BUFFER_SIZE = 3
 const LOAD_ERROR_COUNT_MAX = 3
 
-function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defaultStyleOpts) {
+function IMSCSubtitles(
+  mediaPlayer,
+  parentElement,
+  mediaSources,
+  { alwaysOnTop = false, autoStart = false, defaultStyleOpts = {} } = {}
+) {
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
   let currentSegmentRendered = {}
   let loadErrorCount = 0
@@ -19,9 +24,7 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
   let currentSubtitlesElement
   let updateInterval
 
-  if (autoStart) {
-    start()
-  }
+  if (autoStart) start()
 
   function hasOffset() {
     const { presentationTimeOffsetInMilliseconds } = mediaSources.time()
@@ -176,7 +179,9 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
 
   // Opts: { backgroundColour: string (css colour, hex), fontFamily: string , size: number, lineHeight: number }
   function transformStyleOptions(opts) {
-    if (opts === undefined) return
+    if (opts === undefined || Object.keys(opts).length === 0) {
+      return {}
+    }
 
     const customStyles = {}
 
@@ -243,6 +248,9 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     currentSubtitlesElement = document.createElement("div")
     currentSubtitlesElement.id = "bsp_subtitles"
     currentSubtitlesElement.style.position = "absolute"
+
+    if (alwaysOnTop) currentSubtitlesElement.style.zIndex = 2147483647
+
     parentElement.appendChild(currentSubtitlesElement)
 
     renderSubtitle(
@@ -280,6 +288,9 @@ function IMSCSubtitles(mediaPlayer, autoStart, parentElement, mediaSources, defa
     exampleSubtitlesElement.style.right = `${rightPixels}px`
     exampleSubtitlesElement.style.bottom = `${bottomPixels}px`
     exampleSubtitlesElement.style.left = `${leftPixels}px`
+
+    if (alwaysOnTop) exampleSubtitlesElement.style.zIndex = 2147483647
+
     parentElement.appendChild(exampleSubtitlesElement)
 
     renderSubtitle(exampleXml, 1, exampleSubtitlesElement, exampleStyle, renderHeight, renderWidth)
