@@ -21,6 +21,8 @@ The full interface is as follows:
 - `onSubtitlesRenderError`
 - `onSubtitlesDynamicLoadError`
 - `onFragmentContentLengthMismatch`
+- `onPlaybackRateChanged`
+- `onPlaybackFrozen`
 
 An example plugin may look like:
 
