@@ -194,7 +194,8 @@ describe("Bigscreen Player", () => {
         expect.any(Object),
         expect.any(Function),
         expect.any(Function),
-        expect.any(Function)
+        expect.any(Function),
+        expect.objectContaining({ aborted: false })
       )
     })
 
@@ -234,7 +235,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -253,7 +255,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -273,7 +276,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -297,7 +301,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -321,7 +326,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -346,7 +352,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
     })
