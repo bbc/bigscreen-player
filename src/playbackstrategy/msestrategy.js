@@ -483,8 +483,7 @@ function MSEStrategy(
       DebugTool.staticMetric("frames-dropped", event.value.droppedFrames)
     }
 
-    const playbackQuality =
-      "getVideoPlaybackQuality" in playbackElement ? playbackElement?.getVideoPlaybackQuality() : {}
+    const playbackQuality = "getVideoPlaybackQuality" in mediaElement ? mediaElement?.getVideoPlaybackQuality() : {}
     if (playbackQuality.totalVideoFrames) {
       DebugTool.staticMetric("total-frames", playbackQuality?.totalVideoFrames)
     }
