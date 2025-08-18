@@ -491,7 +491,7 @@ function MSEStrategy(
     }
 
     //DEBUGGING
-    const isWebKit = !!("webkitDroppedFrameCount" in mediaElement && "webkitDecodedFrameCount" in mediaElement)
+    const isWebKit = "webkitDroppedFrameCount" in mediaElement && "webkitDecodedFrameCount" in mediaElement
     if (isWebKit) {
       DebugTool.staticMetric(
         "total-frames-webkit",
