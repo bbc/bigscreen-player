@@ -483,8 +483,8 @@ function MSEStrategy(
       DebugTool.staticMetric("frames-dropped", event.value.droppedFrames)
     }
 
-    const result = mediaPlayer.getPlaybackQuality()
-    DebugTool.staticMetric("total-frames-dashjs", result?.totalVideoFrames)
+    const result = playbackElement.getVideoPlaybackQuality()
+    DebugTool.staticMetric("total-frames", result?.totalVideoFrames)
 
     if (event.mediaType === mediaKind && event.metric === "BufferLevel") {
       dashMetrics = mediaPlayer.getDashMetrics()
