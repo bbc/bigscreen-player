@@ -1016,7 +1016,7 @@ function MSEStrategy(
 
   function onPlaybackFrozen(event) {
     Plugins.interface.onPlaybackFrozen(event)
-    DebugTool.error(`${event.cause}. Total frames - ${event.totalVideoFrames}`)
+    DebugTool.info(`${event.cause}. Total frames - ${event.totalVideoFrames}`)
   }
 
   return {
