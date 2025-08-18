@@ -487,7 +487,7 @@ function MSEStrategy(
     const playbackQualityChrome =
       "getVideoPlaybackQuality" in mediaElement ? mediaElement?.getVideoPlaybackQuality() : {}
     if (playbackQualityChrome.totalVideoFrames) {
-      DebugTool.staticMetric("total-frames-chrome", playbackQuality?.totalVideoFrames)
+      DebugTool.staticMetric("total-frames-chrome", playbackQualityChrome?.totalVideoFrames)
     }
 
     //DEBUGGING
