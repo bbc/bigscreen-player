@@ -491,7 +491,7 @@ function MSEStrategy(
     }
 
     //DEBUGGING
-    playbackQualityWebkit =
+    const playbackQualityWebkit =
       "webkitDroppedFrameCount" in mediaElement && "webkitDecodedFrameCount" in mediaElement
         ? mediaElement.webkitDroppedFrameCount + mediaElement.webkitDecodedFrameCount
         : null
