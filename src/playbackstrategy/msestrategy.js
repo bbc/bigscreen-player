@@ -491,12 +491,14 @@ function MSEStrategy(
     }
 
     //DEBUGGING
-    const playbackQualityWebkit =
-      "webkitDroppedFrameCount" in mediaElement && "webkitDecodedFrameCount" in mediaElement
-        ? mediaElement.webkitDroppedFrameCount + mediaElement.webkitDecodedFrameCount
-        : null
-    if (playbackQualityWebkit) {
-      DebugTool.staticMetric("total-frames-webkit", playbackQualityWebkit)
+    const isWebKit = !!("webkitDroppedFrameCount" in mediaElement && "webkitDecodedFrameCount" in mediaElement)
+    if (isWebKit) {
+      DebugTool.staticMetric(
+        "total-frames-webkit",
+        mediaElement.webkitDroppedFrameCount + mediaElement.webkitDecodedFrameCount
+      )
+      DebugTool.staticMetric("dropped-frames-webkit", mediaElement.webkitDroppedFrameCount)
+      DebugTool.staticMetric("decoded-frames-webkit", mediaElement.webkitDecodedFrameCount)
     }
 
     if (event.mediaType === mediaKind && event.metric === "BufferLevel") {
