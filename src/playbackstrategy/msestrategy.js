@@ -492,8 +492,8 @@ function MSEStrategy(
 
     //DEBUGGING
     playbackQualityWebkit =
-      "webkitDroppedFrameCount" in element && "webkitDecodedFrameCount" in element
-        ? element.webkitDroppedFrameCount + element.webkitDecodedFrameCount
+      "webkitDroppedFrameCount" in mediaElement && "webkitDecodedFrameCount" in mediaElement
+        ? mediaElement.webkitDroppedFrameCount + mediaElement.webkitDecodedFrameCount
         : null
     if (playbackQualityWebkit) {
       DebugTool.staticMetric("total-frames-webkit", playbackQualityWebkit)
