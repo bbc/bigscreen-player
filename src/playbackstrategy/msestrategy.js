@@ -483,24 +483,6 @@ function MSEStrategy(
       DebugTool.staticMetric("frames-dropped", event.value.droppedFrames)
     }
 
-    //DEBUGGING
-    const playbackQualityChrome =
-      "getVideoPlaybackQuality" in mediaElement ? mediaElement?.getVideoPlaybackQuality() : {}
-    if (playbackQualityChrome.totalVideoFrames) {
-      DebugTool.staticMetric("total-frames-chrome", playbackQualityChrome?.totalVideoFrames)
-    }
-
-    //DEBUGGING
-    const isWebKit = "webkitDroppedFrameCount" in mediaElement && "webkitDecodedFrameCount" in mediaElement
-    if (isWebKit) {
-      DebugTool.staticMetric(
-        "total-frames-webkit",
-        mediaElement.webkitDroppedFrameCount + mediaElement.webkitDecodedFrameCount
-      )
-      DebugTool.staticMetric("dropped-frames-webkit", mediaElement.webkitDroppedFrameCount)
-      DebugTool.staticMetric("decoded-frames-webkit", mediaElement.webkitDecodedFrameCount)
-    }
-
     if (event.mediaType === mediaKind && event.metric === "BufferLevel") {
       dashMetrics = mediaPlayer.getDashMetrics()
 
