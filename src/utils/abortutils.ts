@@ -5,12 +5,9 @@ export const AbortStages = {
 }
 
 export class AbortError extends Error {
-  abortStage: string
-
   constructor(abortStage: string, message?: string) {
     super(message ?? `BSP aborted at ${abortStage}`)
     this.name = "AbortError"
-    this.abortStage = abortStage
   }
 }
 

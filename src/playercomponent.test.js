@@ -297,7 +297,10 @@ describe("Player Component", () => {
       await jest.runOnlyPendingTimersAsync()
 
       expect(errorCallback).toHaveBeenCalledWith(
-        expect.objectContaining({ name: "AbortError", abortStage: AbortStages.PLAYER_COMPONENT })
+        expect.objectContaining({
+          name: "AbortError",
+          message: `BSP aborted at ${AbortStages.PLAYER_COMPONENT}`,
+        })
       )
     })
 

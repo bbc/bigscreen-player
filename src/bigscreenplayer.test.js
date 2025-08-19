@@ -365,7 +365,7 @@ describe("Bigscreen Player", () => {
         const error = await getError(() => asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData))
 
         expect(error).toHaveProperty("name", "AbortError")
-        expect(error).toHaveProperty("abortStage", AbortStages.DATA_LOADED)
+        expect(error).toHaveProperty("message", `BSP aborted at ${AbortStages.DATA_LOADED}`)
       })
 
       it("does not abort if bigscreen player has not been torn down", async () => {

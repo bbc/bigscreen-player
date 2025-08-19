@@ -8,7 +8,6 @@ describe("AbortError", () => {
     expect(err).toBeInstanceOf(Error)
     expect(err.name).toBe("AbortError")
     expect(err.message).toBe("Something failed")
-    expect(err.abortStage).toBe(AbortStages.STRATEGY)
   })
 
   it("should default message if not provided", () => {
@@ -34,7 +33,6 @@ describe("AbortSignal", () => {
     const error = await getError(() => signal.throwIfAborted(AbortStages.PLAYER_COMPONENT))
 
     expect(error).toBeInstanceOf(AbortError)
-    expect(error).toHaveProperty("abortStage", AbortStages.PLAYER_COMPONENT)
     expect(error).toHaveProperty("message", `BSP aborted at ${AbortStages.PLAYER_COMPONENT}`)
   })
 
