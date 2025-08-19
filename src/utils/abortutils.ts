@@ -1,12 +1,8 @@
-export const AbortStages = {
-  DATA_LOADED: "bigscreen-player-data-loaded",
-  PLAYER_COMPONENT: "bigscreen-player-player-component",
-  STRATEGY: "bigscreen-player-strategy",
-}
+import { AbortStages } from "../models/abortstages"
 
 export class AbortError extends Error {
-  constructor(abortStage: string, message?: string) {
-    super(message ?? `BSP aborted at ${abortStage}`)
+  constructor(abortStage: AbortStages) {
+    super(`bigscreen-player aborted at ${abortStage}`)
     this.name = "AbortError"
   }
 }
@@ -18,7 +14,7 @@ export class AbortSignal {
     this.aborted = false
   }
 
-  throwIfAborted(abortStage: string) {
+  throwIfAborted(abortStage: AbortStages) {
     if (!this.aborted) return
 
     throw new AbortError(abortStage)

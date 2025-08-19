@@ -12,7 +12,7 @@ import MediaState from "./models/mediastate"
 import PauseTriggers from "./models/pausetriggers"
 import { Timeline } from "./models/timeline"
 import getError, { NoErrorThrownError } from "./testutils/geterror"
-import { AbortStages } from "./utils/abortutils"
+import { AbortStages } from "./models/abortstages"
 
 let bigscreenPlayer
 let bigscreenPlayerData
@@ -365,7 +365,7 @@ describe("Bigscreen Player", () => {
         const error = await getError(() => asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData))
 
         expect(error).toHaveProperty("name", "AbortError")
-        expect(error).toHaveProperty("message", `BSP aborted at ${AbortStages.DATA_LOADED}`)
+        expect(error).toHaveProperty("message", `bigscreen-player aborted at ${AbortStages.DATA_LOADED}`)
       })
 
       it("does not abort if bigscreen player has not been torn down", async () => {

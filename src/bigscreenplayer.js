@@ -22,7 +22,8 @@ import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
 import { ManifestType } from "./models/manifesttypes"
 import { Timeline } from "./models/timeline"
-import { AbortSignal, AbortStages } from "./utils/abortutils"
+import { AbortSignal } from "./utils/abortutils"
+import { AbortStages } from "./models/abortstages"
 
 /**
  * @import {

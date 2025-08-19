@@ -7,7 +7,8 @@ import StrategyPicker from "./playbackstrategy/strategypicker"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
-import { AbortError, AbortStages } from "./utils/abortutils"
+import { AbortError } from "./utils/abortutils"
+import { AbortStages } from "./models/abortstages"
 
 jest.mock("./playbackstrategy/strategypicker")
 
@@ -299,7 +300,7 @@ describe("Player Component", () => {
       expect(errorCallback).toHaveBeenCalledWith(
         expect.objectContaining({
           name: "AbortError",
-          message: `BSP aborted at ${AbortStages.PLAYER_COMPONENT}`,
+          message: `bigscreen-player aborted at ${AbortStages.PLAYER_COMPONENT}`,
         })
       )
     })

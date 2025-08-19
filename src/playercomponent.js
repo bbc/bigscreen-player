@@ -9,7 +9,7 @@ import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
-import { AbortStages } from "./utils/abortutils"
+import { AbortStages } from "./models/abortstages"
 
 /**
  * @import { InitData } from './types.d.ts'

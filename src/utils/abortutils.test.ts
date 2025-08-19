@@ -1,18 +1,14 @@
-import { AbortStages, AbortSignal, AbortError } from "./abortutils"
+import { AbortSignal, AbortError } from "./abortutils"
+import { AbortStages } from "../models/abortstages"
 
 import getError from "../testutils/geterror"
 
 describe("AbortError", () => {
-  it("should set name, message, and abortStage correctly with custom message", () => {
-    const err = new AbortError(AbortStages.STRATEGY, "Something failed")
+  it("should set name and message correctly", () => {
+    const err = new AbortError(AbortStages.STRATEGY)
     expect(err).toBeInstanceOf(Error)
     expect(err.name).toBe("AbortError")
-    expect(err.message).toBe("Something failed")
-  })
-
-  it("should default message if not provided", () => {
-    const err = new AbortError(AbortStages.DATA_LOADED)
-    expect(err.message).toBe(`BSP aborted at ${AbortStages.DATA_LOADED}`)
+    expect(err.message).toBe(`bigscreen-player aborted at ${AbortStages.STRATEGY}`)
   })
 })
 
@@ -33,7 +29,7 @@ describe("AbortSignal", () => {
     const error = await getError(() => signal.throwIfAborted(AbortStages.PLAYER_COMPONENT))
 
     expect(error).toBeInstanceOf(AbortError)
-    expect(error).toHaveProperty("message", `BSP aborted at ${AbortStages.PLAYER_COMPONENT}`)
+    expect(error).toHaveProperty("message", `bigscreen-player aborted at ${AbortStages.PLAYER_COMPONENT}`)
   })
 
   it("should set aborted flag to true when abort() is called", () => {
