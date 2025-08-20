@@ -56,6 +56,7 @@ export type MediaDescriptor = {
 export type InitData = {
   media: MediaDescriptor
   enableSubtitles?: boolean
+  subtitlesAlwaysOnTop?: boolean
   enableAudioDescribed?: boolean
   initialPlaybackTime?: number | PlaybackTime
 }

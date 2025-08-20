@@ -72,9 +72,7 @@ describe("Embedded Subtitles", () => {
 
   describe("construction", () => {
     it("returns the correct interface", () => {
-      const autoStart = false
-
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement, null, {})
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement)
 
       expect(subtitles).toEqual(
         expect.objectContaining({
@@ -91,7 +89,10 @@ describe("Embedded Subtitles", () => {
     it("triggers the MSE player to enable subtitles immediately when autoplay is true", () => {
       const autoStart = true
 
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement, null, {})
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement, {
+        autoStart,
+        defaultStyleOpts: {},
+      })
 
       progressTime(1.5)
       expect(mockMediaPlayer.setSubtitles).toHaveBeenCalledTimes(1)
@@ -100,7 +101,7 @@ describe("Embedded Subtitles", () => {
     it("does not trigger the MSE player to enable subtitles immediately when autoplay is false", () => {
       const autoStart = false
 
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, autoStart, targetElement, null, {})
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement, { autoStart })
 
       progressTime(1.5)
       expect(mockMediaPlayer.setSubtitles).toHaveBeenCalledTimes(0)
@@ -111,9 +112,11 @@ describe("Embedded Subtitles", () => {
     it("overrides the subtitles styling metadata with supplied defaults when rendering", () => {
       const expectedStyles = { spanBackgroundColorAdjust: { transparent: "black" }, fontFamily: "Arial" }
 
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, {
-        backgroundColour: "black",
-        fontFamily: "Arial",
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement, {
+        defaultStyleOpts: {
+          backgroundColour: "black",
+          fontFamily: "Arial",
+        },
       })
 
       subtitles.start()
@@ -124,7 +127,7 @@ describe("Embedded Subtitles", () => {
     })
 
     it("overrides the subtitles styling metadata with supplied custom styles when rendering", () => {
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, {})
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement)
 
       const styleOpts = { size: 0.7, lineHeight: 0.9 }
       const expectedOpts = { sizeAdjust: 0.7, lineHeightAdjust: 0.9 }
@@ -147,7 +150,7 @@ describe("Embedded Subtitles", () => {
         lineHeightAdjust: 0.9,
       }
 
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, defaultStyleOpts)
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement, { defaultStyleOpts })
 
       mockMediaPlayer.getCurrentTime.mockReturnValueOnce(1)
 
@@ -161,7 +164,7 @@ describe("Embedded Subtitles", () => {
       const defaultStyleOpts = { backgroundColour: "black", fontFamily: "Arial" }
       const customStyleOpts = { size: 0.7, lineHeight: 0.9 }
 
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, defaultStyleOpts)
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement, { defaultStyleOpts })
 
       mockMediaPlayer.getCurrentTime.mockReturnValueOnce(1)
 
@@ -179,7 +182,7 @@ describe("Embedded Subtitles", () => {
 
   describe("example rendering", () => {
     it("should call fromXML, generate and render when renderExample is called", () => {
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, {})
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement)
 
       subtitles.renderExample("", {}, {})
 
@@ -189,7 +192,7 @@ describe("Embedded Subtitles", () => {
     })
 
     it("should call renderHTML with a preview element with the correct structure when no position info", () => {
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, {})
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement)
 
       let exampleSubsElement = null
       let height = null
@@ -215,7 +218,7 @@ describe("Embedded Subtitles", () => {
     })
 
     it("should call renderHTML with a preview element with the correct structure when there is position info", () => {
-      subtitles = EmbeddedSubtitles(mockMediaPlayer, false, targetElement, null, {})
+      subtitles = EmbeddedSubtitles(mockMediaPlayer, targetElement)
 
       let exampleSubsElement = null
       let height = null

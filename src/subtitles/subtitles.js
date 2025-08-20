@@ -1,7 +1,13 @@
 import Plugins from "../plugins"
 import findSegmentTemplate from "../utils/findtemplate"
 
-function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
+function Subtitles(
+  mediaPlayer,
+  playbackElement,
+  mediaSources,
+  callback,
+  { alwaysOnTop, autoStart, defaultStyleOpts } = {}
+) {
   const useLegacySubs = window.bigscreenPlayer?.overrides?.legacySubtitles ?? false
   const embeddedSubs = window.bigscreenPlayer?.overrides?.embeddedSubtitles ?? false
 
@@ -15,7 +21,12 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
     if (useLegacySubs) {
       import("./legacysubtitles.js")
         .then(({ default: LegacySubtitles }) => {
-          subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+          subtitlesContainer = LegacySubtitles(mediaPlayer, playbackElement, mediaSources, {
+            alwaysOnTop,
+            autoStart,
+            defaultStyleOpts,
+          })
+
           callback(subtitlesEnabled)
         })
         .catch(() => {
@@ -24,13 +35,11 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
     } else if (embeddedSubs) {
       import("./embeddedsubtitles.js")
         .then(({ default: EmbeddedSubtitles }) => {
-          subtitlesContainer = EmbeddedSubtitles(
-            mediaPlayer,
+          subtitlesContainer = EmbeddedSubtitles(mediaPlayer, playbackElement, {
             autoStart,
-            playbackElement,
-            mediaSources,
-            defaultStyleOpts
-          )
+            defaultStyleOpts,
+          })
+
           callback(subtitlesEnabled)
         })
         .catch(() => {
@@ -39,7 +48,12 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
     } else {
       import("./imscsubtitles.js")
         .then(({ default: IMSCSubtitles }) => {
-          subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+          subtitlesContainer = IMSCSubtitles(mediaPlayer, playbackElement, mediaSources, {
+            alwaysOnTop,
+            autoStart,
+            defaultStyleOpts,
+          })
+
           callback(subtitlesEnabled)
         })
         .catch(() => {
