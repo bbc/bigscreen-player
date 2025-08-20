@@ -1,5 +1,5 @@
-const AUDIO = "audio" as const
-const VIDEO = "video" as const
+const AUDIO = "audio"
+const VIDEO = "video"
 
 export const MediaKinds = { AUDIO, VIDEO } as const
 
