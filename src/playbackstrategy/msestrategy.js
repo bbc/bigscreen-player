@@ -479,11 +479,10 @@ function MSEStrategy(
   }
 
   function onMetricAdded(event) {
-    //TEMP CHROME FRAMES DEBUGGING
-    const playbackQualityChrome =
+    const videoPlaybackQuality =
       "getVideoPlaybackQuality" in mediaElement ? mediaElement?.getVideoPlaybackQuality() : {}
-    if (playbackQualityChrome.totalVideoFrames) {
-      DebugTool.staticMetric("total-frames-chrome", playbackQualityChrome?.totalVideoFrames)
+    if (videoPlaybackQuality.totalVideoFrames) {
+      DebugTool.staticMetric("frames-total", videoPlaybackQuality?.totalVideoFrames)
     }
 
     //TEMP WEBKIT FRAMES DEBUGGING
