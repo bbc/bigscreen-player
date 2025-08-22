@@ -479,10 +479,9 @@ function MSEStrategy(
   }
 
   function onMetricAdded(event) {
-    const videoPlaybackQuality =
-      "getVideoPlaybackQuality" in mediaElement ? mediaElement?.getVideoPlaybackQuality() : {}
-    if (videoPlaybackQuality.totalVideoFrames) {
-      DebugTool.staticMetric("frames-total", videoPlaybackQuality?.totalVideoFrames)
+    const totalVideoFrames = (mediaElement.getVideoPlaybackQuality ?? (() => ({})))().totalVideoFrames
+    if (totalVideoFrames) {
+      DebugTool.staticMetric("frames-total", totalVideoFrames)
     }
 
     if (event.mediaType === "video" && event.metric === "DroppedFrames") {
