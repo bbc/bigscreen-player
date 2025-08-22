@@ -485,17 +485,6 @@ function MSEStrategy(
       DebugTool.staticMetric("frames-total", videoPlaybackQuality?.totalVideoFrames)
     }
 
-    //TEMP WEBKIT FRAMES DEBUGGING
-    const isWebKit = "webkitDroppedFrameCount" in mediaElement && "webkitDecodedFrameCount" in mediaElement
-    if (isWebKit) {
-      DebugTool.staticMetric(
-        "total-frames-webkit",
-        mediaElement.webkitDroppedFrameCount + mediaElement.webkitDecodedFrameCount
-      )
-      DebugTool.staticMetric("dropped-frames-webkit", mediaElement.webkitDroppedFrameCount)
-      DebugTool.staticMetric("decoded-frames-webkit", mediaElement.webkitDecodedFrameCount)
-    }
-
     if (event.mediaType === "video" && event.metric === "DroppedFrames") {
       DebugTool.staticMetric("frames-dropped", event.value.droppedFrames)
     }
