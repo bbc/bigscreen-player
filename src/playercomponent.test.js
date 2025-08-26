@@ -149,7 +149,6 @@ describe("Player Component", () => {
         mockMediaSources,
         MediaKinds.VIDEO,
         playbackElement,
-        mockAbortSignal,
         undefined,
         undefined,
         { callback: audioDescribedCallback, enable: false }
