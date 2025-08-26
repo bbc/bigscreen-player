@@ -64,7 +64,7 @@
     "typescript-eslint": "^7.2.0"
   },
   "dependencies": {
-    "dashjs": "github:bbc/dash.js#smp-v4.7.3-12",
+    "dashjs": "github:bbc/dash.js#video-frames-not-advancing-ignore-webkit",
     "smp-imsc": "github:bbc/imscJS#v1.0.3"
   },
   "repository": {
