@@ -65,7 +65,6 @@ function PlayerComponent(
         mediaSources,
         mediaKind,
         playbackElement,
-        abortSignal,
         bigscreenPlayerData.media.isUHD,
         bigscreenPlayerData.media.playerSettings,
         {
