@@ -879,6 +879,14 @@ function Html5() {
       return undefined
     },
 
+    setMuted: (mute) => {
+      mediaElement.muted = mute
+    },
+
+    isMuted: () => {
+      return mediaElement.muted
+    },
+
     getState: () => state,
     getPlayerElement: () => mediaElement,
     getSource: getSource,
