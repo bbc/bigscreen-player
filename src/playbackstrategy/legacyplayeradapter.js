@@ -24,6 +24,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
   let eventCallbacks = []
   let errorCallback
   let timeUpdateCallback
+  let mutedCallback
   let currentTime
   let isPaused
   let hasStartTime
@@ -234,6 +235,9 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
+    addMutedCallback: (thisArg, newMutedCallback) => {
+      mutedCallback = (muted) => newMutedCallback.call(thisArg, muted)
+    },
     load: (mimeType, presentationTimeInSeconds) => {
       setupExitSeekWorkarounds(mimeType)
       isPaused = false
@@ -320,6 +324,13 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       }
     },
     getStrategy: () => window.bigscreenPlayer?.playbackStrategy?.match(/.+(?=strategy)/g)[0].toUpperCase(),
+    setMuted: (muted) => {
+      playbackElement.muted = muted
+      if (mutedCallback) {
+        mutedCallback(playbackElement.muted)
+      }
+    },
+    isMuted: () => playbackElement.muted,
     reset,
     tearDown: () => {
       mediaPlayer.removeAllEventCallbacks()
@@ -336,6 +347,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
       eventCallbacks = []
       errorCallback = undefined
       timeUpdateCallback = undefined
+      mutedCallback = undefined
     },
   }
 }
