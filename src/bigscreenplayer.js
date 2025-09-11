@@ -39,6 +39,7 @@ function BigscreenPlayer() {
     audioDescribed: [],
     playerReady: undefined,
     playerError: undefined,
+    muted: [],
   }
 
   let mediaKind
@@ -124,9 +125,12 @@ function BigscreenPlayer() {
       playbackElement,
       { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime },
       mediaSources,
-      mediaStateUpdateCallback,
-      _callbacks.playerError,
-      callAudioDescribedCallbacks,
+      {
+        mediaStateUpdateCallback,
+        errorCallback: _callbacks.playerError,
+        callAudioDescribedCallbacks,
+        callMutedCallbacks,
+      },
       abortSignal
     )
 
@@ -263,6 +267,10 @@ function BigscreenPlayer() {
 
   function callAudioDescribedCallbacks(enabled) {
     callCallbacks(_callbacks.audioDescribed, { enabled })
+  }
+
+  function callMutedCallbacks(muted) {
+    callCallbacks(_callbacks.muted, { muted })
   }
 
   return /** @alias module:bigscreenplayer/bigscreenplayer */ {
@@ -433,6 +441,23 @@ function BigscreenPlayer() {
       const indexOf = _callbacks.audioDescribed.indexOf(callback)
       if (indexOf !== -1) {
         _callbacks.audioDescribed.splice(indexOf, 1)
+      }
+    },
+
+    registerForMutedChanges: (callback) => {
+      _callbacks.muted.push(callback)
+      return callback
+    },
+
+    /**
+     * Unregisters a previously registered callback for changes to Muted.
+     * @function
+     * @param {Function} callback
+     */
+    unregisterForMutedChanges: (callback) => {
+      const indexOf = _callbacks.muted.indexOf(callback)
+      if (indexOf !== -1) {
+        _callbacks.muted.splice(indexOf, 1)
       }
     },
 
@@ -721,7 +746,7 @@ function BigscreenPlayer() {
      * @returns {void}
      */
     setMuted: (mute) => {
-      playbackStrategy.setMute(mute)
+      playerComponent.setMuted(mute)
     },
 
     /**
@@ -729,7 +754,7 @@ function BigscreenPlayer() {
      * @return Returns whether the current media asset is muted.
      */
     isMuted() {
-      return playbackStrategy.isMuted()
+      return playerComponent.isMuted()
     },
 
     /**

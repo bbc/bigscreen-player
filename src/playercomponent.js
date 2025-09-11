@@ -35,14 +35,13 @@ import { AbortStages } from "./models/abortstages"
  * @param {(data: StateUpdateData) => void} stateUpdateCallback Callback for State Changes
  * @param {(error: any) => void} errorCallback Callback for Errors
  * @param {(enable: boolean) => void} audioDescribedCallback Callback for AD Changes
+ * TODO: Fix
  */
 function PlayerComponent(
   playbackElement,
   bigscreenPlayerData,
   mediaSources,
-  stateUpdateCallback,
-  errorCallback,
-  audioDescribedCallback,
+  { stateUpdateCallback, errorCallback, audioDescribedCallback, mutedCallback },
   abortSignal
 ) {
   let setSubtitlesState
@@ -76,6 +75,10 @@ function PlayerComponent(
       playbackStrategy.addEventCallback(this, eventCallback)
       playbackStrategy.addErrorCallback(this, onError)
       playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate)
+
+      if (mutedCallback) {
+        playbackStrategy.addMutedCallback?.(this, mutedCallback)
+      }
 
       bubbleErrorCleared()
 
