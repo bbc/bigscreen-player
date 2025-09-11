@@ -126,10 +126,10 @@ function BigscreenPlayer() {
       { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime },
       mediaSources,
       {
-        mediaStateUpdateCallback,
+        stateUpdateCallback: mediaStateUpdateCallback,
         errorCallback: _callbacks.playerError,
-        callAudioDescribedCallbacks,
-        callMutedCallbacks,
+        audioDescribedCallback: callAudioDescribedCallbacks,
+        mutedCallback: callMutedCallbacks,
       },
       abortSignal
     )
