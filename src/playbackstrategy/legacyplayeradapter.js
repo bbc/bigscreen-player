@@ -325,12 +325,12 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     },
     getStrategy: () => window.bigscreenPlayer?.playbackStrategy?.match(/.+(?=strategy)/g)[0].toUpperCase(),
     setMuted: (muted) => {
-      playbackElement.muted = muted
+      mediaPlayer.setMuted?.(muted)
       if (mutedCallback) {
-        mutedCallback(playbackElement.muted)
+        mutedCallback(mediaPlayer.isMuted?.())
       }
     },
-    isMuted: () => playbackElement.muted,
+    isMuted: () => mediaPlayer.isMuted?.(),
     reset,
     tearDown: () => {
       mediaPlayer.removeAllEventCallbacks()
