@@ -1067,6 +1067,8 @@ function MSEStrategy(
     customiseSubtitles,
     pause,
     play: () => mediaPlayer.play(),
+    setMute: (mute) => mediaPlayer.setMute(mute),
+    isMuted: () => mediaPlayer.isMuted(),
     setCurrentTime,
     setPlaybackRate: (rate) => mediaPlayer.setPlaybackRate(rate),
     getPlaybackRate: () => mediaPlayer.getPlaybackRate(),

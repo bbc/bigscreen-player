@@ -714,6 +714,25 @@ function BigscreenPlayer() {
     },
 
     /**
+     * Sets the mute state of the current media asset.
+     *
+     * @function
+     * @param {boolean} mute - If true, the media will be muted; if false, it will be unmuted.
+     * @returns {void}
+     */
+    setMuted: (mute) => {
+      playbackStrategy.setMute(mute)
+    },
+
+    /**
+     * @function
+     * @return Returns whether the current media asset is muted.
+     */
+    isMuted() {
+      return playbackStrategy.isMuted()
+    },
+
+    /**
      * Return a mock for in place testing.
      * @function
      * @param {*} opts

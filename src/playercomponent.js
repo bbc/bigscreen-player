@@ -210,6 +210,14 @@ function PlayerComponent(
     return playbackStrategy?.getPlaybackRate()
   }
 
+  function setMuted(mute) {
+    playbackStrategy?.setMute(mute)
+  }
+
+  function isMuted() {
+    return playbackStrategy?.isMuted()
+  }
+
   function transitions() {
     return playbackStrategy?.transitions
   }
@@ -481,6 +489,8 @@ function PlayerComponent(
     setSubtitles,
     setBitrateConstraint,
     getPlaybackBitrate,
+    setMuted,
+    isMuted,
   }
 }
 
