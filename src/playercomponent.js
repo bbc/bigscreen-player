@@ -214,7 +214,7 @@ function PlayerComponent(
   }
 
   function setMuted(mute) {
-    playbackStrategy?.setMute(mute)
+    playbackStrategy?.setMuted(mute)
   }
 
   function isMuted() {

@@ -1072,8 +1072,8 @@ function MSEStrategy(
     customiseSubtitles,
     pause,
     play: () => mediaPlayer.play(),
-    setMute: (mute) => {
-      mediaPlayer.setMute(mute)
+    setMuted: (mute) => {
+      mediaPlayer.setMuted(mute)
       if (mutedCallback) {
         mutedCallback(mediaPlayer.isMuted())
       }
