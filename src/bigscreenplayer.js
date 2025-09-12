@@ -745,8 +745,8 @@ function BigscreenPlayer() {
      * @param {boolean} mute - If true, the media will be muted; if false, it will be unmuted.
      * @returns {void}
      */
-    setMuted: (mute) => {
-      playerComponent.setMuted(mute)
+    setMute: (mute) => {
+      playerComponent.setMute(mute)
     },
 
     /**

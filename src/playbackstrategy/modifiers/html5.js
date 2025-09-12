@@ -879,7 +879,7 @@ function Html5() {
       return undefined
     },
 
-    setMuted: (mute) => {
+    setMute: (mute) => {
       mediaElement.muted = mute
     },
 
