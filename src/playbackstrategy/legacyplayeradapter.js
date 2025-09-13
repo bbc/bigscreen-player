@@ -325,8 +325,6 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
     },
     getStrategy: () => window.bigscreenPlayer?.playbackStrategy?.match(/.+(?=strategy)/g)[0].toUpperCase(),
     setMute: (muted) => {
-      /* eslint-disable no-console */
-      console.log(`legacy player adapter ${muted}`)
       mediaPlayer.setMute?.(muted)
       if (mutedCallback) {
         mutedCallback(mediaPlayer.isMuted?.())
