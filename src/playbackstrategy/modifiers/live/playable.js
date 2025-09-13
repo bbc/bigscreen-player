@@ -16,6 +16,8 @@ function PlayableLivePlayer(mediaPlayer) {
     getSource: () => mediaPlayer.getSource(),
     getMimeType: () => mediaPlayer.getMimeType(),
     getPlayerElement: () => mediaPlayer.getPlayerElement(),
+    setMute: (muted) => mediaPlayer.setMute?.(muted),
+    isMuted: () => mediaPlayer.isMuted?.(),
 
     addEventCallback: (thisArg, callback) => mediaPlayer.addEventCallback(thisArg, callback),
     removeEventCallback: (callback) => mediaPlayer.removeEventCallback(callback),

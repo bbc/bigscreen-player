@@ -120,6 +120,8 @@ function SeekableLivePlayer(mediaPlayer) {
     removeAllEventCallbacks,
     getPlayerElement: () => mediaPlayer.getPlayerElement(),
     getLiveSupport: () => MediaPlayerBase.LIVE_SUPPORT.SEEKABLE,
+    setMute: (muted) => mediaPlayer.setMute?.(muted),
+    isMuted: () => mediaPlayer.isMuted?.(),
   }
 }
 

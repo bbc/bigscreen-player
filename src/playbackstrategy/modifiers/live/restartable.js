@@ -33,6 +33,8 @@ function RestartableLivePlayer(mediaPlayer) {
     addEventCallback: (thisArg, callback) => mediaPlayer.addEventCallback(thisArg, callback),
     removeEventCallback: (callback) => mediaPlayer.removeEventCallback(callback),
     removeAllEventCallbacks: () => mediaPlayer.removeAllEventCallbacks(),
+    setMute: (muted) => mediaPlayer.setMute?.(muted),
+    isMuted: () => mediaPlayer.isMuted?.(),
   }
 }
 
