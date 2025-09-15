@@ -41,7 +41,7 @@ function PlayerComponent(
   playbackElement,
   bigscreenPlayerData,
   mediaSources,
-  { stateUpdateCallback, errorCallback, audioDescribedCallback, mutedCallback },
+  { stateUpdateCallback, errorCallback, audioDescribedCallback, muteCallback },
   abortSignal
 ) {
   let setSubtitlesState
@@ -76,8 +76,8 @@ function PlayerComponent(
       playbackStrategy.addErrorCallback(this, onError)
       playbackStrategy.addTimeUpdateCallback(this, onTimeUpdate)
 
-      if (mutedCallback) {
-        playbackStrategy.addMutedCallback?.(this, mutedCallback)
+      if (muteCallback) {
+        playbackStrategy.addMuteCallback?.(this, muteCallback)
       }
 
       bubbleErrorCleared()
@@ -214,8 +214,6 @@ function PlayerComponent(
   }
 
   function setMute(mute) {
-    /* eslint-disable no-console */
-    console.log("setmute")
     playbackStrategy.setMute(mute)
   }
 

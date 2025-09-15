@@ -15,6 +15,7 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   let eventCallbacks = []
   let errorCallback
   let timeUpdateCallback
+  let muteCallback
 
   let mediaElement
   let metaDataLoaded
@@ -234,6 +235,10 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
     timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
   }
 
+  function addMuteCallback(thisArg, newMuteCallback) {
+    muteCallback = () => newMuteCallback.call(thisArg)
+  }
+
   function tearDown() {
     if (mediaElement) {
       mediaElement.removeEventListener("timeupdate", onTimeUpdate)
@@ -255,6 +260,7 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
     eventCallbacks = []
     errorCallback = undefined
     timeUpdateCallback = undefined
+    muteCallback = undefined
 
     mediaElement = undefined
     metaDataLoaded = undefined
@@ -282,6 +288,9 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
     /* eslint-disable no-console */
     console.log("calling setmute")
     playbackElement.muted = muted
+    if (muteCallback) {
+      muteCallback(playbackElement.muted)
+    }
   }
 
   function isMuted() {
@@ -297,6 +306,7 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
     removeEventCallback,
     addErrorCallback,
     addTimeUpdateCallback,
+    addMuteCallback,
     load,
     getSeekableRange,
     getCurrentTime,

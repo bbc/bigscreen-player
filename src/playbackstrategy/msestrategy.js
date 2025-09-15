@@ -57,7 +57,7 @@ function MSEStrategy(
   let eventCallbacks = []
   let errorCallback
   let timeUpdateCallback
-  let mutedCallback
+  let muteCallback
 
   const seekDurationPadding = isNaN(playerSettings.streaming?.seekDurationPadding)
     ? DEFAULT_SETTINGS.seekDurationPadding
@@ -990,7 +990,7 @@ function MSEStrategy(
     eventCallbacks = []
     errorCallback = undefined
     timeUpdateCallback = undefined
-    mutedCallback = undefined
+    muteCallback = undefined
     isEnded = undefined
     dashMetrics = undefined
     playerMetadata = {
@@ -1041,8 +1041,8 @@ function MSEStrategy(
     addTimeUpdateCallback: (thisArg, newTimeUpdateCallback) => {
       timeUpdateCallback = () => newTimeUpdateCallback.call(thisArg)
     },
-    addMutedCallback: (thisArg, newMutedCallback) => {
-      mutedCallback = (muted) => newMutedCallback.call(thisArg, muted)
+    addMuteCallback: (thisArg, newmuteCallback) => {
+      muteCallback = (muted) => newmuteCallback.call(thisArg, muted)
     },
     load,
     getSeekableRange,
@@ -1074,8 +1074,8 @@ function MSEStrategy(
     play: () => mediaPlayer.play(),
     setMute: (mute) => {
       mediaPlayer.setMute(mute)
-      if (mutedCallback) {
-        mutedCallback(mediaPlayer.isMuted())
+      if (muteCallback) {
+        muteCallback(mediaPlayer.isMuted())
       }
     },
     isMuted: () => mediaPlayer.isMuted(),

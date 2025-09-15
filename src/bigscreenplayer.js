@@ -129,7 +129,7 @@ function BigscreenPlayer() {
         stateUpdateCallback: mediaStateUpdateCallback,
         errorCallback: _callbacks.playerError,
         audioDescribedCallback: callAudioDescribedCallbacks,
-        mutedCallback: callMutedCallbacks,
+        muteCallback: callMuteCallbacks,
       },
       abortSignal
     )
@@ -269,7 +269,7 @@ function BigscreenPlayer() {
     callCallbacks(_callbacks.audioDescribed, { enabled })
   }
 
-  function callMutedCallbacks(muted) {
+  function callMuteCallbacks(muted) {
     callCallbacks(_callbacks.muted, { muted })
   }
 
