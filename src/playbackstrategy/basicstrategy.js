@@ -285,16 +285,14 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   }
 
   function setMute(muted) {
-    /* eslint-disable no-console */
-    console.log("calling setmute")
-    playbackElement.muted = muted
+    mediaElement.muted = muted
     if (muteCallback) {
-      muteCallback(playbackElement.muted)
+      muteCallback(mediaElement.muted)
     }
   }
 
   function isMuted() {
-    return playbackElement.muted
+    return mediaElement.muted
   }
 
   return {
