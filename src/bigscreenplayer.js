@@ -110,7 +110,7 @@ function BigscreenPlayer() {
     }
   }
 
-  function bigscreenPlayerDataLoaded({ media, enableSubtitles, enableAudioDescribed }) {
+  function bigscreenPlayerDataLoaded({ media, enableSubtitles, enableAudioDescribed, startMuted }) {
     abortSignal.throwIfAborted(AbortStages.DATA_LOADED)
 
     const initialPresentationTime =
@@ -123,7 +123,7 @@ function BigscreenPlayer() {
 
     playerComponent = PlayerComponent(
       playbackElement,
-      { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime },
+      { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime, startMuted },
       mediaSources,
       {
         stateUpdateCallback: mediaStateUpdateCallback,
