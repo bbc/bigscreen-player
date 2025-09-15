@@ -86,6 +86,9 @@ function PlayerComponent(
 
       loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime)
 
+      /* eslint-disable no-console */
+      console.log("here", bigscreenPlayerData.startMuted)
+
       if (setSubtitlesState) playbackStrategy.setSubtitles(setSubtitlesState)
       if (bigscreenPlayerData.startMuted) playbackStrategy.setMute(true)
     })
