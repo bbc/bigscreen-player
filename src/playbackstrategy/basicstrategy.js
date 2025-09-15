@@ -279,6 +279,8 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
   }
 
   function setMute(muted) {
+    /* eslint-disable no-console */
+    console.log("calling setmute")
     playbackElement.muted = muted
   }
 

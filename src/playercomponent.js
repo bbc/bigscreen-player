@@ -214,6 +214,8 @@ function PlayerComponent(
   }
 
   function setMute(mute) {
+    /* eslint-disable no-console */
+    console.log("setmute")
     playbackStrategy.setMute(mute)
   }
 
