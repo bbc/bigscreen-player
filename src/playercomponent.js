@@ -84,10 +84,9 @@ function PlayerComponent(
 
       mediaMetaData = bigscreenPlayerData.media
 
-      loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime)
+      loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime, bigscreenPlayerData.startMuted)
 
       if (setSubtitlesState) playbackStrategy.setSubtitles(setSubtitlesState)
-      if (bigscreenPlayerData.startMuted) playbackStrategy.setMute(true)
     })
     .catch((error) => {
       errorCallback && errorCallback(error)
@@ -438,7 +437,7 @@ function PlayerComponent(
     }
   }
 
-  function loadMedia(type, presentationTimeInSeconds) {
+  function loadMedia(type, presentationTimeInSeconds, startMuted) {
     playbackStrategy?.load(type, presentationTimeInSeconds)
 
     if (mediaSources.isAudioDescribedEnabled()) {
@@ -448,6 +447,8 @@ function PlayerComponent(
       audioDescribedCallback(false)
       DebugTool.info("Source changed. Audio Described off.")
     }
+
+    if (startMuted) playbackStrategy?.setMute(true)
   }
 
   function tearDown() {
