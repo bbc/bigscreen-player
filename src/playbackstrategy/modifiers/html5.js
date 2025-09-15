@@ -880,10 +880,7 @@ function Html5() {
     },
 
     setMute: (muted) => {
-      /* eslint-disable no-console */
-      console.log(`html5 ${muted}`)
       mediaElement.muted = muted
-      mediaElement.volume = muted ? 0 : 1
     },
 
     isMuted: () => {

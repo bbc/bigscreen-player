@@ -214,11 +214,11 @@ function PlayerComponent(
   }
 
   function setMute(mute) {
-    playbackStrategy?.setMute(mute)
+    playbackStrategy.setMute(mute)
   }
 
   function isMuted() {
-    return playbackStrategy?.isMuted()
+    return playbackStrategy.isMuted()
   }
 
   function transitions() {

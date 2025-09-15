@@ -278,6 +278,14 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
     return mediaElement || undefined
   }
 
+  function setMute(muted) {
+    playbackElement.muted = muted
+  }
+
+  function isMuted() {
+    return playbackElement.muted
+  }
+
   return {
     transitions: {
       canBePaused: () => true,
@@ -301,6 +309,8 @@ function BasicStrategy(mediaSources, mediaKind, playbackElement) {
     setPlaybackRate,
     getPlaybackRate,
     getPlayerElement,
+    setMute,
+    isMuted,
   }
 }
 
