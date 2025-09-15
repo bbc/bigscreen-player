@@ -87,6 +87,7 @@ function PlayerComponent(
       loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime)
 
       if (setSubtitlesState) playbackStrategy.setSubtitles(setSubtitlesState)
+      if (bigscreenPlayerData.startMuted) playbackStrategy.setMute(true)
     })
     .catch((error) => {
       errorCallback && errorCallback(error)

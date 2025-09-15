@@ -444,7 +444,7 @@ function BigscreenPlayer() {
       }
     },
 
-    registerForMutedChanges: (callback) => {
+    registerForMuteChanges: (callback) => {
       _callbacks.muted.push(callback)
       return callback
     },
@@ -454,7 +454,7 @@ function BigscreenPlayer() {
      * @function
      * @param {Function} callback
      */
-    unregisterForMutedChanges: (callback) => {
+    unregisterForMuteChanges: (callback) => {
       const indexOf = _callbacks.muted.indexOf(callback)
       if (indexOf !== -1) {
         _callbacks.muted.splice(indexOf, 1)
