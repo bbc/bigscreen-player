@@ -117,7 +117,7 @@ function MSEStrategy(
     QUOTA_EXCEEDED: "quotaExceeded",
     TEXT_TRACKS_ADDED: "allTextTracksAdded",
     CURRENT_TRACK_CHANGED: "currentTrackChanged",
-    PLAYBACK_RATE_CHANGED: "playbackRateChanged",
+    PLAYBACK_FROZEN: "playbackFrozen",
   }
 
   function onLoadedMetaData() {
@@ -204,6 +204,7 @@ function MSEStrategy(
   }
 
   function onRateChange() {
+    Plugins.interface.onPlaybackRateChanged({ playbackRate: mediaElement.playbackRate })
     DebugTool.dynamicMetric("playback-rate", mediaElement.playbackRate)
   }
 
@@ -478,6 +479,13 @@ function MSEStrategy(
   }
 
   function onMetricAdded(event) {
+    const videoPlaybackQuality =
+      "getVideoPlaybackQuality" in mediaElement ? mediaElement?.getVideoPlaybackQuality() : {}
+
+    if (videoPlaybackQuality?.totalVideoFrames) {
+      DebugTool.staticMetric("frames-total", videoPlaybackQuality?.totalVideoFrames)
+    }
+
     if (event.mediaType === "video" && event.metric === "DroppedFrames") {
       DebugTool.staticMetric("frames-dropped", event.value.droppedFrames)
     }
@@ -703,11 +711,7 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.TEXT_TRACKS_ADDED, handleTextTracks)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
     mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
-    mediaPlayer.on(DashJSEvents.PLAYBACK_RATE_CHANGED, onPlaybackRateChanged)
-  }
-
-  function onPlaybackRateChanged(event) {
-    Plugins.interface.onPlaybackRateChanged(event)
+    mediaPlayer.on(DashJSEvents.PLAYBACK_FROZEN, onPlaybackFrozen)
   }
 
   function handleTextTracks() {
@@ -896,7 +900,7 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
       mediaPlayer.off(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
-      mediaPlayer.off(DashJSEvents.PLAYBACK_RATE_CHANGED, onPlaybackRateChanged)
+      mediaPlayer.off(DashJSEvents.PLAYBACK_FROZEN, onPlaybackFrozen)
       mediaPlayer = undefined
     }
 
@@ -1015,6 +1019,11 @@ function MSEStrategy(
         },
       },
     })
+  }
+
+  function onPlaybackFrozen(event) {
+    Plugins.interface.onPlaybackFrozen(event)
+    DebugTool.info(`${event.cause}. Total frames - ${event.totalVideoFrames}`)
   }
 
   return {

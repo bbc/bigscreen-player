@@ -51,5 +51,6 @@ export default {
     onFragmentContentLengthMismatch: (evt) => callOnAllPlugins("onFragmentContentLengthMismatch", evt),
     onQuotaExceeded: (evt) => callOnAllPlugins("onQuotaExceeded", evt),
     onPlaybackRateChanged: (evt) => callOnAllPlugins("onPlaybackRateChanged", evt),
+    onPlaybackFrozen: (evt) => callOnAllPlugins("onPlaybackFrozen", evt),
   },
 }

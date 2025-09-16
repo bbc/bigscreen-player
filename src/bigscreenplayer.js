@@ -22,6 +22,8 @@ import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
 import { ManifestType } from "./models/manifesttypes"
 import { Timeline } from "./models/timeline"
+import { AbortSignal } from "./utils/abortutils"
+import { AbortStages } from "./models/abortstages"
 
 /**
  * @import {
@@ -52,6 +54,8 @@ function BigscreenPlayer() {
   let subtitles
 
   const END_OF_STREAM_TOLERANCE = 10
+
+  const abortSignal = new AbortSignal()
 
   function mediaStateUpdateCallback(evt) {
     if (evt.timeUpdate) {
@@ -106,6 +110,8 @@ function BigscreenPlayer() {
   }
 
   function bigscreenPlayerDataLoaded({ media, enableSubtitles, subtitlesAlwaysOnTop, enableAudioDescribed }) {
+    abortSignal.throwIfAborted(AbortStages.DATA_LOADED)
+
     const initialPresentationTime =
       initialPlaybackTime == null ? undefined : convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
@@ -120,7 +126,8 @@ function BigscreenPlayer() {
       mediaSources,
       mediaStateUpdateCallback,
       _callbacks.playerError,
-      callAudioDescribedCallbacks
+      callAudioDescribedCallbacks,
+      abortSignal
     )
 
     readyHelper = ReadyHelper(
@@ -308,6 +315,8 @@ function BigscreenPlayer() {
      * @name tearDown
      */
     tearDown() {
+      abortSignal.abort()
+
       if (subtitles) {
         subtitles.tearDown()
         subtitles = undefined

@@ -12,6 +12,7 @@ import MediaState from "./models/mediastate"
 import PauseTriggers from "./models/pausetriggers"
 import { Timeline } from "./models/timeline"
 import getError, { NoErrorThrownError } from "./testutils/geterror"
+import { AbortStages } from "./models/abortstages"
 
 let bigscreenPlayer
 let bigscreenPlayerData
@@ -194,7 +195,8 @@ describe("Bigscreen Player", () => {
         expect.any(Object),
         expect.any(Function),
         expect.any(Function),
-        expect.any(Function)
+        expect.any(Function),
+        expect.objectContaining({ aborted: false })
       )
     })
 
@@ -235,7 +237,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -254,7 +257,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -274,7 +278,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -298,7 +303,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -322,7 +328,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -347,8 +354,25 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
+      })
+    })
+
+    describe("aborting during initialization", () => {
+      it("aborts if bigscreen player has been torn down", async () => {
+        bigscreenPlayer.tearDown()
+        const error = await getError(() => asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData))
+
+        expect(error).toHaveProperty("name", "AbortError")
+        expect(error).toHaveProperty("message", `bigscreen-player aborted at ${AbortStages.DATA_LOADED}`)
+      })
+
+      it("does not abort if bigscreen player has not been torn down", async () => {
+        const error = await getError(() => asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData))
+
+        expect(error).toBeInstanceOf(NoErrorThrownError)
       })
     })
   })

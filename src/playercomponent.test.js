@@ -7,6 +7,8 @@ import StrategyPicker from "./playbackstrategy/strategypicker"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import PlayerComponent from "./playercomponent"
+import { AbortError } from "./utils/abortutils"
+import { AbortStages } from "./models/abortstages"
 
 jest.mock("./playbackstrategy/strategypicker")
 
@@ -71,6 +73,13 @@ const mockMediaSources = {
   setAudioDescribed: jest.fn().mockResolvedValue(),
 }
 
+const mockAbortSignal = {
+  aborted: false,
+  throwIfAborted(abortStage) {
+    if (this.aborted) throw new AbortError(abortStage)
+  },
+}
+
 describe("Player Component", () => {
   let mockStrategy
   let bigscreenPlayerData
@@ -109,12 +118,16 @@ describe("Player Component", () => {
         type: "application/dash+xml",
         transferFormat: TransferFormat.DASH,
       },
+      enableAudioDescribed: false,
     }
+
+    mockAbortSignal.aborted = false
   })
 
   describe("construction", () => {
     it("should initialise the playback strategy selected by the strategy picker", async () => {
       const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+      const audioDescribedCallback = jest.fn()
 
       StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
 
@@ -125,7 +138,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        audioDescribedCallback,
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -136,7 +151,7 @@ describe("Player Component", () => {
         playbackElement,
         undefined,
         undefined,
-        { callback: undefined, enabled: undefined }
+        { callback: audioDescribedCallback, enable: false }
       )
       expect(mockPlaybackStrategyClass).toHaveBeenCalledTimes(1)
 
@@ -153,7 +168,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        onError
+        onError,
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -169,7 +186,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -200,7 +219,8 @@ describe("Player Component", () => {
         mockMediaSources,
         jest.fn(),
         jest.fn(),
-        mockAudioDescribedCallback
+        mockAudioDescribedCallback,
+        mockAbortSignal
       )
 
       expect(mockAudioDescribedCallback).toHaveBeenCalledWith(true)
@@ -222,7 +242,8 @@ describe("Player Component", () => {
         mockMediaSources,
         jest.fn(),
         jest.fn(),
-        mockAudioDescribedCallback
+        mockAudioDescribedCallback,
+        mockAbortSignal
       )
 
       expect(mockAudioDescribedCallback).toHaveBeenCalledWith(false)
@@ -244,12 +265,66 @@ describe("Player Component", () => {
         mockMediaSources,
         jest.fn(),
         jest.fn(),
-        mockAudioDescribedCallback
+        mockAudioDescribedCallback,
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
 
       expect(mockAudioDescribedCallback).not.toHaveBeenCalled()
+    })
+
+    it("throws an abort error if bigscreen player has been torn down", async () => {
+      mockAbortSignal.aborted = true
+
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+      const errorCallback = jest.fn()
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playbackElement = createPlaybackElement()
+
+      const _playerComponent = new PlayerComponent(
+        playbackElement,
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        errorCallback,
+        jest.fn(),
+        mockAbortSignal
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      expect(errorCallback).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "AbortError",
+          message: `bigscreen-player aborted at ${AbortStages.PLAYER_COMPONENT}`,
+        })
+      )
+    })
+
+    it("does not throw an error if bigscreen player has not been torn down", async () => {
+      const mockPlaybackStrategyClass = jest.fn().mockReturnValue(mockStrategy)
+      const errorCallback = jest.fn()
+
+      StrategyPicker.mockResolvedValueOnce(mockPlaybackStrategyClass)
+
+      const playbackElement = createPlaybackElement()
+
+      const _playerComponent = new PlayerComponent(
+        playbackElement,
+        bigscreenPlayerData,
+        mockMediaSources,
+        jest.fn(),
+        errorCallback,
+        jest.fn(),
+        mockAbortSignal
+      )
+
+      await jest.runOnlyPendingTimersAsync()
+
+      expect(errorCallback).not.toHaveBeenCalled()
     })
   })
 
@@ -262,7 +337,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -285,7 +362,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -301,7 +380,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -319,7 +400,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -340,7 +423,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -358,7 +443,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -378,7 +465,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -394,7 +483,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -411,7 +502,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -430,7 +523,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -447,7 +542,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -464,7 +561,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -481,7 +580,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -500,7 +601,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -523,7 +626,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -546,7 +651,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -567,7 +674,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -589,7 +698,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           onStateUpdate,
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -610,7 +721,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -635,7 +748,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -663,7 +778,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -688,7 +805,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -717,7 +836,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           onStateUpdate,
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -738,7 +859,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -763,7 +886,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -791,7 +916,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -816,7 +943,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -845,7 +974,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           onStateUpdate,
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -867,7 +998,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -909,7 +1042,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -936,7 +1071,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -965,7 +1102,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           onStateUpdate,
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -986,7 +1125,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -1011,7 +1152,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -1039,7 +1182,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -1064,7 +1209,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -1093,7 +1240,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           onStateUpdate,
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -1118,7 +1267,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           onStateUpdate,
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -1138,7 +1289,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -1170,7 +1323,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -1200,7 +1355,9 @@ describe("Player Component", () => {
           bigscreenPlayerData,
           mockMediaSources,
           jest.fn(),
-          jest.fn()
+          jest.fn(),
+          jest.fn(),
+          mockAbortSignal
         )
 
         await jest.runOnlyPendingTimersAsync()
@@ -1232,7 +1389,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1265,7 +1424,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1299,7 +1460,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1331,7 +1494,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1366,7 +1531,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         onStateUpdate,
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1407,7 +1574,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1429,7 +1598,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1458,7 +1629,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1490,7 +1663,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1506,7 +1681,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1526,7 +1703,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1551,7 +1730,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1578,7 +1759,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1603,7 +1786,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
 
       await jest.runOnlyPendingTimersAsync()
@@ -1621,7 +1806,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
       await jest.runOnlyPendingTimersAsync()
       playerComponent.setBitrateConstraint("video", 100, 200)
@@ -1636,7 +1823,9 @@ describe("Player Component", () => {
         bigscreenPlayerData,
         mockMediaSources,
         jest.fn(),
-        jest.fn()
+        jest.fn(),
+        jest.fn(),
+        mockAbortSignal
       )
       await jest.runOnlyPendingTimersAsync()
 

@@ -9,6 +9,7 @@ import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
+import { AbortStages } from "./models/abortstages"
 
 /**
  * @import { InitData } from './types.d.ts'
@@ -41,7 +42,8 @@ function PlayerComponent(
   mediaSources,
   stateUpdateCallback,
   errorCallback,
-  audioDescribedCallback
+  audioDescribedCallback,
+  abortSignal
 ) {
   let setSubtitlesState
   let _stateUpdateCallback = stateUpdateCallback
@@ -57,6 +59,8 @@ function PlayerComponent(
 
   StrategyPicker()
     .then((strategy) => {
+      abortSignal.throwIfAborted(AbortStages.PLAYER_COMPONENT)
+
       playbackStrategy = strategy(
         mediaSources,
         mediaKind,
