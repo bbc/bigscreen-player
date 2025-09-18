@@ -4,7 +4,7 @@ import Utils from "../utils/playbackutils"
 import DebugTool from "../debugger/debugtool"
 import Plugins from "../plugins"
 
-function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources, defaultStyleOpts) {
+function EmbeddedSubtitles(mediaPlayer, parentElement, { autoStart = false, defaultStyleOpts = {} } = {}) {
   let exampleSubtitlesElement
   let imscRenderOpts = transformStyleOptions(defaultStyleOpts)
   let subtitlesEnabled = false
@@ -43,6 +43,7 @@ function EmbeddedSubtitles(mediaPlayer, autoStart, parentElement, _mediaSources,
     exampleSubtitlesElement.style.right = `${rightPixels}px`
     exampleSubtitlesElement.style.bottom = `${bottomPixels}px`
     exampleSubtitlesElement.style.left = `${leftPixels}px`
+
     parentElement.appendChild(exampleSubtitlesElement)
 
     renderSubtitle(exampleXml, 1, exampleSubtitlesElement, exampleStyle, renderHeight, renderWidth)

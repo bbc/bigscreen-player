@@ -109,7 +109,7 @@ function BigscreenPlayer() {
     }
   }
 
-  function bigscreenPlayerDataLoaded({ media, enableSubtitles, enableAudioDescribed }) {
+  function bigscreenPlayerDataLoaded({ media, enableSubtitles, subtitlesAlwaysOnTop, enableAudioDescribed }) {
     abortSignal.throwIfAborted(AbortStages.DATA_LOADED)
 
     const initialPresentationTime =
@@ -136,14 +136,11 @@ function BigscreenPlayer() {
       PlayerComponent.getLiveSupport(),
       () => {
         _callbacks.playerReady && _callbacks.playerReady()
-        subtitles = Subtitles(
-          playerComponent,
-          enableSubtitles,
-          playbackElement,
-          media.subtitleCustomisation,
-          mediaSources,
-          callSubtitlesCallbacks
-        )
+        subtitles = Subtitles(playerComponent, playbackElement, mediaSources, callSubtitlesCallbacks, {
+          alwaysOnTop: subtitlesAlwaysOnTop,
+          autoStart: enableSubtitles,
+          defaultStyleOpts: media.subtitleCustomisation,
+        })
       }
     )
   }
