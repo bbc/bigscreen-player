@@ -22,7 +22,8 @@ function MSEStrategy(
   playbackElement,
   _isUHD = false,
   customPlayerSettings = {},
-  audioDescribedOpts = {}
+  audioDescribedOpts = {},
+  debugSettings = {}
 ) {
   const audioDescribed = { callback: undefined, enable: false, ...audioDescribedOpts }
 
@@ -114,6 +115,7 @@ function MSEStrategy(
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
+    FRAGMENT_LOADED: "fragmentLoadingCompleted",
     QUOTA_EXCEEDED: "quotaExceeded",
     TEXT_TRACKS_ADDED: "allTextTracksAdded",
     CURRENT_TRACK_CHANGED: "currentTrackChanged",
@@ -524,6 +526,19 @@ function MSEStrategy(
     }
   }
 
+  function onFragmentLoaded() {
+    if (debugSettings?.fragmentResponseHeaders) {
+      debugSettings.fragmentResponseHeaders.forEach((responseHeader) => {
+        const responseHeaderValue = mediaPlayer
+          .getDashMetrics()
+          .getLatestFragmentRequestHeaderValueByID("video", responseHeader)
+        if (responseHeaderValue) {
+          DebugTool.staticMetric(responseHeader, responseHeaderValue)
+        }
+      })
+    }
+  }
+
   function onFragmentContentLengthMismatch(event) {
     DebugTool.info(`Fragment Content Length Mismatch: ${event.responseUrl} (${event.mediaType})`)
     DebugTool.info(`Header Length ${event.headerLength}`)
@@ -705,6 +720,7 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
     mediaPlayer.on(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
+    mediaPlayer.on(DashJSEvents.FRAGMENT_LOADED, onFragmentLoaded)
     mediaPlayer.on(DashJSEvents.GAP_JUMP, onGapJump)
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
