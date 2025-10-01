@@ -533,7 +533,7 @@ function MSEStrategy(
           .getDashMetrics()
           .getLatestFragmentRequestHeaderValueByID("video", responseHeader)
         if (responseHeaderValue) {
-          DebugTool.staticMetric(responseHeader, responseHeaderValue)
+          DebugTool.staticMetric(responseHeader.toLowerCase(), responseHeaderValue)
         }
       })
     }
