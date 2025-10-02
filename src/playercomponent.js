@@ -70,7 +70,8 @@ function PlayerComponent(
         {
           enable: bigscreenPlayerData.enableAudioDescribed,
           callback: audioDescribedCallback,
-        }
+        },
+        bigscreenPlayerData?.debug
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)

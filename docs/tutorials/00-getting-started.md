@@ -78,6 +78,9 @@ The full set of options for BigscreenPlayer is:
 const optionalData = {
   initialPlaybackTime: 0, // Time (in seconds) to begin playback from
   enableSubtitles: false,
+  debug: {
+    fragmentResponseHeaders: [], // video fragment response headers to output in the debug tool
+  },
   media: {
     type: "application/dash+xml",
     kind: MediaKinds.VIDEO, // Can be VIDEO, or AUDIO
