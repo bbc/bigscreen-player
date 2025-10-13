@@ -151,7 +151,8 @@ describe("Player Component", () => {
         playbackElement,
         undefined,
         undefined,
-        { callback: audioDescribedCallback, enable: false }
+        { callback: audioDescribedCallback, enable: false },
+        undefined
       )
       expect(mockPlaybackStrategyClass).toHaveBeenCalledTimes(1)
 
