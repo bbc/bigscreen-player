@@ -24,6 +24,8 @@ function IMSCSubtitles(
   let currentSubtitlesElement
   let updateInterval
 
+  let currentSubtitlePresentationTime = null
+
   if (autoStart) start()
 
   function hasOffset() {
@@ -299,6 +301,10 @@ function IMSCSubtitles(
   function renderSubtitle(xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
     try {
       const isd = generateISD(xml, currentTime)
+
+      // track active subtitle's presentation time
+      currentSubtitlePresentationTime = isd?.contents?.length ? currentTime : null
+
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
     } catch (error) {
       error.name = "SubtitlesRenderError"
@@ -372,6 +378,8 @@ function IMSCSubtitles(
 
     if (segment) {
       render(currentTime, segment.xml)
+    } else if (Math.abs(currentTime - (currentSubtitlePresentationTime || currentTime)) > 9) {
+      removeCurrentSubtitlesElement()
     }
   }
 

@@ -1324,6 +1324,25 @@ describe("IMSC Subtitles", () => {
         expect(generateISD).not.toHaveBeenCalled()
         expect(renderHTML).not.toHaveBeenCalled()
       })
+
+      it("removes subtitle element after seeking to an unsubtitled region", () => {
+        captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
+
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+          autoStart: true,
+          alwaysOnTop: false,
+        })
+
+        setTime(20)
+
+        const preSeekAwayContainer = document.querySelector("#bsp_subtitles")
+        expect(preSeekAwayContainer).not.toBeNull()
+
+        setTime(0)
+
+        const postSeekAwayContainer = document.querySelector("#bsp_subtitles")
+        expect(postSeekAwayContainer).toBeNull()
+      })
     })
   })
 
