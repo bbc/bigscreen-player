@@ -53,12 +53,17 @@ export type MediaDescriptor = {
   subtitlesRequestTimeout?: number
 }
 
+export type DebugSettings = {
+  fragmentResponseHeaders?: string[]
+}
+
 export type InitData = {
   media: MediaDescriptor
   enableSubtitles?: boolean
   subtitlesAlwaysOnTop?: boolean
   enableAudioDescribed?: boolean
   initialPlaybackTime?: number | PlaybackTime
+  debug?: DebugSettings
 }
 
 export type InitCallbacks = {
