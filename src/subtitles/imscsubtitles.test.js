@@ -635,6 +635,42 @@ describe("IMSC Subtitles", () => {
 
       expect(Plugins.interface.onSubtitlesRenderError).toHaveBeenCalledTimes(1)
     })
+
+    it("removes subtitle element after seeking to an unsubtitled region", () => {
+      captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
+
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+        autoStart: true,
+      })
+
+      setTime(20)
+
+      const preSeekAwayContainer = document.querySelector("#bsp_subtitles")
+      expect(preSeekAwayContainer).not.toBeNull()
+
+      setTime(0)
+
+      const postSeekAwayContainer = document.querySelector("#bsp_subtitles")
+      expect(postSeekAwayContainer).toBeNull()
+    })
+
+    it("keeps subtitle element rendered after seeking forward within the same subtitle", () => {
+      captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
+
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+        autoStart: true,
+      })
+
+      setTime(20)
+
+      const preSeekAwayContainer = document.querySelector("#bsp_subtitles")
+      expect(preSeekAwayContainer).not.toBeNull()
+
+      setTime(30)
+
+      const postSeekAwayContainer = document.querySelector("#bsp_subtitles")
+      expect(postSeekAwayContainer).not.toBeNull()
+    })
   })
 
   describe("subtitles delivered as segments", () => {
@@ -1323,6 +1359,93 @@ describe("IMSC Subtitles", () => {
 
         expect(generateISD).not.toHaveBeenCalled()
         expect(renderHTML).not.toHaveBeenCalled()
+      })
+
+      it("keeps subtitle element rendered after seeking between segments", () => {
+        captions = [
+          {
+            type: "application/ttml+xml",
+            url: "mock://some.media/captions/$segment$.m4s",
+            cdn: "foo",
+            segmentLength: 3.84,
+          },
+        ]
+
+        const epochStartTimeSeconds = 1614769200
+
+        const convertSecondsToEpoch = (...seconds) =>
+          seconds.map((time) => (time === 0 ? 0 : epochStartTimeSeconds + time))
+
+        const buildMockSegment = ({ beginTimes, id } = {}) => ({
+          _mockedSegmentID: id,
+          body: {
+            contents: ["stub"],
+          },
+          head: {
+            styling: {},
+          },
+          getMediaTimeEvents: () => beginTimes,
+        })
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 1,
+            beginTimes: convertSecondsToEpoch(0, 1, 2, 3.84),
+          })
+        )
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 2,
+            beginTimes: convertSecondsToEpoch(0, 3.84, 4, 7.68),
+          })
+        )
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 3,
+            beginTimes: convertSecondsToEpoch(0, 7.68, 9, 9.7, 11.52),
+          })
+        )
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 4,
+            beginTimes: convertSecondsToEpoch(0, 11.52, 14, 16),
+          })
+        )
+
+        // back to segment 1
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 1,
+            beginTimes: convertSecondsToEpoch(0, 1, 2, 3.84),
+          })
+        )
+
+        fromXML.mockReturnValue(buildMockSegment({ id: null }))
+
+        generateISD.mockReturnValue({ contents: ["mockContents"] })
+
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+          autoStart: true,
+        })
+
+        progressTime(3.5)
+
+        const preSeekAwayContainer = document.querySelector("#bsp_subtitles")
+        expect(preSeekAwayContainer).not.toBeNull()
+
+        progressTime(2.5)
+
+        const postSeekAwayContainer = document.querySelector("#bsp_subtitles")
+        expect(postSeekAwayContainer).not.toBeNull()
+
+        // back to segment 1
+        progressTime(-2.5)
+
+        const postSeekAwayContainer2 = document.querySelector("#bsp_subtitles")
+        expect(postSeekAwayContainer2).not.toBeNull()
       })
     })
   })
