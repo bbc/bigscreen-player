@@ -335,6 +335,9 @@ function PlayerComponent(
       })
   }
 
+  // Not an ideal place for this, but I've been warned of a possible playercomponent rewrite
+  Plugins.updateContext((context) => ({ ...context, attemptCdnFailover }))
+
   function clearFatalErrorTimeout() {
     if (fatalErrorTimeout !== null) {
       clearTimeout(fatalErrorTimeout)

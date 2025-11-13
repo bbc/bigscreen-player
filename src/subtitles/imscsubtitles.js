@@ -164,6 +164,8 @@ function IMSCSubtitles(
     }
   }
 
+  Plugins.updateContext((context) => ({ ...context, attemptSubtitleCdnFailover: loadErrorFailover }))
+
   function pruneSegments() {
     // Before sorting, check if we've gone back in time, so we know whether to prune from front or back of array
     const seekedBack = segments[SEGMENTS_BUFFER_SIZE].number < segments[SEGMENTS_BUFFER_SIZE - 1].number

@@ -7,6 +7,7 @@ import Plugins from "../plugins"
 jest.mock("smp-imsc")
 jest.mock("../utils/loadurl")
 jest.mock("../plugins", () => ({
+  updateContext: jest.fn(),
   interface: {
     onSubtitlesTimeout: jest.fn(),
     onSubtitlesXMLError: jest.fn(),
