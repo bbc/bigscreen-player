@@ -51,7 +51,7 @@ export default {
       })
 
       // provide initial update
-      plugin.__onPluginContextUpdated(pluginContext)
+      plugin.__onPluginContextUpdated?.(pluginContext)
     }
   },
 
