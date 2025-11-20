@@ -10,6 +10,7 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
 import { ManifestType } from "../models/manifesttypes"
+import setPropertyPath from "../utils/setPropertyPath"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -1034,17 +1035,22 @@ function MSEStrategy(
    * Set constrained audio or video bitrate
    */
   function setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps) {
+    if (mediaKind !== MediaKinds.AUDIO && mediaKind !== MediaKinds.VIDEO) {
+      throw new TypeError(`Bitrate constraint not supported for this media kind. (got ${mediaKind})`)
+    }
+
+    if (mediaPlayer == null) {
+      setPropertyPath(playerSettings, ["streaming", "abr", "minBitrate", mediaKind], minBitrateKbps)
+      setPropertyPath(playerSettings, ["streaming", "abr", "maxBitrate", mediaKind], maxBitrateKbps)
+
+      return
+    }
+
     mediaPlayer.updateSettings({
       streaming: {
         abr: {
-          minBitrate: {
-            audio: mediaKind === MediaKinds.AUDIO ? minBitratKbps : -1,
-            video: mediaKind === MediaKinds.VIDEO ? minBitrateKbps : -1,
-          },
-          maxBitrate: {
-            audio: mediaKind === MediaKinds.AUDIO ? maxBitrateKbps : -1,
-            video: mediaKind === MediaKinds.VIDEO ? maxBitrateKbps : -1,
-          },
+          minBitrate: { [mediaKind]: minBitrateKbps },
+          maxBitrate: { [mediaKind]: maxBitrateKbps },
         },
       },
     })
