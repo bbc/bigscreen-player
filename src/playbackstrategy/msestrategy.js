@@ -384,6 +384,7 @@ function MSEStrategy(
     Plugins.interface.onDownloadQualityChange({
       type: "downloadqualitychange",
       detail: {
+        mediaType: kind,
         currentBitrateInBps: bitrateInBps,
         currentQualityIndex: qualityIndex,
         previousBitrateInBps: prevBitrateInBps,
