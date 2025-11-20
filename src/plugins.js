@@ -40,6 +40,7 @@ export default {
     onPlayerInfoUpdated: (evt) => callOnAllPlugins("onPlayerInfoUpdated", evt),
     onManifestLoaded: (manifest) => callOnAllPlugins("onManifestLoaded", manifest),
     onManifestParseError: (evt) => callOnAllPlugins("onManifestParseError", evt),
+    onDownloadQualityChange: (evt) => callOnAllPlugins("onDownloadQualityChange", evt),
     onQualityChangeRequested: (evt) => callOnAllPlugins("onQualityChangeRequested", evt),
     onQualityChangedRendered: (evt) => callOnAllPlugins("onQualityChangedRendered", evt),
     onSubtitlesLoadError: (evt) => callOnAllPlugins("onSubtitlesLoadError", evt),

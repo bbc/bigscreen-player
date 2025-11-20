@@ -330,6 +330,8 @@ function MSEStrategy(
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
+    DebugTool.info("Stream initialised")
+
     if (mediaPlayer.getActiveStream()?.getHasVideoTrack()) {
       dispatchDownloadQualityChangeForKind(MediaKinds.VIDEO)
       dispatchMaxQualityChangeForKind(MediaKinds.VIDEO)
@@ -378,6 +380,16 @@ function MSEStrategy(
     const switchToPart = ` to ${qualityIndex} (${(bitrateInBps / 1000).toFixed(0)} kbps)`
 
     DebugTool.info(`${abrChangePart}${switchFromPart}${switchToPart}`)
+
+    Plugins.interface.onDownloadQualityChange({
+      type: "downloadqualitychange",
+      detail: {
+        currentBitrateInBps: bitrateInBps,
+        currentQualityIndex: qualityIndex,
+        previousBitrateInBps: prevBitrateInBps,
+        previousQualityIndex: prevQualityIndex,
+      },
+    })
   }
 
   function dispatchMaxQualityChangeForKind(kind) {
