@@ -51,6 +51,7 @@ export default {
     onSubtitlesDynamicLoadError: (evt) => callOnAllPlugins("onSubtitlesDynamicLoadError", evt),
     onFragmentContentLengthMismatch: (evt) => callOnAllPlugins("onFragmentContentLengthMismatch", evt),
     onQuotaExceeded: (evt) => callOnAllPlugins("onQuotaExceeded", evt),
+    onPlaybackQualityChange: (evt) => callOnAllPlugins("onPlaybackQualityChange", evt),
     onPlaybackRateChanged: (evt) => callOnAllPlugins("onPlaybackRateChanged", evt),
     onPlaybackFrozen: (evt) => callOnAllPlugins("onPlaybackFrozen", evt),
   },

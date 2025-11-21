@@ -10,7 +10,7 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
 import { ManifestType } from "../models/manifesttypes"
-import setPropertyPath from "../utils/setPropertyPath"
+import setPropertyPath from "../utils/setpropertypath"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -83,6 +83,10 @@ function MSEStrategy(
 
   let playerMetadata = {
     downloadQuality: {
+      [MediaKinds.AUDIO]: undefined,
+      [MediaKinds.VIDEO]: undefined,
+    },
+    playbackQuality: {
       [MediaKinds.AUDIO]: undefined,
       [MediaKinds.VIDEO]: undefined,
     },
@@ -394,6 +398,32 @@ function MSEStrategy(
     })
   }
 
+  function dispatchPlaybackQualityChangeForKind(kind, { qualityIndex } = {}) {
+    const { qualityIndex: previousQualityIndex, bitrateInBps: previousBitrateInBps } =
+      playerMetadata.playbackQuality[kind] ?? {}
+
+    if (previousQualityIndex === qualityIndex) {
+      return
+    }
+
+    const bitrateInBps = playbackBitrateForRepresentationIndex(newQuality, mediaType)
+
+    playerMetadata.playbackQuality[kind] = { bitrateInBps, qualityIndex }
+
+    DebugTool.dynamicMetric(`${mediaType}-playback-quality`, [newQuality, bitrateInBps])
+
+    Plugins.interface.onPlaybackQualityChange({
+      type: "playbackqualitychange",
+      detail: {
+        mediaType: kind,
+        previousBitrateInBps,
+        previousQualityIndex,
+        currentBitrateInBps: bitrateInBps,
+        currentQualityIndex: qualityIndex,
+      },
+    })
+  }
+
   function dispatchMaxQualityChangeForKind(kind) {
     const { qualityIndex, bitrate: bitrateInBps } = mediaPlayer.getTopBitrateInfoFor(kind)
 
@@ -442,17 +472,10 @@ function MSEStrategy(
   }
 
   function onQualityChangeRendered(event) {
-    if (
-      event.newQuality !== undefined &&
-      (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
-    ) {
-      const { mediaType, newQuality } = event
+    const { mediaType, newQuality } = event
 
-      DebugTool.dynamicMetric(`${mediaType}-playback-quality`, [
-        newQuality,
-        playbackBitrateForRepresentationIndex(newQuality, mediaType),
-      ])
-
+    if (newQuality !== undefined && (mediaType === MediaKinds.AUDIO || mediaType === MediaKinds.VIDEO)) {
+      dispatchPlaybackQualityChangeForKind(mediaType, { currentQualityIndex: newQuality })
       dispatchMaxQualityChangeForKind(mediaType)
     }
 
