@@ -42,7 +42,7 @@ export default {
     onManifestParseError: (evt) => callOnAllPlugins("onManifestParseError", evt),
     onDownloadQualityChange: (evt) => callOnAllPlugins("onDownloadQualityChange", evt),
     onQualityChangeRequested: (evt) => callOnAllPlugins("onQualityChangeRequested", evt),
-    onQualityChangedRendered: (evt) => callOnAllPlugins("onQualityChangedRendered", evt),
+    onQualityChangeRendered: (evt) => callOnAllPlugins("onQualityChangeRendered", evt),
     onSubtitlesLoadError: (evt) => callOnAllPlugins("onSubtitlesLoadError", evt),
     onSubtitlesTimeout: (evt) => callOnAllPlugins("onSubtitlesTimeout", evt),
     onSubtitlesXMLError: (evt) => callOnAllPlugins("onSubtitlesXMLError", evt),

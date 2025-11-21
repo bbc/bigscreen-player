@@ -458,7 +458,7 @@ function MSEStrategy(
 
     emitPlayerInfo()
 
-    Plugins.interface.onQualityChangedRendered(event)
+    Plugins.interface.onQualityChangeRendered(event)
   }
 
   /**

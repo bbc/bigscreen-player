@@ -13,7 +13,7 @@ The full interface is as follows:
 - `onManifestLoaded`
 - `onManifestParseError`
 - `onQualityChangeRequested`
-- `onQualityChangedRendered`
+- `onQualityChangeRendered`
 - `onSubtitlesLoadError`
 - `onSubtitlesTimeout`
 - `onSubtitlesXMLError`
