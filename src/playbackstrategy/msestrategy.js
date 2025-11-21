@@ -406,11 +406,11 @@ function MSEStrategy(
       return
     }
 
-    const bitrateInBps = playbackBitrateForRepresentationIndex(newQuality, mediaType)
+    const bitrateInBps = playbackBitrateForRepresentationIndex(qualityIndex, kind)
 
     playerMetadata.playbackQuality[kind] = { bitrateInBps, qualityIndex }
 
-    DebugTool.dynamicMetric(`${mediaType}-playback-quality`, [newQuality, bitrateInBps])
+    DebugTool.dynamicMetric(`${kind}-playback-quality`, [qualityIndex, bitrateInBps])
 
     Plugins.interface.onPlaybackQualityChange({
       type: "playbackqualitychange",
@@ -475,7 +475,7 @@ function MSEStrategy(
     const { mediaType, newQuality } = event
 
     if (newQuality !== undefined && (mediaType === MediaKinds.AUDIO || mediaType === MediaKinds.VIDEO)) {
-      dispatchPlaybackQualityChangeForKind(mediaType, { currentQualityIndex: newQuality })
+      dispatchPlaybackQualityChangeForKind(mediaType, { qualityIndex: newQuality })
       dispatchMaxQualityChangeForKind(mediaType)
     }
 
