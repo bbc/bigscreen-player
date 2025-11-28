@@ -571,6 +571,14 @@ function MSEStrategy(
           .getLatestFragmentRequestHeaderValueByID("video", responseHeader)
         if (responseHeaderValue) {
           DebugTool.staticMetric(responseHeader.toLowerCase(), responseHeaderValue)
+        } else {
+          const httpRequestMetrics = mediaPlayer.getDashMetrics().getHttpRequests("video")
+          const headerValue = httpRequestMetrics.find((responseMetrics) =>
+            responseMetrics._responseHeaders.includes(responseHeader)
+          )
+          if (headerValue) {
+            DebugTool.staticMetric(responseHeader.toLowerCase(), "")
+          }
         }
       })
     }
