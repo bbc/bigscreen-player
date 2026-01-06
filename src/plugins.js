@@ -33,7 +33,7 @@ export default {
 
     // call context update callbacks
     for (const plugin of plugins) {
-      plugin.__onPluginContextUpdated?.(pluginContext)
+      plugin.onContextUpdated?.(pluginContext)
     }
   },
 
@@ -42,17 +42,7 @@ export default {
    */
   registerPlugin: (plugin) => {
     plugins.push(plugin)
-
-    if (typeof plugin === "function") {
-      plugin(pluginContext, (onPluginContextUpdated) => {
-        plugin.__onPluginContextUpdated = (pluginContext) => {
-          onPluginContextUpdated(pluginContext)
-        }
-      })
-
-      // provide initial update
-      plugin.__onPluginContextUpdated?.(pluginContext)
-    }
+    plugin.onContextUpdated?.(pluginContext)
   },
 
   unregisterPlugin: (plugin) => {
