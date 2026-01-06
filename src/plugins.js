@@ -31,7 +31,7 @@ export default {
 
     Object.assign(pluginContext, newContext)
 
-    // call context update callbacks
+    // call context update handlers
     for (const plugin of plugins) {
       plugin.onContextUpdated?.(pluginContext)
     }
@@ -42,6 +42,8 @@ export default {
    */
   registerPlugin: (plugin) => {
     plugins.push(plugin)
+
+    // provide initial context
     plugin.onContextUpdated?.(pluginContext)
   },
 
