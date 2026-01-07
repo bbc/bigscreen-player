@@ -38,7 +38,7 @@ export default {
   },
 
   /**
-   * @param {*} plugin - an object or function, functional plugins receive the context as an argument
+   * @param {*} plugin - an object
    */
   registerPlugin: (plugin) => {
     plugins.push(plugin)
