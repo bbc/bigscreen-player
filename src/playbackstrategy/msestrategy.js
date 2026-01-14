@@ -10,6 +10,7 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
 import { ManifestType } from "../models/manifesttypes"
+import setPropertyPath from "../utils/setpropertypath"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -82,6 +83,10 @@ function MSEStrategy(
 
   let playerMetadata = {
     downloadQuality: {
+      [MediaKinds.AUDIO]: undefined,
+      [MediaKinds.VIDEO]: undefined,
+    },
+    playbackQuality: {
       [MediaKinds.AUDIO]: undefined,
       [MediaKinds.VIDEO]: undefined,
     },
@@ -330,6 +335,8 @@ function MSEStrategy(
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
+    DebugTool.info("Stream initialised")
+
     if (mediaPlayer.getActiveStream()?.getHasVideoTrack()) {
       dispatchDownloadQualityChangeForKind(MediaKinds.VIDEO)
       dispatchMaxQualityChangeForKind(MediaKinds.VIDEO)
@@ -378,6 +385,43 @@ function MSEStrategy(
     const switchToPart = ` to ${qualityIndex} (${(bitrateInBps / 1000).toFixed(0)} kbps)`
 
     DebugTool.info(`${abrChangePart}${switchFromPart}${switchToPart}`)
+
+    Plugins.interface.onDownloadQualityChange({
+      type: "downloadqualitychange",
+      detail: {
+        mediaType: kind,
+        currentBitrateInBps: bitrateInBps,
+        currentQualityIndex: qualityIndex,
+        previousBitrateInBps: prevBitrateInBps,
+        previousQualityIndex: prevQualityIndex,
+      },
+    })
+  }
+
+  function dispatchPlaybackQualityChangeForKind(kind, { qualityIndex } = {}) {
+    const { qualityIndex: previousQualityIndex, bitrateInBps: previousBitrateInBps } =
+      playerMetadata.playbackQuality[kind] ?? {}
+
+    if (previousQualityIndex === qualityIndex) {
+      return
+    }
+
+    const bitrateInBps = playbackBitrateForRepresentationIndex(qualityIndex, kind)
+
+    playerMetadata.playbackQuality[kind] = { bitrateInBps, qualityIndex }
+
+    DebugTool.dynamicMetric(`${kind}-playback-quality`, [qualityIndex, bitrateInBps])
+
+    Plugins.interface.onPlaybackQualityChange({
+      type: "playbackqualitychange",
+      detail: {
+        mediaType: kind,
+        previousBitrateInBps,
+        previousQualityIndex,
+        currentBitrateInBps: bitrateInBps,
+        currentQualityIndex: qualityIndex,
+      },
+    })
   }
 
   function dispatchMaxQualityChangeForKind(kind) {
@@ -428,23 +472,16 @@ function MSEStrategy(
   }
 
   function onQualityChangeRendered(event) {
-    if (
-      event.newQuality !== undefined &&
-      (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
-    ) {
-      const { mediaType, newQuality } = event
+    const { mediaType, newQuality } = event
 
-      DebugTool.dynamicMetric(`${mediaType}-playback-quality`, [
-        newQuality,
-        playbackBitrateForRepresentationIndex(newQuality, mediaType),
-      ])
-
+    if (newQuality !== undefined && (mediaType === MediaKinds.AUDIO || mediaType === MediaKinds.VIDEO)) {
+      dispatchPlaybackQualityChangeForKind(mediaType, { qualityIndex: newQuality })
       dispatchMaxQualityChangeForKind(mediaType)
     }
 
     emitPlayerInfo()
 
-    Plugins.interface.onQualityChangedRendered(event)
+    Plugins.interface.onQualityChangeRendered(event)
   }
 
   /**
@@ -1021,17 +1058,22 @@ function MSEStrategy(
    * Set constrained audio or video bitrate
    */
   function setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps) {
+    if (mediaKind !== MediaKinds.AUDIO && mediaKind !== MediaKinds.VIDEO) {
+      throw new TypeError(`Bitrate constraint not supported for this media kind. (got ${mediaKind})`)
+    }
+
+    if (mediaPlayer == null) {
+      setPropertyPath(playerSettings, ["streaming", "abr", "minBitrate", mediaKind], minBitrateKbps)
+      setPropertyPath(playerSettings, ["streaming", "abr", "maxBitrate", mediaKind], maxBitrateKbps)
+
+      return
+    }
+
     mediaPlayer.updateSettings({
       streaming: {
         abr: {
-          minBitrate: {
-            audio: mediaKind === MediaKinds.AUDIO ? minBitratKbps : -1,
-            video: mediaKind === MediaKinds.VIDEO ? minBitrateKbps : -1,
-          },
-          maxBitrate: {
-            audio: mediaKind === MediaKinds.AUDIO ? maxBitrateKbps : -1,
-            video: mediaKind === MediaKinds.VIDEO ? maxBitrateKbps : -1,
-          },
+          minBitrate: { [mediaKind]: minBitrateKbps },
+          maxBitrate: { [mediaKind]: maxBitrateKbps },
         },
       },
     })

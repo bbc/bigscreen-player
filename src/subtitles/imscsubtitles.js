@@ -24,6 +24,8 @@ function IMSCSubtitles(
   let currentSubtitlesElement
   let updateInterval
 
+  let previousTime = null
+
   if (autoStart) start()
 
   function hasOffset() {
@@ -299,6 +301,7 @@ function IMSCSubtitles(
   function renderSubtitle(xml, currentTime, subsElement, styleOpts, renderHeight, renderWidth) {
     try {
       const isd = generateISD(xml, currentTime)
+
       renderHTML(isd, subsElement, null, renderHeight, renderWidth, false, null, null, false, styleOpts)
     } catch (error) {
       error.name = "SubtitlesRenderError"
@@ -368,6 +371,15 @@ function IMSCSubtitles(
   }
 
   function update(currentTime) {
+    // clears state to ensure we always check if subtitles should be rendered after a seek
+    if (typeof previousTime === "number" && (previousTime > currentTime || currentTime - previousTime > 2)) {
+      for (const segment of segments) {
+        segment.previousSubtitleIndex = undefined
+      }
+      removeCurrentSubtitlesElement()
+    }
+    previousTime = currentTime
+
     const segment = getSegmentToRender(currentTime)
 
     if (segment) {
