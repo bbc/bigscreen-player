@@ -2,6 +2,7 @@ import PlaybackUtils from "./utils/playbackutils"
 import CallCallbacks from "./utils/callcallbacks"
 
 let plugins = []
+const pluginContext = {}
 
 function callOnAllPlugins(funcKey, evt) {
   const clonedEvent = PlaybackUtils.deepClone(evt)
@@ -13,8 +14,37 @@ function callOnAllPlugins(funcKey, evt) {
 }
 
 export default {
+  /**
+   * @param {function (*): *} updater - a function which accepts the current context, and returns a new context
+   */
+  updateContext: (updater) => {
+    const newContext = updater(PlaybackUtils.deepClone(pluginContext))
+
+    if (typeof newContext !== "object") {
+      throw new TypeError("context must be an object")
+    }
+
+    // update object (preserving reference)
+    for (const prop of Object.keys(pluginContext)) {
+      delete pluginContext[prop]
+    }
+
+    Object.assign(pluginContext, newContext)
+
+    // call context update handlers
+    for (const plugin of plugins) {
+      plugin.onContextUpdated?.(pluginContext)
+    }
+  },
+
+  /**
+   * @param {*} plugin - an object
+   */
   registerPlugin: (plugin) => {
     plugins.push(plugin)
+
+    // provide initial context
+    plugin.onContextUpdated?.(pluginContext)
   },
 
   unregisterPlugin: (plugin) => {

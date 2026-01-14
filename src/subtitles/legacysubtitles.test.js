@@ -6,6 +6,7 @@ import Renderer from "./renderer"
 
 jest.mock("../utils/loadurl")
 jest.mock("../plugins", () => ({
+  updateContext: jest.fn(),
   interface: {
     onSubtitlesTimeout: jest.fn(),
     onSubtitlesXMLError: jest.fn(),

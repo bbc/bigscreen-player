@@ -133,6 +133,16 @@ function Subtitles(
     subtitlesContainer?.tearDown()
   }
 
+  function attemptSubtitleCdnFailover(opts) {
+    hide()
+    mediaSources
+      .failoverSubtitles(opts)
+      .then(() => show())
+      .catch(() => DebugTool.info("No more CDNs available for subtitle failover"))
+  }
+
+  Plugins.updateContext((context) => ({ ...context, attemptSubtitleCdnFailover }))
+
   return {
     enable,
     disable,
