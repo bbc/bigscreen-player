@@ -307,6 +307,8 @@ function BigscreenPlayer() {
             callbacks.onError(reason)
           }
         })
+
+      Plugins.updateContext((context) => ({ ...context, mediaSources }))
     },
 
     /**
@@ -737,7 +739,7 @@ function BigscreenPlayer() {
     },
 
     /**
-     * Register a plugin for extended events.
+     * Register a plugin for extended events & custom functionality.
      * @function
      * @param {*} plugin
      */

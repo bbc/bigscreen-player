@@ -1,5 +1,6 @@
 import Plugins from "../plugins"
 import findSegmentTemplate from "../utils/findtemplate"
+import DebugTool from "../debugger/debugtool"
 
 function Subtitles(
   mediaPlayer,
@@ -132,6 +133,16 @@ function Subtitles(
   function tearDown() {
     subtitlesContainer?.tearDown()
   }
+
+  function attemptSubtitleCdnFailover(opts) {
+    hide()
+    mediaSources
+      .failoverSubtitles(opts)
+      .then(() => show())
+      .catch(() => DebugTool.info("No more CDNs available for subtitle failover"))
+  }
+
+  Plugins.updateContext((context) => ({ ...context, attemptSubtitleCdnFailover }))
 
   return {
     enable,
