@@ -81,7 +81,7 @@ type Frames = {
 type DynamicEntry = TimestampedMessage | TimestampedTrace | Timestamp
 
 type StaticEntry =
-  | Exclude<TimestampedMetric, MetricForKind<MediaElementStateKind | AudioQualityKind | VideoQualityKind>>
+  | Exclude<TimestampedMetric, MetricForKind<MediaElementStateKind | AudioQualityKind | VideoQualityKind | FrameKind>>
   | Timestamped<Frames>
   | Timestamped<MediaElementState>
   | Timestamped<AudioQuality>
