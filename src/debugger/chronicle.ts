@@ -46,6 +46,7 @@ type CurrentLatency = CreateMetric<"current-latency", number>
 type CurrentUrl = CreateMetric<"current-url", string>
 type Duration = CreateMetric<"duration", number>
 type FramesDropped = CreateMetric<"frames-dropped", number>
+type FramesTotal = CreateMetric<"frames-total", number>
 type InitialPlaybackTime = CreateMetric<"initial-playback-time", [time: number, timeline: Timeline]>
 type MediaElementEnded = CreateMetric<"ended", HTMLMediaElement["ended"]>
 type MediaElementPaused = CreateMetric<"paused", HTMLMediaElement["paused"]>
@@ -73,6 +74,7 @@ export type Metric =
   | CurrentUrl
   | Duration
   | FramesDropped
+  | FramesTotal
   | InitialPlaybackTime
   | MediaElementEnded
   | MediaElementPaused

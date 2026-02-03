@@ -67,10 +67,22 @@ type MaxBitrate = {
   data: Record<MediaKinds, number>
 }
 
+type FrameKind = Extends<MetricKind, "frames-dropped" | "frames-total">
+
+type Frames = {
+  category: "union"
+  kind: "frames"
+  data: {
+    total?: number
+    dropped?: number
+  }
+}
+
 type DynamicEntry = TimestampedMessage | TimestampedTrace | Timestamp
 
 type StaticEntry =
-  | Exclude<TimestampedMetric, MetricForKind<MediaElementStateKind | AudioQualityKind | VideoQualityKind>>
+  | Exclude<TimestampedMetric, MetricForKind<MediaElementStateKind | AudioQualityKind | VideoQualityKind | FrameKind>>
+  | Timestamped<Frames>
   | Timestamped<MediaElementState>
   | Timestamped<AudioQuality>
   | Timestamped<VideoQuality>
@@ -106,6 +118,32 @@ class DebugViewController {
 
   private dynamicEntries: DynamicEntry[] = []
   private latestMetricByKey: Partial<Record<StaticEntryKind, StaticEntry>> = {}
+
+  private isFrameStat(metric: TimestampedMetric): metric is Timestamped<MetricForKind<FrameKind>> {
+    const { kind } = metric
+    return kind === "frames-dropped" || kind === "frames-total"
+  }
+
+  private mergeFrameStat(entry: Timestamped<MetricForKind<FrameKind>>): Timestamped<Frames> {
+    const prevEntry: Frames =
+      this.latestMetricByKey.frames == null
+        ? { category: "union", kind: "frames", data: {} }
+        : (this.latestMetricByKey.frames as Frames)
+
+    const { sessionTime, currentElementTime, kind: metricKind, data: metricData } = entry
+
+    const keyForKind: Record<FrameKind, string> = {
+      "frames-dropped": "dropped",
+      "frames-total": "total",
+    }
+
+    return {
+      ...prevEntry,
+      sessionTime,
+      currentElementTime,
+      data: { ...prevEntry.data, [keyForKind[metricKind]]: metricData },
+    }
+  }
 
   private isMediaState(metric: TimestampedMetric): metric is Timestamped<MetricForKind<MediaElementStateKind>> {
     const { kind } = metric
@@ -219,6 +257,11 @@ class DebugViewController {
 
     switch (category) {
       case EntryCategory.METRIC:
+        if (this.isFrameStat(entry)) {
+          this.cacheStaticEntry(this.mergeFrameStat(entry))
+          return
+        }
+
         if (this.isMediaState(entry)) {
           this.cacheStaticEntry(this.mergeMediaState(entry))
           return
@@ -475,6 +518,14 @@ class DebugViewController {
       const bitratePart = (((data.audio ?? 0) + (data.video ?? 0)) / 1000).toFixed(0)
 
       return `${bitratePart} kbps`
+    }
+
+    if (kind === "frames") {
+      if (data.total == null) {
+        return null
+      }
+
+      return `${(data.dropped ?? (0 / data.total) * 100).toFixed(2)}% dropped (${data.dropped}/${data.total})`
     }
 
     return data.join(", ")
