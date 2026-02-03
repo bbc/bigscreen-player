@@ -1,5 +1,6 @@
 import Plugins from "../plugins"
 import findSegmentTemplate from "../utils/findtemplate"
+import DebugTool from "../debugger/debugtool"
 
 function Subtitles(
   mediaPlayer,

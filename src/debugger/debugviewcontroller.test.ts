@@ -20,7 +20,7 @@ describe("Debug View", () => {
     controller.showView()
 
     chronicle.appendMetric("buffer-length", 0)
-    chronicle.appendMetric("frames-dropped", 4)
+    chronicle.appendMetric("auto-resume", 4)
     chronicle.appendMetric("duration", 30)
 
     controller.addEntries(chronicle.retrieve())
@@ -31,7 +31,7 @@ describe("Debug View", () => {
       expect.objectContaining({
         static: [
           { id: "buffer-length", key: "buffer length", value: 0 },
-          { id: "frames-dropped", key: "frames dropped", value: 4 },
+          { id: "auto-resume", key: "auto resume", value: 4 },
           { id: "duration", key: "duration", value: 30 },
         ],
       })
@@ -254,22 +254,22 @@ describe("Debug View", () => {
 
     const chronicle = new Chronicle()
 
-    chronicle.appendMetric("frames-dropped", 0)
+    chronicle.appendMetric("auto-resume", 0)
 
     jest.advanceTimersByTime(500)
 
-    chronicle.appendMetric("frames-dropped", 1)
+    chronicle.appendMetric("auto-resume", 1)
 
     jest.advanceTimersByTime(4500)
 
-    chronicle.appendMetric("frames-dropped", 4)
+    chronicle.appendMetric("auto-resume", 4)
 
     controller.addEntries(chronicle.retrieve())
 
     jest.advanceTimersToNextTimer()
 
     expect(DebugView.render).toHaveBeenCalledWith(
-      expect.objectContaining({ static: [{ id: "frames-dropped", key: "frames dropped", value: 4 }] })
+      expect.objectContaining({ static: [{ id: "auto-resume", key: "auto resume", value: 4 }] })
     )
   })
 
