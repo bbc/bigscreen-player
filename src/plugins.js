@@ -83,6 +83,5 @@ export default {
     onQuotaExceeded: (evt) => callOnAllPlugins("onQuotaExceeded", evt),
     onPlaybackQualityChange: (evt) => callOnAllPlugins("onPlaybackQualityChange", evt),
     onPlaybackRateChanged: (evt) => callOnAllPlugins("onPlaybackRateChanged", evt),
-    onPlaybackFrozen: (evt) => callOnAllPlugins("onPlaybackFrozen", evt),
   },
 }

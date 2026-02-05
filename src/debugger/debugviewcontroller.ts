@@ -525,7 +525,7 @@ class DebugViewController {
         return null
       }
 
-      return `${(data.dropped ?? (0 / data.total) * 100).toFixed(2)}% dropped (${data.dropped}/${data.total})`
+      return `${(((data.dropped ?? 0) / data.total) * 100).toFixed(2)}% dropped (${data.dropped}/${data.total})`
     }
 
     return data.join(", ")
