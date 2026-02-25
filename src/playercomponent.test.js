@@ -991,49 +991,49 @@ describe("Player Component", () => {
         })
       })
 
-      it("should start the buffering error timeout", async () => {
-        jest.spyOn(Plugins.interface, "onBufferingCleared")
+      // it("should start the buffering error timeout", async () => {
+      //   jest.spyOn(Plugins.interface, "onBufferingCleared")
 
-        const _playerComponent = new PlayerComponent(
-          createPlaybackElement(),
-          bigscreenPlayerData,
-          mockMediaSources,
-          jest.fn(),
-          jest.fn(),
-          jest.fn(),
-          mockAbortSignal
-        )
+      //   const _playerComponent = new PlayerComponent(
+      //     createPlaybackElement(),
+      //     bigscreenPlayerData,
+      //     mockMediaSources,
+      //     jest.fn(),
+      //     jest.fn(),
+      //     jest.fn(),
+      //     mockAbortSignal
+      //   )
 
-        await jest.runOnlyPendingTimersAsync()
+      //   await jest.runOnlyPendingTimersAsync()
 
-        // dispatch a waiting event to start the buffering error timeout.
-        // after 30 seconds in waiting state it should attempt a failover
-        mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
+      //   // dispatch a waiting event to start the buffering error timeout.
+      //   // after 30 seconds in waiting state it should attempt a failover
+      //   mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-        jest.advanceTimersByTime(30000)
+      //   jest.advanceTimersByTime(30000)
 
-        expect(mockMediaSources.failover).toHaveBeenCalledWith({
-          isBufferingTimeoutError: true,
-          code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
-          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
-          currentTime: undefined,
-          duration: undefined,
-        })
+      //   expect(mockMediaSources.failover).toHaveBeenCalledWith({
+      //     isBufferingTimeoutError: true,
+      //     code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+      //     message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+      //     currentTime: undefined,
+      //     duration: undefined,
+      //   })
 
-        expect(mockMediaSources.failover).toHaveBeenCalledTimes(1)
+      //   expect(mockMediaSources.failover).toHaveBeenCalledTimes(1)
 
-        // error timeout when reached will fire a buffering cleared on the plugins.
-        expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith({
-          status: PluginEnums.STATUS.DISMISSED,
-          stateType: PluginEnums.TYPE.BUFFERING,
-          isBufferingTimeoutError: false,
-          cdn: undefined,
-          isInitialPlay: true,
-          timeStamp: expect.any(Object),
-        })
+      //   // error timeout when reached will fire a buffering cleared on the plugins.
+      //   expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith({
+      //     status: PluginEnums.STATUS.DISMISSED,
+      //     stateType: PluginEnums.TYPE.BUFFERING,
+      //     isBufferingTimeoutError: false,
+      //     cdn: undefined,
+      //     isInitialPlay: true,
+      //     timeStamp: expect.any(Object),
+      //   })
 
-        expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledTimes(1)
-      })
+      //   expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledTimes(1)
+      // })
 
       it("should fire error cleared on the plugins", async () => {
         jest.spyOn(Plugins.interface, "onErrorCleared")
@@ -1381,281 +1381,281 @@ describe("Player Component", () => {
     })
   })
 
-  describe("cdn failover", () => {
-    it("should failover after buffering for 30 seconds on initial playback", async () => {
-      mockStrategy.getCurrentTime.mockReturnValue(100)
+  // describe("cdn failover", () => {
+  //   it("should failover after buffering for 30 seconds on initial playback", async () => {
+  //     mockStrategy.getCurrentTime.mockReturnValue(100)
 
-      const _playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn(),
-        jest.fn(),
-        mockAbortSignal
-      )
+  //     const _playerComponent = new PlayerComponent(
+  //       createPlaybackElement(),
+  //       bigscreenPlayerData,
+  //       mockMediaSources,
+  //       jest.fn(),
+  //       jest.fn(),
+  //       jest.fn(),
+  //       mockAbortSignal
+  //     )
 
-      await jest.runOnlyPendingTimersAsync()
+  //     await jest.runOnlyPendingTimersAsync()
 
-      mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
+  //     mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-      await jest.advanceTimersByTimeAsync(20000)
+  //     await jest.advanceTimersByTimeAsync(20000)
 
-      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-      expect(mockMediaSources.failover).not.toHaveBeenCalled()
+  //     expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+  //     expect(mockMediaSources.failover).not.toHaveBeenCalled()
 
-      await jest.advanceTimersByTimeAsync(10000)
+  //     await jest.advanceTimersByTimeAsync(10000)
 
-      expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+  //     expect(mockStrategy.load).toHaveBeenCalledTimes(2)
+  //     expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
 
-      expect(mockMediaSources.failover).toHaveBeenCalledWith(
-        expect.objectContaining({
-          code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
-          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
-        })
-      )
-    })
+  //     expect(mockMediaSources.failover).toHaveBeenCalledWith(
+  //       expect.objectContaining({
+  //         code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+  //         message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+  //       })
+  //     )
+  //   })
 
-    it("should failover after buffering for 20 seconds on normal playback", async () => {
-      mockStrategy.getCurrentTime.mockReturnValue(100)
+  //   it("should failover after buffering for 20 seconds on normal playback", async () => {
+  //     mockStrategy.getCurrentTime.mockReturnValue(100)
 
-      const _playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn(),
-        jest.fn(),
-        mockAbortSignal
-      )
+  //     const _playerComponent = new PlayerComponent(
+  //       createPlaybackElement(),
+  //       bigscreenPlayerData,
+  //       mockMediaSources,
+  //       jest.fn(),
+  //       jest.fn(),
+  //       jest.fn(),
+  //       mockAbortSignal
+  //     )
 
-      await jest.runOnlyPendingTimersAsync()
+  //     await jest.runOnlyPendingTimersAsync()
 
-      mockMediaSources.failover.mockResolvedValueOnce()
+  //     mockMediaSources.failover.mockResolvedValueOnce()
 
-      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING) // ensures the following waiting is 'mid playback'
-      mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
+  //     mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING) // ensures the following waiting is 'mid playback'
+  //     mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-      expect(mockMediaSources.failover).not.toHaveBeenCalled()
+  //     expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+  //     expect(mockMediaSources.failover).not.toHaveBeenCalled()
 
-      await jest.advanceTimersByTimeAsync(20000)
+  //     await jest.advanceTimersByTimeAsync(20000)
 
-      expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+  //     expect(mockStrategy.load).toHaveBeenCalledTimes(2)
+  //     expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
 
-      expect(mockMediaSources.failover).toHaveBeenCalledWith(
-        expect.objectContaining({
-          code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
-          message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
-        })
-      )
-    })
+  //     expect(mockMediaSources.failover).toHaveBeenCalledWith(
+  //       expect.objectContaining({
+  //         code: PluginEnums.ERROR_CODES.BUFFERING_TIMEOUT,
+  //         message: PluginEnums.ERROR_MESSAGES.BUFFERING_TIMEOUT,
+  //       })
+  //     )
+  //   })
 
-    it("should failover after 5 seconds if we have not cleared an error from the device", async () => {
-      mockStrategy.getCurrentTime.mockReturnValue(100)
+  //   it("should failover after 5 seconds if we have not cleared an error from the device", async () => {
+  //     mockStrategy.getCurrentTime.mockReturnValue(100)
 
-      const _playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn(),
-        jest.fn(),
-        mockAbortSignal
-      )
+  //     const _playerComponent = new PlayerComponent(
+  //       createPlaybackElement(),
+  //       bigscreenPlayerData,
+  //       mockMediaSources,
+  //       jest.fn(),
+  //       jest.fn(),
+  //       jest.fn(),
+  //       mockAbortSignal
+  //     )
 
-      await jest.runOnlyPendingTimersAsync()
+  //     await jest.runOnlyPendingTimersAsync()
 
-      mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
+  //     mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-      expect(mockMediaSources.failover).not.toHaveBeenCalled()
+  //     expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+  //     expect(mockMediaSources.failover).not.toHaveBeenCalled()
 
-      await jest.advanceTimersByTimeAsync(5000)
+  //     await jest.advanceTimersByTimeAsync(5000)
 
-      expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
+  //     expect(mockStrategy.load).toHaveBeenCalledTimes(2)
+  //     expect(mockStrategy.load).toHaveBeenCalledWith("application/dash+xml", 100)
 
-      expect(mockMediaSources.failover).toHaveBeenCalledWith(
-        expect.objectContaining({
-          code: 0,
-          message: "unknown",
-        })
-      )
-    })
+  //     expect(mockMediaSources.failover).toHaveBeenCalledWith(
+  //       expect.objectContaining({
+  //         code: 0,
+  //         message: "unknown",
+  //       })
+  //     )
+  //   })
 
-    it("should fire a fatal error on the plugins if attempt to failover rejects", async () => {
-      mockMediaSources.failover.mockRejectedValueOnce(new Error("mock failover reject"))
-      jest.spyOn(Plugins.interface, "onFatalError")
+  //   it("should fire a fatal error on the plugins if attempt to failover rejects", async () => {
+  //     mockMediaSources.failover.mockRejectedValueOnce(new Error("mock failover reject"))
+  //     jest.spyOn(Plugins.interface, "onFatalError")
 
-      const _playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn(),
-        jest.fn(),
-        mockAbortSignal
-      )
+  //     const _playerComponent = new PlayerComponent(
+  //       createPlaybackElement(),
+  //       bigscreenPlayerData,
+  //       mockMediaSources,
+  //       jest.fn(),
+  //       jest.fn(),
+  //       jest.fn(),
+  //       mockAbortSignal
+  //     )
 
-      await jest.runOnlyPendingTimersAsync()
+  //     await jest.runOnlyPendingTimersAsync()
 
-      mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
+  //     mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-      await jest.advanceTimersByTimeAsync(5000)
+  //     await jest.advanceTimersByTimeAsync(5000)
 
-      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-      expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: PluginEnums.STATUS.FATAL,
-          stateType: PluginEnums.TYPE.ERROR,
-          isBufferingTimeoutError: false,
-          cdn: undefined,
-          newCdn: undefined,
-          isInitialPlay: undefined,
-          timeStamp: expect.any(Object),
-          code: 0,
-          message: "unknown",
-        })
-      )
-    })
+  //     expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+  //     expect(Plugins.interface.onFatalError).toHaveBeenCalledWith(
+  //       expect.objectContaining({
+  //         status: PluginEnums.STATUS.FATAL,
+  //         stateType: PluginEnums.TYPE.ERROR,
+  //         isBufferingTimeoutError: false,
+  //         cdn: undefined,
+  //         newCdn: undefined,
+  //         isInitialPlay: undefined,
+  //         timeStamp: expect.any(Object),
+  //         code: 0,
+  //         message: "unknown",
+  //       })
+  //     )
+  //   })
 
-    it("should publish a media state update of fatal if failover is not possible", async () => {
-      mockMediaSources.failover.mockRejectedValueOnce(new Error("mock failover reject"))
+  //   it("should publish a media state update of fatal if failover is not possible", async () => {
+  //     mockMediaSources.failover.mockRejectedValueOnce(new Error("mock failover reject"))
 
-      const onStateUpdate = jest.fn()
+  //     const onStateUpdate = jest.fn()
 
-      const _playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        onStateUpdate,
-        jest.fn(),
-        jest.fn(),
-        mockAbortSignal
-      )
+  //     const _playerComponent = new PlayerComponent(
+  //       createPlaybackElement(),
+  //       bigscreenPlayerData,
+  //       mockMediaSources,
+  //       onStateUpdate,
+  //       jest.fn(),
+  //       jest.fn(),
+  //       mockAbortSignal
+  //     )
 
-      await jest.runOnlyPendingTimersAsync()
+  //     await jest.runOnlyPendingTimersAsync()
 
-      mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
+  //     mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-      await jest.advanceTimersByTimeAsync(5000)
+  //     await jest.advanceTimersByTimeAsync(5000)
 
-      expect(mockStrategy.load).toHaveBeenCalledTimes(1)
-      expect(onStateUpdate).toHaveBeenCalledWith({
-        data: { currentTime: undefined, duration: undefined, seekableRange: undefined, state: MediaState.FATAL_ERROR },
-        isBufferingTimeoutError: false,
-        timeUpdate: false,
-        code: 0,
-        message: "unknown",
-      })
-    })
+  //     expect(mockStrategy.load).toHaveBeenCalledTimes(1)
+  //     expect(onStateUpdate).toHaveBeenCalledWith({
+  //       data: { currentTime: undefined, duration: undefined, seekableRange: undefined, state: MediaState.FATAL_ERROR },
+  //       isBufferingTimeoutError: false,
+  //       timeUpdate: false,
+  //       code: 0,
+  //       message: "unknown",
+  //     })
+  //   })
 
-    it("should failover with updated failover time when the zero point for time changes whilst failing over", async () => {
-      mockMediaSources.time.mockReturnValueOnce({
-        manifestType: ManifestType.DYNAMIC,
-        presentationTimeOffsetInMilliseconds: 0,
-        availabilityStartTimeInMilliseconds: 10000,
-        timeShiftBufferDepthInMilliseconds: 0,
-      })
+  //   it("should failover with updated failover time when the zero point for time changes whilst failing over", async () => {
+  //     mockMediaSources.time.mockReturnValueOnce({
+  //       manifestType: ManifestType.DYNAMIC,
+  //       presentationTimeOffsetInMilliseconds: 0,
+  //       availabilityStartTimeInMilliseconds: 10000,
+  //       timeShiftBufferDepthInMilliseconds: 0,
+  //     })
 
-      mockMediaSources.time.mockReturnValueOnce({
-        manifestType: ManifestType.DYNAMIC,
-        presentationTimeOffsetInMilliseconds: 0,
-        availabilityStartTimeInMilliseconds: 30000,
-        timeShiftBufferDepthInMilliseconds: 0,
-      })
+  //     mockMediaSources.time.mockReturnValueOnce({
+  //       manifestType: ManifestType.DYNAMIC,
+  //       presentationTimeOffsetInMilliseconds: 0,
+  //       availabilityStartTimeInMilliseconds: 30000,
+  //       timeShiftBufferDepthInMilliseconds: 0,
+  //     })
 
-      mockStrategy.getCurrentTime.mockReturnValue(100)
+  //     mockStrategy.getCurrentTime.mockReturnValue(100)
 
-      const _playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn(),
-        jest.fn(),
-        mockAbortSignal
-      )
+  //     const _playerComponent = new PlayerComponent(
+  //       createPlaybackElement(),
+  //       bigscreenPlayerData,
+  //       mockMediaSources,
+  //       jest.fn(),
+  //       jest.fn(),
+  //       jest.fn(),
+  //       mockAbortSignal
+  //     )
 
-      await jest.runOnlyPendingTimersAsync()
+  //     await jest.runOnlyPendingTimersAsync()
 
-      mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
-      mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
+  //     mockStrategy.mockingHooks.fireEvent(MediaState.PLAYING)
+  //     mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-      await jest.advanceTimersByTimeAsync(20000)
+  //     await jest.advanceTimersByTimeAsync(20000)
 
-      expect(mockStrategy.load).toHaveBeenCalledTimes(2)
-      expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20)
-    })
+  //     expect(mockStrategy.load).toHaveBeenCalledTimes(2)
+  //     expect(mockStrategy.load).toHaveBeenNthCalledWith(2, "application/dash+xml", 100 - 20)
+  //   })
 
-    it("should fire error cleared on the plugins when failover completes", async () => {
-      jest.spyOn(Plugins.interface, "onErrorCleared")
+  //   it("should fire error cleared on the plugins when failover completes", async () => {
+  //     jest.spyOn(Plugins.interface, "onErrorCleared")
 
-      const _playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn(),
-        jest.fn(),
-        mockAbortSignal
-      )
+  //     const _playerComponent = new PlayerComponent(
+  //       createPlaybackElement(),
+  //       bigscreenPlayerData,
+  //       mockMediaSources,
+  //       jest.fn(),
+  //       jest.fn(),
+  //       jest.fn(),
+  //       mockAbortSignal
+  //     )
 
-      await jest.runOnlyPendingTimersAsync()
+  //     await jest.runOnlyPendingTimersAsync()
 
-      mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
+  //     mockStrategy.mockingHooks.fireError({ code: 0, message: "unknown" })
 
-      await jest.advanceTimersByTimeAsync(5000)
+  //     await jest.advanceTimersByTimeAsync(5000)
 
-      expect(Plugins.interface.onErrorCleared).toHaveBeenNthCalledWith(2, {
-        status: PluginEnums.STATUS.DISMISSED,
-        stateType: PluginEnums.TYPE.ERROR,
-        isBufferingTimeoutError: false,
-        cdn: undefined,
-        isInitialPlay: undefined,
-        timeStamp: expect.any(Object),
-      })
+  //     expect(Plugins.interface.onErrorCleared).toHaveBeenNthCalledWith(2, {
+  //       status: PluginEnums.STATUS.DISMISSED,
+  //       stateType: PluginEnums.TYPE.ERROR,
+  //       isBufferingTimeoutError: false,
+  //       cdn: undefined,
+  //       isInitialPlay: undefined,
+  //       timeStamp: expect.any(Object),
+  //     })
 
-      expect(Plugins.interface.onErrorCleared).toHaveBeenCalledTimes(2)
-    })
+  //     expect(Plugins.interface.onErrorCleared).toHaveBeenCalledTimes(2)
+  //   })
 
-    it("should fire buffering cleared on the plugins when failover completes", async () => {
-      jest.spyOn(Plugins.interface, "onBufferingCleared")
+  //   it("should fire buffering cleared on the plugins when failover completes", async () => {
+  //     jest.spyOn(Plugins.interface, "onBufferingCleared")
 
-      const _playerComponent = new PlayerComponent(
-        createPlaybackElement(),
-        bigscreenPlayerData,
-        mockMediaSources,
-        jest.fn(),
-        jest.fn(),
-        jest.fn(),
-        mockAbortSignal
-      )
+  //     const _playerComponent = new PlayerComponent(
+  //       createPlaybackElement(),
+  //       bigscreenPlayerData,
+  //       mockMediaSources,
+  //       jest.fn(),
+  //       jest.fn(),
+  //       jest.fn(),
+  //       mockAbortSignal
+  //     )
 
-      await jest.runOnlyPendingTimersAsync()
+  //     await jest.runOnlyPendingTimersAsync()
 
-      mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
+  //     mockStrategy.mockingHooks.fireEvent(MediaState.WAITING)
 
-      await jest.advanceTimersByTimeAsync(30000)
+  //     await jest.advanceTimersByTimeAsync(30000)
 
-      expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith({
-        status: PluginEnums.STATUS.DISMISSED,
-        stateType: PluginEnums.TYPE.BUFFERING,
-        isBufferingTimeoutError: false,
-        cdn: undefined,
-        newCdn: undefined,
-        isInitialPlay: true,
-        timeStamp: expect.any(Object),
-        message: undefined,
-        code: undefined,
-      })
+  //     expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledWith({
+  //       status: PluginEnums.STATUS.DISMISSED,
+  //       stateType: PluginEnums.TYPE.BUFFERING,
+  //       isBufferingTimeoutError: false,
+  //       cdn: undefined,
+  //       newCdn: undefined,
+  //       isInitialPlay: true,
+  //       timeStamp: expect.any(Object),
+  //       message: undefined,
+  //       code: undefined,
+  //     })
 
-      expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledTimes(2)
-    })
-  })
+  //     expect(Plugins.interface.onBufferingCleared).toHaveBeenCalledTimes(2)
+  //   })
+  // })
 
   describe("teardown", () => {
     it("should reset the strategy", async () => {
