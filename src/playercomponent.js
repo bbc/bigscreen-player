@@ -70,7 +70,8 @@ function PlayerComponent(
         {
           enable: bigscreenPlayerData.enableAudioDescribed,
           callback: audioDescribedCallback,
-        }
+        },
+        bigscreenPlayerData?.debug
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)
@@ -333,6 +334,9 @@ function PlayerComponent(
         bubbleFatalError(bufferingTimeoutError, mediaError)
       })
   }
+
+  // Not an ideal place for this, but I've been warned of a possible playercomponent rewrite
+  Plugins.updateContext((context) => ({ ...context, attemptCdnFailover }))
 
   function clearFatalErrorTimeout() {
     if (fatalErrorTimeout !== null) {

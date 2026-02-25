@@ -1923,12 +1923,34 @@ describe("Media Source Extensions Playback Strategy", () => {
   })
 
   describe("Playback bitrate", () => {
+    it("setBitrateConstraint should apply to an uninitialised player", () => {
+      const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
+
+      mseStrategy.setBitrateConstraint("video", 100, 200)
+
+      mseStrategy.load()
+
+      expect(mockDashInstance.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          streaming: expect.objectContaining({
+            abr: expect.objectContaining({ minBitrate: { video: 100 }, maxBitrate: { video: 200 } }),
+          }),
+        })
+      )
+    })
+
     it("setBitrateConstraint should call media player updateSettings", () => {
       const mseStrategy = MSEStrategy(mockMediaSources, MediaKinds.VIDEO, playbackElement)
       mseStrategy.load(null, 0)
       mseStrategy.setBitrateConstraint("video", 100, 200)
 
-      expect(mockDashInstance.updateSettings).toHaveBeenCalled()
+      expect(mockDashInstance.updateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          streaming: expect.objectContaining({
+            abr: expect.objectContaining({ minBitrate: { video: 100 }, maxBitrate: { video: 200 } }),
+          }),
+        })
+      )
     })
 
     it("getPlaybackBitrate returns the current playback bitrate in kbps", () => {

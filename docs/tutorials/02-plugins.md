@@ -12,8 +12,10 @@ The full interface is as follows:
 - `onPlayerInfoUpdated`
 - `onManifestLoaded`
 - `onManifestParseError`
-- `onQualityChangeRequested`
-- `onQualityChangedRendered`
+- `onQualityChangeRequested` (deprecated: use `onDownloadQualityChange`)
+- `onQualityChangeRendered` (deprecated: use `onPlaybackQualityChange`)
+- `onDownloadQualityChange`
+- `onPlaybackQualityChange`
 - `onSubtitlesLoadError`
 - `onSubtitlesTimeout`
 - `onSubtitlesXMLError`
@@ -22,7 +24,6 @@ The full interface is as follows:
 - `onSubtitlesDynamicLoadError`
 - `onFragmentContentLengthMismatch`
 - `onPlaybackRateChanged`
-- `onPlaybackFrozen`
 
 An example plugin may look like:
 

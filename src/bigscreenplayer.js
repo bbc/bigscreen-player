@@ -109,7 +109,7 @@ function BigscreenPlayer() {
     }
   }
 
-  function bigscreenPlayerDataLoaded({ media, enableSubtitles, subtitlesAlwaysOnTop, enableAudioDescribed }) {
+  function bigscreenPlayerDataLoaded({ media, enableSubtitles, subtitlesAlwaysOnTop, enableAudioDescribed, debug }) {
     abortSignal.throwIfAborted(AbortStages.DATA_LOADED)
 
     const initialPresentationTime =
@@ -122,7 +122,7 @@ function BigscreenPlayer() {
 
     playerComponent = PlayerComponent(
       playbackElement,
-      { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime },
+      { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime, debug },
       mediaSources,
       mediaStateUpdateCallback,
       _callbacks.playerError,
@@ -307,6 +307,8 @@ function BigscreenPlayer() {
             callbacks.onError(reason)
           }
         })
+
+      Plugins.updateContext((context) => ({ ...context, mediaSources }))
     },
 
     /**
@@ -737,7 +739,7 @@ function BigscreenPlayer() {
     },
 
     /**
-     * Register a plugin for extended events.
+     * Register a plugin for extended events & custom functionality.
      * @function
      * @param {*} plugin
      */

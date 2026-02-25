@@ -10,6 +10,7 @@ import DOMHelpers from "../domhelpers"
 import Utils from "../utils/playbackutils"
 import convertTimeRangesToArray from "../utils/mse/convert-timeranges-to-array"
 import { ManifestType } from "../models/manifesttypes"
+import setPropertyPath from "../utils/setpropertypath"
 
 const DEFAULT_SETTINGS = {
   liveDelay: 0,
@@ -22,7 +23,8 @@ function MSEStrategy(
   playbackElement,
   _isUHD = false,
   customPlayerSettings = {},
-  audioDescribedOpts = {}
+  audioDescribedOpts = {},
+  debugSettings = {}
 ) {
   const audioDescribed = { callback: undefined, enable: false, ...audioDescribedOpts }
 
@@ -84,6 +86,10 @@ function MSEStrategy(
       [MediaKinds.AUDIO]: undefined,
       [MediaKinds.VIDEO]: undefined,
     },
+    playbackQuality: {
+      [MediaKinds.AUDIO]: undefined,
+      [MediaKinds.VIDEO]: undefined,
+    },
     playbackBitrate: undefined,
     bufferLength: undefined,
     latency: undefined,
@@ -114,10 +120,10 @@ function MSEStrategy(
     METRIC_CHANGED: "metricChanged",
     STREAM_INITIALIZED: "streamInitialized",
     FRAGMENT_CONTENT_LENGTH_MISMATCH: "fragmentContentLengthMismatch",
+    FRAGMENT_LOADED: "fragmentLoadingCompleted",
     QUOTA_EXCEEDED: "quotaExceeded",
     TEXT_TRACKS_ADDED: "allTextTracksAdded",
     CURRENT_TRACK_CHANGED: "currentTrackChanged",
-    PLAYBACK_FROZEN: "playbackFrozen",
   }
 
   function onLoadedMetaData() {
@@ -328,6 +334,8 @@ function MSEStrategy(
       mediaPlayer.setMediaDuration(Number.MAX_SAFE_INTEGER)
     }
 
+    DebugTool.info("Stream initialised")
+
     if (mediaPlayer.getActiveStream()?.getHasVideoTrack()) {
       dispatchDownloadQualityChangeForKind(MediaKinds.VIDEO)
       dispatchMaxQualityChangeForKind(MediaKinds.VIDEO)
@@ -376,6 +384,43 @@ function MSEStrategy(
     const switchToPart = ` to ${qualityIndex} (${(bitrateInBps / 1000).toFixed(0)} kbps)`
 
     DebugTool.info(`${abrChangePart}${switchFromPart}${switchToPart}`)
+
+    Plugins.interface.onDownloadQualityChange({
+      type: "downloadqualitychange",
+      detail: {
+        mediaType: kind,
+        currentBitrateInBps: bitrateInBps,
+        currentQualityIndex: qualityIndex,
+        previousBitrateInBps: prevBitrateInBps,
+        previousQualityIndex: prevQualityIndex,
+      },
+    })
+  }
+
+  function dispatchPlaybackQualityChangeForKind(kind, { qualityIndex } = {}) {
+    const { qualityIndex: previousQualityIndex, bitrateInBps: previousBitrateInBps } =
+      playerMetadata.playbackQuality[kind] ?? {}
+
+    if (previousQualityIndex === qualityIndex) {
+      return
+    }
+
+    const bitrateInBps = playbackBitrateForRepresentationIndex(qualityIndex, kind)
+
+    playerMetadata.playbackQuality[kind] = { bitrateInBps, qualityIndex }
+
+    DebugTool.dynamicMetric(`${kind}-playback-quality`, [qualityIndex, bitrateInBps])
+
+    Plugins.interface.onPlaybackQualityChange({
+      type: "playbackqualitychange",
+      detail: {
+        mediaType: kind,
+        previousBitrateInBps,
+        previousQualityIndex,
+        currentBitrateInBps: bitrateInBps,
+        currentQualityIndex: qualityIndex,
+      },
+    })
   }
 
   function dispatchMaxQualityChangeForKind(kind) {
@@ -426,23 +471,16 @@ function MSEStrategy(
   }
 
   function onQualityChangeRendered(event) {
-    if (
-      event.newQuality !== undefined &&
-      (event.mediaType === MediaKinds.AUDIO || event.mediaType === MediaKinds.VIDEO)
-    ) {
-      const { mediaType, newQuality } = event
+    const { mediaType, newQuality } = event
 
-      DebugTool.dynamicMetric(`${mediaType}-playback-quality`, [
-        newQuality,
-        playbackBitrateForRepresentationIndex(newQuality, mediaType),
-      ])
-
+    if (newQuality !== undefined && (mediaType === MediaKinds.AUDIO || mediaType === MediaKinds.VIDEO)) {
+      dispatchPlaybackQualityChangeForKind(mediaType, { qualityIndex: newQuality })
       dispatchMaxQualityChangeForKind(mediaType)
     }
 
     emitPlayerInfo()
 
-    Plugins.interface.onQualityChangedRendered(event)
+    Plugins.interface.onQualityChangeRendered(event)
   }
 
   /**
@@ -521,6 +559,19 @@ function MSEStrategy(
       DebugTool.info(event.message)
     } else {
       DebugTool.debug(event.message)
+    }
+  }
+
+  function onFragmentLoaded() {
+    if (debugSettings?.fragmentResponseHeaders) {
+      debugSettings.fragmentResponseHeaders.forEach((responseHeader) => {
+        const responseHeaderValue = mediaPlayer
+          .getDashMetrics()
+          .getLatestFragmentRequestHeaderValueByID("video", responseHeader)
+        if (responseHeaderValue) {
+          DebugTool.staticMetric(responseHeader.toLowerCase(), responseHeaderValue)
+        }
+      })
     }
   }
 
@@ -705,13 +756,13 @@ function MSEStrategy(
     mediaPlayer.on(DashJSEvents.SERVICE_LOCATION_AVAILABLE, onServiceLocationAvailable)
     mediaPlayer.on(DashJSEvents.URL_RESOLUTION_FAILED, onURLResolutionFailed)
     mediaPlayer.on(DashJSEvents.FRAGMENT_CONTENT_LENGTH_MISMATCH, onFragmentContentLengthMismatch)
+    mediaPlayer.on(DashJSEvents.FRAGMENT_LOADED, onFragmentLoaded)
     mediaPlayer.on(DashJSEvents.GAP_JUMP, onGapJump)
     mediaPlayer.on(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
     mediaPlayer.on(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
     mediaPlayer.on(DashJSEvents.TEXT_TRACKS_ADDED, handleTextTracks)
     mediaPlayer.on(DashJSEvents.MANIFEST_LOADING_FINISHED, manifestLoadingFinished)
     mediaPlayer.on(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
-    mediaPlayer.on(DashJSEvents.PLAYBACK_FROZEN, onPlaybackFrozen)
   }
 
   function handleTextTracks() {
@@ -900,7 +951,6 @@ function MSEStrategy(
       mediaPlayer.off(DashJSEvents.GAP_JUMP_TO_END, onGapJump)
       mediaPlayer.off(DashJSEvents.QUOTA_EXCEEDED, onQuotaExceeded)
       mediaPlayer.off(DashJSEvents.CURRENT_TRACK_CHANGED, onCurrentTrackChanged)
-      mediaPlayer.off(DashJSEvents.PLAYBACK_FROZEN, onPlaybackFrozen)
       mediaPlayer = undefined
     }
 
@@ -1005,25 +1055,25 @@ function MSEStrategy(
    * Set constrained audio or video bitrate
    */
   function setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps) {
+    if (mediaKind !== MediaKinds.AUDIO && mediaKind !== MediaKinds.VIDEO) {
+      throw new TypeError(`Bitrate constraint not supported for this media kind. (got ${mediaKind})`)
+    }
+
+    if (mediaPlayer == null) {
+      setPropertyPath(playerSettings, ["streaming", "abr", "minBitrate", mediaKind], minBitrateKbps)
+      setPropertyPath(playerSettings, ["streaming", "abr", "maxBitrate", mediaKind], maxBitrateKbps)
+
+      return
+    }
+
     mediaPlayer.updateSettings({
       streaming: {
         abr: {
-          minBitrate: {
-            audio: mediaKind === MediaKinds.AUDIO ? minBitratKbps : -1,
-            video: mediaKind === MediaKinds.VIDEO ? minBitrateKbps : -1,
-          },
-          maxBitrate: {
-            audio: mediaKind === MediaKinds.AUDIO ? maxBitrateKbps : -1,
-            video: mediaKind === MediaKinds.VIDEO ? maxBitrateKbps : -1,
-          },
+          minBitrate: { [mediaKind]: minBitrateKbps },
+          maxBitrate: { [mediaKind]: maxBitrateKbps },
         },
       },
     })
-  }
-
-  function onPlaybackFrozen(event) {
-    Plugins.interface.onPlaybackFrozen(event)
-    DebugTool.info(`${event.cause}. Total frames - ${event.totalVideoFrames}`)
   }
 
   return {
