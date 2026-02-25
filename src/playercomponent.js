@@ -276,7 +276,7 @@ function PlayerComponent(
   }
 
   function startBufferingErrorTimeout() {
-    const bufferingTimeout = isInitialPlay ? 30000 : 20000
+    const bufferingTimeout = 120000
     clearBufferingErrorTimeout()
     errorTimeoutID = setTimeout(() => {
       bubbleBufferingCleared()
