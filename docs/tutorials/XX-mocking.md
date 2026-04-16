@@ -6,7 +6,7 @@ Bigscreen Player includes a test mode than can be triggered by calling `mock()` 
 
 ## `mock(opts)` and `mockJasmine(opts)`
 
-`mockJasmine()` should be used when you want to mock Bigscreen Player within Jasmine tests. This turns each Bigsceen Player api function into a Jasmine spy, so you can call all the spy function on them e.g. `expect(BigscreenPlayer.play).toHaveBeenCalled()`.
+`mockJasmine()` should be used when you want to mock Bigscreen Player within Jasmine tests. This turns each Bigscreen Player api function into a Jasmine spy, so you can call all the spy function on them e.g. `expect(BigscreenPlayer.play).toHaveBeenCalled()`.
 
 `mock()` should be used when you are not running Jasmine tests.
 
@@ -16,11 +16,11 @@ Bigscreen Player includes a test mode than can be triggered by calling `mock()` 
 
 ## `unmock()`
 
-Should be called when you want to stop mocking Bigsceen Player, including in the `afterEach()` of Jasmine tests.
+Should be called when you want to stop mocking Bigscreen Player, including in the `afterEach()` of Jasmine tests.
 
 ## Mocking hooks
 
-When Bigsceen Player has been mocked, there are various hooks added to the API in order to modify its behaviour or emulate certain real life scenarios.
+When bigscreen Player has been mocked, there are various hooks added to the API in order to modify its behaviour or emulate certain real life scenarios.
 
 ### `changeState(state, eventTrigger, opts)`
 
@@ -55,7 +55,7 @@ Sets the `endOfStream` value to be sent with events to `isEndOfStream`.
 
 ### `setInitialBuffering(value)`
 
-If Mock Bigsceen Player is setup to automatically progress, it will by default start progressing 100ms after `init()` has been called. If `setInitialBuffering(true)` is called, playback will not progress until something else causes it e.g. `play()` or `changeState(MediaState.PLAYING)`.
+If Mock bigscreen Player is setup to automatically progress, it will by default start progressing 100ms after `init()` has been called. If `setInitialBuffering(true)` is called, playback will not progress until something else causes it e.g. `play()` or `changeState(MediaState.PLAYING)`.
 
 ### `setLiveWindowStart(value)`
 
@@ -75,7 +75,7 @@ Set the seekable range to `newSeekableRange`.
 
 ### `setWindowType(type)`
 
-Sets the [WindowType](/models/windowtypes.js). Mock Bigsceen Player will behave differently for VOD, WEBCAST, and SIMULCAST as in production.
+Sets the [WindowType](/models/windowtypes.js). Mock bigscreen Player will behave differently for VOD, WEBCAST, and SIMULCAST as in production.
 
 ### `setSubtitlesAvailable(value)`
 
@@ -83,8 +83,8 @@ Sets the return value of `isSubtitlesAvailable()` to `value`.
 
 ### `triggerError()`
 
-Triggers a non-fatal error which stalls playback. Will be dismissed when any call to Bigsceen Player is made which results in a state change, or with mocking hooks `changeState()` or `triggerErrorHandled()`.
+Triggers a non-fatal error which stalls playback. Will be dismissed when any call to bigscreen Player is made which results in a state change, or with mocking hooks `changeState()` or `triggerErrorHandled()`.
 
 ### `triggerErrorHandled()`
 
-Makes Bigsceen Player handle an error - changes the URL if multiple were passed in, and the list hasn't already been exhausted, and resumes playback if Mock Bigsceen Player is automatically progressing.
+Makes bigscreen Player handle an error - changes the URL if multiple were passed in, and the list hasn't already been exhausted, and resumes playback if Mock bigscreen Player is automatically progressing.
