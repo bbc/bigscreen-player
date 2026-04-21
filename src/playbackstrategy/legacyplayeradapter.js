@@ -10,7 +10,7 @@ function LegacyPlayerAdapter(mediaSources, playbackElement, isUHD, player) {
 
   const setSourceOpts = {
     disableSentinels:
-      !!isUHD && manifestType === ManifestType.DYNAMIC && window.bigscreenPlayer?.overrides?.liveUhdDisableSentinels,
+      manifestType === ManifestType.DYNAMIC && window.bigscreenPlayer?.overrides?.liveUhdDisableSentinels,
     disableSeekSentinel: !!window.bigscreenPlayer?.overrides?.disableSeekSentinel,
   }
 
