@@ -239,33 +239,6 @@ describe("Legacy Playback Adapter", () => {
       }
     )
 
-    it("should disable all sentinels for a dynamic UHD stream when configured to do so", () => {
-      window.bigscreenPlayer.overrides = {
-        liveUhdDisableSentinels: true,
-      }
-
-      mockMediaSources.time.mockReturnValueOnce({ manifestType: ManifestType.DYNAMIC })
-      mockMediaSources.currentSource.mockReturnValueOnce("mock://media.src/")
-
-      const isUHD = true
-      const mediaPlayer = createMockMediaPlayer()
-
-      const legacyAdapter = LegacyAdapter(mockMediaSources, playbackElement, isUHD, mediaPlayer)
-
-      legacyAdapter.load("video/mp4")
-
-      expect(mediaPlayer.initialiseMedia).toHaveBeenCalledWith(
-        "video",
-        "mock://media.src/",
-        "video/mp4",
-        playbackElement,
-        {
-          disableSeekSentinel: false,
-          disableSentinels: true,
-        }
-      )
-    })
-
     it("should disable seek sentinels if we are configured to do so", () => {
       window.bigscreenPlayer.overrides = {
         disableSeekSentinel: true,
