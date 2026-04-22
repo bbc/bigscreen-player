@@ -1,8 +1,17 @@
 import Plugins from "../plugins"
 import findSegmentTemplate from "../utils/findtemplate"
+import DebugTool from "../debugger/debugtool"
 
-function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, mediaSources, callback) {
+function Subtitles(
+  mediaPlayer,
+  playbackElement,
+  mediaSources,
+  callback,
+  { alwaysOnTop, autoStart, defaultStyleOpts } = {}
+) {
   const useLegacySubs = window.bigscreenPlayer?.overrides?.legacySubtitles ?? false
+  const embeddedSubs = window.bigscreenPlayer?.overrides?.embeddedSubtitles ?? false
+
   const isSeekableLiveSupport =
     window.bigscreenPlayer.liveSupport == null || window.bigscreenPlayer.liveSupport === "seekable"
 
@@ -13,7 +22,25 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
     if (useLegacySubs) {
       import("./legacysubtitles.js")
         .then(({ default: LegacySubtitles }) => {
-          subtitlesContainer = LegacySubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+          subtitlesContainer = LegacySubtitles(mediaPlayer, playbackElement, mediaSources, {
+            alwaysOnTop,
+            autoStart,
+            defaultStyleOpts,
+          })
+
+          callback(subtitlesEnabled)
+        })
+        .catch(() => {
+          Plugins.interface.onSubtitlesDynamicLoadError()
+        })
+    } else if (embeddedSubs) {
+      import("./embeddedsubtitles.js")
+        .then(({ default: EmbeddedSubtitles }) => {
+          subtitlesContainer = EmbeddedSubtitles(mediaPlayer, playbackElement, {
+            autoStart,
+            defaultStyleOpts,
+          })
+
           callback(subtitlesEnabled)
         })
         .catch(() => {
@@ -22,7 +49,12 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
     } else {
       import("./imscsubtitles.js")
         .then(({ default: IMSCSubtitles }) => {
-          subtitlesContainer = IMSCSubtitles(mediaPlayer, autoStart, playbackElement, mediaSources, defaultStyleOpts)
+          subtitlesContainer = IMSCSubtitles(mediaPlayer, playbackElement, mediaSources, {
+            alwaysOnTop,
+            autoStart,
+            defaultStyleOpts,
+          })
+
           callback(subtitlesEnabled)
         })
         .catch(() => {
@@ -67,6 +99,10 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
   }
 
   function available() {
+    if (embeddedSubs) {
+      return mediaPlayer && mediaPlayer.isSubtitlesAvailable()
+    }
+
     const url = mediaSources.currentSubtitlesSource()
 
     if (!(typeof url === "string" && url !== "")) {
@@ -97,6 +133,16 @@ function Subtitles(mediaPlayer, autoStart, playbackElement, defaultStyleOpts, me
   function tearDown() {
     subtitlesContainer?.tearDown()
   }
+
+  function attemptSubtitleCdnFailover(opts) {
+    hide()
+    mediaSources
+      .failoverSubtitles(opts)
+      .then(() => show())
+      .catch(() => DebugTool.info("No more CDNs available for subtitle failover"))
+  }
+
+  Plugins.updateContext((context) => ({ ...context, attemptSubtitleCdnFailover }))
 
   return {
     enable,

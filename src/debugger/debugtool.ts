@@ -41,7 +41,7 @@ interface DebugTool {
   toggleVisibility(): void
 }
 
-function shouldDisplayEntry(entry: TimestampedEntry): boolean {
+function shouldDisplayMediaElemenEvent(entry: TimestampedEntry): boolean {
   return (
     !isTrace(entry) ||
     entry.kind !== "event" ||
@@ -81,11 +81,7 @@ function createDebugTool() {
       return
     }
 
-    if (newLogLevel === LogLevels.DEBUG) {
-      viewController.setFilters([])
-    } else {
-      viewController.setFilters([shouldDisplayEntry])
-    }
+    viewController.setFilters(newLogLevel === LogLevels.DEBUG ? [] : [shouldDisplayMediaElemenEvent])
 
     currentLogLevel = newLogLevel
   }

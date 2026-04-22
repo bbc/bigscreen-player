@@ -22,6 +22,8 @@ import ReadyHelper from "./readyhelper"
 import Subtitles from "./subtitles/subtitles"
 import { ManifestType } from "./models/manifesttypes"
 import { Timeline } from "./models/timeline"
+import { AbortSignal } from "./utils/abortutils"
+import { AbortStages } from "./models/abortstages"
 
 /**
  * @import {
@@ -53,6 +55,8 @@ function BigscreenPlayer() {
   let subtitleElementId
 
   const END_OF_STREAM_TOLERANCE = 10
+
+  const abortSignal = new AbortSignal()
 
   function mediaStateUpdateCallback(evt) {
     if (evt.timeUpdate) {
@@ -106,7 +110,9 @@ function BigscreenPlayer() {
     }
   }
 
-  function bigscreenPlayerDataLoaded({ media, enableSubtitles, enableAudioDescribed, subtitleElementId }) {
+  function bigscreenPlayerDataLoaded({ media, enableSubtitles, subtitlesAlwaysOnTop, enableAudioDescribed, debug, subtitleElementId }) {
+    abortSignal.throwIfAborted(AbortStages.DATA_LOADED)
+
     const initialPresentationTime =
       initialPlaybackTime == null ? undefined : convertPlaybackTimeToPresentationTimeInSeconds(initialPlaybackTime)
 
@@ -115,32 +121,32 @@ function BigscreenPlayer() {
       !initialPresentationTime &&
       initialPresentationTime !== 0
 
-    readyHelper = ReadyHelper(
-      initialPresentationTime,
-      mediaSources.time().manifestType,
-      PlayerComponent.getLiveSupport(),
-      _callbacks.playerReady
-    )
-
     playerComponent = PlayerComponent(
       playbackElement,
-      { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime },
+      { media, enableAudioDescribed, initialPlaybackTime: initialPresentationTime, debug },
       mediaSources,
       mediaStateUpdateCallback,
       _callbacks.playerError,
-      callAudioDescribedCallbacks
+      callAudioDescribedCallbacks,
+      abortSignal
     )
+
 
     const subtitleElement = document.getElementById(subtitleElementId)
     const subtitleContainer = subtitleElement || playbackElement
 
-    subtitles = Subtitles(
-      playerComponent,
-      enableSubtitles,
-      subtitleContainer,
-      media.subtitleCustomisation,
-      mediaSources,
-      callSubtitlesCallbacks
+    readyHelper = ReadyHelper(
+      initialPresentationTime,
+      mediaSources.time().manifestType,
+      PlayerComponent.getLiveSupport(),
+      () => {
+        _callbacks.playerReady && _callbacks.playerReady()
+        subtitles = Subtitles(playerComponent, subtitleContainer, mediaSources, callSubtitlesCallbacks, {
+          alwaysOnTop: subtitlesAlwaysOnTop,
+          autoStart: enableSubtitles,
+          defaultStyleOpts: media.subtitleCustomisation,
+        })
+      }
     )
   }
 
@@ -307,6 +313,8 @@ function BigscreenPlayer() {
             callbacks.onError(reason)
           }
         })
+
+      Plugins.updateContext((context) => ({ ...context, mediaSources }))
     },
 
     /**
@@ -315,6 +323,8 @@ function BigscreenPlayer() {
      * @name tearDown
      */
     tearDown() {
+      abortSignal.abort()
+
       if (subtitles) {
         subtitles.tearDown()
         subtitles = undefined
@@ -474,6 +484,24 @@ function BigscreenPlayer() {
      * @returns {Number} the current media playback rate
      */
     getPlaybackRate: () => playerComponent && playerComponent.getPlaybackRate(),
+
+    /**
+     * Set constrained bitrate given a min/max range and mediakind.
+     */
+    setBitrateConstraint: (mediaKind, minBitrateKbps, maxBitrateKbps) => {
+      if (playerComponent) {
+        playerComponent.setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps)
+      }
+    },
+
+    /**
+     * Returns current playback bitrate for media kind.
+     */
+    getPlaybackBitrate: (mediaKind) => {
+      if (playerComponent) {
+        return playerComponent.getPlaybackBitrate(mediaKind)
+      }
+    },
 
     /**
      * Returns the media asset's current time in seconds.
@@ -717,7 +745,7 @@ function BigscreenPlayer() {
     },
 
     /**
-     * Register a plugin for extended events.
+     * Register a plugin for extended events & custom functionality.
      * @function
      * @param {*} plugin
      */

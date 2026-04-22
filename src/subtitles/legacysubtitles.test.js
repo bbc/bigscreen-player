@@ -6,6 +6,7 @@ import Renderer from "./renderer"
 
 jest.mock("../utils/loadurl")
 jest.mock("../plugins", () => ({
+  updateContext: jest.fn(),
   interface: {
     onSubtitlesTimeout: jest.fn(),
     onSubtitlesXMLError: jest.fn(),
@@ -32,10 +33,10 @@ describe("Legacy Subtitles", () => {
     getDuration: jest.fn(),
   }
 
-  const parentElement = document.createElement("div")
   const loadUrlStubResponseXml = "<?xml>"
   const loadUrlStubResponseText = "loadUrlStubResponseText"
 
+  let parentElement
   let legacySubtitles
   let subtitlesUrl
   let subtitlesCdn
@@ -47,6 +48,7 @@ describe("Legacy Subtitles", () => {
       callbackObject.onLoad(loadUrlStubResponseXml, loadUrlStubResponseText, 200)
     })
 
+    parentElement = document.createElement("div")
     subtitlesUrl = "http://stub-captions.test"
     subtitlesCdn = "supplier1"
     mockMediaSources = {
@@ -79,20 +81,20 @@ describe("Legacy Subtitles", () => {
 
   it("Should load the subtitles url if auto start is true", () => {
     const autoStart = true
-    legacySubtitles = LegacySubtitles(mockMediaPlayer, autoStart, parentElement, mockMediaSources)
+    legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart })
 
     expect(LoadUrl).toHaveBeenCalledWith(subtitlesUrl, expect.any(Object))
   })
 
   it("Should not load the subtitles url if auto start is false", () => {
     const autoStart = false
-    legacySubtitles = LegacySubtitles(mockMediaPlayer, autoStart, parentElement, mockMediaSources)
+    legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart })
 
     expect(LoadUrl).not.toHaveBeenCalled()
   })
 
   it("Has a player subtitles class", () => {
-    legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
+    legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart: true })
 
     expect(parentElement.firstChild.className).toContain("playerCaptions")
   })
@@ -101,7 +103,7 @@ describe("Legacy Subtitles", () => {
     LoadUrl.mockImplementation((url, callbackObject) => {
       callbackObject.onLoad(null, "", 200)
     })
-    legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
+    legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart: true })
 
     expect(Plugins.interface.onSubtitlesXMLError).toHaveBeenCalledWith({ cdn: subtitlesCdn })
     expect(Plugins.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1)
@@ -112,7 +114,7 @@ describe("Legacy Subtitles", () => {
     LoadUrl.mockImplementation((url, callbackObject) => {
       callbackObject.onError({ statusCode: 404 })
     })
-    legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
+    legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart: true })
 
     expect(mockMediaSources.failoverSubtitles).toHaveBeenCalledWith({
       statusCode: 404,
@@ -124,7 +126,7 @@ describe("Legacy Subtitles", () => {
     LoadUrl.mockImplementation((url, callbackObject) => {
       callbackObject.onTimeout()
     })
-    legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
+    legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart: true })
 
     expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledWith({ cdn: subtitlesCdn })
     expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1)
@@ -132,7 +134,7 @@ describe("Legacy Subtitles", () => {
 
   describe("Start", () => {
     it("Should call start on the renderer when the renderer exists", () => {
-      legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart: true })
 
       legacySubtitles.start()
 
@@ -140,7 +142,7 @@ describe("Legacy Subtitles", () => {
     })
 
     it("Should load the subtitle url and create the renderer when the renderer doesnt exist", () => {
-      legacySubtitles = LegacySubtitles(mockMediaPlayer, false, parentElement, mockMediaSources)
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources)
 
       legacySubtitles.start()
 
@@ -152,7 +154,7 @@ describe("Legacy Subtitles", () => {
       LoadUrl.mockImplementation((url, callbackObject) => {
         callbackObject.onError()
       })
-      legacySubtitles = LegacySubtitles(mockMediaPlayer, false, parentElement, mockMediaSources)
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources)
 
       legacySubtitles.start()
 
@@ -162,7 +164,7 @@ describe("Legacy Subtitles", () => {
 
   describe("Stop", () => {
     it("Stops the subtitles if there is valid xml in the response object", () => {
-      legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart: true })
       legacySubtitles.stop()
 
       expect(mockStop).toHaveBeenCalledWith()
@@ -173,7 +175,7 @@ describe("Legacy Subtitles", () => {
         callbackObject.onError()
       })
 
-      legacySubtitles = new LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
+      legacySubtitles = new LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart: true })
       legacySubtitles.stop()
 
       expect(mockStop).not.toHaveBeenCalledWith()
@@ -182,7 +184,7 @@ describe("Legacy Subtitles", () => {
 
   describe("Updating position", () => {
     beforeEach(() => {
-      legacySubtitles = LegacySubtitles(mockMediaPlayer, true, parentElement, mockMediaSources)
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, { autoStart: true })
     })
 
     test.each([
@@ -203,6 +205,30 @@ describe("Legacy Subtitles", () => {
       legacySubtitles.updatePosition(TransportControlPosition.CONTROLS_WITH_INFO)
 
       expect(parentElement.firstChild.className).not.toContain("controlsVisible")
+    })
+  })
+
+  describe("always on top", () => {
+    it("should set the parent element's z-index to the maximum value when alwaysOnTop is true", () => {
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, {
+        autoStart: true,
+        alwaysOnTop: true,
+      })
+
+      const subtitlesElement = parentElement.firstChild
+
+      expect(subtitlesElement.style.zIndex).toBe("2147483647")
+    })
+
+    it("should not set the parent element's z-index when alwaysOnTop is false", () => {
+      legacySubtitles = LegacySubtitles(mockMediaPlayer, parentElement, mockMediaSources, {
+        autoStart: true,
+        alwaysOnTop: false,
+      })
+
+      const subtitlesElement = parentElement.firstChild
+
+      expect(subtitlesElement.style.zIndex).toBe("")
     })
   })
 })

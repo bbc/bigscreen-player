@@ -12,6 +12,7 @@ import MediaState from "./models/mediastate"
 import PauseTriggers from "./models/pausetriggers"
 import { Timeline } from "./models/timeline"
 import getError, { NoErrorThrownError } from "./testutils/geterror"
+import { AbortStages } from "./models/abortstages"
 
 let bigscreenPlayer
 let bigscreenPlayerData
@@ -116,6 +117,8 @@ describe("Bigscreen Player", () => {
       isAudioDescribedAvailable: jest.fn(),
       isAudioDescribedEnabled: jest.fn(),
       setAudioDescribed: jest.fn(),
+      setBitrateConstraint: jest.fn(),
+      getPlaybackBitrate: jest.fn(),
     }
 
     jest.spyOn(PlayerComponent, "getLiveSupport").mockReturnValue(LiveSupport.SEEKABLE)
@@ -192,7 +195,8 @@ describe("Bigscreen Player", () => {
         expect.any(Object),
         expect.any(Function),
         expect.any(Function),
-        expect.any(Function)
+        expect.any(Function),
+        expect.objectContaining({ aborted: false })
       )
     })
 
@@ -205,11 +209,12 @@ describe("Bigscreen Player", () => {
 
       expect(jest.mocked(Subtitles)).toHaveBeenCalledWith(
         expect.any(Object),
-        true,
         expect.any(HTMLDivElement),
-        undefined,
         expect.any(Object),
-        expect.any(Function)
+        expect.any(Function),
+        expect.objectContaining({
+          autoStart: true,
+        })
       )
     })
 
@@ -232,7 +237,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -251,7 +257,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -271,7 +278,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -295,7 +303,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -319,7 +328,8 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
       })
 
@@ -344,8 +354,25 @@ describe("Bigscreen Player", () => {
           expect.any(Object),
           expect.any(Function),
           expect.any(Function),
-          expect.any(Function)
+          expect.any(Function),
+          expect.objectContaining({ aborted: false })
         )
+      })
+    })
+
+    describe("aborting during initialization", () => {
+      it("aborts if bigscreen player has been torn down", async () => {
+        bigscreenPlayer.tearDown()
+        const error = await getError(() => asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData))
+
+        expect(error).toHaveProperty("name", "AbortError")
+        expect(error).toHaveProperty("message", `bigscreen-player aborted at ${AbortStages.DATA_LOADED}`)
+      })
+
+      it("does not abort if bigscreen player has not been torn down", async () => {
+        const error = await getError(() => asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData))
+
+        expect(error).toBeInstanceOf(NoErrorThrownError)
       })
     })
   })
@@ -1667,6 +1694,37 @@ describe("Bigscreen Player", () => {
       bigscreenPlayer.getDebugLogs()
 
       expect(DebugTool.getDebugLogs).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe("Set and get playback bitrate", () => {
+    const mediaKind = "video"
+    const minBitrateKbps = 100
+    const maxBitrateKbps = 200
+
+    it("should set bitrate on the strategy", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+      bigscreenPlayer.setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps)
+
+      expect(mockPlayerComponentInstance.setBitrateConstraint).toHaveBeenLastCalledWith(
+        mediaKind,
+        minBitrateKbps,
+        maxBitrateKbps
+      )
+    })
+
+    it("should not set the bitrate if playerComponent is not initialised", async () => {
+      bigscreenPlayer.setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps)
+
+      expect(mockPlayerComponentInstance.setBitrateConstraint).not.toHaveBeenCalled()
+    })
+
+    it("should return the bitrate given a media kind", async () => {
+      await asyncInitialiseBigscreenPlayer(createPlaybackElement(), bigscreenPlayerData)
+      mockPlayerComponentInstance.getPlaybackBitrate.mockReturnValue(100)
+      bigscreenPlayer.getPlaybackBitrate(mediaKind)
+
+      expect(mockPlayerComponentInstance.getPlaybackBitrate()).toBe(100)
     })
   })
 })

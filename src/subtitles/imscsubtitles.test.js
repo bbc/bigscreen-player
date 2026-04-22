@@ -7,6 +7,7 @@ import Plugins from "../plugins"
 jest.mock("smp-imsc")
 jest.mock("../utils/loadurl")
 jest.mock("../plugins", () => ({
+  updateContext: jest.fn(),
   interface: {
     onSubtitlesTimeout: jest.fn(),
     onSubtitlesXMLError: jest.fn(),
@@ -83,13 +84,10 @@ describe("IMSC Subtitles", () => {
     }),
   }
 
-  beforeAll(() => {
-    fromXML.mockReturnValue(mockImscDoc)
-
-    generateISD.mockReturnValue({ contents: ["mockContents"] })
-  })
-
   beforeEach(() => {
+    fromXML.mockReturnValue(mockImscDoc)
+    generateISD.mockReturnValue({ contents: ["mockContents"] })
+
     jest.useFakeTimers()
     jest.clearAllMocks()
     jest.clearAllTimers()
@@ -127,7 +125,7 @@ describe("IMSC Subtitles", () => {
     it("returns the correct interface", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       expect(subtitles).toEqual(
         expect.objectContaining({
@@ -142,7 +140,7 @@ describe("IMSC Subtitles", () => {
     it("starts the update loop immediately when set to autoplay", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       setTime(1.5)
 
@@ -154,7 +152,7 @@ describe("IMSC Subtitles", () => {
     it("does not start the update loop immediately when not autoplaying", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: false })
 
       setTime(1.5)
 
@@ -169,9 +167,11 @@ describe("IMSC Subtitles", () => {
 
       const expectedStyles = { spanBackgroundColorAdjust: { transparent: "black" }, fontFamily: "Arial" }
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {
-        backgroundColour: "black",
-        fontFamily: "Arial",
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+        defaultStyleOpts: {
+          backgroundColour: "black",
+          fontFamily: "Arial",
+        },
       })
 
       subtitles.start()
@@ -195,7 +195,7 @@ describe("IMSC Subtitles", () => {
     it("overrides the subtitles styling metadata with supplied custom styles when rendering", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       const styleOpts = { size: 0.7, lineHeight: 0.9 }
       const expectedOpts = { sizeAdjust: 0.7, lineHeightAdjust: 0.9 }
@@ -231,7 +231,7 @@ describe("IMSC Subtitles", () => {
         lineHeightAdjust: 0.9,
       }
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, defaultStyleOpts)
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { defaultStyleOpts })
 
       mockMediaPlayer.getCurrentTime.mockReturnValueOnce(1)
 
@@ -255,7 +255,7 @@ describe("IMSC Subtitles", () => {
     it("does not render custom styles when subtitles are not enabled", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       const subsEnabled = false
       subtitles.start()
@@ -269,7 +269,7 @@ describe("IMSC Subtitles", () => {
     it("should call fromXML, generate and render when renderExample is called", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       subtitles.renderExample("", {}, {})
 
@@ -281,7 +281,7 @@ describe("IMSC Subtitles", () => {
     it("should call renderHTML with a preview element with the correct structure when no position info", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources)
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       let exampleSubsElement = null
       let height = null
@@ -309,7 +309,7 @@ describe("IMSC Subtitles", () => {
     it("should call renderHTML with a preview element with the correct structure when there is position info", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       let exampleSubsElement = null
       let height = null
@@ -348,7 +348,7 @@ describe("IMSC Subtitles", () => {
     it("should load the subtitles url", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       expect(LoadUrl).toHaveBeenCalledWith("mock://some.media/captions/subtitles.xml", expect.any(Object))
     })
@@ -363,7 +363,7 @@ describe("IMSC Subtitles", () => {
         callbackObject.onError()
       })
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       await jest.runOnlyPendingTimersAsync()
 
@@ -376,7 +376,7 @@ describe("IMSC Subtitles", () => {
     it("calls fromXML on creation with the extracted XML from the text property of the response argument", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       expect(fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>')
     })
@@ -387,7 +387,7 @@ describe("IMSC Subtitles", () => {
 
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       expect(fromXML).toHaveBeenCalledWith('<tt xmlns="http://www.w3.org/ns/ttml"></tt>')
     })
@@ -399,7 +399,7 @@ describe("IMSC Subtitles", () => {
 
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       expect(Plugins.interface.onSubtitlesTransformError).toHaveBeenCalledTimes(1)
     })
@@ -411,7 +411,7 @@ describe("IMSC Subtitles", () => {
 
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       expect(Plugins.interface.onSubtitlesXMLError).toHaveBeenCalledTimes(1)
     })
@@ -423,7 +423,7 @@ describe("IMSC Subtitles", () => {
 
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledWith({ cdn: "foo" })
       expect(Plugins.interface.onSubtitlesTimeout).toHaveBeenCalledTimes(1)
@@ -432,7 +432,7 @@ describe("IMSC Subtitles", () => {
     it("does not attempt to load subtitles if there is no subtitles url", () => {
       captions = [{}]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       expect(LoadUrl).not.toHaveBeenCalled()
     })
@@ -443,7 +443,7 @@ describe("IMSC Subtitles", () => {
         { url: "mock://other.media/captions/subtitles.xml", cdn: "bar" },
       ]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       expect(LoadUrl).toHaveBeenCalledTimes(1)
       expect(LoadUrl).toHaveBeenCalledWith("mock://some.media/captions/subtitles.xml", expect.any(Object))
@@ -461,7 +461,7 @@ describe("IMSC Subtitles", () => {
 
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       setTime(1.5)
 
@@ -472,7 +472,7 @@ describe("IMSC Subtitles", () => {
     it("does not try to generate and render when current time is undefined", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       setTime()
 
@@ -487,7 +487,7 @@ describe("IMSC Subtitles", () => {
 
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
       setTime(1.5)
 
@@ -498,7 +498,7 @@ describe("IMSC Subtitles", () => {
     it("does not try to generate and render when the initial current time is less than the first subtitle time", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       subtitles.start()
 
@@ -511,7 +511,7 @@ describe("IMSC Subtitles", () => {
     it("attempts to generate and render when the initial current time is greater than the final subtitle time", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       subtitles.start()
       setTime(9)
@@ -529,7 +529,7 @@ describe("IMSC Subtitles", () => {
     it("attempts to generate and render when the initial current time is mid way through a stream", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       subtitles.start()
 
@@ -543,7 +543,7 @@ describe("IMSC Subtitles", () => {
     it("only generates and renders when there are new subtitles to display", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       subtitles.start()
 
@@ -574,7 +574,7 @@ describe("IMSC Subtitles", () => {
     it("no longer attempts any rendering if subtitles have been stopped", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       subtitles.start()
       setTime(1.5)
@@ -592,7 +592,7 @@ describe("IMSC Subtitles", () => {
     it("no longer attempts any rendering if subtitles have been torn down", () => {
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       subtitles.start()
       setTime(1.5)
@@ -614,7 +614,7 @@ describe("IMSC Subtitles", () => {
 
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       subtitles.start()
       setTime(1.5)
@@ -629,12 +629,48 @@ describe("IMSC Subtitles", () => {
 
       captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
 
-      subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources)
 
       subtitles.start()
       setTime(1.5)
 
       expect(Plugins.interface.onSubtitlesRenderError).toHaveBeenCalledTimes(1)
+    })
+
+    it("removes subtitle element after seeking to an unsubtitled region", () => {
+      captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
+
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+        autoStart: true,
+      })
+
+      setTime(20)
+
+      const preSeekAwayContainer = document.querySelector("#bsp_subtitles")
+      expect(preSeekAwayContainer).not.toBeNull()
+
+      setTime(0)
+
+      const postSeekAwayContainer = document.querySelector("#bsp_subtitles")
+      expect(postSeekAwayContainer).toBeNull()
+    })
+
+    it("keeps subtitle element rendered after seeking forward within the same subtitle", () => {
+      captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
+
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+        autoStart: true,
+      })
+
+      setTime(20)
+
+      const preSeekAwayContainer = document.querySelector("#bsp_subtitles")
+      expect(preSeekAwayContainer).not.toBeNull()
+
+      setTime(30)
+
+      const postSeekAwayContainer = document.querySelector("#bsp_subtitles")
+      expect(postSeekAwayContainer).not.toBeNull()
     })
   })
 
@@ -661,7 +697,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -681,7 +717,9 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+          autoStart: true,
+        })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -710,7 +748,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         progressTime(13.84)
 
@@ -732,7 +770,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -758,7 +796,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         progressTime(100) // seek way ahead
 
@@ -783,7 +821,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -808,7 +846,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: false })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -825,7 +863,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, false, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: false })
 
         expect(LoadUrl).not.toHaveBeenCalled()
 
@@ -848,7 +886,7 @@ describe("IMSC Subtitles", () => {
 
         mockLoadUrlResponse.text = `stuff that might exists before the xml string${mockLoadUrlResponse.text}`
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -865,7 +903,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -888,7 +926,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         subtitles.start()
 
@@ -908,7 +946,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         mockMediaPlayer.getCurrentTime.mockReturnValueOnce(NaN)
         jest.advanceTimersByTime(UPDATE_INTERVAL)
@@ -926,7 +964,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         mockMediaPlayer.getCurrentTime.mockReturnValue(0)
 
@@ -949,7 +987,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         progressTime(1)
 
@@ -974,7 +1012,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         progressTime(1)
 
@@ -1007,7 +1045,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -1042,7 +1080,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -1071,7 +1109,7 @@ describe("IMSC Subtitles", () => {
           },
         ]
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         jest.advanceTimersByTime(UPDATE_INTERVAL)
 
@@ -1148,7 +1186,7 @@ describe("IMSC Subtitles", () => {
 
         generateISD.mockReturnValue({ contents: ["mockContents"] })
 
-        subtitles = IMSCSubtitles(mockMediaPlayer, true, targetElement, mockMediaSources, {})
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, { autoStart: true })
 
         progressTime(2.75)
 
@@ -1323,6 +1361,125 @@ describe("IMSC Subtitles", () => {
         expect(generateISD).not.toHaveBeenCalled()
         expect(renderHTML).not.toHaveBeenCalled()
       })
+
+      it("keeps subtitle element rendered after seeking between segments", () => {
+        captions = [
+          {
+            type: "application/ttml+xml",
+            url: "mock://some.media/captions/$segment$.m4s",
+            cdn: "foo",
+            segmentLength: 3.84,
+          },
+        ]
+
+        const epochStartTimeSeconds = 1614769200
+
+        const convertSecondsToEpoch = (...seconds) =>
+          seconds.map((time) => (time === 0 ? 0 : epochStartTimeSeconds + time))
+
+        const buildMockSegment = ({ beginTimes, id } = {}) => ({
+          _mockedSegmentID: id,
+          body: {
+            contents: ["stub"],
+          },
+          head: {
+            styling: {},
+          },
+          getMediaTimeEvents: () => beginTimes,
+        })
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 1,
+            beginTimes: convertSecondsToEpoch(0, 1, 2, 3.84),
+          })
+        )
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 2,
+            beginTimes: convertSecondsToEpoch(0, 3.84, 4, 7.68),
+          })
+        )
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 3,
+            beginTimes: convertSecondsToEpoch(0, 7.68, 9, 9.7, 11.52),
+          })
+        )
+
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 4,
+            beginTimes: convertSecondsToEpoch(0, 11.52, 14, 16),
+          })
+        )
+
+        // back to segment 1
+        fromXML.mockReturnValueOnce(
+          buildMockSegment({
+            id: 1,
+            beginTimes: convertSecondsToEpoch(0, 1, 2, 3.84),
+          })
+        )
+
+        fromXML.mockReturnValue(buildMockSegment({ id: null }))
+
+        generateISD.mockReturnValue({ contents: ["mockContents"] })
+
+        subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+          autoStart: true,
+        })
+
+        progressTime(3.5)
+
+        const preSeekAwayContainer = document.querySelector("#bsp_subtitles")
+        expect(preSeekAwayContainer).not.toBeNull()
+
+        progressTime(2.5)
+
+        const postSeekAwayContainer = document.querySelector("#bsp_subtitles")
+        expect(postSeekAwayContainer).not.toBeNull()
+
+        // back to segment 1
+        progressTime(-2.5)
+
+        const postSeekAwayContainer2 = document.querySelector("#bsp_subtitles")
+        expect(postSeekAwayContainer2).not.toBeNull()
+      })
+    })
+  })
+
+  describe("always on top", () => {
+    it("should set the container element's z-index to the maximum value when alwaysOnTop is true", () => {
+      captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
+
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+        autoStart: true,
+        alwaysOnTop: true,
+      })
+
+      setTime(1.5)
+
+      const container = document.querySelector("#bsp_subtitles")
+
+      expect(container.style.zIndex).toBe("2147483647")
+    })
+
+    it("should not set the container element's z-index when alwaysOnTop is false", () => {
+      captions = [{ url: "mock://some.media/captions/subtitles.xml", cdn: "foo" }]
+
+      subtitles = IMSCSubtitles(mockMediaPlayer, targetElement, mockMediaSources, {
+        autoStart: true,
+        alwaysOnTop: false,
+      })
+
+      setTime(1.5)
+
+      const container = document.querySelector("#bsp_subtitles")
+
+      expect(container.style.zIndex).toBe("")
     })
   })
 })

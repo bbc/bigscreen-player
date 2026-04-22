@@ -34,7 +34,7 @@ This requires additional config to select which media player implementation to u
 window.bigscreenPlayer.mediaPlayer: 'html5'
 ```
 
-You must also indicate the device's live playback capability. There's more info in [the documentation on live-streaming](https://bbc.github.io/bigscreen-player/api/tutorial-live-streaming.html)
+You must also indicate the device's live playback capability. There's more info in [the documentation on live-streaming](https://bbc.github.io/bigscreen-player/api/tutorial-10-live-streaming.html)
 
 ```javascript
 window.bigscreenPlayer.liveSupport = "seekable"

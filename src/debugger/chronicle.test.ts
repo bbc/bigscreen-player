@@ -88,10 +88,10 @@ describe("Chronicle", () => {
 
     chronicle.setCurrentElementTime(32)
 
-    chronicle.appendMetric("bitrate", 16)
+    chronicle.appendMetric("buffer-length", 16)
 
     expect(chronicle.retrieve()).toEqual([
-      { category: EntryCategory.METRIC, currentElementTime: 32, sessionTime: 0, kind: "bitrate", data: 16 },
+      { category: EntryCategory.METRIC, currentElementTime: 32, sessionTime: 0, kind: "buffer-length", data: 16 },
     ])
   })
 
@@ -162,29 +162,29 @@ describe("Chronicle", () => {
     it("does not record a new metric if the array value is the same", () => {
       const chronicle = new Chronicle()
 
-      chronicle.appendMetric("representation-audio", [0, 67])
+      chronicle.appendMetric("seekable-range", [0, 67])
 
       jest.advanceTimersByTime(2345)
 
-      chronicle.appendMetric("representation-audio", [0, 67])
+      chronicle.appendMetric("seekable-range", [0, 67])
 
       jest.advanceTimersByTime(3456)
       chronicle.setCurrentElementTime(0.3)
 
-      chronicle.appendMetric("representation-audio", [1, 128])
+      chronicle.appendMetric("seekable-range", [1, 128])
 
       expect(chronicle.retrieve()).toEqual([
-        expect.objectContaining({ kind: "representation-audio", data: [0, 67], sessionTime: 0, currentElementTime: 0 }),
+        expect.objectContaining({ kind: "seekable-range", data: [0, 67], sessionTime: 0, currentElementTime: 0 }),
         expect.objectContaining({
-          kind: "representation-audio",
+          kind: "seekable-range",
           data: [1, 128],
           sessionTime: 2345 + 3456,
           currentElementTime: 0.3,
         }),
       ])
 
-      expect(chronicle.getLatestMetric("representation-audio")).toMatchObject({
-        kind: "representation-audio",
+      expect(chronicle.getLatestMetric("seekable-range")).toMatchObject({
+        kind: "seekable-range",
         data: [1, 128],
       })
     })
@@ -203,13 +203,6 @@ describe("Chronicle", () => {
     it("accepts an array-like as a metric value", () => {
       const chronicle = new Chronicle()
       const code = () => chronicle.appendMetric("seekable-range", [0, 30])
-
-      expect(code).not.toThrow()
-    })
-
-    it("accepts nested array-likes as a metric value", () => {
-      const chronicle = new Chronicle()
-      const code = () => chronicle.appendMetric("representation-video", [9, 14931])
 
       expect(code).not.toThrow()
     })
@@ -285,7 +278,7 @@ describe("Chronicle", () => {
     it("accepts nested array-likes as a metric value", () => {
       const chronicle = new Chronicle()
 
-      const code = () => chronicle.setMetric("representation-audio", [0, 67])
+      const code = () => chronicle.setMetric("seekable-range", [0, 67])
 
       expect(code).not.toThrow()
     })

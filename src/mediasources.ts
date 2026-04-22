@@ -1,4 +1,4 @@
-import type { CaptionsConnection, Connection, MediaDescriptor } from "./types"
+import type { CaptionsConnection, Connection, MediaDescriptor, MediaProtectionData } from "./types"
 
 import PlaybackUtils from "./utils/playbackutils"
 import Plugins from "./plugins"
@@ -37,6 +37,7 @@ function MediaSources() {
 
   let subtitlesSources: CaptionsConnection[] = []
   let current: SourceType = SourceType.MEDIA
+  let protectionData: MediaProtectionData | null = null
 
   let failoverResetTokens: number[] = []
   let time: TimeInfo | null = null
@@ -66,6 +67,8 @@ function MediaSources() {
 
       sources[SourceType.MEDIA] = PlaybackUtils.cloneArray(media.urls ?? []) as Connection[]
       sources[SourceType.AUDIO_DESCRIBED] = PlaybackUtils.cloneArray(media.audioDescribed ?? []) as Connection[]
+
+      protectionData = media.protectionData || null
 
       subtitlesSources = PlaybackUtils.cloneArray(media.captions ?? []) as CaptionsConnection[]
 
@@ -234,6 +237,10 @@ function MediaSources() {
       })
   }
 
+  function getCurrentProtectionData(): MediaProtectionData | null {
+    return protectionData
+  }
+
   function getCurrentUrl(): string {
     return sources[current].length > 0 ? sources[current][0].url.toString() : ""
   }
@@ -367,6 +374,7 @@ function MediaSources() {
     currentSubtitlesSource: getCurrentSubtitlesUrl,
     currentSubtitlesSegmentLength: getCurrentSubtitlesSegmentLength,
     currentSubtitlesCdn: getCurrentSubtitlesCdn,
+    currentProtectionData: getCurrentProtectionData,
     subtitlesRequestTimeout: getSubtitlesRequestTimeout,
     availableSources: availableUrls,
     failoverResetTime,

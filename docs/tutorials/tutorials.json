@@ -5,20 +5,41 @@
   "01-playback-strategies": {
     "title": "Playback Strategies"
   },
-  "02-settings-and-overrides": {
+  "01-settings-and-overrides": {
     "title": "Settings And Overrides"
   },
-  "cdn-failover": {
-    "title": "CDN Failover"
-  },
-  "debugging": {
+  "02-debugging": {
     "title": "Debugging"
   },
-  "live-streaming": {
-    "title": "Live"
+  "02-events": {
+    "title": "Events"
   },
-  "seeking": {
+  "02-media-state-changes": {
+    "title": "Media State Changes"
+  },
+  "02-plugins": {
+    "title": "Plugins"
+  },
+  "10-live-streaming": {
+    "title": "Playing Livestreams"
+  },
+  "10-seeking": {
     "title": "Seeking"
+  },
+  "20-audio-description": {
+    "title": "Audio Description"
+  },
+  "20-timed-text": {
+    "title": "Subtitles and Timed Text"
+  },
+  "30-cdn-failover": {
+    "title": "CDN Failover"
+  },
+  "90-design": {
+    "title": "Design"
+  },
+  "90-testing": {
+    "title": "Testing"
   },
   "XX-mocking": {
     "title": "Mocking Playback (deprecated)"

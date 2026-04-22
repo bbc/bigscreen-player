@@ -1,4 +1,14 @@
-A seek is initiated by `BigscreenPlayer#setCurrentTime()`. It can take a number or a number and a timeline. Each timeline is defined in the `Timeline` enum.
+A seek is initiated by `BigscreenPlayer#setCurrentTime()`.
+
+```js
+bigscreenPlayer.setCurrentTime(30) // seeks in seconds
+```
+
+You can also specify [a timeline (read more in section: Timelines)](#timelines) to anchor your seek:
+
+```js
+bigscreenPlayer.setCurrentTime(Date.now() / 1000 - 60, Timeline.AVAILABILITY_TIME)
+```
 
 BigscreenPlayer will signal a seek is in progress through the `isSeeking` property on the `WAITING` state change.
 

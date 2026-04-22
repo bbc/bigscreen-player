@@ -9,6 +9,7 @@ import PluginData from "./plugindata"
 import PluginEnums from "./pluginenums"
 import Plugins from "./plugins"
 import DebugTool from "./debugger/debugtool"
+import { AbortStages } from "./models/abortstages"
 
 /**
  * @import { InitData } from './types.d.ts'
@@ -41,8 +42,10 @@ function PlayerComponent(
   mediaSources,
   stateUpdateCallback,
   errorCallback,
-  audioDescribedCallback
+  audioDescribedCallback,
+  abortSignal
 ) {
+  let setSubtitlesState
   let _stateUpdateCallback = stateUpdateCallback
 
   let mediaKind = bigscreenPlayerData.media.kind
@@ -56,6 +59,8 @@ function PlayerComponent(
 
   StrategyPicker()
     .then((strategy) => {
+      abortSignal.throwIfAborted(AbortStages.PLAYER_COMPONENT)
+
       playbackStrategy = strategy(
         mediaSources,
         mediaKind,
@@ -65,7 +70,8 @@ function PlayerComponent(
         {
           enable: bigscreenPlayerData.enableAudioDescribed,
           callback: audioDescribedCallback,
-        }
+        },
+        bigscreenPlayerData?.debug
       )
 
       playbackStrategy.addEventCallback(this, eventCallback)
@@ -77,6 +83,8 @@ function PlayerComponent(
       mediaMetaData = bigscreenPlayerData.media
 
       loadMedia(bigscreenPlayerData.media.type, bigscreenPlayerData.initialPlaybackTime)
+
+      if (setSubtitlesState) playbackStrategy.setSubtitles(setSubtitlesState)
     })
     .catch((error) => {
       errorCallback && errorCallback(error)
@@ -94,6 +102,22 @@ function PlayerComponent(
     if (transitions().canBePaused()) {
       playbackStrategy?.pause()
     }
+  }
+
+  function isSubtitlesAvailable() {
+    return playbackStrategy && playbackStrategy.isSubtitlesAvailable()
+  }
+
+  function setSubtitles(state) {
+    if (playbackStrategy) {
+      playbackStrategy.setSubtitles(state)
+    } else {
+      setSubtitlesState = state
+    }
+  }
+
+  function customiseSubtitles(styleOpts) {
+    return playbackStrategy && playbackStrategy.customiseSubtitles(styleOpts)
   }
 
   function getDuration() {
@@ -311,6 +335,9 @@ function PlayerComponent(
       })
   }
 
+  // Not an ideal place for this, but I've been warned of a possible playercomponent rewrite
+  Plugins.updateContext((context) => ({ ...context, attemptCdnFailover }))
+
   function clearFatalErrorTimeout() {
     if (fatalErrorTimeout !== null) {
       clearTimeout(fatalErrorTimeout)
@@ -428,11 +455,21 @@ function PlayerComponent(
     fatalError = undefined
   }
 
+  function setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps) {
+    playbackStrategy?.setBitrateConstraint(mediaKind, minBitrateKbps, maxBitrateKbps)
+  }
+
+  function getPlaybackBitrate(mediaKind) {
+    return playbackStrategy?.getPlaybackBitrate(mediaKind)
+  }
+
   return {
     play,
     pause,
+    customiseSubtitles,
     transitions,
     isEnded,
+    isSubtitlesAvailable,
     setPlaybackRate,
     getPlaybackRate,
     setCurrentTime,
@@ -445,6 +482,9 @@ function PlayerComponent(
     isAudioDescribedAvailable,
     isAudioDescribedEnabled,
     setAudioDescribed,
+    setSubtitles,
+    setBitrateConstraint,
+    getPlaybackBitrate,
   }
 }
 
