@@ -49,7 +49,7 @@ function MediaSources() {
 
   // Array of CDN names that failed for the playback session
   // and we added back in after 120 seconds (failoverResetTimeMs)
-  const failBackCdns = [] 
+  const failBackCdns: string[] = []
 
   function init(media: MediaDescriptor, setAudioDescribedOn?: boolean): Promise<void> {
     return new Promise((resolve, reject) => {
