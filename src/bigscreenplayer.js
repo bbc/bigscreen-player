@@ -52,7 +52,6 @@ function BigscreenPlayer() {
   let playbackElement
   let readyHelper
   let subtitles
-  let subtitleElementId
 
   const END_OF_STREAM_TOLERANCE = 10
 
@@ -110,7 +109,7 @@ function BigscreenPlayer() {
     }
   }
 
-  function bigscreenPlayerDataLoaded({ media, enableSubtitles, subtitlesAlwaysOnTop, enableAudioDescribed, debug, subtitleElementId }) {
+  function bigscreenPlayerDataLoaded({ media, enableSubtitles, subtitlesAlwaysOnTop, enableAudioDescribed, debug }) {
     abortSignal.throwIfAborted(AbortStages.DATA_LOADED)
 
     const initialPresentationTime =
@@ -131,17 +130,13 @@ function BigscreenPlayer() {
       abortSignal
     )
 
-
-    const subtitleElement = document.getElementById(subtitleElementId)
-    const subtitleContainer = subtitleElement || playbackElement
-
     readyHelper = ReadyHelper(
       initialPresentationTime,
       mediaSources.time().manifestType,
       PlayerComponent.getLiveSupport(),
       () => {
         _callbacks.playerReady && _callbacks.playerReady()
-        subtitles = Subtitles(playerComponent, subtitleContainer, mediaSources, callSubtitlesCallbacks, {
+        subtitles = Subtitles(playerComponent, playbackElement, mediaSources, callSubtitlesCallbacks, {
           alwaysOnTop: subtitlesAlwaysOnTop,
           autoStart: enableSubtitles,
           defaultStyleOpts: media.subtitleCustomisation,
@@ -277,7 +272,6 @@ function BigscreenPlayer() {
      * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, callbacks = {}) => {
-      console.log(`bigscreenplayer: init!`)
       playbackElement = newPlaybackElement
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
