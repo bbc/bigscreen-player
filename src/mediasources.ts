@@ -45,7 +45,7 @@ function MediaSources() {
 
   // Can be overridden with media.subtitlesRequestTimeout
   let subtitlesRequestTimeout = 5000
-  let failoverResetTimeMs = 120000
+  let failoverResetTimeMs = 5000
 
   // Array of CDN names that failed for the playback session
   // and we added back in after 120 seconds (failoverResetTimeMs)
@@ -85,7 +85,7 @@ function MediaSources() {
   }
 
   function failover(failoverParams: FailoverParams): Promise<void> {
-    console.log('*** Failover! ***');
+    DebugTool.info("*** Failover! ***")
     return new Promise((resolve, reject) => {
       if (!isFailoverInfoValid(failoverParams)) {
         return reject(new TypeError("Invalid failover params"))
@@ -283,23 +283,23 @@ function MediaSources() {
       sources[currentSources] = failoverSort(sources[currentSources])
     }
 
-    const hasFailedBack = failBackCdns.includes(mediaSource.cdn);
+    const hasFailedBack = failBackCdns.includes(mediaSource.cdn)
 
     // If CDN does not exist in failBackCdns, add
     // back in to the available mediasource CDNs
     if (!hasFailedBack) {
       const failoverResetToken = setTimeout(() => {
-        console.log('*** Adding CDN back! ***')
+        DebugTool.info("*** Adding CDN back! ***")
         if (mediaSource == null || sources[currentSources].length === 0) return
-  
+
         DebugTool.info(`${mediaSource.cdn} has been added back in to available CDNs`)
         sources[currentSources].push(mediaSource)
-  
+
         updateDebugOutput()
       }, failoverResetTimeMs)
-  
+
       failoverResetTokens.push(failoverResetToken as unknown as number)
-      failBackCdns.push(mediaSource.cdn);
+      failBackCdns.push(mediaSource.cdn)
     }
   }
 
