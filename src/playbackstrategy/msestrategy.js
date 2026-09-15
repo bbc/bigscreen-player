@@ -771,7 +771,9 @@ function MSEStrategy(
 
   function manifestLoadingFinished(event) {
     manifestLoadCount++
-    manifestRequestTime = event.request.requestEndDate.getTime() - event.request.requestStartDate.getTime()
+    if (event.request?.requestEndDate && event.request?.requestStartDate) {
+      manifestRequestTime = event.request.requestEndDate.getTime() - event.request.requestStartDate.getTime()
+    }
   }
 
   function getSeekableRange() {
