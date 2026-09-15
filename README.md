@@ -18,6 +18,12 @@ Install dependencies:
 npm install
 ```
 
+Set up dev tools:
+
+```bash
+npm run devenv
+```
+
 You can run Bigscreen Player locally in a dev environment by running:
 
 ```bash

@@ -1,8 +1,26 @@
 {
   "name": "bigscreen-player",
-  "version": "10.20.3",
-  "type": "module",
   "description": "Simplified media playback for bigscreen devices.",
+  "keywords": [
+    "BBC",
+    "Media Player",
+    "Video Playback",
+    "TV",
+    "Set Top Box",
+    "Streaming"
+  ],
+  "version": "10.20.3",
+  "author": "BBC",
+  "license": "Apache-2.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bbc/bigscreen-player.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bbc/bigscreen-player/issues"
+  },
+  "homepage": "https://github.com/bbc/bigscreen-player#readme",
   "main": "dist/esm/main.js",
   "browser": "dist/esm/main.js",
   "module": "dist/esm/main.js",
@@ -12,8 +30,8 @@
     "CONTRIBUTING.md"
   ],
   "scripts": {
+    "devenv": "husky install",
     "prepare": "if [ ! -d dist/ ]; then npm run build; fi",
-    "postinstall": "if [ -d .git/ ]; then husky install; fi",
     "docs": "jsdoc -c jsdoc.conf.json",
     "build": "npm run build:clean && npm run build:bundle && npm run build:tmp",
     "build:clean": "rm -rf dist/*",
@@ -66,22 +84,7 @@
     "dashjs": "github:bbc/dash.js#smp-v4.7.3-19",
     "smp-imsc": "github:bbc/imscJS#v1.0.11"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/bbc/bigscreen-player.git"
-  },
-  "keywords": [
-    "BBC",
-    "Media Player",
-    "Video Playback",
-    "TV",
-    "Set Top Box",
-    "Streaming"
-  ],
-  "author": "BBC",
-  "license": "Apache-2.0",
-  "bugs": {
-    "url": "https://github.com/bbc/bigscreen-player/issues"
-  },
-  "homepage": "https://github.com/bbc/bigscreen-player#readme"
+  "engines": {
+    "node": "24"
+  }
 }
