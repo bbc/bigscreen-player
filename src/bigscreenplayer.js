@@ -272,6 +272,7 @@ function BigscreenPlayer() {
      * @param {InitCallbacks} callbacks
      */
     init: (newPlaybackElement, bigscreenPlayerData, callbacks = {}) => {
+      console.log(`Bigscreenplayer init!`)
       playbackElement = newPlaybackElement
       DebugTool.init()
       DebugTool.setRootElement(playbackElement)
