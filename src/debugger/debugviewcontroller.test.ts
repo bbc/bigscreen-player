@@ -6,6 +6,7 @@ describe("Debug View", () => {
   beforeAll(() => {
     jest.useFakeTimers()
     jest.spyOn(DebugView, "render").mockImplementation()
+    jest.spyOn(DebugView, "setRootElement")
   })
 
   beforeEach(() => {
@@ -294,5 +295,39 @@ describe("Debug View", () => {
         dynamic: ["00:00:00.000 - Video time: 100.00"],
       })
     )
+  })
+
+  it("does not retain entries after hiding the view", () => {
+    const controller = new ViewController()
+    const chronicle = new Chronicle()
+    controller.showView()
+
+    chronicle.info("Only shown once")
+    controller.addEntries(chronicle.retrieve())
+    controller.hideView()
+    controller.showView()
+    controller.addEntries([])
+
+    jest.advanceTimersToNextTimer()
+
+    expect(DebugView.render).toHaveBeenLastCalledWith({ dynamic: [], static: [] })
+  })
+
+  it("uses the configured root element when showing the view for the second time", () => {
+    const rootElement = document.createElement("div")
+    const controller = new ViewController()
+
+    controller.setRootElement(rootElement)
+    controller.showView()
+    controller.hideView()
+    controller.showView()
+
+    const logBox = rootElement.querySelector("#logBox")
+    const staticBox = rootElement.querySelector("#staticBox")
+
+    expect(logBox).not.toBeNull()
+    expect(staticBox).not.toBeNull()
+    expect(logBox?.parentElement).toBe(rootElement)
+    expect(staticBox?.parentElement).toBe(rootElement)
   })
 })
