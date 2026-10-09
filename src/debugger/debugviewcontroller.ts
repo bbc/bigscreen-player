@@ -563,6 +563,9 @@ class DebugViewController {
   public hideView(): void {
     clearInterval(this.renderInterval)
     DebugView.tearDown()
+    this.dynamicEntries = []
+    this.latestMetricByKey = {}
+    this.shouldRender = false
     this.isVisible = false
   }
 
@@ -579,6 +582,7 @@ class DebugViewController {
   }
 
   setRootElement(el: HTMLElement): void {
+    this.rootElement = el
     DebugView.setRootElement(el)
   }
 }
