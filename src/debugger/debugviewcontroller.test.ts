@@ -313,13 +313,21 @@ describe("Debug View", () => {
     expect(DebugView.render).toHaveBeenLastCalledWith({ dynamic: [], static: [] })
   })
 
-  it("uses the configured root element when showing the view", () => {
+  it("uses the configured root element when showing the view for the second time", () => {
     const rootElement = document.createElement("div")
     const controller = new ViewController()
 
     controller.setRootElement(rootElement)
     controller.showView()
+    controller.hideView()
+    controller.showView()
 
-    expect(DebugView.setRootElement).toHaveBeenLastCalledWith(rootElement)
+    const logBox = rootElement.querySelector("#logBox")
+    const staticBox = rootElement.querySelector("#staticBox")
+
+    expect(logBox).not.toBeNull()
+    expect(staticBox).not.toBeNull()
+    expect(logBox?.parentElement).toBe(rootElement)
+    expect(staticBox?.parentElement).toBe(rootElement)
   })
 })
