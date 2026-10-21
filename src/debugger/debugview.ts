@@ -40,7 +40,7 @@ function init() {
 
   logContainer.id = "logContainer"
   logContainer.style.color = "#ffffff"
-  logContainer.style.fontSize = "11pt"
+  logContainer.style.fontSize = "10pt"
   logContainer.style.position = "absolute"
   logContainer.style.bottom = "1%"
   logContainer.style.left = "1%"
@@ -49,7 +49,7 @@ function init() {
 
   staticContainer.id = "staticContainer"
   staticContainer.style.color = "#ffffff"
-  staticContainer.style.fontSize = "11pt"
+  staticContainer.style.fontSize = "10pt"
   staticContainer.style.wordWrap = "break-word"
   staticContainer.style.left = "1%"
   staticContainer.style.whiteSpace = "pre-line"
