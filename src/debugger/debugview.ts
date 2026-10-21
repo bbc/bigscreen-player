@@ -20,8 +20,8 @@ function init() {
 
   logBox.id = "logBox"
   logBox.style.position = "absolute"
-  logBox.style.width = "63%"
-  logBox.style.left = "5%"
+  logBox.style.width = "65%"
+  logBox.style.left = "2%"
   logBox.style.top = "15%"
   logBox.style.bottom = "25%"
   logBox.style.backgroundColor = "#1D1D1D"
@@ -31,7 +31,7 @@ function init() {
   staticBox.id = "staticBox"
   staticBox.style.position = "absolute"
   staticBox.style.width = "30%"
-  staticBox.style.right = "1%"
+  staticBox.style.right = "2%"
   staticBox.style.top = "15%"
   staticBox.style.bottom = "25%"
   staticBox.style.backgroundColor = "#1D1D1D"
@@ -40,7 +40,7 @@ function init() {
 
   logContainer.id = "logContainer"
   logContainer.style.color = "#ffffff"
-  logContainer.style.fontSize = "11pt"
+  logContainer.style.fontSize = "10pt"
   logContainer.style.position = "absolute"
   logContainer.style.bottom = "1%"
   logContainer.style.left = "1%"
@@ -49,7 +49,7 @@ function init() {
 
   staticContainer.id = "staticContainer"
   staticContainer.style.color = "#ffffff"
-  staticContainer.style.fontSize = "11pt"
+  staticContainer.style.fontSize = "10pt"
   staticContainer.style.wordWrap = "break-word"
   staticContainer.style.left = "1%"
   staticContainer.style.whiteSpace = "pre-line"
